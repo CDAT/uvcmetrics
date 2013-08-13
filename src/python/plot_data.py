@@ -137,6 +137,12 @@ def test_driver( path1, path2=None, filt2=None ):
     filetable1 = basic_filetable( datafiles1 )
     filetable2 = basic_filetable( datafiles2 )
 
+    # Next we'll compute reduced variables.  They have generally been reduced by averaging in time,
+    # and often more axes as well.  Reducing the data first is the fastest way to compute, important
+    # if we need to be interactive.  And it is correct if whatever we plot is linear in the
+    # variables, as is almost always the case.  But if we want to plot a highly nonlinear function
+    # of the data variables, the averaging will have to wait until later.
+
     # The plotvars dict names and contains all the reduced variables which we have defined.
     # They will be used in defining instances of plotspec.
     reduced_variables = {
