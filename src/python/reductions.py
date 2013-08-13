@@ -339,6 +339,24 @@ def reduce2latlon( mv, vid=None ):
 
     return avmv
 
+def reduce_time( mv, vid=None ):
+    """as reduce2lat, but averaging reduces only the time coordinate"""
+    if vid==None:   # Note that the averager function returns a variable with meaningless id.
+        vid = 'reduced_'+mv.id
+    axes = allAxes( mv )
+    axis_names = [ a.id for a in axes if a.id=='time' ]
+    axes_string = '('+')('.join(axis_names)+')'
+    for ax in axes:
+        # The averager insists on bounds.  Sometimes they don't exist, especially for obs.
+        if ax.id!='lat' and ax.id!='lon' and not hasattr( ax, 'bounds' ):
+            ax.setBounds( ax.genGenericBounds() )
+
+    avmv = averager( mv, axis=axes_string )
+    avmv.id = vid
+    avmv.units = mv.units
+
+    return avmv
+
 def reduce2lat_seasonal( mv, seasons=seasonsyr, vid=None ):
     """as reduce2lat, but data is used only for time restricted to the specified season.  The season
     is specified as an object of type cdutil.ties.Seasons, and defaults to the whole year.
@@ -357,7 +375,7 @@ def reduce2lat_seasonal( mv, seasons=seasonsyr, vid=None ):
         timeax._bounds_ = timeax.genGenericBounds()
     if timeax.units=='months':
         # Special check necessary for LEGATES obs data, because
-        # climatolgy() won't accept this incomplete specification
+        # climatology() won't accept this incomplete specification
         timeax.units = 'months since 0001-01-01'
     mvseas = seasons.climatology(mv)
     
@@ -401,6 +419,28 @@ def reduce2latlon_seasonal( mv, seasons=seasonsyr, vid=None ):
         avmv = averager( mvseas, axis=axes_string )
     else:
         avmv = mvseas
+    avmv.id = vid
+    if hasattr(mv,'units'): avmv.units = mv.units
+    avmv = delete_singleton_axis( avmv, vid='time' )
+    avmv.units = mv.units
+    return avmv
+
+def reduce_time_seasonal( mv, seasons=seasonsyr, vid=None ):
+    """as reduce2lat_seasonal, but both all non-time axes are retained.
+    """
+    if vid==None:
+        vid = 'reduced_'+mv.id
+    # Note that the averager function returns a variable with meaningless id.
+    # The climatology function returns the same id as mv, which we also don't want.
+
+    # The slicers in time.py require getBounds() to work.
+    # If it doesn't, we'll have to give it one.
+    # Setting the _bounds_ attribute will do it.
+    timeax = timeAxis(mv)
+    if timeax.getBounds()==None:
+        timeax._bounds_ = timeax.genGenericBounds()
+    mvseas = seasons.climatology(mv)
+    avmv = mvseas
     avmv.id = vid
     if hasattr(mv,'units'): avmv.units = mv.units
     avmv = delete_singleton_axis( avmv, vid='time' )
