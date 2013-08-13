@@ -60,12 +60,12 @@ class ftrow:
              self.timerange.__repr__(), self.latrange.__repr__(), self.lonrange.__repr__() )
 
 
-def get_datafile_filefmt( dfile ):
+def get_datafile_filefmt( dfile, get_them_all=False ):
     """dfile is an open datafile.  If the file type is recognized,
     then this will return an object with methods needed to support that file type."""
     if hasattr(dfile,'source') and ( dfile.source[0:3]=='CAM' or dfile.source[0:4]=='CCSM'\
            or dfile.source[0:4]=='CESM' ):
-       return NCAR_filefmt( dfile )
+       return NCAR_filefmt( dfile, get_them_all )
        # Note that NCAR Histoy Tape files are marked as supporting the CF Conventions
        # and do so, but it's minimal, without most of the useful CF features (e.g.
        # where are bounds for the lat axis?).
@@ -76,7 +76,7 @@ def get_datafile_filefmt( dfile ):
        # I should put in a check for that.
        return CF_filefmt( dfile )
     else:
-       return NCAR_filefmt( dfile )
+       return NCAR_filefmt( dfile, get_them_all )
        # Formerly this was "return Unknown_filefmt()" but I have some obs data from NCAR
        # which has no global attributes which would tell you what kind of file it is.
        # Nevertheless the one I am looking at has lots of clues, e.g. variable and axis names.
@@ -87,7 +87,7 @@ class basic_filetable:
     Different file types will require different methods,
     and auxiliary data."""
 
-    def __init__( self, filelist ):
+    def __init__( self, filelist, get_them_all=False ):
         """filelist is a list of strings, each of which is the path to a file"""
         self._table = []     # will be built from the filelist, see below
         # We have two indices, one by file and one by variable.
@@ -101,25 +101,24 @@ class basic_filetable:
         #print "filelist=",filelist,type(filelist)
         if filelist is None: return
         for filep in filelist.files:
-            self.addfile( filep )
+            self.addfile( filep, get_them_all )
     def __repr__(self):
        return self._table.__repr__()
     def sort(self):
        """in-place sort keyed on the file paths"""
        self._table.sort(key=(lambda ftrow: ftrow.fileid))
        return self
-    def addfile( self, filep ):
+    def addfile( self, filep, get_them_all=False ):
         """Extract essential header information from a file filep,
         and put the results in the table.
         filep should be a string consisting of the path to the file."""
         fileid = filep
-        #print "jfp fileid=",fileid
         try:
            dfile = cdms2.open( fileid )
         except cdms2.error.CDMSError as e:
            # probably "Cannot open file", but whatever the problem is, don't bother with it.
            return
-        filesupp = get_datafile_filefmt( dfile )
+        filesupp = get_datafile_filefmt( dfile, get_them_all )
         vars = filesupp.interesting_variables()
         if len(vars)>0:
             timerange = filesupp.get_timerange()
@@ -160,6 +159,10 @@ class basic_filetable:
                  level_range.overlaps_with( ftrow.levelrange ):
              found.append( ftrow )
        return found
+    def list_variables(self):
+       vars = list(set([ r.variableid for r in self._table ]))
+       vars.sort()
+       return vars
             
 class basic_filefmt:
     """Children of this class contain methods which support specific file types,
@@ -178,14 +181,18 @@ class Unknown_filefmt(basic_filefmt):
 class NCAR_filefmt(basic_filefmt):
    """NCAR History Tape format, used by CAM,CCSM,CESM.  This class works off a derived
    xml file produced with cdscan."""
-   def __init__(self,dfile):
+   def __init__(self,dfile, get_them_all=False):
       """dfile is an open file.  It must be an xml file produced by cdscan,
       combining NCAR History Tape format files."""
       self._dfile = dfile
-      self._all_interesting_names = [
-         'hyam', 'hybm', 'T', 'TREFHT', 'PRECT', 'PS', 'PSL', 'Z500', 'ORO',
-         'FSNS', 'FLNS', 'FLUT', 'FSNTOA', 'FLNT', 'FSNT', 'SHFLX', 'LHFLX', 'OCNFRAC'
-         ] 
+      if get_them_all:
+         self._all_interesting_names = self._dfile.variables.keys()
+      else:
+         self._all_interesting_names = [
+            'hyam', 'hybm', 'T', 'TREFHT', 'PRECT', 'PS', 'PSL', 'Z500', 'ORO',
+            'FSNS', 'FLNS', 'FLUT', 'FSNTOA', 'FLNT', 'FSNT', 'SHFLX', 'LHFLX', 'OCNFRAC'
+            ] 
+
    def get_timerange(self):
       if 'time' not in self._dfile.axes:
          return None
