@@ -16,16 +16,17 @@ from pprint import pprint
 from plot_data import derived_var, plotspec
 from cdutil.times import Seasons
 
-def climatology_var(varname,filetable,seasonname='ANN'):
-    if seasonname=='ANN':
-        return reduced_variable(
-            variableid=varname, filetable=filetable,
-            reduction_function=(lambda x,vid=None: reduce_time(x,vid=vid)) )
-    else:
-        season = cdutil.times.Seasons([seasonname])
-        return reduced_variable(
-            variableid=varname, filetable=filetable,
-            reduction_function=(lambda x,vid=None: reduce_time_seasonal(x,season,vid=vid)) )
+class climatology_variable( reduced_variable ):
+    def __init__(self,varname,filetable,seasonname='ANN'):
+        if seasonname=='ANN':
+            reduced_variable.__init__( self,
+               variableid=varname, filetable=filetable,
+               reduction_function=(lambda x,vid=None: reduce_time(x,vid=vid)) )
+        else:
+            season = cdutil.times.Seasons([seasonname])
+            reduced_variable.__init__( self,
+               variableid=varname, filetable=filetable,
+               reduction_function=(lambda x,vid=None: reduce_time_seasonal(x,season,vid=vid)) )
 
 def test_driver( path1, filt1=None ):
     """ Test driver for setting up data for plots"""
@@ -35,7 +36,7 @@ def test_driver( path1, filt1=None ):
     # Then you can call filetable1.list_variables to get the variable list.
     filetable1 = basic_filetable( datafiles1, get_them_all )
 
-    reduced_variables = { var+'_'+seas: climatology_var(var,filetable1,seas)
+    reduced_variables = { var+'_'+seas: climatology_variable(var,filetable1,seas)
                           for seas in ['ANN','DJF','MAR']
                           for var in ['TREFHT','FLNT']}
     #reduced_variables = {
