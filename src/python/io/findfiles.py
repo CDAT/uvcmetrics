@@ -75,6 +75,7 @@ class treeof_datafiles (basic_datafiles):
         root can be a string representing a directory, or a list
         of such strings.
         The second argument is an optional filter, of type basic_filter."""
+        if filt==None: filt=basic_filter()
         if type(filt)==str and filt.find('filt=')==0:   # really we need to use getopt to parse args
             filt = eval(filt[5:])
         if root==None: return None
