@@ -87,7 +87,7 @@ class basic_filetable:
     Different file types will require different methods,
     and auxiliary data."""
 
-    def __init__( self, filelist, get_them_all=False ):
+    def __init__( self, filelist, ftid='', get_them_all=False ):
         """filelist is a list of strings, each of which is the path to a file"""
         self._table = []     # will be built from the filelist, see below
         # We have two indices, one by file and one by variable.
@@ -100,6 +100,7 @@ class basic_filetable:
         self._varindex = {} # will be built as the table is built
         #print "filelist=",filelist,type(filelist)
         if filelist is None: return
+        self._id = ftid
         for filep in filelist.files:
             self.addfile( filep, get_them_all )
     def __repr__(self):
