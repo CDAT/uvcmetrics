@@ -189,7 +189,7 @@ class NCAR_filefmt(basic_filefmt):
          self._all_interesting_names = self._dfile.variables.keys()
       else:
          self._all_interesting_names = [
-            'hyam', 'hybm', 'T', 'TREFHT', 'PRECT', 'PS', 'PSL', 'Z500', 'ORO',
+            'hyam', 'hybm', 'T', 'TREFHT', 'PRECT', 'PS', 'PSL', 'Z500', 'ORO', 'QFLX',
             'FSNS', 'FLNS', 'FLUT', 'FSNTOA', 'FLNT', 'FSNT', 'SHFLX', 'LHFLX', 'OCNFRAC'
             ] 
 
