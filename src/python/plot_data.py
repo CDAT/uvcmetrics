@@ -130,6 +130,8 @@ class plotspec:
 
 def test_driver( path1, path2=None, filt2=None ):
     """ Test driver for setting up data for plots"""
+
+    # First, find and index the data files.
     datafiles1 = treeof_datafiles( path1 )
     print "jfp datafiles1=",datafiles1
     datafiles2 = treeof_datafiles( path2, filt2 )
@@ -143,130 +145,9 @@ def test_driver( path1, path2=None, filt2=None ):
     # variables, as is almost always the case.  But if we want to plot a highly nonlinear function
     # of the data variables, the averaging will have to wait until later.
 
-    # The plotvars dict names and contains all the reduced variables which we have defined.
+    # The reduced_variables dict names and contains all the reduced variables which we have defined.
     # They will be used in defining instances of plotspec.
-    reduced_variables = {
-        'hyam_1': reduced_variable(
-            variableid='hyam', filetable=filetable1,
-            reduction_function=(lambda x,vid=None: x) ),
-        'hybm_1': reduced_variable(
-            variableid='hybm', filetable=filetable1,
-            reduction_function=(lambda x,vid=None: x) ),
-        'PS_ANN_1': reduced_variable(
-            variableid='PS', filetable=filetable1,
-            reduction_function=reduce2lat ),
-        'T_CAM_ANN_1': reduced_variable(
-            variableid='T', filetable=filetable1,
-            reduction_function=reduce2levlat ),
-        'T_CAM_ANN_2': reduced_variable(
-            variableid='T', filetable=filetable2,
-            reduction_function=reduce2levlat ),
-        'TREFHT_ANN_latlon_Npole_1': reduced_variable(
-            variableid='TREFHT', filetable=filetable1,
-            reduction_function=(lambda x,vid=None: restrict_lat(reduce2latlon(x,vid=vid),50,90)) ),
-        'TREFHT_ANN_latlon_Npole_2': reduced_variable(
-            variableid='TREFHT', filetable=filetable2,
-            reduction_function=(lambda x,vid=None: restrict_lat(reduce2latlon(x,vid=vid),50,90)) ),
-        'TREFHT_ANN_lat_1': reduced_variable(
-            variableid='TREFHT', filetable=filetable1,
-            reduction_function=reduce2lat ),
-        'TREFHT_DJF_lat_1': reduced_variable(
-            variableid='TREFHT',
-            filetable=filetable1,
-            reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,seasonsDJF,vid=vid)) ),
-        'TREFHT_DJF_lat_2': reduced_variable(
-            variableid='TREFHT',
-            filetable=filetable2,
-            reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,seasonsDJF,vid=vid)) ),
-        'TREFHT_DJF_latlon_1': reduced_variable(
-            variableid='TREFHT',
-            filetable=filetable1,
-            reduction_function=(lambda x,vid=None: reduce2latlon_seasonal(x,seasonsDJF,vid=vid)) ),
-        'TREFHT_DJF_latlon_2': reduced_variable(
-            variableid='TREFHT',
-            filetable=filetable2,
-            reduction_function=(lambda x,vid=None: reduce2latlon_seasonal(x,seasonsDJF,vid=vid)) ),
-        'TREFHT_JJA': reduced_variable(
-            variableid='TREFHT',
-            filetable=filetable1,
-            reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,seasonsJJA,vid=vid)) ),
-        'PRECT_JJA_lat_1': reduced_variable(
-            variableid='PRECT',
-            filetable=filetable1,
-            reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,seasonsJJA,vid=vid)) ),
-        'PRECT_JJA_lat_2': reduced_variable(
-            variableid='PRECT',
-            filetable=filetable2,
-            reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,seasonsJJA,vid=vid)) ),
-
-        # CAM variables needed for heat transport:
-        # FSNS, FLNS, FLUT, FSNTOA, FLNT, FSNT, SHFLX, LHFLX,
-        'FSNS_ANN_latlon_1': reduced_variable(
-            variableid='FSNS',
-            filetable=filetable1,
-            reduction_function=reduce2latlon ),
-        'FLNS_ANN_latlon_1': reduced_variable(
-            variableid='FLNS',
-            filetable=filetable1,
-            reduction_function=reduce2latlon ),
-        'FLUT_ANN_latlon_1': reduced_variable(
-            variableid='FLUT',
-            filetable=filetable1,
-            reduction_function=reduce2latlon ),
-        'FSNTOA_ANN_latlon_1': reduced_variable(
-            variableid='FSNTOA',
-            filetable=filetable1,
-            reduction_function=reduce2latlon ),
-        'FLNT_ANN_latlon_1': reduced_variable(
-            variableid='FLNT',
-            filetable=filetable1,
-            reduction_function=reduce2latlon ),
-        'FSNT_ANN_latlon_1': reduced_variable(
-            variableid='FSNT',
-            filetable=filetable1,
-            reduction_function=reduce2latlon ),
-        'SHFLX_ANN_latlon_1': reduced_variable(
-            variableid='SHFLX',
-            filetable=filetable1,
-            reduction_function=reduce2latlon ),
-        'LHFLX_ANN_latlon_1': reduced_variable(
-            variableid='LHFLX',
-            filetable=filetable1,
-            reduction_function=reduce2latlon ),
-        'ORO_ANN_latlon_1': reduced_variable(
-            variableid='ORO',
-            filetable=filetable1,
-            reduction_function=reduce2latlon ),
-        'OCNFRAC_ANN_latlon_1': reduced_variable(
-            variableid='OCNFRAC',
-            filetable=filetable1,
-            reduction_function=reduce2latlon ),
-
-
-        'ts_lat_old': reduced_variable(
-            variableid='surface_temperature', # normally a CF standard_name, even for non-CF data.
-            filetable=filetable1,
-            reduction_function=reduce2lat_old ),
-        'ts_lat_new': reduced_variable(
-            variableid='surface_temperature', # normally a CF standard_name, even for non-CF data.
-            filetable=filetable1,
-            reduction_function=reduce2lat 
-            # The reduction function will take just one argument, a variable (MV).  But it might
-            # be expressed here as a lambda wrapping a more general function.
-            # Often there will be ranges in time, space, etc. specified here.  No range means
-            # everything.
-            ),
-        'ts_scalar_tropical_o': reduced_variable(
-            variableid = 'surface_temperature',
-            filetable=filetable1,
-            reduction_function=(lambda mv,vid=None: reduce2scalar_zonal_old(mv,-20,20,vid=vid))
-            ),
-        'ts_scalar_tropical_n': reduced_variable(
-            variableid = 'surface_temperature',
-            filetable=filetable1,
-            reduction_function=(lambda mv,vid=None: reduce2scalar_zonal(mv,-20,20,vid=vid))
-            )
-        }
+    from reduced_variables import *
 
     # Derived variables have to be treated separately from reduced variables
     # because derived variables generally depend on reduced variables.
@@ -531,6 +412,7 @@ def test_driver( path1, path2=None, filt2=None ):
     #plotspeckeys = ['TREFHT_DJF_laton_ALL']
     #plotspeckeys = ['TREFHT_ANN_Npole_ALL']
     plotspeckeys = ['TREFHT_DJF']
+    #plotspeckeys = ['GLOBAL_AVERAGES']
 
     # Find the variable names required by the plotspecs.
     varkeys = []
@@ -654,6 +536,12 @@ def test_driver( path1, path2=None, filt2=None ):
                 zr.id = 'Zrange'
                 g.write(zr)
             g.presentation = ps.plottype
+            # Note: For table output, it would be convenient to use a string-valued variable X
+            # to specify string parts of the table.  Butcdms2 doesn't support them usefully.
+            # Instead we'll manage with a convention that a table row plotspec's id is the name of
+            # the row, thus available to be printed in, e.g., the first column.
+            if ps.plottype=="table row":
+                g.rowid = ps._id
             g.close()
             if write_xml:
                 h.write( "<ncfile>"+filename+"</ncfile>\n" )
