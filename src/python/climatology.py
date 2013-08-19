@@ -35,10 +35,12 @@ def test_driver( path1, filt1=None ):
     get_them_all = False  # Set True to get all variables in all specified files
     # Then you can call filetable1.list_variables to get the variable list.
     filetable1 = basic_filetable( datafiles1, get_them_all )
+    print "jfp variable list from filetable1:", filetable1.list_variables()
 
     reduced_variables = { var+'_'+seas: climatology_variable(var,filetable1,seas)
                           for seas in ['ANN','DJF','MAR']
-                          for var in ['TREFHT','FLNT']}
+                          for var in filetable1.list_variables() }
+    #                     for var in ['TREFHT','FLNT']}
     #reduced_variables = {
     #    'TREFHT_ANN': reduced_variable(
     #        variableid='TREFHT', filetable=filetable1,
@@ -58,8 +60,7 @@ def test_driver( path1, filt1=None ):
     varvals = {}
     # First compute all the reduced variables
     for key in varkeys:
-        if key in reduced_variables.keys():
-            varvals[key] = reduced_variables[key].reduce()
+        varvals[key] = reduced_variables[key].reduce()
 
     # Now use the reduced and derived variables to compute the plot data.
     for key in varkeys:
