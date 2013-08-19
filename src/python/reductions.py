@@ -577,6 +577,14 @@ def interp2( newaxis1, mv ):
                                              right=missing ) )>0
     return new_vals
 
+def aminusb0( mv1, mv2 ):
+    """ returns mv1[0,]-mv2[0,]; they should be dimensioned alike.  Attributes will be fixed up where I know how."""
+    mv = mv1[0,] - mv2[0,]
+    if hasattr(mv,'long_name'):
+        if mv.long_name==mv1.long_name:  # They're different, shouldn't have the same long_name
+            mv.long_name = ''
+    return mv
+
 def aminusb_ax2( mv1, mv2 ):
     """returns a transient variable representing mv1-mv2, where mv1 and mv2 are variables with
     exactly two axes, with the first axis the same for each (but it's ok to differ only in units,
@@ -675,6 +683,7 @@ def aminusb_1ax( mv1, mv2 ):
     """
     if hasattr(mv1,'units') and hasattr(mv2,'units') and mv1.units!=mv2.units:
         print "WARNING: aminusb_1ax1 is subtracting variables with different units!",mv1,mv1
+    if mv1 is None or mv2 is None: return None
     missing = mv1.get_fill_value()
     axis1 = allAxes(mv1)[0]
     axis2 = allAxes(mv2)[0]
