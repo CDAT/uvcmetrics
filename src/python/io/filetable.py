@@ -190,7 +190,8 @@ class NCAR_filefmt(basic_filefmt):
          self._all_interesting_names = self._dfile.variables.keys()
       else:
          self._all_interesting_names = [
-            'hyam', 'hybm', 'T', 'TREFHT', 'PRECT', 'PS', 'PSL', 'Z500', 'ORO', 'QFLX',
+            'hyam', 'hybm', 'CLDTOT',
+            'T', 'TREFHT', 'PRECT', 'PS', 'PSL', 'Z500', 'ORO', 'QFLX',
             'FSNS', 'FLNS', 'FLUT', 'FSNTOA', 'FLNT', 'FSNT', 'SHFLX', 'LHFLX', 'OCNFRAC'
             ] 
 
@@ -261,6 +262,9 @@ class NCAR_filefmt(basic_filefmt):
       for var in self._dfile.variables.keys():
          if var in self._all_interesting_names:
             iv.append(var)
+         elif hasattr(self._dfile[var],'original_name') and\
+                self._dfile[var].original_name in self._all_interesting_names:
+            iv.append(var)
       return iv
    def variable_by_stdname(self,stdname):
       """returns the variable name for the given standard name if known; otherwise
@@ -271,6 +275,11 @@ class NCAR_filefmt(basic_filefmt):
             return var
          elif var==stdname and var in self._all_interesting_names:
             return var
+         else:
+            original_name = getattr( self._dfile[var], 'original_name', None )
+            if var==stdname and original_name in self._all_interesting_names:
+               return var
+
       return None
 
 class CF_filefmt(basic_filefmt):
