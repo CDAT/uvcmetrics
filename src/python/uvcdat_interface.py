@@ -8,6 +8,7 @@ from filetable import *
 from findfiles import *
 from reductions import *
 from plot_data import plotspec
+from pprint import pprint
 
 def setup_filetable( search_path, cache_path, ftid=None, search_filter=None ):
     """Returns a file table (an index which says where you can find a variable) for files in the
@@ -50,15 +51,18 @@ class uvc_plotspec():
     """This is a simplified version of the plotspec class, intended for the UV-CDAT GUI.
     Once it stabilizes, I may replace the plotspec class with this one.
     The plots will be of the type specified by presentation.  The data will be the
-    variable(s) supplied, and their axes."""
+    variable(s) supplied, and their axes.  Optionally one may specify a list of labels
+    for the variables, and a title for the whole plot."""
     # re prsentation (plottype): Yvsx is a line plot, for Y=Y(X).  It can have one or several lines.
     # Isofill is a contour plot.  To make it polar, set projection=polar.  I'll
     # probably communicate that by passing a name "Isofill_polar".
-    def __init__( self, vars, presentation ):
+    def __init__( self, vars, presentation, labels=[], title='' ):
         self.presentation = presentation
         self.vars = vars
+        self.labels = labels
+        self.title = title
     def __repr__(self):
-        return ("uvc_plotspec %s: %s\n" % (self.presentation,self.vars))
+        return ("uvc_plotspec %s: %s\n" % (self.presentation,self.title,self.labels))
 
 class one_line_plot( plotspec ):
     def __init__( self, yvar, xvar=None ):
@@ -119,15 +123,24 @@ class plot_set3():
         # At the moment this is very specific to plot set 3.  Maybe later I'll use a
         # more general method, to something like what's in plot_data.py, maybe not.
         # later this may be something more specific to the needs of the UV-CDAT GUI
-        y1val = self.plot_a.y1vars[0].reduce()
-        y1val.id = '_'.join([self._var_baseid,filetable1._id])  # e.g. CLT_DJF_set3_CAM456
-        y2val = self.plot_a.y2vars[0].reduce()
-        y2val.id = '_'.join([self._var_baseid,filetable2._id])  # e.g. CLT_DJF_set3_NCEP
+        y1var = self.plot_a.y1vars[0]
+        y2var = self.plot_a.y2vars[0]
+        y1val = y1var.reduce()
+        y1unam = y1var._filetable._id  # unique part of name for y1, e.g. CAM456
+        y1val.id = '_'.join([self._var_baseid,y1unam])  # e.g. CLT_DJF_set3_CAM456
+        y2val = y2var.reduce()
+        y2unam = y2var._filetable._id  # unique part of name for y2, e.g. NCEP
+        y2val.id = '_'.join([self._var_baseid,y2unam])  # e.g. CLT_DJF_set3_NCEP
         ydiffval = apply( self.plot_b.yfunc, [y1val,y2val] )
-        ydiffval.id = '_'.join([self._var_baseid,filetable1._id,filetable2._id,'diff'])
+        ydiffval.id = '_'.join([self._var_baseid, y1var._filetable._id, y2var._filetable._id,
+                                'diff'])
         # ... e.g. CLT_DJF_set3_CAM456_NCEP_diff
-        plot_a_val = uvc_plotspec([y1val,y2val],'Yvsx')
-        plot_b_val = uvc_plotspec([ydiffval],'Yvsx')
+        plot_a_val = uvc_plotspec(
+            [y1val,y2val],'Yvsx', labels=[y1unam,y2unam],
+            title=' '.join([self._var_baseid,y1unam,'and',y2unam]) )
+        plot_b_val = uvc_plotspec(
+            [ydiffval],'Yvsx', labels=['difference'],
+            title=' '.join([self._var_baseid,y1unam,'-',y2unam]))
         return [ plot_a_val, plot_b_val ]
 
 
@@ -149,7 +162,7 @@ if __name__ == '__main__':
           filetable2 = setup_filetable(path2,os.environ['PWD'])
       ps3 = plot_set3( filetable1, filetable2, 'TREFHT', 'DJF' )
       print "ps3=",ps3
-      ps3.results()
+      pprint( ps3.results() )
    else:
       print "usage: plot_data.py root"
 else:
