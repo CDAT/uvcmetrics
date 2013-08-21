@@ -151,7 +151,6 @@ class basic_filetable:
        if variable not in self._varindex.keys():
           return None
        candidates = self._varindex[ variable ]
-       #print "jfp find_files candidates=",candidates
        found = []
        for ftrow in candidates:
           if time_range.overlaps_with( ftrow.timerange ) and\
