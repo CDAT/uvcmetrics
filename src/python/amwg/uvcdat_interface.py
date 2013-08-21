@@ -106,6 +106,28 @@ class one_line_diff_plot( plotspec ):
             vid=vid,
             plottype='Yvsx' )
 
+class contour_plot( plotspec ):
+    def __init__( self, zvar, xvar=None, yvar=None ):
+        # zvar is the variable to be plotted.  xvar,yvar are the x,y of the plot,
+        # normally the axes of zvar.  If you don't specify, a x=lon,y=lat plot will be preferred.
+        # xvar, yvar, zvar should already have been reduced; x,y to 1-D and z to 2-D.
+        if xvar is None and yvar is None:
+            xvar = latAxis(zvar)
+            yvar = lonAxis(zvar)
+        if xvar is None:
+            if yvar==zvar.getAxisList()[0]:
+                xvar = zvar.getAxisList()[1]
+            else:
+                xvar = zvar.getAxisList()[0]
+        if yvar is None:
+            if xvar==zvar.getAxisList()[1]:
+                yvar = zvar.getAxisList()[0]
+            else:
+                yvar = zvar.getAxisList()[1]
+        plotspec.__init__( self,
+            xvars=[xvar], yvars=[yvar], zvars=[zvar], plottype='Isofill' )
+
+
 class plot_set3():
     """represents one plot from AMWG Diagnostics Plot Set 3.
     Each such plot is a pair of plots: a 2-line plot comparing model with obs, and
@@ -181,26 +203,56 @@ class plot_set4():
             variableid=varid,
             filetable=filetable2,
             reduction_function=(lambda x,vid=None: reduce2levlat_seasonal(x,season,vid=vid)) )
-        vid1=******
-        'hyam': reduced_variable(
+        hyam = reduced_variable(      # hyam=hyam(lev)
             variableid='hyam', filetable=filetable1,
             reduction_function=(lambda x,vid=None: x) ),
->>>> do hyam, hybm have time dependence? => would need a seasonal average <<<<<
-        'hybm': reduced_variable(
+        hybm = reduced_variable(      # hyab=hyab(lev)
             variableid='hybm', filetable=filetable1,
             reduction_function=(lambda x,vid=None: x) ),
-        'PS_ANN_1': reduced_variable(
+        ps = reduced_variable(
             variableid='PS', filetable=filetable1,
             reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,season,vid=vid)) ),
+        vid1='_'.join(varid,seasonid,'levlat')
         vv1 = derived_var(
             vid=vid1, inputs=[rv1, hyam, hybm, ps, rv2], func=verticalize )
         vv2 = rv2
 
-        # code from plot_set3:...
-        self.plot_a = two_line_plot( y1var, y2var )
+        self.plot_a = contour_plot( vv1 )
+        self.plot_b = contour_plot( vv2 )
         vid = '_'.join([self._var_baseid,filetable1._id,filetable2._id,'diff'])
-        # ... e.g. CLT_DJF_set3_CAM456_NCEP_diff
-        self.plot_b = one_line_diff_plot( y1var, y2var, vid )
+        # ... e.g. CLT_DJF_set4_CAM456_NCEP_diff
+        self.plot_c = contour_diff_plot( vv1, vv2, vid )
+    def results(self):
+        # At the moment this is very specific to plot set 4.  Maybe later I'll use a
+        # more general method, to something like what's in plot_data.py, maybe not.
+        # later this may be something more specific to the needs of the UV-CDAT GUI
+        zavar = self.plot_a.zvar[0]
+        zaval = zavar.reduce()
+        if zaval is None: return None
+        zaunam = zavar._filetable._id  # unique part of name for y1, e.g. CAM456
+        zaval.id = '_'.join([self._var_baseid,zaunam])  # e.g. CLT_DJF_set3_CAM456
+        zbvar = self.plot_b.zvar[0]
+        zbval = zbvar.reduce()
+        if zbval is None: return None
+        zbunam = zbvar._filetable._id  # unique part of name for y1, e.g. OBS123
+        zbval.id = '_'.join([self._var_baseid,zbunam])  # e.g. CLT_DJF_set3_OBS123
+        zdiffvar = self.plot_c.zvar[0]
+        zdiffval = zdiffvar.reduce()
+        if zdiffval is None: return None
+        zdiffval = apply( self.plot_c.zfunc, [z1val,z2val] )
+        zdiffval.id = '_'.join([self._var_baseid, z1var._filetable._id, z2var._filetable._id,
+                                'diff'])
+        # ... e.g. CLT_DJF_set3_CAM456_OBS123_diff
+        plot_a_val = uvc_plotspec(
+            [zaval],'Isofill', labels=[zaunam],
+            title= zaunam ),
+        plot_b_val = uvc_plotspec(
+            [zbval],'Isofill', labels=[zbunam],
+            title= zbunam ),
+        plot_c_val = uvc_plotspec(
+            [zdiffval],'Isofill', labels=['difference'],
+            title=' '.join([self._var_baseid,z1unam,'-',z2unam]))
+        return [ plot_a_val, plot_b_val, plot_c_val ]
 
 
 # TO DO: reset axes, set 'x' or 'y' attributes, etc., as needed
