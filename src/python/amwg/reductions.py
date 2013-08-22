@@ -11,8 +11,9 @@ import dateutil.parser
 from datetime import datetime as datetime
 from unidata import udunits
 from cdutil import averager
-import press2alt
-from filetable import *
+import derivations
+from derivations import press2alt
+from metrics.io.filetable import *
 
 seasonsDJF=cdutil.times.Seasons(['DJF'])
 seasonsJJA=cdutil.times.Seasons(['JJA'])

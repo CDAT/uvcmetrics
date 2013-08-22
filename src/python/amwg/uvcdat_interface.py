@@ -4,8 +4,8 @@
 
 import hashlib, os, pickle, sys, os
 import cdutil.times
-from filetable import *
-from findfiles import *
+from metrics.io.filetable import *
+from metrics.io.findfiles import *
 from reductions import *
 from plot_data import plotspec
 from pprint import pprint
@@ -256,7 +256,8 @@ class plot_set4():
 
 
 # TO DO: reset axes, set 'x' or 'y' attributes, etc., as needed
-
+# C. Doutriaux commeting bellow seems to break import system, should be moved to script directory anyway
+"""
 if __name__ == '__main__':
    if len( sys.argv ) > 1:
       from findfiles import *
@@ -286,3 +287,4 @@ else:
     filetable2 = setup_filetable(path2,os.environ['PWD'],search_filter=filt2)
     ps3 = plot_set3( filetable1, filetable2, 'TREFHT', 'DJF' )
     res3 = ps3.results()
+    """
