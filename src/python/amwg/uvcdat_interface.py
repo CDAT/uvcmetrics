@@ -62,7 +62,7 @@ class uvc_plotspec():
         self.labels = labels
         self.title = title
     def __repr__(self):
-        return ("uvc_plotspec %s: %s\n" % (self.presentation,self.title,self.labels))
+        return ("uvc_plotspec %s: %s\n" % (self.presentation,self.title))
 
 def get_plot_data( plot_set, filetable1, filetable2, variable, season ):
     """returns a list of uvc_plotspec objects to be plotted.  The plot_set is a string from
