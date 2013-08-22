@@ -73,6 +73,8 @@ def get_plot_data( plot_set, filetable1, filetable2, variable, season ):
     e.g. 'DJF','ANN','MAR'."""
     if plot_set=='3':
         return plot_set3( filetable1, filetable2, variable, season )
+    elif plot_set=='4':
+        return plot_set4( filetable1, filetable2, variable, season )
     else:
         print "ERROR, plot set",plot_set," not implemented yet!"
         return None
