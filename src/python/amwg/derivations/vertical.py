@@ -3,7 +3,7 @@
 # Ngl doesn't work yet onoceanonly:
 # import Ngl
 import numpy, cdms2, cdutil
-from metrics.amwg.reductions import *
+from reductions import *
 
 # constants as in functions_vertical.ncl, lines 5-10:
 plvlO = numpy.array([30.,50.,70.,100.,150.,200.,250.,300.,400.,500.,
@@ -27,10 +27,14 @@ def verticalize( T, hyam, hybm, ps, levels=plvlO ):
     p0 = 1000.   # mb
     interp = 2   # log interpolation
     extrap = False     # no extrapolation past psfc
-    if isinstance(levels,cdms2.avariable.AbstractVariable):
+    if levels is None:
+        levels = plvlO
+    elif isinstance(levels,cdms2.avariable.AbstractVariable):
+        print "jfp levels=",levels,levels.id
         lev_axis = levAxis(levels)
         if lev_axis==None:
-            print "ERROR, no level axis in",levels
+            print "WARNING, no level axis in",levels.id
+            return None
         levels = lev_axis[:]
     # Convert p0 to match ps.  Later, we'll convert back to mb.  This is faster than
     # converting ps to millibars.
