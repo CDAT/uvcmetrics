@@ -4,10 +4,11 @@
 
 import hashlib, os, pickle, sys, os
 import cdutil.times
-from metrics.io.filetable import *
-from metrics.io.findfiles import *
+from filetable import *
+from findfiles import *
 from reductions import *
-from plot_data import plotspec
+from vertical import *
+from plot_data import plotspec, derived_var
 from pprint import pprint
 
 def setup_filetable( search_path, cache_path, ftid=None, search_filter=None ):
@@ -88,17 +89,17 @@ class one_line_plot( plotspec ):
 
 class two_line_plot( plotspec ):
     def __init__( self, y1var, y2var, x1var=None, x2var=None ):
-        # x?var, y?var should be the actual x,y of the plots.
-        # x?var, y?var should already have been reduced to 1-D variables.
-        # Normally y?=y(x?), x? is the axis of y?.
+        """x?var, y?var should be the actual x,y of the plots.
+        x?var, y?var should already have been reduced to 1-D variables.
+        Normally y?=y(x?), x? is the axis of y?."""
         plotspec.__init__( self, y1vars=[y1var], y2vars=[y2var],
                            vid = y1var.variableid+y2var.variableid+" line plot", plottype='Yvsx' )
 
 class one_line_diff_plot( plotspec ):
     def __init__( self, y1var, y2var, vid ):
-        # y?var should be the actual y of the plots.
-        # y?var should already have been reduced to 1-D variables.
-        # y?=y(x?), x? is the axis of y?.
+        """y?var should be the actual y of the plots.
+        y?var should already have been reduced to 1-D variables.
+        y?=y(x?), x? is the axis of y?."""
         plotspec.__init__( self,
             xvars=[y1var,y2var], xfunc = latvar_min,
             yvars=[y1var,y2var],
@@ -107,28 +108,63 @@ class one_line_diff_plot( plotspec ):
             plottype='Yvsx' )
 
 class contour_plot( plotspec ):
-    def __init__( self, zvar, xvar=None, yvar=None ):
-        # zvar is the variable to be plotted.  xvar,yvar are the x,y of the plot,
-        # normally the axes of zvar.  If you don't specify, a x=lon,y=lat plot will be preferred.
-        # xvar, yvar, zvar should already have been reduced; x,y to 1-D and z to 2-D.
-        if xvar is None and yvar is None:
-            xvar = latAxis(zvar)
-            yvar = lonAxis(zvar)
+    def __init__( self, zvar, xvar=None, yvar=None, ya1var=None,
+                  xfunc=None, yfunc=None, ya1func=None ):
+        """ zvar is the variable to be plotted.  xvar,yvar are the x,y of the plot,
+        normally the axes of zvar.  If you don't specify, a x=lon,y=lat plot will be preferred.
+        xvar, yvar, zvar should already have been reduced; x,y to 1-D and z to 2-D."""
         if xvar is None:
-            if yvar==zvar.getAxisList()[0]:
-                xvar = zvar.getAxisList()[1]
-            else:
-                xvar = zvar.getAxisList()[0]
+            xvar = zvar
         if yvar is None:
-            if xvar==zvar.getAxisList()[1]:
-                yvar = zvar.getAxisList()[0]
-            else:
-                yvar = zvar.getAxisList()[1]
-        plotspec.__init__( self,
-            xvars=[xvar], yvars=[yvar], zvars=[zvar], plottype='Isofill' )
+            yvar = zvar
+        if ya1var is None:
+            ya1var = zvar
+        if xfunc==None: xfunc=lonvar
+        if yfunc==None: yfunc=latvar
+        vid = ''
+        if hasattr(zvar,'vid'): vid = zvar.vid
+        if hasattr(zvar,'id'): vid = zvar.id
+        plotspec.__init__(
+            self, vid+'_contour', xvars=[xvar], xfunc=xfunc,
+            yvars=[yvar], yfunc=yfunc, ya1vars=[ya1var], ya1func=ya1func,
+            zvars=[zvar], plottype='Isofill' )
 
+class contour_diff_plot( plotspec ):
+    def __init__( self, z1var, z2var, plotid, x1var=None, x2var=None, y1var=None, y2var=None,
+                   ya1var=None,  ya2var=None, xfunc=None, yfunc=None, ya1func=None ):
+        """We will plot the difference of the two z variables, z1var-z2var.
+        See the notes on contour_plot"""
+        if x1var is None:
+            x1var = z1var
+        if y1var is None:
+            y1var = z1var
+        if ya1var is None:
+            ya1var = z1var
+        if x2var is None:
+            x2var = z2var
+        if y2var is None:
+            y2var = z2var
+        if ya2var is None:
+            ya2var = z2var
+        if xfunc==None: xfunc=lonvar_min
+        if yfunc==None: yfunc=latvar_min
+        plotspec.__init__(
+            self, plotid, xvars=[x1var,x2var], xfunc=xfunc,
+            yvars=[y1var,y2var], yfunc=yfunc, ya1vars=[ya1var,ya2var], ya1func=ya1func,
+            zvars=[z1var,z2var], zfunc=aminusb_ax2, plottype='Isofill' )
 
-class plot_set3():
+class plot_set():
+    def __init__(self):
+        self.reduced_variables = {}
+        self.derived_variables = {}
+        self.variable_values = {}
+    def results(self):
+        for v in self.reduced_variables.keys():
+            self.variable_values[v] = self.reduced_variables[v].reduce()
+        for v in self.derived_variables.keys():
+            self.variable_values[v] = self.derived_variables[v].derive(self.variable_values)
+    
+class plot_set3(plot_set):
     """represents one plot from AMWG Diagnostics Plot Set 3.
     Each such plot is a pair of plots: a 2-line plot comparing model with obs, and
     a 1-line plot of the model-obs difference.  A plot's x-axis is latitude, and
@@ -179,7 +215,7 @@ class plot_set3():
             title=' '.join([self._var_baseid,y1unam,'-',y2unam]))
         return [ plot_a_val, plot_b_val ]
 
-class plot_set4():
+class plot_set4(plot_set):
     """represents one plot from AMWG Diagnostics Plot Set 4.
     Each such plot is a set of three contour plots: one each for model output, observations, and
     the difference between the two.  A plot's x-axis is latitude and its y-axis is the level,
@@ -193,53 +229,74 @@ class plot_set4():
         varid is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'.
         At the moment we assume that data from filetable1 has CAM hybrid levels,
         and data from filetable2 has pressure levels."""
+        plot_set.__init__(self)
         season = cdutil.times.Seasons(seasonid)
         self._var_baseid = '_'.join([varid,seasonid,'set3'])   # e.g. CLT_DJF_set3
         rv1 = reduced_variable(
             variableid=varid,
             filetable=filetable1,
             reduction_function=(lambda x,vid=None: reduce2levlat_seasonal(x,season,vid=vid)) )
+        self.reduced_variables[varid+'_1'] = rv1
         rv2 = reduced_variable(
             variableid=varid,
             filetable=filetable2,
             reduction_function=(lambda x,vid=None: reduce2levlat_seasonal(x,season,vid=vid)) )
+        self.reduced_variables[varid+'_2'] = rv2
         hyam = reduced_variable(      # hyam=hyam(lev)
             variableid='hyam', filetable=filetable1,
-            reduction_function=(lambda x,vid=None: x) ),
+            reduction_function=(lambda x,vid=None: x) )
+        self.reduced_variables['hyam'] = hyam
         hybm = reduced_variable(      # hyab=hyab(lev)
             variableid='hybm', filetable=filetable1,
-            reduction_function=(lambda x,vid=None: x) ),
+            reduction_function=(lambda x,vid=None: x) )
+        self.reduced_variables['hybm'] = hybm
         ps = reduced_variable(
             variableid='PS', filetable=filetable1,
-            reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,season,vid=vid)) ),
-        vid1='_'.join(varid,seasonid,'levlat')
+            reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,season,vid=vid)) )
+        self.reduced_variables['ps'] = ps
+        vid1='_'.join([varid,seasonid,'levlat'])
         vv1 = derived_var(
-            vid=vid1, inputs=[rv1, hyam, hybm, ps, rv2], func=verticalize )
+            vid=vid1, inputs=[varid+'_1', 'hyam', 'hybm', 'ps', varid+'_2'], func=verticalize )
+        vv1._filetable = filetable1  # so later we can extract the filetable id for labels
+        self.derived_variables[vid1] = vv1
         vv2 = rv2
+        vv2._vid = varid+'_2'        # for lookup conventience in results() method
+        vv2._filetable = filetable2  # so later we can extract the filetable id for labels
 
-        self.plot_a = contour_plot( vv1 )
-        self.plot_b = contour_plot( vv2 )
+        self.plot_a = contour_plot( vv1, xfunc=latvar, yfunc=levvar, ya1func=heightvar )
+        self.plot_b = contour_plot( vv2, xfunc=latvar, yfunc=levvar, ya1func=heightvar )
         vid = '_'.join([self._var_baseid,filetable1._id,filetable2._id,'diff'])
         # ... e.g. CLT_DJF_set4_CAM456_NCEP_diff
-        self.plot_c = contour_diff_plot( vv1, vv2, vid )
+        self.plot_c = contour_diff_plot( vv1, vv2, vid, xfunc=latvar_min, yfunc=levvar_min,
+                                         ya1func=(lambda y1,y2: heightvar(levvar_min(y1,y2))))
     def results(self):
         # At the moment this is very specific to plot set 4.  Maybe later I'll use a
         # more general method, to something like what's in plot_data.py, maybe not.
         # later this may be something more specific to the needs of the UV-CDAT GUI
-        zavar = self.plot_a.zvar[0]
-        zaval = zavar.reduce()
+        plot_set.results(self)
+        zavar = self.plot_a.zvars[0]
+        zaval = self.variable_values[ zavar._vid ]
         if zaval is None: return None
         zaunam = zavar._filetable._id  # unique part of name for y1, e.g. CAM456
         zaval.id = '_'.join([self._var_baseid,zaunam])  # e.g. CLT_DJF_set3_CAM456
-        zbvar = self.plot_b.zvar[0]
-        zbval = zbvar.reduce()
+
+        zbvar = self.plot_b.zvars[0]
+        #zbval = zbvar.reduce()
+        zbval = self.variable_values[ zbvar._vid ]
         if zbval is None: return None
         zbunam = zbvar._filetable._id  # unique part of name for y1, e.g. OBS123
         zbval.id = '_'.join([self._var_baseid,zbunam])  # e.g. CLT_DJF_set3_OBS123
-        zdiffvar = self.plot_c.zvar[0]
-        zdiffval = zdiffvar.reduce()
-        if zdiffval is None: return None
+
+        z1var = self.plot_c.zvars[0]
+        z2var = self.plot_c.zvars[1]
+        z1val = self.variable_values[ z1var._vid ]
+        z2val = self.variable_values[ z2var._vid ]
+        z1unam = z1var._filetable._id  # unique part of name for y1, e.g. OBS123
+        z1val.id = '_'.join([self._var_baseid,z1unam])  # e.g. CLT_DJF_set3_OBS123
+        z2unam = z1var._filetable._id  # unique part of name for y1, e.g. OBS123
+        z2val.id = '_'.join([self._var_baseid,z2unam])  # e.g. CLT_DJF_set3_OBS123
         zdiffval = apply( self.plot_c.zfunc, [z1val,z2val] )
+        if zdiffval is None: return None
         zdiffval.id = '_'.join([self._var_baseid, z1var._filetable._id, z2var._filetable._id,
                                 'diff'])
         # ... e.g. CLT_DJF_set3_CAM456_OBS123_diff
@@ -252,12 +309,11 @@ class plot_set4():
         plot_c_val = uvc_plotspec(
             [zdiffval],'Isofill', labels=['difference'],
             title=' '.join([self._var_baseid,z1unam,'-',z2unam]))
-        return [ plot_a_val, plot_b_val, plot_c_val ]
+        return ( plot_a_val, plot_b_val, plot_c_val )
 
 
 # TO DO: reset axes, set 'x' or 'y' attributes, etc., as needed
 # C. Doutriaux commeting bellow seems to break import system, should be moved to script directory anyway
-"""
 if __name__ == '__main__':
    if len( sys.argv ) > 1:
       from findfiles import *
@@ -272,19 +328,28 @@ if __name__ == '__main__':
           filetable2 = setup_filetable(path2,os.environ['PWD'],search_filter=filt2)
       else:
           filetable2 = setup_filetable(path2,os.environ['PWD'])
-      ps3 = plot_set3( filetable1, filetable2, 'TREFHT', 'DJF' )
-      print "ps3=",ps3
-      pprint( ps3.results() )
+#      ps3 = plot_set3( filetable1, filetable2, 'TREFHT', 'DJF' )
+#      print "ps3=",ps3
+#      pprint( ps3.results() )
+      ps4 = plot_set4( filetable1, filetable2, 'T', 'DJF' )
+      print "ps4=",ps4
+      pprint( ps4.results() )
    else:
       print "usage: plot_data.py root"
+""" for testing...
 else:
     # My usual command-line test is:
     # ./uvcdat_interface.py /export/painter1/cam_output/*.xml ./obs_data/ filt="f_startswith('LEGATES')"
+    # ...That's for plot set 3; it has no levels so it's a bad test for plot set 4.  Here's another:
+    # ./uvcdat_interface.py /export/painter1/cam_output/*.xml ./obs_data/ filt="f_startswith('NCEP')"
     path1 = '/export/painter1/cam_output/b30.009.cam2.h0.06.xml'
     path2 = '/export/painter1/metrics/src/python/obs_data/'
-    filt2="filt=f_startswith('LEGATES')"
+#    filt2="filt=f_startswith('LEGATES')"
+    filt2="filt=f_startswith('NCEP')"
     filetable1 = setup_filetable(path1,os.environ['PWD'])
     filetable2 = setup_filetable(path2,os.environ['PWD'],search_filter=filt2)
-    ps3 = plot_set3( filetable1, filetable2, 'TREFHT', 'DJF' )
-    res3 = ps3.results()
-    """
+#    ps3 = plot_set3( filetable1, filetable2, 'TREFHT', 'DJF' )
+#    res3 = ps3.results()
+    ps4 = plot_set4( filetable1, filetable2, 'T', 'DJF' )
+    res4 = ps4.results()
+"""
