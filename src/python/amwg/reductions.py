@@ -13,7 +13,7 @@ from unidata import udunits
 from cdutil import averager
 import derivations
 from derivations import press2alt
-from metrics.io.filetable import *
+from filetable import *
 
 seasonsDJF=cdutil.times.Seasons(['DJF'])
 seasonsJJA=cdutil.times.Seasons(['JJA'])
@@ -318,6 +318,35 @@ def reduce2levlat( mv, vid=None ):
 
     avmv = averager( mv, axis=axes_string )
     avmv.id = vid
+    avmv.units = mv.units
+
+    return avmv
+
+def reduce2levlat_seasonal( mv, seasons=seasonsyr, vid=None ):
+    """as reduce2levlat, but data is averaged only for time restricted to the specified season;
+    as in reduce2lat_seasona."""
+    if vid==None:   # Note that the averager function returns a variable with meaningless id.
+        vid = 'reduced_'+mv.id
+    axes = allAxes( mv )
+    timeax = timeAxis(mv)
+    if timeax.getBounds()==None:
+        timeax._bounds_ = timeax.genGenericBounds()
+
+    if timeax.units=='months':
+        # Special check necessary for LEGATES obs data, because
+        # climatology() won't accept this incomplete specification
+        timeax.units = 'months since 0001-01-01'
+    mvseas = seasons.climatology(mv)
+
+    axis_names = [ a.id for a in axes if a.id!='lev' and a.id!='lat' and a.id!='time']
+    axes_string = '('+')('.join(axis_names)+')'
+
+    if len(axes_string)>2:
+        avmv = averager( mvseas, axis=axes_string )
+    else:
+        avmv = mvseas
+    avmv.id = vid
+    avmv = delete_singleton_axis( avmv, vid='time' )
     avmv.units = mv.units
 
     return avmv
