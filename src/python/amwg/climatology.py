@@ -38,9 +38,9 @@ def test_driver( path1, filt1=None ):
     print "jfp variable list from filetable1:", filetable1.list_variables()
 
     reduced_variables = { var+'_'+seas: climatology_variable(var,filetable1,seas)
-                          for seas in ['ANN','DJF','MAR']
+                          for seas in ['ANN','DJF','JAN']
                           for var in filetable1.list_variables() }
-    #                     for var in ['TREFHT','FLNT']}
+    #                     for var in ['TREFHT','FLNT','SOILC']}
     #reduced_variables = {
     #    'TREFHT_ANN': reduced_variable(
     #        variableid='TREFHT', filetable=filetable1,
@@ -65,7 +65,6 @@ def test_driver( path1, filt1=None ):
     # Now use the reduced and derived variables to compute the plot data.
     for key in varkeys:
         var = reduced_variables[key]
-        print "jfp preparing data for",var.variableid
         filename = key+"_test.nc"
         if varvals[key] is not None:
             g = cdms2.open( filename, 'w' )    # later, choose a better name and a path!
