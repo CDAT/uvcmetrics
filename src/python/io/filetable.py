@@ -259,6 +259,8 @@ class NCAR_filefmt(basic_filefmt):
       the actual variable name."""
       iv = []
       for var in self._dfile.variables.keys():
+         if len(self._dfile.variables[var].getAxisList())>=3:
+            iv.append(var)
          if var in self._all_interesting_names:
             iv.append(var)
          elif hasattr(self._dfile[var],'original_name') and\
@@ -267,7 +269,7 @@ class NCAR_filefmt(basic_filefmt):
       return iv
    def variable_by_stdname(self,stdname):
       """returns the variable name for the given standard name if known; otherwise
-      if the given name be known to be interesting, the name itself is returned."""
+      if the variable be interesting, the name itself is returned."""
       for var in self._dfile.variables.keys():
          standard_name = getattr( self._dfile[var], 'standard_name', None )
          if standard_name==stdname:
@@ -279,7 +281,10 @@ class NCAR_filefmt(basic_filefmt):
             if var==stdname and original_name in self._all_interesting_names:
                return var
 
-      return None
+      # For now, just return the input name, it's better than nothing - I haven't yet tried
+      # seriously to use the standard_name concept for NCAR files
+      return stdname
+      #return None
 
 class CF_filefmt(basic_filefmt):
     """NetCDF file conforming to the CF Conventions, and using useful CF featues
