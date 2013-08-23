@@ -15,6 +15,7 @@ import derivations
 from derivations import press2alt
 from metrics.io.filetable import *
 from metrics.io.filetable import *
+#from climo_test import cdutil_climatology
 
 seasonsDJF=cdutil.times.Seasons(['DJF'])
 seasonsJJA=cdutil.times.Seasons(['JJA'])
