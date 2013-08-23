@@ -14,6 +14,7 @@ from cdutil import averager
 import derivations
 from derivations import press2alt
 from metrics.io.filetable import *
+from metrics.io.filetable import *
 
 seasonsDJF=cdutil.times.Seasons(['DJF'])
 seasonsJJA=cdutil.times.Seasons(['JJA'])
