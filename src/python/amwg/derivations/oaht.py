@@ -5,7 +5,7 @@
 # pcmdi11.llnl.gov:~painter1/amwg/amwg_diag5.6/code/plot_oaht.ncl
 
 from ncl_isms import *
-from metrics.amwg.reductions import *
+from reductions import *
 
 # NCAR gets thse from environment variables!  We have to do it better, but for now, do it worse!
 version = None

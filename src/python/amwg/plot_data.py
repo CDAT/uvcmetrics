@@ -4,7 +4,7 @@
 # There's a whole lot left to do!
 
 import cdms2, math
-from metrics.io.filetable import *
+from filetable import *
 from reductions import *
 from derivations.oaht import *
 from derivations.ncl_isms import *
