@@ -4,7 +4,7 @@
 
 import numpy
 from numpy import pi, sin
-from reductions import *
+from metrics.amwg.reductions import *
 
 # ~/amwg/ncl/lib/ncarg/nclscripts/csm/contributed.ncl
 def latRegWgt( lat ):
