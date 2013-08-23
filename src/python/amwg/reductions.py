@@ -14,6 +14,7 @@ from cdutil import averager
 import derivations
 from derivations import press2alt
 from filetable import *
+from climo_test import cdutil_climatology
 
 seasonsDJF=cdutil.times.Seasons(['DJF'])
 seasonsJJA=cdutil.times.Seasons(['JJA'])
@@ -376,12 +377,14 @@ def reduce_time( mv, vid=None ):
     axes = allAxes( mv )
     axis_names = [ a.id for a in axes if a.id=='time' ]
     axes_string = '('+')('.join(axis_names)+')'
-    for ax in axes:
-        # The averager insists on bounds.  Sometimes they don't exist, especially for obs.
-        if ax.id!='lat' and ax.id!='lon' and not hasattr( ax, 'bounds' ):
-            ax.setBounds( ax.genGenericBounds() )
-
-    avmv = averager( mv, axis=axes_string )
+    if len(axes_string)>2:
+        for ax in axes:
+            # The averager insists on bounds.  Sometimes they don't exist, especially for obs.
+            if ax.id!='lat' and ax.id!='lon' and not hasattr( ax, 'bounds' ):
+                ax.setBounds( ax.genGenericBounds() )
+        avmv = averager( mv, axis=axes_string )
+    else:
+        avmv = mv
     avmv.id = vid
     avmv.units = mv.units
 
@@ -467,9 +470,16 @@ def reduce_time_seasonal( mv, seasons=seasonsyr, vid=None ):
     # If it doesn't, we'll have to give it one.
     # Setting the _bounds_ attribute will do it.
     timeax = timeAxis(mv)
+    if timeax is None:
+        print "WARNING- no time axis in",mv.id
+        return None
     if timeax.getBounds()==None:
         timeax._bounds_ = timeax.genGenericBounds()
     mvseas = seasons.climatology(mv)
+    if mvseas is None:
+        print "WARNING- cannot compute climatology for",mv.id,seasons.seasons
+        print "...probably there is no data for times in the requested season."
+        return None
     avmv = mvseas
     avmv.id = vid
     if hasattr(mv,'units'): avmv.units = mv.units
