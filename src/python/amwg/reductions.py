@@ -14,7 +14,6 @@ from cdutil import averager
 import derivations
 from derivations import press2alt
 from filetable import *
-from climo_test import cdutil_climatology
 
 seasonsDJF=cdutil.times.Seasons(['DJF'])
 seasonsJJA=cdutil.times.Seasons(['JJA'])
@@ -641,7 +640,7 @@ def aminusb_ax2( mv1, mv2 ):
     ax1=axes1[0]
     ax2=axes2[0]
     if ax1.shape!=ax2.shape:
-        print "ERROR aminusb_ax2 requires same axes, but shape differs:",ax1.shape,ax2,shape
+        print "ERROR aminusb_ax2 requires same axes, but shape differs:",ax1.shape,ax2.shape
         print "ax1,ax2"
         return None
     if hasattr(ax1,'units') and hasattr(ax2,'units') and ax1.units!=ax2.units:
@@ -687,6 +686,9 @@ def aminusb_2ax( mv1, mv2 ):
     axes2 = allAxes(mv2)
     if len(axes1)!=2: print "ERROR @1, wrong number of axes for aminusb_2ax",axes1
     if len(axes2)!=2: print "ERROR @2, wrong number of axes for aminusb_2ax",axes2
+    if len(axes1[0])==len(axes2[0]):
+        # Only axis2 differs, there's a better way...
+        return aminusb_ax2( mv1, mv2 )
     if len(axes1[0])<=len(axes2[0]):
         if len(axes1[1])<=len(axes2[1]):
             mv1new = mv1
