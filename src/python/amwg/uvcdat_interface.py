@@ -4,10 +4,10 @@
 
 import hashlib, os, pickle, sys, os
 import cdutil.times
-from filetable import *
-from findfiles import *
+from metrics.io.filetable import *
+from metrics.io.findfiles import *
 from reductions import *
-from vertical import *
+from derivations.vertical import *
 from plot_data import plotspec, derived_var
 from pprint import pprint
 
@@ -58,10 +58,26 @@ class uvc_plotspec():
     # Isofill is a contour plot.  To make it polar, set projection=polar.  I'll
     # probably communicate that by passing a name "Isofill_polar".
     def __init__( self, vars, presentation, labels=[], title='' ):
-        self.presentation = presentation
+        import vcs
+        x=vcs.init()
+        type = presentation
+        if presentation=="Yvsx":
+            self.presentation = x.createyxvsx()
+            type="Yxvsx"
+        elif presentation == "Isofill":
+            self.presentation = x.createisofill()
+        elif presentation == "Vector":
+            self.presentation = x.createvector()
+        elif presentation == "Boxfill":
+            self.presentation = x.createboxfill()
+        elif presentation == "Isoline":
+            self.presentation = x.createisoline()
+        ## elif presentation == "":
+        ##     self.resentation = x.create
         self.vars = vars
         self.labels = labels
         self.title = title
+        self.type = type
     def __repr__(self):
         return ("uvc_plotspec %s: %s\n" % (self.presentation,self.title))
 
