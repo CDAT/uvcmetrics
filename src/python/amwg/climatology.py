@@ -6,11 +6,11 @@
 # This is basically a simplified version of plot_data.py.
 
 import cdms2, math
-from filetable import *
+from metrics.io.filetable import *
 from reductions import *
-from oaht import *
-from ncl_isms import *
-from vertical import *
+from metrics.amwg.derivations.oaht import *
+from metrics.amwg.derivations.ncl_isms import *
+from metrics.amwg.derivations.vertical import *
 from pprint import pprint
 
 from plot_data import derived_var, plotspec

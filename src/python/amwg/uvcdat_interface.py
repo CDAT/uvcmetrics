@@ -6,9 +6,9 @@ import hashlib, os, pickle, sys, os
 import cdutil.times
 from metrics.io.filetable import *
 from metrics.io.findfiles import *
-from reductions import *
-from derivations.vertical import *
-from plot_data import plotspec, derived_var
+from metrics.amwg.reductions import *
+from metrics.amwg.derivations.vertical import *
+from metrics.amwg.plot_data import plotspec, derived_var
 from pprint import pprint
 
 def setup_filetable( search_path, cache_path, ftid=None, search_filter=None ):
@@ -183,7 +183,7 @@ class plot_set():
             self.variable_values[v] = self.reduced_variables[v].reduce()
         for v in self.derived_variables.keys():
             self.variable_values[v] = self.derived_variables[v].derive(self.variable_values)
-    
+
 class plot_set3(plot_set):
     """represents one plot from AMWG Diagnostics Plot Set 3.
     Each such plot is a pair of plots: a 2-line plot comparing model with obs, and

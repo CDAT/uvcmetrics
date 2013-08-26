@@ -4,11 +4,11 @@
 # There's a whole lot left to do!
 
 import cdms2, math
-from filetable import *
+from metrics.io.filetable import *
 from reductions import *
-from derivations.oaht import *
-from derivations.ncl_isms import *
-from derivations.vertical import *
+from metrics.amwg.derivations.oaht import *
+from metrics.amwg.derivations.ncl_isms import *
+from metrics.amwg.derivations.vertical import *
 from pprint import pprint
 
 class derived_var:
