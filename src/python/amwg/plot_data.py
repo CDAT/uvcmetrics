@@ -5,10 +5,10 @@
 
 import cdms2, math
 from metrics.io.filetable import *
-from reductions import *
-from metrics.amwg.derivations.oaht import *
-from metrics.amwg.derivations.ncl_isms import *
-from metrics.amwg.derivations.vertical import *
+from metrics.amwg.reductions import *
+from derivations.oaht import *
+from derivations.ncl_isms import *
+from derivations.vertical import *
 from pprint import pprint
 
 class derived_var:
