@@ -14,12 +14,15 @@ class drange:
       self.hi = high
       self.units = units
    def overlaps_with( self, range2 ):
-      if self.units!=range2.units and self.units!=None and range2.units!=None:
+      if range2==None:
+         # None means everything, units don't matter
+         return True
+      elif range2.lo==float('-inf') and range2.hi==float('inf'):
+         # Everything, units don't matter
+         return True
+      elif self.units!=range2.units and self.units!=None and range2.units!=None:
          # >>> TO DO >>>> units conversion, and think more about dealing with unspecified units
          return False
-      elif range2==None:
-         # None means everything
-         return True
       else:
          return self.hi>range2.lo and self.lo<range2.hi
    def __repr__(self):
@@ -99,12 +102,14 @@ class basic_filetable:
         # own standard name list.
         self._varindex = {} # will be built as the table is built
         #print "filelist=",filelist,type(filelist)
+        self._filelist = filelist # just used for __repr__
         if filelist is None: return
         self._id = ftid
         for filep in filelist.files:
             self.addfile( filep, get_them_all )
     def __repr__(self):
-       return self._table.__repr__()
+       return 'filetable from '+str(self._filelist)
+       #too verbose return 'filetable from '+str(self._filelist)+'\n'+self._table.__repr__()
     def sort(self):
        """in-place sort keyed on the file paths"""
        self._table.sort(key=(lambda ftrow: ftrow.fileid))
