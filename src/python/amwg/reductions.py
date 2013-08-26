@@ -958,13 +958,14 @@ class reduced_variable(ftrow):
         if rows==None or len(rows)<=0:
             # this belongs in a log file:
             print "ERROR no data found for reduced variable",self.variableid
+            print self.timerange, self.latrange, self.lonrange, self.levelrange
             return None
 
         # To make it even easier on the first cut, I won't worry about missing data and
         # anything else inconvenient, and I'll assume CF compliance.
-        if len(rows)>1:
+        files = list(set([r.fileid for r in rows]))
+        if len(files)>1:
             # Piece together the data from multiple files.  That's what cdscan is for...
-            files = [r.fileid for r in rows]
             # One problem is there may be more than one file family in the same
             # directory!  If we see more than one at this point, the user wasn't
             # careful in his specifications.  We'll just have to choose one.
@@ -978,7 +979,6 @@ class reduced_variable(ftrow):
                 print "WARNING: ",len(families)," file families found, will use the first one:",families
             fam = families[0]
             famfiles = [f for f in files if famdict[f]==fam]
-
             # Normally when we get here, it's because data has been divided by time among
             # several files.  So when cdscan puts it all back together, it needs the time
             # units.  If the time variable is named 'time' and has a valid 'units'
