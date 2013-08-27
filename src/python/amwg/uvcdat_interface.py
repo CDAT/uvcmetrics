@@ -322,14 +322,14 @@ class plot_set4(plot_set):
         # ... e.g. CLT_DJF_set4_CAM456_OBS123_diff
         plot_a_val = uvc_plotspec(
             [zaval],'Isofill', labels=[zaunam],
-            title= zaunam ),
+            title= zaunam )
         plot_b_val = uvc_plotspec(
             [zbval],'Isofill', labels=[zbunam],
-            title= zbunam ),
+            title= zbunam )
         plot_c_val = uvc_plotspec(
             [zdiffval],'Isofill', labels=['difference'],
             title=' '.join([self._var_baseid,z1unam,'-',z2unam]))
-        return ( plot_a_val, plot_b_val, plot_c_val )
+        return [ plot_a_val, plot_b_val, plot_c_val ]
 
 class plot_set5(plot_set):
     """represents one plot from AMWG Diagnostics Plot Set 5.
@@ -402,14 +402,14 @@ class plot_set5(plot_set):
         # ... e.g. CLT_DJF_set5_CAM456_OBS123_diff
         plot_a_val = uvc_plotspec(
             [zaval],'Isofill', labels=[zaunam],
-            title= zaunam ),
+            title= zaunam )
         plot_b_val = uvc_plotspec(
             [zbval],'Isofill', labels=[zbunam],
-            title= zbunam ),
+            title= zbunam )
         plot_c_val = uvc_plotspec(
             [zdiffval],'Isofill', labels=['difference'],
             title=' '.join([self._var_baseid,z1unam,'-',z2unam]))
-        return ( plot_a_val, plot_b_val, plot_c_val )
+        return [ plot_a_val, plot_b_val, plot_c_val ]
 
 
 # TO DO: reset axes, set 'x' or 'y' attributes, etc., as needed
