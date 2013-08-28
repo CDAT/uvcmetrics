@@ -15,11 +15,15 @@ import operator, os, functools, sys
 class basic_filter:
     def __call__( self, filen ):
         return True
+    def __repr__( self ):
+        return self.__class__.__name__
 
 class basic_binary_filter:
     def __init__( self, f1, f2 ):
         self._f1 = f1
         self._f2 = f2
+    def __repr__( self ):
+        return basic_filter.__repr__(self)+'('+self._f1.__repr__()+','+self._f2.__repr__()+')'
 
 # If we were to decide to require that all datafiles functions put nothing but files
 # into the files variable, then the following filter would be pointless:
@@ -38,6 +42,8 @@ class f_startswith(basic_filter):
         self._startstring = startstring
     def __call__( self, filen ):
         return filen.find(self._startstring)==0
+    def __repr__( self ):
+        return basic_filter.__repr__(self)+'("'+self._startstring+'")'
 
 class f_and(basic_binary_filter):
     def __call__( self, filen ):
