@@ -311,6 +311,8 @@ def reduce2levlat( mv, vid=None ):
     """as reduce2lat, but averaging reduces coordinates to (lev,lat)"""
     if vid==None:   # Note that the averager function returns a variable with meaningless id.
         vid = 'reduced_'+mv.id
+    if levAxis(mv) is None: return None
+    if latAxis(mv) is None: return None
     axes = allAxes( mv )
     timeax = timeAxis(mv)
     if timeax.getBounds()==None:
@@ -329,6 +331,8 @@ def reduce2levlat_seasonal( mv, seasons=seasonsyr, vid=None ):
     as in reduce2lat_seasona."""
     if vid==None:   # Note that the averager function returns a variable with meaningless id.
         vid = 'reduced_'+mv.id
+    if levAxis(mv) is None: return None
+    if latAxis(mv) is None: return None
     axes = allAxes( mv )
     timeax = timeAxis(mv)
     if timeax.getBounds()==None:
@@ -450,6 +454,9 @@ def reduce2latlon_seasonal( mv, seasons=seasonsyr, vid=None ):
     axes_string = '('+')('.join(axis_names)+')'
 
     if len(axes_string)>2:
+        for axis in mvseas.getAxisList():
+            if axis.getBounds() is None:
+                axis._bounds_ = axis.genGenericBounds()
         avmv = averager( mvseas, axis=axes_string )
     else:
         avmv = mvseas
