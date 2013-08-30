@@ -965,7 +965,8 @@ class reduced_variable(ftrow):
         if rows==None or len(rows)<=0:
             # this belongs in a log file:
             print "ERROR no data found for reduced variable",self.variableid
-            print self.timerange, self.latrange, self.lonrange, self.levelrange
+            print "in",self.timerange, self.latrange, self.lonrange, self.levelrange
+            print "filetable is",self._filetable
             return None
 
         # To make it even easier on the first cut, I won't worry about missing data and
