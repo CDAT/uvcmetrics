@@ -18,6 +18,7 @@ def setup_filetable( search_path, cache_path, ftid=None, search_filter=None ):
     plotted.  This function will cache the file table and
     use it if possible.  If the cache be stale, call clear_filetable()."""
     search_path = os.path.abspath(search_path)
+    print "jfp in setup_filetable, search_path=",search_path," search_filter=",search_filter
     cache_path = os.path.abspath(cache_path)
     if ftid is None:
         ftid = os.path.basename(search_path)
@@ -35,6 +36,7 @@ def setup_filetable( search_path, cache_path, ftid=None, search_filter=None ):
         f = open(cachefile,'wb')
         pickle.dump( filetable, f )
         f.close()
+    print "jfp setup_filetable is returning\n",filetable.full_repr()
     return filetable
 
 def clear_filetable( search_path, cache_path, search_filter=None ):

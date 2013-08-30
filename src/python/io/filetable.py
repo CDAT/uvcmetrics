@@ -109,7 +109,8 @@ class basic_filetable:
             self.addfile( filep, get_them_all )
     def __repr__(self):
        return 'filetable from '+str(self._filelist)
-       #too verbose return 'filetable from '+str(self._filelist)+'\n'+self._table.__repr__()
+    def full_repr(self):
+       return 'filetable from '+str(self._filelist)+'\n'+self._table.__repr__()
     def sort(self):
        """in-place sort keyed on the file paths"""
        self._table.sort(key=(lambda ftrow: ftrow.fileid))
