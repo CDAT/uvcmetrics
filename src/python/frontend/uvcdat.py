@@ -9,6 +9,7 @@ from metrics.io.findfiles import *
 from metrics.computation.reductions import *
 from metrics.amwg.derivations.vertical import *
 from metrics.amwg.plot_data import plotspec, derived_var
+from metrics.frontend.version import version
 from pprint import pprint
 
 def setup_filetable( search_path, cache_path, ftid=None, search_filter=None ):
@@ -17,12 +18,17 @@ def setup_filetable( search_path, cache_path, ftid=None, search_filter=None ):
     for the file table, the string ftid.  For example, this may appear in names of variables to be
     plotted.  This function will cache the file table and
     use it if possible.  If the cache be stale, call clear_filetable()."""
-    search_path = os.path.abspath(search_path)
-    print "jfp in setup_filetable, search_path=",search_path," search_filter=",search_filter
-    cache_path = os.path.abspath(cache_path)
     if ftid is None:
         ftid = os.path.basename(search_path)
-    csum = hashlib.md5(search_path+cache_path+str(search_filter)).hexdigest()
+    search_path = os.path.abspath(search_path)
+    print "jfp in setup_filetable, search_path=",search_path," search_filter=",search_filter
+    datafiles = treeof_datafiles( search_path, search_filter )
+    datafile_ls = [ f+'size'+str(os.path.getsize(f))+'mtime'+str(os.path.getmtime(f))\
+                        for f in datafiles.files ]
+    cache_path = os.path.abspath(cache_path)
+    search_string = ' '.join(
+        [search_path,cache_path,str(search_filter),version,';'.join(datafile_ls)] )
+    csum = hashlib.md5(search_string).hexdigest()
     cachefilename = csum+'.cache'
     cachefile=os.path.normpath( cache_path+'/'+cachefilename )
 
@@ -31,12 +37,10 @@ def setup_filetable( search_path, cache_path, ftid=None, search_filter=None ):
         filetable = pickle.load(f)
         f.close()
     else:
-        datafiles = treeof_datafiles( search_path, search_filter )
         filetable = basic_filetable( datafiles, ftid )
         f = open(cachefile,'wb')
         pickle.dump( filetable, f )
         f.close()
-    print "jfp setup_filetable is returning\n",filetable
     return filetable
 
 def clear_filetable( search_path, cache_path, search_filter=None ):
