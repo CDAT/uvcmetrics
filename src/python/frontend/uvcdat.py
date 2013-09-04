@@ -6,7 +6,7 @@ import hashlib, os, pickle, sys, os
 import cdutil.times
 from metrics.io.filetable import *
 from metrics.io.findfiles import *
-from metrics.amwg.reductions import *
+from metrics.computation.reductions import *
 from metrics.amwg.derivations.vertical import *
 from metrics.amwg.plot_data import plotspec, derived_var
 from pprint import pprint
@@ -36,7 +36,7 @@ def setup_filetable( search_path, cache_path, ftid=None, search_filter=None ):
         f = open(cachefile,'wb')
         pickle.dump( filetable, f )
         f.close()
-    print "jfp setup_filetable is returning\n",filetable.full_repr()
+    print "jfp setup_filetable is returning\n",filetable
     return filetable
 
 def clear_filetable( search_path, cache_path, search_filter=None ):
