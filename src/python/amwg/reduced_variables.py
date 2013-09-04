@@ -1,4 +1,4 @@
-from reductions import *
+from metrics.computations.reductions import *
 
 reduced_variables = {
     'hyam_1': reduced_variable(
