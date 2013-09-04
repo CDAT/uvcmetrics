@@ -1005,7 +1005,7 @@ class reduced_variable(ftrow):
             if type(time_units) is str and len(time_units)>3:
                 # cdscan can get time units from the files; we're good.
                 f.close()
-                cdscan_line = 'cdscan '+'-x '+fam+'.xml '+' '.join(famfiles)
+                cdscan_line = 'cdscan -q '+'-x '+fam+'.xml '+' '.join(famfiles)
             else:
                 # cdscan need to be told what the time units are.  I'm betting that all files
                 # use the same units.  I know of cases where they all have different units (e.g.,
@@ -1019,16 +1019,13 @@ class reduced_variable(ftrow):
                     time_units.find('months')==0 or time_units.find('days')==0 or
                     time_units.find('hours')==0 ):
                     time_units = fix_time_units( time_units )
-                    cdscan_line = 'cdscan '+'-x '+fam+'.xml '+' -e time.units="'+time_units+'" '+' '.join(famfiles)
+                    cdscan_line = 'cdscan -q '+'-x '+fam+'.xml '+' -e time.units="'+time_units+'" '+\
+                        ' '.join(famfiles)
                 else:
                     print "WARNING, cannot find time units; will try to continue",famfiles[0]
-                    cdscan_line = 'cdscan '+'-x '+fam+'.xml '+' -e time.units="'+time_units+'" '+' '.join(famfiles)
-
-            # here's some old experimental code:
-            #cdscan_line = 'cdscan '+'-x '+fam+'.xml '+' -r "months since 1979-01-01" -e time.units="months since 1979-01-01" '+' '.join(famfiles)
-            #cdscan_line = 'cdscan '+'-x '+fam+'.xml '+' -e time.units="months since 1979-01-01" '+' '.join(famfiles)
-            #cdscan_line = 'cdscan '+'-x '+fam+'.xml '+' '.join(famfiles)
-
+                    cdscan_line = 'cdscan -q '+'-x '+fam+'.xml '+' -e time.units="'+time_units+'" '+\
+                        ' '.join(famfiles)
+            print "cdscan_line=",cdscan_line
             proc = subprocess.Popen([cdscan_line],shell=True)
             proc_status = proc.wait()
             if proc_status!=0: print "ERROR: cdscan terminated with",proc_status
