@@ -961,7 +961,7 @@ class reduced_variable(ftrow):
         Applies the reduction function to the data, and returns an MV.
         When completed, this will treat missing data as such.
         At present only CF-compliant files are supported."""
-
+        raise Exception,"Voila"
         rows = self._filetable.find_files( self.variableid, time_range=self.timerange,
                                            lat_range=self.latrange, lon_range=self.lonrange,
                                            level_range=self.levelrange )

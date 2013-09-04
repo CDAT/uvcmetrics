@@ -4,3 +4,4 @@ import wgne
 import computation
 import amwg
 import frontend
+import git

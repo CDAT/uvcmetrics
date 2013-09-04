@@ -3,7 +3,7 @@
 # Ngl doesn't work yet onoceanonly:
 # import Ngl
 import numpy, cdms2, cdutil
-from metrics.amwg.reductions import *
+from metrics.computation.reductions import *
 
 # constants as in functions_vertical.ncl, lines 5-10:
 plvlO = numpy.array([30.,50.,70.,100.,150.,200.,250.,300.,400.,500.,
