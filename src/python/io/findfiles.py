@@ -75,7 +75,7 @@ class basic_datafiles:
     def __repr__(self):
         return self.files.__repr__()
 
-class treeof_datafiles (basic_datafiles):
+class treeof_datafiles( basic_datafiles ):
     def __init__( self, root, filt=basic_filter() ):
         """Finds all the data files in the directory tree below root.
         root can be a string representing a directory, or a list
@@ -93,10 +93,8 @@ class treeof_datafiles (basic_datafiles):
         else:
             raise Error("don't understand root directory %s"%root)
         for r in root:
-            self.getdatafiles(r,filt)
-
-
-    def getdatafiles( self, root, filt ):
+            self._getdatafiles(r,filt)
+    def _getdatafiles( self, root, filt ):
         """returns all data files under a single root directory"""
         if os.path.isfile(root):
             self.files += [root]
