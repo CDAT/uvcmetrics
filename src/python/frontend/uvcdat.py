@@ -11,6 +11,8 @@ from metrics.amwg.derivations.vertical import *
 from metrics.amwg.plot_data import plotspec, derived_var
 from metrics.frontend.version import version
 from pprint import pprint
+import vcs
+x=vcs.init()
 
 def setup_filetable( search_path, cache_path, ftid=None, search_filter=None ):
     """Returns a file table (an index which says where you can find a variable) for files in the
@@ -63,9 +65,7 @@ class uvc_plotspec():
     # re prsentation (plottype): Yvsx is a line plot, for Y=Y(X).  It can have one or several lines.
     # Isofill is a contour plot.  To make it polar, set projection=polar.  I'll
     # probably communicate that by passing a name "Isofill_polar".
-    def __init__( self, vars, presentation, labels=[], title='' ):
-        import vcs
-        x=vcs.init()
+    def __init__( self, vars, presentation, labels=[], title=''):
         type = presentation
         if presentation=="Yvsx":
             self.presentation = x.createyxvsx()
@@ -260,9 +260,11 @@ class plot_set3(plot_set):
         ydiffval.id = '_'.join([self._var_baseid, y1var._filetable._id, y2var._filetable._id,
                                 'diff'])
         # ... e.g. CLT_DJF_set3_CAM456_NCEP_diff
+        import vcs
+        x=vcs.init()
         plot_a_val = uvc_plotspec(
             [y1val,y2val],'Yvsx', labels=[y1unam,y2unam],
-            title=' '.join([self._var_baseid,y1unam,'and',y2unam]) )
+            title=' '.join([self._var_baseid,y1unam,'and',y2unam]))
         plot_b_val = uvc_plotspec(
             [ydiffval],'Yvsx', labels=['difference'],
             title=' '.join([self._var_baseid,y1unam,'-',y2unam]))
