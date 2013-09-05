@@ -411,9 +411,10 @@ def reduce2lat_seasonal( mv, seasons=seasonsyr, vid=None ):
     # The slicers in time.py require getBounds() to work.
     # If it doesn't, we'll have to give it one.
     # Setting the _bounds_ attribute will do it.
+    for ax in mv.getAxisList():
+        if ax.getBounds() is None:
+            ax._bounds_ = ax.genGenericBounds()
     timeax = timeAxis(mv)
-    if timeax.getBounds()==None:
-        timeax._bounds_ = timeax.genGenericBounds()
     if timeax.units=='months':
         # Special check necessary for LEGATES obs data, because
         # climatology() won't accept this incomplete specification
