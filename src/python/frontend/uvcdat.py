@@ -26,7 +26,7 @@ def setup_filetable( search_path, cache_path, ftid=None, search_filter=None ):
     search_path = os.path.abspath(search_path)
     print "jfp in setup_filetable, search_path=",search_path," search_filter=",search_filter
     datafiles = treeof_datafiles( search_path, search_filter )
-    datafiles.sort()  # improves consistency between runs
+    datafiles.files.sort()  # improves consistency between runs
     datafile_ls = [ f+'size'+str(os.path.getsize(f))+'mtime'+str(os.path.getmtime(f))\
                         for f in datafiles.files ]
     cache_path = os.path.abspath(cache_path)
@@ -208,7 +208,7 @@ class plot_set():
         self.derived_variables = {}
         self.variable_values = {}
     def results(self):
-        return _results(self)
+        return self._results()
 # To profile, replace (by name changes) the above results() with the following one:
     def profiled_results(self):
         prof = cProfile.Profile()
