@@ -3,6 +3,7 @@
 # Data reduction functions.
 
 import cdms2, math, itertools, operator, numpy, subprocess, re
+import hashlib, os
 import pprint
 import cdutil.times
 from math import radians
@@ -989,6 +990,21 @@ class reduced_variable(ftrow):
             elif len(families)>1:
                 print "WARNING: ",len(families)," file families found, will use the first one:",families
             fam = families[0]
+
+            # We'll run cdscan to combine the multiple files into one logical file.
+            # To save (a lot of) time, we'll re-use an xml file if a suitable one already exists.
+            # To do this safely, incorporate the file list (names,lengths,dates) into the xml file name.
+            famfiles = [f for f in files if famdict[f]==fam]
+            famfiles.sort()   # improves consistency between runs
+            file_list = '-'.join(
+                [ f+'size'+str(os.path.getsize(f))+'mtime'+str(os.path.getmtime(f))\
+                      for f in famfiles ] )
+            csum = hashlib.md5(file_list).hexdigest()
+            xml_name = fam+'_cs'+csum+'.xml'
+            if os.path.isfile( xml_name ):
+                files = [ xml_name ]
+
+        if len(files)>1:
             famfiles = [f for f in files if famdict[f]==fam]
             # Normally when we get here, it's because data has been divided by time among
             # several files.  So when cdscan puts it all back together, it needs the time
@@ -1005,7 +1021,7 @@ class reduced_variable(ftrow):
             if type(time_units) is str and len(time_units)>3:
                 # cdscan can get time units from the files; we're good.
                 f.close()
-                cdscan_line = 'cdscan -q '+'-x '+fam+'.xml '+' '.join(famfiles)
+                cdscan_line = 'cdscan -q '+'-x '+xml_name+' '+' '.join(famfiles)
             else:
                 # cdscan need to be told what the time units are.  I'm betting that all files
                 # use the same units.  I know of cases where they all have different units (e.g.,
@@ -1019,20 +1035,20 @@ class reduced_variable(ftrow):
                     time_units.find('months')==0 or time_units.find('days')==0 or
                     time_units.find('hours')==0 ):
                     time_units = fix_time_units( time_units )
-                    cdscan_line = 'cdscan -q '+'-x '+fam+'.xml '+' -e time.units="'+time_units+'" '+\
+                    cdscan_line = 'cdscan -q '+'-x '+xml_name+' -e time.units="'+time_units+'" '+\
                         ' '.join(famfiles)
                 else:
                     print "WARNING, cannot find time units; will try to continue",famfiles[0]
-                    cdscan_line = 'cdscan -q '+'-x '+fam+'.xml '+' -e time.units="'+time_units+'" '+\
+                    cdscan_line = 'cdscan -q '+'-x '+xml_name+' -e time.units="'+time_units+'" '+\
                         ' '.join(famfiles)
             print "cdscan_line=",cdscan_line
             proc = subprocess.Popen([cdscan_line],shell=True)
             proc_status = proc.wait()
             if proc_status!=0: print "ERROR: cdscan terminated with",proc_status
-            f = cdms2.open( fam+'.xml' )
+            f = cdms2.open( xml_name )
         else:
             # the easy case, just one file has all the data on this variable
-            f = cdms2.open(rows[0].fileid)
+            f = cdms2.open(files[0])
         fcf = get_datafile_filefmt(f)
         varname = fcf.variable_by_stdname(self.variableid)
         reduced_data = self._reduction_function( f(varname), vid=vid )
