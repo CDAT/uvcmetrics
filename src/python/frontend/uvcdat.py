@@ -58,6 +58,18 @@ def clear_filetable( search_path, cache_path, search_filter=None ):
     if os.path.isfile(cache_path):
         os.remove(cache_path)
 
+def list_variables( filetable1, filetable2=None ):
+    """returns a sorted list of variable ids (strings) found in both filetables provided
+    You can provide one of two filetables."""
+    if filetable1 is None: return []
+    vars1 = filetable1.list_variables()
+    if filetable2 is None: return vars1
+    vars2 = filetable2.list_variables()
+    varset = set(vars1).intersection(set(vars2))
+    vars = list(varset)
+    vars.sort()
+    return vars
+
 class uvc_plotspec():
     """This is a simplified version of the plotspec class, intended for the UV-CDAT GUI.
     Once it stabilizes, I may replace the plotspec class with this one.
