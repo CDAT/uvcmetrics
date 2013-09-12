@@ -25,6 +25,7 @@ seasonsyr=cdutil.times.Seasons('JFMAMJJASOND')
 seasonsmons=cdutil.times.Seasons(
     ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'])
 
+
 # >>>> TO DO: accomodate more names for the level axis.  Much of this can be
 # >>>> done simply by adding more names in levAxis().  Search on 'lev' for the rest.
 # >>>> in this file.
@@ -508,7 +509,7 @@ def latvar( mv ):
     lat_axis = latAxis(mv)
     #latmv = mv.clone()  # good if mv has only a lat axis
     #latmv[:] = lat_axis[:]
-    latmv = cdms2.createVariable( lat_axis[:], axes=[lat_axis], id=mv.id,
+    latmv = cdms2.createVariable( lat_axis[:], axes=[lat_axis], id='lat',
                                   attributes={'units':lat_axis.units},
                                   copy=True )
     return latmv
