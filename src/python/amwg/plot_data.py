@@ -7,9 +7,9 @@ import cdms2, math
 from metrics.io.filetable import *
 from metrics.computation.reductions import *
 from metrics.computation.plotspec import *
-from derivations.oaht import *
-from derivations.ncl_isms import *
-from derivations.vertical import *
+from metrics.amwg.derivations.oaht import *
+from metrics.amwg.derivations.ncl_isms import *
+from metrics.amwg.derivations.vertical import *
 from pprint import pprint
 
 
