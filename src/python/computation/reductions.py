@@ -512,7 +512,6 @@ def latvar( mv ):
     latmv = cdms2.createVariable( lat_axis[:], axes=[lat_axis], id='lat',
                                   attributes={'units':lat_axis.units},
                                   copy=True )
-    print "jfp latvar is returning latmv with id=",latmv.id
     return latmv
 
 def lonvar( mv ):
