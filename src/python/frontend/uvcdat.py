@@ -232,6 +232,18 @@ class plot_set():
         self.single_plotspecs = {}
         self.composite_plotspecs = {}
         self.plotspec_values = {}
+    def _build_label( self, vars, p ):
+        yls = []
+        for y in vars:
+            if type(y) is tuple:
+                yl = getattr(y[0],'_vid',None)
+            else:
+                yl = getattr(y,'_vid',None)
+            if yl is not None:
+                yls.append( yl )
+        new_id = '_'.join(yls)
+        if new_id is None: new_id = p+'_2'
+        return new_id    
     def results(self):
         return self._results()
 # To profile, replace (by name changes) the above results() with the following one:
@@ -249,6 +261,7 @@ class plot_set():
             value = self.derived_variables[v].derive(self.variable_values)
             if value is None: return None
             self.variable_values[v] = value
+        varvals = self.variable_values
         for p,ps in self.single_plotspecs.iteritems():
             print "jfp preparing data for",ps._id
             xrv = [ varvals[k] for k in ps.xvars ]
@@ -275,11 +288,49 @@ class plot_set():
             ya1ax = apply( ps.ya1func, ya1rv )
             zax = apply( ps.zfunc, zrv )
             # not used yet zr = apply( ps.zrangefunc, zrrv )
-            vars = xax+x1ax+x2ax+x3ax+yax+y1ax+y2ax+y3ax+zax
+            vars = []
+            # The x or x,y vars will hopefully appear as axes of the y or z
+            # vars.  This needs more work; but for now we never want x vars here:
+            xlab=""
+            ylab=""
+            zlab=""
+            if xax is not None:
+                xlab += ' '+xax.id
+            if x1ax is not None:
+                xlab += ' '+x1ax.id
+            if x2ax is not None:
+                xlab += ', '+x2ax.id
+            if x3ax is not None:
+                xlab += ', '+x3ax.id
+            if yax is not None:
+                vars.append( yax )
+                new_id = self._build_label( yrv, p )
+                yax.id = new_id
+                ylab += ' '+yax.id
+            if y1ax is not None:
+                vars.append( y1ax )
+                new_id = self._build_label( y1rv, p )
+                y1ax.id = new_id
+                ylab += ' '+y1ax.id
+            if y2ax is not None:
+                vars.append( y2ax )
+                new_id = self._build_label( y2rv, p )
+                y2ax.id = new_id
+                ylab += ', '+y2ax.id
+            if y3ax is not None:
+                vars.append( y3ax )
+                new_id = self._build_label( y3rv, p )
+                y3ax.id = new_id
+                ylab += ', '+y3ax.id
+            if zax is not None:
+                vars.append( zax )
+                new_id = self._build_label( zrv, p )
+                zax.id = new_id
+                zlab += ' '+zax.id
             if vars==[]:
                 continue
-            labels = []  # fix later
-            title = ""   # fix later
+            labels = [xlab,ylab,zlab]
+            title = ' '.join(labels)  # do this better later
             self.plotspec_values[p] = uvc_plotspec( vars, 'Yxvsx', labels, title )
         for p,ps in self.composite_plotspecs.iteritems():
             self.plotspec_values[p] = [ self.plotspec_values[sp] for sp in ps ]
@@ -300,6 +351,7 @@ class plot_set2(plot_set):
         plot_set.__init__(self)
         self._var_baseid = '_'.join([varid,'set2'])   # e.g. Ocean_Heat_set2
         print "In plot_set2 __init__, ignoring varid input, will compute Ocean_Heat"
+        print "Warning: plot_set2 only uses NCEP obs, and will ignore any other obs specification."
 
         # CAM variables needed for heat transport: (SOME ARE SUPERFLUOUS <<<<<<)
         # FSNS, FLNS, FLUT, FSNTOA, FLNT, FSNT, SHFLX, LHFLX,
@@ -367,9 +419,9 @@ class plot_set2(plot_set):
                 inputs=[],
                 outputs=('latitude', ['atlantic_heat_transport','pacific_heat_transport',
                                       'indian_heat_transport', 'global_heat_transport' ]),
-                func=(lambda: ncep_ocean_heat_transport(path2) ) )
+                func=(lambda: ncep_ocean_heat_transport(filetable2) ) )
             }
-        single_plotspecs = {
+        self.single_plotspecs = {
             'CAM_NCEP_HEAT_TRANSPORT_GLOBAL': plotspec(
                 vid='CAM_NCEP_HEAT_TRANSPORT_GLOBAL',
                 x1vars=['FSNS_ANN_latlon_1'], x1func=latvar,
@@ -407,7 +459,7 @@ class plot_set2(plot_set):
                 y2func=(lambda y: y[1][2]),
                 plottype='2 line plot'  )
             }
-        composite_plotspecs = {
+        self.composite_plotspecs = {
             'CAM_NCEP_HEAT_TRANSPORT_ALL':
                 ['CAM_NCEP_HEAT_TRANSPORT_GLOBAL','CAM_NCEP_HEAT_TRANSPORT_PACIFIC',
                  'CAM_NCEP_HEAT_TRANSPORT_ATLANTIC','CAM_NCEP_HEAT_TRANSPORT_INDIAN']
