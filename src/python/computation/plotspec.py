@@ -10,6 +10,13 @@ class derived_var:
         self._func = func
     def derive( self, vardict ):
         output = apply( self._func, [ vardict[inp] for inp in self._inputs ] )
+        if type(output) is tuple or type(tuple) is list:
+            for o in output:
+                o._vid  = self._vid
+                print "jfp o._vid=",o._vid
+        elif output is not None:
+            output._vid = self._vid
+            print "jfp output._vid=",output._vid
         return output
 
 class plotspec:
