@@ -4,8 +4,8 @@
 # Based on NCAR's plot_oaht.ncl
 # pcmdi11.llnl.gov:~painter1/amwg/amwg_diag5.6/code/plot_oaht.ncl
 
+import os
 from ncl_isms import *
-from metrics.computation.reductions import *
 
 # NCAR gets thse from environment variables!  We have to do it better, but for now, do it worse!
 version = None
@@ -137,7 +137,21 @@ def ncep_ocean_heat_transport( path ):
     # NCEP REANALYSIS AND ERBE DATA
     # read in NCEP meridional transport data by Trenberth and Caron 
     # which uses T42 latitudes
-    f = open( os.path.normpath( path+'/ANNUAL_TRANSPORTS_1985_1989.ascii' ) )
+    if type(path) is str:
+        # simple case, path is a string
+        f = open( os.path.normpath( path+'/ANNUAL_TRANSPORTS_1985_1989.ascii' ) )
+    elif hasattr(path,'_filelist'):
+        # path isn't a path string, it's a filetable.
+        # We'll get paths out of it and look for what we need there.
+        paths = set([os.path.dirname(f) for f in path._filelist.files])
+        for p in paths:
+            filep = os.path.normpath( p+'/ANNUAL_TRANSPORTS_1985_1989.ascii' )
+            if os.path.isfile(filep):
+                f = open( filep )
+                break
+    else:
+        raise Exception(
+            "ncep_ocean_heat_transport() cannot find path needed for NCEP heat transport obs")
     nlatT42 = 64   # T42 latitudes
     i65s = 8       # index of T42 latitude 65S
     i65n = 55      # index of T42 latitude 65N
