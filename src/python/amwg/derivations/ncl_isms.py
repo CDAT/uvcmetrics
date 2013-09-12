@@ -2,9 +2,14 @@
 
 # Support functions like some found in NCL for CAM.
 
-import numpy
+import numpy, cdms2
 from numpy import pi, sin
-from metrics.computation.reductions import *
+def latAxis( mv ):
+    "returns the latitude axis, if any, of a variable mv"
+    lat_axis = None
+    for ax in mv.getAxisList():
+        if ax.id=='lat': lat_axis = ax
+    return lat_axis
 
 # ~/amwg/ncl/lib/ncarg/nclscripts/csm/contributed.ncl
 def latRegWgt( lat ):
@@ -195,8 +200,8 @@ def ocean_mask( oro ):
 #jfp: That is basically the same idea as the basin_mask computed here,
 #jfp: though I don't know whether the values 0-4 have the same meaning.
 
-    lat = allAxes(oro)[0]
-    lon = allAxes(oro)[1]
+    lat = oro.getAxisList()[0]
+    lon = oro.getAxisList()[1]
     nlat = lat.shape[0]
     nlon = lon.shape[0]
 
