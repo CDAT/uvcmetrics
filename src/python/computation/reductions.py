@@ -512,6 +512,7 @@ def latvar( mv ):
     latmv = cdms2.createVariable( lat_axis[:], axes=[lat_axis], id='lat',
                                   attributes={'units':lat_axis.units},
                                   copy=True )
+    print "jfp latvar is returning latmv with id=",latmv.id
     return latmv
 
 def lonvar( mv ):
@@ -520,7 +521,7 @@ def lonvar( mv ):
     # First get the axis.  This is probably not as general as we'll need...
     if mv is None: return None
     lon_axis = lonAxis(mv)
-    latmv = cdms2.createVariable( lon_axis[:], axes=[lon_axis], id=mv.id,
+    latmv = cdms2.createVariable( lon_axis[:], axes=[lon_axis], id='lon',
                                   attributes={'units':lon_axis.units},
                                   copy=True )
     return latmv
@@ -533,7 +534,7 @@ def levvar( mv ):
     lev_axis = levAxis(mv)
     #levmv = mv.clone()  # good if mv has only a lev axis
     #levmv[:] = lev_axis[:]
-    levmv = cdms2.createVariable( lev_axis[:], axes=[lev_axis], id=mv.id,
+    levmv = cdms2.createVariable( lev_axis[:], axes=[lev_axis], id='lev',
                                   attributes={'units':lev_axis.units},
                                   copy=True )
     return levmv
@@ -575,7 +576,7 @@ def latvar_min( mv1, mv2 ):
     else:
         lat_axis = lat_axis2
         mv = mv2
-    latmv = cdms2.createVariable( lat_axis[:], axes=[lat_axis], id=mv.id,
+    latmv = cdms2.createVariable( lat_axis[:], axes=[lat_axis], id='lat',
                                   attributes={'units':lat_axis.units} )
     return latmv
 
@@ -592,7 +593,7 @@ def lonvar_min( mv1, mv2 ):
     else:
         lon_axis = lon_axis2
         mv = mv2
-    lonmv = cdms2.createVariable( lon_axis[:], axes=[lon_axis], id=mv.id,
+    lonmv = cdms2.createVariable( lon_axis[:], axes=[lon_axis], id='lon',
                                   attributes={'units':lon_axis.units} )
     return lonmv
 
