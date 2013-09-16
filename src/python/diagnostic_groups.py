@@ -5,7 +5,7 @@
 class BasicDiagnosticGroup():
     # This class will probably not get instantiated.
     # AMWG, LMWG, etc. should inherit from this.
-    def list_variables( filetable1, filetable2=None, diagnostic_set="" ):
+    def list_variables( self, filetable1, filetable2=None, diagnostic_set="" ):
         """returns a sorted list of variable ids (strings) found in both filetables provided.
         This method _may_ also return names of variables which can be derived from the variables
         in the filtables.
@@ -14,7 +14,7 @@ class BasicDiagnosticGroup():
         This is meant an aid in writing menus for UV-CDAT, but may have other uses.
         """
         return []
-    def _list_variables( filetable1, filetable2=None, diagnostic_set="" ):
+    def _list_variables( self, filetable1, filetable2=None, diagnostic_set="" ):
         """a generic implementation of the list_variables method, should be a good
         starting point for developing something for a particular diagnostic group"""
         if filetable1 is None: return []
