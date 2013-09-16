@@ -28,7 +28,7 @@ seasonsmons=cdutil.times.Seasons(
 
 # >>>> TO DO: accomodate more names for the level axis.  Much of this can be
 # >>>> done simply by adding more names in levAxis().  Search on 'lev' for the rest.
-# >>>> in this file.
+# >>>> in this file.  E.g. LMWG uses levlk and levgrnd.
 
 def allAxes( mv ):
     """returns a list of axes of a variable mv"""
