@@ -4,9 +4,12 @@
 
 import hashlib, os, pickle, sys, os
 import cdutil.times
+from metrics import *
 from metrics.io.filetable import *
 from metrics.io.findfiles import *
 from metrics.computation.reductions import *
+from metrics.amwg import *
+from metrics.amwg.amwg import *
 from metrics.amwg.derivations.vertical import *
 from metrics.amwg.plot_data import plotspec, derived_var
 from metrics.frontend.version import version
@@ -68,15 +71,12 @@ def list_variables( filetable1, filetable2=None, diagnostic_group="AMWG", diagno
     list will be limited to those which work with the selected diagnostic.
     This is meant an aid in writing menus.  However it only tells you about the original variables,
     i.e. what's in the data files.  It doesn't tell you about what derived data could be computed.
+    >>>> THIS FUNCTION IS DEPRECATED.  Its replacement is BasicDiagnosticGroup.list_variables() <<<<
     """
-    if filetable1 is None: return []
-    vars1 = filetable1.list_variables()
-    if filetable2 is None: return vars1
-    vars2 = filetable2.list_variables()
-    varset = set(vars1).intersection(set(vars2))
-    vars = list(varset)
-    vars.sort()
-    return vars
+    print "WARNING - deprecated function list_variables() has been called."
+    if diagnostic_group=='AMWG':
+        dg = AMWG()
+    return dg.list_variables( filetable1, filetable2, diagnostic_set )
 
 class uvc_plotspec():
     """This is a simplified version of the plotspec class, intended for the UV-CDAT GUI.
