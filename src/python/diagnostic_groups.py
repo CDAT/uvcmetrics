@@ -25,5 +25,14 @@ class BasicDiagnosticGroup():
         vars = list(varset)
         vars.sort()
         return vars
-
+    def list_diagnostic_sets( self ):
+        """returns a dict.  The keys are menu items for choosing a diagnostic set (aka plot set).
+        Each value is the corresponding class to be instantiated, which can describe the diagnostic
+        data.
+        The class's __init__ method arguments are (filetable1, filetable2, variable, season ) where
+        the file tables may be computed with setup_filetable(), the variable is one of the choices
+        returned by the list_variables() method, and the season is one of the standard codes for a
+        season such as 'ANN' or 'DJF'."""
+        return []
+    
 
