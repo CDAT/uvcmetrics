@@ -34,5 +34,10 @@ class BasicDiagnosticGroup():
         returned by the list_variables() method, and the season is one of the standard codes for a
         season such as 'ANN' or 'DJF'."""
         return []
+    def list_seasons( self, *args, **kwargs ):
+        """returns a list of season ID strings.  Generally there will be no need to write special
+        versions of this for derived classes."""
+        return ['ANN','DJF','MAM','JJA','SON','JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG',
+                'SEP','OCT','NOV','DEC']
     
 
