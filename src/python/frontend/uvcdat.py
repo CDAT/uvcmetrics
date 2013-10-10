@@ -20,39 +20,17 @@ vcsx=vcs.init()   # This belongs in one of the GUI files, e.g.diagnosticsDockWid
                   # Then, here,  'from foo.bar import vcsx'
 
 def setup_filetable( search_path, cache_path, ftid=None, search_filter=None ):
-    """Returns a file table (an index which says where you can find a variable) for files in the
-    supplied search path, satisfying the optional filter.  It will be useful if you provide a name
-    for the file table, the string ftid.  For example, this may appear in names of variables to be
-    plotted.  This function will cache the file table and
-    use it if possible.  If the cache be stale, call clear_filetable()."""
-    if ftid is None:
-        ftid = os.path.basename(search_path)
-    search_path = os.path.abspath(search_path)
     print "jfp in setup_filetable, search_path=",search_path," search_filter=",search_filter
-    datafiles = treeof_datafiles( search_path, search_filter )
-    datafiles.files.sort()  # improves consistency between runs
-    datafile_ls = [ f+'size'+str(os.path.getsize(f))+'mtime'+str(os.path.getmtime(f))\
-                        for f in datafiles.files ]
-    cache_path = os.path.abspath(cache_path)
-    search_string = ' '.join(
-        [search_path,cache_path,str(search_filter),version,';'.join(datafile_ls)] )
-    csum = hashlib.md5(search_string).hexdigest()
-    cachefilename = csum+'.cache'
-    cachefile=os.path.normpath( cache_path+'/'+cachefilename )
-
-    if os.path.isfile(cachefile):
-        f = open(cachefile,'rb')
-        filetable = pickle.load(f)
-        f.close()
-    else:
-        filetable = basic_filetable( datafiles, ftid )
-        f = open(cachefile,'wb')
-        pickle.dump( filetable, f )
-        f.close()
-    return filetable
+    #try:
+    from metrics.io.findfiles import dirtree_datafiles
+    datafiles = dirtree_datafiles( search_path, search_filter )
+    return datafiles.setup_filetable( cache_path, ftid )
+    #except Exception, err:
+    #    print "=== EXCEPTION in setup_filetable ===", err
+    #    return None
 
 def clear_filetable( search_path, cache_path, search_filter=None ):
-    """Deletes (clears) the cached file table created by the corresponding call of setup_filetable"""
+    """obsolete; Deletes (clears) the cached file table created by the corresponding call of setup_filetable"""
     search_path = os.path.abspath(search_path)
     cache_path = os.path.abspath(cache_path)
     csum = hashlib.md5(search_path+cache_path).hexdigest()  #later will have to add search_filter
@@ -345,13 +323,14 @@ class plot_set():
 # C. Doutriaux commeting bellow seems to break import system, should be moved to script directory anyway
 if __name__ == '__main__':
    if len( sys.argv ) > 1:
-      from findfiles import *
+      from metrics.io.findfiles import *
       path1 = sys.argv[1]
       filetable1 = setup_filetable(path1,os.environ['PWD'])
       if len( sys.argv ) > 2:
           path2 = sys.argv[2]
       else:
           path2 = None
+      filt2 = basic_filter()
       if len(sys.argv)>3 and sys.argv[3].find('filt=')==0:  # need to use getopt to parse args
           filt2 = sys.argv[3]
           filetable2 = setup_filetable(path2,os.environ['PWD'],search_filter=filt2)
