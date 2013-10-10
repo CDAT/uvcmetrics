@@ -5,6 +5,7 @@
 
 import cdms2, math
 from metrics.io.filetable import *
+from metrics.io.findfiles import *
 from metrics.computation.reductions import *
 from metrics.computation.plotspec import *
 from metrics.amwg.derivations.oaht import *
@@ -17,9 +18,9 @@ def test_driver( path1, path2=None, filt2=None ):
     """ Test driver for setting up data for plots"""
 
     # First, find and index the data files.
-    datafiles1 = treeof_datafiles( path1 )
+    datafiles1 = dirtree_datafiles( path1 )
     print "jfp datafiles1=",datafiles1
-    datafiles2 = treeof_datafiles( path2, filt2 )
+    datafiles2 = dirtree_datafiles( path2, filt2 )
     print "jfp datafiles2=",datafiles2
     filetable1 = basic_filetable( datafiles1 )
     filetable2 = basic_filetable( datafiles2 )
