@@ -360,7 +360,7 @@ class CF_filefmt(basic_filefmt):
 if __name__ == '__main__':
    if len( sys.argv ) > 1:
       from findfiles import *
-      datafiles = treeof_datafiles( sys.argv[1] )
+      datafiles = dirtree_datafiles( sys.argv[1] )
       filetable = basic_filetable( datafiles )
       print "filetable=", filetable.sort()
    else:
