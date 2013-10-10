@@ -2,6 +2,10 @@
 
 # Features common to standard diagnostics from all groups, e.g. AMWG, LMWG.
 
+def diagnostics_menu():
+    from metrics.amwg.amwg import AMWG
+    return { "AMWG":AMWG }
+
 class BasicDiagnosticGroup():
     # This class will probably not get instantiated.
     # AMWG, LMWG, etc. should inherit from this.
