@@ -16,16 +16,16 @@ class AMWG(BasicDiagnosticGroup):
         return BasicDiagnosticGroup._list_variables( self, filetable1, filetable2, diagnostic_set )
     def list_diagnostic_sets( self ):
         return {
-            '1- Table of Global and Regional Means and RMS Error': plot_set1,
-            '2- Line Plots of Annual Implied Northward Transport': plot_set2,
-            '3- Line Plots of  Zonal Means': plot_set3,
-            '4- Vertical Contour Plots Zonal Means': plot_set4,
-            '4a- Vertical (XZ) Contour Plots Meridional Means': plot_set4a,
-            '5- Horizontal Contour Plots of Seasonal M eans': plot_set5,
-            '6- Horizontal Vector Plots of Seasonal Means': plot_set6,
-            '7- Polar Contour and Vector Plots of Seasonal Means': plot_set7,
-            '8- Annual Cycle Contour Plots of Zonal Means ': plot_set8,
-            '9- Horizontal Contour Plots of DJF-JJA Differences': plot_set9,
+            ' 1- Table of Global and Regional Means and RMS Error': plot_set1,
+            ' 2- Line Plots of Annual Implied Northward Transport': plot_set2,
+            ' 3- Line Plots of  Zonal Means': plot_set3,
+            ' 4- Vertical Contour Plots Zonal Means': plot_set4,
+            ' 4a- Vertical (XZ) Contour Plots Meridional Means': plot_set4a,
+            ' 5- Horizontal Contour Plots of Seasonal M eans': plot_set5,
+            ' 6- Horizontal Vector Plots of Seasonal Means': plot_set6,
+            ' 7- Polar Contour and Vector Plots of Seasonal Means': plot_set7,
+            ' 8- Annual Cycle Contour Plots of Zonal Means ': plot_set8,
+            ' 9- Horizontal Contour Plots of DJF-JJA Differences': plot_set9,
             '10- Annual Cycle Line Plots of Global Mean': plot_set10,
             '11- Pacific Annual Cycle: plot_set1, Scatter Plots': plot_set11,
             '12- Vertical Profile from 17 Selected Stations': plot_set12,
@@ -38,7 +38,7 @@ class AMWG(BasicDiagnosticGroup):
 class plot_set1(plot_set):
     def __init__(self):
         pass
-class plot_set4b(plot_set):
+class plot_set4a(plot_set):
     def __init__(self):
         pass
 class plot_set6(plot_set):
@@ -89,11 +89,11 @@ class plot_set2(plot_set):
     Both model and obs data is plotted, sometimes in the same plot.
     The data presented is averaged over everything but latitude.
     """
-    def __init__( self, filetable1, filetable2, varid, season=None ):
+    def __init__( self, filetable1, filetable2, varid, seasonid=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the derived variable to be plotted, e.g. 'Ocean_Heat'.
-        The season argument will be ignored."""
-        plot_set.__init__(self)
+        The seasonid argument will be ignored."""
+        plot_set.__init__(self,seasonid)
         self._var_baseid = '_'.join([varid,'set2'])   # e.g. Ocean_Heat_set2
         print "In plot_set2 __init__, ignoring varid input, will compute Ocean_Heat"
         print "Warning: plot_set2 only uses NCEP obs, and will ignore any other obs specification."
@@ -227,8 +227,8 @@ class plot_set3(plot_set):
     def __init__( self, filetable1, filetable2, varid, seasonid ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'."""
-        plot_set.__init__(self)
-        season = cdutil.times.Seasons(seasonid)
+        plot_set.__init__(self,seasonid)
+        season = cdutil.times.Seasons(self._seasonid)
         self._var_baseid = '_'.join([varid,seasonid,'set3'])   # e.g. CLT_DJF_set3
         y1var = reduced_variable(
             variableid=varid,
@@ -290,8 +290,8 @@ class plot_set4(plot_set):
         varid is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'.
         At the moment we assume that data from filetable1 has CAM hybrid levels,
         and data from filetable2 has pressure levels."""
-        plot_set.__init__(self)
-        season = cdutil.times.Seasons(seasonid)
+        plot_set.__init__(self,seasonid)
+        season = cdutil.times.Seasons(self._seasonid)
         self._var_baseid = '_'.join([varid,seasonid,'set4'])   # e.g. CLT_DJF_set4
         rv1 = reduced_variable(
             variableid=varid,
@@ -387,8 +387,8 @@ class plot_set5(plot_set):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'.
         """
-        plot_set.__init__(self)
-        season = cdutil.times.Seasons(seasonid)
+        plot_set.__init__(self,seasonid)
+        season = cdutil.times.Seasons(self._seasonid)
         self._var_baseid = '_'.join([varid,seasonid,'set5'])   # e.g. CLT_DJF_set5
         rv1 = reduced_variable(
             variableid=varid,
