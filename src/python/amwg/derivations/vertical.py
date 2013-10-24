@@ -3,7 +3,7 @@
 # Ngl doesn't work yet onoceanonly:
 # import Ngl
 import numpy, cdms2, cdutil
-from metrics.computation.reductions import *
+from unidata import udunits
 
 # constants as in functions_vertical.ncl, lines 5-10:
 plvlO = numpy.array([30.,50.,70.,100.,150.,200.,250.,300.,400.,500.,
@@ -23,6 +23,7 @@ def verticalize( T, hyam, hybm, ps, levels=plvlO ):
     T should be interpolated.  Or it can be a cdms2 variable, in which case the
     levels will be obtained from its 'lev' or 'plev' axis, if any.
     """
+    from metrics.computation.reductions import levAxis
     # constants as in functions_vertical.ncl, lines 5-10:
     p0 = 1000.   # mb
     interp = 2   # log interpolation
