@@ -2,6 +2,8 @@
 
 # Features common to standard diagnostics from all groups, e.g. AMWG, LMWG.
 
+from metrics.io.filetable import basic_filetable
+
 def diagnostics_menu():
     from metrics.amwg.amwg import AMWG
     return { "AMWG":AMWG }
@@ -23,7 +25,7 @@ class BasicDiagnosticGroup():
         starting point for developing something for a particular diagnostic group"""
         if filetable1 is None: return []
         vars1 = filetable1.list_variables()
-        if filetable2 is None: return vars1
+        if not isinstance( filetable2, basic_filetable ): return vars1
         vars2 = filetable2.list_variables()
         varset = set(vars1).intersection(set(vars2))
         vars = list(varset)
