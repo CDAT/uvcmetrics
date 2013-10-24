@@ -29,7 +29,8 @@ packages = {'metrics': 'src/python',
               'metrics.frontend': 'src/python/frontend',
               'metrics.computation': 'src/python/computation',
               'metrics.wgne': 'src/python/wgne',
-              'metrics.amwg': 'src/python/amwg'}
+              'metrics.amwg': 'src/python/amwg',
+              'metrics.amwg.derivations': 'src/python/amwg/derivations'}
 for d in packages.itervalues():
     shutil.copy("git.py",os.path.join(d,"git.py"))
 
@@ -45,7 +46,7 @@ setup (name = "metrics",
                    'metrics.amwg.derivations',
                    'metrics.graphics',
                    'metrics.frontend',
-                   'metrics.computation',
+                   'metrics.computation'
                    ],
        package_dir = packages,
        scripts = ["src/python/wgne/scripts/wgne_metrics_driver.py",],
