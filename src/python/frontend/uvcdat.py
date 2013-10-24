@@ -115,6 +115,7 @@ def _get_plot_data( plot_set, filetable1, filetable2, variable, season ):
     if season=='ANN':
         # cdutil.times.getMonthIndex() (called by climatology()) doesn't recognize 'ANN'
         season='JFMAMJJASOND'
+    plot_set = plot_set.strip()
     from metrics.amwg.amwg import plot_set2, plot_set3, plot_set4, plot_set5
     if plot_set=='2':
         return plot_set2( filetable1, filetable2, variable )
@@ -206,7 +207,12 @@ class contour_diff_plot( plotspec ):
 
 
 class plot_set():
-    def __init__(self):
+    def __init__(self, seasonid='ANN'):
+        if seasonid=='ANN':
+            # cdutil.times.getMonthIndex() (called by climatology()) doesn't recognize 'ANN'
+            self._seasonid='JFMAMJJASOND'
+        else:
+            self._seasonid=seasonid
         self.reduced_variables = {}
         self.derived_variables = {}
         self.variable_values = {}
