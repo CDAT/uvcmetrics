@@ -3,7 +3,8 @@
 # The user provides some minimal specification of the data he wants analyzed.
 # Our goal here is to find all the data files which comprise that data.
 
-import hashlib, pickle, operator, os, functools, sys
+import hashlib, pickle, operator, os, functools, sys, re
+import pprint
 from metrics.frontend.version import version
 from metrics.io.filetable import *
 
@@ -49,7 +50,7 @@ class f_startswith(basic_filter):
 
 class f_and(basic_binary_filter):
     def __call__( self, filen ):
-        return _f1(filen) and _f2(filen)
+        return self._f1(filen) and self._f2(filen)
     def __repr__( self ):
         return self._f1.__repr__()+' and '+self._f2.__repr__()
 
@@ -140,7 +141,7 @@ class dirtree_datafiles( basic_datafiles ):
             - If the output be a dict and one of its values be chosen, this can be used as the
             search_filter argument for a call of setup_filetable."""
         famdict = { f:extract_filefamilyname(f) for f in self.files }
-        families = list(set([ famdict[f] for f in files if famdict[f] is not None]))
+        families = list(set([ famdict[f] for f in self.files if famdict[f] is not None]))
         families.sort(key=len)  # a shorter name is more likely to be what we want
         if len(families)==1: return True
         if len(families)==0: return None
@@ -148,7 +149,6 @@ class dirtree_datafiles( basic_datafiles ):
         famdict = {}
         for fam in families:
             famdict[fam] = f_and( self._filt, f_startswith(fam) )
-        pprint( famdict )
         return famdict
     def setup_filetable( self, cache_path, ftid=None ):
         """Returns a file table (an index which says where you can find a variable) for files in the
