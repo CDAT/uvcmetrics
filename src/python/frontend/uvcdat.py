@@ -229,7 +229,7 @@ class plot_set():
             if yl is not None:
                 yls.append( yl )
         new_id = '_'.join(yls)
-        if new_id is None: new_id = p+'_2'
+        if new_id is None or new_id.strip()=="": new_id = p+'_2'
         return new_id    
     def results(self):
         return self._results()
@@ -318,7 +318,7 @@ class plot_set():
                 continue
             labels = [xlab,ylab,zlab]
             title = ' '.join(labels)  # do this better later
-            self.plotspec_values[p] = uvc_plotspec( vars, 'Yxvsx', labels, title )
+            self.plotspec_values[p] = uvc_plotspec( vars, self.plottype, labels, title )
         for p,ps in self.composite_plotspecs.iteritems():
             self.plotspec_values[p] = [ self.plotspec_values[sp] for sp in ps ]
 
