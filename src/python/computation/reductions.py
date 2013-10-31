@@ -936,12 +936,15 @@ class reduced_variable(ftrow):
     # (lambda mv: return zonal_mean( mv, sourcefile, -20, 20 )
     def __init__( self, fileid=None, variableid='', timerange=None,\
                       latrange=None, lonrange=None, levelrange=None,\
+                      reduced_var_id=None,\
                       reduction_function=(lambda x,vid=None: x),\
                       filetable=None, axes=None
                   ):
         ftrow.__init__( self, fileid, variableid, timerange, latrange, lonrange, levelrange )
         self._reduction_function = reduction_function
         self._axes = axes
+        if reduced_var_id is not None:
+            self._vid = reduced_var_id
         if filetable==None:
             print "ERROR.  No filetable specified for reduced_variable instance",variableid
         self._filetable = filetable
@@ -964,6 +967,8 @@ class reduced_variable(ftrow):
         Applies the reduction function to the data, and returns an MV.
         When completed, this will treat missing data as such.
         At present only CF-compliant files are supported."""
+        if vid is None:
+            vid = self._vid
         rows = self._filetable.find_files( self.variableid, time_range=self.timerange,
                                            lat_range=self.latrange, lon_range=self.lonrange,
                                            level_range=self.levelrange )
@@ -1053,6 +1058,7 @@ class reduced_variable(ftrow):
         fcf = get_datafile_filefmt(f)
         varname = fcf.variable_by_stdname(self.variableid)
         reduced_data = self._reduction_function( f(varname), vid=vid )
+        reduced_data._vid = vid
         f.close()
         return reduced_data
 
