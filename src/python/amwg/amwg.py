@@ -41,9 +41,7 @@ class plot_set1(plot_set):
 class plot_set4a(plot_set):
     def __init__(self):
         pass
-class plot_set6(plot_set):
-    def __init__(self):
-        pass
+
 
 class plot_set7(plot_set):
     def __init__(self):
@@ -453,5 +451,57 @@ class plot_set5(plot_set):
             [zdiffval],'Isofill', labels=['difference'],
             title=' '.join([self._var_baseid,z1unam,'-',z2unam]))
         return [ plot_a_val, plot_b_val, plot_c_val ]
+
+class plot_set6(plot_set):
+    """represents one plot from AMWG Diagnostics Plot Set 6
+    **** SO FAR, VECTOR PLOTS ARE NOT DONE; ONLY CONTOUR ****
+    The contour plots of set 6 are identical to those of set 6.
+    Each such plot is a set of three contour plots: one each for model output, observations, and
+    the difference between the two.  A plot's x-axis is longitude and its y-axis is the latitude;,
+    normally a world map will be overlaid.
+    """
+    def __init__( self, filetable1, filetable2, varid, seasonid=None ):
+        """filetable1, filetable2 should be filetables for model and obs.
+        varid is a string identifying the variable to be plotted, e.g. 'TREFHT'.
+        seasonid is a string such as 'DJF'."""
+        plot_set.__init__(self,seasonid)
+        self.plottype = 'Isofill'
+        season = cdutil.times.Seasons(self._seasonid)
+        self._var_baseid = '_'.join([varid,'set6'])   # e.g. TREFHT_set6
+
+        self.reduced_variables = {
+            varid+'_1': reduced_variable(
+                variableid=varid, filetable=filetable1, reduced_var_id=varid+'_1',
+                reduction_function=(lambda x,vid: reduce2latlon_seasonal( x, season, vid ) ) ),
+            varid+'_2': reduced_variable(
+                variableid=varid, filetable=filetable2, reduced_var_id=varid+'_2',
+                reduction_function=(lambda x,vid: reduce2latlon_seasonal( x, season, vid ) ) )
+            }
+        self.derived_variables = {}
+        plot1_id = filetable1._id+'_'+varid+'_'+seasonid
+        plot2_id = filetable2._id+'_'+varid+'_'+seasonid
+        plot3_id = filetable1._id+' - '+filetable2._id+'_'+varid+'_'+seasonid
+        self.plotall_id = filetable1._id+'_'+filetable2._id+'_'+varid+'_'+seasonid
+        self.single_plotspecs = {
+            plot1_id: plotspec(
+                vid = varid+'_1',
+                zvars = [varid+'_1'],  zfunc = (lambda z: z),
+                plottype = self.plottype ),
+            plot2_id: plotspec(
+                vid = varid+'_2',
+                zvars = [varid+'_2'],  zfunc = (lambda z: z),
+                plottype = self.plottype ),
+            plot3_id: plotspec(
+                vid = varid+' diff',
+                zvars = [varid+'_1',varid+'_2'],  zfunc = aminusb_2ax,
+                plottype = self.plottype )
+            }
+        self.composite_plotspecs = {
+            self.plotall_id: [ plot1_id, plot2_id, plot3_id ]            
+            }
+    def _results(self):
+        results = plot_set._results(self)
+        if results is None: return None
+        return self.plotspec_values[self.plotall_id]
 
 
