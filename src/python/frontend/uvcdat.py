@@ -206,7 +206,8 @@ class contour_diff_plot( plotspec ):
             zvars=[z1var,z2var], zfunc=aminusb_2ax, plottype='Isofill' )
 
 
-class plot_set():
+class plot_set(object):
+    # ...I made this a new-style class so we can call __subclasses__ .
     def __init__(self, seasonid='ANN'):
         if seasonid=='ANN':
             # cdutil.times.getMonthIndex() (called by climatology()) doesn't recognize 'ANN'
