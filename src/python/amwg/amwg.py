@@ -15,6 +15,9 @@ class AMWG(BasicDiagnosticGroup):
     def list_variables( self, filetable1, filetable2=None, diagnostic_set="" ):
         return BasicDiagnosticGroup._list_variables( self, filetable1, filetable2, diagnostic_set )
     def list_diagnostic_sets( self ):
+        plot_sets = amwg_plot_set.__subclasses__()
+        return { aps.name:aps for aps in plot_sets if hasattr(aps,'name') }
+        """ was:
         return {
             ' 1- Table of Global and Regional Means and RMS Error': plot_set1,
             ' 2- Line Plots of Annual Implied Northward Transport': plot_set2,
@@ -33,68 +36,51 @@ class AMWG(BasicDiagnosticGroup):
             '14- Taylor diagrams': plot_set14,
             '15- Annual Cycle at Select Stations Plots': plot_set15,
             }
+         """
 
-# plot set classes which I haven't done yet:
-class plot_set1(plot_set):
-    def __init__(self):
-        pass
-class plot_set4a(plot_set):
-    def __init__(self):
-        pass
+class amwg_plot_set(plot_set): pass
 
-
-class plot_set7(plot_set):
-    def __init__(self):
-        pass
-
-class plot_set8(plot_set):
-    def __init__(self):
-        pass
-
-class plot_set9(plot_set):
-    def __init__(self):
-        pass
-
-class plot_set10(plot_set):
-    def __init__(self):
-        pass
-
-class plot_set11(plot_set):
-    def __init__(self):
-        pass
-
-class plot_set12(plot_set):
-    def __init__(self):
-        pass
-
-class plot_set13(plot_set):
-    def __init__(self):
-        pass
-
-class plot_set14(plot_set):
-    def __init__(self):
-        pass
-
-class plot_set15(plot_set):
-    def __init__(self):
-        pass
+# plot set classes we need which I haven't done yet:
+class amwg_plot_set1(amwg_plot_set):
+    pass
+class amwg_plot_set4a(amwg_plot_set):
+    pass
+class amwg_plot_set7(amwg_plot_set):
+    pass
+class amwg_plot_set8(amwg_plot_set):
+    pass
+class amwg_plot_set9(amwg_plot_set):
+    pass
+class amwg_plot_set10(amwg_plot_set):
+    pass
+class amwg_plot_set11(amwg_plot_set):
+    pass
+class amwg_plot_set12(amwg_plot_set):
+    pass
+class amwg_plot_set13(amwg_plot_set):
+    pass
+class amwg_plot_set14(amwg_plot_set):
+    pass
+class amwg_plot_set15(amwg_plot_set):
+    pass
 
 
-class plot_set2(plot_set):
+class amwg_plot_set2(amwg_plot_set):
     """represents one plot from AMWG Diagnostics Plot Set 2
     Each such plot is a page consisting of two to four plots.  The horizontal
     axis is latitude and the vertical axis is heat or fresh-water transport.
     Both model and obs data is plotted, sometimes in the same plot.
     The data presented is averaged over everything but latitude.
     """
+    name = ' 2- Line Plots of Annual Implied Northward Transport'
     def __init__( self, filetable1, filetable2, varid, seasonid=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the derived variable to be plotted, e.g. 'Ocean_Heat'.
         The seasonid argument will be ignored."""
         plot_set.__init__(self,seasonid)
         self._var_baseid = '_'.join([varid,'set2'])   # e.g. Ocean_Heat_set2
-        print "In plot_set2 __init__, ignoring varid input, will compute Ocean_Heat"
-        print "Warning: plot_set2 only uses NCEP obs, and will ignore any other obs specification."
+        print "In amwg_plot_set2 __init__, ignoring varid input, will compute Ocean_Heat"
+        print "Warning: amwg_plot_set2 only uses NCEP obs, and will ignore any other obs specification."
 
         # CAM variables needed for heat transport: (SOME ARE SUPERFLUOUS <<<<<<)
         # FSNS, FLNS, FLUT, FSNTOA, FLNT, FSNT, SHFLX, LHFLX,
@@ -214,7 +200,7 @@ class plot_set2(plot_set):
         return self.plotspec_values['CAM_NCEP_HEAT_TRANSPORT_ALL']
 
 
-class plot_set3(plot_set):
+class amwg_plot_set3(amwg_plot_set):
     """represents one plot from AMWG Diagnostics Plot Set 3.
     Each such plot is a pair of plots: a 2-line plot comparing model with obs, and
     a 1-line plot of the model-obs difference.  A plot's x-axis is latitude, and
@@ -222,6 +208,7 @@ class plot_set3(plot_set):
     time-averaged with times restricted to the specified season, DJF, JJA, or ANN."""
     # N.B. In plot_data.py, the plotspec contained keys identifying reduced variables.
     # Here, the plotspec contains the variables themselves.
+    name = ' 3- Line Plots of  Zonal Means'
     def __init__( self, filetable1, filetable2, varid, seasonid ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'."""
@@ -274,7 +261,7 @@ class plot_set3(plot_set):
             title=' '.join([self._var_baseid,y1unam,'-',y2unam]))
         return [ plot_a_val, plot_b_val ]
 
-class plot_set4(plot_set):
+class amwg_plot_set4(amwg_plot_set):
     """represents one plot from AMWG Diagnostics Plot Set 4.
     Each such plot is a set of three contour plots: one each for model output, observations, and
     the difference between the two.  A plot's x-axis is latitude and its y-axis is the level,
@@ -283,6 +270,7 @@ class plot_set4(plot_set):
     time-averaged with times restricted to the specified season, DJF, JJA, or ANN."""
     # N.B. In plot_data.py, the plotspec contained keys identifying reduced variables.
     # Here, the plotspec contains the variables themselves.
+    name = ' 4- Vertical Contour Plots Zonal Means'
     def __init__( self, filetable1, filetable2, varid, seasonid ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'.
@@ -371,95 +359,70 @@ class plot_set4(plot_set):
             title=' '.join([self._var_baseid,z1unam,'-',z2unam]))
         return [ plot_a_val, plot_b_val, plot_c_val ]
 
-class plot_set5(plot_set):
+class amwg_plot_set5(amwg_plot_set):
     """represents one plot from AMWG Diagnostics Plot Set 5.
     Each such plot is a set of three contour plots: one each for model output, observations, and
-    the difference between the two.  A plot's x-axis is longitude and its y-axis is the latitude;,
+    the difference between the two.  A plot's x-axis is longitude and its y-axis is the latitude;
     normally a world map will be overlaid.
     The model and obs plots should have contours at the same values of
     their variable.  The data presented is a climatological mean - i.e.,
-    time-averaged with times restricted to the specified season, DJF, JJA, or ANN."""
-    # N.B. In plot_data.py, the plotspec contained keys identifying reduced variables.
-    # Here, the plotspec contains the variables themselves.
-    def __init__( self, filetable1, filetable2, varid, seasonid ):
+    time-averaged with times restricted to the specified season, DJF, JJA, or ANN.
+    """
+    name = ' 5- Horizontal Contour Plots of Seasonal Means'
+    def __init__( self, filetable1, filetable2, varid, seasonid=None ):
         """filetable1, filetable2 should be filetables for model and obs.
-        varid is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'.
-        """
+        varid is a string identifying the variable to be plotted, e.g. 'TREFHT'.
+        seasonid is a string such as 'DJF'."""
         plot_set.__init__(self,seasonid)
+        self.plottype = 'Isofill'
         season = cdutil.times.Seasons(self._seasonid)
-        self._var_baseid = '_'.join([varid,seasonid,'set5'])   # e.g. CLT_DJF_set5
-        rv1 = reduced_variable(
-            variableid=varid,
-            filetable=filetable1,
-            reduction_function=(lambda x,vid=None: reduce2latlon_seasonal(x,season,vid=vid)) )
-        self.reduced_variables[varid+'_1'] = rv1
-        rv2 = reduced_variable(
-            variableid=varid,
-            filetable=filetable2,
-            reduction_function=(lambda x,vid=None: reduce2latlon_seasonal(x,season,vid=vid)) )
-        self.reduced_variables[varid+'_2'] = rv2
-        vv1 = rv1
-        vv1._vid = varid+'_1'        # for lookup conventience in results() method
-        vv1._filetable = filetable1  # so later we can extract the filetable id for labels
-        vv2 = rv2
-        vv2._vid = varid+'_2'        # for lookup conventience in results() method
-        vv2._filetable = filetable2  # so later we can extract the filetable id for labels
-        self.plot_a = contour_plot( vv1, xfunc=lonvar, yfunc=latvar )
-        self.plot_b = contour_plot( vv2, xfunc=lonvar, yfunc=latvar )
-        vid = '_'.join([self._var_baseid,filetable1._id,filetable2._id,'diff'])
-        # ... e.g. CLT_DJF_set5_CAM456_NCEP_diff
-        self.plot_c = contour_diff_plot( vv1, vv2, vid, xfunc=lonvar_min, yfunc=latvar_min )
+        self._var_baseid = '_'.join([varid,'set6'])   # e.g. TREFHT_set6
+
+        self.reduced_variables = {
+            varid+'_1': reduced_variable(
+                variableid=varid, filetable=filetable1, reduced_var_id=varid+'_1',
+                reduction_function=(lambda x,vid: reduce2latlon_seasonal( x, season, vid ) ) ),
+            varid+'_2': reduced_variable(
+                variableid=varid, filetable=filetable2, reduced_var_id=varid+'_2',
+                reduction_function=(lambda x,vid: reduce2latlon_seasonal( x, season, vid ) ) )
+            }
+        self.derived_variables = {}
+        plot1_id = filetable1._id+'_'+varid+'_'+seasonid
+        plot2_id = filetable2._id+'_'+varid+'_'+seasonid
+        plot3_id = filetable1._id+' - '+filetable2._id+'_'+varid+'_'+seasonid
+        self.plotall_id = filetable1._id+'_'+filetable2._id+'_'+varid+'_'+seasonid
+        self.single_plotspecs = {
+            plot1_id: plotspec(
+                vid = varid+'_1',
+                zvars = [varid+'_1'],  zfunc = (lambda z: z),
+                plottype = self.plottype ),
+            plot2_id: plotspec(
+                vid = varid+'_2',
+                zvars = [varid+'_2'],  zfunc = (lambda z: z),
+                plottype = self.plottype ),
+            plot3_id: plotspec(
+                vid = varid+' diff',
+                zvars = [varid+'_1',varid+'_2'],  zfunc = aminusb_2ax,
+                plottype = self.plottype )
+            }
+        self.composite_plotspecs = {
+            self.plotall_id: [ plot1_id, plot2_id, plot3_id ]            
+            }
     def _results(self):
-        # At the moment this is very specific to plot set 5.  Maybe later I'll use a
-        # more general method, to something like what's in plot_data.py, maybe not.
-        # later this may be something more specific to the needs of the UV-CDAT GUI
         results = plot_set._results(self)
         if results is None: return None
-        zavar = self.plot_a.zvars[0]
-        zaval = self.variable_values[ zavar._vid ]
-        if zaval is None: return None
-        zaunam = zavar._filetable._id  # unique part of name for y1, e.g. CAM456
-        zaval.id = '_'.join([self._var_baseid,zaunam])  # e.g. CLT_DJF_set5_CAM456
+        return self.plotspec_values[self.plotall_id]
 
-        zbvar = self.plot_b.zvars[0]
-        #zbval = zbvar.reduce()
-        zbval = self.variable_values[ zbvar._vid ]
-        if zbval is None: return None
-        zbunam = zbvar._filetable._id  # unique part of name for y1, e.g. OBS123
-        zbval.id = '_'.join([self._var_baseid,zbunam])  # e.g. CLT_DJF_set5_OBS123
 
-        z1var = self.plot_c.zvars[0]
-        z2var = self.plot_c.zvars[1]
-        z1val = self.variable_values[ z1var._vid ]
-        z2val = self.variable_values[ z2var._vid ]
-        z1unam = z1var._filetable._id  # unique part of name for y1, e.g. OBS123
-        z1val.id = '_'.join([self._var_baseid,z1unam])  # e.g. CLT_DJF_set3_OBS123
-        z2unam = z1var._filetable._id  # unique part of name for y1, e.g. OBS123
-        z2val.id = '_'.join([self._var_baseid,z2unam])  # e.g. CLT_DJF_set3_OBS123
-        zdiffval = apply( self.plot_c.zfunc, [z1val,z2val] )
-        if zdiffval is None: return None
-        zdiffval.id = '_'.join([self._var_baseid, z1var._filetable._id, z2var._filetable._id,
-                                'diff'])
-        # ... e.g. CLT_DJF_set5_CAM456_OBS123_diff
-        plot_a_val = uvc_plotspec(
-            [zaval],'Isofill', labels=[zaunam],
-            title= zaunam )
-        plot_b_val = uvc_plotspec(
-            [zbval],'Isofill', labels=[zbunam],
-            title= zbunam )
-        plot_c_val = uvc_plotspec(
-            [zdiffval],'Isofill', labels=['difference'],
-            title=' '.join([self._var_baseid,z1unam,'-',z2unam]))
-        return [ plot_a_val, plot_b_val, plot_c_val ]
-
-class plot_set6(plot_set):
+class amwg_plot_set6(amwg_plot_set):
     """represents one plot from AMWG Diagnostics Plot Set 6
     **** SO FAR, VECTOR PLOTS ARE NOT DONE; ONLY CONTOUR ****
-    The contour plots of set 6 are identical to those of set 6.
+    The contour plots of set 6 are identical to those of set 5.
     Each such plot is a set of three contour plots: one each for model output, observations, and
-    the difference between the two.  A plot's x-axis is longitude and its y-axis is the latitude;,
+    the difference between the two.  A plot's x-axis is longitude and its y-axis is the latitude;
     normally a world map will be overlaid.
     """
+    name = ' 6- Horizontal Vector Plots of Seasonal Means'
     def __init__( self, filetable1, filetable2, varid, seasonid=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the variable to be plotted, e.g. 'TREFHT'.
