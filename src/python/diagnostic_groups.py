@@ -11,6 +11,8 @@ def diagnostics_menu():
 class BasicDiagnosticGroup():
     # This class will probably not get instantiated.
     # AMWG, LMWG, etc. should inherit from this.
+    def __repr__( self ):
+        return self.__class__.__name__+' object'
     def list_variables( self, filetable1, filetable2=None, diagnostic_set="" ):
         """returns a sorted list of variable ids (strings) found in both filetables provided.
         This method _may_ also return names of variables which can be derived from the variables
