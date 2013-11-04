@@ -208,6 +208,11 @@ class contour_diff_plot( plotspec ):
 
 class plot_set(object):
     # ...I made this a new-style class so we can call __subclasses__ .
+    def __repr__( self ):
+        if hasattr( self, 'plotall_id' ):
+            return self.__class__.__name__+'('+self.plotall_id+')'
+        else:
+            return self.__class__.__name__+' object'
     def __init__(self, seasonid='ANN'):
         if seasonid=='ANN':
             # cdutil.times.getMonthIndex() (called by climatology()) doesn't recognize 'ANN'
@@ -220,6 +225,9 @@ class plot_set(object):
         self.single_plotspecs = {}
         self.composite_plotspecs = {}
         self.plotspec_values = {}
+        self.computation_planned = False
+    def plan_computation( self, seasonid):
+        pass
     def _build_label( self, vars, p ):
         yls = []
         for y in vars:
@@ -231,7 +239,9 @@ class plot_set(object):
                 yls.append( yl )
         new_id = '_'.join(yls)
         if new_id is None or new_id.strip()=="": new_id = p+'_2'
-        return new_id    
+        return new_id
+    def compute(self):
+        return self.results()
     def results(self):
         return self._results()
 # To profile, replace (by name changes) the above results() with the following one:
