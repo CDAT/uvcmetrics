@@ -78,10 +78,13 @@ class amwg_plot_set2(amwg_plot_set):
         varid is a string identifying the derived variable to be plotted, e.g. 'Ocean_Heat'.
         The seasonid argument will be ignored."""
         plot_set.__init__(self,seasonid)
+        self.plottype='2 line plot'
         self._var_baseid = '_'.join([varid,'set2'])   # e.g. Ocean_Heat_set2
         print "In amwg_plot_set2 __init__, ignoring varid input, will compute Ocean_Heat"
         print "Warning: amwg_plot_set2 only uses NCEP obs, and will ignore any other obs specification."
-
+        if not self.computation_planned:
+            self.plan_computation( filetable1, filetable2, varid, seasonid )
+    def plan_computation( self, filetable1, filetable2, varid, seasonid ):
         # CAM variables needed for heat transport: (SOME ARE SUPERFLUOUS <<<<<<)
         # FSNS, FLNS, FLUT, FSNTOA, FLNT, FSNT, SHFLX, LHFLX,
         self.reduced_variables = {
@@ -159,7 +162,7 @@ class amwg_plot_set2(amwg_plot_set):
                 x2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2'], x2func=(lambda x: x[0]),
                 y2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2' ],
                 y2func=(lambda y: y[1][3]),
-                plottype='2 line plot'  ),
+                plottype = self.plottype  ),
             'CAM_NCEP_HEAT_TRANSPORT_PACIFIC': plotspec(
                 vid='CAM_NCEP_HEAT_TRANSPORT_PACIFIC',
                 x1vars=['FSNS_ANN_latlon_1'], x1func=latvar,
@@ -168,7 +171,7 @@ class amwg_plot_set2(amwg_plot_set):
                 x2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2'], x2func=(lambda x: x[0]),
                 y2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2' ],
                 y2func=(lambda y: y[1][0]),
-                plottype='2 line plot'  ),
+                plottype = self.plottype  ),
             'CAM_NCEP_HEAT_TRANSPORT_ATLANTIC': plotspec(
                 vid='CAM_NCEP_HEAT_TRANSPORT_ATLANTIC',
                 x1vars=['FSNS_ANN_latlon_1'], x1func=latvar,
@@ -177,7 +180,7 @@ class amwg_plot_set2(amwg_plot_set):
                 x2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2'], x2func=(lambda x: x[0]),
                 y2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2' ],
                 y2func=(lambda y: y[1][1]),
-                plottype='2 line plot'  ),
+                plottype = self.plottype  ),
             'CAM_NCEP_HEAT_TRANSPORT_INDIAN': plotspec(
                 vid='CAM_NCEP_HEAT_TRANSPORT_INDIAN',
                 x1vars=['FSNS_ANN_latlon_1'], x1func=latvar,
@@ -186,13 +189,14 @@ class amwg_plot_set2(amwg_plot_set):
                 x2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2'], x2func=(lambda x: x[0]),
                 y2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2' ],
                 y2func=(lambda y: y[1][2]),
-                plottype='2 line plot'  )
+                plottype = self.plottype  )
             }
         self.composite_plotspecs = {
             'CAM_NCEP_HEAT_TRANSPORT_ALL':
                 ['CAM_NCEP_HEAT_TRANSPORT_GLOBAL','CAM_NCEP_HEAT_TRANSPORT_PACIFIC',
                  'CAM_NCEP_HEAT_TRANSPORT_ATLANTIC','CAM_NCEP_HEAT_TRANSPORT_INDIAN']
             }
+        self.computation_planned = True
 
     def _results(self):
         results = plot_set._results(self)
@@ -213,24 +217,28 @@ class amwg_plot_set3(amwg_plot_set):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'."""
         plot_set.__init__(self,seasonid)
-        season = cdutil.times.Seasons(self._seasonid)
+        self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
         self._var_baseid = '_'.join([varid,seasonid,'set3'])   # e.g. CLT_DJF_set3
+        if not self.computation_planned:
+            self.plan_computation( filetable1, filetable2, varid, seasonid )
+    def plan_computation( self, filetable1, filetable2, varid, seasonid ):
         y1var = reduced_variable(
             variableid=varid,
             filetable=filetable1,
-            reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,season,vid=vid)) )
+            reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,self.season,vid=vid)) )
         self.reduced_variables[varid+'_1'] = y1var
         y1var._vid = varid+'_1'
         y2var = reduced_variable(
             variableid=varid,
             filetable=filetable2,
-            reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,season,vid=vid)) )
+            reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,self.season,vid=vid)) )
         self.reduced_variables[varid+'_2'] = y2var
         y2var._vid = varid+'_2'
         self.plot_a = basic_two_line_plot( y1var, y2var )
         vid = '_'.join([self._var_baseid,filetable1._id,filetable2._id,'diff'])
         # ... e.g. CLT_DJF_set3_CAM456_NCEP_diff
         self.plot_b = one_line_diff_plot( y1var, y2var, vid )
+        self.computation_planned = True
     def _results(self):
         # At the moment this is very specific to plot set 3.  Maybe later I'll use a
         # more general method, to something like what's in plot_data.py, maybe not.
@@ -277,17 +285,20 @@ class amwg_plot_set4(amwg_plot_set):
         At the moment we assume that data from filetable1 has CAM hybrid levels,
         and data from filetable2 has pressure levels."""
         plot_set.__init__(self,seasonid)
-        season = cdutil.times.Seasons(self._seasonid)
+        self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
         self._var_baseid = '_'.join([varid,seasonid,'set4'])   # e.g. CLT_DJF_set4
+        if not self.computation_planned:
+            self.plan_computation( filetable1, filetable2, varid, seasonid )
+    def plan_computation( self, filetable1, filetable2, varid, seasonid ):
         rv1 = reduced_variable(
             variableid=varid,
             filetable=filetable1,
-            reduction_function=(lambda x,vid=None: reduce2levlat_seasonal(x,season,vid=vid)) )
+            reduction_function=(lambda x,vid=None: reduce2levlat_seasonal(x,self.season,vid=vid)) )
         self.reduced_variables[varid+'_1'] = rv1
         rv2 = reduced_variable(
             variableid=varid,
             filetable=filetable2,
-            reduction_function=(lambda x,vid=None: reduce2levlat_seasonal(x,season,vid=vid)) )
+            reduction_function=(lambda x,vid=None: reduce2levlat_seasonal(x,self.season,vid=vid)) )
         self.reduced_variables[varid+'_2'] = rv2
         hyam = reduced_variable(      # hyam=hyam(lev)
             variableid='hyam', filetable=filetable1,
@@ -299,7 +310,7 @@ class amwg_plot_set4(amwg_plot_set):
         self.reduced_variables['hybm'] = hybm
         ps = reduced_variable(
             variableid='PS', filetable=filetable1,
-            reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,season,vid=vid)) )
+            reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,self.season,vid=vid)) )
         self.reduced_variables['ps'] = ps
         vid1='_'.join([varid,seasonid,'levlat'])
         vv1 = derived_var(
@@ -316,6 +327,7 @@ class amwg_plot_set4(amwg_plot_set):
         # ... e.g. CLT_DJF_set4_CAM456_NCEP_diff
         self.plot_c = contour_diff_plot( vv1, vv2, vid, xfunc=latvar_min, yfunc=levvar_min,
                                          ya1func=(lambda y1,y2: heightvar(levvar_min(y1,y2))))
+        self.computation_planned = True
     def _results(self):
         # At the moment this is very specific to plot set 4.  Maybe later I'll use a
         # more general method, to something like what's in plot_data.py, maybe not.
@@ -375,39 +387,44 @@ class amwg_plot_set5(amwg_plot_set):
         seasonid is a string such as 'DJF'."""
         plot_set.__init__(self,seasonid)
         self.plottype = 'Isofill'
-        season = cdutil.times.Seasons(self._seasonid)
-        self._var_baseid = '_'.join([varid,'set6'])   # e.g. TREFHT_set6
+        self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
 
+        self._var_baseid = '_'.join([varid,'set5'])   # e.g. TREFHT_set5
+        self.plot1_id = filetable1._id+'_'+varid+'_'+seasonid
+        self.plot2_id = filetable2._id+'_'+varid+'_'+seasonid
+        self.plot3_id = filetable1._id+' - '+filetable2._id+'_'+varid+'_'+seasonid
+        self.plotall_id = filetable1._id+'_'+filetable2._id+'_'+varid+'_'+seasonid
+
+        if not self.computation_planned:
+            self.plan_computation( filetable1, filetable2, varid, seasonid )
+    def plan_computation( self, filetable1, filetable2, varid, seasonid ):
         self.reduced_variables = {
             varid+'_1': reduced_variable(
                 variableid=varid, filetable=filetable1, reduced_var_id=varid+'_1',
-                reduction_function=(lambda x,vid: reduce2latlon_seasonal( x, season, vid ) ) ),
+                reduction_function=(lambda x,vid: reduce2latlon_seasonal( x, self.season, vid ) ) ),
             varid+'_2': reduced_variable(
                 variableid=varid, filetable=filetable2, reduced_var_id=varid+'_2',
-                reduction_function=(lambda x,vid: reduce2latlon_seasonal( x, season, vid ) ) )
+                reduction_function=(lambda x,vid: reduce2latlon_seasonal( x, self.season, vid ) ) )
             }
         self.derived_variables = {}
-        plot1_id = filetable1._id+'_'+varid+'_'+seasonid
-        plot2_id = filetable2._id+'_'+varid+'_'+seasonid
-        plot3_id = filetable1._id+' - '+filetable2._id+'_'+varid+'_'+seasonid
-        self.plotall_id = filetable1._id+'_'+filetable2._id+'_'+varid+'_'+seasonid
         self.single_plotspecs = {
-            plot1_id: plotspec(
+            self.plot1_id: plotspec(
                 vid = varid+'_1',
                 zvars = [varid+'_1'],  zfunc = (lambda z: z),
                 plottype = self.plottype ),
-            plot2_id: plotspec(
+            self.plot2_id: plotspec(
                 vid = varid+'_2',
                 zvars = [varid+'_2'],  zfunc = (lambda z: z),
                 plottype = self.plottype ),
-            plot3_id: plotspec(
+            self.plot3_id: plotspec(
                 vid = varid+' diff',
                 zvars = [varid+'_1',varid+'_2'],  zfunc = aminusb_2ax,
                 plottype = self.plottype )
             }
         self.composite_plotspecs = {
-            self.plotall_id: [ plot1_id, plot2_id, plot3_id ]            
+            self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id ]            
             }
+        self.computation_planned = True
     def _results(self):
         results = plot_set._results(self)
         if results is None: return None
@@ -429,39 +446,44 @@ class amwg_plot_set6(amwg_plot_set):
         seasonid is a string such as 'DJF'."""
         plot_set.__init__(self,seasonid)
         self.plottype = 'Isofill'
-        season = cdutil.times.Seasons(self._seasonid)
-        self._var_baseid = '_'.join([varid,'set6'])   # e.g. TREFHT_set6
+        self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
 
+        self._var_baseid = '_'.join([varid,'set6'])   # e.g. TREFHT_set6
+        self.plot1_id = filetable1._id+'_'+varid+'_'+seasonid
+        self.plot2_id = filetable2._id+'_'+varid+'_'+seasonid
+        self.plot3_id = filetable1._id+' - '+filetable2._id+'_'+varid+'_'+seasonid
+        self.plotall_id = filetable1._id+'_'+filetable2._id+'_'+varid+'_'+seasonid
+
+        if not self.computation_planned:
+            self.plan_computation( filetable1, filetable2, varid, seasonid )
+    def plan_computation( self, filetable1, filetable2, varid, seasonid ):
         self.reduced_variables = {
             varid+'_1': reduced_variable(
                 variableid=varid, filetable=filetable1, reduced_var_id=varid+'_1',
-                reduction_function=(lambda x,vid: reduce2latlon_seasonal( x, season, vid ) ) ),
+                reduction_function=(lambda x,vid: reduce2latlon_seasonal( x, self.season, vid ) ) ),
             varid+'_2': reduced_variable(
                 variableid=varid, filetable=filetable2, reduced_var_id=varid+'_2',
-                reduction_function=(lambda x,vid: reduce2latlon_seasonal( x, season, vid ) ) )
+                reduction_function=(lambda x,vid: reduce2latlon_seasonal( x, self.season, vid ) ) )
             }
         self.derived_variables = {}
-        plot1_id = filetable1._id+'_'+varid+'_'+seasonid
-        plot2_id = filetable2._id+'_'+varid+'_'+seasonid
-        plot3_id = filetable1._id+' - '+filetable2._id+'_'+varid+'_'+seasonid
-        self.plotall_id = filetable1._id+'_'+filetable2._id+'_'+varid+'_'+seasonid
         self.single_plotspecs = {
-            plot1_id: plotspec(
+            self.plot1_id: plotspec(
                 vid = varid+'_1',
                 zvars = [varid+'_1'],  zfunc = (lambda z: z),
                 plottype = self.plottype ),
-            plot2_id: plotspec(
+            self.plot2_id: plotspec(
                 vid = varid+'_2',
                 zvars = [varid+'_2'],  zfunc = (lambda z: z),
                 plottype = self.plottype ),
-            plot3_id: plotspec(
+            self.plot3_id: plotspec(
                 vid = varid+' diff',
                 zvars = [varid+'_1',varid+'_2'],  zfunc = aminusb_2ax,
                 plottype = self.plottype )
             }
         self.composite_plotspecs = {
-            self.plotall_id: [ plot1_id, plot2_id, plot3_id ]            
+            self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id ]            
             }
+        self.computation_planned = True
     def _results(self):
         results = plot_set._results(self)
         if results is None: return None
