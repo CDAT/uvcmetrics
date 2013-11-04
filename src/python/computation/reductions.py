@@ -466,6 +466,7 @@ def reduce2latlon_seasonal( mv, seasons=seasonsyr, vid=None ):
         avmv = averager( mvseas, axis=axes_string )
     else:
         avmv = mvseas
+    if avmv is None: return avmv
     avmv.id = vid
     if hasattr(mv,'units'): avmv.units = mv.units
     avmv = delete_singleton_axis( avmv, vid='time' )
@@ -694,8 +695,21 @@ def aminusb_2ax( mv1, mv2 ):
     will also have a missing value at index i.
     """
     if hasattr(mv1,'units') and hasattr(mv2,'units') and mv1.units!=mv2.units:
-        print "WARNING: aminusb_1ax1 is subtracting variables with different units!",mv1,mv1
-        # We should try to convert units; code that up later.
+        print "jfp mv1",mv1.units,mv1[0:3,0:3]
+        print "jfp mv2",mv2.units,mv2[0:3,0:3]
+        if mv1.units=='mb':
+            mv1.units = 'mbar' # udunits uses mb for something else
+        if mv2.units=='mb':
+            mv2.units = 'mbar' # udunits uses mb for something else
+        if mv1.units=='mb/day':
+            mv1.units = 'mbar/day' # udunits uses mb for something else
+        if mv2.units=='mb/day':
+            mv2.units = 'mbar/day' # udunits uses mb for something else
+        tmp = udunits(1.0,mv2.units)
+        s,i = tmp.how(mv1.units)  # will raise an exception if conversion not possible
+        mv2 = s*mv2 + i
+        mv2.units = mv1.units
+        print "jfp mv2",mv2.units,mv2[0:3,0:3]
     missing = mv1.get_fill_value()
     axes1 = allAxes(mv1)
     axes2 = allAxes(mv2)
@@ -943,7 +957,9 @@ class reduced_variable(ftrow):
         ftrow.__init__( self, fileid, variableid, timerange, latrange, lonrange, levelrange )
         self._reduction_function = reduction_function
         self._axes = axes
-        if reduced_var_id is not None:
+        if reduced_var_id is None:
+            self._vid = ""
+        else:
             self._vid = reduced_var_id
         if filetable==None:
             print "ERROR.  No filetable specified for reduced_variable instance",variableid
@@ -1058,7 +1074,8 @@ class reduced_variable(ftrow):
         fcf = get_datafile_filefmt(f)
         varname = fcf.variable_by_stdname(self.variableid)
         reduced_data = self._reduction_function( f(varname), vid=vid )
-        reduced_data._vid = vid
+        if reduced_data is not None:
+            reduced_data._vid = vid
         f.close()
         return reduced_data
 
