@@ -35,20 +35,28 @@ number_diagnostic_plots = 0
 dm = diagnostics_menu()
 for pname,pclass in dm.items():
     package = pclass()
+    print "jfp package=",package
     sm = package.list_diagnostic_sets()
     for sname,sclass in sm.items():
-        if sclass.name != ' 6- Horizontal Vector Plots of Seasonal Means':
-            continue   # for testing, only do one plot set
+        #if sclass.name != ' 3- Line Plots of  Zonal Means':
+        #if sclass.name != ' 6- Horizontal Vector Plots of Seasonal Means':
+        #if sclass.name != ' 2- Line Plots of Annual Implied Northward Transport':
+        #    continue   # for testing, only do one plot set
+        print "jfp sname=",sname
         for seasonid in package.list_seasons():
             if seasonid != 'DJF':
                 continue # for testing, only do one season
-            for varid in package.list_variables( filetable1, filetable2 ):
-                #if varid!='PS':
+            print "jfp seasonid=",seasonid
+            for varid in package.list_variables( filetable1, filetable2, sname  ):
+                #if varid!='SWCF':
                 #    continue # for testing, only do one variable
+                print "jfp varid=",varid
                 plot = sclass( filetable1, filetable2, varid, seasonid )
                 res = plot.compute()
                 if res is not None: #>>> TO DO write res to a NetCDF file <<<<
                     number_diagnostic_plots += 1
                     print plot
                     pprint( res )
+                    for r in res:
+                        r.write_plot_data(outpath)
 print "total number of diagnostic plots generated =", number_diagnostic_plots
