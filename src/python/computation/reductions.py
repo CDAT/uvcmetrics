@@ -422,6 +422,9 @@ def reduce2lat_seasonal( mv, seasons=seasonsyr, vid=None ):
         # climatology() won't accept this incomplete specification
         timeax.units = 'months since 0001-01-01'
     mvseas = seasons.climatology(mv)
+    if mvseas is None:
+        # Among other cases, this can happen if mv has all missing values.
+        return None
     
     axes = allAxes( mv )
     axis_names = [ a.id for a in axes if a.id!='lat' and a.id!='time']
@@ -686,17 +689,8 @@ def aminusb_ax2( mv1, mv2 ):
     aminusb.initDomain( ab_axes )
     return aminusb
 
-def aminusb_2ax( mv1, mv2 ):
-    """returns a transient variable representing mv1-mv2, where mv1 and mv2 are variables, normally
-    transient variables, which depend on exactly two axes, typically lon-lat.
-    To perform the subtraction, the variables will be interpolated as necessary to the axes
-    which are minimal (fewest points) in each direction.
-    Note that if mv1 _or_ mv2 have a missing value at index i, then the return value (mv1-mv2)
-    will also have a missing value at index i.
-    """
+def reconcile_units( mv1, mv2 ):
     if hasattr(mv1,'units') and hasattr(mv2,'units') and mv1.units!=mv2.units:
-        print "jfp mv1",mv1.units,mv1[0:3,0:3]
-        print "jfp mv2",mv2.units,mv2[0:3,0:3]
         if mv1.units=='mb':
             mv1.units = 'mbar' # udunits uses mb for something else
         if mv2.units=='mb':
@@ -709,7 +703,17 @@ def aminusb_2ax( mv1, mv2 ):
         s,i = tmp.how(mv1.units)  # will raise an exception if conversion not possible
         mv2 = s*mv2 + i
         mv2.units = mv1.units
-        print "jfp mv2",mv2.units,mv2[0:3,0:3]
+    return mv1, mv2
+
+def aminusb_2ax( mv1, mv2 ):
+    """returns a transient variable representing mv1-mv2, where mv1 and mv2 are variables, normally
+    transient variables, which depend on exactly two axes, typically lon-lat.
+    To perform the subtraction, the variables will be interpolated as necessary to the axes
+    which are minimal (fewest points) in each direction.
+    Note that if mv1 _or_ mv2 have a missing value at index i, then the return value (mv1-mv2)
+    will also have a missing value at index i.
+    """
+    mv1, mv2 = reconcile_units( mv1, mv2 )
     missing = mv1.get_fill_value()
     axes1 = allAxes(mv1)
     axes2 = allAxes(mv2)
@@ -752,6 +756,7 @@ def aminusb_1ax( mv1, mv2 ):
     Note that if mv1 _or_ mv2 have a missing value at index i, then the return value (mv1-mv2)
     will also have a missing value at index i.
     """
+    mv1, mv2 = reconcile_units( mv1, mv2 )
     if hasattr(mv1,'units') and hasattr(mv2,'units') and mv1.units!=mv2.units:
         print "WARNING: aminusb_1ax1 is subtracting variables with different units!",mv1,mv1
     if mv1 is None or mv2 is None: return None
