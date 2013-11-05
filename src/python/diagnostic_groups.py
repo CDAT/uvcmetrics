@@ -22,7 +22,8 @@ class BasicDiagnosticGroup():
         This is meant an aid in writing menus for UV-CDAT, but may have other uses.
         """
         return []
-    def _list_variables( self, filetable1, filetable2=None, diagnostic_set="" ):
+    @staticmethod
+    def _list_variables( filetable1, filetable2=None, diagnostic_set_name="" ):
         """a generic implementation of the list_variables method, should be a good
         starting point for developing something for a particular diagnostic group"""
         if filetable1 is None: return []
