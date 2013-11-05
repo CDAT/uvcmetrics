@@ -12,6 +12,7 @@ from metrics.amwg.derivations.vertical import *
 from metrics.amwg.plot_data import plotspec, derived_var
 from metrics.frontend.version import version
 from metrics.amwg.derivations import *
+from metrics.diagnostic_groups import *
 from pprint import pprint
 import cProfile
 import vcs
@@ -77,6 +78,9 @@ class uvc_plotspec():
             self.presentation = vcsx.createboxfill()
         elif presentation == "Isoline":
             self.presentation = vcsx.createisoline()
+        else:
+            print "ERROR, uvc_plotspec doesn't recognize presentation",presentation
+            self.presentation = "Isofill"  # try to go on
         ## elif presentation == "":
         ##     self.resentation = vcsx.create
         self.vars = vars
@@ -85,6 +89,21 @@ class uvc_plotspec():
         self.type = type
     def __repr__(self):
         return ("uvc_plotspec %s: %s\n" % (self.presentation,self.title))
+    def write_plot_data( self, writer="" ):
+        # This is just experimental code, so far.
+        if len(self.title)<=0:
+            fname = 'foo'
+        else:
+            fname = self.title.strip()+'.nc'
+        filename = os.path.join(writer,fname)
+        print "output to",filename
+        writer = cdms2.open( filename, 'w' )    # later, choose a better name and a path!
+
+        for zax in self.vars:
+            writer.write( zax )
+
+        writer.close()
+
 
 def get_plot_data( plot_set, filetable1, filetable2, variable, season ):
     """returns a list of uvc_plotspec objects to be plotted.  The plot_set is a string from
@@ -206,14 +225,15 @@ class contour_diff_plot( plotspec ):
             zvars=[z1var,z2var], zfunc=aminusb_2ax, plottype='Isofill' )
 
 
-class plot_set(object):
+class plot_spec(object):
     # ...I made this a new-style class so we can call __subclasses__ .
+    package=BasicDiagnosticGroup  # Note that this is a class not an object.
     def __repr__( self ):
         if hasattr( self, 'plotall_id' ):
             return self.__class__.__name__+'('+self.plotall_id+')'
         else:
             return self.__class__.__name__+' object'
-    def __init__(self, seasonid='ANN'):
+    def __init__(self, seasonid='ANN' ):
         if seasonid=='ANN':
             # cdutil.times.getMonthIndex() (called by climatology()) doesn't recognize 'ANN'
             self._seasonid='JFMAMJJASOND'
@@ -334,7 +354,6 @@ class plot_set(object):
             self.plotspec_values[p] = [ self.plotspec_values[sp] for sp in ps ]
 
         return self
-
         
 # TO DO: reset axes, set 'x' or 'y' attributes, etc., as needed
 # C. Doutriaux commeting bellow seems to break import system, should be moved to script directory anyway
