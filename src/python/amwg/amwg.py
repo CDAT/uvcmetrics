@@ -12,11 +12,23 @@ class AMWG(BasicDiagnosticGroup):
     """This class defines features unique to the AMWG Diagnostics."""
     def __init__(self):
         pass
-    def list_variables( self, filetable1, filetable2=None, diagnostic_set="" ):
-        return BasicDiagnosticGroup._list_variables( self, filetable1, filetable2, diagnostic_set )
+    def list_variables( self, filetable1, filetable2=None, diagnostic_set_name="" ):
+        if diagnostic_set_name!="":
+            dset = self.list_diagnostic_sets().get( diagnostic_set_name, None )
+            if dset is None:
+                return self._list_variables( filetable1, filetable2 )
+            else:   # Note that dset is a class not an object.
+                return dset._list_variables( filetable1, filetable2 )
+        else:
+            return self._list_variables( filetable1, filetable2 )
+    @staticmethod
+    def _list_variables( filetable1, filetable2=None, diagnostic_set_name="" ):
+        return BasicDiagnosticGroup._list_variables( filetable1, filetable2, diagnostic_set_name )
     def list_diagnostic_sets( self ):
-        plot_sets = amwg_plot_set.__subclasses__()
+        plot_sets = amwg_plot_spec.__subclasses__()
         return { aps.name:aps for aps in plot_sets if hasattr(aps,'name') }
+        #return { aps.name:(lambda ft1, ft2, var, seas: aps(ft1,ft2,var,seas,self))
+        #         for aps in plot_sets if hasattr(aps,'name') }
         """ was:
         return {
             ' 1- Table of Global and Regional Means and RMS Error': plot_set1,
@@ -38,34 +50,38 @@ class AMWG(BasicDiagnosticGroup):
             }
          """
 
-class amwg_plot_set(plot_set): pass
+class amwg_plot_spec(plot_spec):
+    package = AMWG  # Note that this is a class not an object.
+    @staticmethod
+    def _list_variables( filetable1, filetable2=None ):
+        return amwg_plot_spec.package._list_variables( filetable1, filetable2, "amwg_plot_spec" )
 
 # plot set classes we need which I haven't done yet:
-class amwg_plot_set1(amwg_plot_set):
+class amwg_plot_set1(amwg_plot_spec):
     pass
-class amwg_plot_set4a(amwg_plot_set):
+class amwg_plot_set4a(amwg_plot_spec):
     pass
-class amwg_plot_set7(amwg_plot_set):
+class amwg_plot_set7(amwg_plot_spec):
     pass
-class amwg_plot_set8(amwg_plot_set):
+class amwg_plot_set8(amwg_plot_spec):
     pass
-class amwg_plot_set9(amwg_plot_set):
+class amwg_plot_set9(amwg_plot_spec):
     pass
-class amwg_plot_set10(amwg_plot_set):
+class amwg_plot_set10(amwg_plot_spec):
     pass
-class amwg_plot_set11(amwg_plot_set):
+class amwg_plot_set11(amwg_plot_spec):
     pass
-class amwg_plot_set12(amwg_plot_set):
+class amwg_plot_set12(amwg_plot_spec):
     pass
-class amwg_plot_set13(amwg_plot_set):
+class amwg_plot_set13(amwg_plot_spec):
     pass
-class amwg_plot_set14(amwg_plot_set):
+class amwg_plot_set14(amwg_plot_spec):
     pass
-class amwg_plot_set15(amwg_plot_set):
+class amwg_plot_set15(amwg_plot_spec):
     pass
 
 
-class amwg_plot_set2(amwg_plot_set):
+class amwg_plot_set2(amwg_plot_spec):
     """represents one plot from AMWG Diagnostics Plot Set 2
     Each such plot is a page consisting of two to four plots.  The horizontal
     axis is latitude and the vertical axis is heat or fresh-water transport.
@@ -77,13 +93,19 @@ class amwg_plot_set2(amwg_plot_set):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the derived variable to be plotted, e.g. 'Ocean_Heat'.
         The seasonid argument will be ignored."""
-        plot_set.__init__(self,seasonid)
-        self.plottype='2 line plot'
+        plot_spec.__init__(self,seasonid)
+        self.plottype='Yxvsx'
+        vars = self._list_variables(filetable1,filetable2)
+        if varid not in vars:
+            print "In amwg_plot_set2 __init__, ignoring varid input, will compute Ocean_Heat"
+            varid = vars[0]
         self._var_baseid = '_'.join([varid,'set2'])   # e.g. Ocean_Heat_set2
-        print "In amwg_plot_set2 __init__, ignoring varid input, will compute Ocean_Heat"
         print "Warning: amwg_plot_set2 only uses NCEP obs, and will ignore any other obs specification."
         if not self.computation_planned:
             self.plan_computation( filetable1, filetable2, varid, seasonid )
+    @staticmethod
+    def _list_variables( self, filetable1=None, filetable2=None ):
+        return ['Ocean_Heat']
     def plan_computation( self, filetable1, filetable2, varid, seasonid ):
         # CAM variables needed for heat transport: (SOME ARE SUPERFLUOUS <<<<<<)
         # FSNS, FLNS, FLUT, FSNTOA, FLNT, FSNT, SHFLX, LHFLX,
@@ -199,12 +221,12 @@ class amwg_plot_set2(amwg_plot_set):
         self.computation_planned = True
 
     def _results(self):
-        results = plot_set._results(self)
+        results = plot_spec._results(self)
         if results is None: return None
         return self.plotspec_values['CAM_NCEP_HEAT_TRANSPORT_ALL']
 
 
-class amwg_plot_set3(amwg_plot_set):
+class amwg_plot_set3(amwg_plot_spec):
     """represents one plot from AMWG Diagnostics Plot Set 3.
     Each such plot is a pair of plots: a 2-line plot comparing model with obs, and
     a 1-line plot of the model-obs difference.  A plot's x-axis is latitude, and
@@ -213,10 +235,10 @@ class amwg_plot_set3(amwg_plot_set):
     # N.B. In plot_data.py, the plotspec contained keys identifying reduced variables.
     # Here, the plotspec contains the variables themselves.
     name = ' 3- Line Plots of  Zonal Means'
-    def __init__( self, filetable1, filetable2, varid, seasonid ):
+    def __init__( self, filetable1, filetable2, varid, seasonid=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'."""
-        plot_set.__init__(self,seasonid)
+        plot_spec.__init__(self,seasonid)
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
         self._var_baseid = '_'.join([varid,seasonid,'set3'])   # e.g. CLT_DJF_set3
         if not self.computation_planned:
@@ -243,7 +265,7 @@ class amwg_plot_set3(amwg_plot_set):
         # At the moment this is very specific to plot set 3.  Maybe later I'll use a
         # more general method, to something like what's in plot_data.py, maybe not.
         # later this may be something more specific to the needs of the UV-CDAT GUI
-        results = plot_set._results(self)
+        results = plot_spec._results(self)
         if results is None: return None
         y1var = self.plot_a.y1vars[0]
         y2var = self.plot_a.y2vars[0]
@@ -269,7 +291,7 @@ class amwg_plot_set3(amwg_plot_set):
             title=' '.join([self._var_baseid,y1unam,'-',y2unam]))
         return [ plot_a_val, plot_b_val ]
 
-class amwg_plot_set4(amwg_plot_set):
+class amwg_plot_set4(amwg_plot_spec):
     """represents one plot from AMWG Diagnostics Plot Set 4.
     Each such plot is a set of three contour plots: one each for model output, observations, and
     the difference between the two.  A plot's x-axis is latitude and its y-axis is the level,
@@ -279,12 +301,12 @@ class amwg_plot_set4(amwg_plot_set):
     # N.B. In plot_data.py, the plotspec contained keys identifying reduced variables.
     # Here, the plotspec contains the variables themselves.
     name = ' 4- Vertical Contour Plots Zonal Means'
-    def __init__( self, filetable1, filetable2, varid, seasonid ):
+    def __init__( self, filetable1, filetable2, varid, seasonid=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'.
         At the moment we assume that data from filetable1 has CAM hybrid levels,
         and data from filetable2 has pressure levels."""
-        plot_set.__init__(self,seasonid)
+        plot_spec.__init__(self,seasonid)
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
         self._var_baseid = '_'.join([varid,seasonid,'set4'])   # e.g. CLT_DJF_set4
         if not self.computation_planned:
@@ -332,7 +354,7 @@ class amwg_plot_set4(amwg_plot_set):
         # At the moment this is very specific to plot set 4.  Maybe later I'll use a
         # more general method, to something like what's in plot_data.py, maybe not.
         # later this may be something more specific to the needs of the UV-CDAT GUI
-        results = plot_set._results(self)
+        results = plot_spec._results(self)
         if results is None: return None
         zavar = self.plot_a.zvars[0]
         zaval = self.variable_values[ zavar._vid ]
@@ -371,7 +393,7 @@ class amwg_plot_set4(amwg_plot_set):
             title=' '.join([self._var_baseid,z1unam,'-',z2unam]))
         return [ plot_a_val, plot_b_val, plot_c_val ]
 
-class amwg_plot_set5(amwg_plot_set):
+class amwg_plot_set5(amwg_plot_spec):
     """represents one plot from AMWG Diagnostics Plot Set 5.
     Each such plot is a set of three contour plots: one each for model output, observations, and
     the difference between the two.  A plot's x-axis is longitude and its y-axis is the latitude;
@@ -385,7 +407,7 @@ class amwg_plot_set5(amwg_plot_set):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the variable to be plotted, e.g. 'TREFHT'.
         seasonid is a string such as 'DJF'."""
-        plot_set.__init__(self,seasonid)
+        plot_spec.__init__(self,seasonid)
         self.plottype = 'Isofill'
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
 
@@ -426,12 +448,12 @@ class amwg_plot_set5(amwg_plot_set):
             }
         self.computation_planned = True
     def _results(self):
-        results = plot_set._results(self)
+        results = plot_spec._results(self)
         if results is None: return None
         return self.plotspec_values[self.plotall_id]
 
 
-class amwg_plot_set6(amwg_plot_set):
+class amwg_plot_set6(amwg_plot_spec):
     """represents one plot from AMWG Diagnostics Plot Set 6
     **** SO FAR, VECTOR PLOTS ARE NOT DONE; ONLY CONTOUR ****
     The contour plots of set 6 are identical to those of set 5.
@@ -444,7 +466,7 @@ class amwg_plot_set6(amwg_plot_set):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the variable to be plotted, e.g. 'TREFHT'.
         seasonid is a string such as 'DJF'."""
-        plot_set.__init__(self,seasonid)
+        plot_spec.__init__(self,seasonid)
         self.plottype = 'Isofill'
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
 
@@ -485,7 +507,7 @@ class amwg_plot_set6(amwg_plot_set):
             }
         self.computation_planned = True
     def _results(self):
-        results = plot_set._results(self)
+        results = plot_spec._results(self)
         if results is None: return None
         return self.plotspec_values[self.plotall_id]
 
