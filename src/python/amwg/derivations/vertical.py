@@ -14,7 +14,7 @@ plvlO = numpy.array([30.,50.,70.,100.,150.,200.,250.,300.,400.,500.,
 nplvlO = 16
 
 def verticalize( T, hyam, hybm, ps, levels=plvlO ):
-    """This is a wrapper around the function vinth2p.
+    """
     For data T with CAM's hybrid level coordinates, interpolates to
     the more standard pressure level coordinates and returns the results.
     The input arguments hyam, hybm, ps are the usual CAM veriables by that
