@@ -340,3 +340,32 @@ class plot_spec(object):
 
         return self
         
+class basic_plot_variable():
+    """represents a variable to be plotted.  This need not be an actual data variable;
+       it could be some derived quantity"""
+    def __init__( self, name, plotset_name, package ):
+        self.name = name
+        self.plotset_name = plotset_name
+        self.package = package
+    @staticmethod
+    def varoptions(*args,**kwargs):
+        """returns a represention of options specific to this variable.  Example dict items:
+         'vertical average':'vertavg'
+         '300 mbar level value':300
+        """
+        return None
+    
+class basic_level_variable(basic_plot_variable):
+    """represents a typical variable with a level axis, in a plot set which reduces the level
+    axis."""
+    @staticmethod
+    def varoptions():
+        """returns a represention of options specific to this variable.  That is, how should
+        one reduce the level axis?  The default is to average along that axis.  But other options
+        are to pick out the variable's value at some particular pressure level, e.g. 300 mb.
+        """
+        opts ={
+            "default":"vertical average", "vertical average":"vertical average",
+            "200 mbar":200, "300 mbar":300, "500 mbar":500, "850 mbar":850 }
+        return opts
+    
