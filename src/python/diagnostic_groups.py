@@ -22,6 +22,26 @@ class BasicDiagnosticGroup():
         This is meant an aid in writing menus for UV-CDAT, but may have other uses.
         """
         return []
+    def all_variables( self, filetable1, filetable2=None, diagnostic_set_name="" ):
+        """like list_variables but returns a dict, varname:varclass items suitable for a meniu.
+        Instantiation is like newvar = varclass( varname, diagnpstoc_set_name, package )
+        """
+        if diagnostic_set_name!="":
+            dset = self.list_diagnostic_sets().get( diagnostic_set_name, None )
+            print "jfp in BDG.all_variables, dset=",dset
+            if dset is None:
+                varlist = self._list_variables( filetable1, filetable2 )
+            else:   # Note that dset is a class not an object.
+                return dset._all_variables( filetable1, filetable2 )
+        else:
+            varlist = self._list_variables( filetable1, filetable2 )
+        from metrics.frontend.uvcdat import basic_plot_variable
+        return { vn: basic_plot_variable for vn in varlist }
+    @staticmethod
+    def _all_variables( filetable1, filetable2=None, diagnostic_set_name="" ):
+        varlist = BasicDiagnosticGroup._list_variables( filetable1, filetable2, diagnostic_set_name )
+        from metrics.frontend.uvcdat import basic_plot_variable
+        return { vn: basic_plot_variable for vn in varlist }
     @staticmethod
     def _list_variables( filetable1, filetable2=None, diagnostic_set_name="" ):
         """a generic implementation of the list_variables method, should be a good
