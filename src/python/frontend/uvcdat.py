@@ -41,21 +41,6 @@ def clear_filetable( search_path, cache_path, search_filter=None ):
     if os.path.isfile(cache_path):
         os.remove(cache_path)
 
-def list_variables( filetable1, filetable2=None, diagnostic_group="AMWG", diagnostic_set="" ):
-    """returns a sorted list of variable ids (strings) found in both filetables provided
-    You can provide one of two filetables.  You also can provide a diagnostic group and set, e.g.
-    "AMWG and "plot_set3". At the moment these is ignored, but in the future the returned variable
-    list will be limited to those which work with the selected diagnostic.
-    This is meant an aid in writing menus.  However it only tells you about the original variables,
-    i.e. what's in the data files.  It doesn't tell you about what derived data could be computed.
-    >>>> THIS FUNCTION IS DEPRECATED.  Its replacement is BasicDiagnosticGroup.list_variables() <<<<
-    """
-    print "WARNING - deprecated function list_variables() has been called."
-    if diagnostic_group=='AMWG':
-        from metrics.amwg.amwg import AMWG
-        dg = AMWG()
-    return dg.list_variables( filetable1, filetable2, diagnostic_set )
-
 class uvc_plotspec():
     """This is a simplified version of the plotspec class, intended for the UV-CDAT GUI.
     Once it stabilizes, I may replace the plotspec class with this one.
