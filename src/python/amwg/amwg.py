@@ -6,6 +6,7 @@
 from metrics.diagnostic_groups import *
 from metrics.computation.reductions import *
 from metrics.frontend.uvcdat import *
+from unidata import udunits
 import cdutil.times
 
 class AMWG(BasicDiagnosticGroup):
@@ -512,3 +513,64 @@ class amwg_plot_set6(amwg_plot_spec):
         return self.plotspec_values[self.plotall_id]
 
 
+class amwg_jerry( amwg_plot_spec ):
+    """200 mb heights from variable Z3, for Jerry Potter"""
+    name = 'Jerry Potter'
+    def __init__( self, filetable1, filetable2, varid, seasonid=None ):
+        plot_spec.__init__(self,seasonid)
+        self.plottype = 'Isofill'
+        self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
+
+        self._var_baseid = '_'.join([varid,'set6'])   # e.g. TREFHT_set6
+        self.plot1_id = filetable1._id+'_'+varid+'_'+seasonid
+        self.plotall_id = filetable1._id+'_'+varid+'_'+seasonid
+
+        if not self.computation_planned:
+            self.plan_computation( filetable1, filetable2, varid, seasonid )
+    @staticmethod
+    def _list_variables( self, filetable1=None, filetable2=None ):
+        return ['Z3']  # actually any 3-D variable would be ok
+    def plan_computation( self, filetable1, filetable2, varid, seasonid ):
+        # >>> Instead of reduce2latlon, I want to 
+        # (1) Average var (Z3 for now) over time, thus reducing from Z3(time,hlev,lat,lon)
+        # to Z3b(hlev,lat,lon) .  This is all that happens at the reduced_variables level.
+        # (2) convert Z3b from hybrid (hlev) to pressure (plev) level coordinates- Z3c(plev,lat,lon)
+        # This Z3c is a derived variable
+        # (3) restrict Z3 to the 200 MB level, thus reducing it to Z3d(lat,lon)
+        # This will have to be as the zfunc in the final plot definition.
+
+        # In calling reduce_time_seasonal, I am assuming that no variable has axes other than (time,
+        # lev,lat,lon).  If there were another axis, then we'd need a new function which reduces it.
+        self.reduced_variables = {
+            varid+'_1': reduced_variable(  # var=var(time,lev,lat,lon)
+                variableid=varid, filetable=filetable1, reduced_var_id=varid+'_1',
+                reduction_function=(lambda x,vid: reduce_time_seasonal( x, self.season, vid ) ) ),
+            'hyam': reduced_variable(   # hyam=hyam(lev)
+                variableid='hyam', filetable=filetable1, reduced_var_id='hyam',
+                reduction_function=(lambda x,vid=None: x) ),
+            'hybm': reduced_variable(   # hybm=hybm(lev)
+                variableid='hybm', filetable=filetable1, reduced_var_id='hybm',
+                reduction_function=(lambda x,vid=None: x) ),
+            'ps': reduced_variable(     # ps=ps(time,lat,lon)
+                variableid='PS', filetable=filetable1, reduced_var_id='ps',
+                reduction_function=(lambda x,vid=None: reduce_time_seasonal( x, self.season, vid ) ) )
+            }
+        vid1 = varid+'_p'+'_1'
+        self.derived_variables = {
+            vid1: derived_var( vid=vid1, inputs=[ varid+'_1', 'hyam', 'hybm', 'ps' ], func=verticalize )
+            }
+        pselect = udunits(200,'mbar')
+        self.single_plotspecs = {
+            self.plot1_id: plotspec(
+                vid = varid+'_1',
+                zvars = [vid1],  zfunc = (lambda z: select_lev( z, pselect ) ),
+                plottype = self.plottype )
+            }
+        self.composite_plotspecs = {
+            self.plotall_id: [ self.plot1_id ]            
+            }
+        self.computation_planned = True
+    def _results(self):
+        results = plot_spec._results(self)
+        if results is None: return None
+        return self.plotspec_values[self.plotall_id]
