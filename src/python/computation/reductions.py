@@ -59,7 +59,7 @@ def lonAxis( mv ):
     return lon_axis
 
 def levAxis( mv ):
-    "returns the latitude axis, if any, of a variable mv"
+    "returns the level axis, if any, of a variable mv"
     lev_axis = None
     for ax in allAxes(mv):
         if ax.id=='lev':
@@ -477,7 +477,7 @@ def reduce2latlon_seasonal( mv, seasons=seasonsyr, vid=None ):
     return avmv
 
 def reduce_time_seasonal( mv, seasons=seasonsyr, vid=None ):
-    """as reduce2lat_seasonal, but both all non-time axes are retained.
+    """as reduce2lat_seasonal, but all non-time axes are retained.
     """
     if vid==None:
         vid = 'reduced_'+mv.id
@@ -504,6 +504,34 @@ def reduce_time_seasonal( mv, seasons=seasonsyr, vid=None ):
     avmv = delete_singleton_axis( avmv, vid='time' )
     avmv.units = mv.units
     return avmv
+
+def select_lev( mv, slev ):
+    """Input is a level-dependent variable mv and a level slev to select.
+    slev is an instance of udunits - thus it has a value and a units attribute.
+    This function will create and return a new variable mvs without a level axis.
+    The values of mvs correspond to the values of mv with level set to slev.
+    Interpolation isn't done yet, but is planned !"""
+    levax = levAxis(mv)
+    # Get ig, the first index for which levax[ig]>slev
+    # Assume that levax values are monotonic.
+    dummy,slev = reconcile_units( levax, slev )  # new slev has same units as levax
+    if levax[0]<=levax[-1]:
+        ids = numpy.where( levax[:]>=slev.value )    # assumes levax values are monotonic increasing
+    else:
+        ids = numpy.where( levax[:]<=slev.value )    # assumes levax values are monotonic decreasing
+    if ids is None or len(ids)==0:
+        ig = len(levax)-1
+    else:
+        ig = ids[0][0]
+    # Crude fist cut: don't interpolate, just return a value
+    if levax == mv.getAxisList()[0]:
+        mvs = cdms2.createVariable( mv[ig:ig+1,...], copy=1 )  # why ig:ig+1 rather than ig?  bug workaround.
+    elif levax == mv.getAxisList()[1]:
+        mvs = cdms2.createVariable( mv[:,ig:ig+1,...], copy=1 )
+    else:
+        print "ERROR, select_lev() does not support level axis except as first or second dimentions"
+        return None
+    return mvs
 
 def latvar( mv ):
     """returns a transient variable which is dimensioned along the lat axis
