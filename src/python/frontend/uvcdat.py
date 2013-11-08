@@ -234,7 +234,7 @@ class plot_spec(object):
         else:
             return self.__class__.__name__+' object'
     def __init__(self, seasonid='ANN' ):
-        if seasonid=='ANN':
+        if seasonid=='ANN' or seasonid is None:
             # cdutil.times.getMonthIndex() (called by climatology()) doesn't recognize 'ANN'
             self._seasonid='JFMAMJJASOND'
         else:
@@ -348,7 +348,7 @@ class plot_spec(object):
             if vars==[]:
                 continue
             labels = [xlab,ylab,zlab]
-            title = ' '.join(labels)  # do this better later
+            title = ' '.join(labels)+' '+self._seasonid  # do this better later
             self.plotspec_values[p] = uvc_plotspec( vars, self.plottype, labels, title )
         for p,ps in self.composite_plotspecs.iteritems():
             self.plotspec_values[p] = [ self.plotspec_values[sp] for sp in ps ]
