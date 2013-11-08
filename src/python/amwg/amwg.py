@@ -25,6 +25,9 @@ class AMWG(BasicDiagnosticGroup):
     @staticmethod
     def _list_variables( filetable1, filetable2=None, diagnostic_set_name="" ):
         return BasicDiagnosticGroup._list_variables( filetable1, filetable2, diagnostic_set_name )
+    @staticmethod
+    def _all_variables( filetable1, filetable2, diagnostic_set_name ):
+        return BasicDiagnosticGroup._all_variables( filetable1, filetable2, diagnostic_set_name )
     def list_diagnostic_sets( self ):
         plot_sets = amwg_plot_spec.__subclasses__()
         return { aps.name:aps for aps in plot_sets if hasattr(aps,'name') }
@@ -56,6 +59,9 @@ class amwg_plot_spec(plot_spec):
     @staticmethod
     def _list_variables( filetable1, filetable2=None ):
         return amwg_plot_spec.package._list_variables( filetable1, filetable2, "amwg_plot_spec" )
+    @staticmethod
+    def _all_variables( filetable1, filetable2=None ):
+        return amwg_plot_spec.package._all_variables( filetable1, filetable2, "amwg_plot_spec" )
 
 # plot set classes we need which I haven't done yet:
 class amwg_plot_set1(amwg_plot_spec):
@@ -529,7 +535,10 @@ class amwg_jerry( amwg_plot_spec ):
             self.plan_computation( filetable1, filetable2, varid, seasonid )
     @staticmethod
     def _list_variables( self, filetable1=None, filetable2=None ):
-        return ['Z3']  # actually any 3-D variable would be ok
+        return ['Z3']  # actually any 3-D variable would work
+    @staticmethod
+    def _all_variables( self, filetable1=None, filetable2=None ):
+        return {'Z3':basic_level_variable}  # actually any 3-D variable would work
     def plan_computation( self, filetable1, filetable2, varid, seasonid ):
         # >>> Instead of reduce2latlon, I want to 
         # (1) Average var (Z3 for now) over time, thus reducing from Z3(time,hlev,lat,lon)
