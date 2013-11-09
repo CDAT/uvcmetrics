@@ -28,7 +28,6 @@ class BasicDiagnosticGroup():
         """
         if diagnostic_set_name!="":
             dset = self.list_diagnostic_sets().get( diagnostic_set_name, None )
-            print "jfp in BDG.all_variables, dset=",dset
             if dset is None:
                 varlist = self._list_variables( filetable1, filetable2 )
             else:   # Note that dset is a class not an object.
