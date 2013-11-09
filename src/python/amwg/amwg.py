@@ -8,6 +8,7 @@ from metrics.computation.reductions import *
 from metrics.frontend.uvcdat import *
 from unidata import udunits
 import cdutil.times
+from numbers import Number
 
 class AMWG(BasicDiagnosticGroup):
     """This class defines features unique to the AMWG Diagnostics."""
@@ -96,7 +97,7 @@ class amwg_plot_set2(amwg_plot_spec):
     The data presented is averaged over everything but latitude.
     """
     name = ' 2- Line Plots of Annual Implied Northward Transport'
-    def __init__( self, filetable1, filetable2, varid, seasonid=None ):
+    def __init__( self, filetable1, filetable2, varid, seasonid=None, aux=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the derived variable to be plotted, e.g. 'Ocean_Heat'.
         The seasonid argument will be ignored."""
@@ -242,7 +243,7 @@ class amwg_plot_set3(amwg_plot_spec):
     # N.B. In plot_data.py, the plotspec contained keys identifying reduced variables.
     # Here, the plotspec contains the variables themselves.
     name = ' 3- Line Plots of  Zonal Means'
-    def __init__( self, filetable1, filetable2, varid, seasonid=None ):
+    def __init__( self, filetable1, filetable2, varid, seasonid=None, aux=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'."""
         plot_spec.__init__(self,seasonid)
@@ -308,7 +309,7 @@ class amwg_plot_set4(amwg_plot_spec):
     # N.B. In plot_data.py, the plotspec contained keys identifying reduced variables.
     # Here, the plotspec contains the variables themselves.
     name = ' 4- Vertical Contour Plots Zonal Means'
-    def __init__( self, filetable1, filetable2, varid, seasonid=None ):
+    def __init__( self, filetable1, filetable2, varid, seasonid=None, aux=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'.
         At the moment we assume that data from filetable1 has CAM hybrid levels,
@@ -410,7 +411,7 @@ class amwg_plot_set5(amwg_plot_spec):
     time-averaged with times restricted to the specified season, DJF, JJA, or ANN.
     """
     name = ' 5- Horizontal Contour Plots of Seasonal Means'
-    def __init__( self, filetable1, filetable2, varid, seasonid=None ):
+    def __init__( self, filetable1, filetable2, varid, seasonid=None, aux=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the variable to be plotted, e.g. 'TREFHT'.
         seasonid is a string such as 'DJF'."""
@@ -469,7 +470,7 @@ class amwg_plot_set6(amwg_plot_spec):
     normally a world map will be overlaid.
     """
     name = ' 6- Horizontal Vector Plots of Seasonal Means'
-    def __init__( self, filetable1, filetable2, varid, seasonid=None ):
+    def __init__( self, filetable1, filetable2, varid, seasonid=None, aux=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the variable to be plotted, e.g. 'TREFHT'.
         seasonid is a string such as 'DJF'."""
@@ -522,7 +523,7 @@ class amwg_plot_set6(amwg_plot_spec):
 class amwg_jerry( amwg_plot_spec ):
     """200 mb heights from variable Z3, for Jerry Potter"""
     name = 'Jerry Potter'
-    def __init__( self, filetable1, filetable2, varid, seasonid=None ):
+    def __init__( self, filetable1, filetable2, varid, seasonid=None, aux=None ):
         plot_spec.__init__(self,seasonid)
         self.plottype = 'Isofill'
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
@@ -532,14 +533,14 @@ class amwg_jerry( amwg_plot_spec ):
         self.plotall_id = filetable1._id+'_'+varid+'_'+seasonid
 
         if not self.computation_planned:
-            self.plan_computation( filetable1, filetable2, varid, seasonid )
+            self.plan_computation( filetable1, filetable2, varid, seasonid, aux )
     @staticmethod
     def _list_variables( self, filetable1=None, filetable2=None ):
         return ['Z3']  # actually any 3-D variable would work
     @staticmethod
     def _all_variables( self, filetable1=None, filetable2=None ):
         return {'Z3':basic_level_variable}  # actually any 3-D variable would work
-    def plan_computation( self, filetable1, filetable2, varid, seasonid ):
+    def plan_computation( self, filetable1, filetable2, varid, seasonid, aux ):
         # >>> Instead of reduce2latlon, I want to 
         # (1) Average var (Z3 for now) over time, thus reducing from Z3(time,hlev,lat,lon)
         # to Z3b(hlev,lat,lon) .  This is all that happens at the reduced_variables level.
@@ -550,20 +551,25 @@ class amwg_jerry( amwg_plot_spec ):
 
         # In calling reduce_time_seasonal, I am assuming that no variable has axes other than (time,
         # lev,lat,lon).  If there were another axis, then we'd need a new function which reduces it.
-        self.reduced_variables = {
-            varid+'_1': reduced_variable(  # var=var(time,lev,lat,lon)
-                variableid=varid, filetable=filetable1, reduced_var_id=varid+'_1',
-                reduction_function=(lambda x,vid: reduce_time_seasonal( x, self.season, vid ) ) ),
-            'hyam': reduced_variable(   # hyam=hyam(lev)
-                variableid='hyam', filetable=filetable1, reduced_var_id='hyam',
-                reduction_function=(lambda x,vid=None: x) ),
-            'hybm': reduced_variable(   # hybm=hybm(lev)
-                variableid='hybm', filetable=filetable1, reduced_var_id='hybm',
-                reduction_function=(lambda x,vid=None: x) ),
-            'ps': reduced_variable(     # ps=ps(time,lat,lon)
-                variableid='PS', filetable=filetable1, reduced_var_id='ps',
-                reduction_function=(lambda x,vid=None: reduce_time_seasonal( x, self.season, vid ) ) )
-            }
+        if isinstance(aux,Number):
+            self.reduced_variables = {
+                varid+'_1': reduced_variable(  # var=var(time,lev,lat,lon)
+                    variableid=varid, filetable=filetable1, reduced_var_id=varid+'_1',
+                    reduction_function=(lambda x,vid: reduce_time_seasonal( x, self.season, vid ) ) ),
+                'hyam': reduced_variable(   # hyam=hyam(lev)
+                    variableid='hyam', filetable=filetable1, reduced_var_id='hyam',
+                    reduction_function=(lambda x,vid=None: x) ),
+                'hybm': reduced_variable(   # hybm=hybm(lev)
+                    variableid='hybm', filetable=filetable1, reduced_var_id='hybm',
+                    reduction_function=(lambda x,vid=None: x) ),
+                'ps': reduced_variable(     # ps=ps(time,lat,lon)
+                    variableid='PS', filetable=filetable1, reduced_var_id='ps',
+                    reduction_function=(lambda x,vid=None: reduce_time_seasonal( x, self.season, vid ) ) )
+                }
+        else:
+            print "ERROR, for var=",varid," aux=",aux," is not supported yet!"
+            self.plotall_id = None
+            return None
         vid1 = varid+'_p'+'_1'
         self.derived_variables = {
             vid1: derived_var( vid=vid1, inputs=[ varid+'_1', 'hyam', 'hybm', 'ps' ], func=verticalize )
@@ -580,6 +586,7 @@ class amwg_jerry( amwg_plot_spec ):
             }
         self.computation_planned = True
     def _results(self):
+        if self.plotall_id is None: return None
         results = plot_spec._results(self)
         if results is None: return None
         return self.plotspec_values[self.plotall_id]
