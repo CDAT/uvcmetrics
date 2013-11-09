@@ -218,7 +218,7 @@ class plot_spec(object):
             return self.__class__.__name__+'('+self.plotall_id+')'
         else:
             return self.__class__.__name__+' object'
-    def __init__(self, seasonid='ANN' ):
+    def __init__(self, seasonid='ANN', *args ):
         if seasonid=='ANN' or seasonid is None:
             # cdutil.times.getMonthIndex() (called by climatology()) doesn't recognize 'ANN'
             self._seasonid='JFMAMJJASOND'
@@ -365,7 +365,7 @@ class basic_level_variable(basic_plot_variable):
         are to pick out the variable's value at some particular pressure level, e.g. 300 mb.
         """
         opts ={
-            "default":"vertical average", "vertical average":"vertical average",
+            " default":"vertical average", " vertical average":"vertical average",
             "200 mbar":200, "300 mbar":300, "500 mbar":500, "850 mbar":850 }
         return opts
     
