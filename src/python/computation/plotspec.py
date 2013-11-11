@@ -9,6 +9,8 @@ class derived_var:
         self._outputs = outputs
         self._func = func
     def derive( self, vardict ):
+        if None in [ vardict[inp] for inp in self._inputs ]:
+            return None
         output = apply( self._func, [ vardict[inp] for inp in self._inputs ] )
         if type(output) is tuple or type(tuple) is list:
             for o in output:
