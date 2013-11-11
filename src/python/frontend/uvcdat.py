@@ -260,7 +260,16 @@ class plot_spec(object):
             value = self.reduced_variables[v].reduce()
             if value is None: return None
             self.variable_values[v] = value
+        postponed = []   # derived variables we won't do right away
         for v in self.derived_variables.keys():
+            value = self.derived_variables[v].derive(self.variable_values)
+            if value is None:
+                # couldn't compute v - probably it depends on another derived variables which
+                # hasn't been computed yet
+                postponed.append(v)
+            else:
+                self.variable_values[v] = value
+        for v in postponed:   # Finish up with derived variables
             value = self.derived_variables[v].derive(self.variable_values)
             if value is None: return None
             self.variable_values[v] = value
