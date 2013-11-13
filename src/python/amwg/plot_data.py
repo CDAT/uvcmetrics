@@ -4,8 +4,8 @@
 # There's a whole lot left to do!
 
 import cdms2, math
-from metrics.io.filetable import *
-from metrics.io.findfiles import *
+from metrics.fileio.filetable import *
+from metrics.fileio.findfiles import *
 from metrics.computation.reductions import *
 from metrics.computation.plotspec import *
 from metrics.amwg.derivations.oaht import *

@@ -6,7 +6,7 @@
 # This is basically a simplified version of plot_data.py.
 
 import cdms2, math
-from metrics.io.filetable import *
+from metrics.fileio.filetable import *
 from metrics.computation.reductions import *
 from metrics.amwg.derivations.oaht import *
 from metrics.amwg.derivations.ncl_isms import *

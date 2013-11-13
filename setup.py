@@ -24,7 +24,7 @@ f.close()
 
 Version="0.1.0"
 packages = {'metrics': 'src/python',
-              'metrics.io': 'src/python/io',
+              'metrics.fileio': 'src/python/fileio',
               'metrics.graphics': 'src/python/graphics',
               'metrics.frontend': 'src/python/frontend',
               'metrics.computation': 'src/python/computation',
@@ -40,7 +40,7 @@ setup (name = "metrics",
        description = "model metrics tools",
        url = "http://uvcdat.llnl.gov",
        packages = ['metrics',
-                   'metrics.io',
+                   'metrics.fileio',
                    'metrics.wgne',
                    'metrics.amwg',
                    'metrics.amwg.derivations',

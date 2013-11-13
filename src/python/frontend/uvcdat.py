@@ -4,8 +4,8 @@
 
 import hashlib, os, pickle, sys, os
 from metrics import *
-from metrics.io.filetable import *
-from metrics.io.findfiles import *
+from metrics.fileio.filetable import *
+from metrics.fileio.findfiles import *
 from metrics.computation.reductions import *
 from metrics.amwg import *
 from metrics.amwg.derivations.vertical import *
@@ -23,7 +23,6 @@ vcsx=vcs.init()   # This belongs in one of the GUI files, e.g.diagnosticsDockWid
 def setup_filetable( search_path, cache_path, ftid=None, search_filter=None ):
     print "jfp in setup_filetable, search_path=",search_path," search_filter=",search_filter
     #try:
-    from metrics.io.findfiles import dirtree_datafiles
     datafiles = dirtree_datafiles( search_path, search_filter )
     return datafiles.setup_filetable( cache_path, ftid )
     #except Exception, err:

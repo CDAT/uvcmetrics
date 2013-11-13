@@ -7,8 +7,8 @@
 
 import hashlib, os, pickle, sys, os
 from metrics import *
-from metrics.io.filetable import *
-from metrics.io.findfiles import *
+from metrics.fileio.filetable import *
+from metrics.fileio.findfiles import *
 from metrics.computation.reductions import *
 from metrics.amwg import *
 from metrics.amwg.derivations.vertical import *

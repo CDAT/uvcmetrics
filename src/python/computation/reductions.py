@@ -13,8 +13,7 @@ from datetime import datetime as datetime
 from unidata import udunits
 from cdutil import averager
 from metrics.amwg.derivations import press2alt
-from metrics.io.filetable import *
-from metrics.io.filetable import *
+from metrics.fileio.filetable import *
 #from climo_test import cdutil_climatology
 
 seasonsDJF=cdutil.times.Seasons(['DJF'])

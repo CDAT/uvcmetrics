@@ -2,7 +2,7 @@
 
 # Features common to standard diagnostics from all groups, e.g. AMWG, LMWG.
 
-from metrics.io.filetable import basic_filetable
+from metrics.fileio.filetable import basic_filetable
 
 def diagnostics_menu():
     from metrics.amwg.amwg import AMWG
