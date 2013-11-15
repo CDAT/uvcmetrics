@@ -31,10 +31,12 @@ seasonsmons=cdutil.times.Seasons(
 
 def allAxes( mv ):
     """returns a list of axes of a variable mv"""
+    if mv is None: return None
     return mv.getAxisList()
 
 def latAxis( mv ):
     "returns the latitude axis, if any, of a variable mv"
+    if mv is None: return None
     lat_axis = None
     for ax in allAxes(mv):
         if ax.id=='lat': lat_axis = ax
@@ -42,6 +44,7 @@ def latAxis( mv ):
 
 def latAxis2( mv ):
     "returns the latitude axis, if any, of a variable mv; and the index in its axis list"
+    if mv is None: return None
     lat_axis = None
     idx = None
     for i,ax in enumerate(allAxes(mv)):
@@ -52,6 +55,7 @@ def latAxis2( mv ):
 
 def lonAxis( mv ):
     "returns the longitude axis, if any, of a variable mv"
+    if mv is None: return None
     lon_axis = None
     for ax in allAxes(mv):
         if ax.id=='lon': lon_axis = ax
@@ -59,6 +63,7 @@ def lonAxis( mv ):
 
 def levAxis( mv ):
     "returns the level axis, if any, of a variable mv"
+    if mv is None: return None
     lev_axis = None
     for ax in allAxes(mv):
         if ax.id=='lev':
@@ -71,6 +76,7 @@ def levAxis( mv ):
 
 def timeAxis( mv ):
     "returns the time axis, if any, of a variable mv"
+    if mv is None: return None
     time_axis = None
     for ax in allAxes(mv):
         if ax.id=='time': time_axis = ax
@@ -78,6 +84,7 @@ def timeAxis( mv ):
 
 def tllAxes( mv ):
     "returns the time,latitude, and longitude axes, if any, of a variable mv"
+    if mv is None: return None
     for ax in allAxes(mv):
         if ax.id=='lat': lat_axis = ax
         if ax.id=='lon': lon_axis = ax
@@ -744,6 +751,7 @@ def aminusb_2ax( mv1, mv2 ):
     missing = mv1.get_fill_value()
     axes1 = allAxes(mv1)
     axes2 = allAxes(mv2)
+    if axes1 is None or axes2 is None: return None
     if len(axes1)!=2: print "ERROR @1, wrong number of axes for aminusb_2ax",axes1
     if len(axes2)!=2: print "ERROR @2, wrong number of axes for aminusb_2ax",axes2
     if len(axes1[0])==len(axes2[0]):
