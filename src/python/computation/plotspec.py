@@ -10,7 +10,7 @@ class derived_var:
         self._func = func
     def derive( self, vardict ):
         # error from checking this way!... if None in [ vardict[inp] for inp in self._inputs ]:
-        dictvals = [ vardict[inp] for inp in self._inputs ]
+        dictvals = [ vardict.get(inp,None) for inp in self._inputs ]
         nonevals = [nn for nn in dictvals if nn is None]
         if len(nonevals)>0:
             return None
@@ -18,10 +18,8 @@ class derived_var:
         if type(output) is tuple or type(tuple) is list:
             for o in output:
                 o._vid  = self._vid
-                print "jfp o._vid=",o._vid
         elif output is not None:
             output._vid = self._vid
-            print "jfp output._vid=",output._vid
         return output
 
 class plotspec:
