@@ -30,7 +30,10 @@ class AMWG(BasicDiagnosticGroup):
     def _all_variables( filetable1, filetable2, diagnostic_set_name ):
         return BasicDiagnosticGroup._all_variables( filetable1, filetable2, diagnostic_set_name )
     def list_diagnostic_sets( self ):
-        plot_sets = amwg_plot_spec.__subclasses__()
+        psets = amwg_plot_spec.__subclasses__()
+        plot_sets = psets
+        for cl in psets:
+            plot_sets = plot_sets + cl.__subclasses__()
         return { aps.name:aps for aps in plot_sets if hasattr(aps,'name') }
         #return { aps.name:(lambda ft1, ft2, var, seas: aps(ft1,ft2,var,seas,self))
         #         for aps in plot_sets if hasattr(aps,'name') }
@@ -401,20 +404,24 @@ class amwg_plot_set4(amwg_plot_spec):
             title=' '.join([self._var_baseid,z1unam,'-',z2unam]))
         return [ plot_a_val, plot_b_val, plot_c_val ]
 
+""" old version...
 class amwg_plot_set5(amwg_plot_spec):
-    """represents one plot from AMWG Diagnostics Plot Set 5.
+    #" " "
+    represents one plot from AMWG Diagnostics Plot Set 5.
     Each such plot is a set of three contour plots: one each for model output, observations, and
     the difference between the two.  A plot's x-axis is longitude and its y-axis is the latitude;
     normally a world map will be overlaid.
     The model and obs plots should have contours at the same values of
     their variable.  The data presented is a climatological mean - i.e.,
     time-averaged with times restricted to the specified season, DJF, JJA, or ANN.
-    """
+    #" " "
     name = ' 5- Horizontal Contour Plots of Seasonal Means'
     def __init__( self, filetable1, filetable2, varid, seasonid=None, aux=None ):
-        """filetable1, filetable2 should be filetables for model and obs.
+        #" " "
+        filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the variable to be plotted, e.g. 'TREFHT'.
-        seasonid is a string such as 'DJF'."""
+        seasonid is a string such as 'DJF'.
+        #" " "
         plot_spec.__init__(self,seasonid)
         self.plottype = 'Isofill'
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
@@ -459,17 +466,17 @@ class amwg_plot_set5(amwg_plot_spec):
         results = plot_spec._results(self)
         if results is None: return None
         return self.plotspec_values[self.plotall_id]
+"""
 
-
-class amwg_plot_set6(amwg_plot_spec):
-    """represents one plot from AMWG Diagnostics Plot Set 6
-    **** SO FAR, VECTOR PLOTS ARE NOT DONE; ONLY CONTOUR ****
-    The contour plots of set 6 are identical to those of set 5.
-    Each such plot is a set of three contour plots: one each for model output, observations, and
+class amwg_plot_set5and6(amwg_plot_spec):
+    """represents one plot from AMWG Diagnostics Plot Sets 5 and 6
+    NCAR has the same menu for both plot sets, and we want to ease the transition from NCAR
+    diagnostics to these; so both plot sets will be done together here as well.
+    **** SO FAR, PLOT 6 VECTOR PLOTS ARE NOT DONE; ONLY Plot 5 CONTOUR ****
+    Each contour plot is a set of three contour plots: one each for model output, observations, and
     the difference between the two.  A plot's x-axis is longitude and its y-axis is the latitude;
     normally a world map will be overlaid.
     """
-    name = ' 6- Horizontal Vector Plots of Seasonal Means'
     def __init__( self, filetable1, filetable2, varid, seasonid=None, aux=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the variable to be plotted, e.g. 'TREFHT'.
@@ -485,8 +492,20 @@ class amwg_plot_set6(amwg_plot_spec):
         self.plotall_id = filetable1._id+'_'+filetable2._id+'_'+varid+'_'+seasonid
 
         if not self.computation_planned:
-            self.plan_computation( filetable1, filetable2, varid, seasonid )
-    def plan_computation( self, filetable1, filetable2, varid, seasonid ):
+            self.plan_computation( filetable1, filetable2, varid, seasonid, aux )
+    @staticmethod
+    def _all_variables( filetable1, filetable2=None ):
+        allvars = amwg_plot_spec.package._all_variables( filetable1, filetable2, "amwg_plot_spec" )
+        allvars['Z3'] = basic_level_variable # temporary, the right thing is to find level-dep't vars
+        return allvars
+    def plan_computation( self, filetable1, filetable2, varid, seasonid, aux=None ):
+        if isinstance(aux,Number):
+            return self.plan_computation_level_surface( filetable1, filetable2, varid, seasonid, aux )
+        else:
+            return self.plan_computation_normal_countours( filetable1, filetable2, varid, seasonid, aux )
+    def plan_computation_normal_countours( self, filetable1, filetable2, varid, seasonid, aux=None ):
+        """Set up for a lat-lon contour plot, as in plot set 5.  Data is averaged over all other
+        axes."""
         self.reduced_variables = {
             varid+'_1': reduced_variable(
                 variableid=varid, filetable=filetable1, reduced_var_id=varid+'_1',
@@ -514,10 +533,96 @@ class amwg_plot_set6(amwg_plot_spec):
             self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id ]            
             }
         self.computation_planned = True
+    def plan_computation_level_surface( self, filetable1, filetable2, varid, seasonid, aux ):
+        """Set up for a lat-lon contour plot, averaged in other directions - except that if the
+        variable to be plotted depend on level, it is not averaged over level.  Instead, the value
+        at a single specified pressure level, aux, is used. The units of aux are millbars."""
+        # In calling reduce_time_seasonal, I am assuming that no variable has axes other than
+        # (time, lev,lat,lon).
+        # If there were another axis, then we'd need a new function which reduces it as well.
+        if not isinstance(aux,Number): return None
+        self.reduced_variables = {
+            varid+'_1': reduced_variable(  # var=var(time,lev,lat,lon)
+                variableid=varid, filetable=filetable1, reduced_var_id=varid+'_1',
+                reduction_function=(lambda x,vid: reduce_time_seasonal( x, self.season, vid ) ) ),
+            'hyam_1': reduced_variable(   # hyam=hyam(lev)
+                variableid='hyam', filetable=filetable1, reduced_var_id='hyam_1',
+                reduction_function=(lambda x,vid=None: x) ),
+            'hybm_1': reduced_variable(   # hybm=hybm(lev)
+                variableid='hybm', filetable=filetable1, reduced_var_id='hybm_1',
+                reduction_function=(lambda x,vid=None: x) ),
+            'PS_1': reduced_variable(     # ps=ps(time,lat,lon)
+                variableid='PS', filetable=filetable1, reduced_var_id='PS_1',
+                reduction_function=(lambda x,vid=None: reduce_time_seasonal( x, self.season, vid ) ) ),
+            varid+'_2': reduced_variable(  # var=var(time,lev,lat,lon)
+                variableid=varid, filetable=filetable2, reduced_var_id=varid+'_2',
+                reduction_function=(lambda x,vid: reduce_time_seasonal( x, self.season, vid ) ) ),
+            'hyam_2': reduced_variable(   # hyam=hyam(lev)
+                variableid='hyam', filetable=filetable2, reduced_var_id='hyam_2',
+                reduction_function=(lambda x,vid=None: x) ),
+            'hybm_2': reduced_variable(   # hybm=hybm(lev)
+                variableid='hybm', filetable=filetable2, reduced_var_id='hybm_2',
+                reduction_function=(lambda x,vid=None: x) ),
+            'PS_2': reduced_variable(     # ps=ps(time,lat,lon)
+                variableid='PS', filetable=filetable2, reduced_var_id='PS_2',
+                reduction_function=(lambda x,vid=None: reduce_time_seasonal( x, self.season, vid ) ) )
+            }
+        pselect = udunits(aux,'mbar')
+        vid1 = varid+'_p_1'
+        vidl1 = varid+'_lp_1'
+        vid2 = varid+'_p_2'
+        vidl2 = varid+'_lp_2'
+        self.derived_variables = {
+            vid1: derived_var( vid=vid1, inputs=[ varid+'_1', 'hyam_1', 'hybm_1', 'PS_1' ],
+                               func=verticalize ),
+            vidl1: derived_var( vid=vidl1, inputs=[vid1], func=(lambda z: select_lev(z,pselect) ) ),
+            vid2: derived_var( vid=vid2, inputs=[ varid+'_2', 'hyam_2', 'hybm_2', 'PS_2' ],
+                               func=verticalize ),
+            vidl2: derived_var( vid=vidl2, inputs=[vid2], func=(lambda z: select_lev(z,pselect) ) )
+            }
+        self.single_plotspecs = {
+            self.plot1_id: plotspec(
+                vid = varid+'_1',
+                # was zvars = [vid1],  zfunc = (lambda z: select_lev( z, pselect ) ),
+                zvars = [vidl1],  zfunc = (lambda z: z),
+                plottype = self.plottype ),
+            self.plot2_id: plotspec(
+                vid = varid+'_2',
+                zvars = [vidl2],  zfunc = (lambda z: z),
+                plottype = self.plottype ),
+            self.plot3_id: plotspec(
+                vid = varid+'_diff',
+                zvars = [vidl1,vidl2],  zfunc = aminusb_2ax,
+                plottype = self.plottype ),
+            }
+        self.composite_plotspecs = {
+            self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id ]            
+            }
+        self.computation_planned = True
     def _results(self):
         results = plot_spec._results(self)
         if results is None: return None
         return self.plotspec_values[self.plotall_id]
+
+
+class amwg_plot_set5(amwg_plot_set5and6):
+    """represents one plot from AMWG Diagnostics Plot Set 5
+    Each contour plot is a set of three contour plots: one each for model output, observations, and
+    the difference between the two.  A plot's x-axis is longitude and its y-axis is the latitude;
+    normally a world map will be overlaid.
+    """
+    name = ' 5- Horizontal Contour Plots of Seasonal Means'
+
+
+
+class amwg_plot_set6(amwg_plot_set5and6):
+    """represents one plot from AMWG Diagnostics Plot Set 6
+    **** SO FAR, PLOT 6 VECTOR PLOTS ARE NOT DONE; ONLY Plot 5 CONTOUR ****
+    Each contour plot is a set of three contour plots: one each for model output, observations, and
+    the difference between the two.  A plot's x-axis is longitude and its y-axis is the latitude;
+    normally a world map will be overlaid.
+    """
+    name = ' 6- Horizontal Vector Plots of Seasonal Means'
 
 
 class amwg_jerry( amwg_plot_spec ):
