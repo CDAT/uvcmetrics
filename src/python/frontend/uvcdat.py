@@ -257,8 +257,7 @@ class plot_spec(object):
     def _results(self):
         for v in self.reduced_variables.keys():
             value = self.reduced_variables[v].reduce()
-            if value is None: return None
-            self.variable_values[v] = value
+            self.variable_values[v] = value  # could be None
         postponed = []   # derived variables we won't do right away
         for v in self.derived_variables.keys():
             value = self.derived_variables[v].derive(self.variable_values)
@@ -270,8 +269,7 @@ class plot_spec(object):
                 self.variable_values[v] = value
         for v in postponed:   # Finish up with derived variables
             value = self.derived_variables[v].derive(self.variable_values)
-            if value is None: return None
-            self.variable_values[v] = value
+            self.variable_values[v] = value  # could be None
         varvals = self.variable_values
         for p,ps in self.single_plotspecs.iteritems():
             print "jfp preparing data for",ps._id
@@ -339,6 +337,7 @@ class plot_spec(object):
                 zax.id = new_id
                 zlab += ' '+zax.id
             if vars==[]:
+                self.plotspec_values[p] = None
                 continue
             labels = [xlab,ylab,zlab]
             title = ' '.join(labels)+' '+self._seasonid  # do this better later
