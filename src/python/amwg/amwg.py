@@ -29,6 +29,22 @@ class AMWG(BasicDiagnosticGroup):
     @staticmethod
     def _all_variables( filetable1, filetable2, diagnostic_set_name ):
         return BasicDiagnosticGroup._all_variables( filetable1, filetable2, diagnostic_set_name )
+    def list_variables_with_levelaxis( self, filetable1, filetable2=None, diagnostic_set="" ):
+        """like list_variables, but only returns variables which have a level axis
+        """
+        return self._list_variables_with_levelaxis( filetable1, filetable2, diagnostic_set )
+    @staticmethod
+    def _list_variables_with_levelaxis( filetable1, filetable2=None, diagnostic_set_name="" ):
+        """like _list_variables, but only returns variables which have a level axis
+        """
+        if filetable1 is None: return []
+        vars1 = filetable1.list_variables_with_levelaxis()
+        if not isinstance( filetable2, basic_filetable ): return vars1
+        vars2 = filetable2.list_variables_with_levelaxis()
+        varset = set(vars1).intersection(set(vars2))
+        vars = list(varset)
+        vars.sort()
+        return vars
     def list_diagnostic_sets( self ):
         psets = amwg_plot_spec.__subclasses__()
         plot_sets = psets
@@ -494,9 +510,21 @@ class amwg_plot_set5and6(amwg_plot_spec):
         if not self.computation_planned:
             self.plan_computation( filetable1, filetable2, varid, seasonid, aux )
     @staticmethod
+    def _list_variables( filetable1, filetable2=None ):
+        allvars = amwg_plot_set5and6._all_variables( filetable1, filetable2 )
+        #print "jfp in 5&6 _list_variables, allvars=",allvars
+        listvars = allvars.keys()
+        print "jfp in 5&6 _list_variables, level-dependent listvars=",\
+            [v for v in listvars if allvars[v]==basic_level_variable ]
+        listvars.sort()
+        return listvars
+    @staticmethod
     def _all_variables( filetable1, filetable2=None ):
         allvars = amwg_plot_spec.package._all_variables( filetable1, filetable2, "amwg_plot_spec" )
-        allvars['Z3'] = basic_level_variable # temporary, the right thing is to find level-dep't vars
+        #allvars['Z3'] = basic_level_variable # temporary, the right thing is to find level-dep't vars
+        for varname in amwg_plot_spec.package._list_variables_with_levelaxis(
+            filetable1, filetable2, "amwg_plot_spec" ):
+            allvars[varname] = basic_level_variable
         return allvars
     def plan_computation( self, filetable1, filetable2, varid, seasonid, aux=None ):
         if isinstance(aux,Number):
