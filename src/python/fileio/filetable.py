@@ -50,8 +50,10 @@ class ftrow:
         else:
            self.lonrange = lonrange
         if levelrange is None:
+           self.haslevel = False
            self.levelrange = drange()
         else:
+           self.haslevel = True
            self.levelrange = levelrange
     def __repr__(self):
        if self.fileid is None:
@@ -134,8 +136,24 @@ class basic_filetable:
             levelrange = filesupp.get_levelrange()
             for var in vars:
                 variableid = var
-                newrow = ftrow( fileid, variableid, timerange, latrange, lonrange,
-                              levelrange )
+                varaxisnames = [a[0].id for a in dfile[var].domain]
+                if 'time' in varaxisnames:
+                   timern = timerange
+                else:
+                   timern = None
+                if 'lat' in varaxisnames:
+                   latrn = latrange
+                else:
+                   latrn = None
+                if 'lon' in varaxisnames:
+                   lonrn = lonrange
+                else:
+                   lonrn = None
+                if 'lev' in varaxisnames:
+                   levrn = levelrange
+                else:
+                   levrn = None
+                newrow = ftrow( fileid, variableid, timern, latrn, lonrn, levrn )
                 self._table.append( newrow )
                 if fileid in self._fileindex.keys():
                     self._fileindex[fileid].append(newrow)
@@ -167,6 +185,10 @@ class basic_filetable:
        return found
     def list_variables(self):
        vars = list(set([ r.variableid for r in self._table ]))
+       vars.sort()
+       return vars
+    def list_variables_with_levelaxis(self):
+       vars = list(set([ r.variableid for r in self._table if r.haslevel]))
        vars.sort()
        return vars
             
@@ -255,9 +277,7 @@ class NCAR_filefmt(basic_filefmt):
          hi = self._dfile.axes['lev'][-1]
          units = self._dfile.axes['lev'].units
       else:
-         lo = None
-         hi = None
-         units = None         
+         return None
       return drange( lo, hi, units )
    def interesting_variables(self):
       """returns a list of interesting variables in the NCAR History Tape file.
