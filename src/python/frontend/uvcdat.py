@@ -19,6 +19,56 @@ import vcs
 vcsx=vcs.init()   # This belongs in one of the GUI files, e.g.diagnosticsDockWidget.py
                   # The GUI probably will have already called vcs.init().
                   # Then, here,  'from foo.bar import vcsx'
+# ---------------- code to compute plot in another process, not specific to UV-CDAT:
+
+from multiprocessing import Process, Semaphore, Pipe
+
+def _plotdata_run( child_conn, sema,
+                   plotspec, filetable1, filetable2, varname, seasonname, aux=None ):
+    global vcsx
+    vcsx = False # temporary kludge
+    sema.acquire()
+    ps = plotspec( filetable1, filetable2, varname, seasonname, aux )
+    if ps is None:
+        results = None
+    else:
+        results = ps.compute()
+    print "jfp _plotdata_run results=",results
+    sema.release()
+    child_conn.send(results)
+    return results
+
+def plotdata_run( plotspec, filetable1, filetable2, varname, seasonname, aux=None ):
+    """Inputs:
+    plotspec is a plot_spec class to be instantiated
+    filetable1 is the model data file table
+    fileteable2 is the obs or reference model data file table
+    varname is a string representing the variable to be plotted
+    seasonname is a string representing the season for climatology to be presented
+    aux is an auxiliary option, if any
+
+    This function will spawn another process and return it as p, an instance of
+    multiprocessing.Process.  This p will create a plotspec object and run its compute() method.
+    To check the status of p, call plotdata_status(p) to get a semaphore value (>0 means done).
+    To get the computed value, call plotdata_results(p).
+    """
+    sema = Semaphore()
+    parent_conn, child_conn = Pipe()
+    p = Process( target=_plotdata_run,
+                 args=(child_conn, sema,
+                       plotspec, filetable1, filetable2, varname, seasonname, aux) )
+    p.start()
+    p.sema = sema
+    p.parent_conn = parent_conn
+    return p
+
+def plotdata_status( p ):
+    return p.sema.get_value()
+
+def plotdata_results( p ):
+    return p.parent_conn.recv()
+
+# ----------------
 
 def setup_filetable( search_path, cache_path, ftid=None, search_filter=None ):
     print "jfp in setup_filetable, search_path=",search_path," search_filter=",search_filter
@@ -51,20 +101,23 @@ class uvc_plotspec():
     # probably communicate that by passing a name "Isofill_polar".
     def __init__( self, vars, presentation, labels=[], title=''):
         type = presentation
-        if presentation=="Yxvsx":
-            self.presentation = vcsx.createyxvsx()
-            type="Yxvsx"
-        elif presentation == "Isofill":
-            self.presentation = vcsx.createisofill()
-        elif presentation == "Vector":
-            self.presentation = vcsx.createvector()
-        elif presentation == "Boxfill":
-            self.presentation = vcsx.createboxfill()
-        elif presentation == "Isoline":
-            self.presentation = vcsx.createisoline()
+        if vcsx:   # temporary kludge, presently need to know whether preparing VCS plots
+            if presentation=="Yxvsx":
+                self.presentation = vcsx.createyxvsx()
+                type="Yxvsx"
+            elif presentation == "Isofill":
+                self.presentation = vcsx.createisofill()
+            elif presentation == "Vector":
+                self.presentation = vcsx.createvector()
+            elif presentation == "Boxfill":
+                self.presentation = vcsx.createboxfill()
+            elif presentation == "Isoline":
+                self.presentation = vcsx.createisoline()
+            else:
+                print "ERROR, uvc_plotspec doesn't recognize presentation",presentation
+                self.presentation = "Isofill"  # try to go on
         else:
-            print "ERROR, uvc_plotspec doesn't recognize presentation",presentation
-            self.presentation = "Isofill"  # try to go on
+            self.presentation = presentation
         ## elif presentation == "":
         ##     self.resentation = vcsx.create
         self.vars = vars
