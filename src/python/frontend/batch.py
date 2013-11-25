@@ -16,6 +16,7 @@ from metrics.amwg.plot_data import plotspec, derived_var
 from metrics.frontend.version import version
 from metrics.amwg.derivations import *
 from metrics.diagnostic_groups import *
+from metrics.frontend.uvcdat import *
 from pprint import pprint
 import cProfile
 
@@ -38,24 +39,27 @@ for pname,pclass in dm.items():
     print "jfp package=",package
     sm = package.list_diagnostic_sets()
     for sname,sclass in sm.items():
-        #if sclass.name != ' 3- Line Plots of  Zonal Means':
         #if sclass.name != ' 6- Horizontal Vector Plots of Seasonal Means':
         #if sclass.name != ' 2- Line Plots of Annual Implied Northward Transport':
-        #    continue   # for testing, only do one plot set
+        if sclass.name != ' 3- Line Plots of  Zonal Means':
+            continue   # for testing, only do one plot set
         print "jfp sname=",sname
         for seasonid in package.list_seasons():
             if seasonid != 'DJF':
                 continue # for testing, only do one season
             print "jfp seasonid=",seasonid
+            print "jfp variables=",package.list_variables( filetable1, filetable2, sname  )
             for varid in package.list_variables( filetable1, filetable2, sname  ):
-                #if varid!='SWCF':
-                #    continue # for testing, only do one variable
+                if varid!='TREFHT':
+                    continue # for testing, only do one variable
                 print "jfp varid=",varid
-                plot = sclass( filetable1, filetable2, varid, seasonid )
-                res = plot.compute()
+                proc = plotdata_run( sclass, filetable1, filetable2, varid, seasonid )
+                res = plotdata_results( proc )
+                #plot = sclass( filetable1, filetable2, varid, seasonid )
+                #res = plot.compute()
                 if res is not None: #>>> TO DO write res to a NetCDF file <<<<
                     number_diagnostic_plots += 1
-                    print plot
+                    #print plot
                     pprint( res )
                     for r in res:
                         r.write_plot_data(outpath)
