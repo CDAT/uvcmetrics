@@ -1085,13 +1085,17 @@ class reduced_variable(ftrow):
                 f.close()
                 cdscan_line = 'cdscan -q '+'-x '+xml_name+' '+' '.join(famfiles)
             else:
-                # cdscan need to be told what the time units are.  I'm betting that all files
+                # cdscan needs to be told what the time units are.  I'm betting that all files
                 # use the same units.  I know of cases where they all have different units (e.g.,
                 # GISS) but in all those cases, the units attribute is used properly, so we don't
                 # get here.
                 # Another problem is that units stuck in the long_name sometimes are
                 # nonstandard.  So fix them!
-                time_units = f['time'].long_name
+                if hasattr(f['time'],'long_name'):
+                    time_units = f['time'].long_name
+                else:
+                    time_units = 'days'  # probably wrong but we can't go on without something
+                    # Usually when we get here it's a climatology file where time is meaningless.
                 f.close()
                 if type(time_units) is str and len(time_units)>1 and (
                     time_units.find('months')==0 or time_units.find('days')==0 or
