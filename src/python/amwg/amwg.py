@@ -512,10 +512,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
     @staticmethod
     def _list_variables( filetable1, filetable2=None ):
         allvars = amwg_plot_set5and6._all_variables( filetable1, filetable2 )
-        #print "jfp in 5&6 _list_variables, allvars=",allvars
         listvars = allvars.keys()
-        print "jfp in 5&6 _list_variables, level-dependent listvars=",\
-            [v for v in listvars if allvars[v]==basic_level_variable ]
         listvars.sort()
         return listvars
     @staticmethod
