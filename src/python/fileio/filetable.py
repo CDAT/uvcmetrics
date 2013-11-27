@@ -35,8 +35,8 @@ class ftrow:
     If the file has several variables, there will be several rows for the file."""
     # One can think of lots of cases where this is too simple, but it's a start.
     def __init__( self, fileid, variableid, timerange, latrange, lonrange, levelrange=None ):
-        self.fileid = fileid
-        self.variableid = variableid
+        self.fileid = fileid          # file name
+        self.variableid = variableid  # variable name
         if timerange is None:
            self.timerange = drange()
         else:
@@ -117,6 +117,8 @@ class basic_filetable:
        """in-place sort keyed on the file paths"""
        self._table.sort(key=(lambda ftrow: ftrow.fileid))
        return self
+    def nrows( self ):
+       return len(self._table)
     def addfile( self, filep, get_them_all=False ):
         """Extract essential header information from a file filep,
         and put the results in the table.
@@ -332,9 +334,11 @@ class CF_filefmt(basic_filefmt):
           standard_name = getattr( self._dfile[var], 'standard_name', None )
           if standard_name!=None:
              print "  ",var," has standard name",standard_name
-          if standard_name in\
-                 self._all_interesting_standard_names:
-             iv.append(standard_name)
+          #if standard_name in\
+          #       self._all_interesting_standard_names:
+          #   iv.append(standard_name)
+          if standard_name is not None:
+             iv.append(var)
        return iv
     def variable_by_stdname(self,stdname):
         for var in self._dfile.variables.keys():
