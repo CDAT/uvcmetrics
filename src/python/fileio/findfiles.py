@@ -54,6 +54,12 @@ class f_and(basic_binary_filter):
     def __repr__( self ):
         return self._f1.__repr__()+' and '+self._f2.__repr__()
 
+class f_or(basic_binary_filter):
+    def __call__( self, filen ):
+        return self._f1(filen) or self._f2(filen)
+    def __repr__( self ):
+        return self._f1.__repr__()+' or '+self._f2.__repr__()
+
 # Thus a filter for "is a real file, with a .nc extension" is:
 #       f = f_and( f_nc(), f_isfile() )
 # Or we could do that in a class by:
@@ -91,7 +97,11 @@ class dirtree_datafiles( basic_datafiles ):
         root can be a string representing a directory, or a list
         of such strings.
         The second argument is an optional filter, of type basic_filter."""
-        if root==None: return None
+        if root==None:
+            self._root = None
+            self._filt = None
+            self.files = []
+            return None
         root = os.path.expanduser(root)
         root = os.path.abspath(root)
         if filt==None: filt=basic_filter()
@@ -120,9 +130,9 @@ class dirtree_datafiles( basic_datafiles ):
             self.files += [ os.path.join(dirpath,f) for f in filenames if filt(f) ]
         return self.files
     def short_name(self):
-        return os.path.basename(self._root)
+        return os.path.basename(str(self._root))
     def long_name(self):
-        return ' '.join( [ self.__class__.__name__, self._root, str(self._filt) ] )
+        return ' '.join( [ self.__class__.__name__, str(self._root), str(self._filt) ] )
     def check_filespec( self ):
         """method to determine whether the file specification used to build this object is useful,
         and help improve it if it's not.
