@@ -48,6 +48,7 @@ class BasicDiagnosticGroup():
         if filetable1 is None: return []
         vars1 = filetable1.list_variables()
         if not isinstance( filetable2, basic_filetable ): return vars1
+        if filetable2.nrows()==0: return vars1
         vars2 = filetable2.list_variables()
         varset = set(vars1).intersection(set(vars2))
         vars = list(varset)
