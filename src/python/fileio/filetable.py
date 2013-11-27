@@ -349,23 +349,35 @@ class CF_filefmt(basic_filefmt):
     def get_timerange(self):
        if 'time' not in self._dfile.axes:
           return None
-       time_bnds_name = self._dfile.axes['time'].bounds
-       lo = self._dfile[time_bnds_name][0][0]
-       hi = self._dfile[time_bnds_name][-1][1]
+       if 'bounds' in self._dfile.axes['time'].__dict__:
+          time_bnds_name = self._dfile.axes['time'].bounds
+          lo = self._dfile[time_bnds_name][0][0]
+          hi = self._dfile[time_bnds_name][-1][1]
+       else:
+          lo = self._dfile.axes['time'][0]
+          hi = self._dfile.axes['time'][-1]
        units = self._dfile.axes['time'].units
        return drange( lo, hi, units )
     def get_latrange(self):
-        lat_bnds_name = self._dfile.axes['lat'].bounds
-        lo = self._dfile[lat_bnds_name][0][0]
-        hi = self._dfile[lat_bnds_name][-1][1]
-        units = self._dfile.axes['lat'].units
-        return drange( lo, hi, units )
+       if 'bounds' in self._dfile.axes['lat'].__dict__:
+          lat_bnds_name = self._dfile.axes['lat'].bounds
+          lo = self._dfile[lat_bnds_name][0][0]
+          hi = self._dfile[lat_bnds_name][-1][1]
+       else:
+          lo = self._dfile.axes['lat'][0]
+          hi = self._dfile.axes['lat'][-1]
+       units = self._dfile.axes['lat'].units
+       return drange( lo, hi, units )
     def get_lonrange(self):
-        lon_bnds_name = self._dfile.axes['lon'].bounds
-        lo = self._dfile[lon_bnds_name][0][0]
-        hi = self._dfile[lon_bnds_name][-1][1]
-        units = self._dfile.axes['lon'].units
-        return drange( lo, hi, units )
+       if 'bounds' in self._dfile.axes['lon'].__dict__:
+          lon_bnds_name = self._dfile.axes['lon'].bounds
+          lo = self._dfile[lon_bnds_name][0][0]
+          hi = self._dfile[lon_bnds_name][-1][1]
+       else:
+          lo = self._dfile.axes['lon'][0]
+          hi = self._dfile.axes['lon'][-1]
+       units = self._dfile.axes['lon'].units
+       return drange( lo, hi, units )
     def get_levelrange(self):
         levelaxis = None
         for axis_name in self._dfile.axes.keys():
