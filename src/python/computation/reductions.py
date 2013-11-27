@@ -1116,8 +1116,7 @@ class reduced_variable(ftrow):
             # the easy case, just one file has all the data on this variable
             f = cdms2.open(files[0])
         fcf = get_datafile_filefmt(f)
-        varname = fcf.variable_by_stdname(self.variableid)
-        reduced_data = self._reduction_function( f(varname), vid=vid )
+        reduced_data = self._reduction_function( f(self.variableid), vid=vid )
         if reduced_data is not None:
             reduced_data._vid = vid
         f.close()
