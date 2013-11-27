@@ -21,14 +21,19 @@ from pprint import pprint
 import cProfile
 
 path1 = os.path.join(os.environ["HOME"],'cam_output/b30.009.cam2.h0.06.xml')
+#cmip5 test path1 = os.path.join(os.environ["HOME"],'cmip5/')
 path2 = os.path.join(os.environ["HOME"],'obs_data')
+#cmip5 test path2 = os.path.join(os.environ["HOME"],'cmip5/')
 tmppth = os.path.join(os.environ['HOME'],"tmp")
 outpath = os.path.join(os.environ['HOME'],"tmp","diagout")
 if not os.path.exists(tmppth):
     os.makedirs(tmppth)
-datafiles1 = dirtree_datafiles( path1 )
+filt1 = None
+#cmip5 test filt1 = f_or(f_startswith("p"),f_startswith("P"))
+datafiles1 = dirtree_datafiles( path1, filt1 )
 filetable1 = datafiles1.setup_filetable( tmppth, "model" )
 filt2 = f_startswith("NCEP")
+#cmip5 test filt2 = filt1
 datafiles2 = dirtree_datafiles( path2, filt2 )
 filetable2 = datafiles2.setup_filetable( tmppth, "obs" )
 
