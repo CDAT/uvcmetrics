@@ -652,7 +652,7 @@ class amwg_plot_set6(amwg_plot_set5and6):
 
 class amwg_jerry( amwg_plot_spec ):
     """200 mb heights from variable Z3, for Jerry Potter"""
-    name = 'Jerry Potter'
+    #no name makes this invisible:  name = 'Jerry Potter'
     def __init__( self, filetable1, filetable2, varid, seasonid=None, aux=None ):
         plot_spec.__init__(self,seasonid)
         self.plottype = 'Isofill'
