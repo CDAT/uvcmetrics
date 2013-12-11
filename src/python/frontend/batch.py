@@ -67,5 +67,6 @@ for pname,pclass in dm.items():
                     #print plot
                     pprint( res )
                     for r in res:
-                        r.write_plot_data(outpath)
+                        print( r.write_plot_data( writer="JSON string" ) )
+                        #r.write_plot_data(outpath)
 print "total number of diagnostic plots generated =", number_diagnostic_plots
