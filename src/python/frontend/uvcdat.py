@@ -15,6 +15,7 @@ from metrics.amwg.derivations import *
 from metrics.diagnostic_groups import *
 from pprint import pprint
 import cProfile
+import json
 import vcs
 vcsx=vcs.init()   # This belongs in one of the GUI files, e.g.diagnosticsDockWidget.py
                   # The GUI probably will have already called vcs.init().
@@ -126,21 +127,47 @@ class uvc_plotspec():
         self.type = type
     def __repr__(self):
         return ("uvc_plotspec %s: %s\n" % (self.presentation,self.title))
+    def _json(self,*args,**kwargs):
+        """returns a JSON serialization of this object"""
+        vars_json_list = [ v.dumps() for v in self.vars ]
+        vars_json = json.dumps(vars_json_list)
+        return {'vars':vars_json, 'presentation':self.presentation, 'type':self.type,\
+                    'labels':self.labels, 'title':self.title }
     def write_plot_data( self, writer="" ):
         # This is just experimental code, so far.
+        if writer=="" or writer=="NetCDF" or writer=="NetCDF file":
+            writer = "NetCDF file"
+        elif writer=="JSON string":
+            pass
+        elif writer=="JSON file":
+            pass
+        else:
+            print "WARNING: write_plot_data cannot recognize writer name",writer,\
+                ", will write a NetCDF file."
+            writer = "NetCDF file"
+
         if len(self.title)<=0:
             fname = 'foo'
         else:
             fname = self.title.strip()+'.nc'
         filename = os.path.join(writer,fname)
         print "output to",filename
-        writer = cdms2.open( filename, 'w' )    # later, choose a better name and a path!
+
+        if writer=="NetCDF file":
+            writer = cdms2.open( filename, 'w' )    # later, choose a better name and a path!
+        elif writer=="JSON file":
+            print "ERROR: JSON file not implemented yet"
+        elif writer=="JSON string":
+            return json.dumps(self,cls=DiagsEncoder)
 
         for zax in self.vars:
             writer.write( zax )
 
         writer.close()
 
+class DiagsEncoder(json.JSONEncoder):
+    def default(self, obj):
+        return obj._json()
 
 def get_plot_data( plot_set, filetable1, filetable2, variable, season ):
     """returns a list of uvc_plotspec objects to be plotted.  The plot_set is a string from
