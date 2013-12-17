@@ -193,24 +193,25 @@ def profiled_get_plot_data( plot_set, filetable1, filetable2, variable, season )
     prof.print_stats()   # use dump_stats(filename) to print to file
     return returnme
 
-def _get_plot_data( plot_set, filetable1, filetable2, variable, season ):
+def _get_plot_data( plot_set_id, filetable1, filetable2, variable, season ):
     """the real _get_plot_data() function; get_plot_data() is a simple wrapper around this"""
     if season=='ANN':
         # cdutil.times.getMonthIndex() (called by climatology()) doesn't recognize 'ANN'
         season='JFMAMJJASOND'
-    plot_set = plot_set.strip()
+    plot_set_id = plot_set_id.strip()
     from metrics.amwg.amwg import plot_set2, plot_set3, plot_set4, plot_set5
-    if plot_set=='2':
+    if plot_set_id=='2':
         return plot_set2( filetable1, filetable2, variable )
-    if plot_set=='3':
+    if plot_set_id=='3':
         return plot_set3( filetable1, filetable2, variable, season )
-    elif plot_set=='4':
+    elif plot_set_id=='4':
         return plot_set4( filetable1, filetable2, variable, season )
-    elif plot_set=='5':
+    elif plot_set_id=='5':
         return plot_set5( filetable1, filetable2, variable, season )
     else:
-        print "ERROR, plot set",plot_set," not implemented yet!"
+        print "ERROR, plot set",plot_set_id," not implemented yet!"
         return None
+    
 
 class basic_one_line_plot( plotspec ):
     def __init__( self, yvar, xvar=None ):
@@ -298,6 +299,7 @@ class plot_spec(object):
         else:
             return self.__class__.__name__+' object'
     def __init__(self, seasonid='ANN', *args ):
+        self._season_displayid = seasonid
         if seasonid=='ANN' or seasonid is None:
             # cdutil.times.getMonthIndex() (called by climatology()) doesn't recognize 'ANN'
             self._seasonid='JFMAMJJASOND'
@@ -420,7 +422,7 @@ class plot_spec(object):
                 self.plotspec_values[p] = None
                 continue
             labels = [xlab,ylab,zlab]
-            title = ' '.join(labels)+' '+self._seasonid  # do this better later
+            title = ' '.join(labels)+' '+self._season_displayid  # do this better later
             self.plotspec_values[p] = uvc_plotspec( vars, self.plottype, labels, title )
         for p,ps in self.composite_plotspecs.iteritems():
             self.plotspec_values[p] = [ self.plotspec_values[sp] for sp in ps ]
