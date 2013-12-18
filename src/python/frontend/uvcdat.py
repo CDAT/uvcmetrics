@@ -34,7 +34,6 @@ def _plotdata_run( child_conn, sema,
         results = None
     else:
         results = ps.compute()
-    print "jfp _plotdata_run results=",results
     sema.release()
     child_conn.send(results)
     return results
@@ -67,7 +66,9 @@ def plotdata_status( p ):
     return p.sema.get_value()
 
 def plotdata_results( p ):
-    return p.parent_conn.recv()
+    results = p.parent_conn.recv()
+    p.join()  # assumption: the process won't be needed after we have the results
+    return results
 
 # ----------------
 
