@@ -73,7 +73,6 @@ def test_driver( path1, filt1=None ):
         filename = key.strip()+"_climo.nc"
         if varvals[key] is not None:
             if not hasattr(varvals[key],'id') or varvals[key].id is None or varvals[key].id=='':
-                print "jfp fixing id"
                 varvals[key].id = varvals[key].name
             g = cdms2.open( filename, 'w' )    # later, choose a better name and a path!
             # ...actually we want to write this to a full directory structure like
@@ -83,6 +82,9 @@ def test_driver( path1, filt1=None ):
             g.variable=original_variable
             g.season = var.seasonname
             g.write(varvals[key])
+            for attr,val in var._file_attributes.items():
+                if not hasattr( g, attr ):
+                    setattr( g, attr, val )
             g.close()
 
 if __name__ == '__main__':
