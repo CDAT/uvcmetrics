@@ -389,7 +389,8 @@ def reduce2latlon( mv, vid=None ):
 def reduce_time( mv, vid=None ):
     """as reduce2lat, but averaging reduces only the time coordinate"""
     if vid==None:   # Note that the averager function returns a variable with meaningless id.
-        vid = 'reduced_'+mv.id
+        #vid = 'reduced_'+mv.id
+        vid = mv.id
     axes = allAxes( mv )
     axis_names = [ a.id for a in axes if a.id=='time' ]
     axes_string = '('+')('.join(axis_names)+')'
@@ -402,7 +403,8 @@ def reduce_time( mv, vid=None ):
     else:
         avmv = mv
     avmv.id = vid
-    avmv.units = mv.units
+    if hasattr( mv, 'units' ):
+        avmv.units = mv.units
 
     return avmv
 
@@ -486,7 +488,8 @@ def reduce_time_seasonal( mv, seasons=seasonsyr, vid=None ):
     """as reduce2lat_seasonal, but all non-time axes are retained.
     """
     if vid==None:
-        vid = 'reduced_'+mv.id
+        #vid = 'reduced_'+mv.id
+        vid = mv.id
     # Note that the averager function returns a variable with meaningless id.
     # The climatology function returns the same id as mv, which we also don't want.
 
@@ -1011,12 +1014,17 @@ class reduced_variable(ftrow):
         extract and return 'ts_Amon_bcc-csm1-1_amip_r1i1p1'.  To distinguish between the
         end of a file family name and the beginning of the file-specific part of the filename,
         we look for an underscore and two numerical digits, e.g. '_19'."""
-        matchobject = re.search( r"^.*_\d\d", filename )
-        if matchobject is None:
-            return filename
-        else:
+        matchobject = re.search( r"^.*_\d\d", filename )  # CMIP5 and other cases
+        if matchobject is not None:
             familyname = filename[0:(matchobject.end()-3)]
             return familyname        
+        matchobject = re.search( r"^.*.cam.h0.", filename ) # CAM,CESM,etc. sometimes
+        # ...CAM match is a quick fix, may be often wrong...
+        if matchobject is not None:
+            familyname = filename[0:(matchobject.end()-8)]
+            return familyname
+        else:
+            return filename
 
     def reduce( self, vid=None ):
         """Finds and opens the files containing data required for the variable,
