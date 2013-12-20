@@ -1007,6 +1007,7 @@ class reduced_variable(ftrow):
         if filetable==None:
             print "ERROR.  No filetable specified for reduced_variable instance",variableid
         self._filetable = filetable
+        self._file_attributes = {}
 
     def extract_filefamilyname( self, filename ):
         """From a filename, extracts the first part of the filename as the possible
@@ -1123,6 +1124,7 @@ class reduced_variable(ftrow):
         else:
             # the easy case, just one file has all the data on this variable
             f = cdms2.open(files[0])
+        self._file_attributes.update(f.attributes)
         fcf = get_datafile_filefmt(f)
         reduced_data = self._reduction_function( f(self.variableid), vid=vid )
         if reduced_data is not None:
