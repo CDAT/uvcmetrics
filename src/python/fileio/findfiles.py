@@ -39,6 +39,15 @@ class f_nc(basic_filter):
     def __call__( self, filen ):
         return os.path.splitext(filen).lower()=='nc'
 
+class f_endswith(basic_filter):
+    """requires name to end with a specified string"""
+    def __init__( self, endstring ):
+        self._endstring = endstring
+    def __call__( self, filen ):
+        return filen.rfind(self._endstring)==len(filen)-len(self._endstring)
+    def __repr__( self ):
+        return basic_filter.__repr__(self)+'("'+self._endstring+'")'
+
 class f_startswith(basic_filter):
     """requires name to start with a specified string"""
     def __init__( self, startstring ):
@@ -105,8 +114,11 @@ class dirtree_datafiles( basic_datafiles ):
         root = os.path.expanduser(root)
         root = os.path.abspath(root)
         if filt==None: filt=basic_filter()
-        if type(filt)==str and filt.find('filt=')==0:   # really we need to use getopt to parse args
-            filt = eval(filt[5:])
+        if type(filt)==str:
+            if filt.find('filt=')==0:   # really we need to use getopt to parse args
+                filt = eval(filt[5:])
+            else:   # really we need to use getopt to parse args
+                filt = eval(filt)
         self._root = root
         self._filt = filt
         self.files = []
