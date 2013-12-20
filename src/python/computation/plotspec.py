@@ -8,6 +8,7 @@ class derived_var:
         self._inputs = inputs
         self._outputs = outputs
         self._func = func
+        self._file_attributes = {}
     def derive( self, vardict ):
         # error from checking this way!... if None in [ vardict[inp] for inp in self._inputs ]:
         dictvals = [ vardict.get(inp,None) for inp in self._inputs ]
@@ -15,11 +16,13 @@ class derived_var:
         if len(nonevals)>0:
             return None
         output = apply( self._func, [ vardict[inp] for inp in self._inputs ] )
-        if type(output) is tuple or type(tuple) is list:
+        if type(output) is tuple or type(output) is list:
             for o in output:
                 o._vid  = self._vid
+                self._file_attributes.update( getattr(o,'_file_attributes',{}) )
         elif output is not None:
             output._vid = self._vid
+            self._file_attributes.update( getattr(output,'_file_attributes',{}) )
         return output
 
 class plotspec:
