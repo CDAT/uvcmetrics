@@ -1015,15 +1015,17 @@ class reduced_variable(ftrow):
         extract and return 'ts_Amon_bcc-csm1-1_amip_r1i1p1'.  To distinguish between the
         end of a file family name and the beginning of the file-specific part of the filename,
         we look for an underscore and two numerical digits, e.g. '_19'."""
-        matchobject = re.search( r"^.*_\d\d", filename )  # CMIP5 and other cases
-        if matchobject is not None:
-            familyname = filename[0:(matchobject.end()-3)]
-            return familyname        
         matchobject = re.search( r"^.*.cam.h0.", filename ) # CAM,CESM,etc. sometimes
+        if matchobject is None:
+            matchobject = re.search( r"^.*.cam2.h0.", filename ) # CAM,CESM,etc. sometimes
         # ...CAM match is a quick fix, may be often wrong...
         if matchobject is not None:
             familyname = filename[0:(matchobject.end()-8)]
             return familyname
+        matchobject = re.search( r"^.*_\d\d", filename )  # CMIP5 and other cases
+        if matchobject is not None:
+            familyname = filename[0:(matchobject.end()-3)]
+            return familyname        
         else:
             return filename
 
