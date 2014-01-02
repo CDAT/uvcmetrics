@@ -104,7 +104,7 @@ class basic_filetable:
         # own standard name list.
         self._varindex = {} # will be built as the table is built
         #print "filelist=",filelist,type(filelist)
-        self._filelist = filelist # just used for __repr__
+        self._filelist = filelist # just used for __repr__ and root_dir
         if filelist is None: return
         self._id = ftid
         for filep in filelist.files:
@@ -113,6 +113,11 @@ class basic_filetable:
        return 'filetable from '+str(self._filelist)
     def full_repr(self):
        return 'filetable from '+str(self._filelist)+'\n'+self._table.__repr__()
+    def root_dir(self):
+       """returns a root directory for the files in this filetable"""
+       if self._filelist is None: return None
+       file0 = self._filelist._root
+       return os.path.dirname( os.path.abspath(os.path.expanduser(file0)) )
     def sort(self):
        """in-place sort keyed on the file paths"""
        self._table.sort(key=(lambda ftrow: ftrow.fileid))
