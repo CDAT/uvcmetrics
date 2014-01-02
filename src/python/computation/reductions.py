@@ -982,6 +982,67 @@ def convert_axis( mv, axisold, axisindnew ):
 
 
 
+def run_cdscan( fam, famfiles, cache_path=None ):
+    """If necessary, runs cdscan on the provided files, all in one "family", fam.
+    Leave the output in an xml file in the cache_path.
+    Thereafter, re-use this xml file rather than run cdscan again."""
+    # Not finished.  Presently, the cache_path argument is ignored, and the xml file is always
+    # written where the data is.
+    famfiles.sort()   # improves consistency between runs
+    file_list = '-'.join(
+        [ f+'size'+str(os.path.getsize(f))+'mtime'+str(os.path.getmtime(f))\
+              for f in famfiles ] )
+    csum = hashlib.md5(file_list).hexdigest()
+    xml_name = fam+'_cs'+csum+'.xml'
+    if os.path.isfile( xml_name ):
+        print "using cached cdscan output",xml_name
+        return xml_name
+
+    # Normally when we get here, it's because data has been divided by time among
+    # several files.  So when cdscan puts it all back together, it needs the time
+    # units.  If the time variable is named 'time' and has a valid 'units'
+    # attribute, we're fine; otherwise we're in trouble.  But for some AMWG obs
+    # data which I have, the time units may be found in the long_name attribute.
+    # The -e option will normally be the way to fix it up, but maybe the -r option
+    # could be made to work.
+
+    # I know of no exception to the rule that all files in the file family keep their
+    # units in the same place; so find where they are by checking the first file.
+    f = cdms2.open( famfiles[0] )
+    time_units = f['time'].units
+    if type(time_units) is str and len(time_units)>3:
+        # cdscan can get time units from the files; we're good.
+        f.close()
+        cdscan_line = 'cdscan -q '+'-x '+xml_name+' '+' '.join(famfiles)
+    else:
+        # cdscan needs to be told what the time units are.  I'm betting that all files
+        # use the same units.  I know of cases where they all have different units (e.g.,
+        # GISS) but in all those cases, the units attribute is used properly, so we don't
+        # get here.
+        # Another problem is that units stuck in the long_name sometimes are
+        # nonstandard.  So fix them!
+        if hasattr(f['time'],'long_name'):
+            time_units = f['time'].long_name
+        else:
+            time_units = 'days'  # probably wrong but we can't go on without something
+        # Usually when we get here it's a climatology file where time is meaningless.
+        f.close()
+        if type(time_units) is str and len(time_units)>1 and (
+            time_units.find('months')==0 or time_units.find('days')==0 or
+            time_units.find('hours')==0 ):
+            time_units = fix_time_units( time_units )
+            cdscan_line = 'cdscan -q '+'-x '+xml_name+' -e time.units="'+time_units+'" '+\
+                ' '.join(famfiles)
+        else:
+            print "WARNING, cannot find time units; will try to continue",famfiles[0]
+            cdscan_line = 'cdscan -q '+'-x '+xml_name+' -e time.units="'+time_units+'" '+\
+                ' '.join(famfiles)
+    print "cdscan_line=",cdscan_line
+    proc = subprocess.Popen([cdscan_line],shell=True)
+    proc_status = proc.wait()
+    if proc_status!=0: print "ERROR: cdscan terminated with",proc_status
+    return xml_name
+
 class reduced_variable(ftrow):
     """Specifies a 'reduced variable', which is a single-valued part of an output specification.
     This would be a variable(s) and its domain, a reduction function, and perhaps
@@ -1061,67 +1122,18 @@ class reduced_variable(ftrow):
                 print "ERROR.  No data to reduce.  files[0]=:",files[0]
                 return None
             elif len(families)>1:
-                print "WARNING: ",len(families)," file families found, will use the first one:",families
-            fam = families[0]
+                fam = families[0]
+                print "WARNING: ",len(families)," file families found, will use:",fam
+            else:
+                fam = families[0]
 
             # We'll run cdscan to combine the multiple files into one logical file.
             # To save (a lot of) time, we'll re-use an xml file if a suitable one already exists.
             # To do this safely, incorporate the file list (names,lengths,dates) into the xml file name.
             famfiles = [f for f in files if famdict[f]==fam]
-            famfiles.sort()   # improves consistency between runs
-            file_list = '-'.join(
-                [ f+'size'+str(os.path.getsize(f))+'mtime'+str(os.path.getmtime(f))\
-                      for f in famfiles ] )
-            csum = hashlib.md5(file_list).hexdigest()
-            xml_name = fam+'_cs'+csum+'.xml'
-            if os.path.isfile( xml_name ):
-                files = [ xml_name ]
 
-        if len(files)>1:
-            famfiles = [f for f in files if famdict[f]==fam]
-            # Normally when we get here, it's because data has been divided by time among
-            # several files.  So when cdscan puts it all back together, it needs the time
-            # units.  If the time variable is named 'time' and has a valid 'units'
-            # attribute, we're fine; otherwise we're in trouble.  But for some AMWG obs
-            # data which I have, the time units may be found in the long_name attribute.
-            # The -e option will normally be the way to fix it up, but maybe the -r option
-            # could be made to work.
-            
-            # I know of no exception to the rule that all files in the file family keep their
-            # units in the same place; so find where they are by checking the first file.
-            f = cdms2.open( famfiles[0] )
-            time_units = f['time'].units
-            if type(time_units) is str and len(time_units)>3:
-                # cdscan can get time units from the files; we're good.
-                f.close()
-                cdscan_line = 'cdscan -q '+'-x '+xml_name+' '+' '.join(famfiles)
-            else:
-                # cdscan needs to be told what the time units are.  I'm betting that all files
-                # use the same units.  I know of cases where they all have different units (e.g.,
-                # GISS) but in all those cases, the units attribute is used properly, so we don't
-                # get here.
-                # Another problem is that units stuck in the long_name sometimes are
-                # nonstandard.  So fix them!
-                if hasattr(f['time'],'long_name'):
-                    time_units = f['time'].long_name
-                else:
-                    time_units = 'days'  # probably wrong but we can't go on without something
-                    # Usually when we get here it's a climatology file where time is meaningless.
-                f.close()
-                if type(time_units) is str and len(time_units)>1 and (
-                    time_units.find('months')==0 or time_units.find('days')==0 or
-                    time_units.find('hours')==0 ):
-                    time_units = fix_time_units( time_units )
-                    cdscan_line = 'cdscan -q '+'-x '+xml_name+' -e time.units="'+time_units+'" '+\
-                        ' '.join(famfiles)
-                else:
-                    print "WARNING, cannot find time units; will try to continue",famfiles[0]
-                    cdscan_line = 'cdscan -q '+'-x '+xml_name+' -e time.units="'+time_units+'" '+\
-                        ' '.join(famfiles)
-            print "cdscan_line=",cdscan_line
-            proc = subprocess.Popen([cdscan_line],shell=True)
-            proc_status = proc.wait()
-            if proc_status!=0: print "ERROR: cdscan terminated with",proc_status
+            cache_path = self._filetable.root_dir()
+            xml_name = run_cdscan( fam, famfiles, cache_path )
             f = cdms2.open( xml_name )
         else:
             # the easy case, just one file has all the data on this variable
