@@ -995,8 +995,13 @@ def run_cdscan( fam, famfiles, cache_path=None ):
     csum = hashlib.md5(file_list).hexdigest()
     xml_name = fam+'_cs'+csum+'.xml'
     if os.path.isfile( xml_name ):
-        print "using cached cdscan output",xml_name
+        print "using cached cdscan output",xml_name," (in data directory)"
         return xml_name
+    if cache_path is not None:
+        xml_name = os.path.join( cache_path, os.path.basename(xml_name) )
+        if os.path.isfile( os.path.join(cache_path,xml_name) ):
+            print "using cached cdscan output",xml_name," (in cache directory)"
+            return xml_name
 
     # Normally when we get here, it's because data has been divided by time among
     # several files.  So when cdscan puts it all back together, it needs the time
@@ -1132,7 +1137,8 @@ class reduced_variable(ftrow):
             # To do this safely, incorporate the file list (names,lengths,dates) into the xml file name.
             famfiles = [f for f in files if famdict[f]==fam]
 
-            cache_path = self._filetable.root_dir()
+            cache_path = self._filetable.cache_path()
+            print "jfp reduce() is using cache_path",cache_path
             xml_name = run_cdscan( fam, famfiles, cache_path )
             f = cdms2.open( xml_name )
         else:
