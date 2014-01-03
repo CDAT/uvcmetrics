@@ -202,7 +202,7 @@ class dirtree_datafiles( basic_datafiles ):
         else:
             cached=False
         if cached==False:
-            filetable = basic_filetable( self, ftid )
+            filetable = basic_filetable( self, ftid, cache_path=cache_path )
             f = open(cachefile,'wb')
             pickle.dump( filetable, f )
             f.close()
