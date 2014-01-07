@@ -233,8 +233,13 @@ class basic_one_line_plot( plotspec ):
         # Normally y=y(x), x is the axis of y.
         if xvar is None:
             xvar = yvar.getAxisList()[0]
+        x = vcs.init()
+        yx=x.createyxvsx()
+        ## Set the default parameters
+        yx.datawc_y1=-2
+        yx.datawc_y2=4
         plotspec.__init__( self, xvars=[xvar], yvars=[yvar],
-                           vid = yvar.id+" line plot", plottype='Yxvsx' )
+                           vid = yvar.id+" line plot", plottype=yx.tojson() )
 
 class basic_two_line_plot( plotspec ):
     def __init__( self, y1var, y2var, x1var=None, x2var=None ):

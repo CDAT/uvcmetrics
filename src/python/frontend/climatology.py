@@ -6,18 +6,19 @@
 # This is basically a simplified version of plot_data.py.
 
 import cdms2, math
+from metrics.fileio.findfiles import *
 from metrics.fileio.filetable import *
 from metrics.computation.reductions import *
 from metrics.amwg.derivations.oaht import *
 from metrics.amwg.derivations.ncl_isms import *
 from metrics.amwg.derivations.vertical import *
-from pprint import pprint
-
-from plot_data import derived_var, plotspec
+from metrics.amwg.plot_data import derived_var, plotspec
 from cdutil.times import Seasons
+from pprint import pprint
 
 class climatology_variable( reduced_variable ):
     def __init__(self,varname,filetable,seasonname='ANN'):
+        self.seasonname = seasonname
         if seasonname=='ANN':
             reduced_variable.__init__( self,
                variableid=varname, filetable=filetable,
@@ -26,13 +27,13 @@ class climatology_variable( reduced_variable ):
             season = cdutil.times.Seasons([seasonname])
             reduced_variable.__init__( self,
                variableid=varname, filetable=filetable,
-               reduction_function=(lambda x,vid=None: reduce_time_seasonal(x,season,vid=vid)) )
+               reduction_function=(lambda x,vid=None: reduce_time_seasonal(x,season)) )
 
 def test_driver( path1, filt1=None ):
     """ Test driver for setting up data for plots"""
-    datafiles1 = treeof_datafiles( path1, filt1 )
+    datafiles1 = dirtree_datafiles( path1, filt1 )
     print "jfp datafiles1=",datafiles1
-    get_them_all = False  # Set True to get all variables in all specified files
+    get_them_all = True  # Set True to get all variables in all specified files
     # Then you can call filetable1.list_variables to get the variable list.
     filetable1 = basic_filetable( datafiles1, get_them_all )
     print "jfp variable list from filetable1:", filetable1.list_variables()
@@ -59,24 +60,40 @@ def test_driver( path1, filt1=None ):
     # Compute the value of every variable we need.
     varvals = {}
     # First compute all the reduced variables
+    # Probably this loop consumes most of the running time.  It's what has to read in all the data.
+    #for key in varkeys[0:2]:  #quick version for testing
     for key in varkeys:
         varvals[key] = reduced_variables[key].reduce()
 
     # Now use the reduced and derived variables to compute the plot data.
+    #for key in varkeys[0:2]:  # quick version for testing
     for key in varkeys:
         var = reduced_variables[key]
-        filename = key+"_test.nc"
+        original_variable = var.variableid
+        filename = key.strip()+"_climo.nc"
         if varvals[key] is not None:
+            if not hasattr(varvals[key],'id') or varvals[key].id is None or varvals[key].id=='':
+                varvals[key].id = varvals[key].name
             g = cdms2.open( filename, 'w' )    # later, choose a better name and a path!
+            # ...actually we want to write this to a full directory structure like
+            #    root/institute/model/realm/run_name/season/
+            g.reduced_variable=varvals[key].id
+            g.original_variable=original_variable
+            g.variable=original_variable
+            g.season = var.seasonname
             g.write(varvals[key])
+            for attr,val in var._file_attributes.items():
+                if not hasattr( g, attr ):
+                    setattr( g, attr, val )
             g.close()
 
 if __name__ == '__main__':
    if len( sys.argv ) > 1:
-      from findfiles import *
       path1 = sys.argv[1]
-      if len( sys.argv ) > 2 and sys.argv[2].find('filt=')==0:  # need to use getopt to parse args
-          filt1 = sys.argv[2]
+      if len( sys.argv ) > 2 and sys.argv[2].find('--filt=')==0:  # need to use getopt to parse args
+          filt1 = sys.argv[2][7:]
+          #filt1="f_and(f_startswith('FLUT'),"+filt1+")"
+          print "jfp filt1=",filt1
           test_driver(path1,filt1)
       else:
           test_driver(path1)

@@ -92,7 +92,7 @@ class basic_filetable:
     Different file types will require different methods,
     and auxiliary data."""
 
-    def __init__( self, filelist, ftid='', get_them_all=False ):
+    def __init__( self, filelist, ftid='', cache_path=None, get_them_all=False ):
         """filelist is a list of strings, each of which is the path to a file"""
         self._table = []     # will be built from the filelist, see below
         # We have two indices, one by file and one by variable.
@@ -104,7 +104,8 @@ class basic_filetable:
         # own standard name list.
         self._varindex = {} # will be built as the table is built
         #print "filelist=",filelist,type(filelist)
-        self._filelist = filelist # just used for __repr__
+        self._filelist = filelist # just used for __repr__ and root_dir
+        self._cache_path=cache_path
         if filelist is None: return
         self._id = ftid
         for filep in filelist.files:
@@ -113,6 +114,17 @@ class basic_filetable:
        return 'filetable from '+str(self._filelist)
     def full_repr(self):
        return 'filetable from '+str(self._filelist)+'\n'+self._table.__repr__()
+    def root_dir(self):
+       """returns a root directory for the files in this filetable"""
+       if self._filelist is None: return None
+       file0 = self._filelist._root
+       return os.path.dirname( os.path.abspath(os.path.expanduser(file0)) )
+    def cache_path(self):
+       """returns the path to a directory suitable for cache files"""
+       if self._cache_path is None:
+          return self.root_dir()
+       else:
+          return self._cache_path
     def sort(self):
        """in-place sort keyed on the file paths"""
        self._table.sort(key=(lambda ftrow: ftrow.fileid))
