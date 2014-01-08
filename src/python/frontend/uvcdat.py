@@ -26,26 +26,27 @@ from multiprocessing import Process, Semaphore, Pipe
 import time
 
 #def _plotdata_run( child_conn, sema, plotspec, filetable1, filetable2, varname, seasonname, outputPath, aux=None ):
-def _plotdata_run(sema, plotspec, filetable1, filetable2, varname, seasonname, outputPath, unique_ID, taskTracker, aux=None ):
+def _plotdata_run(plotspec, filetable1, filetable2, varname, seasonname, outputPath, unique_ID, aux=None ):
     global vcsx
     vcsx = False # temporary kludge
-    sema.acquire()
-    ps = plotspec( filetable1, filetable2, varname, seasonname, aux )
+    #ps = plotspec( filetable1, filetable2, varname, seasonname, aux )
+    ps = None
     if ps is None:
         results = None
+        return results
     else:
         results = ps.compute()
         ts=time.time()
-        outfile=os.path.join(outputPath,str(ts))
+        outfile=os.path.join(outputPath,str(unique_ID),str(ts)+'.diagoutput')
         f=open(outfile,'w')
-        f.write(repr(results))
+        for i in range(0, len(results)):
+            f.write(results[i].write_plot_data(writer="JSON string"))
+            f.write('\n')
         f.close()
-        taskTracker.add_task(unique_ID,outfile)
-    sema.release()
     #child_conn.send(outfile)
     return outfile
 
-def plotdata_run( plotspec, filetable1, filetable2, varname, seasonname, outputPath, unique_ID, taskTracker, aux=None ):
+def plotdata_run( plotspec, filetable1, filetable2, varname, seasonname, outputPath, unique_ID, aux=None ):
     """Inputs:
     plotspec is a plot_spec class to be instantiated
     filetable1 is the model data file table
@@ -59,20 +60,24 @@ def plotdata_run( plotspec, filetable1, filetable2, varname, seasonname, outputP
     To check the status of p, call plotdata_status(p) to get a semaphore value (>0 means done).
     To get the computed value, call plotdata_results(p).
     """
-    sema = Semaphore()
     #parent_conn, child_conn = Pipe()
     #p = Process( target=_plotdata_run,
     #             args=(child_conn, sema,
     #                   plotspec, filetable1, filetable2, varname, seasonname, aux) )
+    outfile=_plotdata_run(plotspec, filetable1, filetable2, varname, seasonname, outputPath, unique_ID)
+    print outfile
+    """ 
     p = Process( target=_plotdata_run,
-                 args=(sema,
-                       plotspec, filetable1, filetable2, varname, seasonname, outputPath, unique_ID, taskTracker, aux) )
+                 args=(
+                       plotspec, filetable1, filetable2, varname, seasonname, outputPath, unique_ID, aux) )
     p.start()
-    #p.sema = sema
     pid = p.pid
     p.join()
+    
     #p.parent_conn = parent_conn
     return pid
+    """
+    return 1
 
 #def plotdata_status( p ):
 #    return p.sema.get_value()
