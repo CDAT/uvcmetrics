@@ -9,6 +9,7 @@ from metrics.frontend.uvcdat import *
 from unidata import udunits
 import cdutil.times
 from numbers import Number
+from pprint import pprint
 
 class AMWG(BasicDiagnosticGroup):
     """This class defines features unique to the AMWG Diagnostics."""
@@ -250,6 +251,12 @@ class amwg_plot_set2(amwg_plot_spec):
     def _results(self):
         results = plot_spec._results(self)
         if results is None: return None
+        psv = self.plotspec_values
+        psv['CAM_NCEP_HEAT_TRANSPORT_GLOBAL'].synchronize_many_values(
+            [ psv['CAM_NCEP_HEAT_TRANSPORT_PACIFIC'], psv['CAM_NCEP_HEAT_TRANSPORT_ATLANTIC'],
+              psv['CAM_NCEP_HEAT_TRANSPORT_INDIAN'] ],
+            suffix_length=0 )
+        # ...add the other two if this works <<<<<<
         return self.plotspec_values['CAM_NCEP_HEAT_TRANSPORT_ALL']
 
 
@@ -418,71 +425,8 @@ class amwg_plot_set4(amwg_plot_spec):
         plot_c_val = uvc_plotspec(
             [zdiffval],'Isofill', labels=['difference'],
             title=' '.join([self._var_baseid,z1unam,'-',z2unam]))
+        plot_a_val.synchronize_ranges(plot_b_val)
         return [ plot_a_val, plot_b_val, plot_c_val ]
-
-""" old version...
-class amwg_plot_set5(amwg_plot_spec):
-    #" " "
-    represents one plot from AMWG Diagnostics Plot Set 5.
-    Each such plot is a set of three contour plots: one each for model output, observations, and
-    the difference between the two.  A plot's x-axis is longitude and its y-axis is the latitude;
-    normally a world map will be overlaid.
-    The model and obs plots should have contours at the same values of
-    their variable.  The data presented is a climatological mean - i.e.,
-    time-averaged with times restricted to the specified season, DJF, JJA, or ANN.
-    #" " "
-    name = ' 5- Horizontal Contour Plots of Seasonal Means'
-    def __init__( self, filetable1, filetable2, varid, seasonid=None, aux=None ):
-        #" " "
-        filetable1, filetable2 should be filetables for model and obs.
-        varid is a string identifying the variable to be plotted, e.g. 'TREFHT'.
-        seasonid is a string such as 'DJF'.
-        #" " "
-        plot_spec.__init__(self,seasonid)
-        self.plottype = 'Isofill'
-        self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
-
-        self._var_baseid = '_'.join([varid,'set5'])   # e.g. TREFHT_set5
-        self.plot1_id = filetable1._id+'_'+varid+'_'+seasonid
-        self.plot2_id = filetable2._id+'_'+varid+'_'+seasonid
-        self.plot3_id = filetable1._id+' - '+filetable2._id+'_'+varid+'_'+seasonid
-        self.plotall_id = filetable1._id+'_'+filetable2._id+'_'+varid+'_'+seasonid
-
-        if not self.computation_planned:
-            self.plan_computation( filetable1, filetable2, varid, seasonid )
-    def plan_computation( self, filetable1, filetable2, varid, seasonid ):
-        self.reduced_variables = {
-            varid+'_1': reduced_variable(
-                variableid=varid, filetable=filetable1, reduced_var_id=varid+'_1',
-                reduction_function=(lambda x,vid: reduce2latlon_seasonal( x, self.season, vid ) ) ),
-            varid+'_2': reduced_variable(
-                variableid=varid, filetable=filetable2, reduced_var_id=varid+'_2',
-                reduction_function=(lambda x,vid: reduce2latlon_seasonal( x, self.season, vid ) ) )
-            }
-        self.derived_variables = {}
-        self.single_plotspecs = {
-            self.plot1_id: plotspec(
-                vid = varid+'_1',
-                zvars = [varid+'_1'],  zfunc = (lambda z: z),
-                plottype = self.plottype ),
-            self.plot2_id: plotspec(
-                vid = varid+'_2',
-                zvars = [varid+'_2'],  zfunc = (lambda z: z),
-                plottype = self.plottype ),
-            self.plot3_id: plotspec(
-                vid = varid+' diff',
-                zvars = [varid+'_1',varid+'_2'],  zfunc = aminusb_2ax,
-                plottype = self.plottype )
-            }
-        self.composite_plotspecs = {
-            self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id ]            
-            }
-        self.computation_planned = True
-    def _results(self):
-        results = plot_spec._results(self)
-        if results is None: return None
-        return self.plotspec_values[self.plotall_id]
-"""
 
 class amwg_plot_set5and6(amwg_plot_spec):
     """represents one plot from AMWG Diagnostics Plot Sets 5 and 6
@@ -501,6 +445,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
         self.plottype = 'Isofill'
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
 
+        self.varid = varid
         self._var_baseid = '_'.join([varid,'set6'])   # e.g. TREFHT_set6
         self.plot1_id = filetable1._id+'_'+varid+'_'+seasonid
         self.plot2_id = filetable2._id+'_'+varid+'_'+seasonid
@@ -566,6 +511,8 @@ class amwg_plot_set5and6(amwg_plot_spec):
         # (time, lev,lat,lon).
         # If there were another axis, then we'd need a new function which reduces it as well.
         if not isinstance(aux,Number): return None
+        pselect = udunits(aux,'mbar')
+
         self.reduced_variables = {
             varid+'_1': reduced_variable(  # var=var(time,lev,lat,lon)
                 variableid=varid, filetable=filetable1, reduced_var_id=varid+'_1',
@@ -578,33 +525,49 @@ class amwg_plot_set5and6(amwg_plot_spec):
                 reduction_function=(lambda x,vid=None: x) ),
             'PS_1': reduced_variable(     # ps=ps(time,lat,lon)
                 variableid='PS', filetable=filetable1, reduced_var_id='PS_1',
-                reduction_function=(lambda x,vid=None: reduce_time_seasonal( x, self.season, vid ) ) ),
-            varid+'_2': reduced_variable(  # var=var(time,lev,lat,lon)
-                variableid=varid, filetable=filetable2, reduced_var_id=varid+'_2',
-                reduction_function=(lambda x,vid: reduce_time_seasonal( x, self.season, vid ) ) ),
-            'hyam_2': reduced_variable(   # hyam=hyam(lev)
-                variableid='hyam', filetable=filetable2, reduced_var_id='hyam_2',
-                reduction_function=(lambda x,vid=None: x) ),
-            'hybm_2': reduced_variable(   # hybm=hybm(lev)
-                variableid='hybm', filetable=filetable2, reduced_var_id='hybm_2',
-                reduction_function=(lambda x,vid=None: x) ),
-            'PS_2': reduced_variable(     # ps=ps(time,lat,lon)
-                variableid='PS', filetable=filetable2, reduced_var_id='PS_2',
-                reduction_function=(lambda x,vid=None: reduce_time_seasonal( x, self.season, vid ) ) )
-            }
-        pselect = udunits(aux,'mbar')
+                reduction_function=(lambda x,vid=None: reduce_time_seasonal( x, self.season, vid ) ) ) }
         vid1 = varid+'_p_1'
         vidl1 = varid+'_lp_1'
-        vid2 = varid+'_p_2'
-        vidl2 = varid+'_lp_2'
         self.derived_variables = {
             vid1: derived_var( vid=vid1, inputs=[ varid+'_1', 'hyam_1', 'hybm_1', 'PS_1' ],
                                func=verticalize ),
-            vidl1: derived_var( vid=vidl1, inputs=[vid1], func=(lambda z: select_lev(z,pselect) ) ),
-            vid2: derived_var( vid=vid2, inputs=[ varid+'_2', 'hyam_2', 'hybm_2', 'PS_2' ],
-                               func=verticalize ),
-            vidl2: derived_var( vid=vidl2, inputs=[vid2], func=(lambda z: select_lev(z,pselect) ) )
-            }
+            vidl1: derived_var( vid=vidl1, inputs=[vid1], func=(lambda z: select_lev(z,pselect))) }
+        if 'hyam' in filetable2.list_variables() and 'hybm' in filetable2.list_variables():
+            # hybrid levels in use, convert to pressure levels
+            self.reduced_variables.update( {
+                varid+'_2': reduced_variable(  # var=var(time,lev,lat,lon)
+                    variableid=varid, filetable=filetable2, reduced_var_id=varid+'_2',
+                    reduction_function=(lambda x,vid: reduce_time_seasonal( x, self.season, vid ) ) ),
+                'hyam_2': reduced_variable(   # hyam=hyam(lev)
+                    variableid='hyam', filetable=filetable2, reduced_var_id='hyam_2',
+                    reduction_function=(lambda x,vid=None: x) ),
+                'hybm_2': reduced_variable(   # hybm=hybm(lev)
+                    variableid='hybm', filetable=filetable2, reduced_var_id='hybm_2',
+                    reduction_function=(lambda x,vid=None: x) ),
+                'PS_2': reduced_variable(     # ps=ps(time,lat,lon)
+                    variableid='PS', filetable=filetable2, reduced_var_id='PS_2',
+                    reduction_function=(lambda x,vid=None: reduce_time_seasonal( x, self.season, vid ) ) )
+                } )
+            vid2 = varid+'_p_2'
+            vidl2 = varid+'_lp_2'
+            self.derived_variables.update( {
+                    vid2: derived_var( vid=vid2, inputs=[ varid+'_2', 'hyam_2', 'hybm_2', 'PS_2' ],
+                                       func=verticalize ),
+                    vidl2: derived_var( vid=vidl2, inputs=[vid2], func=(lambda z: select_lev(z,pselect) ) )
+                    } )
+        else:
+            # no hybrid levels, assume pressure levels.
+            vid2 = varid+'_2'
+            self.reduced_variables.update( {
+                vid2: reduced_variable(  # var=var(time,lev,lat,lon)
+                    variableid=varid, filetable=filetable2, reduced_var_id=varid+'_2',
+                    reduction_function=(lambda x,vid: reduce_time_seasonal( x, self.season, vid ) ) )
+                } )
+            vidl2 = varid+'_lp_2'
+            self.derived_variables.update( {
+                    vidl2: derived_var( vid=vidl2, inputs=[vid2], func=(lambda z: select_lev(z,pselect) ) )
+                    } )
+
         self.single_plotspecs = {
             self.plot1_id: plotspec(
                 vid = varid+'_1',
@@ -627,6 +590,12 @@ class amwg_plot_set5and6(amwg_plot_spec):
     def _results(self):
         results = plot_spec._results(self)
         if results is None: return None
+        psv = self.plotspec_values
+        print "jfp in plot set 5&6 results psv="
+        pprint( psv)
+        if psv[self.plot1_id] is not None\
+                and psv[self.plot2_id] is not None:
+            psv[self.plot1_id].synchronize_ranges(psv[self.plot2_id])
         return self.plotspec_values[self.plotall_id]
 
 
@@ -649,74 +618,3 @@ class amwg_plot_set6(amwg_plot_set5and6):
     """
     name = ' 6- Horizontal Vector Plots of Seasonal Means'
 
-
-class amwg_jerry( amwg_plot_spec ):
-    """200 mb heights from variable Z3, for Jerry Potter"""
-    #no name makes this invisible:  name = 'Jerry Potter'
-    def __init__( self, filetable1, filetable2, varid, seasonid=None, aux=None ):
-        plot_spec.__init__(self,seasonid)
-        self.plottype = 'Isofill'
-        self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
-
-        self._var_baseid = '_'.join([varid,'set6'])   # e.g. TREFHT_set6
-        self.plot1_id = filetable1._id+'_'+varid+'_'+seasonid
-        self.plotall_id = filetable1._id+'_'+varid+'_'+seasonid
-
-        if not self.computation_planned:
-            self.plan_computation( filetable1, filetable2, varid, seasonid, aux )
-    @staticmethod
-    def _list_variables( self, filetable1=None, filetable2=None ):
-        return ['Z3']  # actually any 3-D variable would work
-    @staticmethod
-    def _all_variables( self, filetable1=None, filetable2=None ):
-        return {'Z3':basic_level_variable}  # actually any 3-D variable would work
-    def plan_computation( self, filetable1, filetable2, varid, seasonid, aux ):
-        # >>> Instead of reduce2latlon, I want to 
-        # (1) Average var (Z3 for now) over time, thus reducing from Z3(time,hlev,lat,lon)
-        # to Z3b(hlev,lat,lon) .  This is all that happens at the reduced_variables level.
-        # (2) convert Z3b from hybrid (hlev) to pressure (plev) level coordinates- Z3c(plev,lat,lon)
-        # This Z3c is a derived variable
-        # (3) restrict Z3 to the 200 MB level, thus reducing it to Z3d(lat,lon)
-        # This will have to be as the zfunc in the final plot definition.
-
-        # In calling reduce_time_seasonal, I am assuming that no variable has axes other than (time,
-        # lev,lat,lon).  If there were another axis, then we'd need a new function which reduces it.
-        if isinstance(aux,Number):
-            self.reduced_variables = {
-                varid+'_1': reduced_variable(  # var=var(time,lev,lat,lon)
-                    variableid=varid, filetable=filetable1, reduced_var_id=varid+'_1',
-                    reduction_function=(lambda x,vid: reduce_time_seasonal( x, self.season, vid ) ) ),
-                'hyam': reduced_variable(   # hyam=hyam(lev)
-                    variableid='hyam', filetable=filetable1, reduced_var_id='hyam',
-                    reduction_function=(lambda x,vid=None: x) ),
-                'hybm': reduced_variable(   # hybm=hybm(lev)
-                    variableid='hybm', filetable=filetable1, reduced_var_id='hybm',
-                    reduction_function=(lambda x,vid=None: x) ),
-                'ps': reduced_variable(     # ps=ps(time,lat,lon)
-                    variableid='PS', filetable=filetable1, reduced_var_id='ps',
-                    reduction_function=(lambda x,vid=None: reduce_time_seasonal( x, self.season, vid ) ) )
-                }
-        else:
-            print "ERROR, for var=",varid," aux=",aux," is not supported yet!"
-            self.plotall_id = None
-            return None
-        vid1 = varid+'_p'+'_1'
-        self.derived_variables = {
-            vid1: derived_var( vid=vid1, inputs=[ varid+'_1', 'hyam', 'hybm', 'ps' ], func=verticalize )
-            }
-        pselect = udunits(200,'mbar')
-        self.single_plotspecs = {
-            self.plot1_id: plotspec(
-                vid = varid+'_1',
-                zvars = [vid1],  zfunc = (lambda z: select_lev( z, pselect ) ),
-                plottype = self.plottype )
-            }
-        self.composite_plotspecs = {
-            self.plotall_id: [ self.plot1_id ]            
-            }
-        self.computation_planned = True
-    def _results(self):
-        if self.plotall_id is None: return None
-        results = plot_spec._results(self)
-        if results is None: return None
-        return self.plotspec_values[self.plotall_id]
