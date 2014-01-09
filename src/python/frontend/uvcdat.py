@@ -102,11 +102,11 @@ class uvc_plotspec():
     # Isofill is a contour plot.  To make it polar, set projection=polar.  I'll
     # probably communicate that by passing a name "Isofill_polar".
     def __init__( self, vars, presentation, labels=[], title=''):
-        type = presentation
+        ptype = presentation
         if vcsx:   # temporary kludge, presently need to know whether preparing VCS plots
             if presentation=="Yxvsx":
                 self.presentation = vcsx.createyxvsx()
-                type="Yxvsx"
+                ptype="Yxvsx"
             elif presentation == "Isofill":
                 self.presentation = vcsx.createisofill()
             elif presentation == "Vector":
@@ -125,7 +125,21 @@ class uvc_plotspec():
         self.vars = vars
         self.labels = labels
         self.title = title
-        self.type = type
+        self.type = ptype
+        # Initial ranges - may later be changed to coordinate with related plots:
+        # For each variable named 'v', the i-th member of self.vars, (most often there is just one),
+        # varmax[v] is the maximum value of v, varmin[v] is the minimum value of v,
+        # axmax[v][ax] is the maximum value of the axis of v with id=ax.
+        # axmin[v][ax] is the minimum value of the axis of v with id=ax.
+        self.varmax = {}
+        self.varmin = {}
+        self.axmax = {}
+        self.axmin = {}
+        for var in vars:
+            self.varmax[var.id] = var.max()
+            self.varmin[var.id] = var.min()
+            self.axmax[var.id]  = { ax[0].id:max(ax[0][:]) for ax in var._TransientVariable__domain[:] }
+            self.axmin[var.id]  = { ax[0].id:min(ax[0][:]) for ax in var._TransientVariable__domain[:] }
     def __repr__(self):
         return ("uvc_plotspec %s: %s\n" % (self.presentation,self.title))
     def _json(self,*args,**kwargs):
@@ -134,6 +148,97 @@ class uvc_plotspec():
         vars_json = json.dumps(vars_json_list)
         return {'vars':vars_json, 'presentation':self.presentation, 'type':self.type,\
                     'labels':self.labels, 'title':self.title }
+    def synchronize_ranges( self, pset ):
+        """Synchronize the range attributes of this and another uvc_plotspec object, pset.
+        That is, numerical values of corresponding range attributes will be changed to be the same.
+        A problem is that these ranges are tied to variable names, and the variable names should be
+        unique.  Typically the ranges we want to synchronize belong to the same variable from two
+        filetables, so the variable names are of the form VAR_1 and VAR_2.  For the moment, we'll
+        just strip off _1 and _2 endings, but in the future something more reliable will be needed,
+        e.g. index dicts off a tuple such as ("VAR",2) instead of a string "VAR_2".
+        """
+        self.synchronize_values( pset )
+        self.synchronize_axes(pset)
+    def synchronize_values( self, pset, suffix_length=2 ):
+        "the part of synchronize_ranges for variable values only"
+        sl = -suffix_length
+        if sl==0:
+            self_suffix = ""
+            pset_suffix = ""
+        else:
+            self_suffix = self.vars[0].id[sl:]
+            pset_suffix = pset.vars[0].id[sl:]
+        if sl==0:
+            var_ids = set([v.id for v in self.vars]) & set([v.id for v in pset.vars])
+        else:
+            var_ids = set([v.id[:sl] for v in self.vars]) & set([v.id[:sl] for v in pset.vars])
+        for vid in var_ids:
+            vids = vid+self_suffix
+            vidp = vid+pset_suffix
+            print "jfp vid,vids,vidp=",vid,vids,vidp
+            varmax = max( self.varmax[vids], pset.varmax[vidp] )
+            varmin = min( self.varmin[vids], pset.varmin[vidp] )
+            self.varmax[vids] = varmax
+            pset.varmax[vidp] = varmax
+            self.varmin[vids] = varmin
+            pset.varmin[vidp] = varmin
+    def synchronize_many_values( self, psets, suffix_length=0 ):
+        """the part of synchronize_ranges for variable values only - except that psets is a list of
+        uvc_plotset instances.  Thus we can combine ranges of many variable values."""
+        sl = -suffix_length
+        if sl==0:
+            self_suffix = ""
+        else:
+            self_suffix = self.vars[0].id[sl:]
+        pset_suffices = range(len(psets))
+        for i in range(len(psets)):
+            if sl==0:
+                pset_suffices[i] = ""
+            else:
+                pset_suffices[i] = psets[i].vars[0].id[sl:]
+        if sl==0:
+            var_ids = set([v.id for v in self.vars])
+            for i in range(len(psets)):
+                var_ids =  var_ids & set([v.id for v in psets[i].vars])
+        else:
+            var_ids = set([v.id[:sl] for v in self.vars])
+            for i in range(len(psets)):
+                var_ids = var_ids & set([v.id[:sl] for v in psets[i].vars])
+        for vid in var_ids:
+            vids = vid+self_suffix
+            varmax = self.varmax[vids]
+            varmin = self.varmin[vids]
+            for i in range(len(psets)):
+                vidp = vid+pset_suffices[i]
+                print "jfp vid,vids,vidp=",vid,vids,vidp
+                varmax = max( varmax, psets[i].varmax[vidp] )
+                varmin = min( varmin, psets[i].varmin[vidp] )
+            self.varmax[vids] = varmax
+            self.varmin[vids] = varmin
+            for i in range(len(psets)):
+                vidp = vid+pset_suffices[i]
+                psets[i].varmax[vidp] = varmax
+                psets[i].varmin[vidp] = varmin
+    def synchronize_axes( self, pset ):
+        "the part of synchronize_ranges for axes only"
+        self_suffix = self.vars[0].id[-2:]
+        pset_suffix = pset.vars[0].id[-2:]
+        var_ids = set([v.id[:-2] for v in self.vars]) & set([v.id[:-2] for v in pset.vars])
+        vards = { v.id: v for v in self.vars }
+        vardp = { v.id: v for v in pset.vars }
+        for vid in var_ids:
+            vids = vid+self_suffix
+            vidp = vid+pset_suffix
+            ax_ids = set([ ax[0].id for ax in vards[vids]._TransientVariable__domain ]) & \
+                set([ ax[0].id for ax in vardp[vidp]._TransientVariable__domain ])
+            axmaxs = { aid: max( self.axmax[vids][aid], pset.axmax[vidp][aid] ) for aid in ax_ids }
+            axmins = { aid: min( self.axmin[vids][aid], pset.axmin[vidp][aid] ) for aid in ax_ids }
+            for aid in ax_ids:
+                self.axmax[vids][aid] = axmaxs[aid]
+                pset.axmax[vidp][aid] = axmaxs[aid]
+                self.axmin[vids][aid] = axmins[aid]
+                pset.axmin[vidp][aid] = axmins[aid]
+        
     def write_plot_data( self, writer="" ):
         # This is just experimental code, so far.
         if writer=="" or writer=="NetCDF" or writer=="NetCDF file":
@@ -221,13 +326,20 @@ class basic_one_line_plot( plotspec ):
         # Normally y=y(x), x is the axis of y.
         if xvar is None:
             xvar = yvar.getAxisList()[0]
-        x = vcs.init()
-        yx=x.createyxvsx()
-        ## Set the default parameters
-        yx.datawc_y1=-2
-        yx.datawc_y2=4
-        plotspec.__init__( self, xvars=[xvar], yvars=[yvar],
-                           vid = yvar.id+" line plot", plottype=yx.tojson() )
+        if xvar == "never really come here":
+            ### modified sample from Charles of how we will pass around plot parameters...
+            vcsx = vcs.init()      # but note that this doesn't belong here!
+            yx=vcsx.createyxvsx()
+            # Set the default parameters
+            yx.datawc_y1=-2  # a lower bound, "data 1st world coordinate on Y axis"
+            yx.datawc_y2=4  # an upper bound, "data 2nd world coordinate on Y axis"
+            plotspec.__init__( self, xvars=[xvar], yvars=[yvar],
+                               vid = yvar.id+" line plot", plottype=yx.tojson() )
+            ### ...sample from Charles of how we will pass around plot parameters
+        else:
+            # This is the real code:
+            plotspec.__init__( self, xvars=[xvar], yvars=[yvar],
+                               vid = yvar.id+" line plot", plottype='Yxvsx' )
 
 class basic_two_line_plot( plotspec ):
     def __init__( self, y1var, y2var, x1var=None, x2var=None ):
