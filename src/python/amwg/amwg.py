@@ -134,6 +134,9 @@ class amwg_plot_set2(amwg_plot_spec):
     @staticmethod
     def _list_variables( self, filetable1=None, filetable2=None ):
         return ['Ocean_Heat']
+    @staticmethod
+    def _all_variables( self, filetable1, filetable2=None ):
+        return { vn:basic_plot_variable for vn in amwg_plot_set2._list_variables( filetable1, filetable2 ) }
     def plan_computation( self, filetable1, filetable2, varid, seasonid ):
         # CAM variables needed for heat transport: (SOME ARE SUPERFLUOUS <<<<<<)
         # FSNS, FLNS, FLUT, FSNTOA, FLNT, FSNT, SHFLX, LHFLX,
