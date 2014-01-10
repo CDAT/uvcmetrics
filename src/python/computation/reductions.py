@@ -796,7 +796,7 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
             mv2new = mv2
             # Interpolate mv2 from axis2 to axis1 in both directions.  Use the CDAT regridder.
             grid2 = mv2.getGrid()
-            mv1new = mv1.regrid(grid2)
+            mv1new = mv1.regrid(grid2,regridTool="regrid2")
     aminusb = mv1new - mv2new
     aminusb.id = mv1.id
     return aminusb
