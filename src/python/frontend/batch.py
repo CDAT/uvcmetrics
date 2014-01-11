@@ -56,8 +56,8 @@ for pname,pclass in dm.items():
             print "jfp seasonid=",seasonid
             print "jfp variables=",package.list_variables( filetable1, filetable2, sname  )
             for varid in package.list_variables( filetable1, filetable2, sname  ):
-                if varid!='Z3':
-                    continue # for testing, only do one variable
+                #if varid!='Z3':
+                #    continue # for testing, only do one variable
                 print "jfp varid=",varid
                 #proc = plotdata_run( sclass, filetable1, filetable2, varid, seasonid )
                 #res = plotdata_results( proc )
@@ -69,12 +69,13 @@ for pname,pclass in dm.items():
                 for aux in varopt:
                     plot = sclass( filetable1, filetable2, varid, seasonid, aux )
                     res = plot.compute()
-                    if res is not None: #>>> TO DO write res to a NetCDF file <<<<
+                    if res is not None: #>>> TO DO write res itself to a NetCDF file <<<<
                         number_diagnostic_plots += 1
                         #print plot
                         #pprint( res )
                         for r in res:
-                             #print( r.write_plot_data( writer="JSON string" ) )
-                            #not working... r.write_plot_data(outpath)
-                            pass
+                            if r is None: continue
+                            #print( r.write_plot_data( writer="JSON string" ) )
+                            r.write_plot_data("NetCDF",outpath)
+
 print "total number of diagnostic plots generated =", number_diagnostic_plots
