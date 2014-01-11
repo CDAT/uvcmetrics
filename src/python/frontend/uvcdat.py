@@ -251,31 +251,31 @@ class uvc_plotspec():
                 self.axmin[vids][aid] = axmins[aid]
                 pset.axmin[vidp][aid] = axmins[aid]
         
-    def write_plot_data( self, writer="" ):
+    def write_plot_data( self, format="", where="" ):
         # This is just experimental code, so far.
-        if writer=="" or writer=="NetCDF" or writer=="NetCDF file":
-            writer = "NetCDF file"
-        elif writer=="JSON string":
+        if format=="" or format=="NetCDF" or format=="NetCDF file":
+            format = "NetCDF file"
+        elif format=="JSON string":
             pass
-        elif writer=="JSON file":
+        elif format=="JSON file":
             pass
         else:
-            print "WARNING: write_plot_data cannot recognize writer name",writer,\
+            print "WARNING: write_plot_data cannot recognize format name",format,\
                 ", will write a NetCDF file."
-            writer = "NetCDF file"
+            format = "NetCDF file"
 
         if len(self.title)<=0:
             fname = 'foo'
         else:
             fname = self.title.strip()+'.nc'
-        filename = os.path.join(writer,fname)
+        filename = os.path.join(where,fname)
         print "output to",filename
 
-        if writer=="NetCDF file":
+        if format=="NetCDF file":
             writer = cdms2.open( filename, 'w' )    # later, choose a better name and a path!
-        elif writer=="JSON file":
+        elif format=="JSON file":
             print "ERROR: JSON file not implemented yet"
-        elif writer=="JSON string":
+        elif format=="JSON string":
             return json.dumps(self,cls=DiagsEncoder)
 
         for zax in self.vars:
