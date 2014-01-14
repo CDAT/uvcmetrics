@@ -107,8 +107,9 @@ def clear_filetable( search_path, cache_path, search_filter=None ):
 class uvc_composite_plotspec():
     def __init__( self, uvcps ):
         """uvcps is a list of instances of uvc_simple_plotspec"""
-        self.plots = uvcps
-        self.title = ' '.join([p.title for p in uvcps])
+        ups = [p for p in uvcps if p is not None]
+        self.plots = ups
+        self.title = ' '.join([p.title for p in ups])
     def outfile( self, format='xml-NetCDF', where=""):
         print "jfp self.title=",self.title
         if len(self.title)<=0:
@@ -116,6 +117,7 @@ class uvc_composite_plotspec():
         else:
             fname = (self.title.strip()+'.xml').replace(' ','_')
         filename = os.path.join(where,fname)
+        filename=filename[:119]
         print "output to",filename
         return filename
     def write_plot_data( self, format="", where="" ):
@@ -152,7 +154,7 @@ class uvc_simple_plotspec():
     # re prsentation (plottype): Yxvsx is a line plot, for Y=Y(X).  It can have one or several lines.
     # Isofill is a contour plot.  To make it polar, set projection=polar.  I'll
     # probably communicate that by passing a name "Isofill_polar".
-    def __init__( self, vars, presentation, labels=[], title=''):
+    def __init__( self, pvars, presentation, labels=[], title=''):
         ptype = presentation
         if vcsx:   # temporary kludge, presently need to know whether preparing VCS plots
             if presentation=="Yxvsx":
@@ -173,10 +175,11 @@ class uvc_simple_plotspec():
             self.presentation = presentation
         ## elif presentation == "":
         ##     self.resentation = vcsx.create
-        self.vars = vars
+        self.vars = pvars
         self.labels = labels
         self.title = title
         self.type = ptype
+        self.ptype = ptype
         # Initial ranges - may later be changed to coordinate with related plots:
         # For each variable named 'v', the i-th member of self.vars, (most often there is just one),
         # varmax[v] is the maximum value of v, varmin[v] is the minimum value of v,
@@ -186,11 +189,40 @@ class uvc_simple_plotspec():
         self.varmin = {}
         self.axmax = {}
         self.axmin = {}
-        for var in vars:
+        for var in pvars:
             self.varmax[var.id] = var.max()
             self.varmin[var.id] = var.min()
             self.axmax[var.id]  = { ax[0].id:max(ax[0][:]) for ax in var._TransientVariable__domain[:] }
             self.axmin[var.id]  = { ax[0].id:min(ax[0][:]) for ax in var._TransientVariable__domain[:] }
+
+    def finalize( self ):
+        """By the time this is called, all synchronize operations should have been done.  But even
+        so, each variable has a min and max and a min and max for each of its axes.  We need to
+        simplify further for the plot package."""
+        print "jfp axmax="
+        pprint( self.axmax )
+        print "jfp varmax="
+        pprint( self.varmax )
+        if self.presentation.__class__.__name__=="GYx":
+            # VCS Yxvsx.
+            var = self.vars[0]
+            axmax = self.axmax[var.id]
+            axmin = self.axmin[var.id]
+            varmax = self.varmax[var.id]
+            varmin = self.varmin[var.id]
+            for v in self.vars[1:]:
+                for ax in axmax.keys():
+                    axmax[ax] = max(axmax[ax],self.axmax[v.id][ax])
+                    axmin[ax] = min(axmin[ax],self.axmin[v.id][ax])
+                varmax = max(varmax,self.varmax[v.id])
+                varmin = min(varmin,self.varmin[v.id])
+            print "jfp axmax,axmin=",axmax,axmin
+            print "jfp varmax,varmin=",varmax,varmin
+            #self.presentation.datawc_x1 = axmax
+            #self.presentation.datawc_x2 = axmin
+            #self.presentation.datawc_y1 = varmax
+            #self.presentation.datawc_y2 = varmin
+
     def __repr__(self):
         return ("uvc_plotspec %s: %s\n" % (self.presentation,self.title))
     def _json(self,*args,**kwargs):
@@ -320,8 +352,13 @@ class uvc_simple_plotspec():
         elif format=="JSON string":
             return json.dumps(self,cls=DiagsEncoder)
 
+        writer.presentation = self.ptype
+        plot_these = []
         for zax in self.vars:
+            print "jfp zax.id=",zax.id
             writer.write( zax )
+            plot_these.append( zax.id )
+        writer.plot_these = ' '.join(plot_these)
 
         writer.close()
 
