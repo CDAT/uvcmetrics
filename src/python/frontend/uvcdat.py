@@ -24,24 +24,32 @@ vcsx=vcs.init()   # This belongs in one of the GUI files, e.g.diagnosticsDockWid
 
 from multiprocessing import Process, Semaphore, Pipe
 import time
+import cdms2
 
 #def _plotdata_run( child_conn, sema, plotspec, filetable1, filetable2, varname, seasonname, outputPath, aux=None ):
 def _plotdata_run(plotspec, filetable1, filetable2, varname, seasonname, outputPath, unique_ID, aux=None ):
     global vcsx
     vcsx = False # temporary kludge
-    #ps = plotspec( filetable1, filetable2, varname, seasonname, aux )
-    ps = None
+    ps = plotspec( filetable1, filetable2, varname, seasonname, aux )
+    #ps = None
     if ps is None:
         results = None
         return results
     else:
         results = ps.compute()
         ts=time.time()
+        """
         outfile=os.path.join(outputPath,str(unique_ID),str(ts)+'.diagoutput')
         f=open(outfile,'w')
         for i in range(0, len(results)):
             f.write(results[i].write_plot_data(writer="JSON string"))
             f.write('\n')
+        f.close()
+        """
+        outfile=os.path.join(outputPath,str(unique_ID),str(ts)+'.diagoutput')
+        print outfile
+        f=cdms2.open(outfile,'w')
+        f.write(results[0].vars)
         f.close()
     #child_conn.send(outfile)
     return outfile
