@@ -326,6 +326,9 @@ class amwg_plot_set3(amwg_plot_spec):
         plot_b_val = uvc_plotspec(
             [ydiffval],'Yxvsx', labels=['difference'],
             title=' '.join([self._var_baseid,y1unam,'-',y2unam]))
+        plot_a_val.synchronize_ranges(plot_b_val)
+        plot_a_val.finalize()
+        plot_b_val.finalize()
         return [ plot_a_val, plot_b_val ]
 
 class amwg_plot_set4(amwg_plot_spec):
@@ -599,6 +602,10 @@ class amwg_plot_set5and6(amwg_plot_spec):
         if psv[self.plot1_id] is not None\
                 and psv[self.plot2_id] is not None:
             psv[self.plot1_id].synchronize_ranges(psv[self.plot2_id])
+        for key,val in psv.items():
+            if type(val) is not list: val=[val]
+            for v in val:
+                v.finalize()
         return self.plotspec_values[self.plotall_id]
 
 
