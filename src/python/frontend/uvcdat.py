@@ -37,9 +37,11 @@ def _plotdata_run(sema, plotspec, filetable1, filetable2, varname, seasonname, o
         results = ps.compute()
         ts=time.time()
         outfile=os.path.join(outputPath,str(ts))
-        f=open(outfile,'w')
-        f.write(repr(results))
-        f.close()
+        if type(results) is list:
+            results_obj = uvc_composite_plotspec(results)
+        else:
+            results_obj = results
+        results_obj.write_plot_data( "", os.path.join(outputPath) ) # second arg sdb directory
         taskTracker.add_task(unique_ID,outfile)
     sema.release()
     #child_conn.send(outfile)
@@ -199,10 +201,6 @@ class uvc_simple_plotspec():
         """By the time this is called, all synchronize operations should have been done.  But even
         so, each variable has a min and max and a min and max for each of its axes.  We need to
         simplify further for the plot package."""
-        print "jfp axmax="
-        pprint( self.axmax )
-        print "jfp varmax="
-        pprint( self.varmax )
         if self.presentation.__class__.__name__=="GYx":
             # VCS Yxvsx.
             var = self.vars[0]
@@ -211,17 +209,17 @@ class uvc_simple_plotspec():
             varmax = self.varmax[var.id]
             varmin = self.varmin[var.id]
             for v in self.vars[1:]:
+                print "WARNING, too many axes for line plot"
                 for ax in axmax.keys():
                     axmax[ax] = max(axmax[ax],self.axmax[v.id][ax])
                     axmin[ax] = min(axmin[ax],self.axmin[v.id][ax])
                 varmax = max(varmax,self.varmax[v.id])
                 varmin = min(varmin,self.varmin[v.id])
-            print "jfp axmax,axmin=",axmax,axmin
-            print "jfp varmax,varmin=",varmax,varmin
-            #self.presentation.datawc_x1 = axmax
-            #self.presentation.datawc_x2 = axmin
-            #self.presentation.datawc_y1 = varmax
-            #self.presentation.datawc_y2 = varmin
+            ax = axmax.keys()[0]
+            self.presentation.datawc_x1 = axmin[ax]
+            self.presentation.datawc_x2 = axmax[ax]
+            self.presentation.datawc_y1 = varmin
+            self.presentation.datawc_y2 = varmax
 
     def __repr__(self):
         return ("uvc_plotspec %s: %s\n" % (self.presentation,self.title))
