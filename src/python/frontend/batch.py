@@ -71,8 +71,8 @@ for pname,pclass in dm.items():
                     #    continue
                     plot = sclass( filetable1, filetable2, varid, seasonid, aux )
                     res = plot.compute()
-                    resc = uvc_composite_plotspec( res )
-                    if res is not None: #>>> TO DO write res itself to a NetCDF file <<<<
+                    if res is not None:
+                        resc = uvc_composite_plotspec( res )
                         number_diagnostic_plots += 1
                         resc.write_plot_data("xml-NetCDF", outpath )
 
