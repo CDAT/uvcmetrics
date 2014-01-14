@@ -67,15 +67,13 @@ for pname,pclass in dm.items():
                 if varopt is None:
                     varopt = [None]
                 for aux in varopt:
+                    #if aux != '850 mbar':
+                    #    continue
                     plot = sclass( filetable1, filetable2, varid, seasonid, aux )
                     res = plot.compute()
+                    resc = uvc_composite_plotspec( res )
                     if res is not None: #>>> TO DO write res itself to a NetCDF file <<<<
                         number_diagnostic_plots += 1
-                        #print plot
-                        #pprint( res )
-                        for r in res:
-                            if r is None: continue
-                            #print( r.write_plot_data( writer="JSON string" ) )
-                            r.write_plot_data("NetCDF",outpath)
+                        resc.write_plot_data("xml-NetCDF", outpath )
 
 print "total number of diagnostic plots generated =", number_diagnostic_plots
