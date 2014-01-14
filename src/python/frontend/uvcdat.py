@@ -104,7 +104,46 @@ def clear_filetable( search_path, cache_path, search_filter=None ):
     if os.path.isfile(cache_path):
         os.remove(cache_path)
 
-class uvc_plotspec():
+class uvc_composite_plotspec():
+    def __init__( self, uvcps ):
+        """uvcps is a list of instances of uvc_simple_plotspec"""
+        self.plots = uvcps
+        self.title = ' '.join([p.title for p in uvcps])
+    def outfile( self, format='xml-NetCDF', where=""):
+        print "jfp self.title=",self.title
+        if len(self.title)<=0:
+            fname = 'foo'
+        else:
+            fname = (self.title.strip()+'.xml').replace(' ','_')
+        filename = os.path.join(where,fname)
+        print "output to",filename
+        return filename
+    def write_plot_data( self, format="", where="" ):
+        if format=="" or format=="xml" or format=="xml-NetCDF" or format=="xml file":
+            format = "xml-NetCDF"
+            contents_format = "NetCDF"
+        else:
+            print "WARNING: write_plot_data cannot recognize format name",format,\
+                ", will write a xml file pointing to NetCDF files."
+            format = "xml-NetCDF"
+            conents_format = "NetCDF"
+
+        for p in self.plots:
+            p.write_plot_data( contents_format, where )
+
+        print "jfp format=",format
+        print "jfp where=",where
+        filename = self.outfile( format, where )
+        print "jfp filename=",filename
+        writer = open( filename, 'w' )    # later, choose a better name and a path!
+        writer.write("<plotdata>\n")
+        for p in self.plots:
+            pfn = p.outfile(where)
+            writer.write( "<ncfile>"+pfn+"</ncfile>\n" )
+        writer.write( "</plotdata>\n" )
+        writer.close()
+
+class uvc_simple_plotspec():
     """This is a simplified version of the plotspec class, intended for the UV-CDAT GUI.
     Once it stabilizes, I may replace the plotspec class with this one.
     The plots will be of the type specified by presentation.  The data will be the
@@ -251,6 +290,14 @@ class uvc_plotspec():
                 self.axmin[vids][aid] = axmins[aid]
                 pset.axmin[vidp][aid] = axmins[aid]
         
+    def outfile( self, format="", where="" ):
+        if len(self.title)<=0:
+            fname = 'foo'
+        else:
+            fname = self.title.strip()+'.nc'
+        filename = os.path.join(where,fname)
+        print "output to",filename
+        return filename
     def write_plot_data( self, format="", where="" ):
         # This is just experimental code, so far.
         if format=="" or format=="NetCDF" or format=="NetCDF file":
@@ -264,12 +311,7 @@ class uvc_plotspec():
                 ", will write a NetCDF file."
             format = "NetCDF file"
 
-        if len(self.title)<=0:
-            fname = 'foo'
-        else:
-            fname = self.title.strip()+'.nc'
-        filename = os.path.join(where,fname)
-        print "output to",filename
+        filename = self.outfile( format, where )
 
         if format=="NetCDF file":
             writer = cdms2.open( filename, 'w' )    # later, choose a better name and a path!
@@ -282,6 +324,9 @@ class uvc_plotspec():
             writer.write( zax )
 
         writer.close()
+
+class uvc_plotspec(uvc_simple_plotspec):
+    pass
 
 class DiagsEncoder(json.JSONEncoder):
     def default(self, obj):
