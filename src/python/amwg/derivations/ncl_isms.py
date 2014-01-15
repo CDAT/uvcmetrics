@@ -161,6 +161,7 @@ def oht_model( gw, oro, fsns, flns, shfl, lhfl ):
     netflux_basin[0,:,:] = netflux[:,:]
     netflux_basin[1,:,:] = netflux[:,:]
     netflux_basin[2,:,:] = netflux[:,:]
+    netflux_basin[:,:,:] = numpy.ma.masked  # to make sure the mask array gets created
     netflux_basin._mask[0,:,:] = numpy.not_equal(basins_mask,1) # False on Pacific
     netflux_basin._mask[1,:,:] = numpy.not_equal(basins_mask,2) # False on Atlantic
     netflux_basin._mask[2,:,:] = numpy.not_equal(basins_mask,3) # False on Indian
