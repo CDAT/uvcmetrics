@@ -70,7 +70,10 @@ def get_datafile_filefmt( dfile, get_them_all=False ):
     then this will return an object with methods needed to support that file type."""
     if hasattr(dfile,'source') and ( dfile.source[0:3]=='CAM' or dfile.source[0:4]=='CCSM'\
            or dfile.source[0:4]=='CESM' ):
-       return NCAR_filefmt( dfile, get_them_all )
+       if hasattr(dfile,'season') or dfile.id[-9:]=="_climo.nc":
+          return NCAR_climo_filefmt( dfile, get_them_all )
+       else:
+          return NCAR_filefmt( dfile, get_them_all )
        # Note that NCAR Histoy Tape files are marked as supporting the CF Conventions
        # and do so, but it's minimal, without most of the useful CF features (e.g.
        # where are bounds for the lat axis?).
@@ -81,7 +84,10 @@ def get_datafile_filefmt( dfile, get_them_all=False ):
        # I should put in a check for that.
        return CF_filefmt( dfile )
     else:
-       return NCAR_filefmt( dfile, get_them_all )
+       if hasattr(dfile,'season') or dfile.id[-9:]=="_climo.nc":
+          return NCAR_climo_filefmt( dfile, get_them_all )
+       else:
+          return NCAR_filefmt( dfile, get_them_all )
        # Formerly this was "return Unknown_filefmt()" but I have some obs data from NCAR
        # which has no global attributes which would tell you what kind of file it is.
        # Nevertheless the one I am looking at has lots of clues, e.g. variable and axis names.
@@ -153,6 +159,8 @@ class basic_filetable:
                 varaxisnames = [a[0].id for a in dfile[var].domain]
                 if 'time' in varaxisnames:
                    timern = timerange
+                elif hasattr(dfile,'season'):  # climatology file
+                   timern = timerange   # this should be the season
                 else:
                    timern = None
                 if 'lat' in varaxisnames:
@@ -179,7 +187,8 @@ class basic_filetable:
                     self._varindex[variableid] = [newrow]
         dfile.close()
     def find_files( self, variable, time_range=None,
-                    lat_range=None, lon_range=None, level_range=None ):
+                    lat_range=None, lon_range=None, level_range=None,
+                    seasonid=None):
        """This method is intended for creating a plot.
        This finds and returns a list of files needed to cover the supplied variable and time and
        space ranges.
@@ -190,12 +199,31 @@ class basic_filetable:
           return None
        candidates = self._varindex[ variable ]
        found = []
-       for ftrow in candidates:
-          if time_range.overlaps_with( ftrow.timerange ) and\
-                 lat_range.overlaps_with( ftrow.latrange ) and\
-                 lon_range.overlaps_with( ftrow.lonrange ) and\
-                 level_range.overlaps_with( ftrow.levelrange ):
-             found.append( ftrow )
+       if seasonid is not None:
+          # the usual case, we're dealing with climatologies not time ranges.
+          if seasonid=='JFMAMJJASOND':
+             seasonid='ANN'
+          for ftrow in candidates:
+             if seasonid==ftrow.timerange and\
+                    lat_range.overlaps_with( ftrow.latrange ) and\
+                    lon_range.overlaps_with( ftrow.lonrange ) and\
+                    level_range.overlaps_with( ftrow.levelrange ):
+                found.append( ftrow )
+             if found==[]:
+                # No suitable season matches (climatology files) found, we will have to use
+                # time-dependent data.  Theoretically we could have to use both climatology
+                # and time-dep't data, but I don't think we'll see that in practice.
+                if lat_range.overlaps_with( ftrow.latrange ) and\
+                       lon_range.overlaps_with( ftrow.lonrange ) and\
+                       level_range.overlaps_with( ftrow.levelrange ):
+                   found.append( ftrow )
+       else:
+          for ftrow in candidates:
+                if time_range.overlaps_with( ftrow.timerange ) and\
+                       lat_range.overlaps_with( ftrow.latrange ) and\
+                       lon_range.overlaps_with( ftrow.lonrange ) and\
+                       level_range.overlaps_with( ftrow.levelrange ):
+                   found.append( ftrow )
        return found
     def list_variables(self):
        vars = list(set([ r.variableid for r in self._table ]))
@@ -325,6 +353,16 @@ class NCAR_filefmt(basic_filefmt):
       # seriously to use the standard_name concept for NCAR files
       return stdname
       #return None
+
+class NCAR_climo_filefmt(NCAR_filefmt):
+   def get_timerange(self):
+      # A climo file has no real time range, that is no times t1,t2 for which a variable is
+      # defined at times t1<=time<t2.  Instead it has a season.  We'll return the season in
+      # place of the time range, and will have to detect it at lookup time.
+      if not hasattr(self._dfile,'season'):
+         season=self._dfile.id[-12:-9]
+         return season
+      return self._dfile.season
 
 class CF_filefmt(basic_filefmt):
     """NetCDF file conforming to the CF Conventions, and using useful CF featues
