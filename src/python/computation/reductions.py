@@ -326,7 +326,7 @@ def reduce2levlat( mv, vid=None ):
     if latAxis(mv) is None: return None
     axes = allAxes( mv )
     timeax = timeAxis(mv)
-    if timeax.getBounds()==None:
+    if timeax is not None and timeax.getBounds()==None:
         timeax._bounds_ = timeax.genGenericBounds()
     axis_names = [ a.id for a in axes if a.id!='lev' and a.id!='lat' ]
     axes_string = '('+')('.join(axis_names)+')'
@@ -346,14 +346,17 @@ def reduce2levlat_seasonal( mv, seasons=seasonsyr, vid=None ):
     if latAxis(mv) is None: return None
     axes = allAxes( mv )
     timeax = timeAxis(mv)
-    if timeax.getBounds()==None:
-        timeax._bounds_ = timeax.genGenericBounds()
+    if timeax is None or len(timeax)<=1:
+        mvseas = mv
+    else:
+        if timeax.getBounds()==None:
+            timeax._bounds_ = timeax.genGenericBounds()
 
-    if timeax.units=='months':
-        # Special check necessary for LEGATES obs data, because
-        # climatology() won't accept this incomplete specification
-        timeax.units = 'months since 0001-01-01'
-    mvseas = seasons.climatology(mv)
+        if timeax is not None and timeax.units=='months':
+            # Special check necessary for LEGATES obs data, because
+            # climatology() won't accept this incomplete specification
+            timeax.units = 'months since 0001-01-01'
+        mvseas = seasons.climatology(mv)
 
     axis_names = [ a.id for a in axes if a.id!='lev' and a.id!='lat' and a.id!='time']
     axes_string = '('+')('.join(axis_names)+')'
@@ -374,12 +377,13 @@ def reduce2latlon( mv, vid=None ):
         vid = 'reduced_'+mv.id
     axes = allAxes( mv )
     axis_names = [ a.id for a in axes if a.id!='lat' and a.id!='lon' ]
+    if len(axis_names)<=0:
+        return mv
     axes_string = '('+')('.join(axis_names)+')'
     for ax in axes:
         # The averager insists on bounds.  Sometimes they don't exist, especially for obs.
         if ax.id!='lat' and ax.id!='lon' and not hasattr( ax, 'bounds' ):
             ax.setBounds( ax.genGenericBounds() )
-
     avmv = averager( mv, axis=axes_string )
     avmv.id = vid
     avmv.units = mv.units
@@ -425,14 +429,17 @@ def reduce2lat_seasonal( mv, seasons=seasonsyr, vid=None ):
         if ax.getBounds() is None:
             ax._bounds_ = ax.genGenericBounds()
     timeax = timeAxis(mv)
-    if timeax.units=='months':
-        # Special check necessary for LEGATES obs data, because
-        # climatology() won't accept this incomplete specification
-        timeax.units = 'months since 0001-01-01'
-    mvseas = seasons.climatology(mv)
-    if mvseas is None:
-        # Among other cases, this can happen if mv has all missing values.
-        return None
+    if timeax is None or len(timeax)<=1:
+        mvseas = mv
+    else:
+        if timeax.units=='months':
+            # Special check necessary for LEGATES obs data, because
+            # climatology() won't accept this incomplete specification
+            timeax.units = 'months since 0001-01-01'
+        mvseas = seasons.climatology(mv)
+        if mvseas is None:
+            # Among other cases, this can happen if mv has all missing values.
+            return None
     
     axes = allAxes( mv )
     axis_names = [ a.id for a in axes if a.id!='lat' and a.id!='time']
@@ -462,9 +469,12 @@ def reduce2latlon_seasonal( mv, seasons=seasonsyr, vid=None ):
     # If it doesn't, we'll have to give it one.
     # Setting the _bounds_ attribute will do it.
     timeax = timeAxis(mv)
-    if timeax.getBounds()==None:
-        timeax._bounds_ = timeax.genGenericBounds()
-    mvseas = seasons.climatology(mv)
+    if timeax is None or len(timeax)<=1:
+        mvseas = mv
+    else:
+        if timeax.getBounds()==None:
+            timeax._bounds_ = timeax.genGenericBounds()
+        mvseas = seasons.climatology(mv)
     
     axes = allAxes( mv )
     axis_names = [ a.id for a in axes if a.id!='lat' and a.id!='lon' and a.id!='time']
@@ -499,7 +509,9 @@ def reduce_time_seasonal( mv, seasons=seasonsyr, vid=None ):
     timeax = timeAxis(mv)
     if timeax is None:
         print "WARNING- no time axis in",mv.id
-        return None
+        return mv
+    if len(timeax)<=1:
+        return mv
     if timeax.getBounds()==None:
         timeax._bounds_ = timeax.genGenericBounds()
     mvseas = seasons.climatology(mv)
@@ -1029,34 +1041,37 @@ def run_cdscan( fam, famfiles, cache_path=None ):
     # I know of no exception to the rule that all files in the file family keep their
     # units in the same place; so find where they are by checking the first file.
     f = cdms2.open( famfiles[0] )
-    time_units = f['time'].units
-    if type(time_units) is str and len(time_units)>3:
-        # cdscan can get time units from the files; we're good.
-        f.close()
-        cdscan_line = 'cdscan -q '+'-x '+xml_name+' '+' '.join(famfiles)
+    if f['time'] is None:
+            cdscan_line = 'cdscan -q '+'-x '+xml_name+' '+' '.join(famfiles)
     else:
-        # cdscan needs to be told what the time units are.  I'm betting that all files
-        # use the same units.  I know of cases where they all have different units (e.g.,
-        # GISS) but in all those cases, the units attribute is used properly, so we don't
-        # get here.
-        # Another problem is that units stuck in the long_name sometimes are
-        # nonstandard.  So fix them!
-        if hasattr(f['time'],'long_name'):
-            time_units = f['time'].long_name
+        time_units = f['time'].units
+        if type(time_units) is str and len(time_units)>3:
+            # cdscan can get time units from the files; we're good.
+            f.close()
+            cdscan_line = 'cdscan -q '+'-x '+xml_name+' '+' '.join(famfiles)
         else:
-            time_units = 'days'  # probably wrong but we can't go on without something
-        # Usually when we get here it's a climatology file where time is meaningless.
-        f.close()
-        if type(time_units) is str and len(time_units)>1 and (
-            time_units.find('months')==0 or time_units.find('days')==0 or
-            time_units.find('hours')==0 ):
-            time_units = fix_time_units( time_units )
-            cdscan_line = 'cdscan -q '+'-x '+xml_name+' -e time.units="'+time_units+'" '+\
-                ' '.join(famfiles)
-        else:
-            print "WARNING, cannot find time units; will try to continue",famfiles[0]
-            cdscan_line = 'cdscan -q '+'-x '+xml_name+' -e time.units="'+time_units+'" '+\
-                ' '.join(famfiles)
+            # cdscan needs to be told what the time units are.  I'm betting that all files
+            # use the same units.  I know of cases where they all have different units (e.g.,
+            # GISS) but in all those cases, the units attribute is used properly, so we don't
+            # get here.
+            # Another problem is that units stuck in the long_name sometimes are
+            # nonstandard.  So fix them!
+            if hasattr(f['time'],'long_name'):
+                time_units = f['time'].long_name
+            else:
+                time_units = 'days'  # probably wrong but we can't go on without something
+            # Usually when we get here it's a climatology file where time is meaningless.
+            f.close()
+            if type(time_units) is str and len(time_units)>1 and (
+                time_units.find('months')==0 or time_units.find('days')==0 or
+                time_units.find('hours')==0 ):
+                time_units = fix_time_units( time_units )
+                cdscan_line = 'cdscan -q '+'-x '+xml_name+' -e time.units="'+time_units+'" '+\
+                    ' '.join(famfiles)
+            else:
+                print "WARNING, cannot find time units; will try to continue",famfiles[0]
+                cdscan_line = 'cdscan -q '+'-x '+xml_name+' -e time.units="'+time_units+'" '+\
+                    ' '.join(famfiles)
     print "cdscan_line=",cdscan_line
     proc = subprocess.Popen([cdscan_line],shell=True)
     proc_status = proc.wait()
@@ -1074,10 +1089,11 @@ class reduced_variable(ftrow):
     # (lambda mv: return zonal_mean( mv, sourcefile, -20, 20 )
     def __init__( self, fileid=None, variableid='', timerange=None,\
                       latrange=None, lonrange=None, levelrange=None,\
-                      reduced_var_id=None,\
+                      season=seasonsyr, reduced_var_id=None,\
                       reduction_function=(lambda x,vid=None: x),\
                       filetable=None, axes=None
                   ):
+        self._season = season
         ftrow.__init__( self, fileid, variableid, timerange, latrange, lonrange, levelrange )
         self._reduction_function = reduction_function
         self._axes = axes
@@ -1119,7 +1135,8 @@ class reduced_variable(ftrow):
             vid = self._vid
         rows = self._filetable.find_files( self.variableid, time_range=self.timerange,
                                            lat_range=self.latrange, lon_range=self.lonrange,
-                                           level_range=self.levelrange )
+                                           level_range=self.levelrange,
+                                           seasonid=self._season.seasons[0] )
         if rows==None or len(rows)<=0:
             # this belongs in a log file:
             print "ERROR no data found for reduced variable",self.variableid
