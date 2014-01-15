@@ -5,6 +5,8 @@
 # variables, with the time often restricted to a month or season.
 # This is basically a simplified version of plot_data.py.
 
+# TO DO >>>> run argument: dict of attribute:value to be written out as file global attributes.
+
 import cdms2, math
 from metrics.fileio.findfiles import *
 from metrics.fileio.filetable import *
@@ -70,13 +72,18 @@ def test_driver( path1, filt1=None ):
     for key in varkeys:
         var = reduced_variables[key]
         original_variable = var.variableid
-        filename = key.strip()+"_climo.nc"
         if varvals[key] is not None:
+            if 'case' in var._file_attributes.keys():
+                case = var._file_attributes['case'] +'_'
+            else:
+                case = ''
+            filename = case + key.strip() + "_climo.nc"
             if not hasattr(varvals[key],'id') or varvals[key].id is None or varvals[key].id=='':
                 varvals[key].id = varvals[key].name
             g = cdms2.open( filename, 'w' )    # later, choose a better name and a path!
             # ...actually we want to write this to a full directory structure like
             #    root/institute/model/realm/run_name/season/
+            varvals[key].id = original_variable
             g.reduced_variable=varvals[key].id
             g.original_variable=original_variable
             g.variable=original_variable
