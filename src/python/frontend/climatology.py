@@ -38,10 +38,10 @@ def test_driver( path1, filt1=None ):
     get_them_all = True  # Set True to get all variables in all specified files
     # Then you can call filetable1.list_variables to get the variable list.
     filetable1 = basic_filetable( datafiles1, get_them_all )
-    print "jfp variable list from filetable1:", filetable1.list_variables()
+    cseasons = ['ANN','DJF','MAM','JJA','SON','JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC']
 
     reduced_variables = { var+'_'+seas: climatology_variable(var,filetable1,seas)
-                          for seas in ['ANN','DJF','JAN']
+                          for seas in cseasons
                           for var in filetable1.list_variables() }
     #                     for var in ['TREFHT','FLNT','SOILC']}
     #reduced_variables = {
@@ -71,28 +71,29 @@ def test_driver( path1, filt1=None ):
     #for key in varkeys[0:2]:  # quick version for testing
     for key in varkeys:
         var = reduced_variables[key]
-        original_variable = var.variableid
         if varvals[key] is not None:
             if 'case' in var._file_attributes.keys():
-                case = var._file_attributes['case'] +'_'
+                case = var._file_attributes['case']+'_'
             else:
                 case = ''
-            filename = case + key.strip() + "_climo.nc"
-            if not hasattr(varvals[key],'id') or varvals[key].id is None or varvals[key].id=='':
-                varvals[key].id = varvals[key].name
-            g = cdms2.open( filename, 'w' )    # later, choose a better name and a path!
-            # ...actually we want to write this to a full directory structure like
-            #    root/institute/model/realm/run_name/season/
-            varvals[key].id = original_variable
-            g.reduced_variable=varvals[key].id
-            g.original_variable=original_variable
-            g.variable=original_variable
-            g.season = var.seasonname
-            g.write(varvals[key])
-            for attr,val in var._file_attributes.items():
-                if not hasattr( g, attr ):
-                    setattr( g, attr, val )
-            g.close()
+            break
+    for season in cseasons:
+        filename = case + season + "_climo.nc"
+        # ...actually we want to write this to a full directory structure like
+        #    root/institute/model/realm/run_name/season/
+        g = cdms2.open( filename, 'w' )    # later, choose a better name and a path!
+        #for key in varkeys[0:2]:  # quick version for testing
+        for key in varkeys:
+            var = reduced_variables[key]
+            if varvals[key] is not None:
+                varvals[key].id = var.variableid
+                varvals[key].reduced_variable=varvals[key].id
+                g.write(varvals[key])
+                for attr,val in var._file_attributes.items():
+                    if not hasattr( g, attr ):
+                        setattr( g, attr, val )
+        g.season = season
+        g.close()
 
 if __name__ == '__main__':
    if len( sys.argv ) > 1:
