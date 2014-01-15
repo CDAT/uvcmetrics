@@ -122,6 +122,7 @@ class amwg_plot_set2(amwg_plot_spec):
         varid is a string identifying the derived variable to be plotted, e.g. 'Ocean_Heat'.
         The seasonid argument will be ignored."""
         plot_spec.__init__(self,seasonid)
+        self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
         self.plottype='Yxvsx'
         vars = self._list_variables(filetable1,filetable2)
         if varid not in vars:
@@ -142,52 +143,56 @@ class amwg_plot_set2(amwg_plot_spec):
         # FSNS, FLNS, FLUT, FSNTOA, FLNT, FSNT, SHFLX, LHFLX,
         self.reduced_variables = {
             'FSNS_1': reduced_variable(
-                variableid='FSNS',filetable=filetable1,reduction_function=(lambda x,vid:x) ),
+                variableid='FSNS', filetable=filetable1, season=self.season,
+                reduction_function=(lambda x,vid:x) ),
             'FSNS_ANN_latlon_1': reduced_variable(
                 variableid='FSNS',
-                filetable=filetable1,
+                filetable=filetable1, season=self.season,
                 reduction_function=reduce2latlon ),
             'FLNS_1': reduced_variable(
-                variableid='FLNS',filetable=filetable1,reduction_function=(lambda x,vid:x) ),
+                variableid='FLNS', filetable=filetable1, season=self.season,
+                reduction_function=(lambda x,vid:x) ),
             'FLNS_ANN_latlon_1': reduced_variable(
                 variableid='FLNS',
-                filetable=filetable1,
+                filetable=filetable1, season=self.season,
                 reduction_function=reduce2latlon ),
             'FLUT_ANN_latlon_1': reduced_variable(
                 variableid='FLUT',
-                filetable=filetable1,
+                filetable=filetable1, season=self.season,
                 reduction_function=reduce2latlon ),
             'FSNTOA_ANN_latlon_1': reduced_variable(
                 variableid='FSNTOA',
-                filetable=filetable1,
+                filetable=filetable1, season=self.season,
                 reduction_function=reduce2latlon ),
             'FLNT_1': reduced_variable(
                 variableid='FLNT',filetable=filetable1,reduction_function=(lambda x,vid:x) ),
             'FLNT_ANN_latlon_1': reduced_variable(
                 variableid='FLNT',
-                filetable=filetable1,
+                filetable=filetable1, season=self.season,
                 reduction_function=reduce2latlon ),
             'FSNT_1': reduced_variable(
-                variableid='FSNT',filetable=filetable1,reduction_function=(lambda x,vid:x) ),
+                variableid='FSNT', filetable=filetable1, season=self.season,
+                reduction_function=(lambda x,vid:x) ),
             'FSNT_ANN_latlon_1': reduced_variable(
                 variableid='FSNT',
-                filetable=filetable1,
+                filetable=filetable1, season=self.season,
                 reduction_function=reduce2latlon ),
             'QFLX_1': reduced_variable(
                 variableid='QFLX',filetable=filetable1,reduction_function=(lambda x,vid:x) ),
             'SHFLX_1': reduced_variable(
-                variableid='SHFLX',filetable=filetable1,reduction_function=(lambda x,vid:x) ),
+                variableid='SHFLX', filetable=filetable1, season=self.season,
+                reduction_function=(lambda x,vid:x) ),
             'SHFLX_ANN_latlon_1': reduced_variable(
                 variableid='SHFLX',
-                filetable=filetable1,
+                filetable=filetable1, season=self.season,
                 reduction_function=reduce2latlon ),
             'LHFLX_ANN_latlon_1': reduced_variable(
                 variableid='LHFLX',
-                filetable=filetable1,
+                filetable=filetable1, season=self.season,
                 reduction_function=reduce2latlon ),
             'OCNFRAC_ANN_latlon_1': reduced_variable(
                 variableid='OCNFRAC',
-                filetable=filetable1,
+                filetable=filetable1, season=self.season,
                 reduction_function=reduce2latlon )
             }
         self.derived_variables = {
@@ -283,13 +288,13 @@ class amwg_plot_set3(amwg_plot_spec):
     def plan_computation( self, filetable1, filetable2, varid, seasonid ):
         y1var = reduced_variable(
             variableid=varid,
-            filetable=filetable1,
+            filetable=filetable1, season=self.season,
             reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,self.season,vid=vid)) )
         self.reduced_variables[varid+'_1'] = y1var
         y1var._vid = varid+'_1'
         y2var = reduced_variable(
             variableid=varid,
-            filetable=filetable2,
+            filetable=filetable2, season=self.season,
             reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,self.season,vid=vid)) )
         self.reduced_variables[varid+'_2'] = y2var
         y2var._vid = varid+'_2'
@@ -354,24 +359,24 @@ class amwg_plot_set4(amwg_plot_spec):
     def plan_computation( self, filetable1, filetable2, varid, seasonid ):
         rv1 = reduced_variable(
             variableid=varid,
-            filetable=filetable1,
+            filetable=filetable1, season=self.season,
             reduction_function=(lambda x,vid=None: reduce2levlat_seasonal(x,self.season,vid=vid)) )
         self.reduced_variables[varid+'_1'] = rv1
         rv2 = reduced_variable(
             variableid=varid,
-            filetable=filetable2,
+            filetable=filetable2, season=self.season,
             reduction_function=(lambda x,vid=None: reduce2levlat_seasonal(x,self.season,vid=vid)) )
         self.reduced_variables[varid+'_2'] = rv2
         hyam = reduced_variable(      # hyam=hyam(lev)
-            variableid='hyam', filetable=filetable1,
+            variableid='hyam', filetable=filetable1, season=self.season,
             reduction_function=(lambda x,vid=None: x) )
         self.reduced_variables['hyam'] = hyam
         hybm = reduced_variable(      # hyab=hyab(lev)
-            variableid='hybm', filetable=filetable1,
+            variableid='hybm', filetable=filetable1, season=self.season,
             reduction_function=(lambda x,vid=None: x) )
         self.reduced_variables['hybm'] = hybm
         ps = reduced_variable(
-            variableid='PS', filetable=filetable1,
+            variableid='PS', filetable=filetable1, season=self.season,
             reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,self.season,vid=vid)) )
         self.reduced_variables['ps'] = ps
         vid1='_'.join([varid,seasonid,'levlat'])
@@ -484,10 +489,10 @@ class amwg_plot_set5and6(amwg_plot_spec):
         axes."""
         self.reduced_variables = {
             varid+'_1': reduced_variable(
-                variableid=varid, filetable=filetable1, reduced_var_id=varid+'_1',
+                variableid=varid, filetable=filetable1, reduced_var_id=varid+'_1', season=self.season,
                 reduction_function=(lambda x,vid: reduce2latlon_seasonal( x, self.season, vid ) ) ),
             varid+'_2': reduced_variable(
-                variableid=varid, filetable=filetable2, reduced_var_id=varid+'_2',
+                variableid=varid, filetable=filetable2, reduced_var_id=varid+'_2', season=self.season,
                 reduction_function=(lambda x,vid: reduce2latlon_seasonal( x, self.season, vid ) ) )
             }
         self.derived_variables = {}
@@ -521,16 +526,16 @@ class amwg_plot_set5and6(amwg_plot_spec):
 
         self.reduced_variables = {
             varid+'_1': reduced_variable(  # var=var(time,lev,lat,lon)
-                variableid=varid, filetable=filetable1, reduced_var_id=varid+'_1',
+                variableid=varid, filetable=filetable1, reduced_var_id=varid+'_1', season=self.season,
                 reduction_function=(lambda x,vid: reduce_time_seasonal( x, self.season, vid ) ) ),
             'hyam_1': reduced_variable(   # hyam=hyam(lev)
-                variableid='hyam', filetable=filetable1, reduced_var_id='hyam_1',
+                variableid='hyam', filetable=filetable1, reduced_var_id='hyam_1',season=self.season,
                 reduction_function=(lambda x,vid=None: x) ),
             'hybm_1': reduced_variable(   # hybm=hybm(lev)
-                variableid='hybm', filetable=filetable1, reduced_var_id='hybm_1',
+                variableid='hybm', filetable=filetable1, reduced_var_id='hybm_1',season=self.season,
                 reduction_function=(lambda x,vid=None: x) ),
             'PS_1': reduced_variable(     # ps=ps(time,lat,lon)
-                variableid='PS', filetable=filetable1, reduced_var_id='PS_1',
+                variableid='PS', filetable=filetable1, reduced_var_id='PS_1', season=self.season,
                 reduction_function=(lambda x,vid=None: reduce_time_seasonal( x, self.season, vid ) ) ) }
         vid1 = varid+'_p_1'
         vidl1 = varid+'_lp_1'
@@ -542,16 +547,16 @@ class amwg_plot_set5and6(amwg_plot_spec):
             # hybrid levels in use, convert to pressure levels
             self.reduced_variables.update( {
                 varid+'_2': reduced_variable(  # var=var(time,lev,lat,lon)
-                    variableid=varid, filetable=filetable2, reduced_var_id=varid+'_2',
+                    variableid=varid, filetable=filetable2, reduced_var_id=varid+'_2',season=self.season,
                     reduction_function=(lambda x,vid: reduce_time_seasonal( x, self.season, vid ) ) ),
                 'hyam_2': reduced_variable(   # hyam=hyam(lev)
-                    variableid='hyam', filetable=filetable2, reduced_var_id='hyam_2',
+                    variableid='hyam', filetable=filetable2, reduced_var_id='hyam_2',season=self.season,
                     reduction_function=(lambda x,vid=None: x) ),
                 'hybm_2': reduced_variable(   # hybm=hybm(lev)
-                    variableid='hybm', filetable=filetable2, reduced_var_id='hybm_2',
+                    variableid='hybm', filetable=filetable2, reduced_var_id='hybm_2',season=self.season,
                     reduction_function=(lambda x,vid=None: x) ),
                 'PS_2': reduced_variable(     # ps=ps(time,lat,lon)
-                    variableid='PS', filetable=filetable2, reduced_var_id='PS_2',
+                    variableid='PS', filetable=filetable2, reduced_var_id='PS_2',season=self.season,
                     reduction_function=(lambda x,vid=None: reduce_time_seasonal( x, self.season, vid ) ) )
                 } )
             vid2 = varid+'_p_2'
@@ -566,7 +571,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
             vid2 = varid+'_2'
             self.reduced_variables.update( {
                 vid2: reduced_variable(  # var=var(time,lev,lat,lon)
-                    variableid=varid, filetable=filetable2, reduced_var_id=varid+'_2',
+                    variableid=varid, filetable=filetable2, reduced_var_id=varid+'_2',season=self.season,
                     reduction_function=(lambda x,vid: reduce_time_seasonal( x, self.season, vid ) ) )
                 } )
             vidl2 = varid+'_lp_2'
