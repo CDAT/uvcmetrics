@@ -199,6 +199,7 @@ class basic_filetable:
           return None
        candidates = self._varindex[ variable ]
        found = []
+       print "jfp in find_files, variable=",variable
        if seasonid is not None:
           # the usual case, we're dealing with climatologies not time ranges.
           if seasonid=='JFMAMJJASOND':
@@ -209,14 +210,17 @@ class basic_filetable:
                     lon_range.overlaps_with( ftrow.lonrange ) and\
                     level_range.overlaps_with( ftrow.levelrange ):
                 found.append( ftrow )
-             if found==[]:
-                # No suitable season matches (climatology files) found, we will have to use
-                # time-dependent data.  Theoretically we could have to use both climatology
-                # and time-dep't data, but I don't think we'll see that in practice.
+                print "jfp find_files seasonal add of",ftrow
+          if found==[]:
+             # No suitable season matches (climatology files) found, we will have to use
+             # time-dependent data.  Theoretically we could have to use both climatology
+             # and time-dep't data, but I don't think we'll see that in practice.
+             for ftrow in candidates:
                 if lat_range.overlaps_with( ftrow.latrange ) and\
                        lon_range.overlaps_with( ftrow.lonrange ) and\
                        level_range.overlaps_with( ftrow.levelrange ):
                    found.append( ftrow )
+                print "jfp find_files have season but time-dep't add of",ftrow
        else:
           for ftrow in candidates:
                 if time_range.overlaps_with( ftrow.timerange ) and\
@@ -224,6 +228,7 @@ class basic_filetable:
                        lon_range.overlaps_with( ftrow.lonrange ) and\
                        level_range.overlaps_with( ftrow.levelrange ):
                    found.append( ftrow )
+                   print "jfp find_files time-dep't add of",ftrow
        return found
     def list_variables(self):
        vars = list(set([ r.variableid for r in self._table ]))
@@ -355,14 +360,28 @@ class NCAR_filefmt(basic_filefmt):
       #return None
 
 class NCAR_climo_filefmt(NCAR_filefmt):
+   def standardize_season( self, season ):
+      """Converts the input season string to one of the standard 3-letter ones:
+      ANN,DJF,MAM,JJA,SON,JAN,FEB,MAR,...DEC.  Strings which will be converted
+      include "JFMAMJJASOND","_01","_02","_03",...,"_12". """
+      seasnms = { 'JFMAMJJASOND':'ANN',
+                  '01':'JAN', '02':'FEB', '03':'MAR', '04':'APR', '05':'MAY', '06':'JUN',
+                  '07':'JUL', '08':'AUG', '09':'SEP', '10':'OCT', '11':'NOV', '12':'DEC',
+                  '_01':'JAN', '_02':'FEB', '_03':'MAR', '_04':'APR', '_05':'MAY', '_06':'JUN',
+                  '_07':'JUL', '_08':'AUG', '_09':'SEP', '_10':'OCT', '_11':'NOV', '_12':'DEC',
+                  'ANN':'ANN', 'DJF':'DJF', 'MAM':'MAM', 'JJA':'JJA', 'SON':'SON',
+                  'JAN':'JAN', 'FEB':'FEB', 'MAR':'MAR', 'APR':'APR', 'MAY':'MAY', 'JUN':'JUN',
+                  'JUL':'JUL', 'AUG':'AUG', 'SEP':'SEP', 'OCT':'OCT', 'NOV':'NOV', 'DEC':'DEC' }
+      return seasnms[ season ]
    def get_timerange(self):
-      # A climo file has no real time range, that is no times t1,t2 for which a variable is
-      # defined at times t1<=time<t2.  Instead it has a season.  We'll return the season in
-      # place of the time range, and will have to detect it at lookup time.
-      if not hasattr(self._dfile,'season'):
+      """ A climo file has no real time range, that is no times t1,t2 for which a variable is
+      defined at times t1<=time<t2.  Instead it has a season.  We'll return the season in
+      place of the time range, and will have to detect it at lookup time."""
+      if hasattr(self._dfile,'season'):
+         season = self._dfile.season
+      else:
          season=self._dfile.id[-12:-9]
-         return season
-      return self._dfile.season
+      return self.standardize_season(season)
 
 class CF_filefmt(basic_filefmt):
     """NetCDF file conforming to the CF Conventions, and using useful CF featues
