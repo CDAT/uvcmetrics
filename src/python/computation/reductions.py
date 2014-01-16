@@ -4,7 +4,7 @@
 
 import cdms2, math, itertools, operator, numpy, subprocess, re
 import hashlib, os
-import pprint
+from pprint import pprint
 import cdutil.times
 from math import radians
 from numpy import sin, ma
@@ -1112,6 +1112,8 @@ class reduced_variable(ftrow):
         extract and return 'ts_Amon_bcc-csm1-1_amip_r1i1p1'.  To distinguish between the
         end of a file family name and the beginning of the file-specific part of the filename,
         we look for an underscore and two numerical digits, e.g. '_19'."""
+        if filename[-9:]=='_climo.nc':
+            return filename[0:-12]
         matchobject = re.search( r"^.*.cam.h0.", filename ) # CAM,CESM,etc. sometimes
         if matchobject is None:
             matchobject = re.search( r"^.*.cam2.h0.", filename ) # CAM,CESM,etc. sometimes
