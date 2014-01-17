@@ -37,47 +37,53 @@ def test_driver( path1, filt1=None ):
     print "jfp datafiles1=",datafiles1
     get_them_all = True  # Set True to get all variables in all specified files
     # Then you can call filetable1.list_variables to get the variable list.
-    filetable1 = basic_filetable( datafiles1, get_them_all )
-    cseasons = ['ANN','DJF','MAM','JJA','SON','JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC']
+    #was filetable1 = basic_filetable( datafiles1, get_them_all )
+    filetable1 = datafiles1.setup_filetable( os.path.join(os.environ['HOME'],'tmp'), "model" )
+    cseasons = ['ANN', 'DJF', 'JJA' ] 
+    #cseasons = ['ANN','DJF','MAM','JJA','SON',
+    #            'JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC']
 
-    reduced_variables = { var+'_'+seas: climatology_variable(var,filetable1,seas)
-                          for seas in cseasons
-                          for var in filetable1.list_variables() }
-    #                     for var in ['TREFHT','FLNT','SOILC']}
-    #reduced_variables = {
-    #    'TREFHT_ANN': reduced_variable(
-    #        variableid='TREFHT', filetable=filetable1,
-    #        reduction_function=(lambda x,vid=None: reduce_time(x,vid=vid)) ),
-    #    'TREFHT_DJF': reduced_variable(
-    #        variableid='TREFHT', filetable=filetable1,
-    #        reduction_function=(lambda x,vid=None: reduce_time_seasonal(x,seasonsDJF,vid=vid)) ),
-    #    'TREFHT_MAR': reduced_variable(
-    #        variableid='TREFHT', filetable=filetable1,
-    #        reduction_function=(lambda x,vid=None:
-    #                                reduce_time_seasonal(x,Seasons(['MAR']),vid=vid)) )
-    #    }
-
-    varkeys = reduced_variables.keys()
-
-    # Compute the value of every variable we need.
-    varvals = {}
-    # First compute all the reduced variables
-    # Probably this loop consumes most of the running time.  It's what has to read in all the data.
-    #for key in varkeys[0:2]:  #quick version for testing
-    for key in varkeys:
-        varvals[key] = reduced_variables[key].reduce()
-
-    # Now use the reduced and derived variables to compute the plot data.
-    #for key in varkeys[0:2]:  # quick version for testing
-    for key in varkeys:
-        var = reduced_variables[key]
-        if varvals[key] is not None:
-            if 'case' in var._file_attributes.keys():
-                case = var._file_attributes['case']+'_'
-            else:
-                case = ''
-            break
     for season in cseasons:
+
+        reduced_variables = { var+'_'+season: climatology_variable(var,filetable1,season)
+                              for var in filetable1.list_variables() }
+        #                     for var in ['TREFHT','FLNT','SOILC']}
+        #reduced_variables = {
+        #    'TREFHT_ANN': reduced_variable(
+        #        variableid='TREFHT', filetable=filetable1,
+        #        reduction_function=(lambda x,vid=None: reduce_time(x,vid=vid)) ),
+        #    'TREFHT_DJF': reduced_variable(
+        #        variableid='TREFHT', filetable=filetable1,
+        #        reduction_function=(lambda x,vid=None: reduce_time_seasonal(x,seasonsDJF,vid=vid)) ),
+        #    'TREFHT_MAR': reduced_variable(
+        #        variableid='TREFHT', filetable=filetable1,
+        #        reduction_function=(lambda x,vid=None:
+        #                                reduce_time_seasonal(x,Seasons(['MAR']),vid=vid)) )
+        #    }
+
+        varkeys = reduced_variables.keys()
+
+        # Compute the value of every variable we need.
+        varvals = {}
+        # First compute all the reduced variables
+        # Probably this loop consumes most of the running time.  It's what has to read in all the data.
+        #for key in varkeys[0:2]:  #quick version for testing
+        for key in varkeys:
+            print "computing climatology of", key
+            varvals[key] = reduced_variables[key].reduce()
+
+        # Now use the reduced and derived variables to compute the plot data.
+        #for key in varkeys[0:2]:  # quick version for testing
+        for key in varkeys:
+            var = reduced_variables[key]
+            if varvals[key] is not None:
+                if 'case' in var._file_attributes.keys():
+                    case = var._file_attributes['case']+'_'
+                else:
+                    case = ''
+                break
+
+        print "writing file for",case,season
         filename = case + season + "_climo.nc"
         # ...actually we want to write this to a full directory structure like
         #    root/institute/model/realm/run_name/season/
