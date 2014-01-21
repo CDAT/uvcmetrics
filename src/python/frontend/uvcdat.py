@@ -26,32 +26,25 @@ from multiprocessing import Process, Semaphore, Pipe
 import time
 import cdms2
 
-#def _plotdata_run( child_conn, sema, plotspec, filetable1, filetable2, varname, seasonname, outputPath, aux=None ):
-def _plotdata_run(plotspec, filetable1, filetable2, varname, seasonname, outputPath, unique_ID, aux=None ):
+def _plotdata_run( child_conn, sema, plotspec, filetable1, filetable2, varname, seasonname, outputPath, unique_ID, aux=None ):
+    #def _plotdata_run(plotspec, filetable1, filetable2, varname, seasonname, outputPath, unique_ID, aux=None ):
     global vcsx
     vcsx = False # temporary kludge
+    sema.acquire()
     ps = plotspec( filetable1, filetable2, varname, seasonname, aux )
-    #ps = None
     if ps is None:
         results = None
         return results
     else:
         results = ps.compute()
-        ts=time.time()
-        """
-        outfile=os.path.join(outputPath,str(unique_ID),str(ts)+'.diagoutput')
-        f=open(outfile,'w')
-        for i in range(0, len(results)):
-            f.write(results[i].write_plot_data(writer="JSON string"))
-            f.write('\n')
-        f.close()
-        """
-        outfile=os.path.join(outputPath,str(unique_ID),str(ts)+'.diagoutput')
-        print outfile
-        f=cdms2.open(outfile,'w')
-        f.write(results[0].vars)
-        f.close()
-    #child_conn.send(outfile)
+        outfile=os.path.join(outputPath,str(unique_ID))
+        if type(results) is list:
+            results_obj = uvc_composite_plotspec(results)
+        else:
+            results_obj = results
+        results_obj.write_plot_data( "", outfile ) # second arg sdb directory
+    sema.release()
+    child_conn.send(outfile)
     return outfile
 
 def plotdata_run( plotspec, filetable1, filetable2, varname, seasonname, outputPath, unique_ID, aux=None ):
@@ -68,32 +61,32 @@ def plotdata_run( plotspec, filetable1, filetable2, varname, seasonname, outputP
     To check the status of p, call plotdata_status(p) to get a semaphore value (>0 means done).
     To get the computed value, call plotdata_results(p).
     """
-    #parent_conn, child_conn = Pipe()
-    #p = Process( target=_plotdata_run,
-    #             args=(child_conn, sema,
-    #                   plotspec, filetable1, filetable2, varname, seasonname, aux) )
-    outfile=_plotdata_run(plotspec, filetable1, filetable2, varname, seasonname, outputPath, unique_ID)
-    print outfile
-    """ 
+    sema = Semaphore()
+    parent_conn, child_conn = Pipe()
+    p = Process( target=_plotdata_run,
+                 args=(child_conn, sema,
+                       plotspec, filetable1, filetable2, varname, seasonname, outputPath, unique_ID,aux) )
+    #outfile=_plotdata_run(plotspec, filetable1, filetable2, varname, seasonname, outputPath, unique_ID)
+    #print outfile
+    """
     p = Process( target=_plotdata_run,
                  args=(
                        plotspec, filetable1, filetable2, varname, seasonname, outputPath, unique_ID, aux) )
-    p.start()
-    pid = p.pid
-    p.join()
-    
-    #p.parent_conn = parent_conn
-    return pid
     """
-    return 1
+    p.start()
+    p.sema = sema
+    #pid = p.pid
+    #p.join()
+    p.parent_conn = parent_conn
+    return p
 
-#def plotdata_status( p ):
-#    return p.sema.get_value()
+def plotdata_status( p ):
+    return p.sema.get_value()
 
-#def plotdata_results( p ):
-#    results = p.parent_conn.recv()
-#    p.join()  # assumption: the process won't be needed after we have the results
-#    return results
+def plotdata_results( p ):
+    results = p.parent_conn.recv()
+    p.join()  # assumption: the process won't be needed after we have the results
+    return results
 
 # ----------------
 
@@ -117,7 +110,48 @@ def clear_filetable( search_path, cache_path, search_filter=None ):
     if os.path.isfile(cache_path):
         os.remove(cache_path)
 
-class uvc_plotspec():
+class uvc_composite_plotspec():
+    def __init__( self, uvcps ):
+        """uvcps is a list of instances of uvc_simple_plotspec"""
+        ups = [p for p in uvcps if p is not None]
+        self.plots = ups
+        self.title = ' '.join([p.title for p in ups])
+    def outfile( self, format='xml-NetCDF', where=""):
+        print "jfp self.title=",self.title
+        if len(self.title)<=0:
+            fname = 'foo'
+        else:
+            fname = (self.title.strip()+'.xml').replace(' ','_')
+        filename = os.path.join(where,fname)
+        filename=filename[:119]
+        print "output to",filename
+        return filename
+    def write_plot_data( self, format="", where="" ):
+        if format=="" or format=="xml" or format=="xml-NetCDF" or format=="xml file":
+            format = "xml-NetCDF"
+            contents_format = "NetCDF"
+        else:
+            print "WARNING: write_plot_data cannot recognize format name",format,\
+                ", will write a xml file pointing to NetCDF files."
+            format = "xml-NetCDF"
+            conents_format = "NetCDF"
+
+        for p in self.plots:
+            p.write_plot_data( contents_format, where )
+
+        print "jfp format=",format
+        print "jfp where=",where
+        filename = self.outfile( format, where )
+        print "jfp filename=",filename
+        writer = open( filename, 'w' )    # later, choose a better name and a path!
+        writer.write("<plotdata>\n")
+        for p in self.plots:
+            pfn = p.outfile(where)
+            writer.write( "<ncfile>"+pfn+"</ncfile>\n" )
+        writer.write( "</plotdata>\n" )
+        writer.close()
+
+class uvc_simple_plotspec():
     """This is a simplified version of the plotspec class, intended for the UV-CDAT GUI.
     Once it stabilizes, I may replace the plotspec class with this one.
     The plots will be of the type specified by presentation.  The data will be the
@@ -126,12 +160,12 @@ class uvc_plotspec():
     # re prsentation (plottype): Yxvsx is a line plot, for Y=Y(X).  It can have one or several lines.
     # Isofill is a contour plot.  To make it polar, set projection=polar.  I'll
     # probably communicate that by passing a name "Isofill_polar".
-    def __init__( self, vars, presentation, labels=[], title=''):
-        type = presentation
+    def __init__( self, pvars, presentation, labels=[], title=''):
+        ptype = presentation
         if vcsx:   # temporary kludge, presently need to know whether preparing VCS plots
             if presentation=="Yxvsx":
                 self.presentation = vcsx.createyxvsx()
-                type="Yxvsx"
+                ptype="Yxvsx"
             elif presentation == "Isofill":
                 self.presentation = vcsx.createisofill()
             elif presentation == "Vector":
@@ -147,10 +181,50 @@ class uvc_plotspec():
             self.presentation = presentation
         ## elif presentation == "":
         ##     self.resentation = vcsx.create
-        self.vars = vars
+        self.vars = pvars
         self.labels = labels
         self.title = title
-        self.type = type
+        self.type = ptype
+        self.ptype = ptype
+        # Initial ranges - may later be changed to coordinate with related plots:
+        # For each variable named 'v', the i-th member of self.vars, (most often there is just one),
+        # varmax[v] is the maximum value of v, varmin[v] is the minimum value of v,
+        # axmax[v][ax] is the maximum value of the axis of v with id=ax.
+        # axmin[v][ax] is the minimum value of the axis of v with id=ax.
+        self.varmax = {}
+        self.varmin = {}
+        self.axmax = {}
+        self.axmin = {}
+        for var in pvars:
+            self.varmax[var.id] = var.max()
+            self.varmin[var.id] = var.min()
+            self.axmax[var.id]  = { ax[0].id:max(ax[0][:]) for ax in var._TransientVariable__domain[:] }
+            self.axmin[var.id]  = { ax[0].id:min(ax[0][:]) for ax in var._TransientVariable__domain[:] }
+
+    def finalize( self ):
+        """By the time this is called, all synchronize operations should have been done.  But even
+        so, each variable has a min and max and a min and max for each of its axes.  We need to
+        simplify further for the plot package."""
+        if self.presentation.__class__.__name__=="GYx":
+            # VCS Yxvsx.
+            var = self.vars[0]
+            axmax = self.axmax[var.id]
+            axmin = self.axmin[var.id]
+            varmax = self.varmax[var.id]
+            varmin = self.varmin[var.id]
+            for v in self.vars[1:]:
+                print "WARNING, too many axes for line plot"
+                for ax in axmax.keys():
+                    axmax[ax] = max(axmax[ax],self.axmax[v.id][ax])
+                    axmin[ax] = min(axmin[ax],self.axmin[v.id][ax])
+                varmax = max(varmax,self.varmax[v.id])
+                varmin = min(varmin,self.varmin[v.id])
+            ax = axmax.keys()[0]
+            self.presentation.datawc_x1 = axmin[ax]
+            self.presentation.datawc_x2 = axmax[ax]
+            self.presentation.datawc_y1 = varmin
+            self.presentation.datawc_y2 = varmax
+
     def __repr__(self):
         return ("uvc_plotspec %s: %s\n" % (self.presentation,self.title))
     def _json(self,*args,**kwargs):
@@ -159,37 +233,139 @@ class uvc_plotspec():
         vars_json = json.dumps(vars_json_list)
         return {'vars':vars_json, 'presentation':self.presentation, 'type':self.type,\
                     'labels':self.labels, 'title':self.title }
-    def write_plot_data( self, writer="" ):
-        # This is just experimental code, so far.
-        if writer=="" or writer=="NetCDF" or writer=="NetCDF file":
-            writer = "NetCDF file"
-        elif writer=="JSON string":
-            pass
-        elif writer=="JSON file":
-            pass
+    def synchronize_ranges( self, pset ):
+        """Synchronize the range attributes of this and another uvc_plotspec object, pset.
+        That is, numerical values of corresponding range attributes will be changed to be the same.
+        A problem is that these ranges are tied to variable names, and the variable names should be
+        unique.  Typically the ranges we want to synchronize belong to the same variable from two
+        filetables, so the variable names are of the form VAR_1 and VAR_2.  For the moment, we'll
+        just strip off _1 and _2 endings, but in the future something more reliable will be needed,
+        e.g. index dicts off a tuple such as ("VAR",2) instead of a string "VAR_2".
+        """
+        self.synchronize_values( pset )
+        self.synchronize_axes(pset)
+    def synchronize_values( self, pset, suffix_length=2 ):
+        "the part of synchronize_ranges for variable values only"
+        sl = -suffix_length
+        if sl==0:
+            self_suffix = ""
+            pset_suffix = ""
         else:
-            print "WARNING: write_plot_data cannot recognize writer name",writer,\
-                ", will write a NetCDF file."
-            writer = "NetCDF file"
-
+            self_suffix = self.vars[0].id[sl:]
+            pset_suffix = pset.vars[0].id[sl:]
+        if sl==0:
+            var_ids = set([v.id for v in self.vars]) & set([v.id for v in pset.vars])
+        else:
+            var_ids = set([v.id[:sl] for v in self.vars]) & set([v.id[:sl] for v in pset.vars])
+        for vid in var_ids:
+            vids = vid+self_suffix
+            vidp = vid+pset_suffix
+            print "jfp vid,vids,vidp=",vid,vids,vidp
+            varmax = max( self.varmax[vids], pset.varmax[vidp] )
+            varmin = min( self.varmin[vids], pset.varmin[vidp] )
+            self.varmax[vids] = varmax
+            pset.varmax[vidp] = varmax
+            self.varmin[vids] = varmin
+            pset.varmin[vidp] = varmin
+    def synchronize_many_values( self, psets, suffix_length=0 ):
+        """the part of synchronize_ranges for variable values only - except that psets is a list of
+        uvc_plotset instances.  Thus we can combine ranges of many variable values."""
+        sl = -suffix_length
+        if sl==0:
+            self_suffix = ""
+        else:
+            self_suffix = self.vars[0].id[sl:]
+        pset_suffices = range(len(psets))
+        for i in range(len(psets)):
+            if sl==0:
+                pset_suffices[i] = ""
+            else:
+                pset_suffices[i] = psets[i].vars[0].id[sl:]
+        if sl==0:
+            var_ids = set([v.id for v in self.vars])
+            for i in range(len(psets)):
+                var_ids =  var_ids & set([v.id for v in psets[i].vars])
+        else:
+            var_ids = set([v.id[:sl] for v in self.vars])
+            for i in range(len(psets)):
+                var_ids = var_ids & set([v.id[:sl] for v in psets[i].vars])
+        for vid in var_ids:
+            vids = vid+self_suffix
+            varmax = self.varmax[vids]
+            varmin = self.varmin[vids]
+            for i in range(len(psets)):
+                vidp = vid+pset_suffices[i]
+                print "jfp vid,vids,vidp=",vid,vids,vidp
+                varmax = max( varmax, psets[i].varmax[vidp] )
+                varmin = min( varmin, psets[i].varmin[vidp] )
+            self.varmax[vids] = varmax
+            self.varmin[vids] = varmin
+            for i in range(len(psets)):
+                vidp = vid+pset_suffices[i]
+                psets[i].varmax[vidp] = varmax
+                psets[i].varmin[vidp] = varmin
+    def synchronize_axes( self, pset ):
+        "the part of synchronize_ranges for axes only"
+        self_suffix = self.vars[0].id[-2:]
+        pset_suffix = pset.vars[0].id[-2:]
+        var_ids = set([v.id[:-2] for v in self.vars]) & set([v.id[:-2] for v in pset.vars])
+        vards = { v.id: v for v in self.vars }
+        vardp = { v.id: v for v in pset.vars }
+        for vid in var_ids:
+            vids = vid+self_suffix
+            vidp = vid+pset_suffix
+            ax_ids = set([ ax[0].id for ax in vards[vids]._TransientVariable__domain ]) & \
+                set([ ax[0].id for ax in vardp[vidp]._TransientVariable__domain ])
+            axmaxs = { aid: max( self.axmax[vids][aid], pset.axmax[vidp][aid] ) for aid in ax_ids }
+            axmins = { aid: min( self.axmin[vids][aid], pset.axmin[vidp][aid] ) for aid in ax_ids }
+            for aid in ax_ids:
+                self.axmax[vids][aid] = axmaxs[aid]
+                pset.axmax[vidp][aid] = axmaxs[aid]
+                self.axmin[vids][aid] = axmins[aid]
+                pset.axmin[vidp][aid] = axmins[aid]
+        
+    def outfile( self, format="", where="" ):
         if len(self.title)<=0:
             fname = 'foo'
         else:
             fname = self.title.strip()+'.nc'
-        filename = os.path.join(writer,fname)
+        filename = os.path.join(where,fname)
         print "output to",filename
+        return filename
+    def write_plot_data( self, format="", where="" ):
+        # This is just experimental code, so far.
+        if format=="" or format=="NetCDF" or format=="NetCDF file":
+            format = "NetCDF file"
+        elif format=="JSON string":
+            pass
+        elif format=="JSON file":
+            pass
+        else:
+            print "WARNING: write_plot_data cannot recognize format name",format,\
+                ", will write a NetCDF file."
+            format = "NetCDF file"
 
-        if writer=="NetCDF file":
+        filename = self.outfile( format, where )
+
+        if format=="NetCDF file":
             writer = cdms2.open( filename, 'w' )    # later, choose a better name and a path!
-        elif writer=="JSON file":
+        elif format=="JSON file":
             print "ERROR: JSON file not implemented yet"
-        elif writer=="JSON string":
+        elif format=="JSON string":
             return json.dumps(self,cls=DiagsEncoder)
 
+        writer.presentation = self.ptype
+        plot_these = []
         for zax in self.vars:
+            print "jfp zax.id=",zax.id
             writer.write( zax )
+            plot_these.append( zax.id )
+        writer.plot_these = ' '.join(plot_these)
 
         writer.close()
+
+class uvc_plotspec(uvc_simple_plotspec):
+    pass
 
 class DiagsEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -246,13 +422,20 @@ class basic_one_line_plot( plotspec ):
         # Normally y=y(x), x is the axis of y.
         if xvar is None:
             xvar = yvar.getAxisList()[0]
-        x = vcs.init()
-        yx=x.createyxvsx()
-        ## Set the default parameters
-        yx.datawc_y1=-2
-        yx.datawc_y2=4
-        plotspec.__init__( self, xvars=[xvar], yvars=[yvar],
-                           vid = yvar.id+" line plot", plottype=yx.tojson() )
+        if xvar == "never really come here":
+            ### modified sample from Charles of how we will pass around plot parameters...
+            vcsx = vcs.init()      # but note that this doesn't belong here!
+            yx=vcsx.createyxvsx()
+            # Set the default parameters
+            yx.datawc_y1=-2  # a lower bound, "data 1st world coordinate on Y axis"
+            yx.datawc_y2=4  # an upper bound, "data 2nd world coordinate on Y axis"
+            plotspec.__init__( self, xvars=[xvar], yvars=[yvar],
+                               vid = yvar.id+" line plot", plottype=yx.tojson() )
+            ### ...sample from Charles of how we will pass around plot parameters
+        else:
+            # This is the real code:
+            plotspec.__init__( self, xvars=[xvar], yvars=[yvar],
+                               vid = yvar.id+" line plot", plottype='Yxvsx' )
 
 class basic_two_line_plot( plotspec ):
     def __init__( self, y1var, y2var, x1var=None, x2var=None ):

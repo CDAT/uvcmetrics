@@ -742,19 +742,34 @@ def reconcile_units( mv1, mv2 ):
         mv2.units = mv1.units
     return mv1, mv2
 
-def aminusb_2ax( mv1, mv2 ):
+def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
     """returns a transient variable representing mv1-mv2, where mv1 and mv2 are variables, normally
-    transient variables, which depend on exactly two axes, typically lon-lat.
+    transient variables, which depend on exactly two (*) axes, typically lon-lat.
     To perform the subtraction, the variables will be interpolated as necessary to the axes
     which are minimal (fewest points) in each direction.
     Note that if mv1 _or_ mv2 have a missing value at index i, then the return value (mv1-mv2)
     will also have a missing value at index i.
+    (*) Experimentally, there can be more than two axes if the first axes be trivial, i.e. length is 1.
+    If this works out, it should be generalized and reproduced in other aminusb_* functions.
     """
     mv1, mv2 = reconcile_units( mv1, mv2 )
     missing = mv1.get_fill_value()
-    axes1 = allAxes(mv1)
-    axes2 = allAxes(mv2)
+    if axes1 is None:
+        axes1 = allAxes(mv1)
+    if axes2 is None:
+        axes2 = allAxes(mv2)
     if axes1 is None or axes2 is None: return None
+
+    # Forget about a trivial extra axis; for now only if it's the first axis:
+    new_axes1 = axes1
+    new_axes2 = axes2
+    if len(axes1)>=3 and len(axes1[0])==1:
+        new_axes1 = axes1[1:]
+    if len(axes2)>=3 and len(axes2[0])==1:
+        new_axes2 = axes2[1:]
+    if len(new_axes1)<len(axes1) or len(new_axes2)<len(axes2):
+        return aminusb_2ax( mv1, mv2, new_axes1, new_axes2 )
+
     if len(axes1)!=2: print "ERROR @1, wrong number of axes for aminusb_2ax",axes1
     if len(axes2)!=2: print "ERROR @2, wrong number of axes for aminusb_2ax",axes2
     if len(axes1[0])==len(axes2[0]):
@@ -1138,7 +1153,6 @@ class reduced_variable(ftrow):
             famfiles = [f for f in files if famdict[f]==fam]
 
             cache_path = self._filetable.cache_path()
-            print "jfp reduce() is using cache_path",cache_path
             xml_name = run_cdscan( fam, famfiles, cache_path )
             f = cdms2.open( xml_name )
         else:

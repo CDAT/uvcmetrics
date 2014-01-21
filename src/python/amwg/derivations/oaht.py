@@ -157,9 +157,11 @@ def ncep_ocean_heat_transport( path ):
     i65n = 55      # index of T42 latitude 65N
     lines = f.readlines()
     f.close()
+    lines.reverse()  # so latitude will range from smallest to largest
     # ncep should have 64 lines each with 22 numbers.
     # We're dropping the 65th line, which is column footers.
-    ncep = numpy.array([ [float(a) for a in l.split(' ') if a!=''] for l in lines[0:nlatT42] ])
+    # for unreversed lines: ncep = numpy.array([ [float(a) for a in l.split(' ') if a!=''] for l in lines[0:nlatT42] ])
+    ncep = numpy.array([ [float(a) for a in l.split(' ') if a!=''] for l in lines[1:] ])
     T42lat = ncep[:,0]/100.
 #    erbe_rhst = ncep[:,1]/100.       # global surface RHT from ERBE TOA (not used yet)
     ncep_oht = numpy.ma.masked_all((4,nlatT42))
