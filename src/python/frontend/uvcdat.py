@@ -112,6 +112,9 @@ class uvc_composite_plotspec():
         ups = [p for p in uvcps if p is not None]
         self.plots = ups
         self.title = ' '.join([p.title for p in ups])
+    def finalize( self ):
+        for p in self.plots:
+            p.finalize()
     def outfile( self, format='xml-NetCDF', where=""):
         print "jfp self.title=",self.title
         if len(self.title)<=0:
@@ -196,6 +199,7 @@ class uvc_simple_plotspec():
             self.varmin[var.id] = var.min()
             self.axmax[var.id]  = { ax[0].id:max(ax[0][:]) for ax in var._TransientVariable__domain[:] }
             self.axmin[var.id]  = { ax[0].id:min(ax[0][:]) for ax in var._TransientVariable__domain[:] }
+        self.finalized = False
 
     def finalize( self ):
         """By the time this is called, all synchronize operations should have been done.  But even
@@ -209,7 +213,6 @@ class uvc_simple_plotspec():
             varmax = self.varmax[var.id]
             varmin = self.varmin[var.id]
             for v in self.vars[1:]:
-                print "WARNING, too many axes for line plot"
                 for ax in axmax.keys():
                     axmax[ax] = max(axmax[ax],self.axmax[v.id][ax])
                     axmin[ax] = min(axmin[ax],self.axmin[v.id][ax])
@@ -357,6 +360,10 @@ class uvc_simple_plotspec():
             writer.write( zax )
             plot_these.append( zax.id )
         writer.plot_these = ' '.join(plot_these)
+        # Once the finalized method guarantees that varmax,varmin are numbers...
+        #if self.finalized==True:
+        #    writer.varmax = self.varmax
+        #    writer.varmin = self.varmin
 
         writer.close()
 
