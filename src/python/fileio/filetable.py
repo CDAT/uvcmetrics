@@ -199,7 +199,6 @@ class basic_filetable:
           return None
        candidates = self._varindex[ variable ]
        found = []
-       print "jfp in find_files, variable=",variable
        if seasonid is not None:
           # the usual case, we're dealing with climatologies not time ranges.
           if seasonid=='JFMAMJJASOND':
@@ -210,7 +209,6 @@ class basic_filetable:
                     lon_range.overlaps_with( ftrow.lonrange ) and\
                     level_range.overlaps_with( ftrow.levelrange ):
                 found.append( ftrow )
-                print "jfp find_files seasonal add of",ftrow
           if found==[]:
              # No suitable season matches (climatology files) found, we will have to use
              # time-dependent data.  Theoretically we could have to use both climatology
@@ -220,7 +218,6 @@ class basic_filetable:
                        lon_range.overlaps_with( ftrow.lonrange ) and\
                        level_range.overlaps_with( ftrow.levelrange ):
                    found.append( ftrow )
-                print "jfp find_files have season but time-dep't add of",ftrow
        else:
           for ftrow in candidates:
                 if time_range.overlaps_with( ftrow.timerange ) and\
@@ -228,7 +225,6 @@ class basic_filetable:
                        lon_range.overlaps_with( ftrow.lonrange ) and\
                        level_range.overlaps_with( ftrow.levelrange ):
                    found.append( ftrow )
-                   print "jfp find_files time-dep't add of",ftrow
        return found
     def list_variables(self):
        vars = list(set([ r.variableid for r in self._table ]))
