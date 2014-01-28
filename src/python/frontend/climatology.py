@@ -17,6 +17,7 @@ from metrics.amwg.derivations.vertical import *
 from metrics.amwg.plot_data import derived_var, plotspec
 from cdutil.times import Seasons
 from pprint import pprint
+import cProfile
 
 class climatology_variable( reduced_variable ):
     def __init__(self,varname,filetable,seasonname='ANN'):
@@ -110,6 +111,10 @@ if __name__ == '__main__':
           print "jfp filt1=",filt1
           test_driver(path1,filt1)
       else:
+          #prof = cProfile.Profile()
+          #args = [path1]
+          #returnme = prof.runcall( test_driver, *args )
+          #prof.print_stats()   # use dump_stats(filename) to print to file
           test_driver(path1)
    else:
       print "usage: plot_data.py root"
