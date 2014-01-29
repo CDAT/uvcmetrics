@@ -21,7 +21,9 @@ from pprint import pprint
 import cProfile
 
 #path1 = os.path.join(os.environ["HOME"],'cam_output/b30.009.cam2.h0.06.xml')
-path1 = os.path.join(os.environ["HOME"],'cam_output/')
+#path1 = os.path.join(os.environ["HOME"],'cam_output/')
+#path1 = os.path.join(os.environ["HOME"],'cam_output_climo/')
+path1 = os.path.join(os.environ["HOME"],'acme_clm_climo/')
 #cmip5 test path1 = os.path.join(os.environ["HOME"],'cmip5/')
 path2 = os.path.join(os.environ["HOME"],'obs_data')
 #cmip5 test path2 = os.path.join(os.environ["HOME"],'cmip5/')
@@ -36,28 +38,34 @@ filetable1 = datafiles1.setup_filetable( tmppth, "model" )
 filt2 = f_startswith("NCEP")
 #cmip5 test filt2 = filt1
 datafiles2 = dirtree_datafiles( path2, filt2 )
-filetable2 = datafiles2.setup_filetable( tmppth, "obs" )
+#filetable2 = datafiles2.setup_filetable( tmppth, "obs" )
+filetable2 = None
 
 number_diagnostic_plots = 0
 dm = diagnostics_menu()
 for pname,pclass in dm.items():
+    if pname!="LMWG":
+        continue
     package = pclass()
-    print "jfp package=",package
+    print "jfp pname=",pname
     sm = package.list_diagnostic_sets()
     for sname,sclass in sm.items():
-        if sclass.name != ' 6- Horizontal Vector Plots of Seasonal Means':
+        #if sclass.name != ' 6- Horizontal Vector Plots of Seasonal Means':
         #if sclass.name != ' 2- Line Plots of Annual Implied Northward Transport':
         #if sclass.name != ' 3- Line Plots of  Zonal Means':
-            continue   # for testing, only do one plot set
+        #if sclass.name != ' 4- Vertical Contour Plots Zonal Means':
+        #    continue   # for testing, only do one plot set
         print "jfp sname=",sname
         for seasonid in package.list_seasons():
-            if seasonid != 'DJF':
+            #if seasonid != 'DJF':
+            if seasonid != 'ANN':
                 continue # for testing, only do one season
             print "jfp seasonid=",seasonid
-            print "jfp variables=",package.list_variables( filetable1, filetable2, sname  )
-            for varid in package.list_variables( filetable1, filetable2, sname  ):
-                #if varid!='Z3':
-                #    continue # for testing, only do one variable
+            variables = package.list_variables( filetable1, filetable2, sname  )
+            print "jfp variables=",variables
+            for varid in variables:
+                if varid!='RAIN':
+                    continue # for testing, only do one variable
                 print "jfp varid=",varid
                 #proc = plotdata_run( sclass, filetable1, filetable2, varid, seasonid )
                 #res = plotdata_results( proc )
@@ -74,6 +82,7 @@ for pname,pclass in dm.items():
                     if res is not None:
                         resc = uvc_composite_plotspec( res )
                         number_diagnostic_plots += 1
+                        print "writing resc to",outpath
                         resc.write_plot_data("xml-NetCDF", outpath )
 
 print "total number of diagnostic plots generated =", number_diagnostic_plots
