@@ -62,7 +62,8 @@ def lonAxis( mv ):
     return lon_axis
 
 def levAxis( mv ):
-    "returns the level axis, if any, of a variable mv"
+    """returns the level axis, if any, of a variable mv.
+    Any kind of vertical axis will be returned if found."""
     if mv is None: return None
     lev_axis = None
     for ax in allAxes(mv):
@@ -70,6 +71,12 @@ def levAxis( mv ):
             lev_axis = ax
             break
         if ax.id=='plev':
+            lev_axis = ax
+            break
+        if ax.id=='levlak':
+            lev_axis = ax
+            break
+        if ax.id=='levgrnd':
             lev_axis = ax
             break
     return lev_axis
@@ -455,6 +462,26 @@ def reduce2lat_seasonal( mv, seasons=seasonsyr, vid=None ):
     avmv.units = mv.units
     return avmv
 
+# N.B. The following function is specific to LMWG but almost general
+def reduceAnnTrend(mv, vid=None):
+   # This does a annual climatology, then a spatial average of a variable. result is basically a list
+   if vid == None:
+      vid = 'reduced_'+mv.id
+
+   timeax = timeAxis(mv)
+   if timeax is not None and timeax.getBounds()==None:
+      timeax._bounds_ = timeax.genGenericBounds()
+   if timeax is not None:
+       print 'Calculating seasonal climatology...'
+       mvann = cdutil.times.YEAR(mv)
+   else:
+       mvann = mv
+   print 'Calculating land averages...'
+   mvtrend = cdutil.averager(mvann, axis='xy')
+   mvtrend.id = vid
+   if hasattr(mv, 'units'): mvtrend.units = mv.units # should be units/sq meter I assume
+   return mvtrend
+
 def reduce2latlon_seasonal( mv, seasons=seasonsyr, vid=None ):
     """as reduce2lat_seasonal, but both lat and lon axes are retained.
     """
@@ -684,6 +711,60 @@ def interp2( newaxis1, mv ):
                                              right=missing ) )>0
     return new_vals
 
+# N.B. The following function was written for LMWG
+def sumvarlist(mlist):
+   mv = cdms2.createVariable()
+   for m in mlist:
+      mv = mv + m
+   return mv
+
+# N.B. The following function was written for LMWG
+def addlistAndReduce(mvlist):
+   print mvlist
+
+# N.B. The following function was written for LMWG
+def aminusbAndReduce(mvlist):
+   print mvlist
+
+# N.B. The following function was written for LMWG
+def adivbAndReduce(mvlist):
+   print mvlist
+
+# N.B. The following function was written for LMWG
+def pminuseAndReduce(mvlist):
+   print mvlist
+
+# N.B. The following function is specific to LMWG
+def evapfracAndReduce(mvlist):
+   print mvlist
+
+
+def aplusb0(mv1, mv2 ):
+   """ returns mv1[0,] + mv2[0,]; they should be dimensioned alike."""
+   mv = mv1[0,] + mv2[0,]
+   if hasattr(mv ,'long_name'):
+      if mv.long_name == mv1.long_name:
+         mv.long_name = ''
+   return mv
+
+def aplusb(mv1, mv2):
+   """ returns mv1+mv2; they should be dimensioned alike."""
+   mv = mv1 + mv2
+   if hasattr(mv, 'long_name'):
+      if mv.long_name == mv1.long_name:
+         mv.long_name = ''
+   return mv
+
+def aminusb(mv1, mv2):
+   """ returns mv1-mv2; they should be dimensioned alike."""
+   if mv1 is None or mv2 is None:
+       return None
+   mv = mv1 - mv2
+   if hasattr(mv, 'long_name'):
+      if mv.long_name == mv1.long_name:
+         mv.long_name = ''
+   return mv
+
 def aminusb0( mv1, mv2 ):
     """ returns mv1[0,]-mv2[0,]; they should be dimensioned alike.  Attributes will be fixed up where I know how."""
     mv = mv1[0,] - mv2[0,]
@@ -691,6 +772,49 @@ def aminusb0( mv1, mv2 ):
         if mv.long_name==mv1.long_name:  # They're different, shouldn't have the same long_name
             mv.long_name = ''
     return mv
+
+# N.B. The following function is specific to LMWG
+def evapfrac(mvdict):
+   """returns evaporative fraction """
+   lheat = mvdict['fctr']+mvdict['fcev']+mvdict['fgev']
+   sheat = mvdict['fsh']
+
+   sheat2 = sheat
+   if sheat.min() < 0.:
+      sheat2 = MV2.where(MV2.less(sheat, 0.), sheat.missing_value, sheat)
+
+   lheat2 = lheat
+   if lheat.min() < 0.:
+      lheat2 = MV2.where(MV2.less(lheat, 0.), lheat.missing_value, lheat)
+
+   denom = lheat2+sheat2
+   denom2 = MV2.where(MV2.less_equal(denom, 0.), denom_missing_value, denom)
+
+   var = lheat2 / denom2
+   var.id = 'evapfrac'
+   var.setattribute('long_name', 'evaporative fraction')
+   var.setattribute('name','evapfrac')
+   var.units=''
+   return var
+
+
+# N.B. The following function is specific to LMWG
+def adivapb(mv1, mv2):
+    """returns a/(a+b) """
+    mv = cdms2.createVariable()
+    mv = mv1/(mv1+mv2)
+    if hasattr(mv, 'long_name'):
+      if mv.long_name == mv1.long_name:
+         mv.long_name = ''
+    return mv
+
+# N.B. The following function is specific to LMWG
+def adivb(mv1, mv2):
+   mv = mv1/mv2
+   if hasattr(mv, 'long_name'):
+      if mv.long_name == mv1.long_name:
+         mv.long_name = ''
+   return mv
 
 def aminusb_ax2( mv1, mv2 ):
     """returns a transient variable representing mv1-mv2, where mv1 and mv2 are variables with
@@ -1114,12 +1238,11 @@ class reduced_variable(ftrow):
         we look for an underscore and two numerical digits, e.g. '_19'."""
         if filename[-9:]=='_climo.nc':
             return filename[0:-12]
-        matchobject = re.search( r"^.*.cam.h0.", filename ) # CAM,CESM,etc. sometimes
+        matchobject = re.search( r"^.*.h0.", filename ) # CAM,CESM,etc. sometimes, good if h0=mon
         if matchobject is None:
-            matchobject = re.search( r"^.*.cam2.h0.", filename ) # CAM,CESM,etc. sometimes
-        # ...CAM match is a quick fix, may be often wrong...
+            matchobject = re.search( r"^.*.h1.", filename ) # h1 is also common in CESM, etc.
         if matchobject is not None:
-            familyname = filename[0:(matchobject.end()-8)]
+            familyname = filename[0:(matchobject.end()-1)]
             return familyname
         matchobject = re.search( r"^.*_\d\d", filename )  # CMIP5 and other cases
         if matchobject is not None:
@@ -1133,6 +1256,12 @@ class reduced_variable(ftrow):
         Applies the reduction function to the data, and returns an MV.
         When completed, this will treat missing data as such.
         At present only CF-compliant files are supported."""
+        if self._filetable is None:
+            print "ERROR no data found for reduced variable",self.variableid
+            print "in",self.timerange, self.latrange, self.lonrange, self.levelrange
+            print "filetable is",self._filetable
+            return None
+
         if vid is None:
             vid = self._vid
         rows = self._filetable.find_files( self.variableid, time_range=self.timerange,
