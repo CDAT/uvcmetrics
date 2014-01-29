@@ -69,7 +69,7 @@ def get_datafile_filefmt( dfile, get_them_all=False ):
     """dfile is an open datafile.  If the file type is recognized,
     then this will return an object with methods needed to support that file type."""
     if hasattr(dfile,'source') and ( dfile.source[0:3]=='CAM' or dfile.source[0:4]=='CCSM'\
-           or dfile.source[0:4]=='CESM' ):
+           or dfile.source[0:4]=='CESM' or dfile.source[0:9]=='Community' ):
        if hasattr(dfile,'season') or dfile.id[-9:]=="_climo.nc":
           return NCAR_climo_filefmt( dfile, get_them_all )
        else:
@@ -98,7 +98,7 @@ class basic_filetable:
     Different file types will require different methods,
     and auxiliary data."""
 
-    def __init__( self, filelist, ftid='', cache_path=None, get_them_all=False ):
+    def __init__( self, filelist, ftid='', cache_path=None, get_them_all=True ):
         """filelist is a list of strings, each of which is the path to a file"""
         self._table = []     # will be built from the filelist, see below
         # We have two indices, one by file and one by variable.
