@@ -30,7 +30,9 @@ packages = {'metrics': 'src/python',
               'metrics.computation': 'src/python/computation',
               'metrics.wgne': 'src/python/wgne',
               'metrics.amwg': 'src/python/amwg',
-              'metrics.amwg.derivations': 'src/python/amwg/derivations'}
+              'metrics.amwg.derivations': 'src/python/amwg/derivations',
+              'metrics.lmwg': 'src/python/lmwg',
+            }
 for d in packages.itervalues():
     shutil.copy("git.py",os.path.join(d,"git.py"))
 
@@ -44,6 +46,7 @@ setup (name = "metrics",
                    'metrics.wgne',
                    'metrics.amwg',
                    'metrics.amwg.derivations',
+                   'metrics.lmwg',
                    'metrics.graphics',
                    'metrics.frontend',
                    'metrics.computation'
