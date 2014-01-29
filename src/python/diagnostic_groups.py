@@ -6,7 +6,8 @@ from metrics.fileio.filetable import basic_filetable
 
 def diagnostics_menu():
     from metrics.amwg.amwg import AMWG
-    return { "AMWG":AMWG }
+    from metrics.lmwg.lmwg import LMWG
+    return { "AMWG":AMWG, "LMWG":LMWG }
 
 class BasicDiagnosticGroup():
     # This class will probably not get instantiated.
