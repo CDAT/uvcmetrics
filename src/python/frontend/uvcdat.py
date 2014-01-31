@@ -2,7 +2,7 @@
 
 # Functions callable from the UV-CDAT GUI.
 
-import hashlib, os, pickle, sys, os
+import hashlib, os, pickle, sys, os, math
 from metrics import *
 from metrics.fileio.filetable import *
 from metrics.fileio.findfiles import *
@@ -194,19 +194,21 @@ class uvc_simple_plotspec():
         self.varmin = {}
         self.axmax = {}
         self.axmin = {}
+        self.axax = {}
         for var in pvars:
             self.varmax[var.id] = var.max()
             self.varmin[var.id] = var.min()
             self.axmax[var.id]  = { ax[0].id:max(ax[0][:]) for ax in var._TransientVariable__domain[:] }
             self.axmin[var.id]  = { ax[0].id:min(ax[0][:]) for ax in var._TransientVariable__domain[:] }
+            self.axax[var.id]  = { ax[0].id:ax[0].axis for ax in var._TransientVariable__domain[:] }
         self.finalized = False
 
     def finalize( self ):
         """By the time this is called, all synchronize operations should have been done.  But even
         so, each variable has a min and max and a min and max for each of its axes.  We need to
         simplify further for the plot package."""
-        if self.presentation.__class__.__name__=="GYx":
-            # VCS Yxvsx.
+        if self.presentation.__class__.__name__=="GYx" or\
+                self.presentation.__class__.__name__=="Gfi":
             var = self.vars[0]
             axmax = self.axmax[var.id]
             axmin = self.axmin[var.id]
@@ -218,11 +220,48 @@ class uvc_simple_plotspec():
                     axmin[ax] = min(axmin[ax],self.axmin[v.id][ax])
                 varmax = max(varmax,self.varmax[v.id])
                 varmin = min(varmin,self.varmin[v.id])
-            ax = axmax.keys()[0]
-            self.presentation.datawc_x1 = axmin[ax]
-            self.presentation.datawc_x2 = axmax[ax]
-            self.presentation.datawc_y1 = varmin
-            self.presentation.datawc_y2 = varmax
+            if self.presentation.__class__.__name__=="GYx":
+                # VCS Yxvsx
+                ax = axmax.keys()[0]
+                self.presentation.datawc_x1 = axmin[ax]
+                self.presentation.datawc_x2 = axmax[ax]
+                self.presentation.datawc_y1 = varmin
+                self.presentation.datawc_y2 = varmax
+            elif self.presentation.__class__.__name__=="Gfi":
+                # VCS Isofill
+                # First we have to identify which axes will be plotted as X and Y.
+                # The following won't cover all cases, but does cover what we have:
+                axaxi = {ax:id for id,ax in self.axax[var.id].items()}
+                if 'X' in axaxi.keys():
+                    axx = axaxi['X']
+                    axy = axaxi['Y']
+                else:
+                    axx = axaxi['Y']
+                    axy = axaxi['Z']
+                # Now send the plotted min,max for the X,Y axes to the graphics:
+                self.presentation.datawc_x1 = axmin[axx]
+                self.presentation.datawc_x2 = axmax[axx]
+                self.presentation.datawc_y1 = axmin[axy]
+                self.presentation.datawc_y2 = axmax[axy]
+                # The variable min and max, varmin and varmax, should be passed on to the graphics
+                # for setting the contours.  But apparently you can't tell VCS just the min and max;
+                # you have to give it all the contour levels.  So...
+                nlevels=10
+                nlrange = range(nlevels+1)
+                nlrange.reverse()
+                vminl = varmin/nlevels
+                vmaxl = varmax/nlevels
+                levels = [a*vminl+(nlevels-a)*vmaxl for a in nlrange]
+                levels[0] = math.floor(levels[0])  # could do better but too much trouble
+                levels[-1] = math.ceil(levels[-1])
+                self.presentation.levels = (levels,)
+                # Once youset the levels, the default color choice looks bad.  So you really have
+                # to set contour fill colors (integers from 0 through 255) too:
+                cmin = 32./nlevels
+                cmax = 255./nlevels
+                colors =  [int(round(a*cmin+(nlevels-a)*cmax)) for a in nlrange]
+                self.presentation.fillareacolors = colors
+                #self.presentation.fillareacolors=[32,48,64,80,96,112,128,144,160,176,240]
 
     def __repr__(self):
         return ("uvc_plotspec %s: %s\n" % (self.presentation,self.title))
