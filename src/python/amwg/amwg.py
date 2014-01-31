@@ -264,7 +264,10 @@ class amwg_plot_set2(amwg_plot_spec):
             [ psv['CAM_NCEP_HEAT_TRANSPORT_PACIFIC'], psv['CAM_NCEP_HEAT_TRANSPORT_ATLANTIC'],
               psv['CAM_NCEP_HEAT_TRANSPORT_INDIAN'] ],
             suffix_length=0 )
-        # ...add the other two if this works <<<<<<
+        psv['CAM_NCEP_HEAT_TRANSPORT_GLOBAL'].finalize()
+        psv['CAM_NCEP_HEAT_TRANSPORT_PACIFIC'].finalize()
+        psv['CAM_NCEP_HEAT_TRANSPORT_ATLANTIC'].finalize()
+        psv['CAM_NCEP_HEAT_TRANSPORT_INDIAN'].finalize()
         return self.plotspec_values['CAM_NCEP_HEAT_TRANSPORT_ALL']
 
 
@@ -437,6 +440,8 @@ class amwg_plot_set4(amwg_plot_spec):
             [zdiffval],'Isofill', labels=['difference'],
             title=' '.join([self._var_baseid,z1unam,'-',z2unam]))
         plot_a_val.synchronize_ranges(plot_b_val)
+        for v in [ plot_a_val, plot_b_val, plot_c_val ]:
+            v.finalize()
         return [ plot_a_val, plot_b_val, plot_c_val ]
 
 class amwg_plot_set5and6(amwg_plot_spec):
