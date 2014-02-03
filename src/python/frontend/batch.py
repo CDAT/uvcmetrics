@@ -22,8 +22,8 @@ import cProfile
 
 #path1 = os.path.join(os.environ["HOME"],'cam_output/b30.009.cam2.h0.06.xml')
 #path1 = os.path.join(os.environ["HOME"],'cam_output/')
-#path1 = os.path.join(os.environ["HOME"],'cam_output_climo/')
-path1 = os.path.join(os.environ["HOME"],'acme_clm_climo/')
+path1 = os.path.join(os.environ["HOME"],'cam_output_climo/')
+#path1 = os.path.join(os.environ["HOME"],'acme_clm_climo/')
 #cmip5 test path1 = os.path.join(os.environ["HOME"],'cmip5/')
 path2 = os.path.join(os.environ["HOME"],'obs_data')
 #cmip5 test path2 = os.path.join(os.environ["HOME"],'cmip5/')
@@ -38,13 +38,12 @@ filetable1 = datafiles1.setup_filetable( tmppth, "model" )
 filt2 = f_startswith("NCEP")
 #cmip5 test filt2 = filt1
 datafiles2 = dirtree_datafiles( path2, filt2 )
-#filetable2 = datafiles2.setup_filetable( tmppth, "obs" )
-filetable2 = None
+filetable2 = datafiles2.setup_filetable( tmppth, "obs" )
 
 number_diagnostic_plots = 0
 dm = diagnostics_menu()
 for pname,pclass in dm.items():
-    if pname!="LMWG":
+    if pname!="AMWG":
         continue
     package = pclass()
     print "jfp pname=",pname
@@ -53,8 +52,8 @@ for pname,pclass in dm.items():
         #if sclass.name != ' 6- Horizontal Vector Plots of Seasonal Means':
         #if sclass.name != ' 2- Line Plots of Annual Implied Northward Transport':
         #if sclass.name != ' 3- Line Plots of  Zonal Means':
-        #if sclass.name != ' 4- Vertical Contour Plots Zonal Means':
-        #    continue   # for testing, only do one plot set
+        if sclass.name != ' 4- Vertical Contour Plots Zonal Means':
+            continue   # for testing, only do one plot set
         print "jfp sname=",sname
         for seasonid in package.list_seasons():
             #if seasonid != 'DJF':
@@ -64,7 +63,7 @@ for pname,pclass in dm.items():
             variables = package.list_variables( filetable1, filetable2, sname  )
             print "jfp variables=",variables
             for varid in variables:
-                if varid!='RAIN':
+                if varid!='T':
                     continue # for testing, only do one variable
                 print "jfp varid=",varid
                 #proc = plotdata_run( sclass, filetable1, filetable2, varid, seasonid )
