@@ -24,30 +24,30 @@ vcsx=vcs.init()   # This belongs in one of the GUI files, e.g.diagnosticsDockWid
 
 from multiprocessing import Process, Semaphore, Pipe
 import time
+import cdms2
 
-#def _plotdata_run( child_conn, sema, plotspec, filetable1, filetable2, varname, seasonname, outputPath, aux=None ):
-def _plotdata_run(sema, plotspec, filetable1, filetable2, varname, seasonname, outputPath, unique_ID, taskTracker, aux=None ):
+def _plotdata_run( child_conn, sema, plotspec, filetable1, filetable2, varname, seasonname, outputPath, unique_ID, aux=None ):
+    #def _plotdata_run(plotspec, filetable1, filetable2, varname, seasonname, outputPath, unique_ID, aux=None ):
     global vcsx
     vcsx = False # temporary kludge
     sema.acquire()
     ps = plotspec( filetable1, filetable2, varname, seasonname, aux )
     if ps is None:
         results = None
+        return results
     else:
         results = ps.compute()
-        ts=time.time()
-        outfile=os.path.join(outputPath,str(ts))
+        outfile=os.path.join(outputPath,str(unique_ID))
         if type(results) is list:
             results_obj = uvc_composite_plotspec(results)
         else:
             results_obj = results
-        results_obj.write_plot_data( "", os.path.join(outputPath) ) # second arg sdb directory
-        taskTracker.add_task(unique_ID,outfile)
+        results_obj.write_plot_data( "", outfile ) # second arg sdb directory
     sema.release()
-    #child_conn.send(outfile)
+    child_conn.send(outfile)
     return outfile
 
-def plotdata_run( plotspec, filetable1, filetable2, varname, seasonname, outputPath, unique_ID, taskTracker, aux=None ):
+def plotdata_run( plotspec, filetable1, filetable2, varname, seasonname, outputPath, unique_ID, aux=None ):
     """Inputs:
     plotspec is a plot_spec class to be instantiated
     filetable1 is the model data file table
@@ -62,27 +62,31 @@ def plotdata_run( plotspec, filetable1, filetable2, varname, seasonname, outputP
     To get the computed value, call plotdata_results(p).
     """
     sema = Semaphore()
-    #parent_conn, child_conn = Pipe()
-    #p = Process( target=_plotdata_run,
-    #             args=(child_conn, sema,
-    #                   plotspec, filetable1, filetable2, varname, seasonname, aux) )
+    parent_conn, child_conn = Pipe()
     p = Process( target=_plotdata_run,
-                 args=(sema,
-                       plotspec, filetable1, filetable2, varname, seasonname, outputPath, unique_ID, taskTracker, aux) )
+                 args=(child_conn, sema,
+                       plotspec, filetable1, filetable2, varname, seasonname, outputPath, unique_ID,aux) )
+    #outfile=_plotdata_run(plotspec, filetable1, filetable2, varname, seasonname, outputPath, unique_ID)
+    #print outfile
+    """
+    p = Process( target=_plotdata_run,
+                 args=(
+                       plotspec, filetable1, filetable2, varname, seasonname, outputPath, unique_ID, aux) )
+    """
     p.start()
-    #p.sema = sema
-    pid = p.pid
-    p.join()
-    #p.parent_conn = parent_conn
-    return pid
+    p.sema = sema
+    #pid = p.pid
+    #p.join()
+    p.parent_conn = parent_conn
+    return p
 
-#def plotdata_status( p ):
-#    return p.sema.get_value()
+def plotdata_status( p ):
+    return p.sema.get_value()
 
-#def plotdata_results( p ):
-#    results = p.parent_conn.recv()
-#    p.join()  # assumption: the process won't be needed after we have the results
-#    return results
+def plotdata_results( p ):
+    results = p.parent_conn.recv()
+    p.join()  # assumption: the process won't be needed after we have the results
+    return results
 
 # ----------------
 
