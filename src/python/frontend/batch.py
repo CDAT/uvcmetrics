@@ -22,8 +22,8 @@ import cProfile
 
 #path1 = os.path.join(os.environ["HOME"],'cam_output/b30.009.cam2.h0.06.xml')
 #path1 = os.path.join(os.environ["HOME"],'cam_output/')
-path1 = os.path.join(os.environ["HOME"],'cam_output_climo/')
-#path1 = os.path.join(os.environ["HOME"],'acme_clm_climo/')
+#path1 = os.path.join(os.environ["HOME"],'cam_output_climo/')
+path1 = os.path.join(os.environ["HOME"],'acme_clm_climo/')
 #cmip5 test path1 = os.path.join(os.environ["HOME"],'cmip5/')
 path2 = os.path.join(os.environ["HOME"],'obs_data')
 #cmip5 test path2 = os.path.join(os.environ["HOME"],'cmip5/')
@@ -38,12 +38,13 @@ filetable1 = datafiles1.setup_filetable( tmppth, "model" )
 filt2 = f_startswith("NCEP")
 #cmip5 test filt2 = filt1
 datafiles2 = dirtree_datafiles( path2, filt2 )
-filetable2 = datafiles2.setup_filetable( tmppth, "obs" )
+#filetable2 = datafiles2.setup_filetable( tmppth, "obs" )
+filetable2 = None
 
 number_diagnostic_plots = 0
 dm = diagnostics_menu()
 for pname,pclass in dm.items():
-    if pname!="AMWG":
+    if pname!="LMWG":
         continue
     package = pclass()
     print "jfp pname=",pname
@@ -52,7 +53,8 @@ for pname,pclass in dm.items():
         #if sclass.name != ' 6- Horizontal Vector Plots of Seasonal Means':
         #if sclass.name != ' 2- Line Plots of Annual Implied Northward Transport':
         #if sclass.name != ' 3- Line Plots of  Zonal Means':
-        if sclass.name != ' 4- Vertical Contour Plots Zonal Means':
+        #if sclass.name != ' 4- Vertical Contour Plots Zonal Means':
+        if sclass.name != '2 - Horizontal contour plots of DJF, MAM, JJA, SON, and ANN means':
             continue   # for testing, only do one plot set
         print "jfp sname=",sname
         for seasonid in package.list_seasons():
@@ -63,11 +65,9 @@ for pname,pclass in dm.items():
             variables = package.list_variables( filetable1, filetable2, sname  )
             print "jfp variables=",variables
             for varid in variables:
-                if varid!='T':
+                if varid!='TSA':
                     continue # for testing, only do one variable
                 print "jfp varid=",varid
-                #proc = plotdata_run( sclass, filetable1, filetable2, varid, seasonid )
-                #res = plotdata_results( proc )
                 vard = package.all_variables( filetable1, filetable2, sname )
                 var = vard[varid]
                 varopt = var.varoptions()
@@ -76,10 +76,18 @@ for pname,pclass in dm.items():
                 for aux in varopt:
                     #if aux != '850 mbar':
                     #    continue
-                    plot = sclass( filetable1, filetable2, varid, seasonid, aux )
-                    res = plot.compute()
+                    #plot = sclass( filetable1, filetable2, varid, seasonid, aux )
+                    #res = plot.compute()
+                    proc = plotdata_run( sclass, filetable1, filetable2, varid, seasonid, outpath, 13 )
+                    resf = plotdata_results( proc )  # file name in which results are written
+                    print "jfp results written in",resf
+                    res = None
                     if res is not None:
-                        resc = uvc_composite_plotspec( res )
+                        print "jfp class name=",res.__class__.__name__
+                        if res.__class__.__name__ is 'uvc_composite_plotspec':
+                            resc = res
+                        else:
+                            resc = uvc_composite_plotspec( res )
                         number_diagnostic_plots += 1
                         print "writing resc to",outpath
                         resc.write_plot_data("xml-NetCDF", outpath )
