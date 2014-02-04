@@ -370,7 +370,7 @@ class uvc_simple_plotspec():
         if len(self.title)<=0:
             fname = 'foo'
         else:
-            fname = self.title.strip()+'.nc'
+            fname = (self.title.strip()+'.nc').replace(' ','_')
         filename = os.path.join(where,fname)
         print "output to",filename
         return filename
