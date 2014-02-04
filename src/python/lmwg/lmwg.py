@@ -222,7 +222,7 @@ class lmwg_plot_set2(lmwg_plot_spec):
    def _all_variables( filetable1, filetable2=None ):
       print 'lmwg_plot_set2._all_variables called, package=',lmwg_plot_spec.package
       allvars = lmwg_plot_spec.package._all_variables( filetable1, filetable2, "lmwg_plot_spec" )
-      print 'allvars: ', allvars
+      #print 'allvars: ', allvars
       #quit()
       return allvars
 
