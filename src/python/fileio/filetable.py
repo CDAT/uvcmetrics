@@ -124,8 +124,8 @@ class basic_filetable:
        """returns a root directory for the files in this filetable"""
        if self._filelist is None: return None
        file0 = self._filelist._root
-       #return os.path.dirname( os.path.abspath(os.path.expanduser(file0)) )
-       return file0
+       return os.path.dirname( os.path.abspath(os.path.expanduser(file0)) )
+       #return file0
     def cache_path(self):
        """returns the path to a directory suitable for cache files"""
        try:
