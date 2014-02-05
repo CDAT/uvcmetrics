@@ -615,26 +615,31 @@ class plot_spec(object):
         varvals = self.variable_values
         for p,ps in self.single_plotspecs.iteritems():
             print "jfp preparing data for",ps._id
-            xrv = [ varvals[k] for k in ps.xvars ]
-            x1rv = [ varvals[k] for k in ps.x1vars ]
-            x2rv = [ varvals[k] for k in ps.x2vars ]
-            x3rv = [ varvals[k] for k in ps.x3vars ]
-            yrv = [ varvals[k] for k in ps.yvars ]
-            y1rv = [ varvals[k] for k in ps.y1vars ]
-            y2rv = [ varvals[k] for k in ps.y2vars ]
-            y3rv = [ varvals[k] for k in ps.y3vars ]
-            yarv = [ varvals[k] for k in ps.yavars ]
-            ya1rv = [ varvals[k] for k in ps.ya1vars ]
-            zrv = [ varvals[k] for k in ps.zvars ]
-            zrrv = [ varvals[k] for k in ps.zrangevars ]
-            xax = apply( ps.xfunc, xrv )
-            x1ax = apply( ps.x1func, x1rv )
-            x2ax = apply( ps.x2func, x2rv )
-            x3ax = apply( ps.x3func, x3rv )
-            yax = apply( ps.yfunc, yrv )
-            y1ax = apply( ps.y1func, y1rv )
-            y2ax = apply( ps.y2func, y2rv )
-            y3ax = apply( ps.y3func, y3rv )
+            try:
+                xrv = [ varvals[k] for k in ps.xvars ]
+                x1rv = [ varvals[k] for k in ps.x1vars ]
+                x2rv = [ varvals[k] for k in ps.x2vars ]
+                x3rv = [ varvals[k] for k in ps.x3vars ]
+                yrv = [ varvals[k] for k in ps.yvars ]
+                y1rv = [ varvals[k] for k in ps.y1vars]
+                y2rv = [ varvals[k] for k in ps.y2vars ]
+                y3rv = [ varvals[k] for k in ps.y3vars ]
+                yarv = [ varvals[k] for k in ps.yavars ]
+                ya1rv = [ varvals[k] for k in ps.ya1vars ]
+                zrv = [ varvals[k] for k in ps.zvars ]
+                zrrv = [ varvals[k] for k in ps.zrangevars ]
+                xax = apply( ps.xfunc, xrv )
+                x1ax = apply( ps.x1func, x1rv )
+                x2ax = apply( ps.x2func, x2rv )
+                x3ax = apply( ps.x3func, x3rv )
+                yax = apply( ps.yfunc, yrv )
+                y1ax = apply( ps.y1func, y1rv )
+                y2ax = apply( ps.y2func, y2rv )
+                y3ax = apply( ps.y3func, y3rv )
+            except Exception as e:
+                print "cannot compute data for",ps._id
+                self.plotspec_values[p] = None
+                continue
             # not used yet yaax = apply( ps.yafunc, yarv )
             ya1ax = apply( ps.ya1func, ya1rv )
             zax = apply( ps.zfunc, zrv )
