@@ -99,6 +99,57 @@ class basic_datafiles:
         """the basic_datafiles version of this method does nothing.  See the dirtree_datafiles
         version to see what it is supposed to do."""
         return True
+    def _cachefile( self, cache_path, ftid=None ):
+        """returns a cache file based on the supplied cache path, the files list, the
+        filetable id"""
+        if ftid is None:
+            ftid = self.short_name()
+        cache_path = os.path.expanduser(cache_path)
+        cache_path = os.path.abspath(cache_path)
+        datafile_ls = [ f+'size'+str(os.path.getsize(f))+'mtime'+str(os.path.getmtime(f))\
+                            for f in self.files ]
+        search_string = ' '.join(
+            [self.long_name(),cache_path,version,';'.join(datafile_ls)] )
+        csum = hashlib.md5(search_string).hexdigest()
+        cachefilename = csum+'.cache'
+        cachefile=os.path.normpath( cache_path+'/'+cachefilename )
+        return cachefile, ftid
+    def setup_filetable( self, cache_path, ftid=None ):
+        """Returns a file table (an index which says where you can find a variable) for files
+        in this object's files list.
+        It will be useful if you provide a name for the file table, the string ftid.
+        For example, this may appear in names of variables to be plotted.
+        This function will cache the file table and use it if possible.
+        If the cache be stale, call clear_filetable()."""
+        cachefile,ftid = self._cachefile( cache_path, ftid )
+        if os.path.isfile(cachefile):
+            f = open(cachefile,'rb')
+            try:
+                filetable = pickle.load(f)
+                cached=True
+            except:
+                cached=False
+            f.close()
+        else:
+            cached=False
+        if cached==False:
+            filetable = basic_filetable( self, ftid, cache_path=cache_path )
+            f = open(cachefile,'wb')
+            pickle.dump( filetable, f )
+            f.close()
+        return filetable
+    def clear_filetable( self, cache_path ):
+        """Deletes (clears) the cached file table created by the corresponding call of setup_filetable"""
+        cache_path = os.path.expanduser(cache_path)
+        cache_path = os.path.abspath(cache_path)
+        # There's a problem with this: if a file is absent we definitely want to get rid of
+        # its cached filetable, but _cachefile() won't get it because the cache file name
+        # depends on the file name, which doesn't exist!  The only real solution is to get rid
+        # of all cached data, or all old cached data.  The user can do that.
+        cachefile,ftid = self._cachefile( cache_path, ftid )
+
+        if os.path.isfile(cache_path):
+            os.remove(cache_path)
 
 class dirtree_datafiles( basic_datafiles ):
     def __init__( self, root, filt=basic_filter() ):
@@ -111,8 +162,14 @@ class dirtree_datafiles( basic_datafiles ):
             self._filt = None
             self.files = []
             return None
-        root = os.path.expanduser(root)
-        root = os.path.abspath(root)
+        if type(root)==list:
+            pass
+        elif type(root)==str:
+            root = [root]
+        else:
+            raise Error("don't understand root directory %s"%root)
+        root = [ os.path.expanduser(r) for r in root ]
+        root = [ r if r[0:5]=='http:' else os.path.abspath(r) for r in root ]
         if filt==None: filt=basic_filter()
         if type(filt)==str:
             if filt.find('filt=')==0:   # really we need to use getopt to parse args
@@ -123,28 +180,24 @@ class dirtree_datafiles( basic_datafiles ):
         self._filt = filt
         self.files = []
         basic_datafiles.__init__(self)
-        if type(root)==list:
-            pass
-        elif type(root)==str:
-            root = [root]
-        else:
-            raise Error("don't understand root directory %s"%root)
         for r in root:
             self._getdatafiles(r,filt)
         self.files.sort()  # improves consistency between runs
     def _getdatafiles( self, root, filt ):
         """returns all data files under a single root directory"""
+        print "jfp getting datafiles from ",root
         if os.path.isfile(root):
             self.files += [root]
         for dirpath,dirname,filenames in os.walk(root):
             dirpath = os.path.expanduser(dirpath)
             dirpath = os.path.abspath(dirpath)
             self.files += [ os.path.join(dirpath,f) for f in filenames if filt(f) ]
+        print "jfp found files",self.files
         return self.files
     def short_name(self):
-        return os.path.basename(str(self._root))
+        return os.path.basename(str(self._root[0]))
     def long_name(self):
-        return ' '.join( [ self.__class__.__name__, str(self._root), str(self._filt) ] )
+        return ' '.join( [ self.__class__.__name__, str(self._root[0]), str(self._filt) ] )
     def check_filespec( self ):
         """method to determine whether the file specification used to build this object is useful,
         and help improve it if it's not.
@@ -172,58 +225,6 @@ class dirtree_datafiles( basic_datafiles ):
         for fam in families:
             famdict[fam] = f_and( self._filt, f_startswith(fam) )
         return famdict
-    def setup_filetable( self, cache_path, ftid=None ):
-        """Returns a file table (an index which says where you can find a variable) for files in the
-        supplied search path, satisfying the optional filter.  It will be useful if you provide a name
-        for the file table, the string ftid.  For example, this may appear in names of variables to be
-        plotted.  This function will cache the file table and
-        use it if possible.  If the cache be stale, call clear_filetable()."""
-        if ftid is None:
-            ftid = self.short_name()
-
-        cache_path = os.path.expanduser(cache_path)
-        cache_path = os.path.abspath(cache_path)
-        datafile_ls = [ f+'size'+str(os.path.getsize(f))+'mtime'+str(os.path.getmtime(f))\
-                            for f in self.files ]
-        search_string = ' '.join(
-            [self.long_name(),cache_path,version,';'.join(datafile_ls)] )
-        csum = hashlib.md5(search_string).hexdigest()
-        cachefilename = csum+'.cache'
-        cachefile=os.path.normpath( cache_path+'/'+cachefilename )
-
-        if os.path.isfile(cachefile):
-            f = open(cachefile,'rb')
-            try:
-                filetable = pickle.load(f)
-                cached=True
-            except:
-                cached=False
-            f.close()
-        else:
-            cached=False
-        if cached==False:
-            filetable = basic_filetable( self, ftid, cache_path=cache_path )
-            f = open(cachefile,'wb')
-            pickle.dump( filetable, f )
-            f.close()
-        return filetable
-    def clear_filetable( self, cache_path ):
-        """Deletes (clears) the cached file table created by the corresponding call of setup_filetable"""
-        cache_path = os.path.expanduser(cache_path)
-        cache_path = os.path.abspath(cache_path)
-        # >>> problem with this: if the file is absent we definitely want to get rid of
-        # >>> the cached filetable, but we can't compute datafile_ls!!!! >>>>>>
-        datafile_ls = [ f+'size'+str(os.path.getsize(f))+'mtime'+str(os.path.getmtime(f))\
-                            for f in self.files ]
-        search_string = ' '.join(
-            [self.long_name(),cache_path,version,';'.join(datafile_ls)] )
-        csum = hashlib.md5(search_string).hexdigest()
-        cachefilename = csum+'.cache'
-        cachefile=os.path.normpath( cache_path+'/'+cachefilename )
-
-        if os.path.isfile(cache_path):
-            os.remove(cache_path)
-
 
 
 def extract_filefamilyname( filename ):
