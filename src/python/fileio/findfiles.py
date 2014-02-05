@@ -106,7 +106,8 @@ class basic_datafiles:
             ftid = self.short_name()
         cache_path = os.path.expanduser(cache_path)
         cache_path = os.path.abspath(cache_path)
-        datafile_ls = [ f+'size'+str(os.path.getsize(f))+'mtime'+str(os.path.getmtime(f))\
+        datafile_ls = [ f+'size'+(str(os.path.getsize(f)) if os.path.isfile(f) else '0')+\
+                            'mtime'+(str(os.path.getmtime(f)) if os.path.isfile(f) else '0')\
                             for f in self.files ]
         search_string = ' '.join(
             [self.long_name(),cache_path,version,';'.join(datafile_ls)] )
@@ -188,10 +189,13 @@ class dirtree_datafiles( basic_datafiles ):
         print "jfp getting datafiles from ",root
         if os.path.isfile(root):
             self.files += [root]
-        for dirpath,dirname,filenames in os.walk(root):
-            dirpath = os.path.expanduser(dirpath)
-            dirpath = os.path.abspath(dirpath)
-            self.files += [ os.path.join(dirpath,f) for f in filenames if filt(f) ]
+        elif os.path.isdir(root):
+            for dirpath,dirname,filenames in os.walk(root):
+                dirpath = os.path.expanduser(dirpath)
+                dirpath = os.path.abspath(dirpath)
+                self.files += [ os.path.join(dirpath,f) for f in filenames if filt(f) ]
+        else:   # no more checking, but still could be valid - maybe its a url or something:
+            self.files += [root]
         print "jfp found files",self.files
         return self.files
     def short_name(self):
