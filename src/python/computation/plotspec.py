@@ -18,6 +18,7 @@ class derived_var:
         output = apply( self._func, [ vardict[inp] for inp in self._inputs ] )
         if type(output) is tuple or type(output) is list:
             for o in output:
+                if o is None: return None
                 o._vid  = self._vid
                 self._file_attributes.update( getattr(o,'_file_attributes',{}) )
         elif output is not None:
