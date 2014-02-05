@@ -52,7 +52,7 @@ print "jfp filetable1 is",filetable1.full_repr()
 number_diagnostic_plots = 0
 dm = diagnostics_menu()
 for pname,pclass in dm.items():
-    if pname!="LMWG":
+    if pname!="AMWG":
         continue
     package = pclass()
     print "jfp pname=",pname
