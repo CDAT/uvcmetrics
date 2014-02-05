@@ -260,6 +260,9 @@ class amwg_plot_set2(amwg_plot_spec):
         results = plot_spec._results(self)
         if results is None: return None
         psv = self.plotspec_values
+        if not('CAM_NCEP_HEAT_TRANSPORT_GLOBAL' in psv.keys()) or\
+                psv['CAM_NCEP_HEAT_TRANSPORT_GLOBAL'] is None:
+            return None
         psv['CAM_NCEP_HEAT_TRANSPORT_GLOBAL'].synchronize_many_values(
             [ psv['CAM_NCEP_HEAT_TRANSPORT_PACIFIC'], psv['CAM_NCEP_HEAT_TRANSPORT_ATLANTIC'],
               psv['CAM_NCEP_HEAT_TRANSPORT_INDIAN'] ],
