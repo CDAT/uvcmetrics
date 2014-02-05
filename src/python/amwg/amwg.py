@@ -75,6 +75,17 @@ class AMWG(BasicDiagnosticGroup):
             }
          """
 
+def filetable_ids( filetable1, filetable2 ):
+        if filetable1 is None:
+            ft1id = ''
+        else:
+            ft1id  = filetable1._id
+        if filetable2 is None:
+            ft2id = ''
+        else:
+            ft2id  = filetable2._id
+        return ft1id,ft2id
+
 class amwg_plot_spec(plot_spec):
     package = AMWG  # Note that this is a class not an object.
     @staticmethod
@@ -305,7 +316,8 @@ class amwg_plot_set3(amwg_plot_spec):
         self.reduced_variables[varid+'_2'] = y2var
         y2var._vid = varid+'_2'
         self.plot_a = basic_two_line_plot( y1var, y2var )
-        vid = '_'.join([self._var_baseid,filetable1._id,filetable2._id,'diff'])
+        ft1id,ft2id = filetable_ids(filetable1,filetable2)
+        vid = '_'.join([self._var_baseid,ft1id,ft2id,'diff'])
         # ... e.g. CLT_DJF_set3_CAM456_NCEP_diff
         self.plot_b = one_line_diff_plot( y1var, y2var, vid )
         self.computation_planned = True
@@ -396,7 +408,8 @@ class amwg_plot_set4(amwg_plot_spec):
 
         self.plot_a = contour_plot( vv1, xfunc=latvar, yfunc=levvar, ya1func=heightvar )
         self.plot_b = contour_plot( vv2, xfunc=latvar, yfunc=levvar, ya1func=heightvar )
-        vid = '_'.join([self._var_baseid,filetable1._id,filetable2._id,'diff'])
+        ft1id,ft2id = filetable_ids(filetable1,filetable2)
+        vid = '_'.join([self._var_baseid,ft1id,ft2id,'diff'])
         # ... e.g. CLT_DJF_set4_CAM456_NCEP_diff
         self.plot_c = contour_diff_plot( vv1, vv2, vid, xfunc=latvar_min, yfunc=levvar_min,
                                          ya1func=(lambda y1,y2: heightvar(levvar_min(y1,y2))))
@@ -466,10 +479,11 @@ class amwg_plot_set5and6(amwg_plot_spec):
 
         self.varid = varid
         self._var_baseid = '_'.join([varid,'set6'])   # e.g. TREFHT_set6
-        self.plot1_id = filetable1._id+'_'+varid+'_'+seasonid
-        self.plot2_id = filetable2._id+'_'+varid+'_'+seasonid
-        self.plot3_id = filetable1._id+' - '+filetable2._id+'_'+varid+'_'+seasonid
-        self.plotall_id = filetable1._id+'_'+filetable2._id+'_'+varid+'_'+seasonid
+        ft1id,ft2id = filetable_ids(filetable1,filetable2)
+        self.plot1_id = ft1id+'_'+varid+'_'+seasonid
+        self.plot2_id = ft2id+'_'+varid+'_'+seasonid
+        self.plot3_id = ft1id+' - '+ft2id+'_'+varid+'_'+seasonid
+        self.plotall_id = ft1id+'_'+ft2id+'_'+varid+'_'+seasonid
 
         if not self.computation_planned:
             self.plan_computation( filetable1, filetable2, varid, seasonid, aux )
@@ -618,6 +632,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
         for key,val in psv.items():
             if type(val) is not list: val=[val]
             for v in val:
+                if v is None: continue
                 v.finalize()
         return self.plotspec_values[self.plotall_id]
 
