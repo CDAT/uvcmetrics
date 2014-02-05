@@ -150,8 +150,9 @@ def ncep_ocean_heat_transport( path ):
                 f = open( filep )
                 break
     else:
-        raise Exception(
-            "ncep_ocean_heat_transport() cannot find path needed for NCEP heat transport obs")
+        #raise Exception(
+        #    "ncep_ocean_heat_transport() cannot find path needed for NCEP heat transport obs")
+        return None,None
     nlatT42 = 64   # T42 latitudes
     i65s = 8       # index of T42 latitude 65S
     i65n = 55      # index of T42 latitude 65N
