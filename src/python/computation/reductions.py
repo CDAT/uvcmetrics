@@ -816,6 +816,14 @@ def adivb(mv1, mv2):
          mv.long_name = ''
    return mv
 
+def atimesb(mv1, mv2):
+   """ returns mv1+mv2; they should be dimensioned alike."""
+   mv = mv1 * mv2
+   if hasattr(mv, 'long_name'):
+      if mv.long_name == mv1.long_name:
+         mv.long_name = ''
+   return mv
+
 def aminusb_ax2( mv1, mv2 ):
     """returns a transient variable representing mv1-mv2, where mv1 and mv2 are variables with
     exactly two axes, with the first axis the same for each (but it's ok to differ only in units,
@@ -1206,7 +1214,7 @@ class reduced_variable(ftrow):
     """Specifies a 'reduced variable', which is a single-valued part of an output specification.
     This would be a variable(s) and its domain, a reduction function, and perhaps
     an axis or two describing the domain after applying the reduction function.
-    Output may be based on one or two of these objects"""
+    Output may be based on one or two of these objects."""
     # The reduction function should take just one parameter, the data to be reduced.
     # In reality we will have a more generic function, and some additional parameters.
     # So this reduction function will typically be specified as a lambda expression, e.g.
@@ -1215,7 +1223,7 @@ class reduced_variable(ftrow):
                       latrange=None, lonrange=None, levelrange=None,\
                       season=seasonsyr, reduced_var_id=None,\
                       reduction_function=(lambda x,vid=None: x),\
-                      filetable=None, axes=None
+                      filetable=None, axes=None, duvs={}, rvs={}
                   ):
         self._season = season
         ftrow.__init__( self, fileid, variableid, timerange, latrange, lonrange, levelrange )
@@ -1229,6 +1237,8 @@ class reduced_variable(ftrow):
             print "ERROR.  No filetable specified for reduced_variable instance",variableid
         self._filetable = filetable
         self._file_attributes = {}
+        self._duvs = duvs
+        self._rvs = rvs
 
     def extract_filefamilyname( self, filename ):
         """From a filename, extracts the first part of the filename as the possible
@@ -1251,28 +1261,14 @@ class reduced_variable(ftrow):
         else:
             return filename
 
-    def reduce( self, vid=None ):
-        """Finds and opens the files containing data required for the variable,
-        Applies the reduction function to the data, and returns an MV.
-        When completed, this will treat missing data as such.
-        At present only CF-compliant files are supported."""
-        if self._filetable is None:
-            print "ERROR no data found for reduced variable",self.variableid
-            print "in",self.timerange, self.latrange, self.lonrange, self.levelrange
-            print "filetable is",self._filetable
-            return None
-
-        if vid is None:
-            vid = self._vid
-        rows = self._filetable.find_files( self.variableid, time_range=self.timerange,
+    def get_variable_file( self, variableid ):
+        """returns the name of a file containing data for a variable specified by name.
+        If there are several such files, cdscan is run and the resulting xml file is returned."""
+        rows = self._filetable.find_files( variableid, time_range=self.timerange,
                                            lat_range=self.latrange, lon_range=self.lonrange,
                                            level_range=self.levelrange,
                                            seasonid=self._season.seasons[0] )
         if rows==None or len(rows)<=0:
-            # this belongs in a log file:
-            print "ERROR no data found for reduced variable",self.variableid
-            print "in",self.timerange, self.latrange, self.lonrange, self.levelrange
-            print "filetable is",self._filetable
             return None
 
         # To make it even easier on the first cut, I won't worry about missing data and
@@ -1302,16 +1298,75 @@ class reduced_variable(ftrow):
 
             cache_path = self._filetable.cache_path()
             xml_name = run_cdscan( fam, famfiles, cache_path )
-            f = cdms2.open( xml_name )
+            filename = xml_name
         else:
             # the easy case, just one file has all the data on this variable
-            f = cdms2.open(files[0])
-        self._file_attributes.update(f.attributes)
-        fcf = get_datafile_filefmt(f)
-        reduced_data = self._reduction_function( f(self.variableid), vid=vid )
-        if reduced_data is not None:
-            reduced_data._vid = vid
-        f.close()
+            filename = files[0]
+        #fcf = get_datafile_filefmt(f)
+        return filename
+
+    def reduce( self, vid=None ):
+        """Finds and opens the files containing data required for the variable,
+        Applies the reduction function to the data, and returns an MV.
+        When completed, this will treat missing data as such.
+        At present only CF-compliant files are supported.
+        Sometimes the reduced variable may depend, not on model data in files, but
+        on derived unreduced data which is computed from the unreduced model data.
+        In this case the variable to reduced here should be among the derived unreduced variables
+        specified in a dict self._duvs, with elements of the form (variable id):(derived_var object).
+        Along with it may be a dict making available at least the input reduced variables,
+        with elements of the form (variable id):(reduced_var object).  There is no check for
+        circularity!
+        """
+        if self._filetable is None:
+            print "ERROR no data found for reduced variable",self.variableid
+            print "in",self.timerange, self.latrange, self.lonrange, self.levelrange
+            print "filetable is",self._filetable
+            return None
+        if vid is None:
+            vid = self._vid
+
+        filename = self.get_variable_file( self.variableid )
+        if filename is None:
+            if self.variableid not in self._duvs:
+                # this belongs in a log file:
+                print "ERROR no data found for reduced variable",self.variableid
+                print "in",self.timerange, self.latrange, self.lonrange, self.levelrange
+                print "filetable is",self._filetable
+                return None
+            else:
+                # DUVs (derived unreduced variables) would logically be treated as a separate stage
+                # equal to reduced and derived variables, within the plan-compute paradigm.  That
+                # would save time (compute each DUV only once) but cost memory space (you have to
+                # keep the computed DUV until you don't need it any more).  DUVs are big, so the
+                # memory issue is paramont.  Also DUVs will be rare.  Also doing it this way avoids
+                # complexities with differeing reduced variables needing the same DUV on differing
+                # domains (lat-lon ranges).  Thus this block of code here...
+
+                # First identify the DUV we want to compute
+                duv = self._duvs[self.variableid]   # an instance of derived_var
+                # Find the reduced variables it depends on (if any) and compute their values
+                duv_inputs = { rvid:self._rvs[rvid].reduce() for rvid in duv._inputs
+                               if rvid in self._rvs }
+                # Find the model variables it depends on and read them in from files.
+                for fv in duv._inputs:
+                    filename = self.get_variable_file( fv )
+                    print "in reduce, variable",fv," is in file",filename
+                    if filename is None:
+                        return None
+                    f = cdms2.open( filename )
+                    duv_inputs[fv] = f(fv)
+                    f.close()
+                # Finally, we can compute the value of this DUV.
+                duv_value = duv.derive( duv_inputs )
+                reduced_data = self._reduction_function( duv_value, vid=vid )
+        else:
+            f = cdms2.open( filename )
+            self._file_attributes.update(f.attributes)
+            reduced_data = self._reduction_function( f(self.variableid), vid=vid )
+            if reduced_data is not None:
+                reduced_data._vid = vid
+            f.close()
         return reduced_data
 
 
