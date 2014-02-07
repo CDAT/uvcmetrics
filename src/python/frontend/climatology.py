@@ -32,6 +32,70 @@ class climatology_variable( reduced_variable ):
                variableid=varname, filetable=filetable,
                reduction_function=(lambda x,vid=None: reduce_time_seasonal(x,season)) )
 
+class climatology_squared_variable( reduced_variable ):
+    """represents the climatology of the square of a variable.
+    This, together with the variable's climatology, is theoretically sufficient for computing
+    its variance; but it would be numerically better to use this as a model for a class
+    representing the climatology of (var - climo(var))^2."""
+    def __init__(self,varname,filetable,seasonname='ANN'):
+        duv = derived_var( varname+'_sq', [varname], func=(lambda x: atimesb(x,x)) )
+        self.seasonname = seasonname
+        if seasonname=='ANN':
+            reduced_variable.__init__(
+                self,
+                variableid=varname+'_sq', filetable=filetable,
+                reduction_function=(lambda x,vid=None: reduce_time(x,vid=vid)),
+                duvs={ varname+'_sq':duv }, rvs={} )
+        else:
+            season = cdutil.times.Seasons([seasonname])
+            reduced_variable.__init__(
+                self,
+                variableid=varname+'_sq', filetable=filetable,
+                reduction_function=(lambda x,vid=None: reduce_time_seasonal(x,season)),
+                duvs={ varname+'_sq':duv }, rvs={} )
+
+def compute_and_write_climatologies( varkeys, reduced_variables, season, case='', variant='' ):
+    """Computes climatologies and writes them to a file.
+    Inputs: varkeys, names of variables whose climatologies are to be computed
+            reduced_variables, dict (key:rv) where key is a variable name and rv an instance
+               of the class reduced_variable
+            season: the season on which the climatologies will be computed
+            variant: a string to be inserted in the filename"""
+    # Compute the value of every variable we need.
+    varvals = {}
+    # First compute all the reduced variables
+    # Probably this loop consumes most of the running time.  It's what has to read in all the data.
+    for key in varkeys:
+        print "computing climatology of", key
+        varvals[key] = reduced_variables[key].reduce()
+
+    for key in varkeys:
+        var = reduced_variables[key]
+        if varvals[key] is not None:
+            if 'case' in var._file_attributes.keys():
+                case = var._file_attributes['case']+'_'
+                break
+
+    print "writing climatology file for",case,variant,season
+    if variant!='':
+        variant = variant+'_'
+    filename = case + variant + season + "_climo.nc"
+    # ...actually we want to write this to a full directory structure like
+    #    root/institute/model/realm/run_name/season/
+    g = cdms2.open( filename, 'w' )    # later, choose a better name and a path!
+    for key in varkeys:
+        var = reduced_variables[key]
+        if varvals[key] is not None:
+            varvals[key].id = var.variableid
+            varvals[key].reduced_variable=varvals[key].id
+            g.write(varvals[key])
+            for attr,val in var._file_attributes.items():
+                if not hasattr( g, attr ):
+                    setattr( g, attr, val )
+    g.season = season
+    g.close()
+    return case
+
 def test_driver( path1, filt1=None ):
     """ Test driver for setting up data for plots"""
     datafiles1 = dirtree_datafiles( path1, filt1 )
@@ -40,15 +104,17 @@ def test_driver( path1, filt1=None ):
     # Then you can call filetable1.list_variables to get the variable list.
     #was filetable1 = basic_filetable( datafiles1, get_them_all )
     filetable1 = datafiles1.setup_filetable( os.path.join(os.environ['HOME'],'tmp'), "model" )
-    cseasons = ['ANN', 'DJF', 'JJA' ] 
     #cseasons = ['ANN','DJF','MAM','JJA','SON',
     #            'JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC']
+    #cseasons = ['ANN', 'DJF', 'JJA' ] 
+    cseasons = ['JAN']
+    case = ''
 
     for season in cseasons:
 
-        reduced_variables = { var+'_'+season: climatology_variable(var,filetable1,season)
+        reduced_variables = { var+'_'+season:climatology_variable(var,filetable1,season)
                               for var in filetable1.list_variables() }
-        #                     for var in ['TREFHT','FLNT','SOILC']}
+        # example:            for var in ['TREFHT','FLNT','SOILC']}
         #reduced_variables = {
         #    'TREFHT_ANN': reduced_variable(
         #        variableid='TREFHT', filetable=filetable1,
@@ -61,46 +127,18 @@ def test_driver( path1, filt1=None ):
         #        reduction_function=(lambda x,vid=None:
         #                                reduce_time_seasonal(x,Seasons(['MAR']),vid=vid)) )
         #    }
-
+        # Get the case name, used to compute the output file name.
         varkeys = reduced_variables.keys()
+        varkeys = varkeys[0:2]  # quick version for testing
 
-        # Compute the value of every variable we need.
-        varvals = {}
-        # First compute all the reduced variables
-        # Probably this loop consumes most of the running time.  It's what has to read in all the data.
-        #for key in varkeys[0:2]:  #quick version for testing
-        for key in varkeys:
-            print "computing climatology of", key
-            varvals[key] = reduced_variables[key].reduce()
+        case = compute_and_write_climatologies( varkeys, reduced_variables, season, case )
+        print "jfp1 case=",case
 
-        # Now use the reduced and derived variables to compute the plot data.
-        #for key in varkeys[0:2]:  # quick version for testing
-        for key in varkeys:
-            var = reduced_variables[key]
-            if varvals[key] is not None:
-                if 'case' in var._file_attributes.keys():
-                    case = var._file_attributes['case']+'_'
-                else:
-                    case = ''
-                break
-
-        print "writing file for",case,season
-        filename = case + season + "_climo.nc"
-        # ...actually we want to write this to a full directory structure like
-        #    root/institute/model/realm/run_name/season/
-        g = cdms2.open( filename, 'w' )    # later, choose a better name and a path!
-        #for key in varkeys[0:2]:  # quick version for testing
-        for key in varkeys:
-            var = reduced_variables[key]
-            if varvals[key] is not None:
-                varvals[key].id = var.variableid
-                varvals[key].reduced_variable=varvals[key].id
-                g.write(varvals[key])
-                for attr,val in var._file_attributes.items():
-                    if not hasattr( g, attr ):
-                        setattr( g, attr, val )
-        g.season = season
-        g.close()
+        # Repeat for var**2.  Later I'll change this to (var-climo(var))**2/(N-1)
+        # using the (still-in-memory) data in the dict reduced_variables.
+        reduced_variables2 = { var+'_'+season:climatology_squared_variable(var,filetable1,season)
+                               for var in filetable1.list_variables() }
+        compute_and_write_climatologies( varkeys, reduced_variables2, season, case, 'sq' )
 
 if __name__ == '__main__':
    if len( sys.argv ) > 1:
