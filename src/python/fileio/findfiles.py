@@ -199,9 +199,17 @@ class dirtree_datafiles( basic_datafiles ):
         print "jfp found files",self.files
         return self.files
     def short_name(self):
-        return os.path.basename(str(self._root[0]))
+        if hasattr(self._root,'__getitem__'):
+            rootname = str(self._root[0])
+        else:
+            rootname = str(self)
+        return os.path.basename(rootname)
     def long_name(self):
-        return ' '.join( [ self.__class__.__name__, str(self._root[0]), str(self._filt) ] )
+        if hasattr(self._root,'__getitem__'):
+            rootname = str(self._root[0])
+        else:
+            rootname = str(self)
+        return ' '.join( [ self.__class__.__name__, rootname, str(self._filt) ] )
     def check_filespec( self ):
         """method to determine whether the file specification used to build this object is useful,
         and help improve it if it's not.
