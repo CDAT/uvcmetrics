@@ -371,9 +371,13 @@ class NCAR_climo_filefmt(NCAR_filefmt):
                   '_01':'JAN', '_02':'FEB', '_03':'MAR', '_04':'APR', '_05':'MAY', '_06':'JUN',
                   '_07':'JUL', '_08':'AUG', '_09':'SEP', '_10':'OCT', '_11':'NOV', '_12':'DEC',
                   'ANN':'ANN', 'DJF':'DJF', 'MAM':'MAM', 'JJA':'JJA', 'SON':'SON',
+                  'ASO':'ASO', 'FMA':'FMA',
                   'JAN':'JAN', 'FEB':'FEB', 'MAR':'MAR', 'APR':'APR', 'MAY':'MAY', 'JUN':'JUN',
                   'JUL':'JUL', 'AUG':'AUG', 'SEP':'SEP', 'OCT':'OCT', 'NOV':'NOV', 'DEC':'DEC' }
-      return seasnms[ season ]
+      if season in seasnms:
+         return seasnms[ season ]
+      else:
+         return season
    def get_timerange(self):
       """ A climo file has no real time range, that is no times t1,t2 for which a variable is
       defined at times t1<=time<t2.  Instead it has a season.  We'll return the season in
