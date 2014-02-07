@@ -196,7 +196,7 @@ class dirtree_datafiles( basic_datafiles ):
                 self.files += [ os.path.join(dirpath,f) for f in filenames if filt(f) ]
         else:   # no more checking, but still could be valid - maybe its a url or something:
             self.files += [root]
-        print "jfp found files",self.files
+        #print "jfp found files",self.files
         return self.files
     def short_name(self):
         if hasattr(self._root,'__getitem__'):
