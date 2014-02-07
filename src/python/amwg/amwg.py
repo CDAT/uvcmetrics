@@ -586,7 +586,8 @@ class amwg_plot_set5and6(amwg_plot_spec):
             self.derived_variables.update( {
                     vid2: derived_var( vid=vid2, inputs=[ varid+'_2', 'hyam_2', 'hybm_2', 'PS_2' ],
                                        func=verticalize ),
-                    vidl2: derived_var( vid=vidl2, inputs=[vid2], func=(lambda z: select_lev(z,pselect) ) )
+                    vidl2: derived_var( vid=vidl2, inputs=[vid2],
+                                        func=(lambda z: select_lev(z,pselect) ) )
                     } )
         else:
             # no hybrid levels, assume pressure levels.
@@ -598,7 +599,8 @@ class amwg_plot_set5and6(amwg_plot_spec):
                 } )
             vidl2 = varid+'_lp_2'
             self.derived_variables.update( {
-                    vidl2: derived_var( vid=vidl2, inputs=[vid2], func=(lambda z: select_lev(z,pselect) ) )
+                    vidl2: derived_var( vid=vidl2, inputs=[vid2],
+                                        func=(lambda z: select_lev(z,pselect) ) )
                     } )
 
         self.single_plotspecs = {
