@@ -766,7 +766,8 @@ def aminusb(mv1, mv2):
    return mv
 
 def aminusb0( mv1, mv2 ):
-    """ returns mv1[0,]-mv2[0,]; they should be dimensioned alike.  Attributes will be fixed up where I know how."""
+    """ returns mv1[0,]-mv2[0,]; they should be dimensioned alike.
+    Attributes will be fixed up where I know how."""
     mv = mv1[0,] - mv2[0,]
     if hasattr(mv,'long_name'):
         if mv.long_name==mv1.long_name:  # They're different, shouldn't have the same long_name
@@ -817,12 +818,31 @@ def adivb(mv1, mv2):
    return mv
 
 def atimesb(mv1, mv2):
-   """ returns mv1+mv2; they should be dimensioned alike."""
+   """ returns mv1+mv2; they should be dimensioned alike and use the same units."""
    mv = mv1 * mv2
    if hasattr(mv, 'long_name'):
       if mv.long_name == mv1.long_name:
          mv.long_name = ''
    return mv
+
+def varvari( mv, mvclimo ):
+    """Input is a variable mv, and its climatology (i.e., a time average).  Aside from the time
+    axis, they should be dimensioned alike and use the same units.  The time axis is expected to
+    be the first axis of mv.
+    This function returns a variable whose elements represent terms of the variance of mv,
+    ( mv[t,i,j,...] - mvclimo[i,j,...] )^2 ."""
+    #                 First check our assumptions:
+    mvtvd = mv._TransientVariable__domain
+    if mvtvd[0][0].id!='time':
+        print "WARNING varvari expects the first axis of mv=",mvtvd[0][0]," to be the time axis=",axtime
+    mvclimotvd = mvclimo._TransientVariable__domain
+    if [ax[0].id for ax in mvtvd[1:]]!=[ax[0].id for ax in mvclimotvd[0:]]:
+        print "WARNING varvari expects mv and mvclimo to have the same non-time axes"
+        print "mv domain is",mvtvd
+        print "mvclimo domain is",mvclimotvd
+    #                 Now do the calculation:
+    mvdiff = mv - mvclimo
+    return atimesb( mvdiff, mvdiff )
 
 def aminusb_ax2( mv1, mv2 ):
     """returns a transient variable representing mv1-mv2, where mv1 and mv2 are variables with
@@ -1346,17 +1366,27 @@ class reduced_variable(ftrow):
                 # First identify the DUV we want to compute
                 duv = self._duvs[self.variableid]   # an instance of derived_var
                 # Find the reduced variables it depends on (if any) and compute their values
+                # self._rvs could contain reduced_variable objects, which need to have reduce()
+                # applied to them.  Or reduce() may already have been applied, and the results are
+                # in there:
+                
                 duv_inputs = { rvid:self._rvs[rvid].reduce() for rvid in duv._inputs
-                               if rvid in self._rvs }
+                               if rvid in self._rvs and hasattr( self._rvs[rvid],'reduce' ) }
+                
+                duv_inputs = { rvid:self._rvs[rvid] for rvid in duv._inputs
+                               if rvid in self._rvs and not hasattr( self._rvs[rvid],'reduce' ) }
                 # Find the model variables it depends on and read them in from files.
                 for fv in duv._inputs:
                     filename = self.get_variable_file( fv )
-                    print "in reduce, variable",fv," is in file",filename
-                    if filename is None:
+                    if filename is not None:
+                        f = cdms2.open( filename )
+                        duv_inputs[fv] = f(fv)
+                        f.close()
+                for key,val in duv_inputs.iteritems():
+                    # straightforward approaches involving "all" or "in" don't work.
+                    if val is None:
+                        print "missing data; duv_inputs[",key,"]=",val
                         return None
-                    f = cdms2.open( filename )
-                    duv_inputs[fv] = f(fv)
-                    f.close()
                 # Finally, we can compute the value of this DUV.
                 duv_value = duv.derive( duv_inputs )
                 reduced_data = self._reduction_function( duv_value, vid=vid )
