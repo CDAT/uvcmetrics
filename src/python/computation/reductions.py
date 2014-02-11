@@ -550,7 +550,8 @@ def reduce_time_seasonal( mv, seasons=seasonsyr, vid=None ):
     avmv.id = vid
     if hasattr(mv,'units'): avmv.units = mv.units
     avmv = delete_singleton_axis( avmv, vid='time' )
-    avmv.units = mv.units
+    if hasattr( mv, 'units' ):
+        avmv.units = mv.units
     return avmv
 
 def select_lev( mv, slev ):
