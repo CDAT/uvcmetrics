@@ -151,6 +151,7 @@ class basic_filetable:
            dfile = cdms2.open( fileid )
         except cdms2.error.CDMSError as e:
            # probably "Cannot open file", but whatever the problem is, don't bother with it.
+           print "couldn't add file",filep
            return
         filesupp = get_datafile_filefmt( dfile, get_them_all )
         vars = filesupp.interesting_variables()
@@ -333,6 +334,10 @@ class NCAR_filefmt(basic_filefmt):
       the actual variable name."""
       iv = []
       for var in self._dfile.variables.keys():
+         if self._dfile[var].typecode()=='c':
+            continue    # character string
+         if self._dfile[var].typecode()=='i':
+            continue    # integer
          if len(self._dfile.variables[var].getAxisList())>=3:
             iv.append(var)
          if var in self._all_interesting_names:
