@@ -16,6 +16,8 @@ from metrics.amwg.derivations import press2alt
 from metrics.fileio.filetable import *
 #from climo_test import cdutil_climatology
 
+regridded_vars = {}  # experimental
+
 seasonsDJF=cdutil.times.Seasons(['DJF'])
 seasonsJJA=cdutil.times.Seasons(['JJA'])
 seasons2=cdutil.times.Seasons(['DJF','JJA'])
@@ -854,7 +856,7 @@ def aminusb_ax2( mv1, mv2 ):
     dimension to the second axis of the other.
     The axis used will be the coarsest (fewest points) of the two axes."""
     if hasattr(mv1,'units') and hasattr(mv2,'units') and mv1.units!=mv2.units:
-        print "WARING: aminusb_ax2 is subtracting variables with different units!",mv1,mv1
+        print "WARNING: aminusb_ax2 is subtracting variables with different units!",mv1,mv1
     axes1 = allAxes(mv1)
     axes2 = allAxes(mv2)
     # TO DO: convert, interpolate, etc. as needed to accomodate differing first axes.
@@ -918,6 +920,7 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
     (*) Experimentally, there can be more than two axes if the first axes be trivial, i.e. length is 1.
     If this works out, it should be generalized and reproduced in other aminusb_* functions.
     """
+    global regridded_vars   # experimental for now
     mv1, mv2 = reconcile_units( mv1, mv2 )
     missing = mv1.get_fill_value()
     if axes1 is None:
@@ -947,6 +950,8 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
             # Interpolate mv2 from axis2 to axis1 in both directions.  Use the CDAT regridder.
             grid1 = mv1.getGrid()
             mv2new = mv2.regrid(grid1)
+            mv2.regridded = mv2new.id   # a GUI can use this
+            regridded_vars[mv2new.id] = mv2new
         else:
             # Interpolate mv1 from axis1[1] to axis2[1]
             # Interpolate mv2 from axis2[0] to axis1[0]
@@ -963,6 +968,8 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
             # Interpolate mv2 from axis2 to axis1 in both directions.  Use the CDAT regridder.
             grid2 = mv2.getGrid()
             mv1new = mv1.regrid(grid2,regridTool="regrid2")
+            mv1.regridded = mv1new.id   # a GUI can use this
+            regridded_vars[mv1new.id] = mv1new
     aminusb = mv1new - mv2new
     aminusb.id = mv1.id
     return aminusb
