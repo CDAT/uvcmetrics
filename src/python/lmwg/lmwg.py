@@ -166,8 +166,8 @@ class lmwg_plot_set1(lmwg_plot_spec):
 
          self.computation_planned = True
 
-   def _results(self):
-      results = plot_spec._results(self)
+   def _results(self,newgrid=0):
+      results = plot_spec._results(self,newgrid)
       if results is None: return None
       return self.plotspec_values[self.plotall_id]
          
@@ -279,8 +279,8 @@ class lmwg_plot_set2(lmwg_plot_spec):
             
          self.computation_planned = True
 
-   def _results(self):
-      results = plot_spec._results(self)
+   def _results(self,newgrid=0):
+      results = plot_spec._results(self,newgrid)
       if results is None: return None
       return self.plotspec_values[self.plotall_id]
 
