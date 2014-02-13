@@ -88,15 +88,16 @@ def compute_and_write_climatologies( varkeys, reduced_variables, season, case=''
     # First compute all the reduced variables
     # Probably this loop consumes most of the running time.  It's what has to read in all the data.
     for key in varkeys:
-        print "computing climatology of", key
-        varvals[key] = reduced_variables[key].reduce()
+        if key in reduced_variables:
+            varvals[key] = reduced_variables[key].reduce()
 
     for key in varkeys:
-        var = reduced_variables[key]
-        if varvals[key] is not None:
-            if 'case' in var._file_attributes.keys():
-                case = var._file_attributes['case']+'_'
-                break
+        if key in reduced_variables:
+            var = reduced_variables[key]
+            if varvals[key] is not None:
+                if 'case' in var._file_attributes.keys():
+                    case = var._file_attributes['case']+'_'
+                    break
 
     print "writing climatology file for",case,variant,season
     if variant!='':
@@ -106,14 +107,15 @@ def compute_and_write_climatologies( varkeys, reduced_variables, season, case=''
     #    root/institute/model/realm/run_name/season/
     g = cdms2.open( filename, 'w' )    # later, choose a better name and a path!
     for key in varkeys:
-        var = reduced_variables[key]
-        if varvals[key] is not None:
-            varvals[key].id = var.variableid
-            varvals[key].reduced_variable=varvals[key].id
-            g.write(varvals[key])
-            for attr,val in var._file_attributes.items():
-                if not hasattr( g, attr ):
-                    setattr( g, attr, val )
+        if key in reduced_variables:
+            var = reduced_variables[key]
+            if varvals[key] is not None:
+                varvals[key].id = var.variableid
+                varvals[key].reduced_variable=varvals[key].id
+                g.write(varvals[key])
+                for attr,val in var._file_attributes.items():
+                    if not hasattr( g, attr ):
+                        setattr( g, attr, val )
     g.season = season
     g.close()
     return varvals,case
@@ -125,10 +127,10 @@ def test_driver( path1, filt1=None ):
     # Then you can call filetable1.list_variables to get the variable list.
     #was filetable1 = basic_filetable( datafiles1, get_them_all )
     filetable1 = datafiles1.setup_filetable( os.path.join(os.environ['HOME'],'tmp'), "model" )
-    #cseasons = ['ANN','DJF','MAM','JJA','SON',
-    #            'JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC']
+    cseasons = ['ANN','DJF','MAM','JJA','SON',
+                'JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC']
     #cseasons = ['ANN', 'DJF', 'JJA' ] 
-    cseasons = ['JAN']
+    #cseasons = ['JAN']
     case = ''
 
     for season in cseasons:
@@ -150,7 +152,7 @@ def test_driver( path1, filt1=None ):
         #    }
         # Get the case name, used to compute the output file name.
         varkeys = reduced_variables1.keys()
-        varkeys = varkeys[0:2]  # quick version for testing
+        #varkeys = varkeys[0:2]  # quick version for testing
 
         rvs,case = compute_and_write_climatologies( varkeys, reduced_variables1, season, case )
 
