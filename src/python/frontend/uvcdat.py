@@ -265,6 +265,14 @@ class uvc_simple_plotspec():
                 # have to set contour fill colors (integers from 0 through 255) too:
                 cmin = 32./nlevels
                 cmax = 255./nlevels
+                # A more flexible way to do what's going on here, thanks to Charles Doutriaux:
+                # r=10
+                # g=16
+                # b=20
+                # X.setcolorcell(16,r,g,b)
+                # colors = [16,17,18,...] etc.
+                # vcs.getcolors is useful, more complicated - see its doc string
+                # vcs.mkscale probably does exactly what we need here - see its doc string
                 colors =  [int(round(a*cmin+(nlevels-a)*cmax)) for a in nlrange]
                 self.presentation.fillareacolors = colors
                 #self.presentation.fillareacolors=[32,48,64,80,96,112,128,144,160,176,240]
