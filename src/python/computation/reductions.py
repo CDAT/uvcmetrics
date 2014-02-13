@@ -1047,14 +1047,16 @@ def delete_singleton_axis( mv, vid=None ):
             del axes[si]
             break
     if saxis==None: return mv
-    data = ma.copy( mv.data )
-    if numpy.version.version >= '1.7.0':
-        data = ma.squeeze( data, axis=si )
-    else:
-        data = ma.squeeze( data )   # let's hope that there's only one singleton!
-    mvnew = cdms2.createVariable ( data, axes=axes, id=mv.id )
-    if hasattr(mv,'units'): mvnew.units = mv.units
-    return mvnew
+    mv = mv(squeeze=1)  # C.D. recommended instead of following; preserves missing values
+    return mv
+    #data = ma.copy( mv.data )
+    #if numpy.version.version >= '1.7.0':
+    #    data = ma.squeeze( data, axis=si )
+    #else:
+    #    data = ma.squeeze( data )   # let's hope that there's only one singleton!
+    #mvnew = cdms2.createVariable ( data, axes=axes, id=mv.id )
+    #if hasattr(mv,'units'): mvnew.units = mv.units
+    #return mvnew
 
 def common_axes( mv1, mv2 ):
     """Not much tested - I decided against doing overlapping line plots this way.
