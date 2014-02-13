@@ -26,7 +26,7 @@ from multiprocessing import Process, Semaphore, Pipe
 import time
 import cdms2
 
-def _plotdata_run( child_conn, sema, plotspec, filetable1, filetable2, varname, seasonname, outputPath, unique_ID, aux=None ):
+def _plotdata_run( child_conn, sema, plotspec, filetable1, filetable2, varname, seasonname, outputPath, unique_ID, aux=None, newgrid=0 ):
     #def _plotdata_run(plotspec, filetable1, filetable2, varname, seasonname, outputPath, unique_ID, aux=None ):
     global vcsx
     vcsx = False # temporary kludge
@@ -36,7 +36,7 @@ def _plotdata_run( child_conn, sema, plotspec, filetable1, filetable2, varname, 
         results = None
         return results
     else:
-        results = ps.compute()
+        results = ps.compute(newgrid)
         outfile=os.path.join(outputPath,str(unique_ID))
         if type(results) is list:
             results_obj = uvc_composite_plotspec(results)
@@ -47,7 +47,7 @@ def _plotdata_run( child_conn, sema, plotspec, filetable1, filetable2, varname, 
     child_conn.send(outfile)
     return outfile
 
-def plotdata_run( plotspec, filetable1, filetable2, varname, seasonname, outputPath, unique_ID, aux=None ):
+def plotdata_run( plotspec, filetable1, filetable2, varname, seasonname, outputPath, unique_ID, aux=None, newgrid=0 ):
     """Inputs:
     plotspec is a plot_spec class to be instantiated
     filetable1 is the model data file table
@@ -65,13 +65,15 @@ def plotdata_run( plotspec, filetable1, filetable2, varname, seasonname, outputP
     parent_conn, child_conn = Pipe()
     p = Process( target=_plotdata_run,
                  args=(child_conn, sema,
-                       plotspec, filetable1, filetable2, varname, seasonname, outputPath, unique_ID,aux) )
-    #outfile=_plotdata_run(plotspec, filetable1, filetable2, varname, seasonname, outputPath, unique_ID)
+                       plotspec, filetable1, filetable2, varname, seasonname, outputPath,
+                       unique_ID, aux, newgrid ) )
+    #outfile=_plotdata_run(plotspec, filetable1, filetable2, varname, seasonname, outputPath,
+    #                      unique_ID, aux, newgrid)
     #print outfile
     """
     p = Process( target=_plotdata_run,
-                 args=(
-                       plotspec, filetable1, filetable2, varname, seasonname, outputPath, unique_ID, aux) )
+                 args=( plotspec, filetable1, filetable2, varname, seasonname, outputPath,
+                        unique_ID, aux, newgrid ) )
     """
     p.start()
     p.sema = sema
@@ -259,8 +261,8 @@ class uvc_simple_plotspec():
                 levels[0] = math.floor(levels[0])  # could do better but too much trouble
                 levels[-1] = math.ceil(levels[-1])
                 self.presentation.levels = (levels,)
-                # Once youset the levels, the default color choice looks bad.  So you really have
-                # to set contour fill colors (integers from 0 through 255) too:
+                # Once you set the levels, the VCS default color choice looks bad.  So you really
+                # have to set contour fill colors (integers from 0 through 255) too:
                 cmin = 32./nlevels
                 cmax = 255./nlevels
                 colors =  [int(round(a*cmin+(nlevels-a)*cmax)) for a in nlrange]
@@ -586,17 +588,23 @@ class plot_spec(object):
         new_id = '_'.join(yls)
         if new_id is None or new_id.strip()=="": new_id = p+'_2'
         return new_id
-    def compute(self):
-        return self.results()
-    def results(self):
-        return self._results()
+    def compute(self,newgrid=0):
+        return self.results(newgrid)
+    def results(self,newgrid=0):
+        return self._results(newgrid)
 # To profile, replace (by name changes) the above results() with the following one:
-    def profiled_results(self):
+    def profiled_results(self,newgrid=0):
+        if newgrid!=0:
+            print "ERROR haven't implemented profiling with argument"
         prof = cProfile.Profile()
         returnme = prof.runcall( self._results )
         prof.dump_stats('results_stats')
         return returnme
-    def _results(self):
+    def _results(self, newgrid=0 ):
+        """newgrid=0 for keep original. !=0 to use any regridded variants of variables - presently
+        that means a coarser grid, typically from regridding model data to the obs grid.
+        In the future regrid>0 will mean regrid everything to the finest grid and regrid<0
+        will mean regrid everything to the coarsest grid."""
         for v in self.reduced_variables.keys():
             value = self.reduced_variables[v].reduce()
             self.variable_values[v] = value  # could be None
@@ -679,7 +687,10 @@ class plot_spec(object):
                 y3ax.id = new_id
                 ylab += ', '+y3ax.id
             if zax is not None:
-                vars.append( zax )
+                if hasattr(zax,'regridded') and newgrid!=0:
+                    vars.append( regridded_vars[zax.regridded] )
+                else:
+                    vars.append( zax )
                 new_id = self._build_label( zrv, p )
                 zax.id = new_id
                 zlab += ' '+zax.id
@@ -691,7 +702,6 @@ class plot_spec(object):
             self.plotspec_values[p] = uvc_plotspec( vars, self.plottype, labels, title )
         for p,ps in self.composite_plotspecs.iteritems():
             self.plotspec_values[p] = [ self.plotspec_values[sp] for sp in ps ]
-
         return self
         
 class basic_plot_variable():
