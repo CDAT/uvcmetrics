@@ -835,9 +835,10 @@ def varvari( mv, mvclimo ):
     #                 First check our assumptions:
     mvtvd = mv._TransientVariable__domain
     if mvtvd[0][0].id!='time':
-        print "WARNING varvari expects the first axis of mv=",mvtvd[0][0]," to be the time axis=",axtime
+        print "WARNING varvari expects the first axis of mv=",mvtvd[0][0].id," to be the time axis="
     mvclimotvd = mvclimo._TransientVariable__domain
-    if [ax[0].id for ax in mvtvd[1:]]!=[ax[0].id for ax in mvclimotvd[0:]]:
+    if mvtvd[0][0].id=='time' and\
+            [ax[0].id for ax in mvtvd[1:]]!=[ax[0].id for ax in mvclimotvd[0:]]:
         print "WARNING varvari expects mv and mvclimo to have the same non-time axes"
         print "mv domain is",mvtvd
         print "mvclimo domain is",mvclimotvd
