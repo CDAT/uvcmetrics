@@ -267,8 +267,8 @@ class amwg_plot_set2(amwg_plot_spec):
             }
         self.computation_planned = True
 
-    def _results(self):
-        results = plot_spec._results(self)
+    def _results(self,newgrid=0):
+        results = plot_spec._results(self,newgrid)
         if results is None: return None
         psv = self.plotspec_values
         if not('CAM_NCEP_HEAT_TRANSPORT_GLOBAL' in psv.keys()) or\
@@ -321,11 +321,11 @@ class amwg_plot_set3(amwg_plot_spec):
         # ... e.g. CLT_DJF_set3_CAM456_NCEP_diff
         self.plot_b = one_line_diff_plot( y1var, y2var, vid )
         self.computation_planned = True
-    def _results(self):
+    def _results(self,newgrid=0):
         # At the moment this is very specific to plot set 3.  Maybe later I'll use a
         # more general method, to something like what's in plot_data.py, maybe not.
         # later this may be something more specific to the needs of the UV-CDAT GUI
-        results = plot_spec._results(self)
+        results = plot_spec._results(self,newgrid)
         if results is None: return None
         y1var = self.plot_a.y1vars[0]
         y2var = self.plot_a.y2vars[0]
@@ -414,11 +414,11 @@ class amwg_plot_set4(amwg_plot_spec):
         self.plot_c = contour_diff_plot( vv1, vv2, vid, xfunc=latvar_min, yfunc=levvar_min,
                                          ya1func=(lambda y1,y2: heightvar(levvar_min(y1,y2))))
         self.computation_planned = True
-    def _results(self):
+    def _results(self,newgrid=0):
         # At the moment this is very specific to plot set 4.  Maybe later I'll use a
         # more general method, to something like what's in plot_data.py, maybe not.
         # later this may be something more specific to the needs of the UV-CDAT GUI
-        results = plot_spec._results(self)
+        results = plot_spec._results(self,newgrid)
         if results is None: return None
         zavar = self.plot_a.zvars[0]
         zaval = self.variable_values[ zavar._vid ]
@@ -505,8 +505,8 @@ class amwg_plot_set5and6(amwg_plot_spec):
         if isinstance(aux,Number):
             return self.plan_computation_level_surface( filetable1, filetable2, varid, seasonid, aux )
         else:
-            return self.plan_computation_normal_countours( filetable1, filetable2, varid, seasonid, aux )
-    def plan_computation_normal_countours( self, filetable1, filetable2, varid, seasonid, aux=None ):
+            return self.plan_computation_normal_contours( filetable1, filetable2, varid, seasonid, aux )
+    def plan_computation_normal_contours( self, filetable1, filetable2, varid, seasonid, aux=None ):
         """Set up for a lat-lon contour plot, as in plot set 5.  Data is averaged over all other
         axes."""
         self.reduced_variables = {
@@ -515,6 +515,10 @@ class amwg_plot_set5and6(amwg_plot_spec):
                 reduction_function=(lambda x,vid: reduce2latlon_seasonal( x, self.season, vid ) ) ),
             varid+'_2': reduced_variable(
                 variableid=varid, filetable=filetable2, reduced_var_id=varid+'_2', season=self.season,
+                reduction_function=(lambda x,vid: reduce2latlon_seasonal( x, self.season, vid ) ) ),
+            varid+'_var': reduced_variable(
+                # <<<<< variance, work in progress, this isn't correct yet >>>>>>
+                variableid=varid, filetable=filetable1, reduced_var_id=varid+'_1_var', season=self.season,
                 reduction_function=(lambda x,vid: reduce2latlon_seasonal( x, self.season, vid ) ) )
             }
         self.derived_variables = {}
@@ -619,11 +623,11 @@ class amwg_plot_set5and6(amwg_plot_spec):
                 plottype = self.plottype ),
             }
         self.composite_plotspecs = {
-            self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id ]            
+            self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id ]
             }
         self.computation_planned = True
-    def _results(self):
-        results = plot_spec._results(self)
+    def _results(self,newgrid=0):
+        results = plot_spec._results(self,newgrid)
         if results is None: return None
         psv = self.plotspec_values
         print "jfp in plot set 5&6 results psv="
