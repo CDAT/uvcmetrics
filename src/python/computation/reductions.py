@@ -164,6 +164,10 @@ def restrict_lat( mv, latmin, latmax ):
     newaxes[idx] = newlatax
 
     # shrink the data to match the shrunk lat axis
+    # >>> This is a very dangerous way to code, and in fact won't work if there be missing data.
+    # >>> Generally if you directly address the data attribute, something will go wrong.
+    # >>> At the moment, however, this function isn't getting called by anything
+    print "WARNING, restrict_lat doesn't work if there is missing data"
     newmv_shape = list( mv.shape )
     newmv_shape[idx] = imax+1 - imin
     if imin>0:
