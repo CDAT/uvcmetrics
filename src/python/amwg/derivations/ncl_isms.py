@@ -19,18 +19,19 @@ def latRegWgt( lat ):
     nlat = lat.shape[0]
     rad  = pi/180.0
     err  = 1e20
-    eps  = 0.01                        # arbitrary (was 0.001)
+    epsrel = 0.01
+    epsabs = 0.001
 
     dlat = abs(lat[2]-lat[1])           # error check
-    dlat_lo = dlat-eps
-    dlat_hi = dlat+eps
+    dlat_lo = dlat - epsrel*dlat - epsabs
+    dlat_hi = dlat + epsrel*dlat - epsabs
     # For converting subscript ranges (slicing), note that NCL ranges are
     # inclusive but Python ranges don't include the top subscript...
     difflo = numpy.all( (lat[1:nlat]-lat[0:nlat-1])>=dlat_lo )
     diffhi = numpy.all( (lat[1:nlat]-lat[0:nlat-1])<=dlat_hi )
     diff = difflo and diffhi
     if not diff:
-        print "latRegWgt: Expecting equally spaced latitudes"
+        print "ERROR in latRegWgt: Expecting equally spaced latitudes"
         return err*numpy.ones(nlat)
 
     dlat = abs((lat[2]-lat[1])*rad)*0.5
