@@ -5,8 +5,8 @@
 from metrics.fileio.filetable import basic_filetable
 
 def diagnostics_menu():
-    from metrics.amwg.amwg import AMWG
-    from metrics.lmwg.lmwg import LMWG
+    from metrics.packages.amwg.amwg import AMWG
+    from metrics.packages.lmwg.lmwg import LMWG
     return { "AMWG":AMWG, "LMWG":LMWG }
 
 class BasicDiagnosticGroup():

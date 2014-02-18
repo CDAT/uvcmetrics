@@ -12,7 +12,7 @@ import dateutil.parser
 from datetime import datetime as datetime
 from unidata import udunits
 from cdutil import averager
-from metrics.amwg.derivations import press2alt
+from metrics.packages.amwg.derivations import press2alt
 from metrics.fileio.filetable import *
 #from climo_test import cdutil_climatology
 

@@ -8,9 +8,9 @@ from metrics.fileio.filetable import *
 from metrics.fileio.findfiles import *
 from metrics.computation.reductions import *
 from metrics.computation.plotspec import *
-from metrics.amwg.derivations.oaht import *
-from metrics.amwg.derivations.ncl_isms import *
-from metrics.amwg.derivations.vertical import *
+from metrics.packages.amwg.derivations.oaht import *
+from metrics.packages.amwg.derivations.ncl_isms import *
+from metrics.packages.amwg.derivations.vertical import *
 from pprint import pprint
 
 
