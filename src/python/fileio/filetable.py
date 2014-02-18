@@ -340,6 +340,9 @@ class NCAR_filefmt(basic_filefmt):
             continue    # integer
          if len(self._dfile.variables[var].getAxisList())<1:
             continue
+         if len(self._dfile.variables[var].getAxisList())==1 and\
+                self._dfile.variables[var].getAxisList()[0].shape==(1,):
+            continue
          if len(self._dfile.variables[var].getAxisList())>=3:
             iv.append(var)
          if var in self._all_interesting_names:
