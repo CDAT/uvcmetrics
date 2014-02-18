@@ -1395,6 +1395,7 @@ class reduced_variable(ftrow):
                     filename = self.get_variable_file( fv )
                     if filename is not None:
                         f = cdms2.open( filename )
+                        self._file_attributes.update(f.attributes)
                         duv_inputs[fv] = f(fv)
                         f.close()
                 for key,val in duv_inputs.iteritems():
