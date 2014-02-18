@@ -10,7 +10,7 @@ from metrics.computation.reductions import *
 from metrics.amwg import *
 from metrics.amwg.derivations.vertical import *
 from metrics.amwg.plot_data import plotspec, derived_var
-from metrics.frontend.version import version
+from metrics.common.version import version
 from metrics.amwg.derivations import *
 from metrics.diagnostic_groups import *
 from pprint import pprint
