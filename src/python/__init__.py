@@ -3,5 +3,5 @@ import fileio
 import wgne
 import computation
 import amwg
-import frontend
+# doesn't work if vcs not available: import frontend
 import git
