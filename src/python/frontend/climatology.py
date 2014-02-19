@@ -112,6 +112,8 @@ def compute_and_write_climatologies( varkeys, reduced_variables, season, case=''
             if varvals[key] is not None:
                 varvals[key].id = var.variableid
                 varvals[key].reduced_variable=varvals[key].id
+                if hasattr(var,'units'):
+                    varvals[key].units = var.units+'*'+var.units
                 g.write(varvals[key])
                 for attr,val in var._file_attributes.items():
                     if not hasattr( g, attr ):

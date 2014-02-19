@@ -483,6 +483,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
         self.plot1_id = ft1id+'_'+varid+'_'+seasonid
         self.plot2_id = ft2id+'_'+varid+'_'+seasonid
         self.plot3_id = ft1id+' - '+ft2id+'_'+varid+'_'+seasonid
+        self.plot1var_id = ft1id+'_'+varid+'_var_'+seasonid
         self.plotall_id = ft1id+'_'+ft2id+'_'+varid+'_'+seasonid
 
         if not self.computation_planned:
@@ -516,9 +517,9 @@ class amwg_plot_set5and6(amwg_plot_spec):
             varid+'_2': reduced_variable(
                 variableid=varid, filetable=filetable2, reduced_var_id=varid+'_2', season=self.season,
                 reduction_function=(lambda x,vid: reduce2latlon_seasonal( x, self.season, vid ) ) ),
-            varid+'_var': reduced_variable(
-                # <<<<< variance, work in progress, this isn't correct yet >>>>>>
-                variableid=varid, filetable=filetable1, reduced_var_id=varid+'_1_var', season=self.season,
+            varid+'_1_var': reduced_variable(
+                # variance, for when there are variance climatology files
+                variableid=varid+'_var', filetable=filetable1, reduced_var_id=varid+'_1_var', season=self.season,
                 reduction_function=(lambda x,vid: reduce2latlon_seasonal( x, self.season, vid ) ) )
             }
         self.derived_variables = {}
@@ -534,10 +535,14 @@ class amwg_plot_set5and6(amwg_plot_spec):
             self.plot3_id: plotspec(
                 vid = varid+' diff',
                 zvars = [varid+'_1',varid+'_2'],  zfunc = aminusb_2ax,
+                plottype = self.plottype ),
+            self.plot1var_id: plotspec(
+                vid = varid+'_1_var',
+                zvars = [varid+'_1_var'],  zfunc = (lambda z: z),
                 plottype = self.plottype )
             }
         self.composite_plotspecs = {
-            self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id ]            
+            self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id, self.plot1var_id ]
             }
         self.computation_planned = True
     def plan_computation_level_surface( self, filetable1, filetable2, varid, seasonid, aux ):
@@ -630,8 +635,6 @@ class amwg_plot_set5and6(amwg_plot_spec):
         results = plot_spec._results(self,newgrid)
         if results is None: return None
         psv = self.plotspec_values
-        print "jfp in plot set 5&6 results psv="
-        pprint( psv)
         if psv[self.plot1_id] is not None\
                 and psv[self.plot2_id] is not None:
             psv[self.plot1_id].synchronize_ranges(psv[self.plot2_id])
