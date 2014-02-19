@@ -146,9 +146,12 @@ def ncep_ocean_heat_transport( path ):
         paths = set([os.path.dirname(f) for f in path._filelist.files])
         for p in paths:
             filep = os.path.normpath( p+'/ANNUAL_TRANSPORTS_1985_1989.ascii' )
+            f = None
             if os.path.isfile(filep):
                 f = open( filep )
                 break
+            if f is None:
+                return None,None
     else:
         #raise Exception(
         #    "ncep_ocean_heat_transport() cannot find path needed for NCEP heat transport obs")
