@@ -73,7 +73,7 @@ class climatology_variance( reduced_variable ):
             reduced_variable.__init__(
                 self,
                 variableid=varname+'_var', filetable=filetable,
-                reduction_function=(lambda x,vid=None: reduce_time_seasonal(x,vid=vid)),
+                reduction_function=(lambda x,vid=None: reduce_time_seasonal(x,season)),
                 duvs={ varname+'_var':duv }, rvs=rvs )
 
 def compute_and_write_climatologies( varkeys, reduced_variables, season, case='', variant='' ):
