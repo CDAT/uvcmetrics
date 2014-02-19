@@ -204,9 +204,12 @@ class uvc_simple_plotspec():
         for var in pvars:
             self.varmax[var.id] = var.max()
             self.varmin[var.id] = var.min()
-            self.axmax[var.id]  = { ax[0].id:max(ax[0][:]) for ax in var._TransientVariable__domain[:] }
-            self.axmin[var.id]  = { ax[0].id:min(ax[0][:]) for ax in var._TransientVariable__domain[:] }
-            self.axax[var.id]  = { ax[0].id:ax[0].axis for ax in var._TransientVariable__domain[:] }
+            self.axmax[var.id]  = { ax[0].id:max(ax[0][:]) for ax in var._TransientVariable__domain[:]
+                                    if ax is not None }
+            self.axmin[var.id]  = { ax[0].id:min(ax[0][:]) for ax in var._TransientVariable__domain[:]
+                                    if ax is not None}
+            self.axax[var.id]  = { ax[0].id:ax[0].axis for ax in var._TransientVariable__domain[:]
+                                   if ax is not None}
         self.finalized = False
 
     def finalize( self ):
@@ -422,6 +425,12 @@ class uvc_simple_plotspec():
 
 class uvc_plotspec(uvc_simple_plotspec):
     pass
+
+class uvc_zero_plotspec(uvc_simple_plotspec):
+    # for convenience in clearing a cell in the UV-CDAT GUI
+    def __init__( self ):
+        zerovar = cdms2.createVariable([[0,0,0],[0,0,0]])
+        uvc_simple_plotspec.__init__( self, [zerovar], "Isofill" )
 
 class DiagsEncoder(json.JSONEncoder):
     def default(self, obj):
