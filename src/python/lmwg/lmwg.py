@@ -210,17 +210,17 @@ class lmwg_plot_set2(lmwg_plot_spec):
 
    @staticmethod
    def _list_variables( filetable1, filetable2=None ):
-      print 'lmwg_plot_set2._list_variables called'
+      #print 'lmwg_plot_set2._list_variables called'
       #quit()
       allvars = lmwg_plot_set2._all_variables( filetable1, filetable2 )
       listvars = allvars.keys()
-      print 'listvars:' , listvars
+      #print 'listvars:' , listvars
       listvars.sort()
       return listvars
 
    @staticmethod
    def _all_variables( filetable1, filetable2=None ):
-      print 'lmwg_plot_set2._all_variables called, package=',lmwg_plot_spec.package
+      # print 'lmwg_plot_set2._all_variables called, package=',lmwg_plot_spec.package
       allvars = lmwg_plot_spec.package._all_variables( filetable1, filetable2, "lmwg_plot_spec" )
       #print 'allvars: ', allvars
       #quit()
@@ -266,12 +266,12 @@ class lmwg_plot_set2(lmwg_plot_spec):
 
          if(filetable2 != None):
             self.single_plotspecs[self.plot2_id] = plotspec(
-               vid = varid+'_1',
-               zvars = [varid+'_1'], zfunc = (lambda z: z),
+               vid = varid+'_2',
+               zvars = [varid+'_2'], zfunc = (lambda z: z),
                plottype = self.plottype)
             self.single_plotspecs[self.plot3_id] = plotspec(
                vid = varid+' diff',
-               zvars = [varid+'_1', varid+'_2'], zfunc = aminusb,
+               zvars = [varid+'_1', varid+'_2'], zfunc = aminusb_2ax,
                plottype = self.plottype)
             self.composite_plotspecs[self.plotall_id].append(self.plot2_id)
             self.composite_plotspecs[self.plotall_id].append(self.plot3_id)
