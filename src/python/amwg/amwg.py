@@ -403,7 +403,7 @@ class amwg_plot_set4(amwg_plot_spec):
         vv1._filetable = filetable1  # so later we can extract the filetable id for labels
         self.derived_variables[vid1] = vv1
         vv2 = rv2
-        vv2._vid = varid+'_2'        # for lookup conventience in results() method
+        vv2._vid = varid+'_2'        # for lookup convenience in results() method
         vv2._filetable = filetable2  # so later we can extract the filetable id for labels
 
         self.plot_a = contour_plot( vv1, xfunc=latvar, yfunc=levvar, ya1func=heightvar )
