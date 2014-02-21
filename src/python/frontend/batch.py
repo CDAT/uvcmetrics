@@ -13,7 +13,7 @@ from metrics.computation.reductions import *
 from metrics.amwg import *
 from metrics.amwg.derivations.vertical import *
 from metrics.amwg.plot_data import plotspec, derived_var
-from metrics.frontend.version import version
+from metrics.common.version import version
 from metrics.amwg.derivations import *
 from metrics.diagnostic_groups import *
 from metrics.frontend.uvcdat import *
@@ -22,8 +22,9 @@ import cProfile
 
 #path1 = os.path.join(os.environ["HOME"],'cam_output/b30.009.cam2.h0.06.xml')
 #path1 = os.path.join(os.environ["HOME"],'cam_output/')
-path1 = os.path.join(os.environ["HOME"],'cam_output_climo/')
+#path1 = os.path.join(os.environ["HOME"],'cam_output_climo/')
 #path1 = os.path.join(os.environ["HOME"],'acme_clm_climo/')
+path1 = os.path.join(os.environ["HOME"],'acme_data','lores_climo','atm')
 #path1 = [
 #    'http://pcmdi9.llnl.gov/thredds/dodsC/cmip5_data/cmip5/output1/INM/inmcm4/rcp85/fx/atmos/fx/r0i0p0/areacella/1/areacella_fx_inmcm4_rcp85_r0i0p0.nc',
 #    'http://pcmdi9.llnl.gov/thredds/dodsC/cmip5_data/cmip5/output1/INM/inmcm4/rcp85/fx/atmos/fx/r0i0p0/orog/1/orog_fx_inmcm4_rcp85_r0i0p0.nc',
@@ -56,22 +57,22 @@ for pname,pclass in dm.items():
     print "jfp pname=",pname
     sm = package.list_diagnostic_sets()
     for sname,sclass in sm.items():
-        if sclass.name != ' 6- Horizontal Vector Plots of Seasonal Means':
         #if sclass.name != ' 2- Line Plots of Annual Implied Northward Transport':
         #if sclass.name != ' 3- Line Plots of  Zonal Means':
-        #if sclass.name != ' 4- Vertical Contour Plots Zonal Means':
+        if sclass.name != ' 4- Vertical Contour Plots Zonal Means':
+        #if sclass.name != ' 6- Horizontal Vector Plots of Seasonal Means':
         #if sclass.name == '2 - Horizontal contour plots of DJF, MAM, JJA, SON, and ANN means':
             continue   # for testing, only do one plot set
         print "jfp sname=",sname
         for seasonid in package.list_seasons():
             #if seasonid != 'DJF':
-            if seasonid != 'ANN':
+            if seasonid != 'JAN':
                 continue # for testing, only do one season
             print "jfp seasonid=",seasonid
             variables = package.list_variables( filetable1, filetable2, sname  )
             print "jfp variables=",variables
             for varid in variables:
-                if varid!='TREFHT':
+                if varid!='T':
                     continue # for testing, only do one variable
                 print "jfp varid=",varid
                 vard = package.all_variables( filetable1, filetable2, sname )
