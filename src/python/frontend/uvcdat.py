@@ -124,11 +124,11 @@ class uvc_composite_plotspec():
     def outfile( self, format='xml-NetCDF', where=""):
         print "jfp self.title=",self.title
         if len(self.title)<=0:
-            fname = 'foo'
+            fname = 'foo.xml'
         else:
-            fname = (self.title.strip()+'.xml').replace(' ','_')
+            fname = (self.title.strip()+'.xml').replace(' ','_')[:115]  # 115 is to constrain file size
+            fname = fname+'.xml'
         filename = os.path.join(where,fname)
-        filename=filename[:119]
         print "output to",filename
         return filename
     def write_plot_data( self, format="", where="" ):
