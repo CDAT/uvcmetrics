@@ -949,28 +949,42 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
         # Only axis2 differs, there's a better way...
         return aminusb_ax2( mv1, mv2 )
     if len(axes1[0])<=len(axes2[0]):
-        if len(axes1[1])<=len(axes2[1]):
+#        if len(axes1[1])<=len(axes2[1]):
             mv1new = mv1
             # Interpolate mv2 from axis2 to axis1 in both directions.  Use the CDAT regridder.
             grid1 = mv1.getGrid()
+            if grid1 is None:
+                print "ERROR, when regridding mv2 to mv1, failed to get or generate a grid for mv1"
+                print "mv1 axis names are",[a[0].id for a in mv1._TransientVariable__domain],\
+                    " mv2 axis names are",[a[0].id for a in mv2._TransientVariable__domain]
+                print "mv1 axis lengths are",len(axes1[0]),len(axes1[1]),\
+                    "mv2 axis lengths are",len(axes2[0]),len(axes2[1])
+                raise Exception("when regridding mv2 to mv1, failed to get or generate a grid for mv1")
             mv2new = mv2.regrid(grid1)
             mv2.regridded = mv2new.id   # a GUI can use this
             regridded_vars[mv2new.id] = mv2new
-        else:
-            # Interpolate mv1 from axis1[1] to axis2[1]
-            # Interpolate mv2 from axis2[0] to axis1[0]
-            print "ERROR @3, aminusb_2ax IS NOT FINISHED"
-            return None
+#        else:
+#            # Interpolate mv1 from axis1[1] to axis2[1]
+#            # Interpolate mv2 from axis2[0] to axis1[0]
+#            print "ERROR @3, aminusb_2ax IS NOT FINISHED"
+#            return None
     else:
-        if len(axes1[1])<=len(axes2[1]):
-            # Interpolate mv1 from axis1[0] to axis2[0]
-            # Interpolate mv2 from axis2[1] to axis1[1]
-            print "ERROR @4, aminusb_2ax IS NOT FINISHED"
-            return None
-        else:
+#        if len(axes1[1])<=len(axes2[1]):
+#            # Interpolate mv1 from axis1[0] to axis2[0]
+#            # Interpolate mv2 from axis2[1] to axis1[1]
+#            print "ERROR @4, aminusb_2ax IS NOT FINISHED"
+#            return None
+#        else:
             mv2new = mv2
             # Interpolate mv2 from axis2 to axis1 in both directions.  Use the CDAT regridder.
             grid2 = mv2.getGrid()
+            if grid2 is None:
+                print "ERROR, when regridding mv1 to mv2, failed to get or generate a grid for mv2"
+                print "mv1 axis names are",[a[0].id for a in mv1._TransientVariable__domain],\
+                    " mv2 axis names are",[a[0].id for a in mv2._TransientVariable__domain]
+                print "mv1 axis lengths are",len(axes1[0]),len(axes1[1]),\
+                    "mv2 axis lengths are",len(axes2[0]),len(axes2[1])
+                raise Exception("when regridding mv1 to mv2, failed to get or generate a grid for mv2")
             mv1new = mv1.regrid(grid2,regridTool="regrid2")
             mv1.regridded = mv1new.id   # a GUI can use this
             regridded_vars[mv1new.id] = mv1new
