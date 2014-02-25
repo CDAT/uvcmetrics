@@ -430,6 +430,7 @@ class uvc_zero_plotspec(uvc_simple_plotspec):
     # for convenience in clearing a cell in the UV-CDAT GUI
     def __init__( self ):
         zerovar = cdms2.createVariable([[0,0,0],[0,0,0]])
+        zerovar.id = 'zero'
         uvc_simple_plotspec.__init__( self, [zerovar], "Isofill" )
 
 class DiagsEncoder(json.JSONEncoder):
