@@ -15,6 +15,7 @@ from metrics.amwg.derivations import *
 from metrics.diagnostic_groups import *
 from pprint import pprint
 import cProfile
+import logging
 import json
 import vcs
 vcsx=vcs.init()   # This belongs in one of the GUI files, e.g.diagnosticsDockWidget.py
@@ -26,11 +27,14 @@ from multiprocessing import Process, Semaphore, Pipe
 import time
 import cdms2
 
+running = False  # global variable to work around Semaphore problem
+
 def _plotdata_run( child_conn, sema, plotspec, filetable1, filetable2, varname, seasonname, outputPath, unique_ID, aux=None, newgrid=0 ):
     #def _plotdata_run(plotspec, filetable1, filetable2, varname, seasonname, outputPath, unique_ID, aux=None ):
-    global vcsx
+    global vcsx, running
     vcsx = False # temporary kludge
     sema.acquire()
+    running = True
     ps = plotspec( filetable1, filetable2, varname, seasonname, aux )
     if ps is None:
         results = None
@@ -43,6 +47,7 @@ def _plotdata_run( child_conn, sema, plotspec, filetable1, filetable2, varname, 
         else:
             results_obj = results
         results_obj.write_plot_data( "", outfile ) # second arg sdb directory
+    running = False
     sema.release()
     child_conn.send(outfile)
     return outfile
@@ -61,12 +66,16 @@ def plotdata_run( plotspec, filetable1, filetable2, varname, seasonname, outputP
     To check the status of p, call plotdata_status(p) to get a semaphore value (>0 means done).
     To get the computed value, call plotdata_results(p).
     """
+    #logging.basicConfig(filename="diags.log",level=logging.INFO)
+    #log = logging.getLogger("diags")
     sema = Semaphore()
+    #log.info("initial sema=%s"%sema)
     parent_conn, child_conn = Pipe()
     p = Process( target=_plotdata_run,
                  args=(child_conn, sema,
                        plotspec, filetable1, filetable2, varname, seasonname, outputPath,
                        unique_ID, aux, newgrid ) )
+    #log.info("initial p=%s"%(p))
     #outfile=_plotdata_run(plotspec, filetable1, filetable2, varname, seasonname, outputPath,
     #                      unique_ID, aux, newgrid)
     #print outfile
@@ -83,7 +92,13 @@ def plotdata_run( plotspec, filetable1, filetable2, varname, seasonname, outputP
     return p
 
 def plotdata_status( p ):
-    return p.sema.get_value()
+    global running
+    #log = logging.getLogger("diags")
+    #sema = p.sema
+    # sema.get_value returns an exception, NotImplementedError
+    #log.info("status of sema=%s is get_value="%(sema,sema.get_value()))
+    #return p.sema.get_value()
+    return running
 
 def plotdata_results( p ):
     results = p.parent_conn.recv()
