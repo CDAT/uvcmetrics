@@ -5,7 +5,7 @@
 # TO DO: >>> separate plan_computation() from compute()
 # >>>> How does the class design work with this? Improve as needed.
 
-import hashlib, os, pickle, sys, os
+import hashlib, os, pickle, sys, os, time
 from metrics import *
 from metrics.fileio.filetable import *
 from metrics.fileio.findfiles import *
@@ -13,7 +13,6 @@ from metrics.computation.reductions import *
 from metrics.amwg import *
 from metrics.amwg.derivations.vertical import *
 from metrics.amwg.plot_data import plotspec, derived_var
-from metrics.common.version import version
 from metrics.amwg.derivations import *
 from metrics.diagnostic_groups import *
 from metrics.frontend.uvcdat import *
@@ -59,8 +58,8 @@ for pname,pclass in dm.items():
     for sname,sclass in sm.items():
         #if sclass.name != ' 2- Line Plots of Annual Implied Northward Transport':
         #if sclass.name != ' 3- Line Plots of  Zonal Means':
-        if sclass.name != ' 4- Vertical Contour Plots Zonal Means':
-        #if sclass.name != ' 6- Horizontal Vector Plots of Seasonal Means':
+        #if sclass.name != ' 4- Vertical Contour Plots Zonal Means':
+        if sclass.name != ' 6- Horizontal Vector Plots of Seasonal Means':
         #if sclass.name == '2 - Horizontal contour plots of DJF, MAM, JJA, SON, and ANN means':
             continue   # for testing, only do one plot set
         print "jfp sname=",sname
@@ -72,7 +71,7 @@ for pname,pclass in dm.items():
             variables = package.list_variables( filetable1, filetable2, sname  )
             print "jfp variables=",variables
             for varid in variables:
-                if varid!='T':
+                if varid!='TREFHT':
                     continue # for testing, only do one variable
                 print "jfp varid=",varid
                 vard = package.all_variables( filetable1, filetable2, sname )
@@ -83,14 +82,23 @@ for pname,pclass in dm.items():
                 for aux in varopt:
                     #if aux != '850 mbar':
                     #    continue
-                    if True:   # single process
+                    if False:   # single process
                         plot = sclass( filetable1, filetable2, varid, seasonid, aux )
                         res = plot.compute(newgrid=-1) # newgrid=0 for original grid, -1 for coarse
                     else:      # compute in another process
                         proc = plotdata_run(
                             sclass, filetable1, filetable2, varid, seasonid, outpath, 13 )
+                        # Test plotdata_status:
+                        for ipoll in range(100):
+                            status = plotdata_status(proc)
+                            print "jfp**** At",ipoll/10.,"seconds, status=",status
+                            if (not status) and ipoll>=10:
+                                break
+                            time.sleep(0.1)
+                        # plotdata_results will block until the process completes:
                         resf = plotdata_results( proc )  # file name in which results are written
                         print "jfp results written in",resf
+                        number_diagnostic_plots += 1
                         res = None
                     if res is not None:
                         print "jfp class name=",res.__class__.__name__
