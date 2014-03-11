@@ -27,14 +27,12 @@ from multiprocessing import Process, Semaphore, Pipe
 import time
 import cdms2
 
-running = False  # global variable to work around Semaphore problem
-
 def _plotdata_run( child_conn, sema, plotspec, filetable1, filetable2, varname, seasonname, outputPath, unique_ID, aux=None, newgrid=0 ):
     #def _plotdata_run(plotspec, filetable1, filetable2, varname, seasonname, outputPath, unique_ID, aux=None ):
-    global vcsx, running
+    global vcsx
     vcsx = False # temporary kludge
     sema.acquire()
-    running = True
+    print "jfp **** starting to compute diagnostics ****"
     ps = plotspec( filetable1, filetable2, varname, seasonname, aux )
     if ps is None:
         results = None
@@ -47,7 +45,7 @@ def _plotdata_run( child_conn, sema, plotspec, filetable1, filetable2, varname, 
         else:
             results_obj = results
         results_obj.write_plot_data( "", outfile ) # second arg sdb directory
-    running = False
+    print "jfp **** finished computing diagnostics ****"
     sema.release()
     child_conn.send(outfile)
     return outfile
@@ -92,13 +90,17 @@ def plotdata_run( plotspec, filetable1, filetable2, varname, seasonname, outputP
     return p
 
 def plotdata_status( p ):
-    global running
+    # Returns True if a process is running to compute diagnostics; False otherwise.
     #log = logging.getLogger("diags")
-    #sema = p.sema
-    # sema.get_value returns an exception, NotImplementedError
-    #log.info("status of sema=%s is get_value="%(sema,sema.get_value()))
-    #return p.sema.get_value()
-    return running
+    sema = p.sema
+    acq = p.sema.acquire( block=False )  # returns immediately
+    if acq:
+        # We've acquired the semaphore, which means the assiciated process isn't running.
+        sema.release()
+        return False
+    else:
+        # We can't acquire the semaphore, which means the assiciated process is running.
+        return True
 
 def plotdata_results( p ):
     results = p.parent_conn.recv()
