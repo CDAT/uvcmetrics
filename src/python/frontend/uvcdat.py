@@ -32,7 +32,6 @@ def _plotdata_run( child_conn, sema, plotspec, filetable1, filetable2, varname, 
     global vcsx
     vcsx = False # temporary kludge
     sema.acquire()
-    print "jfp **** starting to compute diagnostics ****"
     ps = plotspec( filetable1, filetable2, varname, seasonname, aux )
     if ps is None:
         results = None
@@ -45,7 +44,6 @@ def _plotdata_run( child_conn, sema, plotspec, filetable1, filetable2, varname, 
         else:
             results_obj = results
         results_obj.write_plot_data( "", outfile ) # second arg sdb directory
-    print "jfp **** finished computing diagnostics ****"
     sema.release()
     child_conn.send(outfile)
     return outfile
