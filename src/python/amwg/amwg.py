@@ -370,11 +370,70 @@ class amwg_plot_set4(amwg_plot_spec):
         At the moment we assume that data from filetable1 has CAM hybrid levels,
         and data from filetable2 has pressure levels."""
         plot_spec.__init__(self,seasonid)
+        self.plottype = 'Isofill'
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
         self._var_baseid = '_'.join([varid,seasonid,'set4'])   # e.g. CLT_DJF_set4
+        ft1id,ft2id = filetable_ids(filetable1,filetable2)
+        self.plot1_id = '_'.join([ft1id,varid,seasonid,'contour'])
+        self.plot2_id = '_'.join([ft2id,varid,seasonid,'contour'])
+        self.plot3_id = '_'.join([ft1id+'-'+ft2id,varid,seasonid,'contour'])
+        self.plotall_id = '_'.join([ft1id,ft2id,varid,seasonid])
         if not self.computation_planned:
             self.plan_computation( filetable1, filetable2, varid, seasonid )
     def plan_computation( self, filetable1, filetable2, varid, seasonid ):
+        self.reduced_variables = {
+            varid+'_1': reduced_variable(
+                variableid=varid, filetable=filetable1, reduced_var_id=varid+'_1', season=self.season,
+                reduction_function=(lambda x,vid=None: reduce2levlat_seasonal(x,self.season,vid=vid)) ),
+            varid+'_2': reduced_variable(
+                variableid=varid, filetable=filetable2, reduced_var_id=varid+'_2', season=self.season,
+                reduction_function=(lambda x,vid=None: reduce2levlat_seasonal(x,self.season,vid=vid)) ),
+            'hyam_1': reduced_variable(      # hyam=hyam(lev)
+                variableid='hyam', filetable=filetable1, reduced_var_id='hyam_1', season=self.season,
+                reduction_function=(lambda x,vid=None: x) ),
+            'hybm_1': reduced_variable(      # hybm=hybm(lev)
+                variableid='hybm', filetable=filetable1, reduced_var_id='hybm_1', season=self.season,
+                reduction_function=(lambda x,vid=None: x) ),
+            'PS_1': reduced_variable(
+                variableid='PS', filetable=filetable1, reduced_var_id='PS_1', season=self.season,
+                reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,self.season,vid=vid)) ) }
+        vid1='_'.join([varid,seasonid,'levlat'])
+        self.derived_variables = {
+            vid1: derived_var(
+                vid=vid1, inputs=[varid+'_1', 'hyam_1', 'hybm_1', 'PS_1', varid+'_2'],
+                func=verticalize ) }
+        self.derived_variables[vid1]._filetable = filetable1  # used in _results()
+        self.single_plotspecs = {
+            self.plot1_id: plotspec(
+                vid = varid+'_1', zvars=[vid1], zfunc=(lambda z: z),
+                plottype = self.plottype ),
+            self.plot2_id: plotspec(
+                vid = varid+'_2', zvars=[varid+'_2'], zfunc=(lambda z: z),
+                plottype = self.plottype ),
+            self.plot3_id: plotspec(
+                vid = varid+'_1', zvars=[vid1,varid+'_2'], zfunc=aminusb_2ax,
+                plottype = self.plottype )
+            }
+        self.composite_plotspecs = {
+            self.plotall_id: [self.plot1_id, self.plot2_id, self.plot3_id ]
+            #self.plotall_id: [self.plot1_id, self.plot2_id ]
+            }
+        self.computation_planned = True
+    def _results(self,newgrid=0):
+        results = plot_spec._results(self,newgrid)
+        if results is None: return None
+        psv = self.plotspec_values
+        if psv[self.plot1_id] is not None\
+                and psv[self.plot2_id] is not None:
+            psv[self.plot1_id].synchronize_ranges(psv[self.plot2_id])
+        for key,val in psv.items():
+            if type(val) is not list: val=[val]
+            for v in val:
+                if v is None: continue
+                v.finalize()
+        return self.plotspec_values[self.plotall_id]
+
+    def old_plan_computation( self, filetable1, filetable2, varid, seasonid ):
         rv1 = reduced_variable(
             variableid=varid,
             filetable=filetable1, season=self.season,
@@ -414,7 +473,7 @@ class amwg_plot_set4(amwg_plot_spec):
         self.plot_c = contour_diff_plot( vv1, vv2, vid, xfunc=latvar_min, yfunc=levvar_min,
                                          ya1func=(lambda y1,y2: heightvar(levvar_min(y1,y2))))
         self.computation_planned = True
-    def _results(self,newgrid=0):
+    def _old_results(self,newgrid=0):
         # At the moment this is very specific to plot set 4.  Maybe later I'll use a
         # more general method, to something like what's in plot_data.py, maybe not.
         # later this may be something more specific to the needs of the UV-CDAT GUI
