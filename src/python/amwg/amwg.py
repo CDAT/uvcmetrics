@@ -380,43 +380,75 @@ class amwg_plot_set4(amwg_plot_spec):
         self.plotall_id = '_'.join([ft1id,ft2id,varid,seasonid])
         if not self.computation_planned:
             self.plan_computation( filetable1, filetable2, varid, seasonid )
-    def plan_computation( self, filetable1, filetable2, varid, seasonid ):
-        self.reduced_variables = {
-            varid+'_1': reduced_variable(
-                variableid=varid, filetable=filetable1, reduced_var_id=varid+'_1', season=self.season,
+    def reduced_variables_press_lev( self, filetable, varid, seasonid, ftno ):
+        ft_no = '_'+ftno  # e.g. '_1' or '_2'
+        reduced_variables = {
+            varid+ft_no: reduced_variable(
+                variableid=varid, filetable=filetable, reduced_var_id=varid+ft_no, season=self.season,
+                reduction_function=(lambda x,vid=None: reduce2levlat_seasonal(x,self.season,vid=vid)) ) }
+        return reduced_variables
+    def reduced_variables_hybrid_lev( self, filetable, varid, seasonid, ftno ):
+        ft_no = '_'+ftno  # e.g. '_1' or '_2'
+        reduced_variables = {
+            varid+ft_no: reduced_variable(
+                variableid=varid, filetable=filetable, reduced_var_id=varid+ft_no, season=self.season,
                 reduction_function=(lambda x,vid=None: reduce2levlat_seasonal(x,self.season,vid=vid)) ),
-            varid+'_2': reduced_variable(
-                variableid=varid, filetable=filetable2, reduced_var_id=varid+'_2', season=self.season,
-                reduction_function=(lambda x,vid=None: reduce2levlat_seasonal(x,self.season,vid=vid)) ),
-            'hyam_1': reduced_variable(      # hyam=hyam(lev)
-                variableid='hyam', filetable=filetable1, reduced_var_id='hyam_1', season=self.season,
+            'hyam'+ft_no: reduced_variable(      # hyam=hyam(lev)
+                variableid='hyam', filetable=filetable, reduced_var_id='hyam'+ft_no, season=self.season,
                 reduction_function=(lambda x,vid=None: x) ),
-            'hybm_1': reduced_variable(      # hybm=hybm(lev)
-                variableid='hybm', filetable=filetable1, reduced_var_id='hybm_1', season=self.season,
+            'hybm'+ft_no: reduced_variable(      # hybm=hybm(lev)
+                variableid='hybm', filetable=filetable, reduced_var_id='hybm'+ft_no, season=self.season,
                 reduction_function=(lambda x,vid=None: x) ),
-            'PS_1': reduced_variable(
-                variableid='PS', filetable=filetable1, reduced_var_id='PS_1', season=self.season,
+            'PS'+ft_no: reduced_variable(
+                variableid='PS', filetable=filetable, reduced_var_id='PS'+ft_no, season=self.season,
                 reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,self.season,vid=vid)) ) }
-        vid1='_'.join([varid,seasonid,'levlat'])
-        self.derived_variables = {
-            vid1: derived_var(
+        return reduced_variables
+    def plan_computation( self, filetable1, filetable2, varid, seasonid ):
+        ft1_hyam = filetable1.find_files('hyam')
+        ft2_hyam = filetable2.find_files('hyam')
+        hybrid1 = ft1_hyam is not None and ft1_hyam!=[]    # true iff filetable1 uses hybrid level coordinates
+        hybrid2 = ft2_hyam is not None and ft2_hyam!=[]    # true iff filetable2 uses hybrid level coordinates
+        if hybrid1:
+            reduced_variables_1 = self.reduced_variables_hybrid_lev( filetable1, varid, seasonid, '1' )
+        else:
+            reduced_variables_1 = self.reduced_variables_press_lev( filetable1, varid, seasonid, '2' )
+        if hybrid2:
+            reduced_variables_2 = self.reduced_variables_hybrid_lev( filetable2, varid, seasonid, '2' )
+        else:
+            reduced_variables_2 = self.reduced_variables_press_lev( filetable2, varid, seasonid, '2' )
+        reduced_variables_1.update( reduced_variables_2 )
+        self.reduced_variables = reduced_variables_1
+        self.derived_variables = {}
+        if hybrid1:
+            # >>>> actually last arg of the derived var should identify the coarsest level, not nec. 2
+            vid1='_'.join([varid,seasonid,'levlat','1'])
+            self.derived_variables[vid1] = derived_var(
                 vid=vid1, inputs=[varid+'_1', 'hyam_1', 'hybm_1', 'PS_1', varid+'_2'],
-                func=verticalize ) }
-        self.derived_variables[vid1]._filetable = filetable1  # used in _results()
+                func=verticalize )
+        else:
+            vid1 = varid+'_1'
+        #>>> no longer needed??? self.derived_variables[vid1]._filetable = filetable1  # used in _results()
+        if hybrid2:
+            # >>>> actually last arg of the derived var should identify the coarsest level, not nec. 2
+            vid2='_'.join([varid,seasonid,'levlat','2'])
+            self.derived_variables[vid2] = derived_var(
+                vid=vid2, inputs=[varid+'_2', 'hyam_2', 'hybm_2', 'PS_2', varid+'_2'],
+                func=verticalize )
+        else:
+            vid2 = varid+'_2'
         self.single_plotspecs = {
             self.plot1_id: plotspec(
                 vid = varid+'_1', zvars=[vid1], zfunc=(lambda z: z),
                 plottype = self.plottype ),
             self.plot2_id: plotspec(
-                vid = varid+'_2', zvars=[varid+'_2'], zfunc=(lambda z: z),
+                vid = varid+'_2', zvars=[vid2], zfunc=(lambda z: z),
                 plottype = self.plottype ),
             self.plot3_id: plotspec(
-                vid = varid+'_1', zvars=[vid1,varid+'_2'], zfunc=aminusb_2ax,
+                vid = varid+'_1', zvars=[vid1,vid2], zfunc=aminusb_2ax,
                 plottype = self.plottype )
             }
         self.composite_plotspecs = {
             self.plotall_id: [self.plot1_id, self.plot2_id, self.plot3_id ]
-            #self.plotall_id: [self.plot1_id, self.plot2_id ]
             }
         self.computation_planned = True
     def _results(self,newgrid=0):
