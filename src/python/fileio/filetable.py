@@ -193,7 +193,7 @@ class basic_filetable:
                     self._varindex[variableid] = [newrow]
         dfile.close()
     def find_files( self, variable, time_range=None,
-                    lat_range=None, lon_range=None, level_range=None,
+                    lat_range=drange(), lon_range=drange(), level_range=drange(),
                     seasonid=None):
        """This method is intended for creating a plot.
        This finds and returns a list of files needed to cover the supplied variable and time and
@@ -226,7 +226,12 @@ class basic_filetable:
                    found.append( ftrow )
        else:
           for ftrow in candidates:
-                if time_range.overlaps_with( ftrow.timerange ) and\
+                if time_range is None and\
+                       lat_range.overlaps_with( ftrow.latrange ) and\
+                       lon_range.overlaps_with( ftrow.lonrange ) and\
+                       level_range.overlaps_with( ftrow.levelrange ):
+                   found.append( ftrow )
+                elif time_range.overlaps_with( ftrow.timerange ) and\
                        lat_range.overlaps_with( ftrow.latrange ) and\
                        lon_range.overlaps_with( ftrow.lonrange ) and\
                        level_range.overlaps_with( ftrow.levelrange ):
