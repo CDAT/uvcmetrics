@@ -75,41 +75,47 @@ class Options():
    def listVariables(self, package, setname):
       import metrics.fileio.filetable as ft
       import metrics.fileio.findfiles as fi
-      dtree = fi.dirtree_datafiles(self)
+      dtree = fi.dirtree_datafiles(self, pathid=0)
       filetable = ft.basic_filetable(dtree, self)
 
       # this needs a filetable probably, or we just define the maximum list of variables somewhere
       im = ".".join(['metrics', 'packages', package[0], package[0]])
       if package[0] == 'lmwg':
          pclass = getattr(__import__(im, fromlist=['LMWG']), 'LMWG')()
-         vlist=1
+#         vlist=1
       elif package[0]=='amwg':
          pclass = getattr(__import__(im, fromlist=['AMWG']), 'AMWG')()
-         vlist=None
+#         vlist=None
 
+      vlist=None
       # assume we have a path provided
 
       slist = pclass.list_diagnostic_sets()
       keys = slist.keys()
       keys.sort()
       pset_name = None
+      #print 'keys: ', keys
       for k in keys:
          fields = k.split()
+         #print 'fields: ', fields
          if setname[0] == fields[0]:
             if vlist ==None:
+               print 'calling slist[k]...'
                vl = slist[k]._list_variables(filetable)
                print 'list_vars:**************************'
                print vl
             else:
-               pset = slist[k](filetable, None, None, None, aux=None, vlist=1)
-               pset_name = k
-
-               if pset_name == None:
-                  print 'DIDNT FIND THE SET'
-                  quit()
-               varlist = pset.varlist
-               print 'VARLIST'
-               print varlist
+               vl = slist[k]._list_variables(filetable)
+               print vl
+#               pset = slist[k](filetable, None, None, None, aux=None, vlist=1)
+#               pset_name = k
+#
+#               if pset_name == None:
+#                  print 'DIDNT FIND THE SET'
+#                  quit()
+#               varlist = pset.varlist
+#               print 'VARLIST'
+#               print varlist
          
       return
 
@@ -126,9 +132,9 @@ class Options():
             print 'One or more path arguements is required'
             quit()
       if(self._opts['plots'] == True):
-         if(self._opts['realm'] == None):
-            print 'Please specify a realm type if you want to generate plots'
-            quit()
+#         if(self._opts['realm'] == None):
+#            print 'Please specify a realm type if you want to generate plots'
+#            quit()
          if(self._opts['packages'] == None):
             print 'Please specify a package name if you want to generate plots'
             quit()
@@ -144,13 +150,21 @@ class Options():
       import metrics.fileio.filetable as ft
       import metrics.fileio.findfiles as fi
          
+      print 'self: ',self
+      print 'self._opts:' , self._opts
+
+      # temporarily replace variables
+      myvars = self._opts['vars']
+      self._opts['vars'] = 'ALL'
       dtree1 = fi.dirtree_datafiles(self, pathid=0)
       filetable1 = ft.basic_filetable(dtree1, self)
       if(len(self._opts['path']) == 2):
+         print 'ft2 = path2 ft'
          dtree2 = fi.dirtree_datafiles(self, pathid=1)
          filetable2 = ft.basic_filetable(dtree2, self)
       elif(self._opts['obspath']) != []:
-         dtree2 = fi.dirtree_datafiles(self, obs=1)
+         print 'ft2 = obs ft'
+         dtree2 = fi.dirtree_datafiles(self, obsid=0)
          filetable2 = ft.basic_filetable(dtree2, self)
       else:
          filetable2 = None
@@ -158,6 +172,7 @@ class Options():
          
       package=self._opts['packages']
 
+      self._opts['vars'] = [myvars, 'Ocean_Heat']
       # this needs a filetable probably, or we just define the maximum list of variables somewhere
       im = ".".join(['metrics', 'packages', package[0], package[0]])
       if package[0] == 'lmwg':
@@ -178,6 +193,7 @@ class Options():
       print 'VCS INIT IN FRONT OPTIONS - REVERTED SINGLE INIT UNFORTUNATELY'
       v = vcs.init()
       print 'VCS INIT DONE IN FRONTEND'
+      print slist
       for k in skeys:
          fields = k.split()
          print 'fields111: ', fields
@@ -187,12 +203,16 @@ class Options():
 
             if snames == fields[0]:
                print 'varin'
+               print varids
                for va in varids:
                   for s in seasons:
-                     print 'Creating plot for set: ', k, 'varid: ', va,' season: ', s
+                     print 'Creating plot for set: ', k, 'varid: ', va,' season: ', s, 'ft1: ', filetable1, 'ft2: ', filetable2
                      plot = slist[k](filetable1, filetable2, va, s)
+                     print '**********************************************************************'
+                     print plot
+                     print '**********************************************************************'
                      print 'res'
-                     res = plot.compute()
+                     res = plot.compute(newgrid=0)
                      print 'res done'
 
                      for r in range(len(res)):
@@ -456,7 +476,13 @@ class Options():
       # Check if a user specified package actually exists
       # Note: This is case sensitive.....
       if(args.packages != None):
-         plist = [x for x in args.packages if x in self.all_packages.keys()]
+         plist = []
+         for x in args.packages:
+            if x.upper() in self.all_packages.keys():
+               plist.append(x)
+            elif x in self.all_packages.keys():
+               plist.append(x.lower())
+
          if plist == []:
             print 'Package name(s) ', args.packages, ' not valid'
             print 'Valid package names: ', self.all_packages.keys()
@@ -475,11 +501,13 @@ class Options():
          sets = []
          import metrics.fileio.filetable as ft
          import metrics.fileio.findfiles as fi
-         dtree = fi.dirtree_datafiles(self)
+         dtree = fi.dirtree_datafiles(self, pathid=0)
          filetable = ft.basic_filetable(dtree, self)
          package = self._opts['packages']
 
          # this needs a filetable probably, or we just define the maximum list of variables somewhere
+         print package[0]
+
          im = ".".join(['metrics', 'packages', package[0], package[0]])
          if package[0] == 'lmwg':
             pclass = getattr(__import__(im, fromlist=['LMWG']), 'LMWG')()
@@ -510,7 +538,7 @@ class Options():
       # If --monthly is set, we add all months to the list of climatologies
       if(args.monthly == True):
          self._opts['monthly'] = True
-         self._opts['times'].extend(self.all_months)
+         self._opts['times'].extend(all_months)
 
       # If --seasonally is set, we add all 4 seasons to the list of climatologies
       if(args.seasonally == True):
@@ -523,7 +551,7 @@ class Options():
             print "Please specify just one of --monthly or --months"
             quit()
          else:
-            mlist = [x for x in self.all_months if x in args.months]
+            mlist = [x for x in all_months if x in args.months]
             self._opts['times'] = self._opts['times']+mlist
 
       # This allows specific individual years to be added to the list of climatologies.
