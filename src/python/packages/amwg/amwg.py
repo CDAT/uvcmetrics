@@ -16,19 +16,39 @@ class AMWG(BasicDiagnosticGroup):
     def __init__(self):
         pass
     def list_variables( self, filetable1, filetable2=None, diagnostic_set_name="" ):
+        print 'IN LIST VARS CLASS'
         if diagnostic_set_name!="":
-            dset = self.list_diagnostic_sets().get( diagnostic_set_name, None )
+#            print 'SET NAME WAS != "", set name=', diagnostic_set_name
+#            sets = self.list_diagnostic_sets()
+#            dset = sets.get(diagnostic_set_name, None)
+#            print 'new dset: ', dset
+#            print 'SET LIST: ', sets
+#            print 'SET LIST KEYS:' ,sets.keys()
+#            print 'set name in keys? :'
+#            if diagnostic_set_name in sets.keys():
+#               dset = sets[diagnostic_set_name]
+#            else:
+#               dset = None
+            # I added str() where diagnostic_set_name is set, but jsut to be sure.
+            # spent 2 days debuging a QT Str failing to compare to a "regular" python str
+            dset = self.list_diagnostic_sets().get( str(diagnostic_set_name), None )
+
             if dset is None:
+                print 'DSET WAS NONE'
                 return self._list_variables( filetable1, filetable2 )
             else:   # Note that dset is a class not an object.
+                print 'DSET WAS NOT NONE'
                 return dset._list_variables( filetable1, filetable2 )
         else:
+            print 'OUTER ELSE CLAUSE'
             return self._list_variables( filetable1, filetable2 )
     @staticmethod
     def _list_variables( filetable1, filetable2=None, diagnostic_set_name="" ):
+        print 'class level list_vars ****'
         return BasicDiagnosticGroup._list_variables( filetable1, filetable2, diagnostic_set_name )
     @staticmethod
     def _all_variables( filetable1, filetable2, diagnostic_set_name ):
+        print 'class level _all_vars ****'
         return BasicDiagnosticGroup._all_variables( filetable1, filetable2, diagnostic_set_name )
     def list_variables_with_levelaxis( self, filetable1, filetable2=None, diagnostic_set="" ):
         """like list_variables, but only returns variables which have a level axis
@@ -127,11 +147,12 @@ class amwg_plot_set2(amwg_plot_spec):
     Both model and obs data is plotted, sometimes in the same plot.
     The data presented is averaged over everything but latitude.
     """
-    name = ' 2- Line Plots of Annual Implied Northward Transport'
+    name = ' 2 - Line Plots of Annual Implied Northward Transport'
     def __init__( self, filetable1, filetable2, varid, seasonid=None, aux=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the derived variable to be plotted, e.g. 'Ocean_Heat'.
         The seasonid argument will be ignored."""
+        print '**** SET 2 INIT ******'
         plot_spec.__init__(self,seasonid)
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
         self.plottype='Yxvsx'
@@ -145,9 +166,11 @@ class amwg_plot_set2(amwg_plot_spec):
             self.plan_computation( filetable1, filetable2, varid, seasonid )
     @staticmethod
     def _list_variables( self, filetable1=None, filetable2=None ):
+        print '**** CALLED LIST VARS IN SET2**** '
         return ['Ocean_Heat']
     @staticmethod
     def _all_variables( self, filetable1, filetable2=None ):
+        print '**** CALLED ALLVARS IN SET2**** '
         return { vn:basic_plot_variable for vn in amwg_plot_set2._list_variables( filetable1, filetable2 ) }
     def plan_computation( self, filetable1, filetable2, varid, seasonid ):
         # CAM variables needed for heat transport: (SOME ARE SUPERFLUOUS <<<<<<)
@@ -293,7 +316,7 @@ class amwg_plot_set3(amwg_plot_spec):
     time-averaged with times restricted to the specified season, DJF, JJA, or ANN."""
     # N.B. In plot_data.py, the plotspec contained keys identifying reduced variables.
     # Here, the plotspec contains the variables themselves.
-    name = ' 3- Line Plots of  Zonal Means'
+    name = ' 3 - Line Plots of  Zonal Means'
     def __init__( self, filetable1, filetable2, varid, seasonid=None, aux=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'."""
@@ -363,12 +386,13 @@ class amwg_plot_set4(amwg_plot_spec):
     time-averaged with times restricted to the specified season, DJF, JJA, or ANN."""
     # N.B. In plot_data.py, the plotspec contained keys identifying reduced variables.
     # Here, the plotspec contains the variables themselves.
-    name = ' 4- Vertical Contour Plots Zonal Means'
+    name = ' 4 - Vertical Contour Plots Zonal Means'
     def __init__( self, filetable1, filetable2, varid, seasonid=None, aux=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'.
         At the moment we assume that data from filetable1 has CAM hybrid levels,
         and data from filetable2 has pressure levels."""
+        print 'SET 4 INIT CALLED'
         plot_spec.__init__(self,seasonid)
         self.plottype = 'Isofill'
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
@@ -379,8 +403,10 @@ class amwg_plot_set4(amwg_plot_spec):
         self.plot3_id = '_'.join([ft1id+'-'+ft2id,varid,seasonid,'contour'])
         self.plotall_id = '_'.join([ft1id,ft2id,varid,seasonid])
         if not self.computation_planned:
+            print 'SET 4 PLAN COMPUTING CALLING'
             self.plan_computation( filetable1, filetable2, varid, seasonid )
     def plan_computation( self, filetable1, filetable2, varid, seasonid ):
+        print 'PLAN COMPUTE SET 4 CALLED'
         self.reduced_variables = {
             varid+'_1': reduced_variable(
                 variableid=varid, filetable=filetable1, reduced_var_id=varid+'_1', season=self.season,
@@ -549,12 +575,14 @@ class amwg_plot_set5and6(amwg_plot_spec):
             self.plan_computation( filetable1, filetable2, varid, seasonid, aux )
     @staticmethod
     def _list_variables( filetable1, filetable2=None ):
+        print '5 and 6 _list_vars'
         allvars = amwg_plot_set5and6._all_variables( filetable1, filetable2 )
         listvars = allvars.keys()
         listvars.sort()
         return listvars
     @staticmethod
     def _all_variables( filetable1, filetable2=None ):
+        print '5 and 6 _all_vars'
         allvars = amwg_plot_spec.package._all_variables( filetable1, filetable2, "amwg_plot_spec" )
         #allvars['Z3'] = basic_level_variable # temporary, the right thing is to find level-dep't vars
         for varname in amwg_plot_spec.package._list_variables_with_levelaxis(
@@ -711,7 +739,7 @@ class amwg_plot_set5(amwg_plot_set5and6):
     the difference between the two.  A plot's x-axis is longitude and its y-axis is the latitude;
     normally a world map will be overlaid.
     """
-    name = ' 5- Horizontal Contour Plots of Seasonal Means'
+    name = ' 5 - Horizontal Contour Plots of Seasonal Means'
 
 
 
@@ -722,5 +750,5 @@ class amwg_plot_set6(amwg_plot_set5and6):
     the difference between the two.  A plot's x-axis is longitude and its y-axis is the latitude;
     normally a world map will be overlaid.
     """
-    name = ' 6- Horizontal Vector Plots of Seasonal Means'
+    name = ' 6 - Horizontal Vector Plots of Seasonal Means'
 
