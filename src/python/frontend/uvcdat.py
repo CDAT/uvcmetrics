@@ -9,7 +9,7 @@ from metrics.fileio.findfiles import *
 from metrics.computation.reductions import *
 from metrics.packages.amwg import *
 from metrics.packages.amwg.derivations.vertical import *
-from metrics.packages.amwg.plot_data import plotspec, derived_var
+from metrics.computation.plotspec import plotspec, derived_var
 from metrics.common.version import version
 from metrics.packages.amwg.derivations import *
 from metrics.packages.diagnostic_groups import *
@@ -330,7 +330,7 @@ class uvc_simple_plotspec():
         for vid in var_ids:
             vids = vid+self_suffix
             vidp = vid+pset_suffix
-            print "jfp vid,vids,vidp=",vid,vids,vidp
+            print "first one jfp vid,vids,vidp=",vid,vids,vidp
             varmax = max( self.varmax[vids], pset.varmax[vidp] )
             varmin = min( self.varmin[vids], pset.varmin[vidp] )
             self.varmax[vids] = varmax
@@ -365,7 +365,7 @@ class uvc_simple_plotspec():
             varmin = self.varmin[vids]
             for i in range(len(psets)):
                 vidp = vid+pset_suffices[i]
-                print "jfp vid,vids,vidp=",vid,vids,vidp
+                print "second one jfp vid,vids,vidp=",vid,vids,vidp
                 varmax = max( varmax, psets[i].varmax[vidp] )
                 varmin = min( varmin, psets[i].varmin[vidp] )
             self.varmax[vids] = varmax
@@ -639,7 +639,7 @@ class plot_spec(object):
         In the future regrid>0 will mean regrid everything to the finest grid and regrid<0
         will mean regrid everything to the coarsest grid."""
         for v in self.reduced_variables.keys():
-            value = self.reduced_variables[v].reduce()
+            value = self.reduced_variables[v].reduce(None)
             self.variable_values[v] = value  # could be None
         postponed = []   # derived variables we won't do right away
         for v in self.derived_variables.keys():
@@ -655,7 +655,8 @@ class plot_spec(object):
             self.variable_values[v] = value  # could be None
         varvals = self.variable_values
         for p,ps in self.single_plotspecs.iteritems():
-            print "jfp preparing data for",ps._id
+            print "uvcdat jfp preparing data for",ps._id
+#            if 1:
             try:
                 xrv = [ varvals[k] for k in ps.xvars ]
                 x1rv = [ varvals[k] for k in ps.x1vars ]
@@ -677,8 +678,9 @@ class plot_spec(object):
                 y1ax = apply( ps.y1func, y1rv )
                 y2ax = apply( ps.y2func, y2rv )
                 y3ax = apply( ps.y3func, y3rv )
+#            else:
             except Exception as e:
-                print "cannot compute data for",ps._id
+                print "EXCEPTION cannot compute data for",ps._id
                 self.plotspec_values[p] = None
                 continue
             # not used yet yaax = apply( ps.yafunc, yarv )
