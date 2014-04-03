@@ -22,6 +22,7 @@ import cProfile
 #path1 = os.path.join(os.environ["HOME"],'cam_output/b30.009.cam2.h0.06.xml')
 #path1 = os.path.join(os.environ["HOME"],'cam_output/')
 #path1 = os.path.join(os.environ["HOME"],'cam_output_climo/')
+#path1 = os.path.join(os.environ["HOME"],'acme_cam_climo/')
 #path1 = os.path.join(os.environ["HOME"],'acme_clm_climo/')
 path1 = os.path.join(os.environ["HOME"],'acme_data','lores_climo','atm')
 #path1 = [
@@ -58,8 +59,8 @@ for pname,pclass in dm.items():
     for sname,sclass in sm.items():
         #if sclass.name != ' 2- Line Plots of Annual Implied Northward Transport':
         #if sclass.name != ' 3- Line Plots of  Zonal Means':
-        #if sclass.name != ' 4- Vertical Contour Plots Zonal Means':
-        if sclass.name != ' 6- Horizontal Vector Plots of Seasonal Means':
+        if sclass.name != ' 4- Vertical Contour Plots Zonal Means':
+        #if sclass.name != ' 6- Horizontal Vector Plots of Seasonal Means':
         #if sclass.name == '2 - Horizontal contour plots of DJF, MAM, JJA, SON, and ANN means':
             continue   # for testing, only do one plot set
         print "jfp sname=",sname
@@ -71,7 +72,7 @@ for pname,pclass in dm.items():
             variables = package.list_variables( filetable1, filetable2, sname  )
             print "jfp variables=",variables
             for varid in variables:
-                if varid!='TREFHT':
+                if varid!='T':
                     continue # for testing, only do one variable
                 print "jfp varid=",varid
                 vard = package.all_variables( filetable1, filetable2, sname )
@@ -89,12 +90,15 @@ for pname,pclass in dm.items():
                         proc = plotdata_run(
                             sclass, filetable1, filetable2, varid, seasonid, outpath, 13 )
                         # Test plotdata_status:
-                        for ipoll in range(100):
+                        tpoll = 0
+                        dpoll = 1 # 0.1 is good for set 6, 1 is good for set 4
+                        for ipoll in range(10):
                             status = plotdata_status(proc)
-                            print "jfp**** At",ipoll/10.,"seconds, status=",status
-                            if (not status) and ipoll>=10:
+                            print "jfp At",tpoll,"seconds, status=",status
+                            if (not status) and ipoll>5:
                                 break
-                            time.sleep(0.1)
+                            time.sleep(dpoll)
+                            tpoll += dpoll
                         # plotdata_results will block until the process completes:
                         resf = plotdata_results( proc )  # file name in which results are written
                         print "jfp results written in",resf
