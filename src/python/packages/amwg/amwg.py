@@ -127,7 +127,7 @@ class amwg_plot_set2(amwg_plot_spec):
     Both model and obs data is plotted, sometimes in the same plot.
     The data presented is averaged over everything but latitude.
     """
-    name = ' 2- Line Plots of Annual Implied Northward Transport'
+    name = ' 2 - Line Plots of Annual Implied Northward Transport'
     def __init__( self, filetable1, filetable2, varid, seasonid=None, aux=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the derived variable to be plotted, e.g. 'Ocean_Heat'.
@@ -295,7 +295,7 @@ class amwg_plot_set3(amwg_plot_spec):
     time-averaged with times restricted to the specified season, DJF, JJA, or ANN."""
     # N.B. In plot_data.py, the plotspec contained keys identifying reduced variables.
     # Here, the plotspec contains the variables themselves.
-    name = ' 3- Line Plots of  Zonal Means'
+    name = ' 3 - Line Plots of  Zonal Means'
     def __init__( self, filetable1, filetable2, varid, seasonid=None, aux=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'."""
@@ -365,7 +365,7 @@ class amwg_plot_set4(amwg_plot_spec):
     time-averaged with times restricted to the specified season, DJF, JJA, or ANN."""
     # N.B. In plot_data.py, the plotspec contained keys identifying reduced variables.
     # Here, the plotspec contains the variables themselves.
-    name = ' 4- Vertical Contour Plots Zonal Means'
+    name = ' 4 - Vertical Contour Plots Zonal Means'
     def __init__( self, filetable1, filetable2, varid, seasonid=None, aux=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'.
@@ -744,7 +744,7 @@ class amwg_plot_set5(amwg_plot_set5and6):
     the difference between the two.  A plot's x-axis is longitude and its y-axis is the latitude;
     normally a world map will be overlaid.
     """
-    name = ' 5- Horizontal Contour Plots of Seasonal Means'
+    name = ' 5 - Horizontal Contour Plots of Seasonal Means'
 
 
 
