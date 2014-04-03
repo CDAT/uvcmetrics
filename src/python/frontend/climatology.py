@@ -11,10 +11,10 @@ import cdms2, math
 from metrics.fileio.findfiles import *
 from metrics.fileio.filetable import *
 from metrics.computation.reductions import *
-from metrics.amwg.derivations.oaht import *
-from metrics.amwg.derivations.ncl_isms import *
-from metrics.amwg.derivations.vertical import *
-from metrics.amwg.plot_data import derived_var, plotspec
+from metrics.packages.amwg.derivations.oaht import *
+from metrics.packages.amwg.derivations.ncl_isms import *
+from metrics.packages.amwg.derivations.vertical import *
+from metrics.packages.amwg.plot_data import derived_var, plotspec
 from cdutil.times import Seasons
 from pprint import pprint
 import cProfile

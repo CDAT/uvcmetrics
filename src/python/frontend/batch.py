@@ -10,11 +10,11 @@ from metrics import *
 from metrics.fileio.filetable import *
 from metrics.fileio.findfiles import *
 from metrics.computation.reductions import *
-from metrics.amwg import *
-from metrics.amwg.derivations.vertical import *
-from metrics.amwg.plot_data import plotspec, derived_var
-from metrics.amwg.derivations import *
-from metrics.diagnostic_groups import *
+from metrics.packages.amwg import *
+from metrics.packages.amwg.derivations.vertical import *
+from metrics.packages.amwg.plot_data import plotspec, derived_var
+from metrics.packages.amwg.derivations import *
+from metrics.packages.diagnostic_groups import *
 from metrics.frontend.uvcdat import *
 from pprint import pprint
 import cProfile

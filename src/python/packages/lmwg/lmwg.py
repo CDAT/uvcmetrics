@@ -3,7 +3,7 @@
 # Top-leve definition of LMWG Diagnostics.
 # LMWG = Atmospheric Model Working Group
 
-from metrics.diagnostic_groups import *
+from metrics.packages.diagnostic_groups import *
 #from metrics.packages.common.diagnostic_groups import *
 from metrics.computation.reductions import *
 from metrics.frontend.uvcdat import *

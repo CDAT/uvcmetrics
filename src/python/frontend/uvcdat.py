@@ -7,12 +7,12 @@ from metrics import *
 from metrics.fileio.filetable import *
 from metrics.fileio.findfiles import *
 from metrics.computation.reductions import *
-from metrics.amwg import *
-from metrics.amwg.derivations.vertical import *
-from metrics.amwg.plot_data import plotspec, derived_var
+from metrics.packages.amwg import *
+from metrics.packages.amwg.derivations.vertical import *
+from metrics.packages.amwg.plot_data import plotspec, derived_var
 from metrics.common.version import version
-from metrics.amwg.derivations import *
-from metrics.diagnostic_groups import *
+from metrics.packages.amwg.derivations import *
+from metrics.packages.diagnostic_groups import *
 from pprint import pprint
 import cProfile
 import logging
@@ -482,7 +482,7 @@ def _get_plot_data( plot_set_id, filetable1, filetable2, variable, season ):
         # cdutil.times.getMonthIndex() (called by climatology()) doesn't recognize 'ANN'
         season='JFMAMJJASOND'
     plot_set_id = plot_set_id.strip()
-    from metrics.amwg.amwg import plot_set2, plot_set3, plot_set4, plot_set5
+    from metrics.packages.amwg.amwg import plot_set2, plot_set3, plot_set4, plot_set5
     if plot_set_id=='2':
         return plot_set2( filetable1, filetable2, variable )
     if plot_set_id=='3':
