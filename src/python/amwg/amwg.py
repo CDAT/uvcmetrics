@@ -141,6 +141,8 @@ class amwg_plot_set2(amwg_plot_spec):
             varid = vars[0]
         self._var_baseid = '_'.join([varid,'set2'])   # e.g. Ocean_Heat_set2
         print "Warning: amwg_plot_set2 only uses NCEP obs, and will ignore any other obs specification."
+        # TO DO: Although model vs NCEP obs is all that NCAR does, there's no reason why we
+        # TO DO: shouldn't support something more general, at least model vs model.
         if not self.computation_planned:
             self.plan_computation( filetable1, filetable2, varid, seasonid )
     @staticmethod
@@ -427,7 +429,6 @@ class amwg_plot_set4(amwg_plot_spec):
                 func=verticalize )
         else:
             vid1 = varid+'_1'
-        #>>> no longer needed??? self.derived_variables[vid1]._filetable = filetable1  # used in _results()
         if hybrid2:
             # >>>> actually last arg of the derived var should identify the coarsest level, not nec. 2
             vid2='_'.join([varid,seasonid,'levlat','2'])
