@@ -221,7 +221,7 @@ class basic_filetable:
        The variable is a string, containing as a CF standard name, or equivalent.
        For ranges, None means you want all values."""
        if variable not in self._varindex.keys():
-          print 'couldnt find variable in varindex keys - ', self._varindex.keys()
+          print 'couldnt find variable',variable,' in varindex keys - ', self._varindex.keys()
           return None
        candidates = self._varindex[ variable ]
        found = []
@@ -234,10 +234,8 @@ class basic_filetable:
                     lat_range.overlaps_with( ftrow.latrange ) and\
                     lon_range.overlaps_with( ftrow.lonrange ) and\
                     level_range.overlaps_with( ftrow.levelrange ):
-                print 'found ftrow: ', ftrow
                 found.append( ftrow )
           if found==[]:
-             print 'nothing suitable found in second if'
              # No suitable season matches (climatology files) found, we will have to use
              # time-dependent data.  Theoretically we could have to use both climatology
              # and time-dep't data, but I don't think we'll see that in practice.
@@ -247,7 +245,6 @@ class basic_filetable:
                        level_range.overlaps_with( ftrow.levelrange ):
                    found.append( ftrow )
        else:
-          print 'in find files else. seems bad'
           for ftrow in candidates:
                 if time_range is None and\
                        lat_range.overlaps_with( ftrow.latrange ) and\
