@@ -101,6 +101,7 @@ class basic_filetable:
     which makes it a class.  Moreover, indices for the table are in this class.
     Different file types will require different methods,
     and auxiliary data."""
+    nfiletables = 0
 
     def __init__( self, filelist, opts, ftid=''):
         try:
@@ -112,7 +113,9 @@ class basic_filetable:
           except:
             print 'Could not determine options array in basic_filetable'
             quit()
-
+        if ftid=='':
+           ftid = self.unique_id(opts)
+        
         """filelist is a list of strings, each of which is the path to a file"""
         self._table = []     # will be built from the filelist, see below
         # We have two indices, one by file and one by variable.
@@ -135,6 +138,11 @@ class basic_filetable:
        return 'filetable from '+str(self._filelist)
     def full_repr(self):
        return 'filetable from '+str(self._filelist)+'\n'+self._table.__repr__()
+    def unique_id( self, opts ):
+       "returns a unique id for this filetable"
+       ftn = basic_filetable.nfiletables
+       basic_filetable.nfiletables += 1
+       return "filetable_"+str(ftn)
     def root_dir(self):
        """returns a root directory for the files in this filetable"""
        if self._filelist is None: return None
