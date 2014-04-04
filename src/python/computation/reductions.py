@@ -347,7 +347,7 @@ def reduce2levlat( mv, vid=None ):
     timeax = timeAxis(mv)
     if timeax is not None and timeax.getBounds()==None:
         timeax._bounds_ = timeax.genGenericBounds()
-    axis_names = [ a.id for a in axes if a.id!='lev' and a.id!='lat' ]
+    axis_names = [ a.id for a in axes if a.isLevel()==False and a.isLatitude()==False ]
     axes_string = '('+')('.join(axis_names)+')'
 
     avmv = averager( mv, axis=axes_string )
