@@ -16,15 +16,16 @@ from metrics.packages.amwg.plot_data import plotspec, derived_var
 from metrics.packages.amwg.derivations import *
 from metrics.packages.diagnostic_groups import *
 from metrics.frontend.uvcdat import *
+from metrics.frontend.options import *
 from pprint import pprint
 import cProfile
 
 #path1 = os.path.join(os.environ["HOME"],'cam_output/b30.009.cam2.h0.06.xml')
 #path1 = os.path.join(os.environ["HOME"],'cam_output/')
 #path1 = os.path.join(os.environ["HOME"],'cam_output_climo/')
-#path1 = os.path.join(os.environ["HOME"],'acme_cam_climo/')
+path1 = os.path.join(os.environ["HOME"],'acme_cam_climo/')
 #path1 = os.path.join(os.environ["HOME"],'acme_clm_climo/')
-path1 = os.path.join(os.environ["HOME"],'acme_data','lores_climo','atm')
+#path1 = os.path.join(os.environ["HOME"],'acme_data','lores_climo','atm')
 #path1 = [
 #    'http://pcmdi9.llnl.gov/thredds/dodsC/cmip5_data/cmip5/output1/INM/inmcm4/rcp85/fx/atmos/fx/r0i0p0/areacella/1/areacella_fx_inmcm4_rcp85_r0i0p0.nc',
 #    'http://pcmdi9.llnl.gov/thredds/dodsC/cmip5_data/cmip5/output1/INM/inmcm4/rcp85/fx/atmos/fx/r0i0p0/orog/1/orog_fx_inmcm4_rcp85_r0i0p0.nc',
@@ -39,13 +40,21 @@ if not os.path.exists(tmppth):
     os.makedirs(tmppth)
 filt1 = None
 #cmip5 test filt1 = f_or(f_startswith("p"),f_startswith("P"))
-datafiles1 = dirtree_datafiles( path1, filt1 )
+opts1 = Options()
+opts1._opts['path']={'model':path1}
+opts1._opts['filter']=filt1
+opts1._opts['cachepath']=tmppth
+datafiles1 = dirtree_datafiles( opts1,'model' )
 print "jfp datafiles1 is",datafiles1
-filetable1 = datafiles1.setup_filetable( tmppth, "model" )
+filetable1 = datafiles1.setup_filetable( "model" )
 filt2 = f_startswith("NCEP")
 #cmip5 test filt2 = filt1
-datafiles2 = dirtree_datafiles( path2, filt2 )
-filetable2 = datafiles2.setup_filetable( tmppth, "obs" )
+opts2 = Options()
+opts2._opts['path'] = {'obs':path2}
+opts2._opts['filter'] = filt2
+opts2._opts['cachepath']=tmppth
+datafiles2 = dirtree_datafiles( opts2,'obs' )
+filetable2 = datafiles2.setup_filetable( "obs" )
 #filetable2 = None
 
 number_diagnostic_plots = 0
@@ -57,22 +66,22 @@ for pname,pclass in dm.items():
     print "jfp pname=",pname
     sm = package.list_diagnostic_sets()
     for sname,sclass in sm.items():
-        #if sclass.name != ' 2- Line Plots of Annual Implied Northward Transport':
-        #if sclass.name != ' 3- Line Plots of  Zonal Means':
-        if sclass.name != ' 4- Vertical Contour Plots Zonal Means':
-        #if sclass.name != ' 6- Horizontal Vector Plots of Seasonal Means':
+        #if sclass.name != ' 2 - Line Plots of Annual Implied Northward Transport':
+        #if sclass.name != ' 3 - Line Plots of  Zonal Means':
+        if sclass.name != ' 4 - Vertical Contour Plots Zonal Means':
+        #if sclass.name != ' 6 - Horizontal Vector Plots of Seasonal Means':
         #if sclass.name == '2 - Horizontal contour plots of DJF, MAM, JJA, SON, and ANN means':
             continue   # for testing, only do one plot set
         print "jfp sname=",sname
         for seasonid in package.list_seasons():
             #if seasonid != 'DJF':
-            if seasonid != 'JAN':
+            if seasonid != 'ANN':
                 continue # for testing, only do one season
             print "jfp seasonid=",seasonid
             variables = package.list_variables( filetable1, filetable2, sname  )
             print "jfp variables=",variables
             for varid in variables:
-                if varid!='T':
+                if varid!='RELHUM':
                     continue # for testing, only do one variable
                 print "jfp varid=",varid
                 vard = package.all_variables( filetable1, filetable2, sname )
@@ -83,7 +92,7 @@ for pname,pclass in dm.items():
                 for aux in varopt:
                     #if aux != '850 mbar':
                     #    continue
-                    if False:   # single process
+                    if True:   # single process
                         plot = sclass( filetable1, filetable2, varid, seasonid, aux )
                         res = plot.compute(newgrid=-1) # newgrid=0 for original grid, -1 for coarse
                     else:      # compute in another process
