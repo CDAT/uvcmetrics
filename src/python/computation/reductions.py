@@ -69,18 +69,24 @@ def levAxis( mv ):
     if mv is None: return None
     lev_axis = None
     for ax in allAxes(mv):
-        if ax.id=='lev':
+        if ax.isLevel():   # <<< need a similar change for other axes
             lev_axis = ax
             break
-        if ax.id=='plev':
-            lev_axis = ax
-            break
-        if ax.id=='levlak':
-            lev_axis = ax
-            break
-        if ax.id=='levgrnd':
-            lev_axis = ax
-            break
+    if lev_axis is None:
+        #probably this section isn't needed
+        for ax in allAxes(mv):
+            if ax.id=='lev':
+                lev_axis = ax
+                break
+            if ax.id=='plev':
+                lev_axis = ax
+                break
+            if ax.id=='levlak':
+                lev_axis = ax
+                break
+            if ax.id=='levgrnd':
+                lev_axis = ax
+                break
     return lev_axis
 
 def timeAxis( mv ):
@@ -370,8 +376,13 @@ def reduce2levlat_seasonal( mv, seasons=seasonsyr, vid=None ):
             # climatology() won't accept this incomplete specification
             timeax.units = 'months since 0001-01-01'
         mvseas = seasons.climatology(mv)
+    for ax in axes:
+        if ax.isTime():
+            continue
+        if ax.getBounds() is None:
+            ax._bounds_ = ax.genGenericBounds()  # needed for averager()
 
-    axis_names = [ a.id for a in axes if a.id!='lev' and a.id!='lat' and a.id!='time']
+    axis_names = [ a.id for a in axes if a.isLevel()==False and a.isLatitude()==False and a.isTime()==False ]
     axes_string = '('+')('.join(axis_names)+')'
 
     if len(axes_string)>2:
@@ -567,6 +578,8 @@ def select_lev( mv, slev ):
     The values of mvs correspond to the values of mv with level set to slev.
     Interpolation isn't done yet, but is planned !"""
     levax = levAxis(mv)
+    if levax is None:
+        return None
     # Get ig, the first index for which levax[ig]>slev
     # Assume that levax values are monotonic.
     dummy,slev = reconcile_units( levax, slev )  # new slev has same units as levax
@@ -578,13 +591,13 @@ def select_lev( mv, slev ):
         ig = len(levax)-1
     else:
         ig = ids[0][0]
-    # Crude fist cut: don't interpolate, just return a value
+    # Crude first cut: don't interpolate, just return a value
     if levax == mv.getAxisList()[0]:
         mvs = cdms2.createVariable( mv[ig:ig+1,...], copy=1 )  # why ig:ig+1 rather than ig?  bug workaround.
     elif levax == mv.getAxisList()[1]:
         mvs = cdms2.createVariable( mv[:,ig:ig+1,...], copy=1 )
     else:
-        print "ERROR, select_lev() does not support level axis except as first or second dimentions"
+        print "ERROR, select_lev() does not support level axis except as first or second dimensions"
         return None
     return mvs
 
