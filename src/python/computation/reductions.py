@@ -938,6 +938,12 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
     If this works out, it should be generalized and reproduced in other aminusb_* functions.
     """
     global regridded_vars   # experimental for now
+    if mv1 is None or mv2 is None:
+        print "WARNING, aminusb_2ax missing an input variable."
+        if mv1 is None:  print "mv1=",mv1
+        if mv2 is None:  print "mv2=",mv2
+        raise Exception
+        return None
     mv1, mv2 = reconcile_units( mv1, mv2 )
     missing = mv1.get_fill_value()
     if axes1 is None:
