@@ -684,7 +684,13 @@ class plot_spec(object):
                 self.plotspec_values[p] = None
                 continue
             # not used yet yaax = apply( ps.yafunc, yarv )
+            if any([a is None for a in ya1rv]):
+                print "WARNING - cannot compute results involving ya1ax, ya1vars=",ps.ya1vars
+                continue
             ya1ax = apply( ps.ya1func, ya1rv )
+            if any([a is None for a in zrv]):
+                print "WARNING - cannot compute results involving zax, zvars=",ps.zvars
+                continue
             zax = apply( ps.zfunc, zrv )
             # not used yet zr = apply( ps.zrangefunc, zrrv )
             vars = []
@@ -736,7 +742,7 @@ class plot_spec(object):
             title = ' '.join(labels)+' '+self._season_displayid  # do this better later
             self.plotspec_values[p] = uvc_plotspec( vars, self.plottype, labels, title )
         for p,ps in self.composite_plotspecs.iteritems():
-            self.plotspec_values[p] = [ self.plotspec_values[sp] for sp in ps ]
+            self.plotspec_values[p] = [ self.plotspec_values[sp] for sp in ps if sp in self.plotspec_values ]
         return self
         
 class basic_plot_variable():
