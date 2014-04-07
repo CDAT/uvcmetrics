@@ -479,10 +479,12 @@ class amwg_plot_set4(amwg_plot_spec):
         self.computation_planned = True
     def _results(self,newgrid=0):
         results = plot_spec._results(self,newgrid)
-        if results is None: return None
+        if results is None:
+            print "WARNING, AMWG plot set 4 found nothing to plot"
+            return None
         psv = self.plotspec_values
-        if psv[self.plot1_id] is not None\
-                and psv[self.plot2_id] is not None:
+        if self.plot1_id in psv and self.plot2_id in psv and\
+                psv[self.plot1_id] is not None and psv[self.plot2_id] is not None:
             psv[self.plot1_id].synchronize_ranges(psv[self.plot2_id])
         for key,val in psv.items():
             if type(val) is not list: val=[val]
