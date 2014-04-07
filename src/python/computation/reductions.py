@@ -1269,7 +1269,10 @@ def run_cdscan( fam, famfiles, cache_path=None ):
     print "cdscan_line=",cdscan_line
     proc = subprocess.Popen([cdscan_line],shell=True)
     proc_status = proc.wait()
-    if proc_status!=0: print "ERROR: cdscan terminated with",proc_status
+    if proc_status!=0: 
+        print "ERROR: cdscan terminated with",proc_status
+        print 'This is usually fatal. Frequent causes are an extra XML file in the dataset directory'
+        quit()
     return xml_name
 
 class reduced_variable(ftrow):
@@ -1389,6 +1392,10 @@ class reduced_variable(ftrow):
             vid = self._vid
 
         filename = self.get_variable_file( self.variableid )
+#        print 'FILENAME->', filename
+#        print 'self.varid: ', self.variableid
+#        print 'self._duvs: ', self._duvs
+#        print 'self._rvs:', self._rvs
         if filename is None:
             if self.variableid not in self._duvs:
                 # this belongs in a log file:
