@@ -99,11 +99,11 @@ def filetable_ids( filetable1, filetable2 ):
         if filetable1 is None:
             ft1id = ''
         else:
-            ft1id  = filetable1._id
+            ft1id  = filetable1._strid
         if filetable2 is None:
             ft2id = ''
         else:
-            ft2id  = filetable2._id
+            ft2id  = filetable2._strid
         return ft1id,ft2id
 
 class amwg_plot_spec(plot_spec):
@@ -357,15 +357,15 @@ class amwg_plot_set3(amwg_plot_spec):
         #y1val = y1var.reduce()
         y1val = self.variable_values[y1var._vid]
         if y1val is None: return None
-        y1unam = y1var._filetable._id  # unique part of name for y1, e.g. CAM456
+        y1unam = y1var._filetable._strid  # unique part of name for y1, e.g. CAM456
         y1val.id = '_'.join([self._var_baseid,y1unam])  # e.g. CLT_DJF_set3_CAM456
         #y2val = y2var.reduce()
         y2val = self.variable_values[y2var._vid]
         if y2val is None: return None
-        y2unam = y2var._filetable._id  # unique part of name for y2, e.g. NCEP
+        y2unam = y2var._filetable._strid  # unique part of name for y2, e.g. NCEP
         y2val.id = '_'.join([self._var_baseid,y2unam])  # e.g. CLT_DJF_set3_NCEP
         ydiffval = apply( self.plot_b.yfunc, [y1val,y2val] )
-        ydiffval.id = '_'.join([self._var_baseid, y1var._filetable._id, y2var._filetable._id,
+        ydiffval.id = '_'.join([self._var_baseid, y1var._filetable._strid, y2var._filetable._strid,
                                 'diff'])
         # ... e.g. CLT_DJF_set3_CAM456_NCEP_diff
         plot_a_val = uvc_plotspec(
@@ -542,27 +542,27 @@ class amwg_plot_set4(amwg_plot_spec):
         zavar = self.plot_a.zvars[0]
         zaval = self.variable_values[ zavar._vid ]
         if zaval is None: return None
-        zaunam = zavar._filetable._id  # unique part of name for y1, e.g. CAM456
+        zaunam = zavar._filetable._strid  # unique part of name for y1, e.g. CAM456
         zaval.id = '_'.join([self._var_baseid,zaunam])  # e.g. CLT_DJF_set4_CAM456
 
         zbvar = self.plot_b.zvars[0]
         #zbval = zbvar.reduce()
         zbval = self.variable_values[ zbvar._vid ]
         if zbval is None: return None
-        zbunam = zbvar._filetable._id  # unique part of name for y1, e.g. OBS123
+        zbunam = zbvar._filetable._strid  # unique part of name for y1, e.g. OBS123
         zbval.id = '_'.join([self._var_baseid,zbunam])  # e.g. CLT_DJF_set4_OBS123
 
         z1var = self.plot_c.zvars[0]
         z2var = self.plot_c.zvars[1]
         z1val = self.variable_values[ z1var._vid ]
         z2val = self.variable_values[ z2var._vid ]
-        z1unam = z1var._filetable._id  # unique part of name for y1, e.g. OBS123
+        z1unam = z1var._filetable._strid  # unique part of name for y1, e.g. OBS123
         z1val.id = '_'.join([self._var_baseid,z1unam])  # e.g. CLT_DJF_set4_OBS123
-        z2unam = z1var._filetable._id  # unique part of name for y1, e.g. OBS123
+        z2unam = z1var._filetable._strid  # unique part of name for y1, e.g. OBS123
         z2val.id = '_'.join([self._var_baseid,z2unam])  # e.g. CLT_DJF_set4_OBS123
         zdiffval = apply( self.plot_c.zfunc, [z1val,z2val] )
         if zdiffval is None: return None
-        zdiffval.id = '_'.join([self._var_baseid, z1var._filetable._id, z2var._filetable._id,
+        zdiffval.id = '_'.join([self._var_baseid, z1var._filetable._strid, z2var._filetable._strid,
                                 'diff'])
         # ... e.g. CLT_DJF_set4_CAM456_OBS123_diff
         plot_a_val = uvc_plotspec(
