@@ -3,9 +3,8 @@
 
 class basic_id():
     # Abstract class, mainly to document standard methods for object ids.
-    def __init__(self):
-        self._id = ()    # tuple
-        self._strid = '' # string
+    def __init__( self, *args ):
+        self.make_id(*args)
     def make_id( self, *args ):
         # Creates an id and assigns it to self._id.
         self._id = tuple([ str(a) for a in args ])
