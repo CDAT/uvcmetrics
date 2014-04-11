@@ -655,7 +655,7 @@ class plot_spec(object):
             self.variable_values[v] = value  # could be None
         varvals = self.variable_values
         for p,ps in self.single_plotspecs.iteritems():
-            print "uvcdat jfp preparing data for",ps._id
+            print "uvcdat jfp preparing data for",ps._strid
 #            if 1:
             try:
                 xrv = [ varvals[k] for k in ps.xvars ]
@@ -680,7 +680,7 @@ class plot_spec(object):
                 y3ax = apply( ps.y3func, y3rv )
 #            else:
             except Exception as e:
-                print "EXCEPTION cannot compute data for",ps._id
+                print "EXCEPTION cannot compute data for",ps._strid
                 self.plotspec_values[p] = None
                 continue
             # not used yet yaax = apply( ps.yafunc, yarv )
