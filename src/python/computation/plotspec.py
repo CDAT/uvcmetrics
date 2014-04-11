@@ -1,6 +1,7 @@
 #!/usr/local/uvcdat/1.3.1/bin/python
 
 # general-purpose classes used in computing data for plots
+from metrics.common import *
 
 class derived_var:
     def __init__( self, vid, inputs=[], outputs=['output'], func=(lambda: None) ):
@@ -26,7 +27,7 @@ class derived_var:
             self._file_attributes.update( getattr(output,'_file_attributes',{}) )
         return output
 
-class plotspec:
+class plotspec(basic_id):
     def __init__(
         self, vid,
         xvars=[], xfunc=None, x1vars=[], x1func=None,
@@ -44,6 +45,7 @@ class plotspec:
         axes may be specified - e.g. ya to substitute for y in a plot, or ya1 as an addition
         to y in the plot.
         """
+        basic_id.__init__(self,vid)
         if xfunc==None:
             if len(xvars)==0:
                 xfunc = (lambda: None)
@@ -101,7 +103,6 @@ class plotspec:
                 zfunc = (lambda z: z)
         if zrangefunc==None:
             zrangefunc = (lambda: None)
-        self._id = vid
         self.xfunc = xfunc
         self.xvars = xvars
         self.x1func = x1func
@@ -129,6 +130,6 @@ class plotspec:
         self.plottype = plottype
     def __repr__(self):
         return "plotspec _id=%s xvars=%s xfunc=%s yvars=%s yfunc=%s zvars=%s zfunc=%s" %\
-            (self._id,self.xvars,self.xfunc.__name__,self.yvars,self.yfunc.__name__,\
+            (self._strid,self.xvars,self.xfunc.__name__,self.yvars,self.yfunc.__name__,\
                  self.zvars,self.zfunc.__name__)
     
