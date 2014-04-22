@@ -12,6 +12,8 @@ class Options():
       self._opts = {}
 
       # some default valeus for some of the options
+      self._opts['translate'] = True
+      self._opts['translations'] = {}
       self._opts['compress'] = False
       self._opts['seasonally'] = False # These don't really get used, but are set anyway.
       self._opts['monthly'] = False # These don't really get used, but are set anyway.
@@ -20,7 +22,7 @@ class Options():
       self._opts['json'] = False
       self._opts['netcdf'] = False
       self._opts['climatologies'] = True
-      self._opts['plots'] = True
+      self._opts['plots'] = False
       self._opts['precomputed'] = False
 #      self._opts['realm'] = None
       self._opts['packages'] = None
@@ -30,6 +32,7 @@ class Options():
       self._opts['reltime'] = None
       self._opts['bounds'] = None
       self._opts['dsnames'] = []
+      self._opts['user_filter'] = False
       self._opts['filter'] = None
       self._opts['path'] = []
       self._opts['obspath'] = []
@@ -45,6 +48,12 @@ class Options():
 #      self.realm_types = packages.all_realms
       self.all_packages = packages.package_names
 
+   def __getitem__(self, opt):
+      return self._opts[opt]
+
+   def __setitem__(self, key, value): 
+      self._opts[key] = value
+
    def listSeasons(self):
       return all_seasons;
 
@@ -52,6 +61,13 @@ class Options():
       # The diags do not have this feature yet. It would be really nice to 
       # have plot types and descriptions of them rather than the old 
       # static NCAR "sets" concept
+      return
+
+   def listTranslations(self):
+      # Somewhere a list needs stored or generatable.
+      # Is it going to be class specific? I think probably not, so it could be with all_months or all_seasons
+      # or something similar.
+      # also, allows the user to specify an arbitrary list. that should just get postpended to the existing list
       return
 
    def listSets(self, packageid, key=None):
@@ -155,7 +171,7 @@ class Options():
 
       # temporarily replace variables
       myvars = self._opts['vars']
-      self._opts['vars'] = 'ALL'
+#      self._opts['vars'] = 'ALL'
       dtree1 = fi.dirtree_datafiles(self, pathid=0)
       filetable1 = ft.basic_filetable(dtree1, self)
       if(len(self._opts['path']) == 2):
@@ -172,7 +188,7 @@ class Options():
          
       package=self._opts['packages']
 
-      self._opts['vars'] = [myvars, 'Ocean_Heat']
+#      self._opts['vars'] = [myvars, 'Ocean_Heat']
       # this needs a filetable probably, or we just define the maximum list of variables somewhere
       im = ".".join(['metrics', 'packages', package[0], package[0]])
       if package[0] == 'lmwg':
@@ -299,7 +315,7 @@ class Options():
          help="The sets within a diagnostic package to run. Multiple sets can be specified. If multiple packages were specified, the sets specified will be searched for in each package") 
       parser.add_argument('--vars', '--var', '-v', nargs='+', 
          help="Specify variables of interest to process. The default is all variables which can also be specified with the keyword ALL") 
-      parser.add_argument('--list', '-l', nargs=1, choices=['sets', 'vars', 'variables', 'packages', 'seasons', 'plottypes', 'regions'], 
+      parser.add_argument('--list', '-l', nargs=1, choices=['sets', 'vars', 'variables', 'packages', 'seasons', 'plottypes', 'regions', 'translations'], 
          help="Determine which packages, sets, regions, and variables are available")
          # maybe eventually add compression level too....
       parser.add_argument('--compress', nargs=1, choices=['no', 'yes'],
@@ -344,11 +360,18 @@ class Options():
          help="Specify a start time in the dataset")
       parser.add_argument('--endtime', nargs=1, 
          help="Specify an end time in the dataset")
+      parser.add_argument('--translate', nargs='?', default='y',
+         help="Enable translation for obs sets to datasets. Optional provide a colon separated input to output list e.g. DSVAR1:OBSVAR1")
+
 
 
       args = parser.parse_args()
 
       if(args.list != None):
+         if args.list[0] == 'translations':
+            print "Default variable translations: "
+            self.listTranslations()
+            quit()
          if args.list[0] == 'regions':
             print "Available geographical regions: ", all_regions.keys()
             quit()
@@ -401,6 +424,7 @@ class Options():
       # TODO: Should some pre-defined filters be "nameable" here?
       if(args.filter != None): # Currently only supports one filter argument
          self._opts['filter'] = args.filter[0]
+         self._opts['user_filter'] = True
 #         for i in args.filter:
 #            self._opts['filter'].append(i[0])
 
@@ -463,6 +487,10 @@ class Options():
       if(args.output != None):
          self._opts['output'] = args.output[0]
 
+      if(args.translate != 'y'):
+         print args.translate
+         print self._opts['translate']
+         quit()
       # Timestart assumes a string like "months since 2000". I can't find documentation on
       # toRelativeTime() so I have no idea how to check for valid input
       # This is required for some of the land model sets I've seen

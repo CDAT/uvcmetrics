@@ -106,7 +106,7 @@ class basic_datafiles:
         filetable id"""
         if ftid is None:
             ftid = self.short_name()
-        cache_path = self.opts._opts['cachepath']
+        cache_path = self.opts['cachepath']
         cache_path = os.path.expanduser(cache_path)
         cache_path = os.path.abspath(cache_path)
         datafile_ls = [ f+'size'+(str(os.path.getsize(f)) if os.path.isfile(f) else '0')+\
@@ -144,7 +144,7 @@ class basic_datafiles:
         return filetable
     def clear_filetable( self):
         """Deletes (clears) the cached file table created by the corresponding call of setup_filetable"""
-        cache_path = self.opts._opts['cachepath']
+        cache_path = self.opts['cachepath']
         cache_path = os.path.expanduser(cache_path)
         cache_path = os.path.abspath(cache_path)
         # There's a problem with this: if a file is absent we definitely want to get rid of
@@ -166,18 +166,18 @@ class dirtree_datafiles( basic_datafiles ):
         self._root = None
 
         filt = None
-        if self.opts._opts['filter'] != None:
-           filt = self.opts._opts['filter']
-        if((self.opts._opts['path'] == None and pathid != None) or (self.opts._opts['obspath'] == None and obsid != None)):
+        if self.opts['filter'] != None:
+           filt = self.opts['filter']
+        if((self.opts['path'] == None and pathid != None) or (self.opts['obspath'] == None and obsid != None)):
            self._root = None
            self._filt = None
            self.files = []
            return None
 
         if pathid != None:
-           root = [ self.opts._opts['path'][pathid] ]
+           root = [ self.opts['path'][pathid] ]
         elif obsid != None:
-           root = [ self.opts._opts['obspath'][obsid] ]
+           root = [ self.opts['obspath'][obsid] ]
         else:
            print "don't understand root directory ",self._root 
            quit()
@@ -188,7 +188,7 @@ class dirtree_datafiles( basic_datafiles ):
         if filt==None: 
            filt=basic_filter()
         else:
-           filt = eval(str(self.opts._opts['filter']))
+           filt = eval(str(self.opts['filter']))
 
         self._root = root
         self._filt = filt
@@ -215,7 +215,7 @@ class dirtree_datafiles( basic_datafiles ):
 
     def short_name(self):
         if(self.opts['dsname']) != None and pathid != None:
-            return self.opts._opts['dsname'][pathid]
+            return self.opts['dsname'][pathid]
         else:
             return os.path.basename(str(self._root))
 
