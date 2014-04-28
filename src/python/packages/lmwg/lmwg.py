@@ -74,11 +74,160 @@ class lmwg_plot_spec(plot_spec):
         print 'entering lmwg_plot_spec._all_variables()'
         return lmwg_plot_spec.package._all_variables( filetable1, filetable2, "lmwg_plot_spec" )
 
+class lmwg_plot_set6(lmwg_plot_spec):
+   varlist = []
+   name = '6 - Line plots of annual trends in regional soil water/ice and temperature, runoff, snow water/ice, photosynthesis'
+   def __init__(self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None):
+      print 'Init set 6'
+      plot_spec.__init__(self, seasonid)
+      self.plottype = 'Yxvsx'
+
+      self._var_baseid = '_'.join([varid, 'set6'])
+      self.plot1_id = filetable1._id+'_'+varid
+      if filetable2 is not None:
+         self.plot2_id = filetable2._id+'_'+varid
+         self.plot3_id = filetable1._id+' - '+filetable2._id+'_'+varid
+         self.plotall_id = filetable1._id+'_'+filetable2._id+'_'+varid
+      else:
+         self.plot2_id = None
+         self.plot3_id = None
+         self.plotall_id = None
+      print 'about to plan compute'
+      if not self.computation_planned:
+         self.plan_computation(filetable1, filetable2, varid, seasonid, region, aux)
+
+   @staticmethod
+   def _list_variables(filetable1, filetable2 = None):
+      allvars = lmwg_plot_set6._all_variables(filetable1, filetable2)
+      listvars = allvars.keys()
+      listvars.sort()
+      return listvars
+   @staticmethod
+   def _all_variables(filetable1, filetable2=None):
+      allvars = lmwg_plot_spec.package._all_variables(filetable1, filetable2, "lmwg_plot_spec")
+      return allvars
+
+   def plan_computation(self, filetable1, filetable2, varid, seasonid, region, aux=None):
+      self.reduced_variables = {
+         varid+'_1':reduced_variable(
+            variableid = varid, filetable=filetable1, reduced_var_id=varid+'_1',
+            reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid))),
+         varid+'_2':reduced_variable(
+            variableid = varid, filetable=filetable2, reduced_var_id=varid+'_2',
+            reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid)))
+      }
+
+      self.derived_variables = {
+         'PREC_1': derived_var(vid='PREC_1', inputs=['RAIN_1', 'SNOW_1'], func=aplusb),
+         'PREC_2': derived_var(vid='PREC_2', inputs=['RAIN_2', 'SNOW_2'], func=aplusb)
+      }
+      self.single_plotspecs = {
+         self.plot1_id: plotspec(
+            vid=varid+'_1',
+            zvars = [varid+'_1'], zfunc=(lambda z: z),
+            plottype = self.plottype) } #,
+#            self.plot2_id: plotspec(
+#               vid=varid+'_2',
+#               zvars = [varid+'_2'], zfunc=(lambda z: z),
+#               plottype = self.plottype) }
+#            self.plot3_id: plotspec(
+#               vid=varid+'_1',
+#               zvars = [varid+'_1', varid+'_2'], zfunc=aminusb,
+#               plottype = self.plottype) }
+#            }
+      self.composite_plotspecs = {
+#               self.plotall_id: [self.plot1_id, self.plot2_id, self.plot3_id] 
+         self.plotall_id: [self.plot1_id]
+      }
+
+      self.computation_planned = True
+
+   def _results(self,newgrid=0):
+      results = plot_spec._results(self,newgrid)
+      if results is None: return None
+      return self.plotspec_values[self.plotall_id]
+         
+
+class lmwg_plot_set3(lmwg_plot_spec):
+   varlist = []
+   name = '3 - Line plots of monthly climatology: regional air temperature, precipitation, runoff, snow depth, radiative fluxes, and turbulent fluxes'
+   def __init__(self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None):
+      print 'in __init__ of lmwg set 3'
+      plot_spec.__init__(self, seasonid)
+      self.plottype = 'Yxvsx'
+
+      self._var_baseid = '_'.join([varid, 'set3'])
+      self.plot1_id = filetable1._id+'_'+varid
+      if filetable2 is not None:
+         self.plot2_id = filetable2._id+'_'+varid
+         self.plot3_id = filetable1._id+' - '+filetable2._id+'_'+varid
+         self.plotall_id = filetable1._id+'_'+filetable2._id+'_'+varid
+      else:
+         self.plot2_id = None
+         self.plot3_id = None
+         self.plotall_id = None
+      print 'about to plan compute'
+      if not self.computation_planned:
+         self.plan_computation(filetable1, filetable2, varid, seasonid, region, aux)
+
+   @staticmethod
+   def _list_variables(filetable1, filetable2 = None):
+      allvars = lmwg_plot_set3._all_variables(filetable1, filetable2)
+      listvars = allvars.keys()
+      listvars.sort()
+      return listvars
+   @staticmethod
+   def _all_variables(filetable1, filetable2=None):
+      allvars = lmwg_plot_spec.package._all_variables(filetable1, filetable2, "lmwg_plot_spec")
+      return allvars
+
+   def plan_computation(self, filetable1, filetable2, varid, seasonid, region, aux=None):
+      self.reduced_variables = {
+         varid+'_1':reduced_variable(
+            variableid = varid, filetable=filetable1, reduced_var_id=varid+'_1',
+            reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid))),
+         varid+'_2':reduced_variable(
+            variableid = varid, filetable=filetable2, reduced_var_id=varid+'_2',
+            reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid)))
+      }
+
+      self.derived_variables = {
+         'PREC_1': derived_var(vid='PREC_1', inputs=['RAIN_1', 'SNOW_1'], func=aplusb),
+         'PREC_2': derived_var(vid='PREC_2', inputs=['RAIN_2', 'SNOW_2'], func=aplusb)
+      }
+      self.single_plotspecs = {
+         self.plot1_id: plotspec(
+            vid=varid+'_1',
+            zvars = [varid+'_1'], zfunc=(lambda z: z),
+            plottype = self.plottype) } #,
+#            self.plot2_id: plotspec(
+#               vid=varid+'_2',
+#               zvars = [varid+'_2'], zfunc=(lambda z: z),
+#               plottype = self.plottype) }
+#            self.plot3_id: plotspec(
+#               vid=varid+'_1',
+#               zvars = [varid+'_1', varid+'_2'], zfunc=aminusb,
+#               plottype = self.plottype) }
+#            }
+      self.composite_plotspecs = {
+#               self.plotall_id: [self.plot1_id, self.plot2_id, self.plot3_id] 
+         self.plotall_id: [self.plot1_id]
+      }
+
+      self.computation_planned = True
+
+   def _results(self,newgrid=0):
+      results = plot_spec._results(self,newgrid)
+      if results is None: return None
+      return self.plotspec_values[self.plotall_id]
+         
+
+   
 # plot set classes we need which I haven't done yet:
 class lmwg_plot_set1(lmwg_plot_spec):
    varlist = []
    name = '1 - Line plots of annual trends in energy balance, soil water/ice and temperature, runoff, snow water/ice, photosynthesis '
-   def __init__(self, filetable1, filetable2, varid, seasonid=None, aux=None):
+   def __init__(self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None):
       print 'in __init__ of lmwg set 1'
       plot_spec.__init__(self,seasonid)
       self.plottype = 'Yxvsx'
@@ -97,7 +246,7 @@ class lmwg_plot_set1(lmwg_plot_spec):
       print 'about to plan compute'
       if not self.computation_planned:
          print 'computing'
-         self.plan_computation(filetable1, filetable2, varid, seasonid, aux)
+         self.plan_computation(filetable1, filetable2, varid, seasonid, region, aux)
 
       print 'done'
 
@@ -114,7 +263,7 @@ class lmwg_plot_set1(lmwg_plot_spec):
       allvars = lmwg_plot_spec.package._all_variables(filetable1, filetable2, "lmwg_plot_spec")
       return allvars
 
-   def plan_computation(self, filetable1, filetable2, varid, seasonid, aux=None):
+   def plan_computation(self, filetable1, filetable2, varid, seasonid, region=None, aux=None):
       print 'PLAN COMPUTATION CALLED args:', filetable1, filetable2, varid, seasonid
       self.reduced_variables = {
          varid+'_1':reduced_variable(
@@ -160,7 +309,7 @@ class lmwg_plot_set1(lmwg_plot_spec):
 class lmwg_plot_set2(lmwg_plot_spec):
    varlist = []
    name = '2 - Horizontal contour plots of DJF, MAM, JJA, SON, and ANN means'
-   def __init__( self, filetable1, filetable2, varid, seasonid=None, aux=None):
+   def __init__( self, filetable1, filetable2, varid, seasonid=None, regiond=None, aux=None):
       """filetable1, filetable2 should be filetables for two datasets for now. Need to figure
       out obs data stuff for lmwg at some point
       varid is a string identifying the variable to be plotted, e.g. 'TREFHT'.
@@ -186,7 +335,7 @@ class lmwg_plot_set2(lmwg_plot_spec):
 
    
       if not self.computation_planned:
-         self.plan_computation( filetable1, filetable2, varid, seasonid, aux )
+         self.plan_computation( filetable1, filetable2, varid, seasonid, region, aux )
 
    @staticmethod
    def _list_variables( filetable1, filetable2=None ):
@@ -212,7 +361,7 @@ class lmwg_plot_set2(lmwg_plot_spec):
       return allvars
 
    # This seems like variables should be a dictionary... Varname, components, operation, units, etc
-   def plan_computation( self, filetable1, filetable2, varid, seasonid, aux=None):
+   def plan_computation( self, filetable1, filetable2, varid, seasonid, region=None, aux=None):
       print 'plan compute called'
       self.reduced_variables = {}
       self.reduced_variables[varid+'_1'] = reduced_variable(variableid = varid, 
@@ -262,13 +411,9 @@ class lmwg_plot_set2(lmwg_plot_spec):
 
 
 
-class lmwg_plot_set3(lmwg_plot_spec):
-    pass
 class lmwg_plot_set4(lmwg_plot_spec):
     pass
 class lmwg_plot_set5(lmwg_plot_spec):
-    pass
-class lmwg_plot_set6(lmwg_plot_spec):
     pass
 class lmwg_plot_set7(lmwg_plot_spec):
     pass

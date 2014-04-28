@@ -479,6 +479,52 @@ def reduce2lat_seasonal( mv, seasons=seasonsyr, vid=None ):
     avmv.units = mv.units
     return avmv
 
+# Used for lmwg set 6
+def reduceAnnTrendRegion(mv, region, vid=None):
+# Need to compute year1, year2, ... yearN individual climatologies then get a line plot.
+   if vid == None:
+      vid = 'reduced_'+mv.id
+
+   timeax = timeAxis(mv)
+   if timeax is not None and timeax.getBounds() == None:
+      timeax._bounds_ = timeax.genGenericBounds()
+   if timeax is not None:
+      mvsub = mv(latitude=(region[0], region[1]), longitude=(region[2], region[3]))
+      mvann = cdutil.times.YEAR(mvsub) 
+   else:
+      mvann = mv
+
+   print 'Calculating land averages...'
+   mvtrend = cdutil.averager(mvann, axis='xy')
+   mvtrend.id = vid
+   if hasattr(mv, 'units'): mvtrend.units = mv.units # probably needs some help
+   print 'Returning mvtrend: ', mvtrend
+   return mvtrend
+
+# Used for lmwg set 3
+def reduceMonthlyTrendRegion(mv, region, vid=None):
+# it would be nice if it was easy to tell if these climos were already done
+# but annualcycle is pretty fast.
+   vals = []
+   if vid == None:
+      vid = 'reduced_'+mv.id
+   timeax = timeAxis(mv)
+   if timeax is not None and timeax.getBounds() == None:
+      timeax._bounds_ = timeax.genGenericBounds()
+   if timeax is not None:
+      # first, spatially subset
+      mvsub = mv(latitude=(region[0], region[1]), longitude=(region[2], region[3]))
+      mvtrend = cdutil.times.ANNUALCYCLE.climatology(mvsub)
+   else:
+      mvtrend = mv
+
+   mvvals = cdutil.averager(mvtrend, axis='xy')
+
+   mvvals.id = vid
+   if hasattr(mv, 'units'): mvvals.units = mv.units # probably needs some help
+   print 'Returning ', mvvals
+   return mvvals
+
 # N.B. The following function is specific to LMWG but almost general
 def reduceAnnTrend(mv, vid=None):
    # This does a annual climatology, then a spatial average of a variable. result is basically a list
