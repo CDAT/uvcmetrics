@@ -1296,7 +1296,10 @@ class reduced_variable(ftrow,basic_id):
                       reduction_function=(lambda x,vid=None: x),\
                       filetable=None, axes=None, duvs={}, rvs={}
                   ):
-        basic_id.__init__( self, reduced_var_id )
+        if reduced_var_id is not None:
+            basic_id.__init__( self, reduced_var_id )
+        else:
+            basic_id.__init__( self, variableid, filetable )
         self._season = season
         ftrow.__init__( self, fileid, variableid, timerange, latrange, lonrange, levelrange )
         self._reduction_function = reduction_function
