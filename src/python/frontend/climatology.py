@@ -126,18 +126,32 @@ def compute_and_write_climatologies( varkeys, reduced_variables, season, case=''
 
 def test_driver(opts):
     """ Test driver for setting up data for plots"""
+    print opts._opts
+    # This script should just generate climos 
+    opts._opts['plots'] = False
     datafiles1 = dirtree_datafiles(opts, pathid = 0)
     filetable1 = basic_filetable(datafiles1, opts)
-    cseasons = ['ANN','DJF','MAM','JJA','SON',
-                'JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC']
+
+    myvars = opts._opts['vars']
+    if myvars == ['ALL']:
+        myvars = filetable1.list_variables() 
+
+    cseasons = opts._opts['times']
+    if cseasons == []:
+       print 'Defaulting to all seasons'
+       cseasons = ['ANN','DJF','MAM','JJA','SON',
+                   'JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC']
+
     #cseasons = ['ANN', 'DJF', 'JJA' ] 
     #cseasons = ['JAN']
     case = ''
 
+    print cseasons
     for season in cseasons:
+        print 'Processing ', season
 
         reduced_variables1 = { var+'_'+season:climatology_variable(var,filetable1,season)
-                               for var in filetable1.list_variables() }
+                               for var in myvars }
         # example:             for var in ['TREFHT','FLNT','SOILC']}
         #reduced_variables = {
         #    'TREFHT_ANN': reduced_variable(

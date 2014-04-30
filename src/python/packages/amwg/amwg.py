@@ -610,7 +610,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
         self.plotall_id = ft1id+'_'+ft2id+'_'+varid+'_'+seasonid
 
         if not self.computation_planned:
-            self.plan_computation( filetable1, filetable2, varid, seasonid, aux )
+            self.plan_computation( filetable1, filetable2, varid, seasonid, region, aux )
     @staticmethod
     def _list_variables( filetable1, filetable2=None ):
         print '5 and 6 _list_vars'
@@ -629,9 +629,9 @@ class amwg_plot_set5and6(amwg_plot_spec):
         return allvars
     def plan_computation( self, filetable1, filetable2, varid, seasonid, region=None, aux=None ):
         if isinstance(aux,Number):
-            return self.plan_computation_level_surface( filetable1, filetable2, varid, seasonid, aux )
+            return self.plan_computation_level_surface( filetable1, filetable2, varid, seasonid, region, aux )
         else:
-            return self.plan_computation_normal_contours( filetable1, filetable2, varid, seasonid, aux )
+            return self.plan_computation_normal_contours( filetable1, filetable2, varid, seasonid, region, aux )
     def plan_computation_normal_contours( self, filetable1, filetable2, varid, seasonid, region=None, aux=None ):
         """Set up for a lat-lon contour plot, as in plot set 5.  Data is averaged over all other
         axes."""
@@ -670,7 +670,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
             self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id, self.plot1var_id ]
             }
         self.computation_planned = True
-    def plan_computation_level_surface( self, filetable1, filetable2, varid, seasonid, aux ):
+    def plan_computation_level_surface( self, filetable1, filetable2, varid, seasonid, region, aux ):
         """Set up for a lat-lon contour plot, averaged in other directions - except that if the
         variable to be plotted depend on level, it is not averaged over level.  Instead, the value
         at a single specified pressure level, aux, is used. The units of aux are millbars."""
