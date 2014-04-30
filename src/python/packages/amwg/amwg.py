@@ -332,14 +332,16 @@ class amwg_plot_set3(amwg_plot_spec):
             variableid=varid,
             filetable=filetable1, season=self.season,
             reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,self.season,vid=vid)) )
-        self.reduced_variables[varid+'_1'] = y1var
-        y1var._vid = varid+'_1'
+        self.reduced_variables[y1var._strid] = y1var
+        #self.reduced_variables[varid+'_1'] = y1var
+        #y1var._vid = varid+'_1'      # _vid is deprecated
         y2var = reduced_variable(
             variableid=varid,
             filetable=filetable2, season=self.season,
             reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,self.season,vid=vid)) )
-        self.reduced_variables[varid+'_2'] = y2var
-        y2var._vid = varid+'_2'
+        self.reduced_variables[y2var._strid] = y2var
+        #self.reduced_variables[varid+'_2'] = y2var
+        #y2var._vid = varid+'_2'      # _vid is deprecated
         self.plot_a = basic_two_line_plot( y1var, y2var )
         ft1id,ft2id = filetable_ids(filetable1,filetable2)
         vid = '_'.join([self._var_baseid,ft1id,ft2id,'diff'])
@@ -355,12 +357,14 @@ class amwg_plot_set3(amwg_plot_spec):
         y1var = self.plot_a.y1vars[0]
         y2var = self.plot_a.y2vars[0]
         #y1val = y1var.reduce()
-        y1val = self.variable_values[y1var._vid]
+        y1val = self.variable_values[y1var._strid]
+        #y1val = self.variable_values[y1var._vid] # _vid is deprecated
         if y1val is None: return None
         y1unam = y1var._filetable._strid  # unique part of name for y1, e.g. CAM456
         y1val.id = '_'.join([self._var_baseid,y1unam])  # e.g. CLT_DJF_set3_CAM456
         #y2val = y2var.reduce()
-        y2val = self.variable_values[y2var._vid]
+        y2val = self.variable_values[y2var._strid]
+        y2val = self.variable_values[y2var._vid] # _vid is deprecated
         if y2val is None: return None
         y2unam = y2var._filetable._strid  # unique part of name for y2, e.g. NCEP
         y2val.id = '_'.join([self._var_baseid,y2unam])  # e.g. CLT_DJF_set3_NCEP
