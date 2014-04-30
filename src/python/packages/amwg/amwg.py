@@ -148,7 +148,7 @@ class amwg_plot_set2(amwg_plot_spec):
     The data presented is averaged over everything but latitude.
     """
     name = ' 2 - Line Plots of Annual Implied Northward Transport'
-    def __init__( self, filetable1, filetable2, varid, seasonid=None, aux=None ):
+    def __init__( self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the derived variable to be plotted, e.g. 'Ocean_Heat'.
         The seasonid argument will be ignored."""
@@ -319,7 +319,7 @@ class amwg_plot_set3(amwg_plot_spec):
     # N.B. In plot_data.py, the plotspec contained keys identifying reduced variables.
     # Here, the plotspec contains the variables themselves.
     name = ' 3 - Line Plots of  Zonal Means'
-    def __init__( self, filetable1, filetable2, varid, seasonid=None, aux=None ):
+    def __init__( self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'."""
         plot_spec.__init__(self,seasonid)
@@ -364,7 +364,7 @@ class amwg_plot_set3(amwg_plot_spec):
         y1val.id = '_'.join([self._var_baseid,y1unam])  # e.g. CLT_DJF_set3_CAM456
         #y2val = y2var.reduce()
         y2val = self.variable_values[y2var._strid]
-        y2val = self.variable_values[y2var._vid] # _vid is deprecated
+        #y2val = self.variable_values[y2var._vid] # _vid is deprecated
         if y2val is None: return None
         y2unam = y2var._filetable._strid  # unique part of name for y2, e.g. NCEP
         y2val.id = '_'.join([self._var_baseid,y2unam])  # e.g. CLT_DJF_set3_NCEP
@@ -393,7 +393,7 @@ class amwg_plot_set4(amwg_plot_spec):
     # N.B. In plot_data.py, the plotspec contained keys identifying reduced variables.
     # Here, the plotspec contains the variables themselves.
     name = ' 4 - Vertical Contour Plots Zonal Means'
-    def __init__( self, filetable1, filetable2, varid, seasonid=None, aux=None ):
+    def __init__( self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'.
         At the moment we assume that data from filetable1 has CAM hybrid levels,
@@ -592,7 +592,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
     the difference between the two.  A plot's x-axis is longitude and its y-axis is the latitude;
     normally a world map will be overlaid.
     """
-    def __init__( self, filetable1, filetable2, varid, seasonid=None, aux=None ):
+    def __init__( self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the variable to be plotted, e.g. 'TREFHT'.
         seasonid is a string such as 'DJF'."""
@@ -627,12 +627,12 @@ class amwg_plot_set5and6(amwg_plot_spec):
             filetable1, filetable2, "amwg_plot_spec" ):
             allvars[varname] = basic_level_variable
         return allvars
-    def plan_computation( self, filetable1, filetable2, varid, seasonid, aux=None ):
+    def plan_computation( self, filetable1, filetable2, varid, seasonid, region=None, aux=None ):
         if isinstance(aux,Number):
             return self.plan_computation_level_surface( filetable1, filetable2, varid, seasonid, aux )
         else:
             return self.plan_computation_normal_contours( filetable1, filetable2, varid, seasonid, aux )
-    def plan_computation_normal_contours( self, filetable1, filetable2, varid, seasonid, aux=None ):
+    def plan_computation_normal_contours( self, filetable1, filetable2, varid, seasonid, region=None, aux=None ):
         """Set up for a lat-lon contour plot, as in plot set 5.  Data is averaged over all other
         axes."""
         self.reduced_variables = {
