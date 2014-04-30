@@ -1281,7 +1281,7 @@ def run_cdscan( fam, famfiles, cache_path=None ):
         quit()
     return xml_name
 
-class reduced_variable(ftrow):
+class reduced_variable(ftrow,basic_id):
     """Specifies a 'reduced variable', which is a single-valued part of an output specification.
     This would be a variable(s) and its domain, a reduction function, and perhaps
     an axis or two describing the domain after applying the reduction function.
@@ -1296,14 +1296,15 @@ class reduced_variable(ftrow):
                       reduction_function=(lambda x,vid=None: x),\
                       filetable=None, axes=None, duvs={}, rvs={}
                   ):
+        basic_id.__init__( self, reduced_var_id )
         self._season = season
         ftrow.__init__( self, fileid, variableid, timerange, latrange, lonrange, levelrange )
         self._reduction_function = reduction_function
         self._axes = axes
-        if reduced_var_id is None:
-            self._vid = ""
-        else:
-            self._vid = reduced_var_id
+        #if reduced_var_id is None:      # self._vid is deprecated
+        #    self._vid = ""      # self._vid is deprecated
+        #else:
+        #    self._vid = reduced_var_id      # self._vid is deprecated
         if filetable==None:
             print "ERROR.  No filetable specified for reduced_variable instance",variableid
         self._filetable = filetable
@@ -1395,7 +1396,8 @@ class reduced_variable(ftrow):
             print "filetable is",self._filetable
             return None
         if vid is None:
-            vid = self._vid
+            #vid = self._vid      # self._vid is deprecated
+            vid = self._strid
 
         filename = self.get_variable_file( self.variableid )
 #        print 'FILENAME->', filename

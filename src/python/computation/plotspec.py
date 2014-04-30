@@ -3,9 +3,10 @@
 # general-purpose classes used in computing data for plots
 from metrics.common import *
 
-class derived_var:
+class derived_var(basic_id):
     def __init__( self, vid, inputs=[], outputs=['output'], func=(lambda: None) ):
-        self._vid = vid
+        basic_id.__init__(self,vid)  # often vid is like VAR_1.  Better then to input VAR,1.
+        #self._vid = self._strid      # self._vid is deprecated
         self._inputs = inputs
         self._outputs = outputs
         self._func = func
@@ -20,10 +21,12 @@ class derived_var:
         if type(output) is tuple or type(output) is list:
             for o in output:
                 if o is None: return None
-                o._vid  = self._vid
+                #o._vid  = self._vid      # self._vid is deprecated
+                self.adopt( o )  # o gets ids of self
                 self._file_attributes.update( getattr(o,'_file_attributes',{}) )
         elif output is not None:
-            output._vid = self._vid
+            #output._vid = self._vid      # self._vid is deprecated
+            self.adopt( output )  # output gets ids of self
             self._file_attributes.update( getattr(output,'_file_attributes',{}) )
         return output
 
