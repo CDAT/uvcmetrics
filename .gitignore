@@ -4,4 +4,6 @@ build
 *~
 *swp*
 *.o
+git.py
+
 
