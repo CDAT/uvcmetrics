@@ -613,9 +613,13 @@ class plot_spec(object):
         yls = []
         for y in vars:
             if type(y) is tuple:
-                yl = getattr(y[0],'_vid',None)
+                yl = getattr(y[0],'_strid',None)
+                if yl is None:
+                    yl = getattr(y[0],'_vid',None)  # deprecated attribute
             else:
-                yl = getattr(y,'_vid',None)
+                yl = getattr(y,'_strid',None)
+                if yl is None:
+                    yl = getattr(y,'_vid',None)  # deprecated attribute
             if yl is not None:
                 yls.append( yl )
         new_id = '_'.join(yls)
