@@ -108,7 +108,7 @@ def plotdata_results( p ):
 # ----------------
 
 def setup_filetable( search_path, cache_path, ftid=None, search_filter=None ):
-    print "jfp in setup_filetable, search_path=",search_path," search_filter=",search_filter
+    #print "jfp in setup_filetable, search_path=",search_path," search_filter=",search_filter
     #try:
     datafiles = dirtree_datafiles( search_path, search_filter )
     return datafiles.setup_filetable( cache_path, ftid )
@@ -137,14 +137,13 @@ class uvc_composite_plotspec():
         for p in self.plots:
             p.finalize()
     def outfile( self, format='xml-NetCDF', where=""):
-        print "jfp self.title=",self.title
         if len(self.title)<=0:
             fname = 'foo.xml'
         else:
             fname = (self.title.strip()+'.xml').replace(' ','_')[:115]  # 115 is to constrain file size
             fname = fname+'.xml'
         filename = os.path.join(where,fname)
-        print "output to",filename
+        #print "output to",filename
         return filename
     def write_plot_data( self, format="", where="" ):
         if format=="" or format=="xml" or format=="xml-NetCDF" or format=="xml file":
@@ -159,10 +158,10 @@ class uvc_composite_plotspec():
         for p in self.plots:
             p.write_plot_data( contents_format, where )
 
-        print "jfp format=",format
-        print "jfp where=",where
+        #print "jfp format=",format
+        #print "jfp where=",where
         filename = self.outfile( format, where )
-        print "jfp filename=",filename
+        #print "jfp filename=",filename
         writer = open( filename, 'w' )    # later, choose a better name and a path!
         writer.write("<plotdata>\n")
         for p in self.plots:
@@ -330,7 +329,7 @@ class uvc_simple_plotspec():
         for vid in var_ids:
             vids = vid+self_suffix
             vidp = vid+pset_suffix
-            print "first one jfp vid,vids,vidp=",vid,vids,vidp
+            #print "first one jfp vid,vids,vidp=",vid,vids,vidp
             varmax = max( self.varmax[vids], pset.varmax[vidp] )
             varmin = min( self.varmin[vids], pset.varmin[vidp] )
             self.varmax[vids] = varmax
@@ -365,7 +364,7 @@ class uvc_simple_plotspec():
             varmin = self.varmin[vids]
             for i in range(len(psets)):
                 vidp = vid+pset_suffices[i]
-                print "second one jfp vid,vids,vidp=",vid,vids,vidp
+                #print "second one jfp vid,vids,vidp=",vid,vids,vidp
                 varmax = max( varmax, psets[i].varmax[vidp] )
                 varmin = min( varmin, psets[i].varmin[vidp] )
             self.varmax[vids] = varmax
@@ -400,7 +399,7 @@ class uvc_simple_plotspec():
         else:
             fname = (self.title.strip()+'.nc').replace(' ','_')
         filename = os.path.join(where,fname)
-        print "output to",filename
+        #print "output to",filename
         return filename
     def write_plot_data( self, format="", where="" ):
         # This is just experimental code, so far.
@@ -427,7 +426,7 @@ class uvc_simple_plotspec():
         writer.presentation = self.ptype
         plot_these = []
         for zax in self.vars:
-            print "jfp zax.id=",zax.id
+            #print "jfp zax.id=",zax.id
             writer.write( zax )
             plot_these.append( zax.id )
         writer.plot_these = ' '.join(plot_these)
@@ -685,6 +684,7 @@ class plot_spec(object):
 #            else:
             except Exception as e:
                 print "EXCEPTION cannot compute data for",ps._strid
+                print "Exception is",e
                 self.plotspec_values[p] = None
                 continue
             # not used yet yaax = apply( ps.yafunc, yarv )
