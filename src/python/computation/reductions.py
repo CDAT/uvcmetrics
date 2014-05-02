@@ -953,7 +953,10 @@ def aminusb_ax2( mv1, mv2 ):
         b = mv2
         ab_axes.append(axes2[1])
     aminusb = a - b
-    aminusb.id = mv1.id
+    #aminusb.id = mv1.id
+    aminusb.id = 'difference of '+mv1.id
+    aminusb.long_name = 'difference of '+mv1.long_name
+    if hasattr(mv1,'units'):  aminusb.units = mv1.units
     aminusb.initDomain( ab_axes )
     return aminusb
 
@@ -1054,7 +1057,10 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
             mv1.regridded = mv1new.id   # a GUI can use this
             regridded_vars[mv1new.id] = mv1new
     aminusb = mv1new - mv2new
-    aminusb.id = mv1.id
+    #aminusb.id = mv1.id
+    aminusb.id = 'difference of '+mv1.id
+    aminusb.long_name = 'difference of '+mv1.long_name
+    if hasattr(mv1,'units'):  aminusb.units = mv1.units
     return aminusb
 
 def aminusb_1ax( mv1, mv2 ):
