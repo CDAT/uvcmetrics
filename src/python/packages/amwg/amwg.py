@@ -6,6 +6,7 @@
 from metrics.packages.diagnostic_groups import *
 from metrics.computation.reductions import *
 from metrics.frontend.uvcdat import *
+from metrics.common.id import *
 from unidata import udunits
 import cdutil.times
 from numbers import Number
@@ -16,39 +17,22 @@ class AMWG(BasicDiagnosticGroup):
     def __init__(self):
         pass
     def list_variables( self, filetable1, filetable2=None, diagnostic_set_name="" ):
-        print 'IN LIST VARS CLASS'
         if diagnostic_set_name!="":
-#            print 'SET NAME WAS != "", set name=', diagnostic_set_name
-#            sets = self.list_diagnostic_sets()
-#            dset = sets.get(diagnostic_set_name, None)
-#            print 'new dset: ', dset
-#            print 'SET LIST: ', sets
-#            print 'SET LIST KEYS:' ,sets.keys()
-#            print 'set name in keys? :'
-#            if diagnostic_set_name in sets.keys():
-#               dset = sets[diagnostic_set_name]
-#            else:
-#               dset = None
             # I added str() where diagnostic_set_name is set, but jsut to be sure.
             # spent 2 days debuging a QT Str failing to compare to a "regular" python str
             dset = self.list_diagnostic_sets().get( str(diagnostic_set_name), None )
 
             if dset is None:
-                print 'DSET WAS NONE'
                 return self._list_variables( filetable1, filetable2 )
             else:   # Note that dset is a class not an object.
-                print 'DSET WAS NOT NONE'
                 return dset._list_variables( filetable1, filetable2 )
         else:
-            print 'OUTER ELSE CLAUSE'
             return self._list_variables( filetable1, filetable2 )
     @staticmethod
     def _list_variables( filetable1, filetable2=None, diagnostic_set_name="" ):
-        print 'class level list_vars ****'
         return BasicDiagnosticGroup._list_variables( filetable1, filetable2, diagnostic_set_name )
     @staticmethod
     def _all_variables( filetable1, filetable2, diagnostic_set_name ):
-        print 'class level _all_vars ****'
         return BasicDiagnosticGroup._all_variables( filetable1, filetable2, diagnostic_set_name )
     def list_variables_with_levelaxis( self, filetable1, filetable2=None, diagnostic_set="" ):
         """like list_variables, but only returns variables which have a level axis
@@ -99,11 +83,11 @@ def filetable_ids( filetable1, filetable2 ):
         if filetable1 is None:
             ft1id = ''
         else:
-            ft1id  = filetable1._id
+            ft1id  = filetable1._strid
         if filetable2 is None:
             ft2id = ''
         else:
-            ft2id  = filetable2._id
+            ft2id  = filetable2._strid
         return ft1id,ft2id
 
 class amwg_plot_spec(plot_spec):
@@ -152,7 +136,6 @@ class amwg_plot_set2(amwg_plot_spec):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the derived variable to be plotted, e.g. 'Ocean_Heat'.
         The seasonid argument will be ignored."""
-        print '**** SET 2 INIT ******'
         plot_spec.__init__(self,seasonid)
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
         self.plottype='Yxvsx'
@@ -160,7 +143,6 @@ class amwg_plot_set2(amwg_plot_spec):
         if varid not in vars:
             print "In amwg_plot_set2 __init__, ignoring varid input, will compute Ocean_Heat"
             varid = vars[0]
-        self._var_baseid = '_'.join([varid,'set2'])   # e.g. Ocean_Heat_set2
         print "Warning: amwg_plot_set2 only uses NCEP obs, and will ignore any other obs specification."
         # TO DO: Although model vs NCEP obs is all that NCAR does, there's no reason why we
         # TO DO: shouldn't support something more general, at least model vs model.
@@ -168,11 +150,9 @@ class amwg_plot_set2(amwg_plot_spec):
             self.plan_computation( filetable1, filetable2, varid, seasonid )
     @staticmethod
     def _list_variables( self, filetable1=None, filetable2=None ):
-        print '**** CALLED LIST VARS IN SET2**** '
         return ['Ocean_Heat']
     @staticmethod
     def _all_variables( self, filetable1, filetable2=None ):
-        print '**** CALLED ALLVARS IN SET2**** '
         return { vn:basic_plot_variable for vn in amwg_plot_set2._list_variables( filetable1, filetable2 ) }
     def plan_computation( self, filetable1, filetable2, varid, seasonid ):
         # CAM variables needed for heat transport: (SOME ARE SUPERFLUOUS <<<<<<)
@@ -310,7 +290,7 @@ class amwg_plot_set2(amwg_plot_spec):
         return self.plotspec_values['CAM_NCEP_HEAT_TRANSPORT_ALL']
 
 
-class amwg_plot_set3(amwg_plot_spec):
+class amwg_plot_set3(amwg_plot_spec,basic_id):
     """represents one plot from AMWG Diagnostics Plot Set 3.
     Each such plot is a pair of plots: a 2-line plot comparing model with obs, and
     a 1-line plot of the model-obs difference.  A plot's x-axis is latitude, and
@@ -322,9 +302,9 @@ class amwg_plot_set3(amwg_plot_spec):
     def __init__( self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'."""
+        basic_id.__init__(self,varid,seasonid)
         plot_spec.__init__(self,seasonid)
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
-        self._var_baseid = '_'.join([varid,seasonid,'set3'])   # e.g. CLT_DJF_set3
         if not self.computation_planned:
             self.plan_computation( filetable1, filetable2, varid, seasonid )
     def plan_computation( self, filetable1, filetable2, varid, seasonid ):
@@ -332,18 +312,20 @@ class amwg_plot_set3(amwg_plot_spec):
             variableid=varid,
             filetable=filetable1, season=self.season,
             reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,self.season,vid=vid)) )
-        self.reduced_variables[varid+'_1'] = y1var
-        y1var._vid = varid+'_1'
+        self.reduced_variables[y1var._strid] = y1var
+        #self.reduced_variables[varid+'_1'] = y1var
+        #y1var._vid = varid+'_1'      # _vid is deprecated
         y2var = reduced_variable(
             variableid=varid,
             filetable=filetable2, season=self.season,
             reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,self.season,vid=vid)) )
-        self.reduced_variables[varid+'_2'] = y2var
-        y2var._vid = varid+'_2'
+        self.reduced_variables[y2var._strid] = y2var
+        #self.reduced_variables[varid+'_2'] = y2var
+        #y2var._vid = varid+'_2'      # _vid is deprecated
         self.plot_a = basic_two_line_plot( y1var, y2var )
         ft1id,ft2id = filetable_ids(filetable1,filetable2)
-        vid = '_'.join([self._var_baseid,ft1id,ft2id,'diff'])
-        # ... e.g. CLT_DJF_set3_CAM456_NCEP_diff
+        vid = '_'.join([self._id[0],self._id[1],ft1id,ft2id,'diff'])
+        # ... e.g. CLT_DJF_ft1_ft2_diff
         self.plot_b = one_line_diff_plot( y1var, y2var, vid )
         self.computation_planned = True
     def _results(self,newgrid=0):
@@ -355,25 +337,26 @@ class amwg_plot_set3(amwg_plot_spec):
         y1var = self.plot_a.y1vars[0]
         y2var = self.plot_a.y2vars[0]
         #y1val = y1var.reduce()
-        y1val = self.variable_values[y1var._vid]
+        y1val = self.variable_values[y1var._strid]
+        #y1val = self.variable_values[y1var._vid] # _vid is deprecated
         if y1val is None: return None
-        y1unam = y1var._filetable._id  # unique part of name for y1, e.g. CAM456
-        y1val.id = '_'.join([self._var_baseid,y1unam])  # e.g. CLT_DJF_set3_CAM456
-        #y2val = y2var.reduce()
-        y2val = self.variable_values[y2var._vid]
+        print "jfp in plot set 3 results, y1var id=",y1var._id," y1var strid=",y1var._strid
+        y1unam = y1var._filetable._strid  # part of y1 distinguishing it from y2, e.g. ft_1
+        y1val.id = '_'.join([self._id[0],self._id[1],y1unam])
+        y2val = self.variable_values[y2var._strid]
         if y2val is None: return None
-        y2unam = y2var._filetable._id  # unique part of name for y2, e.g. NCEP
-        y2val.id = '_'.join([self._var_baseid,y2unam])  # e.g. CLT_DJF_set3_NCEP
+        y2unam = y2var._filetable._strid  # part of y2 distinguishing it from y1, e.g. ft_2
+        y2val.id = '_'.join([self._id[0],self._id[1],y2unam])
         ydiffval = apply( self.plot_b.yfunc, [y1val,y2val] )
-        ydiffval.id = '_'.join([self._var_baseid, y1var._filetable._id, y2var._filetable._id,
-                                'diff'])
+        ydiffval.id = '_'.join([self._id[0],self._id[1],
+                                y1var._filetable._strid, y2var._filetable._strid, 'diff'])
         # ... e.g. CLT_DJF_set3_CAM456_NCEP_diff
         plot_a_val = uvc_plotspec(
             [y1val,y2val],'Yxvsx', labels=[y1unam,y2unam],
-            title=' '.join([self._var_baseid,y1unam,'and',y2unam]))
+            title=' '.join([self._id[0],self._id[1],y1unam,'and',y2unam]))
         plot_b_val = uvc_plotspec(
             [ydiffval],'Yxvsx', labels=['difference'],
-            title=' '.join([self._var_baseid,y1unam,'-',y2unam]))
+            title=' '.join([self._id[0],self._id[1],y1unam,'-',y2unam]))
         plot_a_val.synchronize_ranges(plot_b_val)
         plot_a_val.finalize()
         plot_b_val.finalize()
@@ -394,40 +377,37 @@ class amwg_plot_set4(amwg_plot_spec):
         varid is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'.
         At the moment we assume that data from filetable1 has CAM hybrid levels,
         and data from filetable2 has pressure levels."""
-        print 'SET 4 INIT CALLED'
         plot_spec.__init__(self,seasonid)
         self.plottype = 'Isofill'
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
-        self._var_baseid = '_'.join([varid,seasonid,'set4'])   # e.g. CLT_DJF_set4
         ft1id,ft2id = filetable_ids(filetable1,filetable2)
         self.plot1_id = '_'.join([ft1id,varid,seasonid,'contour'])
         self.plot2_id = '_'.join([ft2id,varid,seasonid,'contour'])
         self.plot3_id = '_'.join([ft1id+'-'+ft2id,varid,seasonid,'contour'])
         self.plotall_id = '_'.join([ft1id,ft2id,varid,seasonid])
         if not self.computation_planned:
-            print 'SET 4 PLAN COMPUTING CALLING'
             self.plan_computation( filetable1, filetable2, varid, seasonid )
-    def reduced_variables_press_lev( self, filetable, varid, seasonid, ftno ):
-        ft_no = '_'+ftno  # e.g. '_1' or '_2'
+    def reduced_variables_press_lev( self, filetable, varid, seasonid, ftno=None ):
+        #ft_no = '_'+ftno  # e.g. '_1' or '_2'
         reduced_variables = {
-            varid+ft_no: reduced_variable(
-                variableid=varid, filetable=filetable, reduced_var_id=varid+ft_no, season=self.season,
+            (varid,seasonid,filetable._strid): reduced_variable(
+                variableid=varid, filetable=filetable, season=self.season,
                 reduction_function=(lambda x,vid=None: reduce2levlat_seasonal(x,self.season,vid=vid)) ) }
         return reduced_variables
-    def reduced_variables_hybrid_lev( self, filetable, varid, seasonid, ftno ):
-        ft_no = '_'+ftno  # e.g. '_1' or '_2'
+    def reduced_variables_hybrid_lev( self, filetable, varid, seasonid, ftno=None ):
+        #ft_no = '_'+ftno  # e.g. '_1' or '_2'
         reduced_variables = {
-            varid+ft_no: reduced_variable(
-                variableid=varid, filetable=filetable, reduced_var_id=varid+ft_no, season=self.season,
+            (varid,seasonid,filetable._strid): reduced_variable(
+                variableid=varid, filetable=filetable, season=self.season,
                 reduction_function=(lambda x,vid=None: reduce2levlat_seasonal(x,self.season,vid=vid)) ),
-            'hyam'+ft_no: reduced_variable(      # hyam=hyam(lev)
-                variableid='hyam', filetable=filetable, reduced_var_id='hyam'+ft_no, season=self.season,
+            ('hyam',seasonid,filetable._strid): reduced_variable(      # hyam=hyam(lev)
+                variableid='hyam', filetable=filetable, season=self.season,
                 reduction_function=(lambda x,vid=None: x) ),
-            'hybm'+ft_no: reduced_variable(      # hybm=hybm(lev)
-                variableid='hybm', filetable=filetable, reduced_var_id='hybm'+ft_no, season=self.season,
+            ('hybm',seasonid,filetable._strid): reduced_variable(      # hybm=hybm(lev)
+                variableid='hybm', filetable=filetable, season=self.season,
                 reduction_function=(lambda x,vid=None: x) ),
-            'PS'+ft_no: reduced_variable(
-                variableid='PS', filetable=filetable, reduced_var_id='PS'+ft_no, season=self.season,
+            ('PS',seasonid,filetable._strid): reduced_variable(
+                variableid='PS', filetable=filetable, season=self.season,
                 reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,self.season,vid=vid)) ) }
         return reduced_variables
     def plan_computation( self, filetable1, filetable2, varid, seasonid ):
@@ -436,42 +416,46 @@ class amwg_plot_set4(amwg_plot_spec):
         hybrid1 = ft1_hyam is not None and ft1_hyam!=[]    # true iff filetable1 uses hybrid level coordinates
         hybrid2 = ft2_hyam is not None and ft2_hyam!=[]    # true iff filetable2 uses hybrid level coordinates
         if hybrid1:
-            reduced_variables_1 = self.reduced_variables_hybrid_lev( filetable1, varid, seasonid, '1' )
+            reduced_variables_1 = self.reduced_variables_hybrid_lev( filetable1, varid, seasonid )
         else:
-            reduced_variables_1 = self.reduced_variables_press_lev( filetable1, varid, seasonid, '2' )
+            reduced_variables_1 = self.reduced_variables_press_lev( filetable1, varid, seasonid )
         if hybrid2:
-            reduced_variables_2 = self.reduced_variables_hybrid_lev( filetable2, varid, seasonid, '2' )
+            reduced_variables_2 = self.reduced_variables_hybrid_lev( filetable2, varid, seasonid )
         else:
-            reduced_variables_2 = self.reduced_variables_press_lev( filetable2, varid, seasonid, '2' )
+            reduced_variables_2 = self.reduced_variables_press_lev( filetable2, varid, seasonid )
         reduced_variables_1.update( reduced_variables_2 )
         self.reduced_variables = reduced_variables_1
         self.derived_variables = {}
         if hybrid1:
             # >>>> actually last arg of the derived var should identify the coarsest level, not nec. 2
-            vid1='_'.join([varid,seasonid,'levlat','1'])
+            vid1=(varid+'levlat',seasonid,filetable1._strid)
             self.derived_variables[vid1] = derived_var(
-                vid=vid1, inputs=[varid+'_1', 'hyam_1', 'hybm_1', 'PS_1', varid+'_2'],
+                vid=vid1, inputs=[(varid,seasonid,filetable1._strid), ('hyam',seasonid,filetable1._strid),
+                                  ('hybm',seasonid,filetable1._strid), ('PS',seasonid,filetable1._strid),
+                                  (varid,seasonid,filetable2._strid)],
                 func=verticalize )
         else:
-            vid1 = varid+'_1'
+            vid1 = (varid,seasonid,filetable1._strid)
         if hybrid2:
             # >>>> actually last arg of the derived var should identify the coarsest level, not nec. 2
-            vid2='_'.join([varid,seasonid,'levlat','2'])
+            vid2=(varid+'levlat',seasonid,filetable2._strid)
             self.derived_variables[vid2] = derived_var(
-                vid=vid2, inputs=[varid+'_2', 'hyam_2', 'hybm_2', 'PS_2', varid+'_2'],
+                vid=vid2, inputs=[(varid,seasonid,filetable2._strid), ('hyam',seasonid,filetable2._strid),
+                                  ('hybm',seasonid,filetable2._strid), ('PS',seasonid,filetable2._strid),
+                                  (varid,seasonid,filetable2._strid)],
                 func=verticalize )
         else:
-            vid2 = varid+'_2'
+            vid2 = (varid,seasonid,filetable2._strid)
         self.single_plotspecs = {
             self.plot1_id: plotspec(
-                vid = varid+'_1', zvars=[vid1], zfunc=(lambda z: z),
+                vid = id2strid((varid,seasonid,filetable1._strid)), zvars=[vid1], zfunc=(lambda z: z),
                 plottype = self.plottype ),
             self.plot2_id: plotspec(
-                vid = varid+'_2', zvars=[vid2], zfunc=(lambda z: z),
+                vid = id2strid((varid,seasonid,filetable2._strid)), zvars=[vid2], zfunc=(lambda z: z),
                 plottype = self.plottype ),
             self.plot3_id: plotspec(
-                vid = varid+'_1', zvars=[vid1,vid2], zfunc=aminusb_2ax,
-                plottype = self.plottype )
+                vid = id2strid((varid,seasonid,filetable1._strid,filetable2._strid)), zvars=[vid1,vid2],
+                zfunc=aminusb_2ax, plottype = self.plottype )
             }
         self.composite_plotspecs = {
             self.plotall_id: [self.plot1_id, self.plot2_id, self.plot3_id ]
@@ -511,7 +495,6 @@ class amwg_plot_set5and6(amwg_plot_spec):
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
 
         self.varid = varid
-        self._var_baseid = '_'.join([varid,'set6'])   # e.g. TREFHT_set6
         ft1id,ft2id = filetable_ids(filetable1,filetable2)
         self.plot1_id = ft1id+'_'+varid+'_'+seasonid
         self.plot2_id = ft2id+'_'+varid+'_'+seasonid
@@ -523,14 +506,12 @@ class amwg_plot_set5and6(amwg_plot_spec):
             self.plan_computation( filetable1, filetable2, varid, seasonid, region, aux )
     @staticmethod
     def _list_variables( filetable1, filetable2=None ):
-        print '5 and 6 _list_vars'
         allvars = amwg_plot_set5and6._all_variables( filetable1, filetable2 )
         listvars = allvars.keys()
         listvars.sort()
         return listvars
     @staticmethod
     def _all_variables( filetable1, filetable2=None ):
-        print '5 and 6 _all_vars'
         allvars = amwg_plot_spec.package._all_variables( filetable1, filetable2, "amwg_plot_spec" )
         #allvars['Z3'] = basic_level_variable # temporary, the right thing is to find level-dep't vars
         for varname in amwg_plot_spec.package._list_variables_with_levelaxis(

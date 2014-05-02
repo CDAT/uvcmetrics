@@ -1,10 +1,15 @@
 #!/usr/local/uvcdat/1.3.1/bin/python
 
 # general-purpose classes used in computing data for plots
+from metrics.common import *
 
-class derived_var:
+class derived_var(basic_id):
     def __init__( self, vid, inputs=[], outputs=['output'], func=(lambda: None) ):
-        self._vid = vid
+        if type(vid) is tuple:
+            basic_id.__init__(self,*vid)  # often vid is like VAR_1.  Better then to input (VAR,1).
+        else:  # probably vid is a string
+            basic_id.__init__(self,vid)  # often vid is like VAR_1.  Better then to input (VAR,1).
+        #self._vid = self._strid      # self._vid is deprecated
         self._inputs = inputs
         self._outputs = outputs
         self._func = func
@@ -19,14 +24,16 @@ class derived_var:
         if type(output) is tuple or type(output) is list:
             for o in output:
                 if o is None: return None
-                o._vid  = self._vid
+                #o._vid  = self._vid      # self._vid is deprecated
+                self.adopt( o )  # o gets ids of self
                 self._file_attributes.update( getattr(o,'_file_attributes',{}) )
         elif output is not None:
-            output._vid = self._vid
+            #output._vid = self._vid      # self._vid is deprecated
+            self.adopt( output )  # output gets ids of self
             self._file_attributes.update( getattr(output,'_file_attributes',{}) )
         return output
 
-class plotspec:
+class plotspec(basic_id):
     def __init__(
         self, vid,
         xvars=[], xfunc=None, x1vars=[], x1func=None,
@@ -44,6 +51,7 @@ class plotspec:
         axes may be specified - e.g. ya to substitute for y in a plot, or ya1 as an addition
         to y in the plot.
         """
+        basic_id.__init__(self,vid)
         if xfunc==None:
             if len(xvars)==0:
                 xfunc = (lambda: None)
@@ -101,7 +109,6 @@ class plotspec:
                 zfunc = (lambda z: z)
         if zrangefunc==None:
             zrangefunc = (lambda: None)
-        self._id = vid
         self.xfunc = xfunc
         self.xvars = xvars
         self.x1func = x1func
@@ -129,6 +136,6 @@ class plotspec:
         self.plottype = plottype
     def __repr__(self):
         return "plotspec _id=%s xvars=%s xfunc=%s yvars=%s yfunc=%s zvars=%s zfunc=%s" %\
-            (self._id,self.xvars,self.xfunc.__name__,self.yvars,self.yfunc.__name__,\
+            (self._strid,self.xvars,self.xfunc.__name__,self.yvars,self.yfunc.__name__,\
                  self.zvars,self.zfunc.__name__)
     

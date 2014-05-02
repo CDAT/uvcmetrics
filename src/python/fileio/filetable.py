@@ -6,6 +6,7 @@
 
 import sys, os, cdms2, pprint
 from metrics.frontend.options import Options
+from metrics.common import *
 
 class drange:
    def __init__( self, low=None, high=None, units=None ):
@@ -96,7 +97,7 @@ def get_datafile_filefmt( dfile, options):
        # which has no global attributes which would tell you what kind of file it is.
        # Nevertheless the one I am looking at has lots of clues, e.g. variable and axis names.
 
-class basic_filetable:
+class basic_filetable(basic_id):
     """Conceptually a file table is just a list of rows; but we need to attach some methods,
     which makes it a class.  Moreover, indices for the table are in this class.
     Different file types will require different methods,
@@ -113,8 +114,8 @@ class basic_filetable:
           except:
             print 'Could not determine options array in basic_filetable'
             quit()
-        if ftid=='':
-           ftid = self.unique_id(opts)
+        self.initialize_idnumber()
+        basic_id.__init__( self, self._idnumber, ftid )
         
         """filelist is a list of strings, each of which is the path to a file"""
         self._table = []     # will be built from the filelist, see below
@@ -131,18 +132,17 @@ class basic_filetable:
         self._cache_path=options._opts['cachepath']
         if filelist is None: return
 
-        self._id = ftid
         for filep in filelist.files:
             self.addfile( filep, options )
     def __repr__(self):
        return 'filetable from '+str(self._filelist)
     def full_repr(self):
        return 'filetable from '+str(self._filelist)+'\n'+self._table.__repr__()
-    def unique_id( self, opts ):
-       "returns a unique id for this filetable"
-       ftn = basic_filetable.nfiletables
+    def initialize_idnumber( self ):
+       """Sets a unique (among filetables) number for this filetable.
+       This should called, and only called, at the beginning of __init__()"""
+       self._idnumber = basic_filetable.nfiletables
        basic_filetable.nfiletables += 1
-       return "filetable_"+str(ftn)
     def root_dir(self):
        """returns a root directory for the files in this filetable"""
        if self._filelist is None: return None

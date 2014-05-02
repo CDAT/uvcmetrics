@@ -81,7 +81,7 @@ for pname,pclass in dm.items():
             variables = package.list_variables( filetable1, filetable2, sname  )
             print "jfp variables=",variables
             for varid in variables:
-                if varid!='RELHUM':
+                if varid!='T':
                     continue # for testing, only do one variable
                 print "jfp varid=",varid
                 vard = package.all_variables( filetable1, filetable2, sname )

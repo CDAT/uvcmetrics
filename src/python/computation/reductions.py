@@ -953,7 +953,10 @@ def aminusb_ax2( mv1, mv2 ):
         b = mv2
         ab_axes.append(axes2[1])
     aminusb = a - b
-    aminusb.id = mv1.id
+    #aminusb.id = mv1.id
+    aminusb.id = 'difference of '+mv1.id
+    aminusb.long_name = 'difference of '+mv1.long_name
+    if hasattr(mv1,'units'):  aminusb.units = mv1.units
     aminusb.initDomain( ab_axes )
     return aminusb
 
@@ -1054,7 +1057,10 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
             mv1.regridded = mv1new.id   # a GUI can use this
             regridded_vars[mv1new.id] = mv1new
     aminusb = mv1new - mv2new
-    aminusb.id = mv1.id
+    #aminusb.id = mv1.id
+    aminusb.id = 'difference of '+mv1.id
+    aminusb.long_name = 'difference of '+mv1.long_name
+    if hasattr(mv1,'units'):  aminusb.units = mv1.units
     return aminusb
 
 def aminusb_1ax( mv1, mv2 ):
@@ -1327,7 +1333,7 @@ def run_cdscan( fam, famfiles, cache_path=None ):
         quit()
     return xml_name
 
-class reduced_variable(ftrow):
+class reduced_variable(ftrow,basic_id):
     """Specifies a 'reduced variable', which is a single-valued part of an output specification.
     This would be a variable(s) and its domain, a reduction function, and perhaps
     an axis or two describing the domain after applying the reduction function.
@@ -1342,14 +1348,18 @@ class reduced_variable(ftrow):
                       reduction_function=(lambda x,vid=None: x),\
                       filetable=None, axes=None, duvs={}, rvs={}
                   ):
+        if reduced_var_id is not None:
+            basic_id.__init__( self, reduced_var_id )
+        else:
+            basic_id.__init__( self, variableid, filetable )
         self._season = season
         ftrow.__init__( self, fileid, variableid, timerange, latrange, lonrange, levelrange )
         self._reduction_function = reduction_function
         self._axes = axes
-        if reduced_var_id is None:
-            self._vid = ""
-        else:
-            self._vid = reduced_var_id
+        #if reduced_var_id is None:      # self._vid is deprecated
+        #    self._vid = ""      # self._vid is deprecated
+        #else:
+        #    self._vid = reduced_var_id      # self._vid is deprecated
         if filetable==None:
             print "ERROR.  No filetable specified for reduced_variable instance",variableid
         self._filetable = filetable
@@ -1441,7 +1451,8 @@ class reduced_variable(ftrow):
             print "filetable is",self._filetable
             return None
         if vid is None:
-            vid = self._vid
+            #vid = self._vid      # self._vid is deprecated
+            vid = self._strid
 
         filename = self.get_variable_file( self.variableid )
 #        print 'FILENAME->', filename
