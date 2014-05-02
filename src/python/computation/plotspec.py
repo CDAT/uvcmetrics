@@ -5,7 +5,10 @@ from metrics.common import *
 
 class derived_var(basic_id):
     def __init__( self, vid, inputs=[], outputs=['output'], func=(lambda: None) ):
-        basic_id.__init__(self,vid)  # often vid is like VAR_1.  Better then to input VAR,1.
+        if type(vid) is tuple:
+            basic_id.__init__(self,*vid)  # often vid is like VAR_1.  Better then to input (VAR,1).
+        else:  # probably vid is a string
+            basic_id.__init__(self,vid)  # often vid is like VAR_1.  Better then to input (VAR,1).
         #self._vid = self._strid      # self._vid is deprecated
         self._inputs = inputs
         self._outputs = outputs
