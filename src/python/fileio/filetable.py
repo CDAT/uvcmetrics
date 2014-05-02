@@ -115,11 +115,7 @@ class basic_filetable(basic_id):
             print 'Could not determine options array in basic_filetable'
             quit()
         self.initialize_idnumber()
-        basic_id.__init__(self)
-        if ftid=='':
-           self.make_id( self._idnumber )
-        else:
-           self.make_id( self._idnumber, ftid )
+        basic_id.__init__( self, self._idnumber, ftid )
         
         """filelist is a list of strings, each of which is the path to a file"""
         self._table = []     # will be built from the filelist, see below
