@@ -13,12 +13,12 @@ class derived_var:
     def derive( self, vardict ):
          
         # error from checking this way!... if None in [ vardict[inp] for inp in self._inputs ]:
-        print 'IN DERIVE stack:', traceback.print_stack()
-        print 'vardict: ', vardict
+        # print 'IN DERIVE stack:', traceback.print_stack()
+        #print 'vardict: ', vardict
         print 'inputs: ', self._inputs
         print 'func: ', self._func
         dictvals = [ vardict.get(inp,None) for inp in self._inputs ]
-        print 'dictvals: ', dictvals
+        # print 'dictvals: ', dictvals
         nonevals = [nn for nn in dictvals if nn is None]
         print 'nonevals: ', nonevals
         if len(nonevals)>0:
