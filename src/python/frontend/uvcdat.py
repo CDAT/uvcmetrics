@@ -639,18 +639,22 @@ class plot_spec(object):
         In the future regrid>0 will mean regrid everything to the finest grid and regrid<0
         will mean regrid everything to the coarsest grid."""
         for v in self.reduced_variables.keys():
+            print 'CALLING REDUCE ON v = ', v
             value = self.reduced_variables[v].reduce(None)
             self.variable_values[v] = value  # could be None
         postponed = []   # derived variables we won't do right away
         for v in self.derived_variables.keys():
+            print 'CALLING DERIVE on v = ', v
             value = self.derived_variables[v].derive(self.variable_values)
             if value is None:
                 # couldn't compute v - probably it depends on another derived variables which
                 # hasn't been computed yet
+                print 'VALUE WAS NONE, POSTPONING v=',v
                 postponed.append(v)
             else:
                 self.variable_values[v] = value
         for v in postponed:   # Finish up with derived variables
+            print 'IN POSTPONE DERIVE on v=', v
             value = self.derived_variables[v].derive(self.variable_values)
             self.variable_values[v] = value  # could be None
         varvals = self.variable_values

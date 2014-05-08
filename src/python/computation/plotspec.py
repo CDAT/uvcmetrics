@@ -1,6 +1,7 @@
 #!/usr/local/uvcdat/1.3.1/bin/python
 
 # general-purpose classes used in computing data for plots
+import sys, traceback
 
 class derived_var:
     def __init__( self, vid, inputs=[], outputs=['output'], func=(lambda: None) ):
@@ -10,15 +11,25 @@ class derived_var:
         self._func = func
         self._file_attributes = {}
     def derive( self, vardict ):
+         
         # error from checking this way!... if None in [ vardict[inp] for inp in self._inputs ]:
+        print 'IN DERIVE stack:', traceback.print_stack()
+        print 'vardict: ', vardict
+        print 'inputs: ', self._inputs
+        print 'func: ', self._func
         dictvals = [ vardict.get(inp,None) for inp in self._inputs ]
+        print 'dictvals: ', dictvals
         nonevals = [nn for nn in dictvals if nn is None]
+        print 'nonevals: ', nonevals
         if len(nonevals)>0:
+            print 'LEN WAS 0, RETURN'
             return None
         output = apply( self._func, [ vardict[inp] for inp in self._inputs ] )
         if type(output) is tuple or type(output) is list:
             for o in output:
-                if o is None: return None
+                if o is None: 
+                   print 'O WAS NONE IN DERIVE'
+                   return None
                 o._vid  = self._vid
                 self._file_attributes.update( getattr(o,'_file_attributes',{}) )
         elif output is not None:
