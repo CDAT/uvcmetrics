@@ -16,13 +16,26 @@ def id2strid( id ):
     return strid
 
 class basic_id():
-    # Abstract class, mainly to document standard methods for object ids.
+    """Abstract class, provides standard names and methods for object ids."""
+    # The main variables are _id, a tuple, and _strid, a string.  Either one can be used
+    # as a key in a dict.  The _strid is computed from the _id.
+
+    # Re _idtags: ideally we'd name the slots of _id - it would be a class or dict.
+    # But _id is a tuple, because it is important that this can be the key of a dict.
+    # So the purpose of _idtags is to specify the meaning of each slot of _id.
+    # Inheriting classes should provide their own definitions of _idtags, if they need it.
+    # At least for now, this only needs to be specified once per class, not per object.
+    _idmx = 10   # maximum number of slots of _id.
+    idtags= ['']*len(_idmx)
+    idtags[0] = 'class'
+    _idtags = tuple(idtags)
     def __init__( self, *args ):
         self.make_id(*args)
     def make_id( self, *args ):
-        # Creates an id and assigns it to self._id.
+        # Creates an id and assigns it to self._id.  All arguments become part of the id.
         classid = self.abbrev(self.__class__.__name__)
         self._id = tuple([classid]+[ getattr(a,'_strid',str(a)) for a in args ])
+        assert( len(self._id)<=self._idmx )
         self._strid = id2strid(self._id)
         #print "jfp basic_id,",classid,", just made self._strid=",self._strid,"from args",args
     def id( self ):
