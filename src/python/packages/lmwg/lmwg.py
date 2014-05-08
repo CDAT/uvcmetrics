@@ -482,6 +482,7 @@ class lmwg_plot_set1(lmwg_plot_spec):
 class lmwg_plot_set2(lmwg_plot_spec):
    varlist = []
    name = '2 - Horizontal contour plots of DJF, MAM, JJA, SON, and ANN means'
+   _derived_varnames = ['EVAPFRAC', 'PREC', 'TOTRUNOFF', 'LHEAT', 'P-E']
    def __init__( self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None):
       """filetable1, filetable2 should be filetables for two datasets for now. Need to figure
       out obs data stuff for lmwg at some point
@@ -505,7 +506,6 @@ class lmwg_plot_set2(lmwg_plot_spec):
          self.plotall_id = filetable1._id+'_'+filetable2._id+'_'+varid+'_'+seasonid
       else:
          self.plotall_id = filetable1._id+'_'+varid+'_'+seasonid
-
    
       if not self.computation_planned:
          self.plan_computation( filetable1, filetable2, varid, seasonid, region, aux )
@@ -517,15 +517,9 @@ class lmwg_plot_set2(lmwg_plot_spec):
    @staticmethod
    def _list_variables( filetable1, filetable2=None ):
       print 'lmwg_plot_set2._list_variables called'
-      #quit()
       filevars = lmwg_plot_set2._all_variables( filetable1, filetable2 )
       allvars = filevars
-      derived_vars = ['EVAPFRAC', 'PREC', 'TOTRUNOFF', 'LHEAT', 'P-E']
-      for dv in derived_vars:
-         allvars[dv] = basic_plot_variable
-         
       listvars = allvars.keys()
-      #print 'listvars:' , listvars
       listvars.sort()
       return listvars
 
@@ -533,8 +527,8 @@ class lmwg_plot_set2(lmwg_plot_spec):
    def _all_variables( filetable1, filetable2=None ):
       print 'lmwg_plot_set2._all_variables called, package=',lmwg_plot_spec.package
       allvars = lmwg_plot_spec.package._all_variables( filetable1, filetable2, "lmwg_plot_spec" )
-      #print 'allvars: ', allvars
-      #quit()
+      for dv in lmwg_plot_set2._derived_varnames:
+         allvars[dv] = basic_plot_variable
       return allvars
 
    # This seems like variables should be a dictionary... Varname, components, operation, units, etc
@@ -543,28 +537,37 @@ class lmwg_plot_set2(lmwg_plot_spec):
       print 'varid: ', varid
       print 'plan compute set2 called varid done'
       self.reduced_variables = {}
-      self.reduced_variables[varid+'_1'] = reduced_variable(variableid = varid, 
-         filetable=filetable1, 
-         reduced_var_id=varid+'_1',
-         reduction_function=(lambda x, vid: reduce2latlon_seasonal(x, self.season, vid)))
-      self.reduced_variables['SNOW_A'] = reduced_variable(variableid = varid,
-         filetable = filetable1,
-         reduced_var_id = varid+'_1',
-         reduction_function=(lambda x, vid: reduce2latlon_seasonal(x, self.season, vid)))
-      self.reduced_variables['RAIN_A'] = reduced_variable(variableid = varid,
-         filetable = filetable1,
-         reduction_function=(lambda x, vid: reduce2latlon_seasonal(x, self.season, vid)))
+      self.derived_variables = {}
+      if varid not in lmwg_plot_set2._derived_varnames:
+          self.reduced_variables[varid+'_1'] = reduced_variable(variableid = varid, 
+             filetable=filetable1, 
+             reduced_var_id=varid+'_1',
+             reduction_function=(lambda x, vid: reduce2latlon_seasonal(x, self.season, vid)))
+      else:
+          self.reduced_variables['RAIN_A'] = reduced_variable(
+              variableid = 'RAIN',  filetable = filetable1, reduced_var_id = varid+'_1',
+              reduction_function=(lambda x, vid: reduce2latlon_seasonal(x, self.season, vid)))
+          self.reduced_variables['SNOW_A'] = reduced_variable(
+              variableid = 'SNOW',  filetable = filetable1, reduced_var_id = varid+'_1',
+              reduction_function=(lambda x, vid: reduce2latlon_seasonal(x, self.season, vid)))
+          self.derived_variables['PREC_1'] = derived_var(
+              vid='PREC_1', inputs=['RAIN_A', 'SNOW_A'], func=aplusb)
 
       if(filetable2 != None):
-         self.reduced_variables[varid+'_2'] = reduced_variable(variableid = varid, 
-            filetable=filetable2, 
-            reduced_var_id=varid+'_2',
-            reduction_function=(lambda x, vid: reduce2latlon_seasonal(x, self.season, vid)))
-   
-      self.derived_variables = {}
-      self.derived_variables['PREC_1'] = derived_var(vid='PREC_1', inputs=['RAIN_A', 'SNOW_A'], func=aplusb)
-      if(filetable2 != None):
-         self.derived_variables['PREC_2'] = derived_var(vid='PREC_2', inputs=['RAIN_2', 'SNOW_2'], func=aplusb)
+          if varid not in lmwg_plot_set2._derived_varnames:
+             self.reduced_variables[varid+'_2'] = reduced_variable(variableid = varid, 
+                filetable=filetable2, 
+                reduced_var_id=varid+'_2',
+                reduction_function=(lambda x, vid: reduce2latlon_seasonal(x, self.season, vid)))
+          else:
+              self.reduced_variables['RAIN_2'] = reduced_variable(
+                  variableid = 'RAIN',  filetable = filetable2, reduced_var_id = varid+'_2',
+                  reduction_function=(lambda x, vid: reduce2latlon_seasonal(x, self.season, vid)))
+              self.reduced_variables['SNOW_2'] = reduced_variable(
+                  variableid = 'SNOW',  filetable = filetable2, reduced_var_id = varid+'_2',
+                  reduction_function=(lambda x, vid: reduce2latlon_seasonal(x, self.season, vid)))
+              self.derived_variables['PREC_2'] = derived_var(
+                  vid='PREC_2', inputs=['RAIN_2', 'SNOW_2'], func=aplusb)
    
       self.single_plotspecs = {}
       self.composite_plotspecs = {}
@@ -587,7 +590,9 @@ class lmwg_plot_set2(lmwg_plot_spec):
          self.composite_plotspecs[self.plotall_id].append(self.plot2_id)
          self.composite_plotspecs[self.plotall_id].append(self.plot3_id)
 
-            
+      print "jfp in LMWG plot set 2 plan_computation, ending with"
+      print "jfp reduced_variables.keys=",self.reduced_variables.keys()
+      print "jfp derived_variables.keys=",self.derived_variables.keys()
       self.computation_planned = True
 
    def _results(self,newgrid=0):
