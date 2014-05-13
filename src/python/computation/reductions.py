@@ -881,6 +881,83 @@ def adivb(mv1, mv2):
 
 
 # N.B. The following function is specific to LMWG calculating evaporative fraction derived variable
+def dummy(mv, vid=None):
+   return mv
+
+def evapfrac(mv1, mv2, mv3, mv4): #, flags, season, region):
+   # Basically ripped from the NCL code
+   print '******* IN EVAPFRAC ********'
+   print mv1.id
+   print mv2.id
+   print mv3.id
+   print mv4.id
+   print mv4
+   print type(mv4)
+#   print flags
+#   print season
+#   print region
+   flags = None
+   lheat = mv1+mv2+mv3
+   fsh = mv4
+
+   denom = lheat+fsh
+
+   if fsh.min() < 0.:
+      denom_nz1 = MV2.where(MV2.less(fsh, 0.), fsh.missing_value, denom)
+
+   if lheat.min() < 0.:
+      denom_nz2 = MV2.where(MV2.less(lheat, 0.), lheat.missing_value, denom_nz1)
+
+   denom_nz = MV2.where(MV2.less(denom_nz2, 0.), denom_nz2.missing_value, denom_nz2)
+
+   evap = lheat / denom_nz
+   # This cleans up the graphs a bit. Lots of values were like 1e-30 but they were missing_values in the plots
+   # at NCAR
+   evapfrac = MV2.where(MV2.less_equal(evap, 0.000000001), evap.missing_value, evap)
+
+   evapfrac.id = 'evapfrac'
+
+   if(flags == 'latlon_seasonal'):
+      timeax = timeAxis(evapfrac)
+      if timeax is None or len(timeax)<=1:
+         print 'No time axis, bailing'
+         mvret = evapfrac
+      else:
+         if timeax.getBounds()==None:
+            timeax._bounds_ = timeax.genGenericBounds()
+         evapfrac_seas = seasons.climatology(evapfrac)
+    
+      axes = allAxes( evapfrac )
+      axis_names = [ a.id for a in axes if a.id!='lat' and a.id!='lon' and a.id!='time']
+      axes_string = '('+')('.join(axis_names)+')'
+
+      if len(axes_string)>2:
+         for axis in mvseas.getAxisList():
+            if axis.getBounds() is None:
+               axis._bounds_ = axis.genGenericBounds()
+            avmv = averager( evapfrac_seas, axis=axes_string )
+      else:
+           avmv = evapfrac_seas
+      if avmv is None: return avmv
+      avmv.id = evapfrac.id
+      if hasattr(mv,'units'): avmv.units = mv.units
+      avmv = delete_singleton_axis( avmv, vid='time' )
+      avmv.units = mv.units
+      return avmv
+   elif(flags == 'seasonal'):
+      print 'Seasonal'
+
+   else:
+      return evapfrac
+
+def pminuset(rain, snow, qsoil, qvege, qvegt):
+   mv = rain+snow
+   et = qsoil+qvege+qvegt
+   mv = mv - et
+   mv.id = 'P-E'
+   return mv
+
+
 def evapfrac_special(mv1, mv2):
    """returns evaporative fraction """
    # mv1 = lheat, mv2 = fsh
@@ -1359,11 +1436,12 @@ class reduced_variable(ftrow):
     # (lambda mv: return zonal_mean( mv, sourcefile, -20, 20 )
     def __init__( self, fileid=None, variableid='', timerange=None,\
                       latrange=None, lonrange=None, levelrange=None,\
-                      season=seasonsyr, reduced_var_id=None,\
+                      season=seasonsyr, region=None, reduced_var_id=None,\
                       reduction_function=(lambda x,vid=None: x),\
                       filetable=None, axes=None, duvs={}, rvs={}
                   ):
         self._season = season
+        self._region = region # this could probably change lat/lon range, or lat/lon ranges could be passed in
         ftrow.__init__( self, fileid, variableid, timerange, latrange, lonrange, levelrange )
         self._reduction_function = reduction_function
         self._axes = axes
