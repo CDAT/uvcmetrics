@@ -75,14 +75,135 @@ class lmwg_plot_spec(plot_spec):
         return lmwg_plot_spec.package._all_variables( filetable1, filetable2, "lmwg_plot_spec" )
 
 class lmwg_plot_set6b(lmwg_plot_spec):
+   varlist = []
    name = '6b - Group Line plots of annual trends in regional soil water/ice and temperature, runoff, snow water/ice, photosynthesis'
+   _derived_varnames = ['LHEAT', 'PREC', 'TOTRUNOFF', 'ALBEDO', 'RNET']
    def __init__(self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None):
-      pass
+      print 'Init set 6'
+      plot_spec.__init__(self, seasonid)
+      self.plottype = 'Yxvsx'
+
+      self._var_baseid = '_'.join([varid, 'set6b'])
+      self.plot1_id = filetable1._id+'_'+varid
+      if filetable2 is not None:
+         self.plot2_id = filetable2._id+'_'+varid
+         self.plot3_id = filetable1._id+' - '+filetable2._id+'_'+varid
+         self.plotall_id = filetable1._id+'_'+filetable2._id+'_'+varid
+      else:
+         self.plot2_id = None
+         self.plot3_id = None
+         self.plotall_id = None
+      print 'about to plan compute'
+      if not self.computation_planned:
+         self.plan_computation(filetable1, filetable2, varid, seasonid, region, aux)
+
+   @staticmethod
+   def _list_variables(filetable1, filetable2 = None):
+      varlist = ['Total_Precip', 'Radiative_Fluxes', 'Turbulent_Fluxes', 'Carbon/Nitrogen_Fluxes',
+                 'Fire_Fluxes', 'Soil_Temp', 'SoilLiq_Water', 'SoilIce', 'TotalSoilIce_TotalSoilH2O', 'TotalSnowH2O_TotalSnowIce', 'Hydrology']
+      return varlist
+   @staticmethod
+   def _all_variables(filetable1, filetable2=None):
+      allvars = lmwg_plot_spec.package._all_variables(filetable1, filetable2, "lmwg_plot_spec")
+      for dv in lmwg_plot_set6b._derived_varnames:
+         allvars[dv] = basic_plot_variable
+      return allvars
+
+   def plan_computation(self, filetable1, filetable2, varid, seasonid, region, aux=None):
+      self.reduced_variables = {}
+      self.derived_variables = {}
+
+      if varid in lmwg_plot_set6b._list_variables(filetable1):
+         print 'Got varid: ', varid
+      elif varid not in lmwg_plot_set6b._derived_varnames:
+         self.reduced_variables[varid+'_1'] = reduced_variable(
+               variableid = varid, filetable=filetable1, reduced_var_id=varid+'_1',
+               reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid))),
+         if filetable2 != None:
+            self.reduced_variables[varid+'_2'] = reduced_variable(
+                  variableid = varid, filetable=filetable2, reduced_var_id=varid+'_2',
+                  reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid))),
+      else:
+         red_vars = ['RAIN', 'PREC', 'QSOIL', 'QVEGE', 'QVEGT', 'FCTR', 'FCEV', 'FGEV', 'FSR', 'FSDS', 'FIRA', 'FSA']
+         red_der_vars = ['FSR', 'FSDS', 'FSA', 'FIRA']
+         for k in red_vars:
+            self.reduced_variables[k+'_1'] = reduced_variable(
+               variableid = k, filetable = filetable1, reduced_var_id = k+'_1',
+               reduction_function = (lambda x, vid: reduceAnnTrendRegion(x, region, vid)))
+            if filetable2 != None:
+               self.reduced_variables[k+'_2'] = reduced_variable(
+                  variableid = k, filetable = filetable2, reduced_var_id = k+'_2',
+                  reduction_function = (lambda x, vid: reduceAnnTrendRegion(x, region, vid)))
+         for k in red_der_vars:
+            self.reduced_variables[k+'_A'] = reduced_variable(
+               variableid = k, filetable = filetable1, reduced_var_id = k+'_A',
+               reduction_function = (lambda x, vid: dummy(x, vid)))
+            if filetable2 != None:
+               self.reduced_variables[k+'_B'] = reduced_variable(
+                  variableid = k, filetable = filetable2, reduced_var_id = k+'_B',
+                  reduction_function = (lambda x, vid: dummy(x, vid)))
+
+         self.derived_variables['PREC_1'] = derived_var(
+            vid='PREC_1', inputs=['RAIN_1', 'SNOW_1'], func=aplusb)
+         self.derived_variables['TOTRUNOFF_1'] = derived_var(
+            vid='TOTRUNOFF_1', inputs=['QSOIL_1', 'QVEGE_1', 'QVEGT_1'], func=sum3)
+         self.derived_variables['RNET_1'] = derived_var(
+            vid='RNET_1', inputs=['FSA_A', 'FIRA_A'], func=aminusb)
+         self.derived_variables['LHEAT_1'] = derived_var(
+            vid='LHEAT_1', inputs=['FCTR_1', 'FCEV_1', 'FGEV_1'], func=sum3)
+         # AKA ASA?
+         self.derived_variables['ALBEDO_1'] = derived_var(
+            vid='ALBEDO_1', inputs=['FSR_A', 'FSDS_A'], func=adivb)
+         if filetable2 != None:
+            self.derived_variables['PREC_2'] = derived_var(
+               vid='PREC_2', inputs=['RAIN_2', 'SNOW_2'], func=aplusb)
+            self.derived_variables['TOTRUNOFF_2'] = derived_var(
+               vid='TOTRUNOFF_2', inputs=['QSOIL_2', 'QVEGE_2', 'QVEGT_2'], func=sum3)
+            self.derived_variables['RNET_2'] = derived_var(
+               vid='RNET_2', inputs=['FSA_B', 'FIRA_B'], func=aminusb)
+            self.derived_variables['LHEAT_2'] = derived_var(
+               vid='LHEAT_2', inputs=['FCTR_2', 'FCEV_2', 'FGEV_2'], func=sum3)
+            # AKA ASA?
+            self.derived_variables['ALBEDO_2'] = derived_var(
+               vid='ALBEDO_2', inputs=['FSR_B', 'FSDS_B'], func=adivb)
+
+
+      self.single_plotspecs = {
+         'TSA_1': plotspec(vid = 'TSA_1', zvars = [varid+'_1'], zfunc=(lambda z:z), plottype = self.plottype),
+         'PREC_1': plotspec(vid = 'PREC_1', zvars = [varid+'_1'], zfunc=(lambda z:z), plottype = self.plottype),
+         'TOTRUNOFF_1': plotspec(vid = 'TOTRUNOFF_1', zvars = [varid+'_1'], zfunc=(lambda z:z), plottype = self.plottype),
+         'SNOWDP_1': plotspec(vid = 'SNOWDP_1', zvars=[varid+'_1'], zfunc=(lambda z:z), plottype = self.plottype),
+#         ....
+         'RNET_1': plotspec(vid = 'RNET_1', zvars=[varid+'_1'], zfunc=(lambda z:z), plottype = self.plottype)
+      }
+
+      self.composite_plotspecs = {
+         'Total_Precip': ['TSA_1', 'PREC_1', 'TOTRUNOFF_1', 'SNOWDP_1'],
+         'Radiative_Fluxes': [ 'RNET_1']
+      }
+
+      self.computation_planned = True
+
+   def _results(self,newgrid=0):
+      print self
+      results = plot_spec._results(self,newgrid)
+      if results is None: 
+         print 'results were nont. BAD!!!'
+         quit()
+         return None
+      else:
+         print '!!!!!!!!!!!!!!!!!!!!! plotspec_values:'
+         print self.plotspec_values
+         psv = self.plotspec_values
+         psv['Total_Precip'].finalize()
+         return self.plotspec_values['Total_Precip']
+#      return self.plotspec_values[self.plotall_id]
 
 
 class lmwg_plot_set6(lmwg_plot_spec):
    varlist = []
    name = '6 - Individual Line plots of annual trends in regional soil water/ice and temperature, runoff, snow water/ice, photosynthesis'
+   _derived_varnames = ['LHEAT', 'PREC', 'TOTRUNOFF', 'ALBEDO', 'RNET']
    def __init__(self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None):
       print 'Init set 6'
       plot_spec.__init__(self, seasonid)
@@ -111,32 +232,67 @@ class lmwg_plot_set6(lmwg_plot_spec):
    @staticmethod
    def _all_variables(filetable1, filetable2=None):
       allvars = lmwg_plot_spec.package._all_variables(filetable1, filetable2, "lmwg_plot_spec")
+      for dv in lmwg_plot_set6._derived_varnames:
+         allvars[dv] = basic_plot_variable
       return allvars
 
    def plan_computation(self, filetable1, filetable2, varid, seasonid, region, aux=None):
-      self.reduced_variables = {
-         varid+'_1':reduced_variable(
-            variableid = varid, filetable=filetable1, reduced_var_id=varid+'_1',
-            reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid))),
-         varid+'_2':reduced_variable(
-            variableid = varid, filetable=filetable2, reduced_var_id=varid+'_2',
-            reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid)))
-      }
+      self.reduced_variables = {}
+      self.derived_variables = {}
 
-      self.derived_variables = {
-         'PREC_1': derived_var(vid = 'PREC_1', inputs=['RAIN_1', 'SNOW_1'], outputs=['PREC_1'], func = aplusb),
-         'TOTRUNOFF_1': derived_var(vid = 'TOTRUNOFF_1', inputs=['QOVER_1', 'QDRAI_1', 'QRGWL_1'], outputs='TOTRUNOFF_1', func = sum3),
-         'LHEAT_1': derived_var(vid='LHEAT_1', inputs=['FCTR_1', 'FCEV_1', 'FGEV_1'], outputs='LHEAT_1', func=sum3),
-         'EVAPFRAC_1': derived_var(vid='EVAPFRAC_1', inputs=['LHEAT_1', 'FSH_1'], outputs='EVAPFRAC_1', func=evapfrac_special),
-         'RNET_1': derived_var(vid='RNET_1', inputs=['FSA_1', 'FIRA_1'], outputs='RNET_1', func=aminusb),
-         'ASA_1': derived_var(vid='ASA_1', inputs=['FSR_1', 'FSDS_1'], outputs='ASA_1', func=adivb),
-         'PREC_2': derived_var(vid = 'PREC_2', inputs=['RAIN_2', 'SNOW_2'], outputs=['PREC_2'], func = aplusb),
-         'TOTRUNOFF_2': derived_var(vid = 'TOTRUNOFF_2', inputs=['QOVER_2', 'QDRAI_2', 'QRGWL_2'], outputs='TOTRUNOFF_2', func = sum3),
-         'LHEAT_2': derived_var(vid='LHEAT_2', inputs=['FCTR_2', 'FCEV_2', 'FGEV_2'], outputs='LHEAT_2', func=sum3),
-         'EVAPFRAC_2': derived_var(vid='EVAPFRAC_2', inputs=['LHEAT_2', 'FSH_2'], outputs='EVAPFRAC_2', func=evapfrac_special),
-         'RNET_2': derived_var(vid='RNET_2', inputs=['FSA_2', 'FIRA_2'], outputs='RNET_2', func=aminusb),
-         'ASA_2': derived_var(vid='ASA_2', inputs=['FSR_2', 'FSDS_2'], outputs='ASA_2', func=adivb)
-      }
+      if varid not in lmwg_plot_set6._derived_varnames:
+         self.reduced_variables[varid+'_1'] = reduced_variable(
+               variableid = varid, filetable=filetable1, reduced_var_id=varid+'_1',
+               reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid))),
+         if filetable2 != None:
+            self.reduced_variables[varid+'_2'] = reduced_variable(
+                  variableid = varid, filetable=filetable2, reduced_var_id=varid+'_2',
+                  reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid))),
+      else:
+         red_vars = ['RAIN', 'PREC', 'QSOIL', 'QVEGE', 'QVEGT', 'FCTR', 'FCEV', 'FGEV', 'FSR', 'FSDS', 'FIRA', 'FSA']
+         red_der_vars = ['FSR', 'FSDS', 'FSA', 'FIRA']
+         for k in red_vars:
+            self.reduced_variables[k+'_1'] = reduced_variable(
+               variableid = k, filetable = filetable1, reduced_var_id = k+'_1',
+               reduction_function = (lambda x, vid: reduceAnnTrendRegion(x, region, vid)))
+            if filetable2 != None:
+               self.reduced_variables[k+'_2'] = reduced_variable(
+                  variableid = k, filetable = filetable2, reduced_var_id = k+'_2',
+                  reduction_function = (lambda x, vid: reduceAnnTrendRegion(x, region, vid)))
+         for k in red_der_vars:
+            self.reduced_variables[k+'_A'] = reduced_variable(
+               variableid = k, filetable = filetable1, reduced_var_id = k+'_A',
+               reduction_function = (lambda x, vid: dummy(x, vid)))
+            if filetable2 != None:
+               self.reduced_variables[k+'_B'] = reduced_variable(
+                  variableid = k, filetable = filetable2, reduced_var_id = k+'_B',
+                  reduction_function = (lambda x, vid: dummy(x, vid)))
+
+         self.derived_variables['PREC_1'] = derived_var(
+            vid='PREC_1', inputs=['RAIN_1', 'SNOW_1'], func=aplusb)
+         self.derived_variables['TOTRUNOFF_1'] = derived_var(
+            vid='TOTRUNOFF_1', inputs=['QSOIL_1', 'QVEGE_1', 'QVEGT_1'], func=sum3)
+         self.derived_variables['RNET_1'] = derived_var(
+            vid='RNET_1', inputs=['FSA_A', 'FIRA_A'], func=aminusb)
+         self.derived_variables['LHEAT_1'] = derived_var(
+            vid='LHEAT_1', inputs=['FCTR_1', 'FCEV_1', 'FGEV_1'], func=sum3)
+         # AKA ASA?
+         self.derived_variables['ALBEDO_1'] = derived_var(
+            vid='ALBEDO_1', inputs=['FSR_A', 'FSDS_A'], func=adivb)
+         if filetable2 != None:
+            self.derived_variables['PREC_2'] = derived_var(
+               vid='PREC_2', inputs=['RAIN_2', 'SNOW_2'], func=aplusb)
+            self.derived_variables['TOTRUNOFF_2'] = derived_var(
+               vid='TOTRUNOFF_2', inputs=['QSOIL_2', 'QVEGE_2', 'QVEGT_2'], func=sum3)
+            self.derived_variables['RNET_2'] = derived_var(
+               vid='RNET_2', inputs=['FSA_B', 'FIRA_B'], func=aminusb)
+            self.derived_variables['LHEAT_2'] = derived_var(
+               vid='LHEAT_2', inputs=['FCTR_2', 'FCEV_2', 'FGEV_2'], func=sum3)
+            # AKA ASA?
+            self.derived_variables['ALBEDO_2'] = derived_var(
+               vid='ALBEDO_2', inputs=['FSR_B', 'FSDS_B'], func=adivb)
+
+
       self.single_plotspecs = {
          self.plot1_id: plotspec(
             vid=varid+'_1',
@@ -224,6 +380,7 @@ class lmwg_plot_set3b(lmwg_plot_spec):
       # This list of variables is here:
       # http://www.cgd.ucar.edu/tss/clm/diagnostics/clm4cn/i1860-2009cnGCPs3-obs/set3/variableList_3.html
       ### WORKING HERE NEXT
+      # These variables need reduced for the various plots directly
       self.set3main = ['VBSA','NBSA','VWSA','NWSA','ASA','NEE','GPP','NPP','HR',
          'NEP','NEE','GPP','NPP','AR','HR','ER','SUPPLEMENT_TO_SMINN','SMINN_LEACHED',
          'COL_FIRE_CLOSS','COL_FIRE_NLOSS','PFT_FIRE_CLOSS','PFT_FIRE_NLOSS',
@@ -231,6 +388,7 @@ class lmwg_plot_set3b(lmwg_plot_spec):
          'QCHARGE','FCOV','TSA','SNOWDP','RNET','ET','FSDS',
          'ALBEDO','FSA','FLDS','FIRE','FIRA','RNET','SNOWDP','FSNO','H2OSNO','RNET','FSH',
          'FCTR','FCEV','FGEV','FGR','BTRAN','TLAI']
+      # These are never plotted but are used for derived variables
       self.set3extras = [ 'QRGWL', 'QDRAI', 'QOVER', 'RAIN', 'SNOW', 'FSR']
       self.set3derlist = ['RNET', 'TOTRUNOFF', 'PREC', 'EVAPFRAC', 'LHEAT' ]
 
