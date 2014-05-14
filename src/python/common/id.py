@@ -32,7 +32,9 @@ class basic_id():
     def __init__( self, *args ):
         self.make_id(*args)
     def make_id( self, *args ):
-        # Creates an id and assigns it to self._id.  All arguments become part of the id.
+        """Creates an id and assigns it to self._id.  All arguments become part of the id."""
+        # Often a class derived from basic_id will wrap this method with another method to
+        # enforce a standard list of id components.
         classid = self.abbrev(self.__class__.__name__)
         self._id = tuple([classid]+[ getattr(a,'_strid',str(a)) for a in args ])
         assert( len(self._id)<=self._idmx )
