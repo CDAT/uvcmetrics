@@ -601,7 +601,7 @@ class plot_spec(object):
             self._seasonid=seasonid
         self.reduced_variables = {}
         self.derived_variables = {}
-        self.variable_values = {}
+        self.variable_values = { 'seasonid':self._seasonid }
         self.single_plotspecs = {}
         self.composite_plotspecs = {}
         self.plotspec_values = {}

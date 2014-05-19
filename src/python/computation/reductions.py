@@ -1500,6 +1500,11 @@ class reduced_variable(ftrow,basic_id):
                     if val is None:
                         print "missing data; duv_inputs[",key,"]=",val
                         return None
+                # Stick the season in duv_inputs.  Region or other GUI parameters could be passed
+                # this way too.  Note that the following line converts a cdutil.times.Seasons object
+                # to a string.  Such objects can represent a list of seasons, but in the Diagnostics
+                # we expect them to contain but one season.
+                duv_inputs.update( { 'seasonid':self._season.seasons[0] } )
                 # Finally, we can compute the value of this DUV.
                 duv_value = duv.derive( duv_inputs )
                 reduced_data = self._reduction_function( duv_value, vid=vid )

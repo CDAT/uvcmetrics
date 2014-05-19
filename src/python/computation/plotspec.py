@@ -14,13 +14,21 @@ class derived_var(basic_id):
         self._outputs = outputs
         self._func = func
         self._file_attributes = {}
-    def derive( self, vardict ):
+    def derive( self, inpdict ):
+        """Compute the derived variable.  inpdict is a dictionary of input names (ids) and
+        values, and will be used to get the input values from the input names in self._inputs.
+        Typically an key of inpdict will be the name of a reduced variable, or another derived
+        variable; and the corresponding value will be an MV (i.e. cdms2 variable, usually a
+        TransientVariable).  But the key could also represent a choice made by the user in the GUI
+        or the controlling script, e.g. 'seasonid' or 'region'.  Then the value will typically be a
+        string (By convention we say 'seasonid' for a string and 'season' for a cdutil.times.Seasons
+        object)."""
         # error from checking this way!... if None in [ vardict[inp] for inp in self._inputs ]:
-        dictvals = [ vardict.get(inp,None) for inp in self._inputs ]
+        dictvals = [ inpdict.get(inp,None) for inp in self._inputs ]
         nonevals = [nn for nn in dictvals if nn is None]
         if len(nonevals)>0:
             return None
-        output = apply( self._func, [ vardict[inp] for inp in self._inputs ] )
+        output = apply( self._func, [ inpdict[inp] for inp in self._inputs ] )
         if type(output) is tuple or type(output) is list:
             for o in output:
                 if o is None: return None
