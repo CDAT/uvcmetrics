@@ -1348,11 +1348,14 @@ class reduced_variable(ftrow,basic_id):
                       reduction_function=(lambda x,vid=None: x),\
                       filetable=None, axes=None, duvs={}, rvs={}
                   ):
+        self._season = season
         if reduced_var_id is not None:
             basic_id.__init__( self, reduced_var_id )
         else:
-            basic_id.__init__( self, variableid, filetable )
-        self._season = season
+            seasonid=self._season.seasons[0]
+            if seasonid=='JFMAMJJASOND':
+                seasonid='ANN'
+            basic_id.__init__( self, variableid, seasonid, filetable )
         ftrow.__init__( self, fileid, variableid, timerange, latrange, lonrange, levelrange )
         self._reduction_function = reduction_function
         self._axes = axes
@@ -1366,6 +1369,15 @@ class reduced_variable(ftrow,basic_id):
         self._file_attributes = {}
         self._duvs = duvs
         self._rvs = rvs
+    def __repr__(self):
+        return self._id
+
+    @classmethod
+    def dict_id( cls, varid, seasonid, ft ):
+        """varid, seasonid are strings identifying a variable name (usually of a model output
+        variable) and season, ft is a filetable.  This method constructs and returns an id for
+        the corresponding reduced_variable object."""
+        return basic_id._dict_id( cls, varid, seasonid, ft._strid )
 
     def extract_filefamilyname( self, filename ):
         """From a filename, extracts the first part of the filename as the possible
@@ -1517,7 +1529,9 @@ class reduced_variable(ftrow,basic_id):
             f.close()
         return reduced_data
 
-
+class rv(reduced_variable):
+    """same as reduced_variable, but short name saves on typing"""
+    pass
 
 
 
