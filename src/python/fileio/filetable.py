@@ -135,7 +135,7 @@ class basic_filetable(basic_id):
         for filep in filelist.files:
             self.addfile( filep, options )
     def __repr__(self):
-       return 'filetable from '+str(self._filelist)
+       return 'filetable from '+str(self._filelist)[:100]+'...'
     def full_repr(self):
        return 'filetable from '+str(self._filelist)+'\n'+self._table.__repr__()
     def initialize_idnumber( self ):
