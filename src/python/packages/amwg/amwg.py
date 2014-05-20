@@ -388,27 +388,27 @@ class amwg_plot_set4(amwg_plot_spec):
         if not self.computation_planned:
             self.plan_computation( filetable1, filetable2, varid, seasonid )
     def reduced_variables_press_lev( self, filetable, varid, seasonid, ftno=None ):
-        #ft_no = '_'+ftno  # e.g. '_1' or '_2'
-        reduced_variables = {
-            rv.dict_id(varid,seasonid,filetable): reduced_variable(
+        reduced_varlis = [
+            reduced_variable(
                 variableid=varid, filetable=filetable, season=self.season,
-                reduction_function=(lambda x,vid=None: reduce2levlat_seasonal(x,self.season,vid=vid)) ) }
+                reduction_function=(lambda x,vid=None: reduce2levlat_seasonal(x,self.season,vid=vid)) ) ]
+        reduced_variables = { v.id():v for v in reduced_varlis }
         return reduced_variables
     def reduced_variables_hybrid_lev( self, filetable, varid, seasonid, ftno=None ):
-        #ft_no = '_'+ftno  # e.g. '_1' or '_2'
-        reduced_variables = {
-            rv.dict_id(varid,seasonid,filetable): reduced_variable(
+        reduced_varlis = [
+            reduced_variable(
                 variableid=varid, filetable=filetable, season=self.season,
                 reduction_function=(lambda x,vid=None: reduce2levlat_seasonal(x,self.season,vid=vid)) ),
-            rv.dict_id('hyam',seasonid,filetable): reduced_variable(      # hyam=hyam(lev)
+            reduced_variable(      # hyam=hyam(lev)
                 variableid='hyam', filetable=filetable, season=self.season,
                 reduction_function=(lambda x,vid=None: x) ),
-            rv.dict_id('hybm',seasonid,filetable): reduced_variable(      # hybm=hybm(lev)
+            reduced_variable(      # hybm=hybm(lev)
                 variableid='hybm', filetable=filetable, season=self.season,
                 reduction_function=(lambda x,vid=None: x) ),
-            rv.dict_id('PS',seasonid,filetable): reduced_variable(
+            reduced_variable(
                 variableid='PS', filetable=filetable, season=self.season,
-                reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,self.season,vid=vid)) ) }
+                reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,self.season,vid=vid)) ) ]
+        reduced_variables = { v.id():v for v in reduced_varlis }
         return reduced_variables
     def plan_computation( self, filetable1, filetable2, varid, seasonid ):
         ft1_hyam = filetable1.find_files('hyam')
