@@ -657,10 +657,15 @@ class plot_spec(object):
             value = self.derived_variables[v].derive(self.variable_values)
             self.variable_values[v] = value  # could be None
         varvals = self.variable_values
+        print "jfp varvals keys=",varvals.keys()
         for p,ps in self.single_plotspecs.iteritems():
             print "uvcdat jfp preparing data for",ps._strid
 #            if 1:
             try:
+                print "jfp ps.xvars=",ps.xvars,ps.x1vars,ps.x2vars,ps.x3vars
+                print "jfp ps.yvars=",ps.yvars,ps.y1vars,ps.y2vars,ps.y3vars
+                print "jfp ps.yavars=",ps.yavars,ps.ya1vars
+                print "jfp ps.zvars=",ps.zvars,ps.zrangevars
                 xrv = [ varvals[k] for k in ps.xvars ]
                 x1rv = [ varvals[k] for k in ps.x1vars ]
                 x2rv = [ varvals[k] for k in ps.x2vars ]
