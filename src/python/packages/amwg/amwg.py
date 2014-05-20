@@ -5,6 +5,7 @@
 
 from metrics.packages.diagnostic_groups import *
 from metrics.computation.reductions import *
+from metrics.computation.plotspec import *
 from metrics.frontend.uvcdat import *
 from metrics.common.id import *
 from unidata import udunits
@@ -340,7 +341,6 @@ class amwg_plot_set3(amwg_plot_spec,basic_id):
         y1val = self.variable_values[y1var._strid]
         #y1val = self.variable_values[y1var._vid] # _vid is deprecated
         if y1val is None: return None
-        print "jfp in plot set 3 results, y1var id=",y1var._id," y1var strid=",y1var._strid
         y1unam = y1var._filetable._strid  # part of y1 distinguishing it from y2, e.g. ft_1
         y1val.id = '_'.join([self._id[0],self._id[1],y1unam])
         y2val = self.variable_values[y2var._strid]
@@ -390,23 +390,23 @@ class amwg_plot_set4(amwg_plot_spec):
     def reduced_variables_press_lev( self, filetable, varid, seasonid, ftno=None ):
         #ft_no = '_'+ftno  # e.g. '_1' or '_2'
         reduced_variables = {
-            (varid,seasonid,filetable._strid): reduced_variable(
+            rv.dict_id(varid,seasonid,filetable): reduced_variable(
                 variableid=varid, filetable=filetable, season=self.season,
                 reduction_function=(lambda x,vid=None: reduce2levlat_seasonal(x,self.season,vid=vid)) ) }
         return reduced_variables
     def reduced_variables_hybrid_lev( self, filetable, varid, seasonid, ftno=None ):
         #ft_no = '_'+ftno  # e.g. '_1' or '_2'
         reduced_variables = {
-            (varid,seasonid,filetable._strid): reduced_variable(
+            rv.dict_id(varid,seasonid,filetable): reduced_variable(
                 variableid=varid, filetable=filetable, season=self.season,
                 reduction_function=(lambda x,vid=None: reduce2levlat_seasonal(x,self.season,vid=vid)) ),
-            ('hyam',seasonid,filetable._strid): reduced_variable(      # hyam=hyam(lev)
+            rv.dict_id('hyam',seasonid,filetable): reduced_variable(      # hyam=hyam(lev)
                 variableid='hyam', filetable=filetable, season=self.season,
                 reduction_function=(lambda x,vid=None: x) ),
-            ('hybm',seasonid,filetable._strid): reduced_variable(      # hybm=hybm(lev)
+            rv.dict_id('hybm',seasonid,filetable): reduced_variable(      # hybm=hybm(lev)
                 variableid='hybm', filetable=filetable, season=self.season,
                 reduction_function=(lambda x,vid=None: x) ),
-            ('PS',seasonid,filetable._strid): reduced_variable(
+            rv.dict_id('PS',seasonid,filetable): reduced_variable(
                 variableid='PS', filetable=filetable, season=self.season,
                 reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,self.season,vid=vid)) ) }
         return reduced_variables
@@ -428,33 +428,35 @@ class amwg_plot_set4(amwg_plot_spec):
         self.derived_variables = {}
         if hybrid1:
             # >>>> actually last arg of the derived var should identify the coarsest level, not nec. 2
-            vid1=(varid+'levlat',seasonid,filetable1._strid)
+            vid1=dv.dict_id(varid,'levlat',seasonid,filetable1)
             self.derived_variables[vid1] = derived_var(
-                vid=vid1, inputs=[(varid,seasonid,filetable1._strid), ('hyam',seasonid,filetable1._strid),
-                                  ('hybm',seasonid,filetable1._strid), ('PS',seasonid,filetable1._strid),
-                                  (varid,seasonid,filetable2._strid)],
+                vid=vid1, inputs=[rv.dict_id(varid,seasonid,filetable1), rv.dict_id('hyam',seasonid,filetable1),
+                                  rv.dict_id('hybm',seasonid,filetable1), rv.dict_id('PS',seasonid,filetable1),
+                                  rv.dict_id(varid,seasonid,filetable2) ],
                 func=verticalize )
         else:
-            vid1 = (varid,seasonid,filetable1._strid)
+            vid1 = rv.dict_id(varid,seasonid,filetable1)
         if hybrid2:
             # >>>> actually last arg of the derived var should identify the coarsest level, not nec. 2
-            vid2=(varid+'levlat',seasonid,filetable2._strid)
+            vid2=dv.dict_id(varid,'levlat',seasonid,filetable2)
             self.derived_variables[vid2] = derived_var(
-                vid=vid2, inputs=[(varid,seasonid,filetable2._strid), ('hyam',seasonid,filetable2._strid),
-                                  ('hybm',seasonid,filetable2._strid), ('PS',seasonid,filetable2._strid),
-                                  (varid,seasonid,filetable2._strid)],
+                vid=vid2, inputs=[rv.dict_id(varid,seasonid,filetable2),
+                                  rv.dict_id('hyam',seasonid,filetable2),
+                                  rv.dict_id('hybm',seasonid,filetable2),
+                                  rv.dict_id('PS',seasonid,filetable2),
+                                  rv.dict_id(varid,seasonid,filetable2) ],
                 func=verticalize )
         else:
-            vid2 = (varid,seasonid,filetable2._strid)
+            vid2 = rv.dict_id(varid,seasonid,filetable2)
         self.single_plotspecs = {
             self.plot1_id: plotspec(
-                vid = id2strid((varid,seasonid,filetable1._strid)), zvars=[vid1], zfunc=(lambda z: z),
+                vid = id2strid(vid1), zvars=[vid1], zfunc=(lambda z: z),
                 plottype = self.plottype ),
             self.plot2_id: plotspec(
-                vid = id2strid((varid,seasonid,filetable2._strid)), zvars=[vid2], zfunc=(lambda z: z),
+                vid = id2strid(vid2), zvars=[vid2], zfunc=(lambda z: z),
                 plottype = self.plottype ),
             self.plot3_id: plotspec(
-                vid = id2strid((varid,seasonid,filetable1._strid,filetable2._strid)), zvars=[vid1,vid2],
+                vid = id2strid(dv.dict_id(varid,'',seasonid,filetable1,filetable2)), zvars=[vid1,vid2],
                 zfunc=aminusb_2ax, plottype = self.plottype )
             }
         self.composite_plotspecs = {
