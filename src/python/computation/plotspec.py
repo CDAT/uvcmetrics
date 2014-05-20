@@ -2,13 +2,14 @@
 
 # general-purpose classes used in computing data for plots
 from metrics.common import *
+from metrics.common.id import *
 
 class derived_var(basic_id):
     def __init__( self, vid, inputs=[], outputs=['output'], func=(lambda: None) ):
         if type(vid) is tuple:
-            basic_id.__init__(self,*vid)  # often vid is like VAR_1.  Better then to input (VAR,1).
+            basic_id.__init__(self,*vid)
         else:  # probably vid is a string
-            basic_id.__init__(self,vid)  # often vid is like VAR_1.  Better then to input (VAR,1).
+            basic_id.__init__(self,vid)
         #self._vid = self._strid      # self._vid is deprecated
         self._inputs = inputs
         self._outputs = outputs
@@ -40,6 +41,24 @@ class derived_var(basic_id):
             self.adopt( output )  # output gets ids of self
             self._file_attributes.update( getattr(output,'_file_attributes',{}) )
         return output
+    @classmethod
+    def dict_id( cls, varid, varmod, seasonid, ft1, ft2=None ):
+        """varid, varmod, seasonid are strings identifying a variable name, a name modifier
+        (often '' is a good value) and season, ft is a filetable, or a string id for the filetable.
+        This method constructs and returns an id for the corresponding derived_var object."""
+        if type(ft1) is str:  # can happen if id has already been computed, and is used as input here.
+            ft1id = ft1
+        else:
+            ft1id = id2strid( ft1._id )
+        if ft2 is None or ft2=='':
+            ft2id = ''
+        else:
+            ft2id = id2strid( ft2._id )
+        return basic_id._dict_id( cls, varid, varmod, seasonid, ft1id, ft2id )
+
+class dv(derived_var):
+    """same as derived_var, but short name saves on typing"""
+    pass
 
 class plotspec(basic_id):
     def __init__(
