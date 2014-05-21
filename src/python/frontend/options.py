@@ -40,6 +40,7 @@ class Options():
       self._opts['start'] = -1
       self._opts['end'] = -1
       self._opts['cachepath'] = '/tmp'
+      self._opts['varopts'] = None
 
       # There is no support for maintaining realm distinctions. 
       # At one point, I was thinking you could specify a realm and get a 
@@ -362,6 +363,8 @@ class Options():
          help="Specify an end time in the dataset")
       parser.add_argument('--translate', nargs='?', default='y',
          help="Enable translation for obs sets to datasets. Optional provide a colon separated input to output list e.g. DSVAR1:OBSVAR1")
+      parser.add_argument('--varopts', nargs='+',
+         help="Variable auxillary options")
 
 
 
@@ -434,6 +437,9 @@ class Options():
       self._opts['seasonally'] = args.seasonally
       self._opts['monthly'] = args.monthly
 
+      if(args.varopts != None):
+         self._opts['varopts'] = args.varopts
+
       if(args.starttime != None):
          self._opts['start'] = args.starttime[0]
 
@@ -484,6 +490,7 @@ class Options():
          for i in args.name:
             self._opts['dsnames'].append(i[0])
 
+      # Specify an output path
       if(args.output != None):
          self._opts['output'] = args.output[0]
 
@@ -522,6 +529,10 @@ class Options():
       # Given user-selected packages, check for user specified sets
       # Note: If multiple packages have the same set names, then they are all added to the list.
       # This might be bad since there is no differentiation of lwmg['id==set'] and lmwg2['id==set']
+      if(self._opts['packages'] == None and args.sets != None):
+         print 'No package specified'
+         self._opts['sets'] = args.sets
+
       if(args.sets != None and self._opts['packages'] != None):
          # unfortuantely, we have to go through all of this....
          # there should be a non-init of the class method to list sets/packages/etc,

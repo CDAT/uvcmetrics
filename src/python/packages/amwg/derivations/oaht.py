@@ -61,6 +61,7 @@ def oceanic_heat_transport(
     # gw is sometimes available; and ocnfrac or oro is normally available.
     # compare isn't used at the moment, but it's in a remnant of NCL code below.
 
+    print 'IN OCEANIC HEAT TRANSPORT'
     lat1 = latAxis(fsns)
 
     if gw==None:
