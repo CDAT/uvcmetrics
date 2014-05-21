@@ -3,6 +3,7 @@
 # general-purpose classes used in computing data for plots
 from metrics.common import *
 from metrics.common.id import *
+import sys, traceback
 
 class derived_var(basic_id):
     def __init__( self, vid, inputs=[], outputs=['output'], func=(lambda: None) ):
@@ -27,7 +28,9 @@ class derived_var(basic_id):
         # error from checking this way!... if None in [ vardict[inp] for inp in self._inputs ]:
         dictvals = [ inpdict.get(inp,None) for inp in self._inputs ]
         nonevals = [nn for nn in dictvals if nn is None]
+        print 'nonevals: ', nonevals
         if len(nonevals)>0:
+            print 'LEN WAS 0, RETURN'
             return None
         output = apply( self._func, [ inpdict[inp] for inp in self._inputs ] )
         if type(output) is tuple or type(output) is list:
