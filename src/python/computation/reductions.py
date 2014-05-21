@@ -1059,7 +1059,8 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
     aminusb = mv1new - mv2new
     #aminusb.id = mv1.id
     aminusb.id = 'difference of '+mv1.id
-    aminusb.long_name = 'difference of '+mv1.long_name
+    if hasattr(mv1,'long_name'):
+        aminusb.long_name = 'difference of '+mv1.long_name
     if hasattr(mv1,'units'):  aminusb.units = mv1.units
     return aminusb
 

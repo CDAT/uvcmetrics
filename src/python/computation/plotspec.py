@@ -49,11 +49,11 @@ class derived_var(basic_id):
         if type(ft1) is str:  # can happen if id has already been computed, and is used as input here.
             ft1id = ft1
         else:
-            ft1id = id2strid( ft1._id )
+            ft1id = id2str( ft1._id )
         if ft2 is None or ft2=='':
             ft2id = ''
         else:
-            ft2id = id2strid( ft2._id )
+            ft2id = id2str( ft2._id )
         return basic_id._dict_id( cls, varid, varmod, seasonid, ft1id, ft2id )
 
 class dv(derived_var):
