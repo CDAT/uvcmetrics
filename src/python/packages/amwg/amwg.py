@@ -450,13 +450,13 @@ class amwg_plot_set4(amwg_plot_spec):
             vid2 = rv.dict_id(varid,seasonid,filetable2)
         self.single_plotspecs = {
             self.plot1_id: plotspec(
-                vid = id2strid(vid1), zvars=[vid1], zfunc=(lambda z: z),
+                vid = id2str(vid1), zvars=[vid1], zfunc=(lambda z: z),
                 plottype = self.plottype ),
             self.plot2_id: plotspec(
-                vid = id2strid(vid2), zvars=[vid2], zfunc=(lambda z: z),
+                vid = id2str(vid2), zvars=[vid2], zfunc=(lambda z: z),
                 plottype = self.plottype ),
             self.plot3_id: plotspec(
-                vid = id2strid(dv.dict_id(varid,'',seasonid,filetable1,filetable2)), zvars=[vid1,vid2],
+                vid = dv.str_id(varid,'diff',seasonid,filetable1,filetable2), zvars=[vid1,vid2],
                 zfunc=aminusb_2ax, plottype = self.plottype )
             }
         self.composite_plotspecs = {
@@ -515,7 +515,6 @@ class amwg_plot_set5and6(amwg_plot_spec):
     @staticmethod
     def _all_variables( filetable1, filetable2=None ):
         allvars = amwg_plot_spec.package._all_variables( filetable1, filetable2, "amwg_plot_spec" )
-        #allvars['Z3'] = basic_level_variable # temporary, the right thing is to find level-dep't vars
         for varname in amwg_plot_spec.package._list_variables_with_levelaxis(
             filetable1, filetable2, "amwg_plot_spec" ):
             allvars[varname] = basic_level_variable
@@ -528,35 +527,39 @@ class amwg_plot_set5and6(amwg_plot_spec):
     def plan_computation_normal_contours( self, filetable1, filetable2, varid, seasonid, region=None, aux=None ):
         """Set up for a lat-lon contour plot, as in plot set 5.  Data is averaged over all other
         axes."""
-        self.reduced_variables = {
-            varid+'_1': reduced_variable(
-                variableid=varid, filetable=filetable1, reduced_var_id=varid+'_1', season=self.season,
+        reduced_varlis = [
+            reduced_variable(
+                variableid=varid, filetable=filetable1, season=self.season,
                 reduction_function=(lambda x,vid: reduce2latlon_seasonal( x, self.season, vid ) ) ),
-            varid+'_2': reduced_variable(
-                variableid=varid, filetable=filetable2, reduced_var_id=varid+'_2', season=self.season,
+            reduced_variable(
+                variableid=varid, filetable=filetable2, season=self.season,
                 reduction_function=(lambda x,vid: reduce2latlon_seasonal( x, self.season, vid ) ) ),
-            varid+'_1_var': reduced_variable(
+            reduced_variable(
                 # variance, for when there are variance climatology files
-                variableid=varid+'_var', filetable=filetable1, reduced_var_id=varid+'_1_var', season=self.season,
+                variableid=varid+'_var', filetable=filetable1, season=self.season,
                 reduction_function=(lambda x,vid: reduce2latlon_seasonal( x, self.season, vid ) ) )
-            }
+            ]
+        self.reduced_variables = { v.id():v for v in reduced_varlis }
+        vid1 = rv.dict_id( varid, seasonid, filetable1 )
+        vid2 = rv.dict_id( varid, seasonid, filetable2 )
+        vid1var = rv.dict_id( varid+'_var', seasonid, filetable1 )
         self.derived_variables = {}
         self.single_plotspecs = {
             self.plot1_id: plotspec(
-                vid = varid+'_1',
-                zvars = [varid+'_1'],  zfunc = (lambda z: z),
+                vid = id2str(vid1),
+                zvars = [vid1],  zfunc = (lambda z: z),
                 plottype = self.plottype ),
             self.plot2_id: plotspec(
-                vid = varid+'_2',
-                zvars = [varid+'_2'],  zfunc = (lambda z: z),
+                vid = id2str(vid2),
+                zvars = [vid2],  zfunc = (lambda z: z),
                 plottype = self.plottype ),
             self.plot3_id: plotspec(
-                vid = varid+' diff',
-                zvars = [varid+'_1',varid+'_2'],  zfunc = aminusb_2ax,
+                vid = dv.str_id(varid,'diff',seasonid,filetable1,filetable2),
+                zvars = [vid1,vid2],  zfunc = aminusb_2ax,
                 plottype = self.plottype ),
             self.plot1var_id: plotspec(
-                vid = varid+'_1_var',
-                zvars = [varid+'_1_var'],  zfunc = (lambda z: z),
+                vid = id2str(vid1var),
+                zvars = [vid1var],  zfunc = (lambda z: z),
                 plottype = self.plottype )
             }
         self.composite_plotspecs = {
@@ -573,75 +576,100 @@ class amwg_plot_set5and6(amwg_plot_spec):
         if not isinstance(aux,Number): return None
         pselect = udunits(aux,'mbar')
 
-        self.reduced_variables = {
-            varid+'_1': reduced_variable(  # var=var(time,lev,lat,lon)
-                variableid=varid, filetable=filetable1, reduced_var_id=varid+'_1', season=self.season,
+        # self.reduced_variables = {
+        #     varid+'_1': reduced_variable(  # var=var(time,lev,lat,lon)
+        #         variableid=varid, filetable=filetable1, reduced_var_id=varid+'_1', season=self.season,
+        #         reduction_function=(lambda x,vid: reduce_time_seasonal( x, self.season, vid ) ) ),
+        #     'hyam_1': reduced_variable(   # hyam=hyam(lev)
+        #         variableid='hyam', filetable=filetable1, reduced_var_id='hyam_1',season=self.season,
+        #         reduction_function=(lambda x,vid=None: x) ),
+        #     'hybm_1': reduced_variable(   # hybm=hybm(lev)
+        #         variableid='hybm', filetable=filetable1, reduced_var_id='hybm_1',season=self.season,
+        #         reduction_function=(lambda x,vid=None: x) ),
+        #     'PS_1': reduced_variable(     # ps=ps(time,lat,lon)
+        #         variableid='PS', filetable=filetable1, reduced_var_id='PS_1', season=self.season,
+        #         reduction_function=(lambda x,vid=None: reduce_time_seasonal( x, self.season, vid ) ) ) }
+        reduced_varlis = [
+            reduced_variable(  # var=var(time,lev,lat,lon)
+                variableid=varid, filetable=filetable1, season=self.season,
                 reduction_function=(lambda x,vid: reduce_time_seasonal( x, self.season, vid ) ) ),
-            'hyam_1': reduced_variable(   # hyam=hyam(lev)
-                variableid='hyam', filetable=filetable1, reduced_var_id='hyam_1',season=self.season,
+            reduced_variable(   # hyam=hyam(lev)
+                variableid='hyam', filetable=filetable1, season=self.season,
                 reduction_function=(lambda x,vid=None: x) ),
-            'hybm_1': reduced_variable(   # hybm=hybm(lev)
-                variableid='hybm', filetable=filetable1, reduced_var_id='hybm_1',season=self.season,
+            reduced_variable(   # hybm=hybm(lev)
+                variableid='hybm', filetable=filetable1, season=self.season,
                 reduction_function=(lambda x,vid=None: x) ),
-            'PS_1': reduced_variable(     # ps=ps(time,lat,lon)
-                variableid='PS', filetable=filetable1, reduced_var_id='PS_1', season=self.season,
-                reduction_function=(lambda x,vid=None: reduce_time_seasonal( x, self.season, vid ) ) ) }
-        vid1 = varid+'_p_1'
-        vidl1 = varid+'_lp_1'
+            reduced_variable(     # ps=ps(time,lat,lon)
+                variableid='PS', filetable=filetable1, season=self.season,
+                reduction_function=(lambda x,vid=None: reduce_time_seasonal( x, self.season, vid ) ) ) ]
+        # vid1 = varid+'_p_1'
+        # vidl1 = varid+'_lp_1'
+        vid1 = dv.dict_id(  varid, 'p', seasonid, filetable1)
+        vidl1 = dv.dict_id(varid, 'lp', seasonid, filetable1)
         self.derived_variables = {
-            vid1: derived_var( vid=vid1, inputs=[ varid+'_1', 'hyam_1', 'hybm_1', 'PS_1' ],
+            vid1: derived_var( vid=vid1, inputs =
+                               [rv.dict_id(varid,seasonid,filetable1), rv.dict_id('hyam',seasonid,filetable1),
+                                rv.dict_id('hybm',seasonid,filetable1), rv.dict_id('PS',seasonid,filetable1) ],
+            #was  vid1: derived_var( vid=vid1, inputs=[ varid+'_1', 'hyam_1', 'hybm_1', 'PS_1' ],
                                func=verticalize ),
             vidl1: derived_var( vid=vidl1, inputs=[vid1], func=(lambda z: select_lev(z,pselect))) }
+
         if 'hyam' in filetable2.list_variables() and 'hybm' in filetable2.list_variables():
             # hybrid levels in use, convert to pressure levels
-            self.reduced_variables.update( {
-                varid+'_2': reduced_variable(  # var=var(time,lev,lat,lon)
-                    variableid=varid, filetable=filetable2, reduced_var_id=varid+'_2',season=self.season,
+            reduced_varlis += [
+                reduced_variable(  # var=var(time,lev,lat,lon)
+                    variableid=varid, filetable=filetable2, season=self.season,
                     reduction_function=(lambda x,vid: reduce_time_seasonal( x, self.season, vid ) ) ),
-                'hyam_2': reduced_variable(   # hyam=hyam(lev)
-                    variableid='hyam', filetable=filetable2, reduced_var_id='hyam_2',season=self.season,
+                reduced_variable(   # hyam=hyam(lev)
+                    variableid='hyam', filetable=filetable2, season=self.season,
                     reduction_function=(lambda x,vid=None: x) ),
-                'hybm_2': reduced_variable(   # hybm=hybm(lev)
-                    variableid='hybm', filetable=filetable2, reduced_var_id='hybm_2',season=self.season,
+                reduced_variable(   # hybm=hybm(lev)
+                    variableid='hybm', filetable=filetable2, season=self.season,
                     reduction_function=(lambda x,vid=None: x) ),
-                'PS_2': reduced_variable(     # ps=ps(time,lat,lon)
-                    variableid='PS', filetable=filetable2, reduced_var_id='PS_2',season=self.season,
+                reduced_variable(     # ps=ps(time,lat,lon)
+                    variableid='PS', filetable=filetable2, season=self.season,
                     reduction_function=(lambda x,vid=None: reduce_time_seasonal( x, self.season, vid ) ) )
-                } )
-            vid2 = varid+'_p_2'
-            vidl2 = varid+'_lp_2'
-            self.derived_variables.update( {
-                    vid2: derived_var( vid=vid2, inputs=[ varid+'_2', 'hyam_2', 'hybm_2', 'PS_2' ],
-                                       func=verticalize ),
-                    vidl2: derived_var( vid=vidl2, inputs=[vid2],
-                                        func=(lambda z: select_lev(z,pselect) ) )
-                    } )
+                ]
+            #vid2 = varid+'_p_2'
+            #vidl2 = varid+'_lp_2'
+            vid2 = dv.dict_id( varid, 'p', seasonid, filetable2 )
+            vid2 = dv.dict_id( vards, 'lp', seasonid, filetable2 )
+            self.derived_variables[vid2] = derived_var( vid=vid2, inputs=[
+                    rv.dict_id(varid,seasonid,filetable2), rv.dict_id('hyam',seasonid,filetable2),
+                    rv.dict_id('hybm',seasonid,filetable2), rv.dict_id('PS',seasonid,filetable2) ],
+                                                        func=verticalize )
+            self.derived_variables[vidl2] = derived_var( vid=vidl2, inputs=[vid2],
+                                                         func=(lambda z: select_lev(z,pselect) ) )
         else:
             # no hybrid levels, assume pressure levels.
-            vid2 = varid+'_2'
-            self.reduced_variables.update( {
-                vid2: reduced_variable(  # var=var(time,lev,lat,lon)
-                    variableid=varid, filetable=filetable2, reduced_var_id=varid+'_2',season=self.season,
+            #vid2 = varid+'_2'
+            #vidl2 = varid+'_lp_2'
+            vid2 = rv.dict_id(varid,seasonid,filetable2)
+            vidl2 = dv.dict_id( varid, 'lp', seasonid, filetable2 )
+            reduced_varlis += [
+                reduced_variable(  # var=var(time,lev,lat,lon)
+                    variableid=varid, filetable=filetable2, season=self.season,
                     reduction_function=(lambda x,vid: reduce_time_seasonal( x, self.season, vid ) ) )
-                } )
-            vidl2 = varid+'_lp_2'
-            self.derived_variables.update( {
-                    vidl2: derived_var( vid=vidl2, inputs=[vid2],
-                                        func=(lambda z: select_lev(z,pselect) ) )
-                    } )
+                ]
+            self.derived_variables[vidl2] = derived_var( vid=vidl2, inputs=[vid2],
+                                                         func=(lambda z: select_lev(z,pselect) ) )
+        self.reduced_variables = { v.id():v for v in reduced_varlis }
 
         self.single_plotspecs = {
             self.plot1_id: plotspec(
-                vid = varid+'_1',
+                # was vid = varid+'_1',
                 # was zvars = [vid1],  zfunc = (lambda z: select_lev( z, pselect ) ),
+                vid = id2str(vidl1),
                 zvars = [vidl1],  zfunc = (lambda z: z),
                 plottype = self.plottype ),
             self.plot2_id: plotspec(
-                vid = varid+'_2',
+                #was vid = varid+'_2',
+                vid = id2str(vidl2),
                 zvars = [vidl2],  zfunc = (lambda z: z),
                 plottype = self.plottype ),
             self.plot3_id: plotspec(
-                vid = varid+'_diff',
+                #was vid = varid+'_diff',
+                vid = dv.str_id(varid,'diff',seasonid,filetable1,filetable2),
                 zvars = [vidl1,vidl2],  zfunc = aminusb_2ax,
                 plottype = self.plottype ),
             }
