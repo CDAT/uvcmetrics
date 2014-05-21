@@ -1,7 +1,7 @@
 
 
 
-def id2strid( id ):
+def id2str( id ):
     """computes a string id from a tuple id and returns it.
        If the input is already a string, just returns it unchanged."""
     if type(id) is str:
@@ -31,6 +31,7 @@ class basic_id():
     _idtags = tuple(idtags)
     def __init__( self, *args ):
         self._id = "id not determined yet"
+        self._strid = self._id
         self.make_id(*args)
     def make_id( self, *args ):
         """Creates an id and assigns it to self._id.  All arguments become part of the id."""
@@ -47,8 +48,10 @@ class basic_id():
         else:
             self._id = self.__class__.dict_id( *args )
         if type(self._id) is tuple: assert( len(self._id)<=self._idmx )
-        self._strid = id2strid(self._id)
+        self._strid = id2str(self._id)
         #print "jfp basic_id,",self.__class__.__name__,", just made self._strid=",self._strid,"from args",args
+    def __str__(self):
+        return self._strid
     @classmethod
     def dict_id( cls, *args ):
         """Creates and returns an id.  All arguments become part of the id.  Normally a child class will
@@ -59,6 +62,9 @@ class basic_id():
     def _dict_id( cls, *args ):
         classid = basic_id.abbrev(cls.__name__)
         return tuple([classid]+[ getattr(a,'_strid',str(a)) for a in args ])
+    @classmethod
+    def str_id( cls, *args ):
+        return id2str( cls.dict_id( *args ) )
     def id( self ):
         return self._id
     abbrevs = { 'basic_filetable':'ft', 'derived_var':'var', 'dv':'var', 'reduced_variable':'var', 'rv':'var',
