@@ -66,9 +66,11 @@ for pname,pclass in dm.items():
     print "jfp pname=",pname
     sm = package.list_diagnostic_sets()
     for sname,sclass in sm.items():
+        print "jfp sclass.name=",sclass.name
         #if sclass.name != ' 2 - Line Plots of Annual Implied Northward Transport':
         #if sclass.name != ' 3 - Line Plots of  Zonal Means':
-        if sclass.name != ' 4 - Vertical Contour Plots Zonal Means':
+        #if sclass.name != ' 4 - Vertical Contour Plots Zonal Means' and\
+        if sclass.name != ' 5 - Horizontal Contour Plots of Seasonal Means':
         #if sclass.name != ' 6 - Horizontal Vector Plots of Seasonal Means':
         #if sclass.name == '2 - Horizontal contour plots of DJF, MAM, JJA, SON, and ANN means':
             continue   # for testing, only do one plot set
@@ -90,8 +92,8 @@ for pname,pclass in dm.items():
                 if varopt is None:
                     varopt = [None]
                 for aux in varopt:
-                    #if aux != '850 mbar':
-                    #    continue
+                    if aux != '850 mbar':
+                        continue
                     if True:   # single process
                         plot = sclass( filetable1, filetable2, varid, seasonid, aux )
                         res = plot.compute(newgrid=-1) # newgrid=0 for original grid, -1 for coarse
