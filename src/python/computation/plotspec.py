@@ -78,7 +78,11 @@ class plotspec(basic_id):
         axes may be specified - e.g. ya to substitute for y in a plot, or ya1 as an addition
         to y in the plot.
         """
-        basic_id.__init__(self,vid)
+        if type(vid) is tuple:
+            # probably this is an id tuple with the first element stripped off
+            basic_id.__init__(self,*vid)
+        else:
+            basic_id.__init__(self,vid)
         if xfunc==None:
             if len(xvars)==0:
                 xfunc = (lambda: None)
@@ -175,9 +179,41 @@ class plotspec(basic_id):
             ft1id = id2str( ft1._id )
         if ft2 is None or ft2=='':
             ft2id = ''
+        elif type(ft2) is str:
+            ft2id = ft2
         else:
             ft2id = id2str( ft2._id )
         return basic_id._dict_id( cls, varid, varmod, seasonid, ft1id, ft2id )
+    @classmethod
+    def dict_idid( cls, otherid ):
+        """The purpose of this method is the same as dict_id, except that the input is the id tuple
+        of another object, a reduced or derived variable."""
+        # I'd rather name this dict_id, but Python (unlike Common Lisp or C++) doesn't automatically
+        # dispatch to one of several function definitions.  Doing it by hand with *args is messier.
+        if type(otherid) is not tuple:
+            print "ERROR.  Bad input to plotspec.dict_idid(), not a tuple."
+            print otherid
+            return None
+        if otherid[0]=='rv' and len(otherid)==4:
+            varid = otherid[1]
+            varmod = ''
+            seasonid = otherid[2]
+            ft1 = otherid[3]
+            ft2 = None
+        elif otherid[0]=='dv' and (len(otherid)==5 or len(otherid)==6):
+            varid = otherid[1]
+            varmod = otherid[2]
+            seasonid = otherid[3]
+            ft1 = otherid[4]
+            if len(otherid)<=5:
+                ft2 = None
+            else:
+                ft2 = otherid[5]
+        else:
+            print "ERROR.  Bad input to plotspec.dict_idid(), wrong class slot or wrong length."
+            print otherid
+            return None
+        return cls.dict_id( varid, varmod, seasonid, ft1, ft2 )
 
     def __repr__(self):
         return "plotspec _id=%s xvars=%s xfunc=%s yvars=%s yfunc=%s zvars=%s zfunc=%s" %\
