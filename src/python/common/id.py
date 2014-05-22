@@ -19,7 +19,9 @@ class basic_id():
     """Abstract class, provides standard names and methods for object ids."""
     # The main variables are _id, a tuple, and _strid, a string.  Either one can be used
     # as a key in a dict.  The _strid is computed from the _id.
+    # Note that normally _id[0] identifies the object's class (maybe not uniquely).
 
+    # idtags isn't actually used yet, but might be later:
     # Re _idtags: ideally we'd name the slots of _id - it would be a class or dict.
     # But _id is a tuple, because it is important that this can be the key of a dict.
     # So the purpose of _idtags is to specify the meaning of each slot of _id.
@@ -55,7 +57,10 @@ class basic_id():
     @classmethod
     def dict_id( cls, *args ):
         """Creates and returns an id.  All arguments become part of the id.  Normally a child class will
-        define its own dict_id method""" # (but I'm not ready to eliminate this method yet)
+        define its own dict_id method. (but I'm not ready to eliminate this method yet)
+        Normally the child class will return something similar to what this method returns, but with
+        an argument list enforced and the arguments cleaned up as necessary.  Thus if
+        id=class.dict_id( *args )  then  id == class.dict_id( *(id[1:] ).  """
         # print "WARNING, basic_id.dict_id was called"
         return basic_id._dict_id( cls, *args )
     @staticmethod
@@ -67,8 +72,8 @@ class basic_id():
         return id2str( cls.dict_id( *args ) )
     def id( self ):
         return self._id
-    abbrevs = { 'basic_filetable':'ft', 'derived_var':'var', 'dv':'var', 'reduced_variable':'var', 'rv':'var',
-                'amwg_plot_set3':'set3', 'plotspec':'plot'
+    abbrevs = { 'basic_filetable':'ft', 'derived_var':'dv', 'dv':'dv', 'reduced_variable':'rv', 'rv':'rv',
+                'amwg_plot_set3':'set3', 'plotspec':'plot', 'ps':'plot'
                 }
     @staticmethod
     def abbrev( str ):
