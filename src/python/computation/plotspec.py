@@ -161,8 +161,29 @@ class plotspec(basic_id):
         self.zrangevars = zrangevars
         self.zrangefunc = zrangefunc
         self.plottype = plottype
+
+    @classmethod
+    def dict_id( cls, varid, varmod, seasonid, ft1, ft2=None ):
+        """This method computes an dreturns an id for a uvc_simple_plotspec object.
+        This method is similar to the corresponding method for a derived variable because a plot
+        is normally a representation of a variable.
+        varid, varmod, seasonid are strings identifying a variable name, a name modifier
+        (often '' is a good value) and season, ft is a filetable, or a string id for the filetable."""
+        if type(ft1) is str:  # can happen if id has already been computed, and is used as input here.
+            ft1id = ft1
+        else:
+            ft1id = id2str( ft1._id )
+        if ft2 is None or ft2=='':
+            ft2id = ''
+        else:
+            ft2id = id2str( ft2._id )
+        return basic_id._dict_id( cls, varid, varmod, seasonid, ft1id, ft2id )
+
     def __repr__(self):
         return "plotspec _id=%s xvars=%s xfunc=%s yvars=%s yfunc=%s zvars=%s zfunc=%s" %\
             (self._strid,self.xvars,self.xfunc.__name__,self.yvars,self.yfunc.__name__,\
                  self.zvars,self.zfunc.__name__)
     
+class ps(plotspec):
+    """same as plotspec, but short name saves on typing"""
+    pass
