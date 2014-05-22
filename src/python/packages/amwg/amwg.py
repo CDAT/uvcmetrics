@@ -450,15 +450,16 @@ class amwg_plot_set4(amwg_plot_spec):
             vid2 = rv.dict_id(varid,seasonid,filetable2)
         self.single_plotspecs = {
             self.plot1_id: plotspec(
-                vid = id2str(vid1), zvars=[vid1], zfunc=(lambda z: z),
+                vid = ps.dict_id(vid1[1:]), zvars=[vid1], zfunc=(lambda z: z),
                 plottype = self.plottype ),
             self.plot2_id: plotspec(
-                vid = id2str(vid2), zvars=[vid2], zfunc=(lambda z: z),
+                vid = ps.dict_id(vid2[1:]), zvars=[vid2], zfunc=(lambda z: z),
                 plottype = self.plottype ),
             self.plot3_id: plotspec(
-                vid = dv.str_id(varid,'diff',seasonid,filetable1,filetable2), zvars=[vid1,vid2],
+                vid = ps.str_id(varid,'diff',seasonid,filetable1,filetable2), zvars=[vid1,vid2],
                 zfunc=aminusb_2ax, plottype = self.plottype )
             }
+# >>>>>>>> TEST.  IF THIS WORKS, THEN DO THE SAME WITH OTHER PLOTSPEC vid ARGUMENTS <<<<<<<
         self.composite_plotspecs = {
             self.plotall_id: [self.plot1_id, self.plot2_id, self.plot3_id ]
             }
