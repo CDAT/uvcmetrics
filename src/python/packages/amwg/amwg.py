@@ -231,39 +231,55 @@ class amwg_plot_set2(amwg_plot_spec):
         self.single_plotspecs = {
             'CAM_NCEP_HEAT_TRANSPORT_GLOBAL': plotspec(
                 vid='CAM_NCEP_HEAT_TRANSPORT_GLOBAL',
-                x1vars=['FSNS_ANN_latlon_1'], x1func=latvar,
-                y1vars=['CAM_HEAT_TRANSPORT_ALL_1' ],
-                y1func=(lambda y: y[3]),
-                x2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2'], x2func=(lambda x: x[0]),
-                y2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2' ],
-                y2func=(lambda y: y[1][3]),
+                # x1vars=['FSNS_ANN_latlon_1'], x1func=latvar,
+                # y1vars=['CAM_HEAT_TRANSPORT_ALL_1' ],
+                # y1func=(lambda y: y[3]),
+                # x2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2'], x2func=(lambda x: x[0]),
+                # y2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2' ],
+                # y2func=(lambda y: y[1][3]),
+                zvars=['CAM_HEAT_TRANSPORT_ALL_1' ],
+                zfunc=(lambda y: y[3]),
+                z2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2'],
+                z2func=(lambda z: z[1][3]),
                 plottype = self.plottype  ),
             'CAM_NCEP_HEAT_TRANSPORT_PACIFIC': plotspec(
                 vid='CAM_NCEP_HEAT_TRANSPORT_PACIFIC',
-                x1vars=['FSNS_ANN_latlon_1'], x1func=latvar,
-                y1vars=['CAM_HEAT_TRANSPORT_ALL_1' ],
-                y1func=(lambda y: y[0]),
-                x2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2'], x2func=(lambda x: x[0]),
-                y2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2' ],
-                y2func=(lambda y: y[1][0]),
+                # x1vars=['FSNS_ANN_latlon_1'], x1func=latvar,
+                # y1vars=['CAM_HEAT_TRANSPORT_ALL_1' ],
+                # y1func=(lambda y: y[0]),
+                # x2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2'], x2func=(lambda x: x[0]),
+                # y2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2' ],
+                # y2func=(lambda y: y[1][0]),
+                zvars=['CAM_HEAT_TRANSPORT_ALL_1' ],
+                zfunc=(lambda y: y[0]),
+                z2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2' ],
+                z2func=(lambda y: y[1][0]),
                 plottype = self.plottype  ),
             'CAM_NCEP_HEAT_TRANSPORT_ATLANTIC': plotspec(
                 vid='CAM_NCEP_HEAT_TRANSPORT_ATLANTIC',
-                x1vars=['FSNS_ANN_latlon_1'], x1func=latvar,
-                y1vars=['CAM_HEAT_TRANSPORT_ALL_1' ],
-                y1func=(lambda y: y[0]),
-                x2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2'], x2func=(lambda x: x[0]),
-                y2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2' ],
-                y2func=(lambda y: y[1][1]),
+                # x1vars=['FSNS_ANN_latlon_1'], x1func=latvar,
+                # y1vars=['CAM_HEAT_TRANSPORT_ALL_1' ],
+                # y1func=(lambda y: y[0]),
+                # x2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2'], x2func=(lambda x: x[0]),
+                # y2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2' ],
+                # y2func=(lambda y: y[1][1]),
+                zvars=['CAM_HEAT_TRANSPORT_ALL_1' ],
+                zfunc=(lambda y: y[1]),
+                z2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2' ],
+                z2func=(lambda y: y[1][1]),
                 plottype = self.plottype  ),
             'CAM_NCEP_HEAT_TRANSPORT_INDIAN': plotspec(
                 vid='CAM_NCEP_HEAT_TRANSPORT_INDIAN',
-                x1vars=['FSNS_ANN_latlon_1'], x1func=latvar,
-                y1vars=['CAM_HEAT_TRANSPORT_ALL_1' ],
-                y1func=(lambda y: y[0]),
-                x2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2'], x2func=(lambda x: x[0]),
-                y2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2' ],
-                y2func=(lambda y: y[1][2]),
+                # x1vars=['FSNS_ANN_latlon_1'], x1func=latvar,
+                # y1vars=['CAM_HEAT_TRANSPORT_ALL_1' ],
+                # y1func=(lambda y: y[0]),
+                # x2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2'], x2func=(lambda x: x[0]),
+                # y2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2' ],
+                # y2func=(lambda y: y[1][2]),
+                zvars=['CAM_HEAT_TRANSPORT_ALL_1' ],
+                zfunc=(lambda y: y[2]),
+                z2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2' ],
+                z2func=(lambda y: y[1][2]),
                 plottype = self.plottype  )
             }
         self.composite_plotspecs = {
@@ -309,25 +325,25 @@ class amwg_plot_set3(amwg_plot_spec,basic_id):
         if not self.computation_planned:
             self.plan_computation( filetable1, filetable2, varid, seasonid )
     def plan_computation( self, filetable1, filetable2, varid, seasonid ):
-        y1var = reduced_variable(
+        zvar = reduced_variable(
             variableid=varid,
             filetable=filetable1, season=self.season,
             reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,self.season,vid=vid)) )
-        self.reduced_variables[y1var._strid] = y1var
-        #self.reduced_variables[varid+'_1'] = y1var
-        #y1var._vid = varid+'_1'      # _vid is deprecated
-        y2var = reduced_variable(
+        self.reduced_variables[zvar._strid] = zvar
+        #self.reduced_variables[varid+'_1'] = zvar
+        #zvar._vid = varid+'_1'      # _vid is deprecated
+        z2var = reduced_variable(
             variableid=varid,
             filetable=filetable2, season=self.season,
             reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,self.season,vid=vid)) )
-        self.reduced_variables[y2var._strid] = y2var
-        #self.reduced_variables[varid+'_2'] = y2var
-        #y2var._vid = varid+'_2'      # _vid is deprecated
-        self.plot_a = basic_two_line_plot( y1var, y2var )
+        self.reduced_variables[z2var._strid] = z2var
+        #self.reduced_variables[varid+'_2'] = z2var
+        #z2var._vid = varid+'_2'      # _vid is deprecated
+        self.plot_a = basic_two_line_plot( zvar, z2var )
         ft1id,ft2id = filetable_ids(filetable1,filetable2)
         vid = '_'.join([self._id[0],self._id[1],ft1id,ft2id,'diff'])
         # ... e.g. CLT_DJF_ft1_ft2_diff
-        self.plot_b = one_line_diff_plot( y1var, y2var, vid )
+        self.plot_b = one_line_diff_plot( zvar, z2var, vid )
         self.computation_planned = True
     def _results(self,newgrid=0):
         # At the moment this is very specific to plot set 3.  Maybe later I'll use a
@@ -335,28 +351,28 @@ class amwg_plot_set3(amwg_plot_spec,basic_id):
         # later this may be something more specific to the needs of the UV-CDAT GUI
         results = plot_spec._results(self,newgrid)
         if results is None: return None
-        y1var = self.plot_a.y1vars[0]
-        y2var = self.plot_a.y2vars[0]
-        #y1val = y1var.reduce()
-        y1val = self.variable_values[y1var._strid]
-        #y1val = self.variable_values[y1var._vid] # _vid is deprecated
-        if y1val is None: return None
-        y1unam = y1var._filetable._strid  # part of y1 distinguishing it from y2, e.g. ft_1
-        y1val.id = '_'.join([self._id[0],self._id[1],y1unam])
-        y2val = self.variable_values[y2var._strid]
-        if y2val is None: return None
-        y2unam = y2var._filetable._strid  # part of y2 distinguishing it from y1, e.g. ft_2
-        y2val.id = '_'.join([self._id[0],self._id[1],y2unam])
-        ydiffval = apply( self.plot_b.yfunc, [y1val,y2val] )
-        ydiffval.id = '_'.join([self._id[0],self._id[1],
-                                y1var._filetable._strid, y2var._filetable._strid, 'diff'])
+        zvar = self.plot_a.zvars[0]
+        z2var = self.plot_a.z2vars[0]
+        #zval = zvar.reduce()
+        zval = self.variable_values[zvar._strid]
+        #zval = self.variable_values[zvar._vid] # _vid is deprecated
+        if zval is None: return None
+        zunam = zvar._filetable._strid  # part of y1 distinguishing it from y2, e.g. ft_1
+        zval.id = '_'.join([self._id[0],self._id[1],zunam])
+        z2val = self.variable_values[z2var._strid]
+        if z2val is None: return None
+        z2unam = z2var._filetable._strid  # part of y2 distinguishing it from y1, e.g. ft_2
+        z2val.id = '_'.join([self._id[0],self._id[1],z2unam])
+        zdiffval = apply( self.plot_b.zfunc, [zval,z2val] )
+        zdiffval.id = '_'.join([self._id[0],self._id[1],
+                                zvar._filetable._strid, z2var._filetable._strid, 'diff'])
         # ... e.g. CLT_DJF_set3_CAM456_NCEP_diff
         plot_a_val = uvc_plotspec(
-            [y1val,y2val],'Yxvsx', labels=[y1unam,y2unam],
-            title=' '.join([self._id[0],self._id[1],y1unam,'and',y2unam]))
+            [zval,z2val],'Yxvsx', labels=[zunam,z2unam],
+            title=' '.join([self._id[0],self._id[1],zunam,'and',z2unam]))
         plot_b_val = uvc_plotspec(
-            [ydiffval],'Yxvsx', labels=['difference'],
-            title=' '.join([self._id[0],self._id[1],y1unam,'-',y2unam]))
+            [zdiffval],'Yxvsx', labels=['difference'],
+            title=' '.join([self._id[0],self._id[1],zunam,'-',z2unam]))
         plot_a_val.synchronize_ranges(plot_b_val)
         plot_a_val.finalize()
         plot_b_val.finalize()
