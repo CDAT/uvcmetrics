@@ -69,8 +69,8 @@ for pname,pclass in dm.items():
         print "jfp sclass.name=",sclass.name
         #if sclass.name != ' 2 - Line Plots of Annual Implied Northward Transport':
         #if sclass.name != ' 3 - Line Plots of  Zonal Means':
-        if sclass.name != ' 4 - Vertical Contour Plots Zonal Means':
-        #if sclass.name != ' 5 - Horizontal Contour Plots of Seasonal Means':
+        #if sclass.name != ' 4 - Vertical Contour Plots Zonal Means':
+        if sclass.name != ' 5 - Horizontal Contour Plots of Seasonal Means':
         #if sclass.name != ' 6 - Horizontal Vector Plots of Seasonal Means':
         #if sclass.name == '2 - Horizontal contour plots of DJF, MAM, JJA, SON, and ANN means':
             continue   # for testing, only do one plot set
@@ -83,8 +83,9 @@ for pname,pclass in dm.items():
             variables = package.list_variables( filetable1, filetable2, sname  )
             print "jfp variables=",variables
             for varid in variables:
-                if varid!='T':
-                    continue # for testing, only do one variable
+                #if varid!='T':
+                #if varid!='gw':
+                #    continue # for testing, only do one variable
                 print "jfp varid=",varid
                 vard = package.all_variables( filetable1, filetable2, sname )
                 var = vard[varid]
@@ -116,7 +117,6 @@ for pname,pclass in dm.items():
                         number_diagnostic_plots += 1
                         res = None
                     if res is not None:
-                        print "jfp class name=",res.__class__.__name__
                         if res.__class__.__name__ is 'uvc_composite_plotspec':
                             resc = res
                         else:
