@@ -108,7 +108,6 @@ def plotdata_results( p ):
 # ----------------
 
 def setup_filetable( search_path, cache_path, ftid=None, search_filter=None ):
-    #print "jfp in setup_filetable, search_path=",search_path," search_filter=",search_filter
     #try:
     datafiles = dirtree_datafiles( search_path, search_filter )
     return datafiles.setup_filetable( cache_path, ftid )
@@ -520,22 +519,23 @@ def _get_plot_data( plot_set_id, filetable1, filetable2, variable, season ):
 #                                vid = yvar.id+" line plot", plottype='Yxvsx' )
 
 class basic_two_line_plot( plotspec ):
-    def __init__( self, y1var, y2var, x1var=None, x2var=None ):
-        """x?var, y?var should be the actual x,y of the plots.
-        x?var, y?var should already have been reduced to 1-D variables.
-        Normally y?=y(x?), x? is the axis of y?."""
-        plotspec.__init__( self, y1vars=[y1var], y2vars=[y2var],
-                           vid = y1var.variableid+y2var.variableid+" line plot", plottype='Yxvsx' )
+    def __init__( self, zvar, z2var ):
+        """zvar, z2var should be the actual vertical values (y-axis) of the plots.
+        They should already have been reduced to 1-D variables.
+        The horizontal axis is the axis of z*var."""
+        # plotspec.__init__( self, y1vars=[y1var], y2vars=[y2var],
+        #                    vid = y1var.variableid+y2var.variableid+" line plot", plottype='Yxvsx' )
+        plotspec.__init__( self, zvars=[zvar], z2vars=[z2var],
+                           vid = z2var.variableid+z2var.variableid+" line plot", plottype='Yxvsx' )
 
 class one_line_diff_plot( plotspec ):
-    def __init__( self, y1var, y2var, vid ):
-        """y?var should be the actual y of the plots.
-        y?var should already have been reduced to 1-D variables.
-        y?=y(x?), x? is the axis of y?."""
+    def __init__( self, zvar, z2var, vid ):
+        """z*var should be the actual vertical values (y-axis) of the plots.
+        z*var should already have been reduced to 1-D variables.
+        The horizontal axis of the plot is the axis of z*."""
         plotspec.__init__( self,
-            xvars=[y1var,y2var], xfunc = latvar_min,
-            yvars=[y1var,y2var],
-            yfunc=aminusb_1ax,   # aminusb_1ax(y1,y2)=y1-y2; each y has 1 axis, use min axis
+            zvars=[zvar,z2var],
+            zfunc=aminusb_1ax,   # aminusb_1ax(y1,y2)=y1-y2; each y has 1 axis, use min axis
             vid=vid,
             plottype='Yxvsx' )
 
@@ -659,7 +659,6 @@ class plot_spec(object):
             value = self.derived_variables[v].derive(self.variable_values)
             self.variable_values[v] = value  # could be None
         varvals = self.variable_values
-        print "jfp varvals keys=",varvals.keys()
         for p,ps in self.single_plotspecs.iteritems():
             print "uvcdat jfp preparing data for",ps._strid
             try:
@@ -679,6 +678,8 @@ class plot_spec(object):
                 # ya1rv = [ varvals[k] for k in ps.ya1vars ]
                 zrv = [ varvals[k] for k in ps.zvars ]
                 zrrv = [ varvals[k] for k in ps.zrangevars ]
+                z2rv = [ varvals[k] for k in ps.z2vars ]
+                z2rrv = [ varvals[k] for k in ps.z2rangevars ]
                 # xax = apply( ps.xfunc, xrv )
                 # x1ax = apply( ps.x1func, x1rv )
                 # x2ax = apply( ps.x2func, x2rv )
@@ -696,7 +697,12 @@ class plot_spec(object):
                     print "WARNING - cannot compute results involving zax, zvars=",ps.zvars
                     print "missing results for",[k for k in ps.zvars if varvals[k] is None]
                     continue
+                if any([a is None for a in z2rv]):
+                    print "WARNING - cannot compute results involving zax, zvars=",ps.z2vars
+                    print "missing results for",[k for k in ps.z2vars if varvals[k] is None]
+                    continue
                 zax = apply( ps.zfunc, zrv )
+                z2ax = apply( ps.z2func, z2rv )
             except Exception as e:
                 print "EXCEPTION cannot compute data for",ps._strid
                 print "Exception is",e
@@ -709,6 +715,7 @@ class plot_spec(object):
             # xlab=""
             # ylab=""
             zlab=""
+            z2lab=""
             # if xax is not None:
             #     xlab += ' '+xax.id
             # if x1ax is not None:
@@ -745,11 +752,19 @@ class plot_spec(object):
                 new_id = self._build_label( zrv, p )
                 zax.id = new_id
                 zlab += ' '+zax.id
+            if z2ax is not None:
+                if hasattr(z2ax,'regridded') and newgrid!=0:
+                    vars.append( regridded_vars[z2ax.regridded] )
+                else:
+                    vars.append( z2ax )
+                new_id = self._build_label( z2rv, p )
+                z2ax.id = new_id
+                z2lab += ' '+z2ax.id
             if vars==[]:
                 self.plotspec_values[p] = None
                 continue
             #labels = [xlab,ylab,zlab]
-            labels = [zlab]
+            labels = [zlab,z2lab]
             title = ' '.join(labels)+' '+self._season_displayid  # do this better later
             self.plotspec_values[p] = uvc_plotspec( vars, self.plottype, labels, title )
         for p,ps in self.composite_plotspecs.iteritems():
