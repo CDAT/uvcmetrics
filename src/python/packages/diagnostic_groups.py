@@ -35,12 +35,12 @@ class BasicDiagnosticGroup():
                 return dset._all_variables( filetable1, filetable2 )
         else:
             varlist = self._list_variables( filetable1, filetable2 )
-        from metrics.frontend.uvcdat import basic_plot_variable
+        from metrics.computation.plotspec import basic_plot_variable
         return { vn: basic_plot_variable for vn in varlist }
     @staticmethod
     def _all_variables( filetable1, filetable2=None, diagnostic_set_name="" ):
         varlist = BasicDiagnosticGroup._list_variables( filetable1, filetable2, diagnostic_set_name )
-        from metrics.frontend.uvcdat import basic_plot_variable
+        from metrics.computation.plotspec import basic_plot_variable
         return { vn: basic_plot_variable for vn in varlist }
     @staticmethod
     def _list_variables( filetable1, filetable2=None, diagnostic_set_name="" ):
