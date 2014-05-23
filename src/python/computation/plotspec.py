@@ -1,8 +1,10 @@
 #!/usr/local/uvcdat/1.3.1/bin/python
 
-# general-purpose classes used in computing data for plots
+# general-purpose classes (i.e., not specific to any GUI or diagnostic group) used in computing data for plots
 from metrics.common import *
 from metrics.common.id import *
+from metrics.packages.diagnostic_groups import *
+from metrics.computation.reductions import *
 
 class derived_var(basic_id):
     def __init__( self, vid, inputs=[], outputs=['output'], func=(lambda: None) ):
@@ -181,7 +183,7 @@ class plotspec(basic_id):
 
     @classmethod
     def dict_id( cls, varid, varmod, seasonid, ft1, ft2=None ):
-        """This method computes an dreturns an id for a uvc_simple_plotspec object.
+        """This method computes and returns an id for a plotspec object.
         This method is similar to the corresponding method for a derived variable because a plot
         is normally a representation of a variable.
         varid, varmod, seasonid are strings identifying a variable name, a name modifier
@@ -238,3 +240,124 @@ class plotspec(basic_id):
 class ps(plotspec):
     """same as plotspec, but short name saves on typing"""
     pass
+
+
+# class basic_one_line_plot( plotspec ):
+#     def __init__( self, yvar, xvar=None ):
+#         # xvar, yvar should be the actual x,y of the plot.
+#         # xvar, yvar should already have been reduced to 1-D variables.
+#         # Normally y=y(x), x is the axis of y.
+#         if xvar is None:
+#             xvar = yvar.getAxisList()[0]
+#         if xvar == "never really come here":
+#             ### modified sample from Charles of how we will pass around plot parameters...
+#             vcsx = vcs.init()      # but note that this doesn't belong here!
+#             yx=vcsx.createyxvsx()
+#             # Set the default parameters
+#             yx.datawc_y1=-2  # a lower bound, "data 1st world coordinate on Y axis"
+#             yx.datawc_y2=4  # an upper bound, "data 2nd world coordinate on Y axis"
+#             plotspec.__init__( self, xvars=[xvar], yvars=[yvar],
+#                                vid = yvar.id+" line plot", plottype=yx.tojson() )
+#             ### ...sample from Charles of how we will pass around plot parameters
+#         else:
+#             # This is the real code:
+#             plotspec.__init__( self, xvars=[xvar], yvars=[yvar],
+#                                vid = yvar.id+" line plot", plottype='Yxvsx' )
+
+class basic_two_line_plot( plotspec ):
+    def __init__( self, zvar, z2var ):
+        """zvar, z2var should be the actual vertical values (y-axis) of the plots.
+        They should already have been reduced to 1-D variables.
+        The horizontal axis is the axis of z*var."""
+        # plotspec.__init__( self, y1vars=[y1var], y2vars=[y2var],
+        #                    vid = y1var.variableid+y2var.variableid+" line plot", plottype='Yxvsx' )
+        plotspec.__init__( self, zvars=[zvar], z2vars=[z2var],
+                           vid = z2var.variableid+z2var.variableid+" line plot", plottype='Yxvsx' )
+
+class one_line_diff_plot( plotspec ):
+    def __init__( self, zvar, z2var, vid ):
+        """z*var should be the actual vertical values (y-axis) of the plots.
+        z*var should already have been reduced to 1-D variables.
+        The horizontal axis of the plot is the axis of z*."""
+        plotspec.__init__( self,
+            zvars=[zvar,z2var],
+            zfunc=aminusb_1ax,   # aminusb_1ax(y1,y2)=y1-y2; each y has 1 axis, use min axis
+            vid=vid,
+            plottype='Yxvsx' )
+
+# class contour_plot( plotspec ):
+#     def __init__( self, zvar, xvar=None, yvar=None, ya1var=None,
+#                   xfunc=None, yfunc=None, ya1func=None ):
+#         """ zvar is the variable to be plotted.  xvar,yvar are the x,y of the plot,
+#         normally the axes of zvar.  If you don't specify, a x=lon,y=lat plot will be preferred.
+#         xvar, yvar, zvar should already have been reduced; x,y to 1-D and z to 2-D."""
+#         if xvar is None:
+#             xvar = zvar
+#         if yvar is None:
+#             yvar = zvar
+#         if ya1var is None:
+#             ya1var = zvar
+#         if xfunc==None: xfunc=lonvar
+#         if yfunc==None: yfunc=latvar
+#         vid = ''
+#         if hasattr(zvar,'vid'): vid = zvar.vid
+#         if hasattr(zvar,'id'): vid = zvar.id
+#         plotspec.__init__(
+#             self, vid+'_contour', xvars=[xvar], xfunc=xfunc,
+#             yvars=[yvar], yfunc=yfunc, ya1vars=[ya1var], ya1func=ya1func,
+#             zvars=[zvar], plottype='Isofill' )
+
+# class contour_diff_plot( plotspec ):
+#     def __init__( self, z1var, z2var, plotid, x1var=None, x2var=None, y1var=None, y2var=None,
+#                    ya1var=None,  ya2var=None, xfunc=None, yfunc=None, ya1func=None ):
+#         """We will plot the difference of the two z variables, z1var-z2var.
+#         See the notes on contour_plot"""
+#         if x1var is None:
+#             x1var = z1var
+#         if y1var is None:
+#             y1var = z1var
+#         if ya1var is None:
+#             ya1var = z1var
+#         if x2var is None:
+#             x2var = z2var
+#         if y2var is None:
+#             y2var = z2var
+#         if ya2var is None:
+#             ya2var = z2var
+#         if xfunc==None: xfunc=lonvar_min
+#         if yfunc==None: yfunc=latvar_min
+#         plotspec.__init__(
+#             self, plotid, xvars=[x1var,x2var], xfunc=xfunc,
+#             yvars=[y1var,y2var], yfunc=yfunc, ya1vars=[ya1var,ya2var], ya1func=ya1func,
+#             zvars=[z1var,z2var], zfunc=aminusb_2ax, plottype='Isofill' )
+
+
+class basic_plot_variable():
+    """represents a variable to be plotted.  This need not be an actual data variable;
+       it could be some derived quantity"""
+    def __init__( self, name, plotset_name, package ):
+        self.name = name
+        self.plotset_name = plotset_name
+        self.package = package
+    @staticmethod
+    def varoptions(*args,**kwargs):
+        """returns a represention of options specific to this variable.  Example dict items:
+         'vertical average':'vertavg'
+         '300 mbar level value':300
+        """
+        return None
+    
+class basic_level_variable(basic_plot_variable):
+    """represents a typical variable with a level axis, in a plot set which reduces the level
+    axis."""
+    @staticmethod
+    def varoptions():
+        """returns a represention of options specific to this variable.  That is, how should
+        one reduce the level axis?  The default is to average along that axis.  But other options
+        are to pick out the variable's value at some particular pressure level, e.g. 300 mb.
+        """
+        opts ={
+            " default":"vertical average", " vertical average":"vertical average",
+            "200 mbar":200, "300 mbar":300, "500 mbar":500, "850 mbar":850 }
+        return opts
+    
