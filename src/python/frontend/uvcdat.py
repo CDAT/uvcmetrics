@@ -255,12 +255,14 @@ class uvc_simple_plotspec():
                 # First we have to identify which axes will be plotted as X and Y.
                 # The following won't cover all cases, but does cover what we have:
                 axaxi = {ax:id for id,ax in self.axax[var.id].items()}
-                if 'X' in axaxi.keys():
+                if 'X' in axaxi.keys() and 'Y' in axaxi.keys():
                     axx = axaxi['X']
                     axy = axaxi['Y']
-                else:
+                elif 'Y' in axaxi.keys() and 'Z' in axaxi.keys():
                     axx = axaxi['Y']
                     axy = axaxi['Z']
+                else:
+                    return None
                 # Now send the plotted min,max for the X,Y axes to the graphics:
                 self.presentation.datawc_x1 = axmin[axx]
                 self.presentation.datawc_x2 = axmax[axx]
@@ -495,27 +497,27 @@ def _get_plot_data( plot_set_id, filetable1, filetable2, variable, season ):
         return None
     
 
-class basic_one_line_plot( plotspec ):
-    def __init__( self, yvar, xvar=None ):
-        # xvar, yvar should be the actual x,y of the plot.
-        # xvar, yvar should already have been reduced to 1-D variables.
-        # Normally y=y(x), x is the axis of y.
-        if xvar is None:
-            xvar = yvar.getAxisList()[0]
-        if xvar == "never really come here":
-            ### modified sample from Charles of how we will pass around plot parameters...
-            vcsx = vcs.init()      # but note that this doesn't belong here!
-            yx=vcsx.createyxvsx()
-            # Set the default parameters
-            yx.datawc_y1=-2  # a lower bound, "data 1st world coordinate on Y axis"
-            yx.datawc_y2=4  # an upper bound, "data 2nd world coordinate on Y axis"
-            plotspec.__init__( self, xvars=[xvar], yvars=[yvar],
-                               vid = yvar.id+" line plot", plottype=yx.tojson() )
-            ### ...sample from Charles of how we will pass around plot parameters
-        else:
-            # This is the real code:
-            plotspec.__init__( self, xvars=[xvar], yvars=[yvar],
-                               vid = yvar.id+" line plot", plottype='Yxvsx' )
+# class basic_one_line_plot( plotspec ):
+#     def __init__( self, yvar, xvar=None ):
+#         # xvar, yvar should be the actual x,y of the plot.
+#         # xvar, yvar should already have been reduced to 1-D variables.
+#         # Normally y=y(x), x is the axis of y.
+#         if xvar is None:
+#             xvar = yvar.getAxisList()[0]
+#         if xvar == "never really come here":
+#             ### modified sample from Charles of how we will pass around plot parameters...
+#             vcsx = vcs.init()      # but note that this doesn't belong here!
+#             yx=vcsx.createyxvsx()
+#             # Set the default parameters
+#             yx.datawc_y1=-2  # a lower bound, "data 1st world coordinate on Y axis"
+#             yx.datawc_y2=4  # an upper bound, "data 2nd world coordinate on Y axis"
+#             plotspec.__init__( self, xvars=[xvar], yvars=[yvar],
+#                                vid = yvar.id+" line plot", plottype=yx.tojson() )
+#             ### ...sample from Charles of how we will pass around plot parameters
+#         else:
+#             # This is the real code:
+#             plotspec.__init__( self, xvars=[xvar], yvars=[yvar],
+#                                vid = yvar.id+" line plot", plottype='Yxvsx' )
 
 class basic_two_line_plot( plotspec ):
     def __init__( self, y1var, y2var, x1var=None, x2var=None ):
@@ -537,51 +539,51 @@ class one_line_diff_plot( plotspec ):
             vid=vid,
             plottype='Yxvsx' )
 
-class contour_plot( plotspec ):
-    def __init__( self, zvar, xvar=None, yvar=None, ya1var=None,
-                  xfunc=None, yfunc=None, ya1func=None ):
-        """ zvar is the variable to be plotted.  xvar,yvar are the x,y of the plot,
-        normally the axes of zvar.  If you don't specify, a x=lon,y=lat plot will be preferred.
-        xvar, yvar, zvar should already have been reduced; x,y to 1-D and z to 2-D."""
-        if xvar is None:
-            xvar = zvar
-        if yvar is None:
-            yvar = zvar
-        if ya1var is None:
-            ya1var = zvar
-        if xfunc==None: xfunc=lonvar
-        if yfunc==None: yfunc=latvar
-        vid = ''
-        if hasattr(zvar,'vid'): vid = zvar.vid
-        if hasattr(zvar,'id'): vid = zvar.id
-        plotspec.__init__(
-            self, vid+'_contour', xvars=[xvar], xfunc=xfunc,
-            yvars=[yvar], yfunc=yfunc, ya1vars=[ya1var], ya1func=ya1func,
-            zvars=[zvar], plottype='Isofill' )
+# class contour_plot( plotspec ):
+#     def __init__( self, zvar, xvar=None, yvar=None, ya1var=None,
+#                   xfunc=None, yfunc=None, ya1func=None ):
+#         """ zvar is the variable to be plotted.  xvar,yvar are the x,y of the plot,
+#         normally the axes of zvar.  If you don't specify, a x=lon,y=lat plot will be preferred.
+#         xvar, yvar, zvar should already have been reduced; x,y to 1-D and z to 2-D."""
+#         if xvar is None:
+#             xvar = zvar
+#         if yvar is None:
+#             yvar = zvar
+#         if ya1var is None:
+#             ya1var = zvar
+#         if xfunc==None: xfunc=lonvar
+#         if yfunc==None: yfunc=latvar
+#         vid = ''
+#         if hasattr(zvar,'vid'): vid = zvar.vid
+#         if hasattr(zvar,'id'): vid = zvar.id
+#         plotspec.__init__(
+#             self, vid+'_contour', xvars=[xvar], xfunc=xfunc,
+#             yvars=[yvar], yfunc=yfunc, ya1vars=[ya1var], ya1func=ya1func,
+#             zvars=[zvar], plottype='Isofill' )
 
-class contour_diff_plot( plotspec ):
-    def __init__( self, z1var, z2var, plotid, x1var=None, x2var=None, y1var=None, y2var=None,
-                   ya1var=None,  ya2var=None, xfunc=None, yfunc=None, ya1func=None ):
-        """We will plot the difference of the two z variables, z1var-z2var.
-        See the notes on contour_plot"""
-        if x1var is None:
-            x1var = z1var
-        if y1var is None:
-            y1var = z1var
-        if ya1var is None:
-            ya1var = z1var
-        if x2var is None:
-            x2var = z2var
-        if y2var is None:
-            y2var = z2var
-        if ya2var is None:
-            ya2var = z2var
-        if xfunc==None: xfunc=lonvar_min
-        if yfunc==None: yfunc=latvar_min
-        plotspec.__init__(
-            self, plotid, xvars=[x1var,x2var], xfunc=xfunc,
-            yvars=[y1var,y2var], yfunc=yfunc, ya1vars=[ya1var,ya2var], ya1func=ya1func,
-            zvars=[z1var,z2var], zfunc=aminusb_2ax, plottype='Isofill' )
+# class contour_diff_plot( plotspec ):
+#     def __init__( self, z1var, z2var, plotid, x1var=None, x2var=None, y1var=None, y2var=None,
+#                    ya1var=None,  ya2var=None, xfunc=None, yfunc=None, ya1func=None ):
+#         """We will plot the difference of the two z variables, z1var-z2var.
+#         See the notes on contour_plot"""
+#         if x1var is None:
+#             x1var = z1var
+#         if y1var is None:
+#             y1var = z1var
+#         if ya1var is None:
+#             ya1var = z1var
+#         if x2var is None:
+#             x2var = z2var
+#         if y2var is None:
+#             y2var = z2var
+#         if ya2var is None:
+#             ya2var = z2var
+#         if xfunc==None: xfunc=lonvar_min
+#         if yfunc==None: yfunc=latvar_min
+#         plotspec.__init__(
+#             self, plotid, xvars=[x1var,x2var], xfunc=xfunc,
+#             yvars=[y1var,y2var], yfunc=yfunc, ya1vars=[ya1var,ya2var], ya1func=ya1func,
+#             zvars=[z1var,z2var], zfunc=aminusb_2ax, plottype='Isofill' )
 
 
 class plot_spec(object):
@@ -660,82 +662,81 @@ class plot_spec(object):
         print "jfp varvals keys=",varvals.keys()
         for p,ps in self.single_plotspecs.iteritems():
             print "uvcdat jfp preparing data for",ps._strid
-#            if 1:
             try:
-                print "jfp ps.xvars=",ps.xvars,ps.x1vars,ps.x2vars,ps.x3vars
-                print "jfp ps.yvars=",ps.yvars,ps.y1vars,ps.y2vars,ps.y3vars
-                print "jfp ps.yavars=",ps.yavars,ps.ya1vars
-                print "jfp ps.zvars=",ps.zvars,ps.zrangevars
-                xrv = [ varvals[k] for k in ps.xvars ]
-                x1rv = [ varvals[k] for k in ps.x1vars ]
-                x2rv = [ varvals[k] for k in ps.x2vars ]
-                x3rv = [ varvals[k] for k in ps.x3vars ]
-                yrv = [ varvals[k] for k in ps.yvars ]
-                y1rv = [ varvals[k] for k in ps.y1vars]
-                y2rv = [ varvals[k] for k in ps.y2vars ]
-                y3rv = [ varvals[k] for k in ps.y3vars ]
-                yarv = [ varvals[k] for k in ps.yavars ]
-                ya1rv = [ varvals[k] for k in ps.ya1vars ]
+                # print "jfp ps.xvars=",ps.xvars,ps.x1vars,ps.x2vars,ps.x3vars
+                # print "jfp ps.yvars=",ps.yvars,ps.y1vars,ps.y2vars,ps.y3vars
+                # print "jfp ps.yavars=",ps.yavars,ps.ya1vars
+                #print "jfp ps.zvars=",ps.zvars,ps.zrangevars
+                # xrv = [ varvals[k] for k in ps.xvars ]
+                # x1rv = [ varvals[k] for k in ps.x1vars ]
+                # x2rv = [ varvals[k] for k in ps.x2vars ]
+                # x3rv = [ varvals[k] for k in ps.x3vars ]
+                # yrv = [ varvals[k] for k in ps.yvars ]
+                # y1rv = [ varvals[k] for k in ps.y1vars]
+                # y2rv = [ varvals[k] for k in ps.y2vars ]
+                # y3rv = [ varvals[k] for k in ps.y3vars ]
+                # yarv = [ varvals[k] for k in ps.yavars ]
+                # ya1rv = [ varvals[k] for k in ps.ya1vars ]
                 zrv = [ varvals[k] for k in ps.zvars ]
                 zrrv = [ varvals[k] for k in ps.zrangevars ]
-                xax = apply( ps.xfunc, xrv )
-                x1ax = apply( ps.x1func, x1rv )
-                x2ax = apply( ps.x2func, x2rv )
-                x3ax = apply( ps.x3func, x3rv )
-                yax = apply( ps.yfunc, yrv )
-                y1ax = apply( ps.y1func, y1rv )
-                y2ax = apply( ps.y2func, y2rv )
-                y3ax = apply( ps.y3func, y3rv )
-#            else:
+                # xax = apply( ps.xfunc, xrv )
+                # x1ax = apply( ps.x1func, x1rv )
+                # x2ax = apply( ps.x2func, x2rv )
+                # x3ax = apply( ps.x3func, x3rv )
+                # yax = apply( ps.yfunc, yrv )
+                # y1ax = apply( ps.y1func, y1rv )
+                # y2ax = apply( ps.y2func, y2rv )
+                # y3ax = apply( ps.y3func, y3rv )
+            # not used yet yaax = apply( ps.yafunc, yarv )
+                # if any([a is None for a in ya1rv]):
+                #     print "WARNING - cannot compute results involving ya1ax, ya1vars=",ps.ya1vars
+                #     continue
+                # ya1ax = apply( ps.ya1func, ya1rv )
+                if any([a is None for a in zrv]):
+                    print "WARNING - cannot compute results involving zax, zvars=",ps.zvars
+                    print "missing results for",[k for k in ps.zvars if varvals[k] is None]
+                    continue
+                zax = apply( ps.zfunc, zrv )
             except Exception as e:
                 print "EXCEPTION cannot compute data for",ps._strid
                 print "Exception is",e
                 self.plotspec_values[p] = None
                 continue
-            # not used yet yaax = apply( ps.yafunc, yarv )
-            if any([a is None for a in ya1rv]):
-                print "WARNING - cannot compute results involving ya1ax, ya1vars=",ps.ya1vars
-                continue
-            ya1ax = apply( ps.ya1func, ya1rv )
-            if any([a is None for a in zrv]):
-                print "WARNING - cannot compute results involving zax, zvars=",ps.zvars
-                continue
-            zax = apply( ps.zfunc, zrv )
             # not used yet zr = apply( ps.zrangefunc, zrrv )
             vars = []
             # The x or x,y vars will hopefully appear as axes of the y or z
             # vars.  This needs more work; but for now we never want x vars here:
-            xlab=""
-            ylab=""
+            # xlab=""
+            # ylab=""
             zlab=""
-            if xax is not None:
-                xlab += ' '+xax.id
-            if x1ax is not None:
-                xlab += ' '+x1ax.id
-            if x2ax is not None:
-                xlab += ', '+x2ax.id
-            if x3ax is not None:
-                xlab += ', '+x3ax.id
-            if yax is not None:
-                vars.append( yax )
-                new_id = self._build_label( yrv, p )
-                yax.id = new_id
-                ylab += ' '+yax.id
-            if y1ax is not None:
-                vars.append( y1ax )
-                new_id = self._build_label( y1rv, p )
-                y1ax.id = new_id
-                ylab += ' '+y1ax.id
-            if y2ax is not None:
-                vars.append( y2ax )
-                new_id = self._build_label( y2rv, p )
-                y2ax.id = new_id
-                ylab += ', '+y2ax.id
-            if y3ax is not None:
-                vars.append( y3ax )
-                new_id = self._build_label( y3rv, p )
-                y3ax.id = new_id
-                ylab += ', '+y3ax.id
+            # if xax is not None:
+            #     xlab += ' '+xax.id
+            # if x1ax is not None:
+            #     xlab += ' '+x1ax.id
+            # if x2ax is not None:
+            #     xlab += ', '+x2ax.id
+            # if x3ax is not None:
+            #     xlab += ', '+x3ax.id
+            # if yax is not None:
+            #     vars.append( yax )
+            #     new_id = self._build_label( yrv, p )
+            #     yax.id = new_id
+            #     ylab += ' '+yax.id
+            # if y1ax is not None:
+            #     vars.append( y1ax )
+            #     new_id = self._build_label( y1rv, p )
+            #     y1ax.id = new_id
+            #     ylab += ' '+y1ax.id
+            # if y2ax is not None:
+            #     vars.append( y2ax )
+            #     new_id = self._build_label( y2rv, p )
+            #     y2ax.id = new_id
+            #     ylab += ', '+y2ax.id
+            # if y3ax is not None:
+            #     vars.append( y3ax )
+            #     new_id = self._build_label( y3rv, p )
+            #     y3ax.id = new_id
+            #     ylab += ', '+y3ax.id
             if zax is not None:
                 if hasattr(zax,'regridded') and newgrid!=0:
                     vars.append( regridded_vars[zax.regridded] )
@@ -747,7 +748,8 @@ class plot_spec(object):
             if vars==[]:
                 self.plotspec_values[p] = None
                 continue
-            labels = [xlab,ylab,zlab]
+            #labels = [xlab,ylab,zlab]
+            labels = [zlab]
             title = ' '.join(labels)+' '+self._season_displayid  # do this better later
             self.plotspec_values[p] = uvc_plotspec( vars, self.plottype, labels, title )
         for p,ps in self.composite_plotspecs.iteritems():
