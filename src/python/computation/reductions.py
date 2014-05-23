@@ -188,7 +188,8 @@ def restrict_lat( mv, latmin, latmax ):
 
     # new variable
     newmv = cdms2.createVariable( newdata, copy=True, axes=newaxes, id=mv.id )
-    newmv.units = mv.units
+    if hasattr(mv,'units'):
+        newmv.units = mv.units
     return newmv
 
 def reduce2scalar_zonal_old( mv, latmin=-90, latmax=90, vid=None ):
@@ -277,7 +278,8 @@ def reduce2scalar_zonal( mv, latmin=-90, latmax=90, vid=None ):
     axes_string = '('+')('.join(axis_names)+')'
     avmv = averager( mv2, axis=axes_string )
     avmv.id = vid   # Note that the averager function returns a variable with meaningless id.
-    ammv.units = mv.units
+    if hasattr(mv,'units'):
+        ammv.units = mv.units
 
     return avmv
 
@@ -292,7 +294,8 @@ def reduce2scalar( mv, vid=None ):
 
     avmv = averager( mv, axis=axes_string )
     avmv.id = vid
-    avmv.units = mv.units
+    if hasattr(mv,'units'):
+        avmv.units = mv.units
 
     return avmv
 
@@ -333,7 +336,8 @@ def reduce2lat( mv, vid=None ):
 
     avmv = averager( mv, axis=axes_string )
     avmv.id = vid
-    avmv.units = mv.units
+    if hasattr(mv,'units'):
+        avmv.units = mv.units
 
     return avmv
 
@@ -352,7 +356,8 @@ def reduce2levlat( mv, vid=None ):
 
     avmv = averager( mv, axis=axes_string )
     avmv.id = vid
-    avmv.units = mv.units
+    if hasattr(mv,'units'):
+        avmv.units = mv.units
 
     return avmv
 
@@ -391,7 +396,8 @@ def reduce2levlat_seasonal( mv, seasons=seasonsyr, vid=None ):
         avmv = mvseas
     avmv.id = vid
     avmv = delete_singleton_axis( avmv, vid='time' )
-    avmv.units = mv.units
+    if hasattr(mv,'units'):
+        avmv.units = mv.units
 
     return avmv
 
@@ -410,7 +416,8 @@ def reduce2latlon( mv, vid=None ):
             ax.setBounds( ax.genGenericBounds() )
     avmv = averager( mv, axis=axes_string )
     avmv.id = vid
-    avmv.units = mv.units
+    if hasattr(mv,'units'):
+        avmv.units = mv.units
 
     return avmv
 
@@ -476,7 +483,8 @@ def reduce2lat_seasonal( mv, seasons=seasonsyr, vid=None ):
     avmv.id = vid
 
     avmv = delete_singleton_axis( avmv, vid='time' )
-    avmv.units = mv.units
+    if hasattr(mv,'units'):
+        avmv.units = mv.units
     return avmv
 
 # Used for lmwg set 6
@@ -497,7 +505,8 @@ def reduceAnnTrendRegion(mv, region, vid=None):
    print 'Calculating land averages...'
    mvtrend = cdutil.averager(mvann, axis='xy')
    mvtrend.id = vid
-   if hasattr(mv, 'units'): mvtrend.units = mv.units # probably needs some help
+   if hasattr(mv, 'units'):
+       mvtrend.units = mv.units # probably needs some help
    print 'Returning mvtrend: ', mvtrend
    return mvtrend
 
@@ -521,7 +530,8 @@ def reduceMonthlyTrendRegion(mv, region, vid=None):
    mvvals = cdutil.averager(mvtrend, axis='xy')
 
    mvvals.id = vid
-   if hasattr(mv, 'units'): mvvals.units = mv.units # probably needs some help
+   if hasattr(mv, 'units'):
+       mvvals.units = mv.units # probably needs some help
    print 'Returning ', mvvals
    return mvvals
 
@@ -542,7 +552,8 @@ def reduceAnnTrend(mv, vid=None):
    print 'Calculating land averages...'
    mvtrend = cdutil.averager(mvann, axis='xy')
    mvtrend.id = vid
-   if hasattr(mv, 'units'): mvtrend.units = mv.units # should be units/sq meter I assume
+   if hasattr(mv, 'units'):
+       mvtrend.units = mv.units # should be units/sq meter I assume
    return mvtrend
 
 def reduce2latlon_seasonal( mv, seasons=seasonsyr, vid=None ):
@@ -579,9 +590,9 @@ def reduce2latlon_seasonal( mv, seasons=seasonsyr, vid=None ):
         avmv = mvseas
     if avmv is None: return avmv
     avmv.id = vid
-    if hasattr(mv,'units'): avmv.units = mv.units
     avmv = delete_singleton_axis( avmv, vid='time' )
-    avmv.units = mv.units
+    if hasattr(mv,'units'):
+        avmv.units = mv.units
     return avmv
 
 def reduce_time_seasonal( mv, seasons=seasonsyr, vid=None ):
@@ -611,7 +622,6 @@ def reduce_time_seasonal( mv, seasons=seasonsyr, vid=None ):
         return None
     avmv = mvseas
     avmv.id = vid
-    if hasattr(mv,'units'): avmv.units = mv.units
     avmv = delete_singleton_axis( avmv, vid='time' )
     if hasattr( mv, 'units' ):
         avmv.units = mv.units
@@ -955,7 +965,8 @@ def aminusb_ax2( mv1, mv2 ):
     aminusb = a - b
     #aminusb.id = mv1.id
     aminusb.id = 'difference of '+mv1.id
-    aminusb.long_name = 'difference of '+mv1.long_name
+    if hasattr(mv1,'long_name'):
+        aminusb.long_name = 'difference of '+mv1.long_name
     if hasattr(mv1,'units'):  aminusb.units = mv1.units
     aminusb.initDomain( ab_axes )
     return aminusb
@@ -1010,6 +1021,16 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
         new_axes2 = axes2[1:]
     if len(new_axes1)<len(axes1) or len(new_axes2)<len(axes2):
         return aminusb_2ax( mv1, mv2, new_axes1, new_axes2 )
+
+    # What if an axis is missing?  This is rare, as the two axes are usually lat-lon and practically
+    # all variables with physical meaning depend on lat-lon.  But this can happen, e.g. gw=gw(lat).
+    # We can't deal with it here, and almost surely the variable isn't suited for the plot.
+    if len(axes1)<2:
+        print "WARNING, In aminusb_2ax, mv1 doesn't have enough axes",axes1
+        raise Exception("In aminusb_2ax, mv1 doesn't have enough axes")
+    if len(axes2)<2:
+        print "WARNING, In aminusb_2ax, mv2 doesn't have enough axes",axes2
+        raise Exception("In aminusb_2ax, mv1 doesn't have enough axes")
 
     if len(axes1)!=2: print "ERROR @1, wrong number of axes for aminusb_2ax",axes1
     if len(axes2)!=2: print "ERROR @2, wrong number of axes for aminusb_2ax",axes2
