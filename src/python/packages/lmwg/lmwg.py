@@ -84,11 +84,12 @@ class lmwg_plot_set6b(lmwg_plot_spec):
       self.plottype = 'Yxvsx'
 
       self._var_baseid = '_'.join([varid, 'set6b'])
-      self.plot1_id = filetable1._id+'_'+varid
+      ft1id,ft2id = filetable_ids(filetable1,filetable2)
+      self.plot1_id = ft1id+'_'+varid
       if filetable2 is not None:
-         self.plot2_id = filetable2._id+'_'+varid
-         self.plot3_id = filetable1._id+' - '+filetable2._id+'_'+varid
-         self.plotall_id = filetable1._id+'_'+filetable2._id+'_'+varid
+         self.plot2_id = ft2id+'_'+varid
+         self.plot3_id = ft1id+' - '+ft2id+'_'+varid
+         self.plotall_id = ft1id+'_'+ft2id+'_'+varid
       else:
          self.plot2_id = None
          self.plot3_id = None
@@ -195,11 +196,12 @@ class lmwg_plot_set6(lmwg_plot_spec):
       self.plottype = 'Yxvsx'
 
       self._var_baseid = '_'.join([varid, 'set6'])
-      self.plot1_id = filetable1._id+'_'+varid
+      ft1id,ft2id = filetable_ids(filetable1,filetable2)
+      self.plot1_id = ft1id+'_'+varid
       if filetable2 is not None:
-         self.plot2_id = filetable2._id+'_'+varid
-         self.plot3_id = filetable1._id+' - '+filetable2._id+'_'+varid
-         self.plotall_id = filetable1._id+'_'+filetable2._id+'_'+varid
+         self.plot2_id = ft2id+'_'+varid
+         self.plot3_id = ft1id+' - '+ft2id+'_'+varid
+         self.plotall_id = ft1id+'_'+ft2id+'_'+varid
       else:
          self.plot2_id = None
          self.plot3_id = None
@@ -314,11 +316,12 @@ class lmwg_plot_set3b(lmwg_plot_spec):
       self.plottype = 'Yxvsx'
 
       self._var_baseid = '_'.join([varid, 'set3b'])
-      self.plot1_id = filetable1._id+'_'+varid
+      ft1id,ft2id = filetable_ids(filetable1,filetable2)
+      self.plot1_id = ft1id+'_'+varid
       if filetable2 is not None:
-         self.plot2_id = filetable2._id+'_'+varid
-         self.plot3_id = filetable1._id+' - '+filetable2._id+'_'+varid
-         self.plotall_id = filetable1._id+'_'+filetable2._id+'_'+varid
+         self.plot2_id = ft2id+'_'+varid
+         self.plot3_id = ft1id+' - '+ft2id+'_'+varid
+         self.plotall_id = ft1id+'_'+ft2id+'_'+varid
       else:
          self.plot2_id = None
          self.plot3_id = None
@@ -445,11 +448,12 @@ class lmwg_plot_set3(lmwg_plot_spec):
       self.plottype = 'Yxvsx'
 
       self._var_baseid = '_'.join([varid, 'set3'])
-      self.plot1_id = filetable1._id+'_'+varid
+      ft1id,ft2id = filetable_ids(filetable1,filetable2)
+      self.plot1_id = ft1id+'_'+varid
       if filetable2 is not None:
-         self.plot2_id = filetable2._id+'_'+varid
-         self.plot3_id = filetable1._id+' - '+filetable2._id+'_'+varid
-         self.plotall_id = filetable1._id+'_'+filetable2._id+'_'+varid
+         self.plot2_id = ft2id+'_'+varid
+         self.plot3_id = ft1id+' - '+ft2id+'_'+varid
+         self.plotall_id = ft1id+'_'+ft2id+'_'+varid
       else:
          self.plot2_id = None
          self.plot3_id = None
@@ -527,7 +531,7 @@ class lmwg_plot_set3(lmwg_plot_spec):
       self.single_plotspecs = {
          self.plot1_id: plotspec(
             vid=varid+'_1',
-            xvars = [varid+'_1'], xfunc=(lambda y: y),
+            zvars = [varid+'_1'], zfunc=(lambda y: y),
             plottype = self.plottype) } #,
 #            self.plot2_id: plotspec(
 #               vid=varid+'_2',
@@ -563,11 +567,12 @@ class lmwg_plot_set1(lmwg_plot_spec):
       self.plottype = 'Yxvsx'
 
       self._var_baseid = '_'.join([varid, 'set1'])
-      self.plot1_id = filetable1._strid+'_'+varid
+      ft1id,ft2id = filetable_ids(filetable1,filetable2)
+      self.plot1_id = ft1id+'_'+varid
       if filetable2 is not None:
-         self.plot2_id = filetable2._strid+'_'+varid
-         self.plot3_id = filetable1._strid+' - '+filetable2._strid+'_'+varid
-         self.plotall_id = filetable1._strid+'_'+filetable2._strid+'_'+varid
+         self.plot2_id = ft2id+'_'+varid
+         self.plot3_id = ft1id+' - '+ft2id+'_'+varid
+         self.plotall_id = ft1id+'_'+ft2id+'_'+varid
       else:
          self.plot2_id = None
          self.plot3_id = None
@@ -679,11 +684,12 @@ class lmwg_plot_set2(lmwg_plot_spec):
          self.season = cdutil.times.Seasons(self._seasonid)
 
       self._var_baseid = '_'.join([varid,'set2'])   # e.g. TREFHT_set2
-      self.plot1_id = filetable1._strid+'_'+varid+'_'+seasonid
+      ft1id,ft2id = filetable_ids(filetable1,filetable2)
+      self.plot1_id = ft1id+'_'+varid+'_'+seasonid
       if(filetable2 != None):
-         self.plot2_id = filetable2._strid+'_'+varid+'_'+seasonid
-         self.plot3_id = filetable1._strid+' - '+filetable2._strid+'_'+varid+'_'+seasonid
-         self.plotall_id = filetable1._strid+'_'+filetable2._strid+'_'+varid+'_'+seasonid
+         self.plot2_id = ft2id+'_'+varid+'_'+seasonid
+         self.plot3_id = ft1id+' - '+ft2id+'_'+varid+'_'+seasonid
+         self.plotall_id = ft1id+'_'+ft2id+'_'+varid+'_'+seasonid
       else:
          self.plotall_id = filetable1._strid+'_'+varid+'_'+seasonid
 
