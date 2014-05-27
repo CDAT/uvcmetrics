@@ -80,17 +80,6 @@ class AMWG(BasicDiagnosticGroup):
             }
          """
 
-def filetable_ids( filetable1, filetable2 ):
-        if filetable1 is None:
-            ft1id = ''
-        else:
-            ft1id  = filetable1._strid
-        if filetable2 is None:
-            ft2id = ''
-        else:
-            ft2id  = filetable2._strid
-        return ft1id,ft2id
-
 class amwg_plot_spec(plot_spec):
     package = AMWG  # Note that this is a class not an object.
     @staticmethod

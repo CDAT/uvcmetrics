@@ -82,3 +82,14 @@ class basic_id():
         "other adopts the same id as self"
         other._id = self._id
         other._strid = self._strid
+
+def filetable_ids( filetable1, filetable2 ):
+        if filetable1 is None:
+            ft1id = ''
+        else:
+            ft1id  = filetable1._strid
+        if filetable2 is None:
+            ft2id = ''
+        else:
+            ft2id  = filetable2._strid
+        return ft1id,ft2id
