@@ -2,7 +2,8 @@
 
 # Data reduction functions.
 
-import cdms2, math, itertools, operator, numpy, subprocess, re
+import sys, traceback
+import cdms2, math, itertools, operator, numpy, subprocess, re, MV2
 import hashlib, os
 from pprint import pprint
 import cdutil.times
@@ -403,6 +404,8 @@ def reduce2levlat_seasonal( mv, seasons=seasonsyr, vid=None ):
 
 def reduce2latlon( mv, vid=None ):
     """as reduce2lat, but averaging reduces coordinates to (lat,lon)"""
+    print 'IN REDUCE2LATLON mv.id =', mv.id
+    print 'traceback to get here: ', traceback.print_stack()
     if vid==None:   # Note that the averager function returns a variable with meaningless id.
         vid = 'reduced_'+mv.id
     axes = allAxes( mv )
@@ -511,9 +514,27 @@ def reduceAnnTrendRegion(mv, region, vid=None):
    return mvtrend
 
 # Used for lmwg set 3
+def reduceMonthlyRegion(mv, region, vid=None):
+   vals = []
+   if vid == None:
+      vid = 'reduced_'+mv.id
+   timeax = timeAxis(mv)
+   if timeax is not None and timeax.getBounds() == None:
+      timeax._bounds_ = timeax.genGenericBounds()
+   if timeax is not None:
+      mvsub = mv(latitude=(region[0], region[1]), longitude=(region[2], region[3]))
+      mvtrend = cdutil.times.ANNUALCYCLE.climatology(mvsub)
+   else:
+      mvtrend = mv
+   mvtrend.id = vid
+   if hasattr(mv, 'units'): mvtrend.units = mv.units # probably needs some help
+   print 'reduceMonthlyRegion - Returning shape', mvtrend.shape
+   return mvtrend
+
 def reduceMonthlyTrendRegion(mv, region, vid=None):
 # it would be nice if it was easy to tell if these climos were already done
 # but annualcycle is pretty fast.
+   print 'IN REDUCEMONTHLYTRENDREGION, vid=', vid, 'mv.id=', mv.id
    vals = []
    if vid == None:
       vid = 'reduced_'+mv.id
@@ -530,9 +551,8 @@ def reduceMonthlyTrendRegion(mv, region, vid=None):
    mvvals = cdutil.averager(mvtrend, axis='xy')
 
    mvvals.id = vid
-   if hasattr(mv, 'units'):
-       mvvals.units = mv.units # probably needs some help
-   print 'Returning ', mvvals
+   if hasattr(mv, 'units'): mvvals.units = mv.units # probably needs some help
+   print 'reduceMonthlyTrendRegion - Returning ', mvvals
    return mvvals
 
 # N.B. The following function is specific to LMWG but almost general
@@ -824,8 +844,17 @@ def aplusb0(mv1, mv2 ):
    return mv
 
 def aplusb(mv1, mv2):
+   print '************************************************************************************** IN A PLUSB'
    """ returns mv1+mv2; they should be dimensioned alike."""
    mv = mv1 + mv2
+   if hasattr(mv, 'long_name'):
+      if mv.long_name == mv1.long_name:
+         mv.long_name = ''
+   return mv
+
+def sum3(mv1, mv2, mv3):
+   """ returns mv1+mv2+mv3; they should be dimensioned alike."""
+   mv = mv1+mv2+mv3
    if hasattr(mv, 'long_name'):
       if mv.long_name == mv1.long_name:
          mv.long_name = ''
@@ -850,48 +879,116 @@ def aminusb0( mv1, mv2 ):
             mv.long_name = ''
     return mv
 
-# N.B. The following function is specific to LMWG
-def evapfrac(mvdict):
-   """returns evaporative fraction """
-   lheat = mvdict['fctr']+mvdict['fcev']+mvdict['fgev']
-   sheat = mvdict['fsh']
+def adivb(mv1, mv2):
+   """ returns mv1/mv2; they should be dimensioned alike.
+   Primarily used for ASA - all sky albedo in LMWG but generally useful function"""
+   mv = mv1/mv2
+   if hasattr(mv, 'long_name'):
+      if mv.long_name == mv1.long_name:
+         mv.long_name = ''
+   return mv
 
-   sheat2 = sheat
-   if sheat.min() < 0.:
-      sheat2 = MV2.where(MV2.less(sheat, 0.), sheat.missing_value, sheat)
 
-   lheat2 = lheat
+# N.B. The following function is specific to LMWG calculating evaporative fraction derived variable
+def dummy(mv, vid=None):
+   return mv
+
+def evapfrac(mv1, mv2, mv3, mv4): #, flags, season, region):
+   # Basically ripped from the NCL code
+   print '******* IN EVAPFRAC ********'
+   print mv1.id
+   print mv2.id
+   print mv3.id
+   print mv4.id
+   print mv4
+   print type(mv4)
+#   print flags
+#   print season
+#   print region
+   flags = None
+   lheat = mv1+mv2+mv3
+   fsh = mv4
+
+   denom = lheat+fsh
+
+   if fsh.min() < 0.:
+      denom_nz1 = MV2.where(MV2.less(fsh, 0.), fsh.missing_value, denom)
+
    if lheat.min() < 0.:
-      lheat2 = MV2.where(MV2.less(lheat, 0.), lheat.missing_value, lheat)
+      denom_nz2 = MV2.where(MV2.less(lheat, 0.), lheat.missing_value, denom_nz1)
 
-   denom = lheat2+sheat2
-   denom2 = MV2.where(MV2.less_equal(denom, 0.), denom_missing_value, denom)
+   denom_nz = MV2.where(MV2.less(denom_nz2, 0.), denom_nz2.missing_value, denom_nz2)
 
-   var = lheat2 / denom2
+   evap = lheat / denom_nz
+   # This cleans up the graphs a bit. Lots of values were like 1e-30 but they were missing_values in the plots
+   # at NCAR
+   evapfrac = MV2.where(MV2.less_equal(evap, 0.000000001), evap.missing_value, evap)
+
+   evapfrac.id = 'evapfrac'
+
+   if(flags == 'latlon_seasonal'):
+      timeax = timeAxis(evapfrac)
+      if timeax is None or len(timeax)<=1:
+         print 'No time axis, bailing'
+         mvret = evapfrac
+      else:
+         if timeax.getBounds()==None:
+            timeax._bounds_ = timeax.genGenericBounds()
+         evapfrac_seas = seasons.climatology(evapfrac)
+    
+      axes = allAxes( evapfrac )
+      axis_names = [ a.id for a in axes if a.id!='lat' and a.id!='lon' and a.id!='time']
+      axes_string = '('+')('.join(axis_names)+')'
+
+      if len(axes_string)>2:
+         for axis in mvseas.getAxisList():
+            if axis.getBounds() is None:
+               axis._bounds_ = axis.genGenericBounds()
+            avmv = averager( evapfrac_seas, axis=axes_string )
+      else:
+           avmv = evapfrac_seas
+      if avmv is None: return avmv
+      avmv.id = evapfrac.id
+      if hasattr(mv,'units'): avmv.units = mv.units
+      avmv = delete_singleton_axis( avmv, vid='time' )
+      avmv.units = mv.units
+      return avmv
+   elif(flags == 'seasonal'):
+      print 'Seasonal'
+
+   else:
+      return evapfrac
+
+def pminuset(rain, snow, qsoil, qvege, qvegt):
+   mv = rain+snow
+   et = qsoil+qvege+qvegt
+   mv = mv - et
+   mv.id = 'P-E'
+   return mv
+
+
+def evapfrac_special(mv1, mv2):
+   """returns evaporative fraction """
+   # mv1 = lheat, mv2 = fsh
+   lheat = mv1
+   fsh = mv2
+
+   if mv2.min() < 0.:
+      fsh = MV2.where(MV2.less(mv2, 0.), mv2.missing_value, mv2)
+
+   if mv1.min() < 0.:
+      lheat = MV2.where(MV2.less(mv1, 0.), mv1.missing_value, mv1)
+
+   temp = lheat+fsh
+   denom = MV2.where(MV2.less_equal(temp, 0.), temp.missing_value, temp)
+
+   var = lheat / denom
    var.id = 'evapfrac'
    var.setattribute('long_name', 'evaporative fraction')
    var.setattribute('name','evapfrac')
    var.units=''
    return var
 
-
-# N.B. The following function is specific to LMWG
-def adivapb(mv1, mv2):
-    """returns a/(a+b) """
-    mv = cdms2.createVariable()
-    mv = mv1/(mv1+mv2)
-    if hasattr(mv, 'long_name'):
-      if mv.long_name == mv1.long_name:
-         mv.long_name = ''
-    return mv
-
-# N.B. The following function is specific to LMWG
-def adivb(mv1, mv2):
-   mv = mv1/mv2
-   if hasattr(mv, 'long_name'):
-      if mv.long_name == mv1.long_name:
-         mv.long_name = ''
-   return mv
 
 def atimesb(mv1, mv2):
    """ returns mv1+mv2; they should be dimensioned alike and use the same units."""
@@ -1366,11 +1463,12 @@ class reduced_variable(ftrow,basic_id):
     # (lambda mv: return zonal_mean( mv, sourcefile, -20, 20 )
     def __init__( self, fileid=None, variableid='', timerange=None,\
                       latrange=None, lonrange=None, levelrange=None,\
-                      season=seasonsyr, reduced_var_id=None,\
+                      season=seasonsyr, region=None, reduced_var_id=None,\
                       reduction_function=(lambda x,vid=None: x),\
                       filetable=None, axes=None, duvs={}, rvs={}
                   ):
         self._season = season
+        self._region = region # this could probably change lat/lon range, or lat/lon ranges could be passed in
         if reduced_var_id is not None:
             basic_id.__init__( self, reduced_var_id )
         else:
