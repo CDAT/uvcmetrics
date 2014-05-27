@@ -230,11 +230,11 @@ class lmwg_plot_set6(lmwg_plot_spec):
       if varid not in lmwg_plot_set6._derived_varnames:
          self.reduced_variables[varid+'_1'] = reduced_variable(
                variableid = varid, filetable=filetable1, reduced_var_id=varid+'_1',
-               reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid))),
+               reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid)))
          if filetable2 != None:
             self.reduced_variables[varid+'_2'] = reduced_variable(
                   variableid = varid, filetable=filetable2, reduced_var_id=varid+'_2',
-                  reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid))),
+                  reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid)))
       else:
          red_vars = ['RAIN', 'PREC', 'QSOIL', 'QVEGE', 'QVEGT', 'FCTR', 'FCEV', 'FGEV', 'FSR', 'FSDS', 'FIRA', 'FSA']
          red_der_vars = ['FSR', 'FSDS', 'FSA', 'FIRA']
