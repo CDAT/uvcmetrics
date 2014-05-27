@@ -67,12 +67,12 @@ for pname,pclass in dm.items():
     sm = package.list_diagnostic_sets()
     for sname,sclass in sm.items():
         #if sclass.name != ' 2 - Line Plots of Annual Implied Northward Transport':
-        if sclass.name != ' 3 - Line Plots of  Zonal Means':
+        #if sclass.name != ' 3 - Line Plots of  Zonal Means':
         #if sclass.name != ' 4 - Vertical Contour Plots Zonal Means':
         #if sclass.name != ' 5 - Horizontal Contour Plots of Seasonal Means':
         #if sclass.name != ' 6 - Horizontal Vector Plots of Seasonal Means':
         #if sclass.name == '2 - Horizontal contour plots of DJF, MAM, JJA, SON, and ANN means':
-            continue   # for testing, only do one plot set
+        #    continue   # for testing, only do one plot set
         print "jfp sname=",sname
         for seasonid in package.list_seasons():
             #if seasonid != 'DJF':
