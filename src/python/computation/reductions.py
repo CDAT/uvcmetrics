@@ -404,8 +404,8 @@ def reduce2levlat_seasonal( mv, seasons=seasonsyr, vid=None ):
 
 def reduce2latlon( mv, vid=None ):
     """as reduce2lat, but averaging reduces coordinates to (lat,lon)"""
-    print 'IN REDUCE2LATLON mv.id =', mv.id
-    print 'traceback to get here: ', traceback.print_stack()
+    #print 'IN REDUCE2LATLON mv.id =', mv.id
+    #print 'traceback to get here: ', traceback.print_stack()
     if vid==None:   # Note that the averager function returns a variable with meaningless id.
         vid = 'reduced_'+mv.id
     axes = allAxes( mv )
@@ -1497,7 +1497,10 @@ class reduced_variable(ftrow,basic_id):
         """varid, seasonid are strings identifying a variable name (usually of a model output
         variable) and season, ft is a filetable.  This method constructs and returns an id for
         the corresponding reduced_variable object."""
-        return basic_id._dict_id( cls, varid, seasonid, ft._strid )
+        if ft is None:
+            return None
+        else:
+            return basic_id._dict_id( cls, varid, seasonid, ft._strid )
 
     def extract_filefamilyname( self, filename ):
         """From a filename, extracts the first part of the filename as the possible
@@ -1542,7 +1545,7 @@ class reduced_variable(ftrow,basic_id):
             families = list(set([ famdict[f] for f in files ]))
             families.sort(key=len)  # a shorter name is more likely to be what we want
             if len(families)==0:
-                print "ERROR.  No data to reduce.  files[0]=:",files[0]
+                print "WARNING.  No data to reduce.  files[0]=:",files[0]
                 return None
             elif len(families)>1:
                 fam = families[0]
