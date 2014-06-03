@@ -28,7 +28,10 @@ class drange:
       else:
          return self.hi>range2.lo and self.lo<range2.hi
    def __repr__(self):
-      return "drange %s to %s %s"%(self.lo,self.hi,self.units)
+      if self.units is None:
+         return "drange %s to %s"%(self.lo,self.hi)
+      else:
+         return "drange %s to %s (%s)"%(self.lo,self.hi,self.units)
        
 class ftrow:
     """This class identifies a file and contains the information essential to tell
