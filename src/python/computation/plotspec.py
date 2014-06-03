@@ -8,16 +8,13 @@ from metrics.computation.reductions import *
 import sys, traceback
 
 class derived_var(basic_id):
-    def __init__( self, vid, inputs=[], outputs=['output'], func=(lambda: None),
-                  inputs_none_ok=[] ):
+    def __init__( self, vid, inputs=[], outputs=['output'], func=(lambda: None) ):
         """Arguments:
         vid, an id for this dervied variable;
         func=function to compute values of this variable;
         inputs=list of ids of the variables which are the inputs to func;
         outputs=list of ids of variables which are outputs of func (default is a single output
            quantity named 'output');
-        inputs_none_ok=list of ids of func's input variables which may be None.  Otherwise they are
-           expected to be reduced or derived variables, and None will be an error.
         """
         if type(vid) is tuple:
             basic_id.__init__(self,*vid)
@@ -25,7 +22,6 @@ class derived_var(basic_id):
             basic_id.__init__(self,vid)
         #self._vid = self._strid      # self._vid is deprecated
         self._inputs = [i for i in inputs if i is not None]
-        self._inputs_none_ok = inputs_none_ok
         self._outputs = outputs
         self._func = func
         self._file_attributes = {}
@@ -39,7 +35,7 @@ class derived_var(basic_id):
         string (By convention we say 'seasonid' for a string and 'season' for a cdutil.times.Seasons
         object)."""
         # error from checking this way!... if None in [ vardict[inp] for inp in self._inputs ]:
-        dictvals = [ inpdict.get(inp,None) for inp in self._inputs if inp not in self._inputs_none_ok ]
+        dictvals = [ inpdict.get(inp,None) for inp in self._inputs ]
         nonevals = [nn for nn in dictvals if nn is None]
         if len(nonevals)>0:
             return None
