@@ -174,7 +174,7 @@ class uvc_simple_plotspec():
     The plots will be of the type specified by presentation.  The data will be the
     variable(s) supplied, and their axes.  Optionally one may specify a list of labels
     for the variables, and a title for the whole plot."""
-    # re prsentation (plottype): Yxvsx is a line plot, for Y=Y(X).  It can have one or several lines.
+    # re presentation (plottype): Yxvsx is a line plot, for Y=Y(X).  It can have one or several lines.
     # Isofill is a contour plot.  To make it polar, set projection=polar.  I'll
     # probably communicate that by passing a name "Isofill_polar".
     def __init__( self, pvars, presentation, labels=[], title=''):
@@ -446,6 +446,8 @@ class uvc_zero_plotspec(uvc_simple_plotspec):
         zerovar = cdms2.createVariable([[0,0,0],[0,0,0]])
         zerovar.id = 'zero'
         uvc_simple_plotspec.__init__( self, [zerovar], "Isofill" )
+    def __repr__( self ):
+        return "uvc_zero_plotspec"
 
 class DiagsEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -611,16 +613,19 @@ class plot_spec(object):
                     print "WARNING - cannot compute results involving zax, zvars=",ps.zvars
                     print "missing results for",[k for k in ps.zvars if varvals[k] is None]
                     continue
-                if any([a is None for a in z2rv]):
-                    print "WARNING - cannot compute results involving zax, zvars=",ps.z2vars
-                    print "missing results for",[k for k in ps.z2vars if varvals[k] is None]
-                    continue
                 zax = apply( ps.zfunc, zrv )
-                z2ax = apply( ps.z2func, z2rv )
+                if any([a is None for a in z2rv]):
+                    print "WARNING - cannot compute results involving z2ax, z2vars=",ps.z2vars
+                    print "missing results for",[k for k in ps.z2vars if varvals[k] is None]
+                    z2ax = None
+                else:
+                    z2ax = apply( ps.z2func, z2rv )
             except Exception as e:
-                print "EXCEPTION cannot compute data for",ps._strid
-                print "Exception is",e
-                self.plotspec_values[p] = None
+                if ps._id != plotspec.dict_id( None, None, None, None, None ):
+                    # not an empty plot
+                    print "WARNING cannot compute data for",ps._strid
+                    print "due to exception",e
+                self.plotspec_values[p] = uvc_zero_plotspec()
                 continue
             # not used yet zr = apply( ps.zrangefunc, zrrv )
             vars = []
@@ -675,7 +680,7 @@ class plot_spec(object):
                 z2ax.id = new_id
                 z2lab += ' '+z2ax.id
             if vars==[]:
-                self.plotspec_values[p] = None
+                self.plotspec_values[p] = uvc_zero_plotspec()
                 continue
             #labels = [xlab,ylab,zlab]
             labels = [zlab,z2lab]
