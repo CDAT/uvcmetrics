@@ -393,6 +393,8 @@ class amwg_plot_set4(amwg_plot_spec):
         if not self.computation_planned:
             self.plan_computation( filetable1, filetable2, varid, seasonid )
     def reduced_variables_press_lev( self, filetable, varid, seasonid, ftno=None ):
+        if filetable is None:
+            return {}
         reduced_varlis = [
             reduced_variable(
                 variableid=varid, filetable=filetable, season=self.season,
@@ -417,7 +419,10 @@ class amwg_plot_set4(amwg_plot_spec):
         return reduced_variables
     def plan_computation( self, filetable1, filetable2, varid, seasonid ):
         ft1_hyam = filetable1.find_files('hyam')
-        ft2_hyam = filetable2.find_files('hyam')
+        if filetable2 is None:
+            ft2_hyam = None
+        else:
+            ft2_hyam = filetable2.find_files('hyam')
         hybrid1 = ft1_hyam is not None and ft1_hyam!=[]    # true iff filetable1 uses hybrid level coordinates
         hybrid2 = ft2_hyam is not None and ft2_hyam!=[]    # true iff filetable2 uses hybrid level coordinates
         if hybrid1:
