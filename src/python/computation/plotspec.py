@@ -8,13 +8,24 @@ from metrics.computation.reductions import *
 import sys, traceback
 
 class derived_var(basic_id):
-    def __init__( self, vid, inputs=[], outputs=['output'], func=(lambda: None) ):
+    def __init__( self, vid, inputs=[], outputs=['output'], func=(lambda: None),
+                  inputs_none_ok=[] ):
+        """Arguments:
+        vid, an id for this dervied variable;
+        func=function to compute values of this variable;
+        inputs=list of ids of the variables which are the inputs to func;
+        outputs=list of ids of variables which are outputs of func (default is a single output
+           quantity named 'output');
+        inputs_none_ok=list of ids of func's input variables which may be None.  Otherwise they are
+           expected to be reduced or derived variables, and None will be an error.
+        """
         if type(vid) is tuple:
             basic_id.__init__(self,*vid)
         else:  # probably vid is a string
             basic_id.__init__(self,vid)
         #self._vid = self._strid      # self._vid is deprecated
-        self._inputs = inputs
+        self._inputs = [i for i in inputs if i is not None]
+        self._inputs_none_ok = inputs_none_ok
         self._outputs = outputs
         self._func = func
         self._file_attributes = {}
@@ -28,11 +39,9 @@ class derived_var(basic_id):
         string (By convention we say 'seasonid' for a string and 'season' for a cdutil.times.Seasons
         object)."""
         # error from checking this way!... if None in [ vardict[inp] for inp in self._inputs ]:
-        dictvals = [ inpdict.get(inp,None) for inp in self._inputs ]
+        dictvals = [ inpdict.get(inp,None) for inp in self._inputs if inp not in self._inputs_none_ok ]
         nonevals = [nn for nn in dictvals if nn is None]
-        print 'nonevals: ', nonevals
         if len(nonevals)>0:
-            print 'LEN WAS 0, RETURN'
             return None
         output = apply( self._func, [ inpdict[inp] for inp in self._inputs ] )
         if type(output) is tuple or type(output) is list:
@@ -191,7 +200,9 @@ class plotspec(basic_id):
         is normally a representation of a variable.
         varid, varmod, seasonid are strings identifying a variable name, a name modifier
         (often '' is a good value) and season, ft is a filetable, or a string id for the filetable."""
-        if type(ft1) is str:  # can happen if id has already been computed, and is used as input here.
+        if ft1 is None or ft1=='':
+            ft1id = ''
+        elif type(ft1) is str:  # can happen if id has already been computed, and is used as input here.
             ft1id = ft1
         else:
             ft1id = id2str( ft1._id )
@@ -209,9 +220,12 @@ class plotspec(basic_id):
         # I'd rather name this dict_id, but Python (unlike Common Lisp or C++) doesn't automatically
         # dispatch to one of several function definitions.  Doing it by hand with *args is messier.
         if type(otherid) is not tuple:
-            print "ERROR.  Bad input to plotspec.dict_idid(), not a tuple."
-            print otherid
-            return None
+            if otherid is None:
+                return cls.dict_id( None, None, None, None, None )
+            else:
+                print "ERROR.  Bad input to plotspec.dict_idid(), not a tuple.  Value is"
+                print otherid
+                return None
         if otherid[0]=='rv' and len(otherid)==4:
             varid = otherid[1]
             varmod = ''
