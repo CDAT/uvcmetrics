@@ -628,6 +628,24 @@ class amwg_plot_set5and6(amwg_plot_spec):
                                func=verticalize ),
             vidl1: derived_var( vid=vidl1, inputs=[vid1], func=(lambda z: select_lev(z,pselect))) }
 
+        self.single_plotspecs = {
+            self.plot1_id: plotspec(
+                # was vid = varid+'_1',
+                # was zvars = [vid1],  zfunc = (lambda z: select_lev( z, pselect ) ),
+                vid = ps.dict_idid(vidl1),
+                zvars = [vidl1],  zfunc = (lambda z: z),
+                plottype = self.plottype ) }
+           
+        if filetable2 is None:
+            print "jfp reduced_variables keys=",self.reduced_variables.keys()
+            print "jfp derived_variables keys=",self.derived_variables.keys()
+            self.reduced_variables = { v.id():v for v in reduced_varlis }
+            self.composite_plotspecs = {
+                self.plotall_id: [ self.plot1_id ]
+                }
+            self.computation_planned = True
+            return
+
         if 'hyam' in filetable2.list_variables() and 'hybm' in filetable2.list_variables():
             # hybrid levels in use, convert to pressure levels
             reduced_varlis += [
@@ -669,24 +687,16 @@ class amwg_plot_set5and6(amwg_plot_spec):
                                                          func=(lambda z: select_lev(z,pselect) ) )
         self.reduced_variables = { v.id():v for v in reduced_varlis }
 
-        self.single_plotspecs = {
-            self.plot1_id: plotspec(
-                # was vid = varid+'_1',
-                # was zvars = [vid1],  zfunc = (lambda z: select_lev( z, pselect ) ),
-                vid = ps.dict_idid(vidl1),
-                zvars = [vidl1],  zfunc = (lambda z: z),
-                plottype = self.plottype ),
-            self.plot2_id: plotspec(
+        self.single_plotspecs[self.plot2_id] = plotspec(
                 #was vid = varid+'_2',
                 vid = ps.dict_idid(vidl2),
                 zvars = [vidl2],  zfunc = (lambda z: z),
                 plottype = self.plottype ),
-            self.plot3_id: plotspec(
+        self.single_plotspecs[self.plot3_id] = plotspec(
                 #was vid = varid+'_diff',
                 vid = ps.dict_id(varid,'diff',seasonid,filetable1,filetable2),
                 zvars = [vidl1,vidl2],  zfunc = aminusb_2ax,
                 plottype = self.plottype ),
-            }
         self.composite_plotspecs = {
             self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id ]
             }
@@ -695,8 +705,8 @@ class amwg_plot_set5and6(amwg_plot_spec):
         results = plot_spec._results(self,newgrid)
         if results is None: return None
         psv = self.plotspec_values
-        if psv[self.plot1_id] is not None\
-                and psv[self.plot2_id] is not None:
+        if getattr(psv,self.plot1_id,None) is not None\
+                and getattr(psv,self.plot2_id,None) is not None:
             psv[self.plot1_id].synchronize_ranges(psv[self.plot2_id])
         for key,val in psv.items():
             if type(val) is not list: val=[val]
