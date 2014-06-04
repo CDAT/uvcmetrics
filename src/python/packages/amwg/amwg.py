@@ -349,18 +349,22 @@ class amwg_plot_set3(amwg_plot_spec,basic_id):
         zunam = zvar._filetable._strid  # part of y1 distinguishing it from y2, e.g. ft_1
         zval.id = '_'.join([self._id[0],self._id[1],zunam])
         z2val = self.variable_values[z2var._strid]
-        if z2val is None: return None
-        z2unam = z2var._filetable._strid  # part of y2 distinguishing it from y1, e.g. ft_2
-        z2val.id = '_'.join([self._id[0],self._id[1],z2unam])
-        zdiffval = apply( self.plot_b.zfunc, [zval,z2val] )
-        zdiffval.id = '_'.join([self._id[0],self._id[1],
-                                zvar._filetable._strid, z2var._filetable._strid, 'diff'])
+        if z2val is None:
+            z2unam = ''
+            zdiffval = None
+        else:
+            z2unam = z2var._filetable._strid  # part of y2 distinguishing it from y1, e.g. ft_2
+            z2val.id = '_'.join([self._id[0],self._id[1],z2unam])
+            zdiffval = apply( self.plot_b.zfunc, [zval,z2val] )
+            zdiffval.id = '_'.join([self._id[0],self._id[1],
+                                    zvar._filetable._strid, z2var._filetable._strid, 'diff'])
         # ... e.g. CLT_DJF_set3_CAM456_NCEP_diff
+        print "jfp self._id=",self._id
         plot_a_val = uvc_plotspec(
-            [zval,z2val],'Yxvsx', labels=[zunam,z2unam],
+            [v for v in [zval,z2val] if v is not None],'Yxvsx', labels=[zunam,z2unam],
             title=' '.join([self._id[0],self._id[1],zunam,'and',z2unam]))
         plot_b_val = uvc_plotspec(
-            [zdiffval],'Yxvsx', labels=['difference'],
+            [v for v in [zdiffval] if v is not None],'Yxvsx', labels=['difference'],
             title=' '.join([self._id[0],self._id[1],zunam,'-',z2unam]))
         plot_a_val.synchronize_ranges(plot_b_val)
         plot_a_val.finalize()
