@@ -178,6 +178,11 @@ class uvc_simple_plotspec():
     # Isofill is a contour plot.  To make it polar, set projection=polar.  I'll
     # probably communicate that by passing a name "Isofill_polar".
     def __init__( self, pvars, presentation, labels=[], title=''):
+        if len(pvars)<=0:
+            zerovar = cdms2.createVariable([[0,0,0],[0,0,0]])
+            zerovar.id = 'zero'
+            presentation = 'Isofill'
+            pvars = [zerovar]
         ptype = presentation
         if vcsx:   # temporary kludge, presently need to know whether preparing VCS plots
             if presentation=="Yxvsx":
@@ -242,6 +247,8 @@ class uvc_simple_plotspec():
                 varmax = max(varmax,self.varmax[v.id])
                 varmin = min(varmin,self.varmin[v.id])
             if self.presentation.__class__.__name__=="GYx":
+                if len(axmax.keys())<=0:
+                    return None
                 # VCS Yxvsx
                 ax = axmax.keys()[0]
                 self.presentation.datawc_x1 = axmin[ax]
@@ -575,8 +582,9 @@ class plot_spec(object):
             value = self.derived_variables[v].derive(self.variable_values)
             self.variable_values[v] = value  # could be None
         varvals = self.variable_values
+        #print "jfp in _results, varvals keys,types=",[ (k,type(v)) for k,v in varvals.iteritems() ]
         for p,ps in self.single_plotspecs.iteritems():
-            print "uvcdat jfp preparing data for",ps._strid
+            print "uvcdat preparing data for",ps._strid
             try:
                 # print "jfp ps.xvars=",ps.xvars,ps.x1vars,ps.x2vars,ps.x3vars
                 # print "jfp ps.yvars=",ps.yvars,ps.y1vars,ps.y2vars,ps.y3vars
