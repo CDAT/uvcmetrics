@@ -691,12 +691,12 @@ class amwg_plot_set5and6(amwg_plot_spec):
                 #was vid = varid+'_2',
                 vid = ps.dict_idid(vidl2),
                 zvars = [vidl2],  zfunc = (lambda z: z),
-                plottype = self.plottype ),
+                plottype = self.plottype )
         self.single_plotspecs[self.plot3_id] = plotspec(
                 #was vid = varid+'_diff',
                 vid = ps.dict_id(varid,'diff',seasonid,filetable1,filetable2),
                 zvars = [vidl1,vidl2],  zfunc = aminusb_2ax,
-                plottype = self.plottype ),
+                plottype = self.plottype )
         self.composite_plotspecs = {
             self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id ]
             }
