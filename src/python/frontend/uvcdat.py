@@ -430,6 +430,7 @@ class uvc_simple_plotspec():
         elif format=="JSON string":
             return json.dumps(self,cls=DiagsEncoder)
 
+        writer.source = "UV-CDAT Diagnostics"
         writer.presentation = self.ptype
         plot_these = []
         for zax in self.vars:
