@@ -8,9 +8,9 @@ from metrics.fileio.filetable import *
 from metrics.fileio.findfiles import *
 from metrics.computation.reductions import *
 from metrics.computation.plotspec import *
-from metrics.amwg.derivations.oaht import *
-from metrics.amwg.derivations.ncl_isms import *
-from metrics.amwg.derivations.vertical import *
+from metrics.packages.amwg.derivations.oaht import *
+from metrics.packages.amwg.derivations.ncl_isms import *
+from metrics.packages.amwg.derivations.vertical import *
 from pprint import pprint
 
 
@@ -445,7 +445,7 @@ def test_driver( path1, path2=None, filt2=None ):
         else:
             write_xml = True
             psl = [ plotspecs[k] for k in psk ]
-            xml_name = '_'.join( [ ps._id for ps in psl ] ) +'.xml'
+            xml_name = '_'.join( [ ps._strid for ps in psl ] ) +'.xml'
             h = open( xml_name, 'w' )
             h.write("<plotdata>\n")
         for ps in psl:
@@ -480,12 +480,12 @@ def test_driver( path1, path2=None, filt2=None ):
         else:
             write_xml = True
             psl = [ plotspecs[k] for k in psk ]
-            xml_name = '_'.join( [ ps._id for ps in psl ] ) +'.xml'
+            xml_name = '_'.join( [ ps._strid for ps in psl ] ) +'.xml'
             h = open( xml_name, 'w' )
             h.write("<plotdata>\n")
         varkeys = []
         for ps in psl:
-            print "jfp preparing data for",ps._id
+            print "jfp preparing data for",ps._strid
             xrv = [ varvals[k] for k in ps.xvars ]
             x1rv = [ varvals[k] for k in ps.x1vars ]
             x2rv = [ varvals[k] for k in ps.x2vars ]
@@ -516,7 +516,7 @@ def test_driver( path1, path2=None, filt2=None ):
                 and (y2ax is None or len(y2rv)==0) and (y3ax is None or len(y3rv)==0)\
                 and (zax is None or len(zrv)==0):
                 continue
-            filename = ps._id+"_test.nc"
+            filename = ps._strid+"_test.nc"
             g = cdms2.open( filename, 'w' )    # later, choose a better name and a path!
             # Much more belongs in g, e.g. axis and graph names.
             if xax is not None and len(xrv)>0:
@@ -561,7 +561,7 @@ def test_driver( path1, path2=None, filt2=None ):
             # Instead we'll manage with a convention that a table row plotspec's id is the name of
             # the row, thus available to be printed in, e.g., the first column.
             if ps.plottype=="table row":
-                g.rowid = ps._id
+                g.rowid = ps._strid
             g.close()
             if write_xml:
                 h.write( "<ncfile>"+filename+"</ncfile>\n" )

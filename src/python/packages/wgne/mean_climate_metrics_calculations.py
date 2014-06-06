@@ -12,16 +12,16 @@ def compute_metrics(var,dm,do):
   if var == 'tos': do = do + 273.13
 
   ### ANNUAL CYCLE SPACE-TIME RMS
-  rms_xyt = metrics.wgne.rms_xyt.compute(dm,do)
-  cor_xyt = metrics.wgne.cor_xyt.compute(dm,do)
+  rms_xyt = metrics.packages.wgne.rms_xyt.compute(dm,do)
+  cor_xyt = metrics.packages.wgne.cor_xyt.compute(dm,do)
 
   ### CALCUALTE ANNUAL MEANS OF DATA
-  do_am, dm_am =  metrics.wgne.annual_mean.compute(dm,do)
+  do_am, dm_am =  metrics.packages.wgne.annual_mean.compute(dm,do)
   ### ANNUAL MEAN BIAS
-  bias_am = metrics.wgne.bias.compute(dm_am,do_am) 
+  bias_am = metrics.packages.wgne.bias.compute(dm_am,do_am) 
 
   ### ANNUAL MEAN RMS
-  rms_xy = metrics.wgne.rms_xy.compute(dm_am,do_am)
+  rms_xy = metrics.packages.wgne.rms_xy.compute(dm_am,do_am)
 
   conv = 1.
   if var == 'pr': conv = 1.e5

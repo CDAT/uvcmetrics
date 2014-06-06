@@ -11,12 +11,13 @@ import cdms2, math
 from metrics.fileio.findfiles import *
 from metrics.fileio.filetable import *
 from metrics.computation.reductions import *
-from metrics.amwg.derivations.oaht import *
-from metrics.amwg.derivations.ncl_isms import *
-from metrics.amwg.derivations.vertical import *
-from metrics.amwg.plot_data import derived_var, plotspec
+from metrics.packages.amwg.derivations.oaht import *
+from metrics.packages.amwg.derivations.ncl_isms import *
+from metrics.packages.amwg.derivations.vertical import *
+from metrics.packages.amwg.plot_data import derived_var, plotspec
 from cdutil.times import Seasons
 from pprint import pprint
+from metrics.frontend.options import *
 import cProfile
 
 class climatology_variable( reduced_variable ):
@@ -89,6 +90,7 @@ def compute_and_write_climatologies( varkeys, reduced_variables, season, case=''
     # Probably this loop consumes most of the running time.  It's what has to read in all the data.
     for key in varkeys:
         if key in reduced_variables:
+            print 'reducing ', key
             varvals[key] = reduced_variables[key].reduce()
 
     for key in varkeys:
@@ -122,23 +124,34 @@ def compute_and_write_climatologies( varkeys, reduced_variables, season, case=''
     g.close()
     return varvals,case
 
-def test_driver( path1, filt1=None ):
+def test_driver(opts):
     """ Test driver for setting up data for plots"""
-    datafiles1 = dirtree_datafiles( path1, filt1 )
-    get_them_all = True  # Set True to get all variables in all specified files
-    # Then you can call filetable1.list_variables to get the variable list.
-    #was filetable1 = basic_filetable( datafiles1, get_them_all )
-    filetable1 = datafiles1.setup_filetable( os.path.join(os.environ['HOME'],'tmp'), "model" )
-    cseasons = ['ANN','DJF','MAM','JJA','SON',
-                'JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC']
+    print opts._opts
+    # This script should just generate climos 
+    opts._opts['plots'] = False
+    datafiles1 = dirtree_datafiles(opts, pathid = 0)
+    filetable1 = basic_filetable(datafiles1, opts)
+
+    myvars = opts._opts['vars']
+    if myvars == ['ALL']:
+        myvars = filetable1.list_variables() 
+
+    cseasons = opts._opts['times']
+    if cseasons == []:
+       print 'Defaulting to all seasons'
+       cseasons = ['ANN','DJF','MAM','JJA','SON',
+                   'JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC']
+
     #cseasons = ['ANN', 'DJF', 'JJA' ] 
     #cseasons = ['JAN']
     case = ''
 
+    print cseasons
     for season in cseasons:
+        print 'Processing ', season
 
         reduced_variables1 = { var+'_'+season:climatology_variable(var,filetable1,season)
-                               for var in filetable1.list_variables() }
+                               for var in myvars }
         # example:             for var in ['TREFHT','FLNT','SOILC']}
         #reduced_variables = {
         #    'TREFHT_ANN': reduced_variable(
@@ -156,7 +169,13 @@ def test_driver( path1, filt1=None ):
         varkeys = reduced_variables1.keys()
         #varkeys = varkeys[0:2]  # quick version for testing
 
-        rvs,case = compute_and_write_climatologies( varkeys, reduced_variables1, season, case )
+        print 'writing reduced variables'
+        casename = ''
+        if opts._opts['dsnames'] != []:
+           casename = opts._opts['dsnames'][0]
+           print 'Using ', casename,' as dataset name'
+        rvs,case = compute_and_write_climatologies( varkeys, reduced_variables1, season, casename)
+        print 'done writing reduced vars '
 
         # Repeat for var**2.  Later I'll change this to (var-climo(var))**2/(N-1)
         # using the (still-in-memory) data in the dict reduced_variables.
@@ -167,24 +186,14 @@ def test_driver( path1, filt1=None ):
 
         # Repeat for variance, climatology of (var-climo(var))**2/(N-1)
         # using the (still-in-memory) data in the dict reduced_variables.
-        print "jfp\ndoing var..."
-        reduced_variables3 = { var+'_'+season:
-                                   climatology_variance(var,filetable1,season,rvs=rvs)
-                               for var in filetable1.list_variables() }
-        compute_and_write_climatologies( varkeys, reduced_variables3, season, case, 'var' )
+#        print "jfp\ndoing var..."
+#        reduced_variables3 = { var+'_'+season:
+#                                   climatology_variance(var,filetable1,season,rvs=rvs)
+#                               for var in filetable1.list_variables() }
+#        compute_and_write_climatologies( varkeys, reduced_variables3, season, case, 'var' )
 
 if __name__ == '__main__':
-   if len( sys.argv ) > 1:
-      path1 = sys.argv[1]
-      if len( sys.argv ) > 2 and sys.argv[2].find('--filt=')==0:  # need to use getopt to parse args
-          filt1 = sys.argv[2][7:]
-          #filt1="f_and(f_startswith('FLUT'),"+filt1+")"
-          test_driver(path1,filt1)
-      else:
-          #prof = cProfile.Profile()
-          #args = [path1]
-          #returnme = prof.runcall( test_driver, *args )
-          #prof.print_stats()   # use dump_stats(filename) to print to file
-          test_driver(path1)
-   else:
-      print "usage: plot_data.py root"
+   o = Options()
+   o.processCmdLine()
+   o.verifyOptions()
+   test_driver(o)
