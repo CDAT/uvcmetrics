@@ -145,6 +145,8 @@ class uvc_composite_plotspec():
         #print "output to",filename
         return filename
     def write_plot_data( self, format="", where="" ):
+        """writes plot data to a specified location, usually a file, of the specified format.
+        returns a list of files which were created"""
         if format=="" or format=="xml" or format=="xml-NetCDF" or format=="xml file":
             format = "xml-NetCDF"
             contents_format = "NetCDF"
@@ -154,12 +156,14 @@ class uvc_composite_plotspec():
             format = "xml-NetCDF"
             conents_format = "NetCDF"
 
+        filenames = []
         for p in self.plots:
-            p.write_plot_data( contents_format, where )
+            filenames += p.write_plot_data( contents_format, where )
 
         #print "jfp format=",format
         #print "jfp where=",where
         filename = self.outfile( format, where )
+        filenames.append(filename)
         #print "jfp filename=",filename
         writer = open( filename, 'w' )    # later, choose a better name and a path!
         writer.write("<plotdata>\n")
@@ -168,6 +172,7 @@ class uvc_composite_plotspec():
             writer.write( "<ncfile>"+pfn+"</ncfile>\n" )
         writer.write( "</plotdata>\n" )
         writer.close()
+        return filenames
 
 class uvc_simple_plotspec():
     """This is a simplified version of the plotspec class, intended for the UV-CDAT GUI.
@@ -445,6 +450,7 @@ class uvc_simple_plotspec():
         #    writer.varmin = self.varmin
 
         writer.close()
+        return [filename]
 
 class uvc_plotspec(uvc_simple_plotspec):
     pass
