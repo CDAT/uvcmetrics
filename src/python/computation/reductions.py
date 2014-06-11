@@ -844,7 +844,6 @@ def aplusb0(mv1, mv2 ):
    return mv
 
 def aplusb(mv1, mv2):
-   print '************************************************************************************** IN A PLUSB'
    """ returns mv1+mv2; they should be dimensioned alike."""
    mv = mv1 + mv2
    if hasattr(mv, 'long_name'):
@@ -967,17 +966,31 @@ def pminuset(rain, snow, qsoil, qvege, qvegt):
    return mv
 
 
-def evapfrac_special(mv1, mv2):
+def ab_ratio(mv1, mv2):
+   mv = mv1
+   print 'denom min: ', mv2.min()
+   # this should probably be an absolute value and an epsilon range sort of thing
+#   denom = mv2[mv2.nonzero()] # this doesn't work
+   denom = MV2.where(MV2.equal(mv2, 0.), mv2.missing_value, mv2)
+
+   mv = (mv1 / denom) * 100.
+   if hasattr(mv, 'long_name'):
+      if mv.long_name == mv1.long_name:
+         mv.long_name = ''
+   return mv
+
+
+def evapfrac_special(mv1, mv2, mv3, mv4):
    """returns evaporative fraction """
-   # mv1 = lheat, mv2 = fsh
-   lheat = mv1
-   fsh = mv2
+   lht = mv1+mv2+mv3
+   lheat = lht
+   fsh = mv4
 
-   if mv2.min() < 0.:
-      fsh = MV2.where(MV2.less(mv2, 0.), mv2.missing_value, mv2)
+   if mv4.min() < 0.:
+      fsh = MV2.where(MV2.less(mv4, 0.), mv4.missing_value, mv4)
 
-   if mv1.min() < 0.:
-      lheat = MV2.where(MV2.less(mv1, 0.), mv1.missing_value, mv1)
+   if lht.min() < 0.:
+      lheat = MV2.where(MV2.less(lht, 0.), lht.missing_value, lht)
 
    temp = lheat+fsh
    denom = MV2.where(MV2.less_equal(temp, 0.), temp.missing_value, temp)
