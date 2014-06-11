@@ -286,7 +286,7 @@ class lmwg_plot_set6b(lmwg_plot_spec):
             pspec_name = 'Carbon_Nitrogen_Fluxes'
          if 'Fire' in varid:
             print 'Fire Fluxes'
-            red_varlist = ['COL_FIRE_CLOSS', 'COL_FIRE_NLOSS', 'PFT_FIRE_CLOSS', 'PFT_FIRE_NLOSS', 'FIRESEASONAL', 'ANN_FAREA_BURNED', 'MEAN_FIRE_PROB']
+            red_varlist = ['COL_FIRE_CLOSS', 'COL_FIRE_NLOSS', 'PFT_FIRE_CLOSS', 'PFT_FIRE_NLOSS', 'FIRESEASONL', 'ANN_FAREA_BURNED', 'MEAN_FIRE_PROB']
             pspec_name = 'Fire_Fluxes'
          if 'Hydrology' in varid:
             print 'Hydrology'
@@ -672,7 +672,7 @@ class lmwg_plot_set3b(lmwg_plot_spec):
             pspec_name = 'Carbon_Nitrogen_Fluxes'
          if 'Fire' in varid:
             print 'Fire Fluxes'
-            red_varlist = ['COL_FIRE_CLOSS', 'COL_FIRE_NLOSS', 'PFT_FIRE_CLOSS', 'PFT_FIRE_NLOSS', 'FIRESEASONAL', 'ANN_FAREA_BURNED', 'MEAN_FIRE_PROB']
+            red_varlist = ['COL_FIRE_CLOSS', 'COL_FIRE_NLOSS', 'PFT_FIRE_CLOSS', 'PFT_FIRE_NLOSS', 'FIRESEASONL', 'ANN_FAREA_BURNED', 'MEAN_FIRE_PROB']
             pspec_name = 'Fire_Fluxes'
          if 'Hydrology' in varid:
             print 'Hydrology'
