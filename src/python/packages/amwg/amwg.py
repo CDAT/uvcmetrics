@@ -781,9 +781,9 @@ class amwg_plot_set9(amwg_plot_spec):
             ft2_valid = ft2 is not None and ft2!=[]    # true iff filetable2 uses hybrid level coordinates
         else:
             print "ERROR: user must specify 2 data files"
-            return
+            return None
         if not ft1_valid or not ft2_valid:
-            return
+            return None
 
         #setup the reduced variables
         rv_1 = reduced_variable(variableid=varid, filetable=filetable1, season=cdutil.times.Seasons(self._s1),
