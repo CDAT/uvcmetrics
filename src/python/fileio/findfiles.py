@@ -126,6 +126,7 @@ class basic_datafiles:
         This function will cache the file table and use it if possible.
         If the cache be stale, call clear_filetable()."""
         cachefile,ftid = self._cachefile( ftid )
+        self._ftid = ftid
         if os.path.isfile(cachefile):
             f = open(cachefile,'rb')
             try:
@@ -144,17 +145,13 @@ class basic_datafiles:
         return filetable
     def clear_filetable( self):
         """Deletes (clears) the cached file table created by the corresponding call of setup_filetable"""
-        cache_path = self.opts['cachepath']
-        cache_path = os.path.expanduser(cache_path)
-        cache_path = os.path.abspath(cache_path)
         # There's a problem with this: if a file is absent we definitely want to get rid of
         # its cached filetable, but _cachefile() won't get it because the cache file name
         # depends on the file name, which doesn't exist!  The only real solution is to get rid
         # of all cached data, or all old cached data.  The user can do that.
-        cachefile,ftid = self._cachefile( cache_path, ftid )
-
-        if os.path.isfile(cache_path):
-            os.remove(cache_path)
+        cachefile,ftid = self._cachefile( self._ftid )
+        if os.path.isfile(cachefile):
+            os.remove(cachefile)
 
 class dirtree_datafiles( basic_datafiles ):
     def __init__( self, options, pathid=None, obsid=None):
