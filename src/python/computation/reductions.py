@@ -996,10 +996,10 @@ def evapfrac(mv1, mv2, mv3, mv4): #, flags, season, region):
    else:
       return evapfrac
 
-def pminuset(rain, snow, qsoil, qvege, qvegt):
-   mv = rain+snow
+def pminuse(rain, snow, qsoil, qvege, qvegt):
+   prec = rain+snow
    et = qsoil+qvege+qvegt
-   mv = mv - et
+   mv = prec - et
    mv.id = 'P-E'
    return mv
 
