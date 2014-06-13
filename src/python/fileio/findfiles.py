@@ -160,7 +160,8 @@ class dirtree_datafiles( basic_datafiles ):
     def __init__( self, options, pathid=None, obsid=None):
         """Finds all the data files in the directory tree specified inside the
         options structure, as specified by a path or obs ID
-        An optional filter, of type basic_filter can be passed to options as well"""
+        An optional filter, of type basic_filter can be passed to options as well.
+        pathid and obsid are numbers, usually 0 or 1, for looking up paths in the Options object."""
 
         self.opts = options
         self._root = None
@@ -181,6 +182,11 @@ class dirtree_datafiles( basic_datafiles ):
         else:
            print "don't understand root directory ",self._root 
            quit()
+        if root is None or (type(root) is list and None in root):
+           self._root = None
+           self._filt = None
+           self.files = []
+           return None
 
         root = [ os.path.expanduser(r) for r in root ]
         root = [ r if r[0:5]=='http:' else os.path.abspath(r) for r in root ]

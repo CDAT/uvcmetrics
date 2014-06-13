@@ -174,10 +174,15 @@ class uvc_simple_plotspec():
     The plots will be of the type specified by presentation.  The data will be the
     variable(s) supplied, and their axes.  Optionally one may specify a list of labels
     for the variables, and a title for the whole plot."""
-    # re prsentation (plottype): Yxvsx is a line plot, for Y=Y(X).  It can have one or several lines.
+    # re presentation (plottype): Yxvsx is a line plot, for Y=Y(X).  It can have one or several lines.
     # Isofill is a contour plot.  To make it polar, set projection=polar.  I'll
     # probably communicate that by passing a name "Isofill_polar".
     def __init__( self, pvars, presentation, labels=[], title=''):
+        if len(pvars)<=0:
+            zerovar = cdms2.createVariable([[0,0,0],[0,0,0]])
+            zerovar.id = 'zero'
+            presentation = 'Isofill'
+            pvars = [zerovar]
         ptype = presentation
         if vcsx:   # temporary kludge, presently need to know whether preparing VCS plots
             if presentation=="Yxvsx":
@@ -242,6 +247,8 @@ class uvc_simple_plotspec():
                 varmax = max(varmax,self.varmax[v.id])
                 varmin = min(varmin,self.varmin[v.id])
             if self.presentation.__class__.__name__=="GYx":
+                if len(axmax.keys())<=0:
+                    return None
                 # VCS Yxvsx
                 ax = axmax.keys()[0]
                 self.presentation.datawc_x1 = axmin[ax]
@@ -423,6 +430,7 @@ class uvc_simple_plotspec():
         elif format=="JSON string":
             return json.dumps(self,cls=DiagsEncoder)
 
+        writer.source = "UV-CDAT Diagnostics"
         writer.presentation = self.ptype
         plot_these = []
         for zax in self.vars:
@@ -446,6 +454,8 @@ class uvc_zero_plotspec(uvc_simple_plotspec):
         zerovar = cdms2.createVariable([[0,0,0],[0,0,0]])
         zerovar.id = 'zero'
         uvc_simple_plotspec.__init__( self, [zerovar], "Isofill" )
+    def __repr__( self ):
+        return "uvc_zero_plotspec"
 
 class DiagsEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -554,23 +564,28 @@ class plot_spec(object):
         In the future regrid>0 will mean regrid everything to the finest grid and regrid<0
         will mean regrid everything to the coarsest grid."""
         for v in self.reduced_variables.keys():
+            print 'CALLING REDUCE ON v = ', v
             value = self.reduced_variables[v].reduce(None)
             self.variable_values[v] = value  # could be None
         postponed = []   # derived variables we won't do right away
         for v in self.derived_variables.keys():
+            print 'CALLING DERIVE on v = ', v
             value = self.derived_variables[v].derive(self.variable_values)
             if value is None:
                 # couldn't compute v - probably it depends on another derived variables which
                 # hasn't been computed yet
+                print 'VALUE WAS NONE, POSTPONING v=',v
                 postponed.append(v)
             else:
                 self.variable_values[v] = value
         for v in postponed:   # Finish up with derived variables
+            print 'IN POSTPONE DERIVE on v=', v
             value = self.derived_variables[v].derive(self.variable_values)
             self.variable_values[v] = value  # could be None
         varvals = self.variable_values
+        #print "jfp in _results, varvals keys,types=",[ (k,type(v)) for k,v in varvals.iteritems() ]
         for p,ps in self.single_plotspecs.iteritems():
-            print "uvcdat jfp preparing data for",ps._strid
+            print "uvcdat preparing data for",ps._strid
             try:
                 # print "jfp ps.xvars=",ps.xvars,ps.x1vars,ps.x2vars,ps.x3vars
                 # print "jfp ps.yvars=",ps.yvars,ps.y1vars,ps.y2vars,ps.y3vars
@@ -607,16 +622,19 @@ class plot_spec(object):
                     print "WARNING - cannot compute results involving zax, zvars=",ps.zvars
                     print "missing results for",[k for k in ps.zvars if varvals[k] is None]
                     continue
-                if any([a is None for a in z2rv]):
-                    print "WARNING - cannot compute results involving zax, zvars=",ps.z2vars
-                    print "missing results for",[k for k in ps.z2vars if varvals[k] is None]
-                    continue
                 zax = apply( ps.zfunc, zrv )
-                z2ax = apply( ps.z2func, z2rv )
+                if any([a is None for a in z2rv]):
+                    print "WARNING - cannot compute results involving z2ax, z2vars=",ps.z2vars
+                    print "missing results for",[k for k in ps.z2vars if varvals[k] is None]
+                    z2ax = None
+                else:
+                    z2ax = apply( ps.z2func, z2rv )
             except Exception as e:
-                print "EXCEPTION cannot compute data for",ps._strid
-                print "Exception is",e
-                self.plotspec_values[p] = None
+                if ps._id != plotspec.dict_id( None, None, None, None, None ):
+                    # not an empty plot
+                    print "WARNING cannot compute data for",ps._strid
+                    print "due to exception",e
+                self.plotspec_values[p] = uvc_zero_plotspec()
                 continue
             # not used yet zr = apply( ps.zrangefunc, zrrv )
             vars = []
@@ -671,7 +689,7 @@ class plot_spec(object):
                 z2ax.id = new_id
                 z2lab += ' '+z2ax.id
             if vars==[]:
-                self.plotspec_values[p] = None
+                self.plotspec_values[p] = uvc_zero_plotspec()
                 continue
             #labels = [xlab,ylab,zlab]
             labels = [zlab,z2lab]

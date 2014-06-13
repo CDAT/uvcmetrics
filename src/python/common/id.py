@@ -6,6 +6,8 @@ def id2str( id ):
        If the input is already a string, just returns it unchanged."""
     if type(id) is str:
         return id
+    if id is None:
+        return "None"
     idlist = filter( lambda x: x!='', list(id) )
     if len(idlist)>=2 and type(idlist[1]) is str and idlist[1].isdigit():
         # e.g. ft0
@@ -42,6 +44,8 @@ class basic_id():
         if self.abbrev(args[0])==self.abbrev(self.__class__.__name__):
             # args[0] is a class name.  Don't use two copies of it!
             self._id = self.__class__.dict_id( *(args[1:]) )
+        elif len(args)==1 and args[0] is None:
+            self._id = args[0]
         elif len(args)==1 and type(args[0]) is str:
             # Only one argument was provided, and it's a string.  This is a user-provided str id,
             # no need to call dict_id().  If ever we _do_ need to call dict_id on a single str argument,
@@ -82,3 +86,14 @@ class basic_id():
         "other adopts the same id as self"
         other._id = self._id
         other._strid = self._strid
+
+def filetable_ids( filetable1, filetable2 ):
+        if filetable1 is None:
+            ft1id = ''
+        else:
+            ft1id  = filetable1._strid
+        if filetable2 is None:
+            ft2id = ''
+        else:
+            ft2id  = filetable2._strid
+        return ft1id,ft2id

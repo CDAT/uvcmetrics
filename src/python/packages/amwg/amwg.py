@@ -81,17 +81,6 @@ class AMWG(BasicDiagnosticGroup):
             }
          """
 
-def filetable_ids( filetable1, filetable2 ):
-        if filetable1 is None:
-            ft1id = ''
-        else:
-            ft1id  = filetable1._strid
-        if filetable2 is None:
-            ft2id = ''
-        else:
-            ft2id  = filetable2._strid
-        return ft1id,ft2id
-
 class amwg_plot_spec(plot_spec):
     package = AMWG  # Note that this is a class not an object.
     @staticmethod
@@ -358,18 +347,22 @@ class amwg_plot_set3(amwg_plot_spec,basic_id):
         zunam = zvar._filetable._strid  # part of y1 distinguishing it from y2, e.g. ft_1
         zval.id = '_'.join([self._id[0],self._id[1],zunam])
         z2val = self.variable_values[z2var._strid]
-        if z2val is None: return None
-        z2unam = z2var._filetable._strid  # part of y2 distinguishing it from y1, e.g. ft_2
-        z2val.id = '_'.join([self._id[0],self._id[1],z2unam])
-        zdiffval = apply( self.plot_b.zfunc, [zval,z2val] )
-        zdiffval.id = '_'.join([self._id[0],self._id[1],
-                                zvar._filetable._strid, z2var._filetable._strid, 'diff'])
+        if z2val is None:
+            z2unam = ''
+            zdiffval = None
+        else:
+            z2unam = z2var._filetable._strid  # part of y2 distinguishing it from y1, e.g. ft_2
+            z2val.id = '_'.join([self._id[0],self._id[1],z2unam])
+            zdiffval = apply( self.plot_b.zfunc, [zval,z2val] )
+            zdiffval.id = '_'.join([self._id[0],self._id[1],
+                                    zvar._filetable._strid, z2var._filetable._strid, 'diff'])
         # ... e.g. CLT_DJF_set3_CAM456_NCEP_diff
+        print "jfp self._id=",self._id
         plot_a_val = uvc_plotspec(
-            [zval,z2val],'Yxvsx', labels=[zunam,z2unam],
+            [v for v in [zval,z2val] if v is not None],'Yxvsx', labels=[zunam,z2unam],
             title=' '.join([self._id[0],self._id[1],zunam,'and',z2unam]))
         plot_b_val = uvc_plotspec(
-            [zdiffval],'Yxvsx', labels=['difference'],
+            [v for v in [zdiffval] if v is not None],'Yxvsx', labels=['difference'],
             title=' '.join([self._id[0],self._id[1],zunam,'-',z2unam]))
         plot_a_val.synchronize_ranges(plot_b_val)
         plot_a_val.finalize()
@@ -402,6 +395,8 @@ class amwg_plot_set4(amwg_plot_spec):
         if not self.computation_planned:
             self.plan_computation( filetable1, filetable2, varid, seasonid )
     def reduced_variables_press_lev( self, filetable, varid, seasonid, ftno=None ):
+        if filetable is None:
+            return {}
         reduced_varlis = [
             reduced_variable(
                 variableid=varid, filetable=filetable, season=self.season,
@@ -426,7 +421,10 @@ class amwg_plot_set4(amwg_plot_spec):
         return reduced_variables
     def plan_computation( self, filetable1, filetable2, varid, seasonid ):
         ft1_hyam = filetable1.find_files('hyam')
-        ft2_hyam = filetable2.find_files('hyam')
+        if filetable2 is None:
+            ft2_hyam = None
+        else:
+            ft2_hyam = filetable2.find_files('hyam')
         hybrid1 = ft1_hyam is not None and ft1_hyam!=[]    # true iff filetable1 uses hybrid level coordinates
         hybrid2 = ft2_hyam is not None and ft2_hyam!=[]    # true iff filetable2 uses hybrid level coordinates
         if hybrid1:
@@ -628,6 +626,24 @@ class amwg_plot_set5and6(amwg_plot_spec):
                                func=verticalize ),
             vidl1: derived_var( vid=vidl1, inputs=[vid1], func=(lambda z: select_lev(z,pselect))) }
 
+        self.single_plotspecs = {
+            self.plot1_id: plotspec(
+                # was vid = varid+'_1',
+                # was zvars = [vid1],  zfunc = (lambda z: select_lev( z, pselect ) ),
+                vid = ps.dict_idid(vidl1),
+                zvars = [vidl1],  zfunc = (lambda z: z),
+                plottype = self.plottype ) }
+           
+        if filetable2 is None:
+            print "jfp reduced_variables keys=",self.reduced_variables.keys()
+            print "jfp derived_variables keys=",self.derived_variables.keys()
+            self.reduced_variables = { v.id():v for v in reduced_varlis }
+            self.composite_plotspecs = {
+                self.plotall_id: [ self.plot1_id ]
+                }
+            self.computation_planned = True
+            return
+
         if 'hyam' in filetable2.list_variables() and 'hybm' in filetable2.list_variables():
             # hybrid levels in use, convert to pressure levels
             reduced_varlis += [
@@ -669,24 +685,16 @@ class amwg_plot_set5and6(amwg_plot_spec):
                                                          func=(lambda z: select_lev(z,pselect) ) )
         self.reduced_variables = { v.id():v for v in reduced_varlis }
 
-        self.single_plotspecs = {
-            self.plot1_id: plotspec(
-                # was vid = varid+'_1',
-                # was zvars = [vid1],  zfunc = (lambda z: select_lev( z, pselect ) ),
-                vid = ps.dict_idid(vidl1),
-                zvars = [vidl1],  zfunc = (lambda z: z),
-                plottype = self.plottype ),
-            self.plot2_id: plotspec(
+        self.single_plotspecs[self.plot2_id] = plotspec(
                 #was vid = varid+'_2',
                 vid = ps.dict_idid(vidl2),
                 zvars = [vidl2],  zfunc = (lambda z: z),
-                plottype = self.plottype ),
-            self.plot3_id: plotspec(
+                plottype = self.plottype )
+        self.single_plotspecs[self.plot3_id] = plotspec(
                 #was vid = varid+'_diff',
                 vid = ps.dict_id(varid,'diff',seasonid,filetable1,filetable2),
                 zvars = [vidl1,vidl2],  zfunc = aminusb_2ax,
-                plottype = self.plottype ),
-            }
+                plottype = self.plottype )
         self.composite_plotspecs = {
             self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id ]
             }
@@ -695,8 +703,8 @@ class amwg_plot_set5and6(amwg_plot_spec):
         results = plot_spec._results(self,newgrid)
         if results is None: return None
         psv = self.plotspec_values
-        if psv[self.plot1_id] is not None\
-                and psv[self.plot2_id] is not None:
+        if getattr(psv,self.plot1_id,None) is not None\
+                and getattr(psv,self.plot2_id,None) is not None:
             psv[self.plot1_id].synchronize_ranges(psv[self.plot2_id])
         for key,val in psv.items():
             if type(val) is not list: val=[val]

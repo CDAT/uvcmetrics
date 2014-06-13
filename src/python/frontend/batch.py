@@ -32,7 +32,9 @@ path1 = os.path.join(os.environ["HOME"],'acme_cam_climo/')
 #    'http://pcmdi9.llnl.gov/thredds/dodsC/cmip5_data/cmip5/output1/INM/inmcm4/rcp85/fx/atmos/fx/r0i0p0/sftlf/1/sftlf_fx_inmcm4_rcp85_r0i0p0.nc'
 #    ]
 #cmip5 test path1 = os.path.join(os.environ["HOME"],'cmip5/')
+#path2 = None
 path2 = os.path.join(os.environ["HOME"],'obs_data')
+#path2 = os.path.join(os.environ["HOME"],'acme_data/lores_climo/lnd')
 #cmip5 test path2 = os.path.join(os.environ["HOME"],'cmip5/')
 tmppth = os.path.join(os.environ['HOME'],"tmp")
 outpath = os.path.join(os.environ['HOME'],"tmp","diagout")
@@ -44,36 +46,45 @@ opts1 = Options()
 opts1._opts['path']={'model':path1}
 opts1._opts['filter']=filt1
 opts1._opts['cachepath']=tmppth
-datafiles1 = dirtree_datafiles( opts1,'model' )
+datafiles1 = dirtree_datafiles( opts1, pathid='model' )
 print "jfp datafiles1 is",datafiles1
 filetable1 = datafiles1.setup_filetable( "model" )
-filt2 = f_startswith("NCEP")
+#filt2 = f_startswith("NCEP")
+filt2 = filt1
 #cmip5 test filt2 = filt1
 opts2 = Options()
 opts2._opts['path'] = {'obs':path2}
 opts2._opts['filter'] = filt2
 opts2._opts['cachepath']=tmppth
-datafiles2 = dirtree_datafiles( opts2,'obs' )
+datafiles2 = dirtree_datafiles( opts2, pathid='obs' )
 filetable2 = datafiles2.setup_filetable( "obs" )
 #filetable2 = None
+
+def mysort( lis ):
+    lis.sort()
+    return lis
 
 number_diagnostic_plots = 0
 dm = diagnostics_menu()
 for pname,pclass in dm.items():
     if pname!="AMWG":
+    #if pname!="LMWG":
         continue
     package = pclass()
     print "jfp pname=",pname
     sm = package.list_diagnostic_sets()
     for sname,sclass in sm.items():
         #if sclass.name != ' 2 - Line Plots of Annual Implied Northward Transport':
-        if sclass.name != ' 3 - Line Plots of  Zonal Means':
+        #if sclass.name != ' 3 - Line Plots of  Zonal Means':
         #if sclass.name != ' 4 - Vertical Contour Plots Zonal Means':
-        #if sclass.name != ' 5 - Horizontal Contour Plots of Seasonal Means':
+        if sclass.name != ' 5 - Horizontal Contour Plots of Seasonal Means':
+        #if sclass.name != ' 3 - Line Plots of  Zonal Means':
+        #if sclass.name != ' 4 - Vertical Contour Plots Zonal Means':
         #if sclass.name != ' 6 - Horizontal Vector Plots of Seasonal Means':
-        #if sclass.name == '2 - Horizontal contour plots of DJF, MAM, JJA, SON, and ANN means':
+        #if sclass.name != '2 - Horizontal contour plots of DJF, MAM, JJA, SON, and ANN means':
+        #if sclass.name[:2] != '6 ':
             continue   # for testing, only do one plot set
-        print "jfp sname=",sname
+        print "jfp sclass.name=",sclass.name
         for seasonid in package.list_seasons():
             #if seasonid != 'DJF':
             if seasonid != 'ANN':
@@ -87,6 +98,7 @@ for pname,pclass in dm.items():
                     continue # for testing, only do one variable
                 print "jfp varid=",varid
                 vard = package.all_variables( filetable1, filetable2, sname )
+                #print "jfp vard keys=",mysort(vard.keys())
                 var = vard[varid]
                 varopt = var.varoptions()
                 if varopt is None:
