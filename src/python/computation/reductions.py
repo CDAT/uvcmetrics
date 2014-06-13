@@ -490,7 +490,43 @@ def reduce2lat_seasonal( mv, seasons=seasonsyr, vid=None ):
         avmv.units = mv.units
     return avmv
 
-# Used for lmwg set 6
+def reduceAnnTrendRegionLevel(mv, region, level, vid=None):
+# Need to compute year1, year2, ... yearN individual climatologies then get a line plot.
+   if vid == None:
+      vid = 'reduced_'+mv.id
+
+   timeax = timeAxis(mv)
+   if timeax is not None and timeax.getBounds() == None:
+      timeax._bounds_ = timeax.genGenericBounds()
+   if timeax is not None:
+      mvsub = mv(latitude=(region[0], region[1]), longitude=(region[2], region[3]))
+      mvann = cdutil.times.YEAR(mvsub) 
+   else:
+      mvann = mv
+
+   mvtrend = cdutil.averager(mvann, axis='xy')
+
+   levax = levAxis(mvtrend)
+
+   if levax is None:
+      print 'Variable ', vid, ' has no level axis'
+      return None
+
+   if levax == mvtrend.getAxisList()[0]:
+      mvvar = cdms2.createVariable(mvtrend[level:level+1,...], copy=1) # ig:ig+1 is a bug workaround. see select_lev() 
+   elif levax == mvtrend.getAxisList()[1]:
+      mvvar = cdms2.createVariable(mvtrend[:,level:level+1,...], copy=1)
+   else:
+      print 'ERROR, reduceAnnTrendRegionLevel() only supports level axis as 1st or 2nd axis of reduced variable'
+      return None
+
+   mvvar.id = vid
+   if hasattr(mv, 'units'):
+       mvvar.units = mv.units # probably needs some help
+   print 'Returning mvvar: ', mvvar
+   return mvvar
+
+
 def reduceAnnTrendRegion(mv, region, vid=None):
 # Need to compute year1, year2, ... yearN individual climatologies then get a line plot.
    if vid == None:
@@ -511,6 +547,7 @@ def reduceAnnTrendRegion(mv, region, vid=None):
    if hasattr(mv, 'units'):
        mvtrend.units = mv.units # probably needs some help
    print 'Returning mvtrend: ', mvtrend
+   print 'shape: ', mvtrend.shape
    return mvtrend
 
 # Used for lmwg set 3
@@ -530,6 +567,7 @@ def reduceMonthlyRegion(mv, region, vid=None):
    if hasattr(mv, 'units'): mvtrend.units = mv.units # probably needs some help
    print 'reduceMonthlyRegion - Returning shape', mvtrend.shape
    return mvtrend
+
 
 def reduceMonthlyTrendRegion(mv, region, vid=None):
 # it would be nice if it was easy to tell if these climos were already done
