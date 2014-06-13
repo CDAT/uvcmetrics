@@ -456,7 +456,11 @@ class uvc_plotspec(uvc_simple_plotspec):
     pass
 
 class uvc_zero_plotspec(uvc_simple_plotspec):
-    # for convenience in clearing a cell in the UV-CDAT GUI
+    """for convenience in clearing a cell in the UV-CDAT GUI.
+    Only the GUI should create one of these."""
+    # This is a workaround to a bug in the GUI, and (probably because there is data without axes)
+    # if the GUI gets one of these objects (rather than making it itself), a click on the display
+    # may lead to a segfault.
     def __init__( self ):
         zerovar = cdms2.createVariable([[0,0,0],[0,0,0]])
         zerovar.id = 'zero'
@@ -641,7 +645,7 @@ class plot_spec(object):
                     # not an empty plot
                     print "WARNING cannot compute data for",ps._strid
                     print "due to exception",e
-                self.plotspec_values[p] = uvc_zero_plotspec()
+                self.plotspec_values[p] = None
                 continue
             # not used yet zr = apply( ps.zrangefunc, zrrv )
             vars = []
@@ -696,7 +700,7 @@ class plot_spec(object):
                 z2ax.id = new_id
                 z2lab += ' '+z2ax.id
             if vars==[]:
-                self.plotspec_values[p] = uvc_zero_plotspec()
+                self.plotspec_values[p] = None
                 continue
             #labels = [xlab,ylab,zlab]
             labels = [zlab,z2lab]
