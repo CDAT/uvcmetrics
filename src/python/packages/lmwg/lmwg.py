@@ -162,16 +162,33 @@ class lmwg_plot_set6b(lmwg_plot_spec):
    def plan_computation(self, filetable1, filetable2, varid, seasonid, region, aux=None):
       print varid
 
-      if varid == 'SoilIce':
-         print 'SoilIce'
-      if varid == 'Soil_Temp':
-         print 'SoilTemp' #TSOI
-      if 'TotalSnow' in varid:
-         print 'Total Snow'
+      if varid == 'SoilIce' or varid == 'Soil_Temp' or varid == 'SoilLiq_Water':
+         if varid == 'SoilIce':
+            vbase = 'SOILICE'
+            pname = 'SoilIce'
+         elif varid == 'Soil_Temp':
+            vbase = 'TSOI'
+            pname = 'Soil_Temp'
+         else:
+            vbase = 'SOILLIQ'
+            pname = 'SoilLiq_Water'
+
+         self.composite_plotspecs[pname] = []
+         for i in range(0,10):
+            vn = vbase+str(i+1)
+            self.reduced_variables[vn] = reduced_variable(
+               variableid = vbase, filetable=filetable1, reduced_var_id=vn,
+               reduction_function=(lambda x, vid: reduceAnnTrendRegionLevel(x, region, i, vid)))
+            self.single_plotspecs[vn] = plotspec(vid=vn,
+               zvars = [vn], zfunc=(lambda z:z),
+               # z2, # z3,
+               plottype = self.plottype)
+            self.composite_plotspecs[pname].append(vn)
+         
       if 'TotalSoil' in varid:
-         print 'Total soil'
-      if 'SoilLiq' in varid:
-         print 'Soil Liquid Water'
+         print 'TotalSoil Ice/H2O'
+         # basically, reduce to time/spatial and then sum levels 1-10 for each year
+         # need to write this one still.
 
       if 'Turbulent' in varid:
          print 'Turbulent Fluxes'
@@ -279,7 +296,11 @@ class lmwg_plot_set6b(lmwg_plot_spec):
          self.composite_plotspecs['Radiative_Fluxes'].append('Albedo_1')
          self.composite_plotspecs['Radiative_Fluxes'].append('NetRadiation_1')
          
-      if 'Carbon' in varid or 'Fire' in varid or 'Hydrology' in varid:
+      if 'Carbon' in varid or 'Fire' in varid or 'Hydrology' in varid or 'TotalSnow' in varid:
+         if 'TotalSnow' in varid:
+            print 'TotalSnow H2O/Ice'
+            red_varlist = ['SOILICE', 'SOILLIQ']
+            pspec_name = 'TotalSnowH2O_TotalSnowIce'
          if 'Carbon' in varid:
             print 'Carbon/Nitrogen Fluxes'
             red_varlist = ['NEE', 'GPP', 'NPP', 'AR', 'HR', 'ER', 'SUPPLEMENT_TO_SMINN', 'SMINN_LEACHED']
@@ -319,7 +340,8 @@ class lmwg_plot_set6b(lmwg_plot_spec):
       print psv.keys()
 
       composite_names = ['Total_Precipitation','Hydrology', 'Carbon_Nitrogen_Fluxes', 
-         'Fire_Fluxes', 'Radiative_Fluxes', 'Turbulent_Fluxes']
+         'Fire_Fluxes', 'Radiative_Fluxes', 'Turbulent_Fluxes', 'SoilIce', 
+         'SoilLiq_Water', 'Soil_Temp', 'TotalSnowH2O_TotalSnowIce']
 
       for plot in composite_names:
          if plot in psv.keys():
