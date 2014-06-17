@@ -455,19 +455,6 @@ class uvc_simple_plotspec():
 class uvc_plotspec(uvc_simple_plotspec):
     pass
 
-class uvc_zero_plotspec(uvc_simple_plotspec):
-    """for convenience in clearing a cell in the UV-CDAT GUI.
-    Only the GUI should create one of these."""
-    # This is a workaround to a bug in the GUI, and (probably because there is data without axes)
-    # if the GUI gets one of these objects (rather than making it itself), a click on the display
-    # may lead to a segfault.
-    def __init__( self ):
-        zerovar = cdms2.createVariable([[0,0,0],[0,0,0]])
-        zerovar.id = 'zero'
-        uvc_simple_plotspec.__init__( self, [zerovar], "Isofill" )
-    def __repr__( self ):
-        return "uvc_zero_plotspec"
-
 class DiagsEncoder(json.JSONEncoder):
     def default(self, obj):
         return obj._json()
