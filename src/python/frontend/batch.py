@@ -20,12 +20,13 @@ from metrics.frontend.options import *
 from pprint import pprint
 import cProfile
 
-#path1 = os.path.join(os.environ["HOME"],'cam_output/b30.009.cam2.h0.06.xml')
-#path1 = os.path.join(os.environ["HOME"],'cam_output/')
-#path1 = os.path.join(os.environ["HOME"],'cam_output_climo/')
-path1 = os.path.join(os.environ["HOME"],'acme_cam_climo/')
-#path1 = os.path.join(os.environ["HOME"],'acme_clm_climo/')
-#path1 = os.path.join(os.environ["HOME"],'acme_data','lores_climo','atm')
+rootpath = os.path.join(os.environ["HOME"],"metrics_data")
+#path1 = os.path.join(rootpath,'cam_output/b30.009.cam2.h0.06.xml')
+#path1 = os.path.join(rootpath,'cam_output/')
+#path1 = os.path.join(rootpath,'cam_output_climo/')
+path1 = os.path.join(rootpath,'acme_cam_climo/')
+#path1 = os.path.join(rootpath,'acme_clm_climo/')
+#path1 = os.path.join(rootpath,'acme_data','lores_climo','atm')
 #path1 = [
 #    'http://pcmdi9.llnl.gov/thredds/dodsC/cmip5_data/cmip5/output1/INM/inmcm4/rcp85/fx/atmos/fx/r0i0p0/areacella/1/areacella_fx_inmcm4_rcp85_r0i0p0.nc',
 #    'http://pcmdi9.llnl.gov/thredds/dodsC/cmip5_data/cmip5/output1/INM/inmcm4/rcp85/fx/atmos/fx/r0i0p0/orog/1/orog_fx_inmcm4_rcp85_r0i0p0.nc',
@@ -33,9 +34,9 @@ path1 = os.path.join(os.environ["HOME"],'acme_cam_climo/')
 #    ]
 #cmip5 test path1 = os.path.join(os.environ["HOME"],'cmip5/')
 #path2 = None
-path2 = os.path.join(os.environ["HOME"],'obs_data')
-#path2 = os.path.join(os.environ["HOME"],'acme_data/lores_climo/lnd')
-#cmip5 test path2 = os.path.join(os.environ["HOME"],'cmip5/')
+path2 = os.path.join(rootpath,'obs_data')
+#path2 = os.path.join(rootpath,'acme_data/lores_climo/lnd')
+#cmip5 test path2 = os.path.join(rootpath,'cmip5/')
 tmppth = os.path.join(os.environ['HOME'],"tmp")
 outpath = os.path.join(os.environ['HOME'],"tmp","diagout")
 if not os.path.exists(tmppth):
@@ -50,13 +51,15 @@ datafiles1 = dirtree_datafiles( opts1, pathid='model' )
 print "jfp datafiles1 is",datafiles1
 filetable1 = datafiles1.setup_filetable( "model" )
 #filt2 = f_startswith("NCEP")
-filt2 = filt1
+filt2 = f_startswith("CERES")
+#filt2 = filt1
 #cmip5 test filt2 = filt1
 opts2 = Options()
 opts2._opts['path'] = {'obs':path2}
 opts2._opts['filter'] = filt2
 opts2._opts['cachepath']=tmppth
 datafiles2 = dirtree_datafiles( opts2, pathid='obs' )
+print "jfp datafiles2 is",datafiles2
 filetable2 = datafiles2.setup_filetable( "obs" )
 #filetable2 = None
 
@@ -75,11 +78,9 @@ for pname,pclass in dm.items():
     sm = package.list_diagnostic_sets()
     for sname,sclass in sm.items():
         #if sclass.name != ' 2 - Line Plots of Annual Implied Northward Transport':
-        #if sclass.name != ' 3 - Line Plots of  Zonal Means':
+        if sclass.name != ' 3 - Line Plots of  Zonal Means':
         #if sclass.name != ' 4 - Vertical Contour Plots Zonal Means':
-        if sclass.name != ' 5 - Horizontal Contour Plots of Seasonal Means':
-        #if sclass.name != ' 3 - Line Plots of  Zonal Means':
-        #if sclass.name != ' 4 - Vertical Contour Plots Zonal Means':
+        #if sclass.name != ' 5 - Horizontal Contour Plots of Seasonal Means':
         #if sclass.name != ' 6 - Horizontal Vector Plots of Seasonal Means':
         #if sclass.name != '2 - Horizontal contour plots of DJF, MAM, JJA, SON, and ANN means':
         #if sclass.name[:2] != '6 ':
@@ -93,7 +94,7 @@ for pname,pclass in dm.items():
             variables = package.list_variables( filetable1, filetable2, sname  )
             print "jfp variables=",variables
             for varid in variables:
-                if varid!='T':
+                if varid!='FLUT':
                 #if varid!='gw':
                     continue # for testing, only do one variable
                 print "jfp varid=",varid
