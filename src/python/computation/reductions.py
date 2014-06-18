@@ -126,7 +126,11 @@ def fix_time_units( timeunits ):
             if ihour==0:
                 since="hours since "
             else:
-                return timeunits
+                if timeunits=="date as YYYYMM":
+                    #  Probably a climatology file without time.
+                    return 'days'   # this is wrong but cdscan needs something.
+                else:
+                    return timeunits
     date = timeunits[len(since):]
     date_is_bc = False
     if date.find('B.C.')>0:  # I've seen one example like this!
@@ -1433,10 +1437,10 @@ def run_cdscan( fam, famfiles, cache_path=None ):
                 time_units = 'days'  # probably wrong but we can't go on without something
             # Usually when we get here it's a climatology file where time is meaningless.
             f.close()
+            time_units = fix_time_units( time_units )
             if type(time_units) is str and len(time_units)>1 and (
                 time_units.find('months')==0 or time_units.find('days')==0 or
                 time_units.find('hours')==0 ):
-                time_units = fix_time_units( time_units )
                 cdscan_line = 'cdscan -q '+'-x '+xml_name+' -e time.units="'+time_units+'" '+\
                     ' '.join(famfiles)
             else:
@@ -1449,7 +1453,7 @@ def run_cdscan( fam, famfiles, cache_path=None ):
     if proc_status!=0: 
         print "ERROR: cdscan terminated with",proc_status
         print 'This is usually fatal. Frequent causes are an extra XML file in the dataset directory'
-        quit()
+        raise Exception("cdscan failed")
     return xml_name
 
 class reduced_variable(ftrow,basic_id):
