@@ -55,6 +55,9 @@ class Options():
    def __setitem__(self, key, value): 
       self._opts[key] = value
 
+   def get(self, opt, default=None):
+      return self._opts.get(opt,default)
+
    def listSeasons(self):
       return all_seasons;
 
