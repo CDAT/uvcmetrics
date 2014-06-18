@@ -217,7 +217,7 @@ class dirtree_datafiles( basic_datafiles ):
         return self.files
 
     def short_name(self):
-        if(self.opts['dsname']) != None and pathid != None:
+        if self.opts.get('dsname',None) != None and pathid != None:
             return self.opts['dsname'][pathid]
         else:
             return os.path.basename(str(self._root))
