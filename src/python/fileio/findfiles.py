@@ -17,6 +17,8 @@ from metrics.fileio.filetable import *
 # or 'not' object.
 
 class basic_filter:
+    def __init__( *args ):
+        pass
     def __call__( self, filen ):
         return True
     def __repr__( self ):
@@ -164,7 +166,9 @@ class dirtree_datafiles( basic_datafiles ):
         self._root = None
 
         filt = None
-        if self.opts['filter'] != None:
+        if self.opts['filter']=='None' or self.opts['filter']=='':
+            filt = None
+        elif self.opts['filter'] != None:
            filt = self.opts['filter']
         if((self.opts['path'] == None and pathid != None) or (self.opts['obspath'] == None and obsid != None)):
            self._root = None
