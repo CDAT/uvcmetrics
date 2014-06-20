@@ -34,6 +34,7 @@ class Options():
       self._opts['dsnames'] = []
       self._opts['user_filter'] = False
       self._opts['filter'] = None
+      self._opts['new_filter'] = []
       self._opts['path'] = []
       self._opts['obspath'] = []
       self._opts['output'] = None
@@ -313,6 +314,8 @@ class Options():
 #         help="The realm type. Current valid options are 'land' and 'atmosphere'")
       parser.add_argument('--filter', '-f', nargs=1, 
          help="A filespec filter. This will be applied to the dataset path(s) to narrow down file choices.")
+      parser.add_argument('--new_filter', '-F', action='append', nargs=1, 
+         help="A filespec filter. This will be applied to the corresponding dataset path to narrow down file choices.")
       parser.add_argument('--packages', '--package', '-k', nargs='+', 
          help="The diagnostic packages to run against the dataset(s). Multiple packages can be specified.")
       parser.add_argument('--sets', '--set', '-s', nargs='+', 
@@ -433,6 +436,9 @@ class Options():
          self._opts['user_filter'] = True
 #         for i in args.filter:
 #            self._opts['filter'].append(i[0])
+      if(args.new_filter != None):  # like filter but with multiple arguments
+         for i in args.new_filter:
+            self._opts['new_filter'].append(i[0])
 
       if(args.cachepath != None):
          self._opts['cachepath'] = args.cachepath[0]
