@@ -155,47 +155,72 @@ class basic_datafiles:
         if os.path.isfile(cachefile):
             os.remove(cachefile)
 
+def path2filetable( opts, path, filter=None ):
+    """Convenient way to make a filetable.  Inputs: opts is an Options object, containing a 'cachepath' and
+    maybe a 'dsname' option.  path is the path to the root of the directory tree containing the files to be
+    indexed (or path can be a list of such paths).  filter is a filter inheriting from basic_filter, or None,
+    or a string which can be evaluated to such a filter."""
+    datafiles = dirtree_datafiles( opts, path=path, filter=filter )
+    filetable = datafiles.setup_filetable()
+    return filetable
+
 class dirtree_datafiles( basic_datafiles ):
-    def __init__( self, options, pathid=None, obsid=None):
-        """Finds all the data files in the directory tree specified inside the
-        options structure, as specified by a path or obs ID
+    def __init__( self, options, pathid=None, obsid=None, path=None, filter=None ):
+        """Finds all the data files in the directory tree specified one of two ways:
+        (1) (deprecated) inside the options structure, as specified by a path or obs ID. 
         An optional filter, of type basic_filter can be passed to options as well.
-        pathid and obsid are numbers, usually 0 or 1, for looking up paths in the Options object."""
+        pathid and obsid are numbers, usually 0 or 1, for looking up paths in the Options object.
+        (2) explicitly set the path through the keyword argument (It can be a string; or a list of strings
+        to specify multiple paths).  In this case the filter, if any,
+        also must be specified through the keyword argument.  The Options object will still
+        be used for the cache path."""
 
         self.opts = options
         self._root = None
-
         filt = None
-        if self.opts['filter']=='None' or self.opts['filter']=='':
-            filt = None
-        elif self.opts['filter'] != None:
-           filt = self.opts['filter']
-        if((self.opts['path'] == None and pathid != None) or (self.opts['obspath'] == None and obsid != None)):
-           self._root = None
-           self._filt = None
-           self.files = []
-           return None
 
-        if pathid != None:
-           root = [ self.opts['path'][pathid] ]
-        elif obsid != None:
-           root = [ self.opts['obspath'][obsid] ]
+        if path is None:
+            if self.opts['filter']=='None' or self.opts['filter']=='':
+                filt = None
+            elif self.opts['filter'] != None:
+               filt = self.opts['filter']
+            if((self.opts['path'] == None and pathid != None) or (self.opts['obspath'] == None and obsid != None)):
+               self._root = None
+               self._filt = None
+               self.files = []
+               return None
+
+            if pathid != None:
+               root = [ self.opts['path'][pathid] ]
+            elif obsid != None:
+               root = [ self.opts['obspath'][obsid] ]
+            else:
+               print "don't understand root directory ",self._root 
+               quit()
+            if root is None or (type(root) is list and None in root):
+               self._root = None
+               self._filt = None
+               self.files = []
+               return None
         else:
-           print "don't understand root directory ",self._root 
-           quit()
-        if root is None or (type(root) is list and None in root):
-           self._root = None
-           self._filt = None
-           self.files = []
-           return None
+            if type(path) is str:
+                root = [path]
+            else:
+                root = path
+            filt = filter
 
         root = [ os.path.expanduser(r) for r in root ]
         root = [ r if r[0:5]=='http:' else os.path.abspath(r) for r in root ]
 
-        if filt==None: 
+        print "jfp in dirtree_datafiles, filt=",filt,type(filt)
+        if filt is None or filt=="": 
            filt=basic_filter()
-        else:
+        elif path is None:
            filt = eval(str(self.opts['filter']))
+        elif type(filt) is str:
+            filt = eval(str(filter))
+        else:
+            filt = filter
 
         self._root = root
         self._filt = filt
