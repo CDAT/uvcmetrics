@@ -494,6 +494,43 @@ def reduce2lat_seasonal( mv, seasons=seasonsyr, vid=None ):
         avmv.units = mv.units
     return avmv
 
+# This could possibly be moved to lmwg, but it is not specific to land.
+def reduceAnnTrendRegionSumLevels(mv, region, slevel, elevel, vid=None):
+   print 'level range passed in:', slevel, ' to ', elevel
+   timeax = timeAxis(mv)
+   if timeax is not None and timeax.getBounds() == None:
+      timeax._bounds_ = timeax.genGenericBounds()
+   if timeax is not None:
+      mvsub = mv(latitude=(region[0], region[1]), longitude=(region[2], region[3]))
+      mvann = cdutil.times.YEAR(mvsub) 
+   else:
+      mvann = mv
+
+   mvtrend = cdutil.averager(mvann, axis='xy')
+
+   levax = levAxis(mvtrend)
+
+   if levax is None:
+      print 'Variable ', vid, ' has no level axis'
+      return None
+
+   if levax == mvtrend.getAxisList()[0]:
+      mvvar = cdms2.createVariable(mvtrend[slevel:elevel+1,...], copy=1) # ig:ig+1 is a bug workaround. see select_lev() 
+      print 'THIS HAS NOT BEEN TESTED FOR AXIS=0'
+      mvsum = MV2.sum(mvvar[slevel:elevel+1], axis=0)  
+   elif levax == mvtrend.getAxisList()[1]:
+      mvvar = cdms2.createVariable(mvtrend[:,slevel:elevel+1,...], copy=1)
+      mvsum = MV2.sum(mvvar[...,slevel:elevel+1], axis=1)
+   else:
+      print 'ERROR, reduceAnnTrendRegionSumLevels() only supports level axis as 1st or 2nd axis of reduced variable'
+      return None
+
+   mvsum.id = vid
+   if hasattr(mv, 'units'):
+       mvsum.units = mv.units # probably needs some help
+   print 'Returning mvvar: ', mvsum
+   return mvsum
+
 def reduceAnnTrendRegionLevel(mv, region, level, vid=None):
 # Need to compute year1, year2, ... yearN individual climatologies then get a line plot.
    if vid == None:
@@ -597,8 +634,10 @@ def reduceMonthlyTrendRegion(mv, region, vid=None):
    print 'reduceMonthlyTrendRegion - Returning ', mvvals
    return mvvals
 
-# N.B. The following function is specific to LMWG but almost general
+# Make sure no one is using this. It should be deleted.
 def reduceAnnTrend(mv, vid=None):
+   print'THIS FUNCTION WAS DEPRECATED FOR ReduceAnnTrendRegion(region=global)'
+   quit()
    # This does a annual climatology, then a spatial average of a variable. result is basically a list
    if vid == None:
       vid = 'reduced_'+mv.id
@@ -618,7 +657,42 @@ def reduceAnnTrend(mv, vid=None):
        mvtrend.units = mv.units # should be units/sq meter I assume
    return mvtrend
 
-def reduce2latlon_seasonal( mv, seasons=seasonsyr, vid=None ):
+### This does not yet work; Asking for help from Charles
+def reduce2latlon_seasonal_level( mv, season, level, vid=None):
+# I wonder if this can be done faster somehow? need to ask Charles
+# Note - this doesn't extract all other axes like reduce2latlon_seasonal does, but I don't think it needs to?
+
+   if vid == None:
+      vid = 'reduced_'+mv.id
+
+   timeax = timeAxis(mv)
+   levax = levAxis(mv)
+   if timeax is None or len(timeax)<=1:
+      return mv
+   if levax is None or len(levax)<=1:
+      return mv
+
+   levstr = levax.id
+   print levax
+   print levstr
+   mvsub = mv(levstr=(level, level+1))
+   print mvsub.shape
+
+   mvseas = season.climatology(mvsub)
+   print mvseas.shape
+   quit()
+
+   if mvseas is None:
+      print "WARNING- cannot compute climatology for",mv.id,seasons.seasons
+      print "...probably there is no data for times in the requested season."
+      return None
+      
+   mvseas.id = vid
+   if hasattr(mv,'units'):
+      mvseas.units = mv.units
+
+
+def reduce2latlon_seasonal( mv, season, vid=None ):
     """as reduce2lat_seasonal, but both lat and lon axes are retained.
     """
     # This differs from reduce2lat_seasonal only in the line "axis_names ="....
@@ -637,7 +711,7 @@ def reduce2latlon_seasonal( mv, seasons=seasonsyr, vid=None ):
     else:
         if timeax.getBounds()==None:
             timeax._bounds_ = timeax.genGenericBounds()
-        mvseas = seasons.climatology(mv)
+        mvseas = season.climatology(mv)
     
     axes = allAxes( mv )
     axis_names = [ a.id for a in axes if a.id!='lat' and a.id!='lon' and a.id!='time']
@@ -849,34 +923,6 @@ def interp2( newaxis1, mv ):
                                              right=missing ) )>0
     return new_vals
 
-# N.B. The following function was written for LMWG
-def sumvarlist(mlist):
-   mv = cdms2.createVariable()
-   for m in mlist:
-      mv = mv + m
-   return mv
-
-# N.B. The following function was written for LMWG
-def addlistAndReduce(mvlist):
-   print mvlist
-
-# N.B. The following function was written for LMWG
-def aminusbAndReduce(mvlist):
-   print mvlist
-
-# N.B. The following function was written for LMWG
-def adivbAndReduce(mvlist):
-   print mvlist
-
-# N.B. The following function was written for LMWG
-def pminuseAndReduce(mvlist):
-   print mvlist
-
-# N.B. The following function is specific to LMWG
-def evapfracAndReduce(mvlist):
-   print mvlist
-
-
 def aplusb0(mv1, mv2 ):
    """ returns mv1[0,] + mv2[0,]; they should be dimensioned alike."""
    mv = mv1[0,] + mv2[0,]
@@ -934,7 +980,10 @@ def adivb(mv1, mv2):
 def dummy(mv, vid=None):
    return mv
 
+# This is no longer used. Make sure no one is using it, then delete it.
 def evapfrac(mv1, mv2, mv3, mv4): #, flags, season, region):
+   print 'THIS SHOULD NOT BE CALLED'
+   quit()
    # Basically ripped from the NCL code
    print '******* IN EVAPFRAC ********'
    print mv1.id
