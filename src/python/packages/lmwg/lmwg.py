@@ -464,7 +464,6 @@ class lmwg_plot_set2(lmwg_plot_spec):
 
       ### NOTE The reduce2latlon_seasonal_level does not yet work. Waiting for assistance from Charles
       if varid in lmwg_plot_set2._level_varnames:
-         print "THIS DOES NOT YET WORK"
          # split into varname and level. kinda icky but it works.
          # TODO Offer a level drop down in the GUI/command line
          vbase = varid.split('(')[0]
@@ -812,7 +811,7 @@ class lmwg_plot_set3b(lmwg_plot_spec):
    # These are basically variable reduced to an annual trend line, over a specified region
    # If two filetables are specified, a 2nd graph is produced which is the difference graph. The
    # top graph would plot both models
-   name = '3b - Individual Line plots of monthly climatology: regional air temperature, precipitation, runoff, snow depth, radiative fluxes, and turbulent fluxes'
+#   name = '3b - Individual Line plots of monthly climatology: regional air temperature, precipitation, runoff, snow depth, radiative fluxes, and turbulent fluxes'
    _derived_varnames = ['EVAPFRAC', 'PREC', 'TOTRUNOFF', 'LHEAT', 'RNET', 'ASA'] #, 'P-E']
    def __init__(self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None):
       print 'in __init__ of lmwg set 3b'
@@ -1168,7 +1167,7 @@ class lmwg_plot_set6(lmwg_plot_spec):
 
 class lmwg_plot_set6b(lmwg_plot_spec):
    varlist = []
-   name = '6b - Individual Line plots of annual trends in regional soil water/ice and temperature, runoff, snow water/ice, photosynthesis'
+#   name = '6b - Individual Line plots of annual trends in regional soil water/ice and temperature, runoff, snow water/ice, photosynthesis'
    _derived_varnames = ['LHEAT', 'PREC', 'TOTRUNOFF', 'ALBEDO', 'RNET']
    def __init__(self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None):
       print 'Init set 6b'
@@ -1287,11 +1286,14 @@ class lmwg_plot_set6b(lmwg_plot_spec):
       return self.plotspec_values[self.plotall_id]
          
 
-class lmwg_plot_set4(lmwg_plot_spec):
-    pass
+# These are not implemented yet
 class lmwg_plot_set5(lmwg_plot_spec):
     pass
 class lmwg_plot_set7(lmwg_plot_spec):
+    pass
+
+# These are inactive and won't be implemented
+class lmwg_plot_set4(lmwg_plot_spec):
     pass
 class lmwg_plot_set8(lmwg_plot_spec):
     pass
