@@ -58,9 +58,6 @@ def run_diagnostics_from_options( opts1 ):
     # Each describes one data set.  The first will also be used to determine what to do with it,
     # i.e. what to plot.
 
-    print "jfp opts1 seasons=",opts1.get('seasons',None)
-    opts1['seasons'] = ['DJF','JJA'] # <<<<<< Options['seasons'] isn't working as expected <<<<<<<<
-    print "jfp opts1 seasons=",opts1.get('seasons',None)
     path1 = None
     path2 = None
     filt1 = None
@@ -111,12 +108,13 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
         packages = ['AMWG']
     else:
         packages = opts['packages']
-    print "jfp opts seasons=",opts.get('seasons',None)
-    if opts.get( 'seasons', None ) is None:
+    seasons = opts.get( 'seasons', None )
+    if seasons is None:
+        seasons = opts.get( 'times', None )
+    if seasons is None:
         seasons = ['ANN']
         print "jfp defaulting to season ANN"
     else:
-        seasons = opts['seasons']
         print "jfp from opts, using seasons=",seasons
     if opts['varopts'] is None:
         opts['varopts'] = [None]
