@@ -657,10 +657,8 @@ def reduceAnnTrend(mv, vid=None):
        mvtrend.units = mv.units # should be units/sq meter I assume
    return mvtrend
 
-### This does not yet work; Asking for help from Charles
 def reduce2latlon_seasonal_level( mv, season, level, vid=None):
 # I wonder if this can be done faster somehow? need to ask Charles
-# Note - this doesn't extract all other axes like reduce2latlon_seasonal does, but I don't think it needs to?
 
    if vid == None:
       vid = 'reduced_'+mv.id
@@ -675,12 +673,11 @@ def reduce2latlon_seasonal_level( mv, season, level, vid=None):
    levstr = levax.id
    print levax
    print levstr
-   mvsub = mv(levstr=(level, level+1))
+   mvsub = mv(levstr=slice(level, level+1))
    print mvsub.shape
 
    mvseas = season.climatology(mvsub)
    print mvseas.shape
-   quit()
 
    if mvseas is None:
       print "WARNING- cannot compute climatology for",mv.id,seasons.seasons
@@ -690,6 +687,10 @@ def reduce2latlon_seasonal_level( mv, season, level, vid=None):
    mvseas.id = vid
    if hasattr(mv,'units'):
       mvseas.units = mv.units
+   delete_singleton_axis(mvseas, vid='time')
+   delete_singleton_axis(mvseas, vid=levax)
+   print mvseas.shape
+   return mvseas
 
 
 def reduce2latlon_seasonal( mv, season, vid=None ):
