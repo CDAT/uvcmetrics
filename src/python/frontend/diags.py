@@ -1,24 +1,38 @@
 # Script for running diagnostics.
-# Command-line usage examples:
-# python src/python/frontend/diags.py --path /Users/painter1/metrics_data/cam_output --path /Users/painter1/metrics_data/obs_data --packages AMWG --output /Users/painter1/tmp/diagout --vars FLUT T
+# Command-line usage example:
 #
-# python src/python/frontend/diags.py --path /Users/painter1/metrics_data/cam_output --packages AMWG --output /Users/painter1/tmp/diagout --vars FLUT T --path ~/metrics_data/obs_data --new_filter '' --new_filter 'f_startswith("NCEP")'
+# python src/python/frontend/diags.py --path /Users/painter1/metrics_data/cam_output --packages AMWG --output /Users/painter1/tmp/diagout --vars FLUT T --path2 ~/metrics_data/obs_data --filter2 'f_startswith("NCEP")' --seasons DJF JJA
 
-# Python usage example:
+# python src/python/frontend/diags.py --path /Users/painter1/metrics_data/cam_output --packages AMWG --output /Users/painter1/tmp/diagout --vars FLUT T --path ~/metrics_data/obs_data --filter2 'f_startswith("NCEP")' --seasons DJF JJA
+
+
+# Python usage examples:
+# All inputs through an Options object:
 # opts = Options()
 # opts['cachepath'] = '/tmp'
 # opts['outpath'] = '~/tmp/diagout'
 # opts['packages'] = ['AMWG']
 # opts['sets'] = [' 3 - Line Plots of  Zonal Means']
+# opts['seasons'] = ['DJF','JJA']
+# opts['vars'] = ['T','FLUT']
+# opts['path'] = '~/metrics_data/cam_output'
+# opts['path2] = '~/metrics_data/obs_data'
+# opts['filter2'] = 'f_startswith("NCEP")')
+# run_diagnostics_from_options(opts)
+
+# File locations through a filetable, other inputs through an Options object.
+# This has more possibilities for extension:
+# opts = Options()
+# opts['cachepath'] = '/tmp'
+# opts['outpath'] = '~/tmp/diagout'
+# opts['packages'] = ['AMWG']
+# opts['sets'] = [' 3 - Line Plots of  Zonal Means']
+# opts['seasons'] = ['DJF','JJA']
 # opts['vars'] = ['T','FLUT']
 # filetable1 = path2filetable( opts, path='~/metrics_data/cam_output')
 # filetable2 = path2filetable( opts, path='~/metrics_data/obs_data', filter='f_startswith("NCEP")')
 # run_diagnostics_from_filetables( opts, filetable1, filetable2 )
 #
-# You also could create a more elaborate Options object, or two of them, in which case you won't
-# have to explicitly create the filetables.
-
-
 
 import hashlib, os, pickle, sys, os, time
 from metrics import *
@@ -39,11 +53,14 @@ def mysort( lis ):
     lis.sort()
     return lis
 
-def run_diagnostics_from_options( opts1, opts2=None ):
+def run_diagnostics_from_options( opts1 ):
     # Input is one or two instances of Options, normally two.
     # Each describes one data set.  The first will also be used to determine what to do with it,
     # i.e. what to plot.
 
+    print "jfp opts1 seasons=",opts1.get('seasons',None)
+    opts1['seasons'] = ['DJF','JJA'] # <<<<<< Options['seasons'] isn't working as expected <<<<<<<<
+    print "jfp opts1 seasons=",opts1.get('seasons',None)
     path1 = None
     path2 = None
     filt1 = None
@@ -58,26 +75,24 @@ def run_diagnostics_from_options( opts1, opts2=None ):
         path1 = pathdict[1]
         if 2 in pathdict:
             path2 = pathdict[2]
-    if len(opts1['new_filter'])>0:
-        filt1 = opts1['new_filter'][0]
+    if type(opts1['filter']) is str:
+        filt1 = opts1['filter']
+    #if len(opts1['new_filter'])>0:
+    #    filt1 = opts1['new_filter'][0]
  
     print "jfp path1=",path1,"filt1=",filt1,"X"
     filetable1 = path2filetable( opts1, path=path1, filter=filt1 )
 
     if path2 is None:
-        if opts2 is None:
-            # default is obs data on my (JfP) computer.
-            rootpath = os.path.join(os.environ["HOME"],"metrics_data")
-            path2 = os.path.join(rootpath,'obs_data')
-            filt2 = f_startswith("NCEP")
-        else:
-            # If opts2 were created, there would be no point in putting a list of paths there.
-            # So keep it simple:
-            path2 = opts2['path']
-            filt2 = opts2['filter']
-    else:
-        if len(opts1['new_filter'])>1:
-            filt2 = opts1['new_filter'][1]
+        if type(opts1['path2']) is str:
+            path2 = opts1['path2']
+        if type(opts1['path2']) is list and type(opts1['path2'][0]) is str:
+            path2 = opts1['path2'][0]
+    if path2 is not None:
+        if type(opts1['filter2']) is str:
+            filt2 = opts1['filter2']
+        #if len(opts1['new_filter'])>1:
+        #    filt2 = opts1['new_filter'][1]
 
     print "jfp path2=",path2,"filt2=",filt2,"X"
     filetable2 = path2filetable( opts1, path=path2, filter=filt2 )
@@ -96,10 +111,13 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
         packages = ['AMWG']
     else:
         packages = opts['packages']
+    print "jfp opts seasons=",opts.get('seasons',None)
     if opts.get( 'seasons', None ) is None:
         seasons = ['ANN']
+        print "jfp defaulting to season ANN"
     else:
         seasons = opts['seasons']
+        print "jfp from opts, using seasons=",seasons
     if opts['varopts'] is None:
         opts['varopts'] = [None]
 
@@ -145,8 +163,8 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                             else:
                                 resc = uvc_composite_plotspec( res )
                             number_diagnostic_plots += 1
-                            print "writing resc to",outpath
-                            resc.write_plot_data("xml-NetCDF", outpath )
+                            filenames = resc.write_plot_data("xml-NetCDF", outpath )
+                            print "wrote resc=",resc.title," to",filenames
 
     print "total number of (compound) diagnostic plots generated =", number_diagnostic_plots
 
