@@ -3,6 +3,7 @@
 # Top-leve definition of AMWG Diagnostics.
 # AMWG = Atmospheric Model Working Group
 
+import pdb
 from metrics.packages.diagnostic_groups import *
 from metrics.computation.reductions import *
 from metrics.computation.plotspec import *
@@ -295,7 +296,6 @@ class amwg_plot_set2(amwg_plot_spec):
         psv['CAM_NCEP_HEAT_TRANSPORT_INDIAN'].finalize()
         return self.plotspec_values['CAM_NCEP_HEAT_TRANSPORT_ALL']
 
-
 class amwg_plot_set3(amwg_plot_spec,basic_id):
     """represents one plot from AMWG Diagnostics Plot Set 3.
     Each such plot is a pair of plots: a 2-line plot comparing model with obs, and
@@ -359,13 +359,12 @@ class amwg_plot_set3(amwg_plot_spec,basic_id):
             zdiffval.id = '_'.join([self._id[0],self._id[1],
                                     zvar._filetable._strid, z2var._filetable._strid, 'diff'])
         # ... e.g. CLT_DJF_set3_CAM456_NCEP_diff
-        print "jfp self._id=",self._id
         plot_a_val = uvc_plotspec(
             [v for v in [zval,z2val] if v is not None],'Yxvsx', labels=[zunam,z2unam],
-            title=' '.join([self._id[0],self._id[1],zunam,'and',z2unam]))
+            title=' '.join([self._id[0],self._id[1],self._id[2],zunam,'and',z2unam]))
         plot_b_val = uvc_plotspec(
             [v for v in [zdiffval] if v is not None],'Yxvsx', labels=['difference'],
-            title=' '.join([self._id[0],self._id[1],zunam,'-',z2unam]))
+            title=' '.join([self._id[0],self._id[1],self._id[2],zunam,'-',z2unam]))
         plot_a_val.synchronize_ranges(plot_b_val)
         plot_a_val.finalize()
         plot_b_val.finalize()
@@ -715,17 +714,13 @@ class amwg_plot_set5and6(amwg_plot_spec):
                 v.finalize()
         return self.plotspec_values[self.plotall_id]
 
-
 class amwg_plot_set5(amwg_plot_set5and6):
     """represents one plot from AMWG Diagnostics Plot Set 5
     Each contour plot is a set of three contour plots: one each for model output, observations, and
     the difference between the two.  A plot's x-axis is longitude and its y-axis is the latitude;
-    normally a world map will be overlaid.
-    """
-    name = ' 5 - Horizontal Contour Plots of Seasonal Means'
-
-
-
+    normally a world map will be overlaid. """
+    name = ' 5- Horizontal Contour Plots of Seasonal Means'
+    
 class amwg_plot_set6(amwg_plot_set5and6):
     """represents one plot from AMWG Diagnostics Plot Set 6
     **** SO FAR, PLOT 6 VECTOR PLOTS ARE NOT DONE; ONLY Plot 5 CONTOUR ****
