@@ -34,8 +34,10 @@ class Options():
       self._opts['dsnames'] = []
       self._opts['user_filter'] = False
       self._opts['filter'] = None
+      self._opts['filter2'] = None
       self._opts['new_filter'] = []
       self._opts['path'] = []
+      self._opts['path2'] = []
       self._opts['obspath'] = []
       self._opts['output'] = None
       self._opts['start'] = -1
@@ -305,15 +307,19 @@ class Options():
          usage='%(prog)s --path1 [options]')
 
       parser.add_argument('--path', '-p', action='append', nargs=1, 
-         help="Path to dataset(s). At least one path is required.")
+         help="Path(s) to dataset(s). This is required.  If two paths need different filters, set one here and one in path2.")
+      parser.add_argument('--path2', '-q', action='append', nargs=1, 
+         help="Path to a second dataset.")
       parser.add_argument('--obspath', action='append', nargs=1,
-         help="Path to an observational dataset")
+                          help="Path to an observational dataset")
       parser.add_argument('--cachepath', nargs=1,
          help="Path for temporary and cachced files. Defaults to /tmp")
 #      parser.add_argument('--realm', '-r', nargs=1, choices=self.realm_types,
 #         help="The realm type. Current valid options are 'land' and 'atmosphere'")
       parser.add_argument('--filter', '-f', nargs=1, 
-         help="A filespec filter. This will be applied to the dataset path(s) to narrow down file choices.")
+         help="A filespec filter. This will be applied to the dataset path(s) (--path option) to narrow down file choices.")
+      parser.add_argument('--filter2', '-g', nargs=1, 
+         help="A filespec filter. This will be applied to the second dataset path (--path2 option) to narrow down file choices.")
       parser.add_argument('--new_filter', '-F', action='append', nargs=1, 
          help="A filespec filter. This will be applied to the corresponding dataset path to narrow down file choices.")
       parser.add_argument('--packages', '--package', '-k', nargs='+', 
@@ -425,17 +431,23 @@ class Options():
       else:
          print 'Must specify a path or the --list option at a minimum.'
          quit()
+      if(args.path2 != None):
+         for i in args.path2:
+            self._opts['path2'].append(i[0])
 
       if(args.obspath != None):
          for i in args.obspath:
             self._opts['obspath'].append(i[0])
 
       # TODO: Should some pre-defined filters be "nameable" here?
-      if(args.filter != None): # Currently only supports one filter argument
+      if(args.filter != None): # Only supports one filter argument, see filter2.
          self._opts['filter'] = args.filter[0]
          self._opts['user_filter'] = True
 #         for i in args.filter:
 #            self._opts['filter'].append(i[0])
+      if(args.filter2 != None): # This is a second filter argument.
+         self._opts['filter2'] = args.filter2[0]
+         self._opts['user_filter'] = True
       if(args.new_filter != None):  # like filter but with multiple arguments
          for i in args.new_filter:
             self._opts['new_filter'].append(i[0])

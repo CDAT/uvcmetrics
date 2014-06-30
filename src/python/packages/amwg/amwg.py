@@ -357,13 +357,12 @@ class amwg_plot_set3(amwg_plot_spec,basic_id):
             zdiffval.id = '_'.join([self._id[0],self._id[1],
                                     zvar._filetable._strid, z2var._filetable._strid, 'diff'])
         # ... e.g. CLT_DJF_set3_CAM456_NCEP_diff
-        print "jfp self._id=",self._id
         plot_a_val = uvc_plotspec(
             [v for v in [zval,z2val] if v is not None],'Yxvsx', labels=[zunam,z2unam],
-            title=' '.join([self._id[0],self._id[1],zunam,'and',z2unam]))
+            title=' '.join([self._id[0],self._id[1],self._id[2],zunam,'and',z2unam]))
         plot_b_val = uvc_plotspec(
             [v for v in [zdiffval] if v is not None],'Yxvsx', labels=['difference'],
-            title=' '.join([self._id[0],self._id[1],zunam,'-',z2unam]))
+            title=' '.join([self._id[0],self._id[1],self._id[2],zunam,'-',z2unam]))
         plot_a_val.synchronize_ranges(plot_b_val)
         plot_a_val.finalize()
         plot_b_val.finalize()

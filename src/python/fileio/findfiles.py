@@ -212,7 +212,6 @@ class dirtree_datafiles( basic_datafiles ):
         root = [ os.path.expanduser(r) for r in root ]
         root = [ r if r[0:5]=='http:' else os.path.abspath(r) for r in root ]
 
-        print "jfp in dirtree_datafiles, filt=",filt,type(filt)
         if filt is None or filt=="": 
            filt=basic_filter()
         elif path is None:
@@ -249,10 +248,12 @@ class dirtree_datafiles( basic_datafiles ):
         if self.opts.get('dsname',None) != None and pathid != None:
             return self.opts['dsname'][pathid]
         else:
-            return os.path.basename(str(self._root))
+            return ','.join([os.path.basename(str(r)) for r in self._root])
 
     def long_name(self):
-        return ' '.join( [ self.__class__.__name__, str(self._root), str(self._filt) ] )
+        return ' '.join( [ self.__class__.__name__,
+                           ','.join([os.path.basename(str(r)) for r in self._root]),
+                           str(self._filt) ] )
 
     def check_filespec( self ):
         """method to determine whether the file specification used to build this object is useful,
