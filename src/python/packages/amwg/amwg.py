@@ -10,7 +10,7 @@ from metrics.computation.plotspec import *
 from metrics.frontend.uvcdat import *
 from metrics.common.id import *
 from unidata import udunits
-import cdutil.times
+import cdutil.times, numpy
 from numbers import Number
 from pprint import pprint
 
@@ -728,6 +728,128 @@ class amwg_plot_set6(amwg_plot_set5and6):
     normally a world map will be overlaid.
     """
     name = ' 6 - Horizontal Vector Plots of Seasonal Means' 
+
+def combine(*args):
+    import cdms2, cdutil
+    pdb.set_trace()
+    M = cdms2.MV2.array(args)
+    #M.shape
+    M.setAxis(-1,args[0].getAxis(-1))
+    T = cdms2.createAxis(range(len(args)))
+    T.designateTime()
+    T.id="time"
+    T.units = "months starting with JAN"
+    M.setAxis(0,T)
+    cdutil.times.setTimeBoundsMonthly(T)
+    #M.info()
+    pdb.set_trace()
+    return M
+
+
+class amwg_plot_set8(amwg_plot_spec): 
+    """This class represents one plot from AMWG Diagnostics Plot Set 9.
+    Each such plot is a set of three contour plots: two for the model output and
+    the difference between the two.  A plot's x-axis is latitude and its y-axis is longitute.
+    Both model plots should have contours at the same values of their variable.  The data 
+    presented is a climatological mean - i.e., seasonal-average of the specified season, DJF, JJA, etc.
+    To generate plots use Dataset 1 in the AMWG ddiagnostics menu, set path to the directory,
+    and enter the file name.  Repeat this for dataset 2 and then apply.
+    """
+    # N.B. In plot_data.py, the plotspec contained keys identifying reduced variables.
+    # Here, the plotspec contains the variables themselves.
+    name = ' 8- Annual Cycle Contour Plots of Zonal Means '
+    def __init__( self, filetable1, filetable2, varid, seasonid='ANN', region=None, aux=None ):
+        """filetable1, filetable2 should be filetables for each model.
+        varid is a string, e.g. 'TREFHT'.  The seasonal difference is Seasonid
+        It is is a string, e.g. 'DJF-JJA'. """
+        self.season = seasonid
+        #for f in filetable1._filelist.files:
+        #   print f        
+        import copy
+        months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'] 
+        self.filetables = {}
+        for month in months:
+            for key in filetable1._fileindex.keys():
+                if key.endswith(month + '_climo.nc'):
+                    ft = copy.copy(filetable1)
+                    ft._fileindex = {key: copy.copy(filetable1._fileindex[key])}
+                    ft._filelist = [key]
+                    self.filetables[month] = ft
+                    #pdb.set_trace()
+                    break
+        #pdb.set_trace()
+             
+        plot_spec.__init__(self, seasonid)
+        self.plottype = 'Isofill'
+        self._seasonid = seasonid
+        self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
+        ft1id, ft2id = filetable_ids(filetable1, filetable2)
+
+        self.plot1_id = '_'.join([ft1id, varid, 'composite', 'contour'])
+        self.plot2_id = None#'_'.join([ft2id, varid, self._s2, 'contour'])
+        #self.plot3_id = '_'.join([ft1id+'-'+ft2id, varid, seasonid, 'contour'])
+        self.plotall_id = '_'.join([ft1id,ft2id, varid, seasonid])
+        if not self.computation_planned:
+            self.plan_computation( filetable1, filetable2, varid, seasonid )
+    def plan_computation( self, filetable1, filetable2, varid, seasonid ):
+        self.computation_planned = False
+        months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'] 
+        #check if there is data to process
+        
+        #setup the reduced variables
+        self.reduced_variables = {}
+        vidAll = []
+        for month in months:
+            VID = rv.dict_id(varid, month, self.filetables[month])
+            RF = (lambda x, vid=id2str(VID):reduce2lat_seasonal(x, cdutil.times.Seasons(month), vid=vid))
+            RV = reduced_variable(variableid = varid, 
+                                  filetable = self.filetables[month], 
+                                  season = cdutil.times.Seasons(month), 
+                                  reduction_function =  RF)
+            self.reduced_variables[RV.id()] = RV   
+            
+            print id2str(VID)
+            vidAll += [VID]
+        
+        #create identifiers
+        #vidAll = []
+        #for month in months:
+        #    vidAll += [rv.dict_id(varid, month, filetable1)]
+        #generate identifiers
+        vidComposite = dv.dict_id(varid, 'ZonalMean', self._seasonid, filetable1)#, ft2=filetable2)
+        
+        self.derived_variables = {}
+        #create the derived variable which is the composite of the months
+        self.derived_variables[vidComposite] = derived_var(vid=vidComposite, inputs=vidAll, func=combine) 
+  
+        pdb.set_trace()
+        
+        #create a single composite plot zfunc = (lambda x: x), 
+        self.single_plotspecs = {
+            self.plot1_id: plotspec(vid = ps.dict_idid(vidComposite), 
+                                    zvars = vidComposite,
+                                    zfunc = (lambda x: x), 
+                                    plottype = self.plottype )
+            }
+
+        self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
+        self.computation_planned = True
+    def _results(self, newgrid=0):
+        pdb.set_trace()
+        results = plot_spec._results(self, newgrid)
+        if results is None:
+            print "WARNING, AMWG plot set 9 found nothing to plot"
+            return None
+        psv = self.plotspec_values
+        if self.plot1_id in psv and self.plot2_id in psv and\
+                psv[self.plot1_id] is not None and psv[self.plot2_id] is not None:
+            psv[self.plot1_id].synchronize_ranges(psv[self.plot2_id])
+        for key,val in psv.items():
+            if type(val) is not list: val=[val]
+            for v in val:
+                if v is None: continue
+                v.finalize()
+        return self.plotspec_values[self.plotall_id]
     
 class amwg_plot_set9(amwg_plot_spec): 
     """This class represents one plot from AMWG Diagnostics Plot Set 9.
