@@ -17,9 +17,11 @@ import cProfile
 import logging
 import json
 import vcs
-vcsx=vcs.init()   # This belongs in one of the GUI files, e.g.diagnosticsDockWidget.py
+#vcsx=vcs.init()   # This belongs in one of the GUI files, e.g.diagnosticsDockWidget.py
                   # The GUI probably will have already called vcs.init().
                   # Then, here,  'from foo.bar import vcsx'
+vcsx = True
+
 # ---------------- code to compute plot in another process, not specific to UV-CDAT:
 
 
@@ -192,16 +194,17 @@ class uvc_simple_plotspec():
         ptype = presentation
         if vcsx:   # temporary kludge, presently need to know whether preparing VCS plots
             if presentation=="Yxvsx":
-                self.presentation = vcsx.createyxvsx()
+                self.presentation = vcs.createyxvsx()
+                #self.presentation = vcs.createoneD()
                 ptype="Yxvsx"
             elif presentation == "Isofill":
-                self.presentation = vcsx.createisofill()
+                self.presentation = vcs.createisofill()
             elif presentation == "Vector":
-                self.presentation = vcsx.createvector()
+                self.presentation = vcs.createvector()
             elif presentation == "Boxfill":
-                self.presentation = vcsx.createboxfill()
+                self.presentation = vcs.createboxfill()
             elif presentation == "Isoline":
-                self.presentation = vcsx.createisoline()
+                self.presentation = vcs.createisoline()
             else:
                 print "ERROR, uvc_plotspec doesn't recognize presentation",presentation
                 self.presentation = "Isofill"  # try to go on
@@ -239,8 +242,10 @@ class uvc_simple_plotspec():
         """By the time this is called, all synchronize operations should have been done.  But even
         so, each variable has a min and max and a min and max for each of its axes.  We need to
         simplify further for the plot package."""
-        if self.presentation.__class__.__name__=="GYx" or\
-                self.presentation.__class__.__name__=="Gfi":
+        if self.presentation.g_name=='G1d' or self.presentation.__class__.__name__=="G1d" or\
+                self.presentation.g_name=='Gfi' or self.presentation.__class__.__name__=="Gfi":
+        #if self.presentation.__class__.__name__=="GYx" or\
+        #        self.presentation.__class__.__name__=="Gfi":
             var = self.vars[0]
             axmax = self.axmax[var.id]
             axmin = self.axmin[var.id]
@@ -252,7 +257,7 @@ class uvc_simple_plotspec():
                     axmin[ax] = min(axmin[ax],self.axmin[v.id][ax])
                 varmax = max(varmax,self.varmax[v.id])
                 varmin = min(varmin,self.varmin[v.id])
-            if self.presentation.__class__.__name__=="GYx":
+            if self.presentation.g_name=='G1d' or self.presentation.__class__.__name__=="G1d":
                 if len(axmax.keys())<=0:
                     return None
                 # VCS Yxvsx
