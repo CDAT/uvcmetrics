@@ -49,10 +49,6 @@ from metrics.frontend.options import *
 from pprint import pprint
 import cProfile
 
-def mysort( lis ):
-    lis.sort()
-    return lis
-
 def run_diagnostics_from_options( opts1 ):
     # Input is one or two instances of Options, normally two.
     # Each describes one data set.  The first will also be used to determine what to do with it,
@@ -77,7 +73,7 @@ def run_diagnostics_from_options( opts1 ):
     #if len(opts1['new_filter'])>0:
     #    filt1 = opts1['new_filter'][0]
  
-    print "jfp path1=",path1,"filt1=",filt1,"X"
+    print "Diagnostics path1=",path1,"filter1=",filt1
     filetable1 = path2filetable( opts1, path=path1, filter=filt1 )
 
     if path2 is None:
@@ -91,7 +87,7 @@ def run_diagnostics_from_options( opts1 ):
         #if len(opts1['new_filter'])>1:
         #    filt2 = opts1['new_filter'][1]
 
-    print "jfp path2=",path2,"filt2=",filt2,"X"
+    print "Diagnostics path2=",path2,"filter2=",filt2
     filetable2 = path2filetable( opts1, path=path2, filter=filt2 )
 
     run_diagnostics_from_filetables( opts1, filetable1, filetable2 )
@@ -113,9 +109,9 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
         seasons = opts.get( 'times', None )
     if seasons is None:
         seasons = ['ANN']
-        print "jfp defaulting to season ANN"
+        print "Diagnostics defaulting to season ANN"
     else:
-        print "jfp from opts, using seasons=",seasons
+        print "Diagnostics from opts, using seasons=",seasons
     if opts['varopts'] is None:
         opts['varopts'] = [None]
 
@@ -124,7 +120,6 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
     for pname in packages:
         pclass = dm[pname]()
         sm = pclass.list_diagnostic_sets()
-        print "jfp sm=",sm
         # TO DO: more flexibility in how plot sets are identified.  And intersect requested with possible.
         if opts['sets'] is None:
             keys = sm.keys()
@@ -134,18 +129,17 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
             plotsets = opts['sets']
         for sname in plotsets:
             sclass = sm[sname]
-            print "jfp sclass.name=",sclass.name
+            print "Diagnostics set =",sclass.name
             seasons = list( set(seasons) & set(pclass.list_seasons()) )
             for seasonid in seasons:
-                print "jfp seasonid=",seasonid
+                print "Diagnostics season =",seasonid
                 variables = pclass.list_variables( filetable1, filetable2, sname  )
                 if opts.get('vars',['ALL'])!=['ALL']:
-                    print "jfp opts vars=",opts['vars']
                     variables = list( set(variables) & set(opts.get('vars',[])) )
                     if len(variables)==0 and len(opts.get('vars',[]))>0:
                         print "WARNING: Couldn't find any of the requested variables:",opts['vars']
                 for varid in variables:
-                    print "jfp varid=",varid
+                    print "Diagnostics variable =",varid
                     vard = pclass.all_variables( filetable1, filetable2, sname )
                     var = vard[varid]
                     varopts = var.varoptions()
@@ -162,7 +156,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                 resc = uvc_composite_plotspec( res )
                             number_diagnostic_plots += 1
                             filenames = resc.write_plot_data("xml-NetCDF", outpath )
-                            print "wrote resc=",resc.title," to",filenames
+                            print "wrote plot data",resc.title," to",filenames
 
     print "total number of (compound) diagnostic plots generated =", number_diagnostic_plots
 
