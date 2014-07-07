@@ -1,3 +1,5 @@
+### TODO: This isn't used, but something like this might make it easier to add new (similar) sets, esp ones that
+### aren't primarily clones of existing NCAR diags.
 package_name = "lmwg"
 package_raelm = "land"
 

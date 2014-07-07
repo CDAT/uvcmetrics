@@ -16,6 +16,7 @@ from cdutil import averager
 from metrics.packages.amwg.derivations import press2alt
 from metrics.fileio.filetable import *
 #from climo_test import cdutil_climatology
+import metrics.frontend.defines as defines
 
 regridded_vars = {}  # experimental
 
@@ -567,6 +568,50 @@ def reduceAnnTrendRegionLevel(mv, region, level, vid=None):
    print 'Returning mvvar: ', mvvar
    return mvvar
 
+def reduceRegion(mv, r, vid=None):
+   print 'IN REDUCE REGION, region: ', defines.all_regions[r]
+   mvsub = mv(latitude=(r1, r2), longitude=(r3, r4))
+   rv = cdutil.averager(mvsub, axis='xy')
+   return rv
+
+
+def reduceAnnTrendSingle(mv, vid=None):
+   if vid == None:
+      vid = 'reduced_'+mv.id
+
+   timeax = timeAxis(mv)
+   if timeax is not None and timeax.getBounds() == None:
+      timeax._bounds_ = timeax.genGenericBounds()
+   if timeax is not None:
+      mvann = cdutil.times.YEAR(mv) 
+   else:
+      mvann = mv
+
+   mvtrend = cdutil.averager(mvann, axis='t')
+   mvtrend.id = vid
+   if hasattr(mv, 'units'):
+       mvtrend.units = mv.units # probably needs some help
+   return mvtrend
+
+# First, does an annual climatology, then reduces to a region, then to a final single value over the time axis
+def reduceAnnTrendRegionSingle(mv, region, vid=None):
+   if vid == None:
+      vid = 'reduced_'+mv.id
+
+   timeax = timeAxis(mv)
+   if timeax is not None and timeax.getBounds() == None:
+      timeax._bounds_ = timeax.genGenericBounds()
+   if timeax is not None:
+      mvsub = mv(latitude=(region[0], region[1]), longitude=(region[2], region[3]))
+      mvann = cdutil.times.YEAR(mvsub) 
+   else:
+      mvann = mv
+
+   mvtrend = cdutil.averager(mvann, axis='xyt')
+   mvtrend.id = vid
+   if hasattr(mv, 'units'):
+       mvtrend.units = mv.units # probably needs some help
+   return mvtrend
 
 def reduceAnnTrendRegion(mv, region, vid=None):
 # Need to compute year1, year2, ... yearN individual climatologies then get a line plot.
@@ -983,7 +1028,7 @@ def dummy(mv, vid=None):
 
 # This is no longer used. Make sure no one is using it, then delete it.
 def evapfrac(mv1, mv2, mv3, mv4): #, flags, season, region):
-   print 'THIS SHOULD NOT BE CALLED'
+   print 'THIS SHOULD NOT BE CALLED -- in evapfrac in computation/reductions.py'
    quit()
    # Basically ripped from the NCL code
    print '******* IN EVAPFRAC ********'
@@ -1060,7 +1105,7 @@ def pminuse(rain, snow, qsoil, qvege, qvegt):
 
 def ab_ratio(mv1, mv2):
    mv = mv1
-   print 'denom min: ', mv2.min()
+#   print 'denom min: ', mv2.min()
    # this should probably be an absolute value and an epsilon range sort of thing
 #   denom = mv2[mv2.nonzero()] # this doesn't work
    denom = MV2.where(MV2.equal(mv2, 0.), mv2.missing_value, mv2)
@@ -1071,6 +1116,22 @@ def ab_ratio(mv1, mv2):
          mv.long_name = ''
    return mv
 
+
+def qvegep_special(mv1, mv2, mv3):
+   p=mv2+mv3  #rain+snow
+   rv = mv1 #qvege
+
+   prec = p
+   if p.min() < 0.:
+      prec = MV2.where(MV2.less(p, 0.), p.missing_value, p)
+
+   rv = mv1/prec * 100.
+      
+   rv.id = 'qvegep'
+   rv.setattribute('long_name', 'canopy evap percent')
+   rv.setattribute('name', 'qvegep')
+   rv.units=''
+   return rv
 
 def evapfrac_special(mv1, mv2, mv3, mv4):
    """returns evaporative fraction """
