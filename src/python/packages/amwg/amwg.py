@@ -704,8 +704,8 @@ class amwg_plot_set5and6(amwg_plot_spec):
         results = plot_spec._results(self,newgrid)
         if results is None: return None
         psv = self.plotspec_values
-        if getattr(psv,self.plot1_id,None) is not None\
-                and getattr(psv,self.plot2_id,None) is not None:
+        if self.plot1_id in psv and self.plot2_id in psv and\
+                psv[self.plot1_id] is not None and psv[self.plot2_id] is not None:
             psv[self.plot1_id].synchronize_ranges(psv[self.plot2_id])
         for key,val in psv.items():
             if type(val) is not list: val=[val]
