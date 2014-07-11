@@ -34,7 +34,7 @@
 # run_diagnostics_from_filetables( opts, filetable1, filetable2 )
 #
 
-import hashlib, os, pickle, sys, os, time
+import hashlib, os, pickle, sys, os, time, re
 from metrics import *
 from metrics.fileio.filetable import *
 from metrics.fileio.findfiles import *
@@ -57,6 +57,22 @@ import cProfile
 def mysort( lis ):
     lis.sort()
     return lis
+
+def setnum( setname ):
+    """extracts the plot set number from the full plot set name, and returns the number.
+    The plot set name should begin with the set number, e.g.
+       setname = ' 2- Line Plots of Annual Implied Northward Transport'"""
+    mo = re.search( r'\d', setname )   # matches decimal digits
+    if mo is None:
+        return None
+    index1 = mo.start()                        # index of first match
+    mo = re.search( r'\D', setname[index1:] )  # matches anything but decimal digits
+    if mo is None:                             # everything past the first digit is another digit
+        setnumber = setname[index1:]
+    else:
+        index2 = mo.start()                    # index of first match
+        setnumber = setname[index1:index1+index2]
+    return setnumber
 
 def run_diagnostics_from_options( opts1 ):
     # Input is one or two instances of Options, normally two.
@@ -117,7 +133,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
 
     if opts['plots'] == True:
         print 'Initializing vcs for output plots'
-        v = vcs.init()
+        vcanvas = vcs.init()
     outpath = opts['output']
     if outpath is None:
         outpath = os.path.join(os.environ['HOME'],"tmp","diagout")
@@ -142,25 +158,22 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
         opts['varopts'] = [None]
 
     number_diagnostic_plots = 0
-    dm = diagnostics_menu()
+    dm = diagnostics_menu()                 # dm = diagnostics menu (packages), a dict
     for pname in packages:
         pclass = dm[pname]()
-        sm = pclass.list_diagnostic_sets()
+
+        # Find which plotsets the user requested which this package offers:
+        sm = pclass.list_diagnostic_sets()  # sm = plot set menu, a dict
         print "jfp sm=",sm
-        # TO DO: more flexibility in how plot sets are identified.  And intersect requested with possible.
         if opts['sets'] is None:
             keys = sm.keys()
             keys.sort()
             plotsets = [ keys[1] ]
+            print "plot sets not specified, defaulting to",plotsets[0]
         else:
             ps = opts['sets']
-            slist = sm.keys()
-            plotsets = []
-            # This could be a nested list comprehension but this makes it more explicit
-            for x in ps: #x should be a string from parseargs()
-               for y in slist: #y is also a string
-                  if x in y:
-                     plotsets.append(y)
+            sndic = { setnum(s):s for s in sm.keys() }   # plot set number:name
+            plotsets = [ sndic[setnum(x)] for x in ps if setnum(x) in sndic ]
 
         for sname in plotsets:
             sclass = sm[sname]
@@ -188,12 +201,13 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                         if res is not None:
                             if opts['plots'] == True:
                                 for r in range(len(res)):
-                                   fname = outpath+'/figure-set'+sname[0]+'_'+seasonid+'_'+varid+'_plot-'+str(r)+'.png'
+                                   fname = outpath+'/figure-set'+sname[0]+'_'+seasonid+'_'+varid+\
+                                       '_plot-'+str(r)+'.png'
                                    print 'Creating plot ',r,' of ', len(res)
                                    print fname
-                                   v.clear()
-                                   v.plot(res[r].vars, res[r].presentation, bg=1)
-                                   v.png(fname)
+                                   vcanvas.clear()
+                                   vcanvas.plot(res[r].vars, res[r].presentation, bg=1)
+                                   vcanvas.png(fname)
                             # Also, write the nc output files and xml.
                             # Probably make this a command line option.
                             if res.__class__.__name__ is 'uvc_composite_plotspec':
