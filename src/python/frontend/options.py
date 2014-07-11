@@ -1,6 +1,8 @@
 import argparse
 
 ### TODO: Fix compress options (in init or whatever)
+### TODO: Seperate subclasses for datasets vs obs 
+
 
 import cdms2
 import metrics.packages as packages
@@ -154,19 +156,20 @@ class Options():
          if(self._opts['list'] == None):
             print 'One or more path arguements is required'
             quit()
+# This creates a mess inside diags.py.... commenting out the quits for now
       if(self._opts['plots'] == True):
 #         if(self._opts['realm'] == None):
 #            print 'Please specify a realm type if you want to generate plots'
 #            quit()
          if(self._opts['packages'] == None):
             print 'Please specify a package name if you want to generate plots'
-            quit()
+#            quit()
          if(self._opts['sets'] == None):
             print 'Please specify set names if you want to generate plots'
-            quit()
+#            quit()
          if(self._opts['path'] == None):
             print 'Please specify a path to the dataset if you want to generate plots'
-            quit()
+#            quit()
 
 
    def plotMultiple(self):
@@ -494,7 +497,7 @@ class Options():
             self._opts['netcdf'] = True
 
       if(args.plots != None):
-         if(args.plots[0] == 'no'):
+         if(args.plots[0] == 'no' or args.plots[0] == 0):
             self._opts['plots'] = False
          else:
             self._opts['plots'] = True
@@ -555,36 +558,43 @@ class Options():
          self._opts['sets'] = args.sets
 
       if(args.sets != None and self._opts['packages'] != None):
+         print 'NOT VERIFYING INPUT PARMS NOW'
+         self._opts['sets'] = args.sets
          # unfortuantely, we have to go through all of this....
          # there should be a non-init of the class method to list sets/packages/etc,
          # ie a dictionary perhaps?
-         sets = []
-         import metrics.fileio.filetable as ft
-         import metrics.fileio.findfiles as fi
-         dtree = fi.dirtree_datafiles(self, pathid=0)
-         filetable = ft.basic_filetable(dtree, self)
-         package = self._opts['packages']
-
-         # this needs a filetable probably, or we just define the maximum list of variables somewhere
-         print package[0]
-
-         im = ".".join(['metrics', 'packages', package[0], package[0]])
-         if package[0] == 'lmwg':
-            pclass = getattr(__import__(im, fromlist=['LMWG']), 'LMWG')()
-         elif package[0]=='amwg':
-            pclass = getattr(__import__(im, fromlist=['AMWG']), 'AMWG')()
-
-         # there doesn't appear to be a way to change filetables after a class has been init'ed.
-         # is init expensive? not too bad currently, but that could be added perhaps.
-         slist = pclass.list_diagnostic_sets()
-         keys = slist.keys()
-         keys.sort()
-         for k in keys:
-            fields = k.split()
-            for user in args.sets:
-               if user == fields[0]:
-                  sets.append(user)
-         self._opts['sets'] = sets
+         ### Just accept the user passed in value for now. This makes a mess in diags.py
+##         sets = []
+##         import metrics.fileio.filetable as ft
+##         import metrics.fileio.findfiles as fi
+##         dtree = fi.dirtree_datafiles(self, pathid=0)
+##         filetable = ft.basic_filetable(dtree, self)
+##         package = self._opts['packages']
+##
+##         # this needs a filetable probably, or we just define the maximum list of variables somewhere
+##         print package[0]
+##         package[0] = package[0].lower()
+##         print package[0]
+##
+##
+##         # There are all sorts of circular dependencies here if we import diagnostic_groups
+##         im = ".".join(['metrics', 'packages', package[0], package[0]])
+##         if package[0] == 'lmwg' or package[0] == 'LMWG':
+##            pclass = getattr(__import__(im, fromlist=['LMWG']), 'LMWG')()
+##         elif package[0]=='amwg' or package[0] == 'AMWG':
+##            pclass = getattr(__import__(im, fromlist=['AMWG']), 'AMWG')()
+##
+##         # there doesn't appear to be a way to change filetables after a class has been init'ed.
+##         # is init expensive? not too bad currently, but that could be added perhaps.
+##         slist = pclass.list_diagnostic_sets()
+##         keys = slist.keys()
+##         keys.sort()
+##         for k in keys:
+##            fields = k.split()
+##            for user in args.sets:
+##               if user == fields[0]:
+##                  sets.append(user)
+##         self._opts['sets'] = sets
 
       # TODO: Check against an actual list of variables from the set
       if args.vars != None:

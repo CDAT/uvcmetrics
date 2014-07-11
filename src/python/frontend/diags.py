@@ -39,10 +39,15 @@ from metrics import *
 from metrics.fileio.filetable import *
 from metrics.fileio.findfiles import *
 from metrics.computation.reductions import *
+# These next 5 liens really shouldn't be necessary. We should have a top level 
+# file in packages/ that import them all. Otherwise, this needs done in every
+# script that does anything with diags, and would need updated if new packages
+# are added, etc. 
 from metrics.packages.amwg import *
 from metrics.packages.amwg.derivations.vertical import *
 from metrics.packages.amwg.plot_data import plotspec, derived_var
 from metrics.packages.amwg.derivations import *
+from metrics.packages.lmwg import *
 from metrics.packages.diagnostic_groups import *
 from metrics.frontend.uvcdat import *
 from metrics.frontend.options import *
@@ -63,6 +68,8 @@ def run_diagnostics_from_options( opts1 ):
     filt1 = None
     filt2 = None
 
+    print opts1['path']
+
     if type(opts1['path']) is str:
         path1 = opts1['path']
     if type(opts1['path']) is list and type(opts1['path'][0]) is str:
@@ -80,11 +87,14 @@ def run_diagnostics_from_options( opts1 ):
     print "jfp path1=",path1,"filt1=",filt1,"X"
     filetable1 = path2filetable( opts1, path=path1, filter=filt1 )
 
+    print 'path2: ', path2
+    print 'opts1 path2: ', opts1['path2']
     if path2 is None:
         if type(opts1['path2']) is str:
             path2 = opts1['path2']
-        if type(opts1['path2']) is list and type(opts1['path2'][0]) is str:
-            path2 = opts1['path2'][0]
+        if type(opts1['path2']) is list and len(opts1['path2']) != 0:
+            if type(opts1['path2'][0]) is str:
+               path2 = opts1['path2'][0]
     if path2 is not None:
         if type(opts1['filter2']) is str:
             filt2 = opts1['filter2']
@@ -92,8 +102,12 @@ def run_diagnostics_from_options( opts1 ):
         #    filt2 = opts1['new_filter'][1]
 
     print "jfp path2=",path2,"filt2=",filt2,"X"
-    filetable2 = path2filetable( opts1, path=path2, filter=filt2 )
+    if path2 is None:
+      filetable2 = None
+    else:
+       filetable2 = path2filetable( opts1, path=path2, filter=filt2 )
 
+    print 'filetable2: ', filetable2
     run_diagnostics_from_filetables( opts1, filetable1, filetable2 )
 
 def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
@@ -101,11 +115,19 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
     Most other choices, such as the plot sets, variables, and seasons, are specified in opts,
     an instance of Options."""
 
+    if opts['plots'] == True:
+        print 'Initializing vcs for output plots'
+        v = vcs.init()
     outpath = opts['output']
     if outpath is None:
         outpath = os.path.join(os.environ['HOME'],"tmp","diagout")
+
+    # Note:verifyOptions() should prevent this from being none. There used to be a quit() in
+    # there but I removed it. (BES)
     if opts['packages'] is None:
-        packages = ['AMWG']
+        print 'Please specify a package name'
+        quit()
+#        packages = ['AMWG']
     else:
         packages = opts['packages']
     seasons = opts.get( 'seasons', None )
@@ -113,7 +135,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
         seasons = opts.get( 'times', None )
     if seasons is None:
         seasons = ['ANN']
-        print "jfp defaulting to season ANN"
+        print "Defaulting to season ANN. Please specify one of --seasons/--seasonally, --months/--monthly or --yearly otherwise"
     else:
         print "jfp from opts, using seasons=",seasons
     if opts['varopts'] is None:
@@ -131,7 +153,15 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
             keys.sort()
             plotsets = [ keys[1] ]
         else:
-            plotsets = opts['sets']
+            ps = opts['sets']
+            slist = sm.keys()
+            plotsets = []
+            # This could be a nested list comprehension but this makes it more explicit
+            for x in ps: #x should be a string from parseargs()
+               for y in slist: #y is also a string
+                  if x in y:
+                     plotsets.append(y)
+
         for sname in plotsets:
             sclass = sm[sname]
             print "jfp sclass.name=",sclass.name
@@ -156,6 +186,16 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                         plot = sclass( filetable1, filetable2, varid, seasonid, aux )
                         res = plot.compute(newgrid=-1) # newgrid=0 for original grid, -1 for coarse
                         if res is not None:
+                            if opts['plots'] == True:
+                                for r in range(len(res)):
+                                   fname = outpath+'/figure-set'+sname[0]+'_'+seasonid+'_'+varid+'_plot-'+str(r)+'.png'
+                                   print 'Creating plot ',r,' of ', len(res)
+                                   print fname
+                                   v.clear()
+                                   v.plot(res[r].vars, res[r].presentation, bg=1)
+                                   v.png(fname)
+                            # Also, write the nc output files and xml.
+                            # Probably make this a command line option.
                             if res.__class__.__name__ is 'uvc_composite_plotspec':
                                 resc = res
                             else:
