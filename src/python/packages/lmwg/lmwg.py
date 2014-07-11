@@ -218,9 +218,7 @@ class lmwg_plot_set1(lmwg_plot_spec):
          self.plot3_id = ft1id+' - '+ft2id+'_'+varid
          self.plotall_id = ft1id+'_'+ft2id+'_'+varid
       else:
-         self.plot2_id = None
-         self.plot3_id = None
-         self.plotall_id = None
+         self.plotall_id = filetable1._strid+'_'+varid
 
       if not self.computation_planned:
          self.plan_computation(filetable1, filetable2, varid, seasonid, region, aux)
@@ -249,90 +247,7 @@ class lmwg_plot_set1(lmwg_plot_spec):
       # No need for a separate function just use global. 
       region = defines.all_regions['Global']
 
-      # Get the easy ones first
-      if varid not in lmwg_plot_set1._derived_varnames and varid not in lmwg_plot_set1._level_vars:
-         self.reduced_variables[varid+'_1'] = reduced_variable(variableid = varid,
-            filetable=filetable1, reduced_var_id = varid+'_1',
-            reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid)))
-         self.single_plotspecs = {
-            self.plot1_id: plotspec(
-               vid=varid+'_1',
-               zvars = [varid+'_1'], zfunc=(lambda z: z),
-               plottype = self.plottype) } 
-         self.composite_plotspecs = { self.plotall_id: [self.plot1_id] }
-
-         if(filetable2 != None):
-            self.reduced_variables[varid+'_2'] = reduced_variable(variableid = varid,
-               filetable=filetable2, reduced_var_id = varid+'_2',
-               reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid)))
-            self.single_plotspecs[self.plot2_id] = plotspec(
-               vid=varid+'_2',
-               zvars = [varid+'_2'], zfunc=(lambda z: z),
-               plottype = self.plottype)
-            self.single_plotspecs[self.plot3_id] = plotspec(
-               vid=varid+'_1-'+varid+'_2',
-               zvars = [varid+'_1', varid+'_2'], zfunc=aminusb,
-               plottype = self.plottype)
-            self.composite_plotspecs[self.plotall_id].append(self.plot2_id)
-            self.composite_plotspecs[self.plotall_id].append(self.plot3_id)
-               
-
-      if varid == 'PREC' or varid == 'TOTRUNOFF':
-         if varid == 'PREC':
-            red_vars = ['RAIN', 'SNOW']
-            myfunc = aplusb
-         elif varid == 'TOTRUNOFF':
-            red_vars = ['QSOIL', 'QVEGE', 'QVEGT']
-            myfunc = sum3
-         in1 = [x+'_1' for x in red_vars]
-         in2 = [x+'_2' for x in red_vars]
-
-         self.composite_plotspecs[self.plotall_id] = []
-         for v in red_vars:
-            self.reduced_variables[v+'_1'] = reduced_variable(
-               variableid = v, filetable=filetable1, reduced_var_id = v+'_1',
-               reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid)))
-         self.derived_variables[varid+'_1'] = derived_var(
-            vid=varid+'_1', inputs=in1, func=myfunc)
-         self.single_plotspecs[varid+'_1'] = plotspec(vid=varid+'_1',
-            zvars=[varid+'_1'], zfunc=(lambda z:z),
-            plottype = self.plottype)
-         self.composite_plotspecs[self.plotall_id].append(varid+'_1')
-
-         if filetable2 != None: ### Assume ft2 is 2nd model
-            print 'This is assuming 2nd dataset is also model output'
-            for v in red_vars:
-               self.reduced_variables[v+'_2'] = reduced_variable(
-                  variableid = v, filetable=filetable2, reduced_var_id = v+'_2',
-                  reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid)))
-            self.derived_variables[varid+'_2'] = derived_var(
-               vid=varid+'_2', inputs=in2, func=myfunc)
-            self.single_plotspecs[varid+'_2'] = plotspec(vid=varid+'_2',
-               zvars=[varid+'_2'], zfunc=(lambda z:z),
-               plottype = self.plottype)
-            self.single_plotspecs[varid+'_3'] = plotspec(vid=varid+'_3',
-               zvars=[varid+'_1', varid+'_2'], zfunc=aminusb,
-               plottype = self.plottype)
-
-# This code would be for when ft2 is obs data
-#            print 'This is assuming FT2 is observation data'
-#            if varid == 'TOTRUNOFF':
-#               v='RUNOFF' ### Obs set names it such
-#            else:
-#               v='PREC'
-#            self.reduced_variables[v+'_2'] = reduced_variable(
-#               variableid = v, filetable=filetable2, reduced_var_id = v+'_2',
-#               reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid)))
-#
-#            self.single_plotspecs[varid+'_2'] = plotspec(vid=varid+'_2',
-#               zvars=[varid+'_2'], zfunc=(lambda z:z),
-#               plottype = self.plottype)
-#            self.single_plotspecs[varid+'_3'] = plotspec(vid=varid+'_3',
-#               zvars=[varid+'_1', v+'_2'], zfunc=aminusb,
-#               plottype = self.plottype)
-            self.composite_plotspecs[self.plotall_id].append(varid+'_2')
-            self.composite_plotspecs[self.plotall_id].append(varid+'_3')
-
+      # Take care of the oddballs first.
       if varid in lmwg_plot_set1._level_vars:
       # TODO: These should be combined plots for _1 and _2, and split off _3 into a separate thing somehow
          vbase=varid
@@ -363,38 +278,99 @@ class lmwg_plot_set1(lmwg_plot_spec):
                self.composite_plotspecs[self.plotall_id].append(vn+'_2')
                self.composite_plotspecs[self.plotall_id].append(vn+'_3')
                
+      else: # Now everything else.
+         # Get the easy ones first
+         if varid not in lmwg_plot_set1._derived_varnames and varid not in lmwg_plot_set1._level_vars:
+            self.reduced_variables[varid+'_1'] = reduced_variable(variableid = varid,
+               filetable=filetable1, reduced_var_id = varid+'_1',
+               reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid)))
+   
+            if(filetable2 != None):
+               self.reduced_variables[varid+'_2'] = reduced_variable(variableid = varid,
+                  filetable=filetable2, reduced_var_id = varid+'_2',
+                  reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid)))
 
+         # Now some derived variables.
+         if varid == 'PREC' or varid == 'TOTRUNOFF':
+            if varid == 'PREC':
+               red_vars = ['RAIN', 'SNOW']
+               myfunc = aplusb
+            elif varid == 'TOTRUNOFF':
+               red_vars = ['QSOIL', 'QVEGE', 'QVEGT']
+               myfunc = sum3
+            in1 = [x+'_1' for x in red_vars]
+            in2 = [x+'_2' for x in red_vars]
 
-      if varid == 'TOTSOILICE' or varid=='TOTSOILLIQ':
-         self.composite_plotspecs[self.plotall_id] = []
-         region = defines.all_regions['Global']
-         if varid == 'TOTSOILICE':
-            vname = 'SOILICE'
-         else:
-            vname = 'SOILLIQ'
-         self.reduced_variables[varid+'_1'] = reduced_variable(
-            variableid = vname, filetable=filetable1, reduced_var_id=varid+'_1',
-            reduction_function=(lambda x, vid: reduceAnnTrendRegionSumLevels(x, region, 1, 10, vid)))
-         self.single_plotspecs[varid+'_1'] = plotspec(vid=varid+'_1',
-            zvars = [varid+'_1'], zfunc=(lambda z:z),
-            #obs
-            plottype = self.plottype)
-         self.composite_plotspecs[self.plotall_id].append(varid+'_1')
-         if filetable2 != None:
-            self.reduced_variables[varid+'_2'] = reduced_variable(
-               variableid = vname, filetable=filetable2, reduced_var_id=varid+'_2',
+            for v in red_vars:
+               self.reduced_variables[v+'_1'] = reduced_variable(
+                  variableid = v, filetable=filetable1, reduced_var_id = v+'_1',
+                  reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid)))
+            self.derived_variables[varid+'_1'] = derived_var(
+               vid=varid+'_1', inputs=in1, func=myfunc)
+
+            if filetable2 != None: ### Assume ft2 is 2nd model
+               print 'This is assuming 2nd dataset is also model output'
+               for v in red_vars:
+                  self.reduced_variables[v+'_2'] = reduced_variable(
+                     variableid = v, filetable=filetable2, reduced_var_id = v+'_2',
+                     reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid)))
+               self.derived_variables[varid+'_2'] = derived_var(
+                  vid=varid+'_2', inputs=in2, func=myfunc)
+
+               # This code would be for when ft2 is obs data
+               #            print 'This is assuming FT2 is observation data'
+               #            if varid == 'TOTRUNOFF':
+               #               v='RUNOFF' ### Obs set names it such
+               #            else:
+               #               v='PREC'
+               #            self.reduced_variables[v+'_2'] = reduced_variable(
+               #               variableid = v, filetable=filetable2, reduced_var_id = v+'_2',
+               #               reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid)))
+               #
+               #            self.single_plotspecs[varid+'_2'] = plotspec(vid=varid+'_2',
+               #               zvars=[varid+'_2'], zfunc=(lambda z:z),
+               #               plottype = self.plottype)
+               #            self.single_plotspecs[varid+'_3'] = plotspec(vid=varid+'_3',
+               #               zvars=[varid+'_1', v+'_2'], zfunc=aminusb,
+               #               plottype = self.plottype)
+
+         # Now some derived variables that are sums over a level dimension
+         if varid == 'TOTSOILICE' or varid=='TOTSOILLIQ':
+            self.composite_plotspecs[self.plotall_id] = []
+            region = defines.all_regions['Global']
+            if varid == 'TOTSOILICE':
+               vname = 'SOILICE'
+            else:
+               vname = 'SOILLIQ'
+            self.reduced_variables[varid+'_1'] = reduced_variable(
+               variableid = vname, filetable=filetable1, reduced_var_id=varid+'_1',
                reduction_function=(lambda x, vid: reduceAnnTrendRegionSumLevels(x, region, 1, 10, vid)))
-            self.single_plotspecs[varid+'_2'] = plotspec(vid=varid+'_2',
-               zvars = [varid+'_2'], zfunc=(lambda z:z),
+
+            if filetable2 != None:
+               self.reduced_variables[varid+'_2'] = reduced_variable(
+                  variableid = vname, filetable=filetable2, reduced_var_id=varid+'_2',
+                  reduction_function=(lambda x, vid: reduceAnnTrendRegionSumLevels(x, region, 1, 10, vid)))
+
+         # set up the plots
+         self.single_plotspecs = {
+            self.plot1_id: plotspec(
+               vid=varid+'_1',
+               zvars = [varid+'_1'], zfunc=(lambda z: z),
+               plottype = self.plottype) } 
+         self.composite_plotspecs[self.plotall_id] = [self.plot1_id]
+
+         if filetable2 != None:
+            self.single_plotspecs[self.plot2_id] = plotspec(
+               vid=varid+'_2',
+               zvars = [varid+'_2'], zfunc=(lambda z: z),
                plottype = self.plottype)
-            self.single_plotspecs[varid+'_3'] = plotspec(vid=varid+'_3',
+            self.single_plotspecs[self.plot3_id] = plotspec(
+               vid=varid+'_1-'+varid+'_2',
                zvars = [varid+'_1', varid+'_2'], zfunc=aminusb,
                plottype = self.plottype)
-            self.composite_plotspecs[self.plotall_id].append(varid+'_2')
-            self.composite_plotspecs[self.plotall_id].append(varid+'_3')
-
-
-
+            self.composite_plotspecs[self.plotall_id].append(self.plot2_id)
+            self.composite_plotspecs[self.plotall_id].append(self.plot3_id)
+   
       self.computation_planned = True
 
    def _results(self,newgrid=0):
