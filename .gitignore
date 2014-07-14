@@ -5,5 +5,10 @@ build
 *swp*
 *.o
 git.py
-
-
+.DS_Store
+.metadata/
+.project
+.pydevproject
+RemoteSystemsTempFiles/
+src/python/junk
+src/python/packages/amwg/CharlesMajic

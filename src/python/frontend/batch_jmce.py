@@ -37,8 +37,9 @@ path1 = os.path.join(os.environ["HOME"],  'Documents/Climatology/ClimateData/sim
 #    'http://pcmdi9.llnl.gov/thredds/dodsC/cmip5_data/cmip5/output1/INM/inmcm4/rcp85/fx/atmos/fx/r0i0p0/sftlf/1/sftlf_fx_inmcm4_rcp85_r0i0p0.nc'
 #    ]
 #cmip5 test path1 = os.path.join(os.environ["HOME"],'cmip5/')
-path2 = path1
+#path2 = path1
 #path2 = os.path.join(os.environ["HOME"],'obs_data')
+path2 = os.path.join(os.environ["HOME"],  'Documents/Climatology/ClimateData/obs/')
 #cmip5 test path2 = os.path.join(os.environ["HOME"],'cmip5/')
 tmppth = os.path.join(os.environ['HOME'], "Documents/Climatology/ClimateData/tmp")
 print tmppth
@@ -46,8 +47,8 @@ outpath = os.path.join(os.environ['HOME'],"Documents/Climatology/ClimateData/dia
 if not os.path.exists(tmppth):
     os.makedirs(tmppth)
 filt1 = None
-filt1 = f_endswith("DJF_climo.nc")
-filt2 = f_endswith("JJA_climo.nc")
+filt1 = f_endswith("_climo.nc")
+#filt2 = f_endswith("JJA_climo.nc")
 #pdb.set_trace()
 #if 'DJF' in filt1 and 'JJA' in filt2:
 #    pass
@@ -61,26 +62,28 @@ filt2 = f_endswith("JJA_climo.nc")
 #    print 'calculation is aborted'
 #    exit()
 #cmip5 test filt1 = f_or(f_startswith("p"),f_startswith("P"))
+
 opts1 = Options()
 opts1._opts['path']={'model':path1}
 opts1._opts['filter']=filt1
 opts1._opts['cachepath']=tmppth
-datafiles1 = dirtree_datafiles( opts1,'model' )
+datafiles1 = dirtree_datafiles( opts1, pathid='model' )
 print "jfp datafiles1 is",datafiles1
+#pdb.set_trace()
 filetable1 = datafiles1.setup_filetable( "model" )
 
 #filt2 = f_startswith("NCEP")
-
+filt2 = f_endswith("_climo.nc")
 #cmip5 test filt2 = filt1
 opts2 = Options()
-opts2._opts['path'] = {'model':path2}
+opts2._opts['path'] = {'obs':path2}
 opts2._opts['filter'] = filt2
 opts2._opts['cachepath']=tmppth
-datafiles2 = dirtree_datafiles( opts2,'model' )
-filetable2 = datafiles2.setup_filetable( "model" )
-print filetable2._id
+datafiles2 = dirtree_datafiles( opts2, pathid=None, obsid = 'obs' )
+filetable2 = datafiles2.setup_filetable( "obs" )
+#print filetable2._id
+
 #filetable2 = None
-#pdb.set_trace()
 
 number_diagnostic_plots = 0
 dm = diagnostics_menu()
@@ -102,15 +105,16 @@ for pname,pclass in dm.items():
         #if sclass.name != ' 5 - Horizontal Contour Plots of Seasonal Means':
         #if sclass.name != ' 6 - Horizontal Vector Plots of Seasonal Means':
         #if sclass.name == '2 - Horizontal contour plots of DJF, MAM, JJA, SON, and ANN means':
-        if sclass.name != ' 9- Horizontal Contour Plots of DJF-JJA Differences':
+        if sclass.name != ' 8- Annual Cycle Contour Plots of Zonal Means ':
+        #if sclass.name != ' 9- Horizontal Contour Plots of DJF-JJA Differences':
             continue   # for testing, only do one plot set
         print "jfp sname=",sname
         print package.list_seasons()
-        SEASONS = package.list_seasons() + ['DJF-JJA']
+        SEASONS = package.list_seasons() #+ ['DJF-JJA']
         for seasonid in SEASONS:
             #if seasonid != 'DJF':
-            if seasonid != 'DJF-JJA':
-            #if seasonid != 'ANN':
+            #if seasonid != 'DJF-JJA':
+            if seasonid != 'ANN':
                 continue # for testing, only do one season
             print "jfp seasonid=",seasonid
             variables = package.list_variables( filetable1, filetable2, sname  )
@@ -130,7 +134,7 @@ for pname,pclass in dm.items():
                     #if aux != '850 mbar':
                     #    continue
                     if True:   # single process
-                        print filetable2._id
+                        #print filetable2._id
                         plot = sclass( filetable1, filetable2, varid, seasonid, aux )
                         res = plot.compute(newgrid=-1) # newgrid=0 for original grid, -1 for coarse
                     else:      # compute in another process
