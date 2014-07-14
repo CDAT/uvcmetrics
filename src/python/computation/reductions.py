@@ -1656,7 +1656,7 @@ class reduced_variable(ftrow,basic_id):
         self._duvs = duvs
         self._rvs = rvs
     def __repr__(self):
-        return self._id
+        return self._strid
 
     @classmethod
     def dict_id( cls, varid, seasonid, ft ):
