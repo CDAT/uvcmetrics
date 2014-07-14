@@ -95,12 +95,13 @@ def run_diagnostics_from_options( opts1 ):
         path1 = pathdict[1]
         if 2 in pathdict:
             path2 = pathdict[2]
+        opts1['path'] = pathdict
     if type(opts1['filter']) is str:
         filt1 = opts1['filter']
     #if len(opts1['new_filter'])>0:
     #    filt1 = opts1['new_filter'][0]
  
-    print "jfp path1=",path1,"filt1=",filt1,"X"
+    print "jfp path1=",path1,"filt1=",filt1
     filetable1 = path2filetable( opts1, path=path1, filter=filt1 )
 
     print 'path2: ', path2
@@ -117,7 +118,7 @@ def run_diagnostics_from_options( opts1 ):
         #if len(opts1['new_filter'])>1:
         #    filt2 = opts1['new_filter'][1]
 
-    print "jfp path2=",path2,"filt2=",filt2,"X"
+    print "jfp path2=",path2,"filt2=",filt2
     if path2 is None:
       filetable2 = None
     else:
@@ -147,13 +148,13 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
     else:
         packages = opts['packages']
     seasons = opts.get( 'seasons', None )
-    if seasons is None:
+    if seasons is None or seasons==[]:
         seasons = opts.get( 'times', None )
-    if seasons is None:
+    if seasons is None or seasons==[]:
         seasons = ['ANN']
         print "Defaulting to season ANN. Please specify one of --seasons/--seasonally, --months/--monthly or --yearly otherwise"
     else:
-        print "jfp from opts, using seasons=",seasons
+        print "using seasons=",seasons
     if opts['varopts'] is None:
         opts['varopts'] = [None]
 
