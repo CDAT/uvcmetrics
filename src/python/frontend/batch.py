@@ -24,9 +24,9 @@ rootpath = os.path.join(os.environ["HOME"],"metrics_data")
 #path1 = os.path.join(rootpath,'cam_output/b30.009.cam2.h0.06.xml')
 #path1 = os.path.join(rootpath,'cam_output/')
 #path1 = os.path.join(rootpath,'cam_output_climo/')
-path1 = os.path.join(rootpath,'acme_cam_climo/')
+#path1 = os.path.join(rootpath,'acme_cam_climo/')
 #path1 = os.path.join(rootpath,'acme_clm_climo/')
-#path1 = os.path.join(rootpath,'acme_data','lores_climo','atm')
+path1 = os.path.join(rootpath,'acme_data','lores_climo','atm')
 #path1 = [
 #    'http://pcmdi9.llnl.gov/thredds/dodsC/cmip5_data/cmip5/output1/INM/inmcm4/rcp85/fx/atmos/fx/r0i0p0/areacella/1/areacella_fx_inmcm4_rcp85_r0i0p0.nc',
 #    'http://pcmdi9.llnl.gov/thredds/dodsC/cmip5_data/cmip5/output1/INM/inmcm4/rcp85/fx/atmos/fx/r0i0p0/orog/1/orog_fx_inmcm4_rcp85_r0i0p0.nc',
@@ -47,9 +47,7 @@ opts1 = Options()
 opts1._opts['path']={'model':path1}
 opts1._opts['filter']=filt1
 opts1._opts['cachepath']=tmppth
-datafiles1 = dirtree_datafiles( opts1, pathid='model' )
-print "jfp datafiles1 is",datafiles1
-filetable1 = datafiles1.setup_filetable( "model" )
+filetable1 = path2filetable( opts1, pathid='model' )
 filt2 = f_startswith("NCEP")
 #filt2 = f_startswith("CERES")
 #filt2 = filt1
@@ -58,9 +56,7 @@ opts2 = Options()
 opts2._opts['path'] = {'obs':path2}
 opts2._opts['filter'] = filt2
 opts2._opts['cachepath']=tmppth
-datafiles2 = dirtree_datafiles( opts2, pathid='obs' )
-print "jfp datafiles2 is",datafiles2
-filetable2 = datafiles2.setup_filetable( "obs" )
+filetable2 = path2filetable( opts2, pathid='obs' )
 #filetable2 = None
 
 def mysort( lis ):
