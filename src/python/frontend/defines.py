@@ -49,7 +49,7 @@ all_regions = {
 "N. Hemisphere Land": [0, 90, -180, 180],  
 "S. Hemisphere Land": [-90, 0, -180, 180],  
 "Global": [-90, 90, -180, 180],
-"User defined": [],
+#"User defined": [0, 0, 0, 0],
 }
 
 # Right now, this is just used for web page generation. 
