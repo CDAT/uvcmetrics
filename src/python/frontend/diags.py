@@ -52,6 +52,7 @@ from metrics.packages.diagnostic_groups import *
 from metrics.frontend.uvcdat import *
 from metrics.frontend.options import *
 from pprint import pprint
+import metrics.frontend.defines as defines
 import cProfile
 
 def mysort( lis ):
@@ -176,6 +177,12 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
             sndic = { setnum(s):s for s in sm.keys() }   # plot set number:name
             plotsets = [ sndic[setnum(x)] for x in ps if setnum(x) in sndic ]
 
+        if opts['regions'] == None:
+            region = defines.all_regions['Global']
+            rname = 'Global'
+        else:
+            region = defines.all_regions[opts['regions'][0]]
+            rname = opts['regions'][0]
         for sname in plotsets:
             sclass = sm[sname]
             print "jfp sclass.name=",sclass.name
@@ -183,6 +190,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
             for seasonid in seasons:
                 print "jfp seasonid=",seasonid
                 variables = pclass.list_variables( filetable1, filetable2, sname  )
+                print variables
                 if opts.get('vars',['ALL'])!=['ALL']:
                     variables = list( set(variables) & set(opts.get('vars',[])) )
                     if len(variables)==0 and len(opts.get('vars',[]))>0:
@@ -213,13 +221,15 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                 print "No plots will be made."
 
                     for aux in varopts:
-                        plot = sclass( filetable1, filetable2, varid, seasonid, aux )
+                        plot = sclass( filetable1, filetable2, varid, seasonid, region, aux )
                         res = plot.compute(newgrid=-1) # newgrid=0 for original grid, -1 for coarse
                         if res is not None:
                             if opts['plots'] == True:
                                 for r in range(len(res)):
-                                   fname = outpath+'/figure-set'+sname[0]+'_'+seasonid+'_'+varid+\
-                                       '_plot-'+str(r)+'.png'
+                                   # Need to replace '/' and ' ' in variable names with '_'.
+                                   vname = varid.replace(' ', '_')
+                                   vname = vname.replace('/', '_')
+                                   fname = outpath+'/figure-set'+sname[0]+'_'+rname+'_'+seasonid+'_'+vname+'_plot-'+str(r)+'.png'
                                    print 'Creating plot ',r,' of ', len(res)
                                    print fname
                                    vcanvas.clear()
