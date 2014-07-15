@@ -184,18 +184,34 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                 print "jfp seasonid=",seasonid
                 variables = pclass.list_variables( filetable1, filetable2, sname  )
                 if opts.get('vars',['ALL'])!=['ALL']:
-                    print "jfp opts vars=",opts['vars']
                     variables = list( set(variables) & set(opts.get('vars',[])) )
                     if len(variables)==0 and len(opts.get('vars',[]))>0:
                         print "WARNING: Couldn't find any of the requested variables:",opts['vars']
+                        print "among",variables
                 for varid in variables:
-                    print "jfp varid=",varid
+                    print "variable",varid
                     vard = pclass.all_variables( filetable1, filetable2, sname )
                     var = vard[varid]
-                    varopts = var.varoptions()
-                    if varopts is None:
+
+                    # Find variable options.  If none were requested, that means "all".
+                    vvaropts = var.varoptions()
+                    if vvaropts is None:
+                        if len(opts['varops'])>0:
+                            print "WARNING: no variable options are available, but these were requested:",\
+                                opts['varopts']
+                            print "Continuing as though no variable options were requested."
                         varopts = [None]
-                    varopts = list( set(varopts) & set(opts['varopts']) )
+                    else:
+                        if len(opts['varopts'])==0:
+                            varopts = vvaropts.keys()
+                        else:
+                            varopts = list( set(vvaropts.keys()) & set(opts['varopts']) )
+                            if varopts==[]:
+                                print "WARNING: requested varopts incompatible with available varopts"
+                                print "requeseted varopts=",opts['varopts']
+                                print "available varopts for variable",varid,"are",vvaropts.keys()
+                                print "No plots will be made."
+
                     for aux in varopts:
                         plot = sclass( filetable1, filetable2, varid, seasonid, aux )
                         res = plot.compute(newgrid=-1) # newgrid=0 for original grid, -1 for coarse
