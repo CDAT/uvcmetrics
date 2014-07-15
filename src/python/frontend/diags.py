@@ -221,20 +221,19 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                 print "No plots will be made."
 
                     for aux in varopts:
-                        plot = sclass( filetable1, filetable2, varid, seasonid, region, aux )
+                        plot = sclass( filetable1, filetable2, varid, seasonid, region, vvaropts[aux] )
                         res = plot.compute(newgrid=-1) # newgrid=0 for original grid, -1 for coarse
                         if res is not None:
                             if opts['plots'] == True:
                                 for r in range(len(res)):
-                                   # Need to replace '/' and ' ' in variable names with '_'.
-                                   vname = varid.replace(' ', '_')
-                                   vname = vname.replace('/', '_')
-                                   fname = outpath+'/figure-set'+sname[0]+'_'+rname+'_'+seasonid+'_'+vname+'_plot-'+str(r)+'.png'
-                                   print 'Creating plot ',r,' of ', len(res)
-                                   print fname
-                                   vcanvas.clear()
-                                   vcanvas.plot(res[r].vars, res[r].presentation, bg=1)
-                                   vcanvas.png(fname)
+                                   for var in res[r].vars:
+                                       vname = varid.replace(' ', '_')
+                                       vname = vname.replace('/', '_')
+                                       fname = outpath+'/figure-set'+sname[0]+'_'+rname+'_'+seasonid+'_'+vname+'_plot-'+str(r)+'.png'
+                                       print "writing png file",fname
+                                       vcanvas.clear()
+                                       vcanvas.plot(var, res[r].presentation, bg=1)
+                                       vcanvas.png(fname)
                             # Also, write the nc output files and xml.
                             # Probably make this a command line option.
                             if res.__class__.__name__ is 'uvc_composite_plotspec':
@@ -243,7 +242,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                 resc = uvc_composite_plotspec( res )
                             number_diagnostic_plots += 1
                             filenames = resc.write_plot_data("xml-NetCDF", outpath )
-                            print "wrote resc=",resc.title," to",filenames
+                            print "wrote plots",resc.title," to",filenames
 
     print "total number of (compound) diagnostic plots generated =", number_diagnostic_plots
 
