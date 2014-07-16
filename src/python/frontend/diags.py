@@ -213,6 +213,8 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                         if len(opts['varopts'])==0:
                             varopts = vvaropts.keys()
                         else:
+                            if opts['varopts']==[] or opts['varopts']==[None]:
+                                opts['varopts'] = [ None, 'default', ' default' ]
                             varopts = list( set(vvaropts.keys()) & set(opts['varopts']) )
                             if varopts==[]:
                                 print "WARNING: requested varopts incompatible with available varopts"
