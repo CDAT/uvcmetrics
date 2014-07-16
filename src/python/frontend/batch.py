@@ -76,7 +76,7 @@ for pname,pclass in dm.items():
         #if sclass.name != ' 2 - Line Plots of Annual Implied Northward Transport':
         #if sclass.name != ' 3 - Line Plots of  Zonal Means':
         if sclass.name != ' 4 - Vertical Contour Plots Zonal Means':
-        #if sclass.name != ' 5 - Horizontal Contour Plots of Seasonal Means':
+        #if sclass.name != ' 5- Horizontal Contour Plots of Seasonal Means':
         #if sclass.name != ' 6 - Horizontal Vector Plots of Seasonal Means':
         #if sclass.name != '2 - Horizontal contour plots of DJF, MAM, JJA, SON, and ANN means':
         #if sclass.name[:2] != '6 ':
@@ -99,8 +99,9 @@ for pname,pclass in dm.items():
                 var = vard[varid]
                 varopt = var.varoptions()
                 if varopt is None:
-                    varopt = [None]
-                for aux in varopt:
+                    varopt = {' default':None}
+                for auxkey in varopt:
+                    aux = varopt[auxkey]
                     #if aux != '850 mbar':
                     #    continue
                     if True:   # single process
