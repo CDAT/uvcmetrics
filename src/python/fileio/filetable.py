@@ -304,12 +304,11 @@ class NCAR_filefmt(basic_filefmt):
       self.opts = options
       
 
-      varlist = self.opts._opts['vars']
-      if 'ALL' in varlist:
-         self._all_interesting_names = self._dfile.variables.keys()
-      else:
-         self._all_interesting_names = varlist
-
+      #varlist = self.opts._opts['vars']
+      # But we can't limit _all_interesting names to varlist!
+      # varlist is only variables the user finds interesting, and may not include
+      # other variables which we may later need to compute them.
+      self._all_interesting_names = self._dfile.variables.keys()
 
    def get_timerange(self):
       if 'time' not in self._dfile.axes:

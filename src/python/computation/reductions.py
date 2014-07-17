@@ -9,7 +9,8 @@ from pprint import pprint
 import cdutil.times
 from math import radians
 from numpy import sin, ma
-import dateutil.parser
+#import dateutil.parser
+import dateparser
 from datetime import datetime as datetime
 from unidata import udunits
 from cdutil import averager
@@ -148,7 +149,7 @@ def fix_time_units( timeunits ):
         # The parser won't understand negative years, but cdtime will.  So don't
         # fix the date quite yet...
         date = date[0:pre_bc]
-    new_date = str( dateutil.parser.parse( date, default=datetime(1850,1,1,0,0)) )
+    new_date = str( dateparser.parse( date, default=datetime(1850,1,1,0,0)) )
     if date_is_bc:
         pre_yr = new_date.find(yr_bc)
         new_date = new_date[0:pre_yr]+yr_ad+new_date[pre_yr+len(yr_bc)]
@@ -1656,7 +1657,7 @@ class reduced_variable(ftrow,basic_id):
         self._duvs = duvs
         self._rvs = rvs
     def __repr__(self):
-        return self._id
+        return self._strid
 
     @classmethod
     def dict_id( cls, varid, seasonid, ft ):

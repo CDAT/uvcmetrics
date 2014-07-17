@@ -46,6 +46,7 @@ class Options():
       self._opts['end'] = -1
       self._opts['cachepath'] = '/tmp'
       self._opts['varopts'] = None
+      self._opts['regions'] = None
 
       # There is no support for maintaining realm distinctions. 
       # At one point, I was thinking you could specify a realm and get a 
@@ -370,7 +371,7 @@ class Options():
       parser.add_argument('--name', action='append', nargs=1,
          help="Specify option names for the datasets for plot titles, etc") #optional name for the set
       # This will be the standard list of region names NCAR has
-      parser.add_argument('--region', '--regions', nargs='+', choices=all_regions.keys(),
+      parser.add_argument('--regions', '--region', nargs='+', choices=all_regions.keys(),
          help="Specify a geographical region of interest. Note: Multi-word regions need quoted, e.g. 'Central Canada'")
       parser.add_argument('--starttime', nargs=1,
          help="Specify a start time in the dataset")
@@ -549,6 +550,15 @@ class Options():
          else:
             self._opts['packages'] = plist
 
+
+      # TODO: Requires exact case; probably make this more user friendly and look for mixed case
+      if(args.regions != None):
+         rlist = []
+         for x in args.regions:
+            if x in all_regions.keys():
+               rlist.append(x)
+         print 'REGIONS: ', rlist
+         self._opts['regions'] = rlist
 
       # Given user-selected packages, check for user specified sets
       # Note: If multiple packages have the same set names, then they are all added to the list.

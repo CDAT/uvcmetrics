@@ -34,7 +34,7 @@
 # run_diagnostics_from_filetables( opts, filetable1, filetable2 )
 #
 
-import hashlib, os, pickle, sys, os, time
+import hashlib, os, pickle, sys, os, time, re
 from metrics import *
 from metrics.fileio.filetable import *
 from metrics.fileio.findfiles import *
@@ -52,11 +52,28 @@ from metrics.packages.diagnostic_groups import *
 from metrics.frontend.uvcdat import *
 from metrics.frontend.options import *
 from pprint import pprint
+import metrics.frontend.defines as defines
 import cProfile
 
 def mysort( lis ):
     lis.sort()
     return lis
+
+def setnum( setname ):
+    """extracts the plot set number from the full plot set name, and returns the number.
+    The plot set name should begin with the set number, e.g.
+       setname = ' 2- Line Plots of Annual Implied Northward Transport'"""
+    mo = re.search( r'\d', setname )   # matches decimal digits
+    if mo is None:
+        return None
+    index1 = mo.start()                        # index of first match
+    mo = re.search( r'\D', setname[index1:] )  # matches anything but decimal digits
+    if mo is None:                             # everything past the first digit is another digit
+        setnumber = setname[index1:]
+    else:
+        index2 = mo.start()                    # index of first match
+        setnumber = setname[index1:index1+index2]
+    return setnumber
 
 def run_diagnostics_from_options( opts1 ):
     # Input is one or two instances of Options, normally two.
@@ -79,12 +96,13 @@ def run_diagnostics_from_options( opts1 ):
         path1 = pathdict[1]
         if 2 in pathdict:
             path2 = pathdict[2]
+        opts1['path'] = pathdict
     if type(opts1['filter']) is str:
         filt1 = opts1['filter']
     #if len(opts1['new_filter'])>0:
     #    filt1 = opts1['new_filter'][0]
  
-    print "jfp path1=",path1,"filt1=",filt1,"X"
+    print "jfp path1=",path1,"filt1=",filt1
     filetable1 = path2filetable( opts1, path=path1, filter=filt1 )
 
     print 'path2: ', path2
@@ -101,7 +119,7 @@ def run_diagnostics_from_options( opts1 ):
         #if len(opts1['new_filter'])>1:
         #    filt2 = opts1['new_filter'][1]
 
-    print "jfp path2=",path2,"filt2=",filt2,"X"
+    print "jfp path2=",path2,"filt2=",filt2
     if path2 is None:
       filetable2 = None
     else:
@@ -117,7 +135,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
 
     if opts['plots'] == True:
         print 'Initializing vcs for output plots'
-        v = vcs.init()
+        vcanvas = vcs.init()
     outpath = opts['output']
     if outpath is None:
         outpath = os.path.join(os.environ['HOME'],"tmp","diagout")
@@ -131,37 +149,40 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
     else:
         packages = opts['packages']
     seasons = opts.get( 'seasons', None )
-    if seasons is None:
+    if seasons is None or seasons==[]:
         seasons = opts.get( 'times', None )
-    if seasons is None:
+    if seasons is None or seasons==[]:
         seasons = ['ANN']
         print "Defaulting to season ANN. Please specify one of --seasons/--seasonally, --months/--monthly or --yearly otherwise"
     else:
-        print "jfp from opts, using seasons=",seasons
+        print "using seasons=",seasons
     if opts['varopts'] is None:
         opts['varopts'] = [None]
 
     number_diagnostic_plots = 0
-    dm = diagnostics_menu()
+    dm = diagnostics_menu()                 # dm = diagnostics menu (packages), a dict
     for pname in packages:
         pclass = dm[pname]()
-        sm = pclass.list_diagnostic_sets()
+
+        # Find which plotsets the user requested which this package offers:
+        sm = pclass.list_diagnostic_sets()  # sm = plot set menu, a dict
         print "jfp sm=",sm
-        # TO DO: more flexibility in how plot sets are identified.  And intersect requested with possible.
         if opts['sets'] is None:
             keys = sm.keys()
             keys.sort()
             plotsets = [ keys[1] ]
+            print "plot sets not specified, defaulting to",plotsets[0]
         else:
             ps = opts['sets']
-            slist = sm.keys()
-            plotsets = []
-            # This could be a nested list comprehension but this makes it more explicit
-            for x in ps: #x should be a string from parseargs()
-               for y in slist: #y is also a string
-                  if x in y:
-                     plotsets.append(y)
+            sndic = { setnum(s):s for s in sm.keys() }   # plot set number:name
+            plotsets = [ sndic[setnum(x)] for x in ps if setnum(x) in sndic ]
 
+        if opts['regions'] == None:
+            region = defines.all_regions['Global']
+            rname = 'Global'
+        else:
+            region = defines.all_regions[opts['regions'][0]]
+            rname = opts['regions'][0]
         for sname in plotsets:
             sclass = sm[sname]
             print "jfp sclass.name=",sclass.name
@@ -169,31 +190,52 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
             for seasonid in seasons:
                 print "jfp seasonid=",seasonid
                 variables = pclass.list_variables( filetable1, filetable2, sname  )
+                print variables
                 if opts.get('vars',['ALL'])!=['ALL']:
-                    print "jfp opts vars=",opts['vars']
                     variables = list( set(variables) & set(opts.get('vars',[])) )
                     if len(variables)==0 and len(opts.get('vars',[]))>0:
                         print "WARNING: Couldn't find any of the requested variables:",opts['vars']
+                        print "among",variables
                 for varid in variables:
-                    print "jfp varid=",varid
+                    print "variable",varid
                     vard = pclass.all_variables( filetable1, filetable2, sname )
                     var = vard[varid]
-                    varopts = var.varoptions()
-                    if varopts is None:
+
+                    # Find variable options.  If none were requested, that means "all".
+                    vvaropts = var.varoptions()
+                    if vvaropts is None:
+                        if len(opts['varops'])>0:
+                            print "WARNING: no variable options are available, but these were requested:",\
+                                opts['varopts']
+                            print "Continuing as though no variable options were requested."
                         varopts = [None]
-                    varopts = list( set(varopts) & set(opts['varopts']) )
+                    else:
+                        if len(opts['varopts'])==0:
+                            varopts = vvaropts.keys()
+                        else:
+                            if opts['varopts']==[] or opts['varopts']==[None]:
+                                opts['varopts'] = [ None, 'default', ' default' ]
+                            varopts = list( set(vvaropts.keys()) & set(opts['varopts']) )
+                            if varopts==[]:
+                                print "WARNING: requested varopts incompatible with available varopts"
+                                print "requeseted varopts=",opts['varopts']
+                                print "available varopts for variable",varid,"are",vvaropts.keys()
+                                print "No plots will be made."
+
                     for aux in varopts:
-                        plot = sclass( filetable1, filetable2, varid, seasonid, aux )
+                        plot = sclass( filetable1, filetable2, varid, seasonid, region, vvaropts[aux] )
                         res = plot.compute(newgrid=-1) # newgrid=0 for original grid, -1 for coarse
                         if res is not None:
                             if opts['plots'] == True:
                                 for r in range(len(res)):
-                                   fname = outpath+'/figure-set'+sname[0]+'_'+seasonid+'_'+varid+'_plot-'+str(r)+'.png'
-                                   print 'Creating plot ',r,' of ', len(res)
-                                   print fname
-                                   v.clear()
-                                   v.plot(res[r].vars, res[r].presentation, bg=1)
-                                   v.png(fname)
+                                   for var in res[r].vars:
+                                       vname = varid.replace(' ', '_')
+                                       vname = vname.replace('/', '_')
+                                       fname = outpath+'/figure-set'+sname[0]+'_'+rname+'_'+seasonid+'_'+vname+'_plot-'+str(r)+'.png'
+                                       print "writing png file",fname
+                                       vcanvas.clear()
+                                       vcanvas.plot(var, res[r].presentation, bg=1)
+                                       vcanvas.png(fname)
                             # Also, write the nc output files and xml.
                             # Probably make this a command line option.
                             if res.__class__.__name__ is 'uvc_composite_plotspec':
@@ -202,7 +244,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                 resc = uvc_composite_plotspec( res )
                             number_diagnostic_plots += 1
                             filenames = resc.write_plot_data("xml-NetCDF", outpath )
-                            print "wrote resc=",resc.title," to",filenames
+                            print "wrote plots",resc.title," to",filenames
 
     print "total number of (compound) diagnostic plots generated =", number_diagnostic_plots
 

@@ -155,13 +155,17 @@ class basic_datafiles:
         if os.path.isfile(cachefile):
             os.remove(cachefile)
 
-def path2filetable( opts, path, filter=None ):
+def path2filetable( opts, pathid=None, obsid=None, path=None, filter=None ):
     """Convenient way to make a filetable.  Inputs: opts is an Options object, containing a 'cachepath' and
     maybe a 'dsname' option.  path is the path to the root of the directory tree containing the files to be
     indexed (or path can be a list of such paths).  filter is a filter inheriting from basic_filter, or None,
     or a string which can be evaluated to such a filter."""
-    datafiles = dirtree_datafiles( opts, path=path, filter=filter )
+    datafiles = dirtree_datafiles( opts, pathid=pathid, obsid=obsid, path=path, filter=filter )
     filetable = datafiles.setup_filetable()
+    if path is not None and pathid is not None:
+        opts['path'][pathid] = path
+    elif path is not None and obsid is not None:
+        opts['path'][obsid] = path
     return filetable
 
 class dirtree_datafiles( basic_datafiles ):
