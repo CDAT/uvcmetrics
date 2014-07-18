@@ -79,7 +79,7 @@ opts2 = Options()
 opts2._opts['path'] = {'obs':path2}
 opts2._opts['filter'] = filt2
 opts2._opts['cachepath']=tmppth
-datafiles2 = dirtree_datafiles( opts2, pathid=None, obsid = 'obs' )
+datafiles2 = dirtree_datafiles( opts2, pathid='obs')#, obsid = 'obs' )
 filetable2 = datafiles2.setup_filetable( "obs" )
 #print filetable2._id
 
