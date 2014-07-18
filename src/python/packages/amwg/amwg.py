@@ -634,8 +634,6 @@ class amwg_plot_set5and6(amwg_plot_spec):
                 plottype = self.plottype ) }
            
         if filetable2 is None:
-            print "jfp reduced_variables keys=",self.reduced_variables.keys()
-            print "jfp derived_variables keys=",self.derived_variables.keys()
             self.reduced_variables = { v.id():v for v in reduced_varlis }
             self.composite_plotspecs = {
                 self.plotall_id: [ self.plot1_id ]

@@ -120,19 +120,13 @@ class Options():
       keys = slist.keys()
       keys.sort()
       pset_name = None
-      #print 'keys: ', keys
       for k in keys:
          fields = k.split()
-         #print 'fields: ', fields
          if setname[0] == fields[0]:
             if vlist ==None:
-               print 'calling slist[k]...'
                vl = slist[k]._list_variables(filetable)
-               print 'list_vars:**************************'
-               print vl
             else:
                vl = slist[k]._list_variables(filetable)
-               print vl
 #               pset = slist[k](filetable, None, None, None, aux=None, vlist=1)
 #               pset_name = k
 #
@@ -177,20 +171,15 @@ class Options():
       import metrics.fileio.filetable as ft
       import metrics.fileio.findfiles as fi
          
-      print 'self: ',self
-      print 'self._opts:' , self._opts
-
       # temporarily replace variables
       myvars = self._opts['vars']
 #      self._opts['vars'] = 'ALL'
       dtree1 = fi.dirtree_datafiles(self, pathid=0)
       filetable1 = ft.basic_filetable(dtree1, self)
       if(len(self._opts['path']) == 2):
-         print 'ft2 = path2 ft'
          dtree2 = fi.dirtree_datafiles(self, pathid=1)
          filetable2 = ft.basic_filetable(dtree2, self)
       elif(self._opts['obspath']) != []:
-         print 'ft2 = obs ft'
          dtree2 = fi.dirtree_datafiles(self, obsid=0)
          filetable2 = ft.basic_filetable(dtree2, self)
       else:
@@ -212,48 +201,27 @@ class Options():
       seasons = self._opts['times']
       slist = pclass.list_diagnostic_sets()
       skeys = slist.keys()
-      print 'PATH:'
-      print self._opts['path']
-      print 'sets: ', sets
       skeys.sort()
       import vcs
-      print 'VCS INIT IN FRONT OPTIONS - REVERTED SINGLE INIT UNFORTUNATELY'
       v = vcs.init()
-      print 'VCS INIT DONE IN FRONTEND'
-      print slist
       for k in skeys:
          fields = k.split()
-         print 'fields111: ', fields
          for snames in sets:
-            print snames
-            print fields[0]
-
             if snames == fields[0]:
-               print 'varin'
-               print varids
                for va in varids:
                   for s in seasons:
-                     print 'Creating plot for set: ', k, 'varid: ', va,' season: ', s, 'ft1: ', filetable1, 'ft2: ', filetable2
                      plot = slist[k](filetable1, filetable2, va, s)
-                     print '**********************************************************************'
-                     print plot
-                     print '**********************************************************************'
-                     print 'res'
                      res = plot.compute(newgrid=0)
-                     print 'res done'
 
                      for r in range(len(res)):
 #                        v = res[r].vcsobj
                         v.clear()
                         v.plot(res[r].vars, res[r].presentation, bg=1)
-                        print len(self._opts['dsnames'])
                         if(len(self._opts['dsnames']) != 0):
                         ### TODO If dsnames gets implemented, need to set a short name for ds3, ie, "ds 1 - ds 2" or something
                            fname = self._opts['dsnames'][r]+'-set'+fields[0]+s+va+'.png'
                         else:
-                           print 'r: ', r
                            fname = 'output-set'+fields[0]+s+va+'plot-'+str(r)+'.png'
-                        print 'fname: ', fname
                         v.png(fname)
 
 
@@ -286,19 +254,14 @@ class Options():
       setname = self._opts['sets'][0]
       varid = self._opts['vars'][0]
       seasonid = self._opts['times'][0]
-      print 'CALLING LIST SETS'
       slist = pclass.list_diagnostic_sets()
-      print 'DONE CALLIGN LIST SETS'
       keys = slist.keys()
       keys.sort()
       import vcs
-      print 'VCS INIT IN OPTIONS'
 #      v = vcs.init()
-      print 'VCS INIT IN OPTIONS DONE'
       for k in keys:
          fields = k.split()
          if setname[0] == fields[0]:
-            print 'calling init for ', k, 'varid: ', varid, 'seasonid: ', seasonid
             plot = slist[k](filetable1, filetable2, varid, seasonid)
             res = plot.compute()
             v.plot(res[0].vars, res[0].presentation, bg=1)
@@ -568,7 +531,6 @@ class Options():
          self._opts['sets'] = args.sets
 
       if(args.sets != None and self._opts['packages'] != None):
-         print 'NOT VERIFYING INPUT PARMS NOW'
          self._opts['sets'] = args.sets
          # unfortuantely, we have to go through all of this....
          # there should be a non-init of the class method to list sets/packages/etc,
