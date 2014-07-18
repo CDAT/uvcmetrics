@@ -239,8 +239,15 @@ class uvc_simple_plotspec():
         """By the time this is called, all synchronize operations should have been done.  But even
         so, each variable has a min and max and a min and max for each of its axes.  We need to
         simplify further for the plot package."""
-        if self.presentation.__class__.__name__=="GYx" or\
-                self.presentation.__class__.__name__=="Gfi":
+        # old test:
+        #if self.presentation.__class__.__name__=="GYx" or\
+        #        self.presentation.__class__.__name__=="Gfi":
+        # interim test here and below.  Once all the is* functions work, I should
+        # drop the tests on self.presentation.__class__.__name__ :
+        if vcs.isyxvsx(self.presentation) or\
+                vcs.isisofill(self.presentation) or\
+                self.presentation.__class__.__name__=="GYx" or\
+                self.presentation.__class__.__name__=="G1d":
             var = self.vars[0]
             axmax = self.axmax[var.id]
             axmin = self.axmin[var.id]
@@ -252,7 +259,9 @@ class uvc_simple_plotspec():
                     axmin[ax] = min(axmin[ax],self.axmin[v.id][ax])
                 varmax = max(varmax,self.varmax[v.id])
                 varmin = min(varmin,self.varmin[v.id])
-            if self.presentation.__class__.__name__=="GYx":
+            if vcs.isyxvsx(self.presentation) or\
+                    self.presentation.__class__.__name__=="GYx" or\
+                    self.presentation.__class__.__name__=="G1d":
                 if len(axmax.keys())<=0:
                     return None
                 # VCS Yxvsx
@@ -261,7 +270,7 @@ class uvc_simple_plotspec():
                 self.presentation.datawc_x2 = axmax[ax]
                 self.presentation.datawc_y1 = varmin
                 self.presentation.datawc_y2 = varmax
-            elif self.presentation.__class__.__name__=="Gfi":
+            elif vcs.isisofill(self.presentation) or self.presentation.__class__.__name__=="Gfi":
                 # VCS Isofill
                 # First we have to identify which axes will be plotted as X and Y.
                 # The following won't cover all cases, but does cover what we have:
