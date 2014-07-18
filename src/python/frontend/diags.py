@@ -204,10 +204,12 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                     # Find variable options.  If none were requested, that means "all".
                     vvaropts = var.varoptions()
                     if vvaropts is None:
-                        if len(opts['varops'])>0:
-                            print "WARNING: no variable options are available, but these were requested:",\
+                        if len(opts['varopts'])>0:
+                            if opts['varopts']!=[None]:
+                                print "WARNING: no variable options are available, but these were requested:",\
                                 opts['varopts']
-                            print "Continuing as though no variable options were requested."
+                                print "Continuing as though no variable options were requested."
+                        vvaropts = {None:None}
                         varopts = [None]
                     else:
                         if len(opts['varopts'])==0:
