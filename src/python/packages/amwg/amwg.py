@@ -987,7 +987,7 @@ class amwg_plot_set9(amwg_plot_spec):
         varid is a string, e.g. 'TREFHT'.  The seasonal difference is Seasonid
         It is is a string, e.g. 'DJF-JJA'. """
         import string
-        
+
         #the following is for future case of setting 2 seasons
         if "-" in seasonid:
             _seasons = string.split(seasonid, '-')
@@ -1026,23 +1026,24 @@ class amwg_plot_set9(amwg_plot_spec):
         if not ft1_valid or not ft2_valid:
             return None
 
-        #setup the reduced variables
-        rv_1 = reduced_variable(variableid=varid, filetable=filetable1, season=cdutil.times.Seasons(self._s1),
-                                reduction_function=reduce2latlon_seasonal) 
-        
-        rv_2 = reduced_variable(variableid=varid, filetable=filetable2, season=cdutil.times.Seasons(self._s2),
-                                reduction_function=reduce2latlon_seasonal)                                             
-                                               
-        self.reduced_variables = {rv_1.id(): rv_1, rv_2.id(): rv_2}  
-        
-        # >>>> actually last arg of the derived var should identify the coarsest level, not nec. 2
         #generate identifiers
         vid1 = rv.dict_id(varid, self._s1, filetable1)
         vid2 = rv.dict_id(varid, self._s2, filetable2)
         vid3 = dv.dict_id(varid, 'SeansonalDifference', self._seasonid, filetable1)#, ft2=filetable2)
 
+        #setup the reduced variables
+        vid1_season = cdutil.times.Seasons(self._s1)
+        vid2_season = cdutil.times.Seasons(self._s2)
+        rv_1 = reduced_variable(variableid=varid, filetable=filetable1, season=vid1_season,
+                                reduction_function=( lambda x, vid=vid1:reduce2latlon_seasonal(x, vid1_season, vid=vid)) ) 
+        
+        rv_2 = reduced_variable(variableid=varid, filetable=filetable2, season=vid2_season,
+                                reduction_function=( lambda x, vid=vid2:reduce2latlon_seasonal(x, vid2_season, vid=vid)) )                                             
+                                               
+        self.reduced_variables = {rv_1.id(): rv_1, rv_2.id(): rv_2}  
+
+        #create the derived variable which is the difference        
         self.derived_variables = {}
-        #create the derived variable which is the difference
         self.derived_variables[vid3] = derived_var(vid=vid3, inputs=[vid1, vid2], func=aminusb) 
             
         self.single_plotspecs = {
