@@ -540,13 +540,13 @@ class lmwg_plot_set2(lmwg_plot_spec):
             self.composite_plotspecs[self.plotall_id].append(varid+'_3')
 
       if varid == 'VBSA' or varid == 'NBSA' or varid == 'VWSA' or varid == 'NWSA' or varid == 'ASA':
-         self.reduced_variables[varid+'_1'] = albedos_redvar(filetable1, 'SEASONAL', self.abledos[varid], season=self.season)
+         self.reduced_variables[varid+'_1'] = albedos_redvar(filetable1, 'SEASONAL', self.albedos[varid], season=self.season)
          if filetable2 != None:
             self.reduced_variables[varid+'_2'] = reduced_variable(
                variableid = varid, filetable=filetable2, reduced_var_id = varid+'_2',
                reduction_function=(lambda x, vid: reduce2latlon_seasonal(x, self.season, vid)))
 # For comparison with a dataset instead of obs, use this.
-#            self.reduced_variables[varid+'_2'] = albedos_redvar(filetable2, 'SEASONAL', self.abledos[varid], season=self.season)
+#            self.reduced_variables[varid+'_2'] = albedos_redvar(filetable2, 'SEASONAL', self.albedos[varid], season=self.season)
 
       # These 3 only exist as model vs model (no model vs obs) comparisons, so ft2 is not special cased
       if varid == 'RNET':
