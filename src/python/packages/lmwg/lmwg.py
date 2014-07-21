@@ -827,7 +827,28 @@ class lmwg_plot_set3(lmwg_plot_spec):
             'TOTRUNOFF_1': derived_var(
             vid='TOTRUNOFF_1', inputs=['QOVER_1', 'QDRAI_1', 'QRGWL_1'], func=sum3)
          }
-         
+         if filetable2 != None:
+            if 'PREC' in filetable2.list_variables():
+               self.reduced_variables['PREC_2'] = reduced_variable(
+                  varialeid = 'PREC', filetable=filetable2, reduced_var_id='PREC_2',
+                  reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid)))
+            if 'PRECIP_LAND' in filetable2.list_variables():
+               self.reduced_variables['PREC_2'] = reduced_variable(
+                  varialeid = 'PRECIP_LAND', filetable=filetable2, reduced_var_id='PREC_2',
+                  reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid)))
+            if 'RUNOFF' in filetable2.list_variables():
+               self.reduced_variables['TOTRUNOFF_2'] = reduced_variable(
+                  varialeid = 'RUNOFF', filetable=filetable2, reduced_var_id='TOTRUNOFF_2',
+                  reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid)))
+            if 'SNOWDP' in filetable2.list_varialbes():
+               self.reduced_variables['SNOWDP_2'] = reduced_variable(
+                  variableid = 'SNOWDP', filetable=filetable2, reduced_var_id='SNOWDP_2',
+                  reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid)))
+            if 'TSA' in filetable2.list_variables():
+               self.reduced_variables['TSA_2'] = reduced_variable(
+                  variableid = 'TSA', filetable=filetable2, reduced_var_id='TSA_2',
+                  reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid)))
+
 
          # Now, define the individual plots.
          self.single_plotspecs = {
@@ -852,6 +873,10 @@ class lmwg_plot_set3(lmwg_plot_spec):
                #z3vars = obs2
                plottype = self.plottype)
          }
+         if filetable2 != None:
+            self.single_plotspecs['2mAir_1'].z2vars = ['TSA_2']
+            self.single_plotspecs['2mAir_1'].z2func = (lambda z:z)
+
          self.composite_plotspecs={
             'Total_Precipitation':
                ['2mAir_1', 'Prec_1', 'Runoff_1', 'SnowDepth_1']
@@ -1049,7 +1074,8 @@ class lmwg_plot_set3b(lmwg_plot_spec):
 
 class lmwg_plot_set5(lmwg_plot_spec):
    varlist = []
-   name = '5 - Tables of annual means'
+# Temporarily disable since we don't process tables yet.
+#   name = '5 - Tables of annual means'
    def __init__( self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None):
       """filetable1, filetable2 should be filetables for two datasets for now. Need to figure
       out obs data stuff for lmwg at some point
