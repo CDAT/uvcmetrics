@@ -475,7 +475,7 @@ class CF_filefmt(basic_filefmt):
        # print "will check variables",self._dfile.variables.keys()
        for var in self._dfile.variables.keys():
           standard_name = getattr( self._dfile[var], 'standard_name', None )
-          if standard_name!=None:
+#          if standard_name!=None:
              #print "  ",var," has standard name",standard_name
           #if standard_name in\
           #       self._all_interesting_standard_names:
