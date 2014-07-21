@@ -179,8 +179,8 @@ class basic_filetable(basic_id):
            dfile = cdms2.open( fileid )
         except cdms2.error.CDMSError as e:
            # probably "Cannot open file", but whatever the problem is, don't bother with it.
-           print "Couldn't add file",filep
-           print "This might just be an unsupported file type"
+           #print "Couldn't add file",filep
+           #print "This might just be an unsupported file type"
            return
         filesupp = get_datafile_filefmt( dfile, options )
         vars = filesupp.interesting_variables()
@@ -475,8 +475,8 @@ class CF_filefmt(basic_filefmt):
        # print "will check variables",self._dfile.variables.keys()
        for var in self._dfile.variables.keys():
           standard_name = getattr( self._dfile[var], 'standard_name', None )
-          if standard_name!=None:
-             print "  ",var," has standard name",standard_name
+#          if standard_name!=None:
+             #print "  ",var," has standard name",standard_name
           #if standard_name in\
           #       self._all_interesting_standard_names:
           #   iv.append(standard_name)

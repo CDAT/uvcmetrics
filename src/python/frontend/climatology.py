@@ -90,7 +90,6 @@ def compute_and_write_climatologies( varkeys, reduced_variables, season, case=''
     # Probably this loop consumes most of the running time.  It's what has to read in all the data.
     for key in varkeys:
         if key in reduced_variables:
-            print 'reducing ', key
             varvals[key] = reduced_variables[key].reduce()
 
     for key in varkeys:
@@ -126,7 +125,6 @@ def compute_and_write_climatologies( varkeys, reduced_variables, season, case=''
 
 def test_driver(opts):
     """ Test driver for setting up data for plots"""
-    print opts._opts
     # This script should just generate climos 
     opts._opts['plots'] = False
     datafiles1 = dirtree_datafiles(opts, pathid = 0)
@@ -146,7 +144,6 @@ def test_driver(opts):
     #cseasons = ['JAN']
     case = ''
 
-    print cseasons
     for season in cseasons:
         print 'Processing ', season
 
@@ -169,13 +166,11 @@ def test_driver(opts):
         varkeys = reduced_variables1.keys()
         #varkeys = varkeys[0:2]  # quick version for testing
 
-        print 'writing reduced variables'
         casename = ''
         if opts._opts['dsnames'] != []:
            casename = opts._opts['dsnames'][0]
            print 'Using ', casename,' as dataset name'
         rvs,case = compute_and_write_climatologies( varkeys, reduced_variables1, season, casename)
-        print 'done writing reduced vars '
 
         # Repeat for var**2.  Later I'll change this to (var-climo(var))**2/(N-1)
         # using the (still-in-memory) data in the dict reduced_variables.

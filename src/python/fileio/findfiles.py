@@ -235,7 +235,7 @@ class dirtree_datafiles( basic_datafiles ):
 
     def _getdatafiles( self, root, filt ):
         """returns all data files under a single root directory"""
-        print "jfp getting datafiles from ",root," with filter",filt
+        #print "jfp getting datafiles from ",root," with filter",filt
         if os.path.isfile(root):
             self.files += [root]
         elif os.path.isdir(root):

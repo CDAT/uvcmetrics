@@ -309,7 +309,7 @@ class lmwg_plot_set1(lmwg_plot_spec):
                vid=varid+'_1', inputs=in1, func=myfunc)
 
             if filetable2 != None: ### Assume ft2 is 2nd model
-               print 'This is assuming 2nd dataset is also model output'
+               #print 'This is assuming 2nd dataset is also model output'
                for v in red_vars:
                   self.reduced_variables[v+'_2'] = reduced_variable(
                      variableid = v, filetable=filetable2, reduced_var_id = v+'_2',
@@ -375,7 +375,7 @@ class lmwg_plot_set1(lmwg_plot_spec):
 
    def _results(self,newgrid=0):
       results = plot_spec._results(self,newgrid)
-      print 'results: ', results
+      #print 'results: ', results
       if results is None: return None
       return self.plotspec_values[self.plotall_id]
          
@@ -540,13 +540,13 @@ class lmwg_plot_set2(lmwg_plot_spec):
             self.composite_plotspecs[self.plotall_id].append(varid+'_3')
 
       if varid == 'VBSA' or varid == 'NBSA' or varid == 'VWSA' or varid == 'NWSA' or varid == 'ASA':
-         self.reduced_variables[varid+'_1'] = albedos_redvar(filetable1, 'SEASONAL', self.abledos[varid], season=self.season)
+         self.reduced_variables[varid+'_1'] = albedos_redvar(filetable1, 'SEASONAL', self.albedos[varid], season=self.season)
          if filetable2 != None:
             self.reduced_variables[varid+'_2'] = reduced_variable(
                variableid = varid, filetable=filetable2, reduced_var_id = varid+'_2',
                reduction_function=(lambda x, vid: reduce2latlon_seasonal(x, self.season, vid)))
 # For comparison with a dataset instead of obs, use this.
-#            self.reduced_variables[varid+'_2'] = albedos_redvar(filetable2, 'SEASONAL', self.abledos[varid], season=self.season)
+#            self.reduced_variables[varid+'_2'] = albedos_redvar(filetable2, 'SEASONAL', self.albedos[varid], season=self.season)
 
       # These 3 only exist as model vs model (no model vs obs) comparisons, so ft2 is not special cased
       if varid == 'RNET':
@@ -688,7 +688,6 @@ class lmwg_plot_set3(lmwg_plot_spec):
    def plan_computation(self, filetable1, filetable2, varid, seasonid, region, aux):
       # This is not scalable, but apparently is the way to do things. Fortunately, we only have 9 variables to deal with
       if 'Albedo' in varid:
-         print 'Albedo'
          self.composite_plotspecs['Albedo_vs_Obs'] = []
 
          for v in self.albedos.keys():
@@ -703,7 +702,6 @@ class lmwg_plot_set3(lmwg_plot_spec):
             self.composite_plotspecs['Albedo_vs_Obs'].append(v)
 
       if 'Moist' in varid:
-         print 'Energy/Moisture'
          red_varlist = ['QVEGE', 'QVEGT', 'QSOIL', 'RAIN', 'SNOW']
          for v in red_varlist:
             self.reduced_variables[v+'_1'] = reduced_variable(
@@ -730,7 +728,6 @@ class lmwg_plot_set3(lmwg_plot_spec):
          }
 
       if 'Radiative' in varid:
-         print 'Radiative Fluxes'
          self.composite_plotspecs['Radiative_Fluxes'] = []
 
          red_varlist = ['FSDS', 'FSA', 'FLDS', 'FIRE', 'FIRA']
@@ -763,7 +760,6 @@ class lmwg_plot_set3(lmwg_plot_spec):
 
 
       if 'Turbulent' in varid:
-         print 'Turbulent fluxes'
          self.composite_plotspecs['Turbulent_Fluxes'] = []
 
          red_varlist = ['FSH', 'FCTR', 'FCEV', 'FGEV', 'FGR', 'BTRAN', 'TLAI']
@@ -818,7 +814,6 @@ class lmwg_plot_set3(lmwg_plot_spec):
          self.composite_plotspecs['Turbulent_Fluxes'].append('NetRadiation_1')
 
       if 'Precip' in varid:
-         print 'Total Precip'
          red_varlist = ['SNOWDP', 'TSA', 'SNOW', 'RAIN', 'QOVER', 'QDRAI', 'QRGWL']
          for v in red_varlist:
             self.reduced_variables[v+'_1'] = reduced_variable(
@@ -832,7 +827,28 @@ class lmwg_plot_set3(lmwg_plot_spec):
             'TOTRUNOFF_1': derived_var(
             vid='TOTRUNOFF_1', inputs=['QOVER_1', 'QDRAI_1', 'QRGWL_1'], func=sum3)
          }
-         
+         if filetable2 != None:
+            if 'PREC' in filetable2.list_variables():
+               self.reduced_variables['PREC_2'] = reduced_variable(
+                  varialeid = 'PREC', filetable=filetable2, reduced_var_id='PREC_2',
+                  reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid)))
+            if 'PRECIP_LAND' in filetable2.list_variables():
+               self.reduced_variables['PREC_2'] = reduced_variable(
+                  varialeid = 'PRECIP_LAND', filetable=filetable2, reduced_var_id='PREC_2',
+                  reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid)))
+            if 'RUNOFF' in filetable2.list_variables():
+               self.reduced_variables['TOTRUNOFF_2'] = reduced_variable(
+                  varialeid = 'RUNOFF', filetable=filetable2, reduced_var_id='TOTRUNOFF_2',
+                  reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid)))
+            if 'SNOWDP' in filetable2.list_varialbes():
+               self.reduced_variables['SNOWDP_2'] = reduced_variable(
+                  variableid = 'SNOWDP', filetable=filetable2, reduced_var_id='SNOWDP_2',
+                  reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid)))
+            if 'TSA' in filetable2.list_variables():
+               self.reduced_variables['TSA_2'] = reduced_variable(
+                  variableid = 'TSA', filetable=filetable2, reduced_var_id='TSA_2',
+                  reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid)))
+
 
          # Now, define the individual plots.
          self.single_plotspecs = {
@@ -857,6 +873,10 @@ class lmwg_plot_set3(lmwg_plot_spec):
                #z3vars = obs2
                plottype = self.plottype)
          }
+         if filetable2 != None:
+            self.single_plotspecs['2mAir_1'].z2vars = ['TSA_2']
+            self.single_plotspecs['2mAir_1'].z2func = (lambda z:z)
+
          self.composite_plotspecs={
             'Total_Precipitation':
                ['2mAir_1', 'Prec_1', 'Runoff_1', 'SnowDepth_1']
@@ -864,19 +884,15 @@ class lmwg_plot_set3(lmwg_plot_spec):
 
       if 'Carbon' in varid or 'Fire' in varid or 'Hydrology' in varid or 'Snow' in varid:
          if 'Carbon' in varid:
-            print 'Carbon/Nitrogen Fluxes'
             red_varlist = ['NEE', 'GPP', 'NPP', 'AR', 'HR', 'ER', 'SUPPLEMENT_TO_SMINN', 'SMINN_LEACHED']
             pspec_name = 'Carbon_Nitrogen_Fluxes'
          if 'Fire' in varid:
-            print 'Fire Fluxes'
             red_varlist = ['COL_FIRE_CLOSS', 'COL_FIRE_NLOSS', 'PFT_FIRE_CLOSS', 'PFT_FIRE_NLOSS', 'FIRESEASONL', 'ANN_FAREA_BURNED', 'MEAN_FIRE_PROB']
             pspec_name = 'Fire_Fluxes'
          if 'Hydrology' in varid:
-            print 'Hydrology'
             red_varlist = ['WA', 'WT', 'ZWT', 'QCHARGE','FCOV']
             pspec_name = 'Hydrology'
          if 'Snow' in varid:
-            print 'Snow vs Obs'
             red_varlist = ['SNOWDP', 'FSNO', 'H2OSNO']
             pspec_name = 'Snow_vs_Obs'
 
@@ -1058,7 +1074,8 @@ class lmwg_plot_set3b(lmwg_plot_spec):
 
 class lmwg_plot_set5(lmwg_plot_spec):
    varlist = []
-   name = '5 - Tables of annual means'
+# Temporarily disable since we don't process tables yet.
+#   name = '5 - Tables of annual means'
    def __init__( self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None):
       """filetable1, filetable2 should be filetables for two datasets for now. Need to figure
       out obs data stuff for lmwg at some point
@@ -1188,27 +1205,24 @@ class lmwg_plot_set5(lmwg_plot_spec):
       self.computation_planned = True
 
    def _results(self,newgrid=0):
-      print 'red var keys:', self.reduced_variables.keys()
+      #print 'red var keys:', self.reduced_variables.keys()
       for v in self.reduced_variables.keys():
          value = self.reduced_variables[v].reduce(None)
          self.variable_values[v] = value
       postponed = []
-      print 'derived var keys:', self.derived_variables.keys()
+      #print 'derived var keys:', self.derived_variables.keys()
       for v in self.derived_variables.keys():
          value = self.derived_variables[v].derive(self.variable_values)
          if value is None:
-            print 'postponing ', v
+            #print 'postponing ', v
             postponed.append(v)
          else:
             self.variable_values[v] = value
       for v in postponed:
-         print 'Working on postponed var', v
+         #print 'Working on postponed var', v
          value = self.derived_variables[v].derive(self.variable_values)
          self.variable_values[v] = value
       varvals = self.variable_values
-      print 'varvals:'
-      print varvals
-      print type(varvals)
       
 
 
@@ -1278,7 +1292,6 @@ class lmwg_plot_set6(lmwg_plot_spec):
             self.composite_plotspecs[pname].append(vn)
          
       if 'TotalSoil' in varid:
-         print 'TotalSoil Ice/H2O'
          self.composite_plotspecs['TotalSoilIce_TotalSoilH2O'] = []
          self.reduced_variables['TOTAL_SOIL_ICE_1'] = reduced_variable(
             variableid = 'SOILICE', filetable=filetable1, reduced_var_id='TOTAL_SOIL_ICE_1',
@@ -1298,7 +1311,6 @@ class lmwg_plot_set6(lmwg_plot_spec):
          self.composite_plotspecs['TotalSoilIce_TotalSoilH2O'].append('TOTAL_SOIL_ICE_1')
 
       if 'Turbulent' in varid:
-         print 'Turbulent Fluxes'
          self.composite_plotspecs['Turbuluent_Fluxes'] = []
          red_varlist = ['FSH', 'FCTR', 'FCEV', 'FGEV', 'FGR', 'BTRAN', 'TLAI']
          for v in red_varlist:
@@ -1352,7 +1364,6 @@ class lmwg_plot_set6(lmwg_plot_spec):
 
 
       if 'Precip' in varid:
-         print 'Total precipitation'
          self.composite_plotspecs['Total_Precipitation'] = []
          red_varlist=['SNOWDP', 'TSA', 'RAIN', 'SNOW', 'QOVER', 'QDRAI', 'QRGWL']
          plots = ['TSA_1', 'PREC_1', 'TOTRUNOFF_1', 'SNOWDP_1']
@@ -1373,7 +1384,6 @@ class lmwg_plot_set6(lmwg_plot_spec):
                plottype = self.plottype)
             self.composite_plotspecs['Total_Precipitation'].append(p)
       if 'Radiative' in varid:
-         print 'Radiative Fluxes'
          self.composite_plotspecs['Radiative_Fluxes'] = []
          red_varlist = ['FSDS', 'FSA', 'FLDS', 'FIRE', 'FIRA']
          for v in red_varlist:
@@ -1405,19 +1415,15 @@ class lmwg_plot_set6(lmwg_plot_spec):
          
       if 'Carbon' in varid or 'Fire' in varid or 'Hydrology' in varid or 'TotalSnow' in varid:
          if 'TotalSnow' in varid:
-            print 'TotalSnow H2O/Ice'
             red_varlist = ['SOILICE', 'SOILLIQ']
             pspec_name = 'TotalSnowH2O_TotalSnowIce'
          if 'Carbon' in varid:
-            print 'Carbon/Nitrogen Fluxes'
             red_varlist = ['NEE', 'GPP', 'NPP', 'AR', 'HR', 'ER', 'SUPPLEMENT_TO_SMINN', 'SMINN_LEACHED']
             pspec_name = 'Carbon_Nitrogen_Fluxes'
          if 'Fire' in varid:
-            print 'Fire Fluxes'
             red_varlist = ['COL_FIRE_CLOSS', 'COL_FIRE_NLOSS', 'PFT_FIRE_CLOSS', 'PFT_FIRE_NLOSS', 'FIRESEASONL', 'ANN_FAREA_BURNED', 'MEAN_FIRE_PROB']
             pspec_name = 'Fire_Fluxes'
          if 'Hydrology' in varid:
-            print 'Hydrology'
             red_varlist = ['WA', 'WT', 'ZWT', 'QCHARGE','FCOV']
             pspec_name = 'Hydrology'
 

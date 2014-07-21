@@ -410,8 +410,6 @@ def reduce2levlat_seasonal( mv, seasons=seasonsyr, vid=None ):
 
 def reduce2latlon( mv, vid=None ):
     """as reduce2lat, but averaging reduces coordinates to (lat,lon)"""
-    #print 'IN REDUCE2LATLON mv.id =', mv.id
-    #print 'traceback to get here: ', traceback.print_stack()
     if vid==None:   # Note that the averager function returns a variable with meaningless id.
         vid = 'reduced_'+mv.id
     axes = allAxes( mv )
@@ -498,7 +496,6 @@ def reduce2lat_seasonal( mv, seasons=seasonsyr, vid=None ):
 
 # This could possibly be moved to lmwg, but it is not specific to land.
 def reduceAnnTrendRegionSumLevels(mv, region, slevel, elevel, vid=None):
-   print 'level range passed in:', slevel, ' to ', elevel
    timeax = timeAxis(mv)
    if timeax is not None and timeax.getBounds() == None:
       timeax._bounds_ = timeax.genGenericBounds()
@@ -518,7 +515,7 @@ def reduceAnnTrendRegionSumLevels(mv, region, slevel, elevel, vid=None):
 
    if levax == mvtrend.getAxisList()[0]:
       mvvar = cdms2.createVariable(mvtrend[slevel:elevel+1,...], copy=1) # ig:ig+1 is a bug workaround. see select_lev() 
-      print 'THIS HAS NOT BEEN TESTED FOR AXIS=0'
+      #print 'THIS HAS NOT BEEN TESTED FOR AXIS=0'
       mvsum = MV2.sum(mvvar[slevel:elevel+1], axis=0)  
    elif levax == mvtrend.getAxisList()[1]:
       mvvar = cdms2.createVariable(mvtrend[:,slevel:elevel+1,...], copy=1)
@@ -530,7 +527,7 @@ def reduceAnnTrendRegionSumLevels(mv, region, slevel, elevel, vid=None):
    mvsum.id = vid
    if hasattr(mv, 'units'):
        mvsum.units = mv.units # probably needs some help
-   print 'Returning mvvar: ', mvsum
+   #print 'Returning mvvar: ', mvsum
    return mvsum
 
 def reduceAnnTrendRegionLevel(mv, region, level, vid=None):
@@ -566,11 +563,11 @@ def reduceAnnTrendRegionLevel(mv, region, level, vid=None):
    mvvar.id = vid
    if hasattr(mv, 'units'):
        mvvar.units = mv.units # probably needs some help
-   print 'Returning mvvar: ', mvvar
+   #print 'Returning mvvar: ', mvvar
    return mvvar
 
 def reduceRegion(mv, r, vid=None):
-   print 'IN REDUCE REGION, region: ', defines.all_regions[r]
+   #print 'IN REDUCE REGION, region: ', defines.all_regions[r]
    mvsub = mv(latitude=(r1, r2), longitude=(r3, r4))
    rv = cdutil.averager(mvsub, axis='xy')
    return rv
@@ -628,13 +625,13 @@ def reduceAnnTrendRegion(mv, region, vid=None):
    else:
       mvann = mv
 
-   print 'Calculating land averages...'
+   #print 'Calculating land averages...'
    mvtrend = cdutil.averager(mvann, axis='xy')
    mvtrend.id = vid
    if hasattr(mv, 'units'):
        mvtrend.units = mv.units # probably needs some help
-   print 'Returning mvtrend: ', mvtrend
-   print 'shape: ', mvtrend.shape
+   #print 'Returning mvtrend: ', mvtrend
+   #print 'shape: ', mvtrend.shape
    return mvtrend
 
 # Used for lmwg set 3
@@ -652,14 +649,14 @@ def reduceMonthlyRegion(mv, region, vid=None):
       mvtrend = mv
    mvtrend.id = vid
    if hasattr(mv, 'units'): mvtrend.units = mv.units # probably needs some help
-   print 'reduceMonthlyRegion - Returning shape', mvtrend.shape
+   #print 'reduceMonthlyRegion - Returning shape', mvtrend.shape
    return mvtrend
 
 
 def reduceMonthlyTrendRegion(mv, region, vid=None):
 # it would be nice if it was easy to tell if these climos were already done
 # but annualcycle is pretty fast.
-   print 'IN REDUCEMONTHLYTRENDREGION, vid=', vid, 'mv.id=', mv.id
+   #print 'IN REDUCEMONTHLYTRENDREGION, vid=', vid, 'mv.id=', mv.id
    vals = []
    if vid == None:
       vid = 'reduced_'+mv.id
@@ -677,7 +674,7 @@ def reduceMonthlyTrendRegion(mv, region, vid=None):
 
    mvvals.id = vid
    if hasattr(mv, 'units'): mvvals.units = mv.units # probably needs some help
-   print 'reduceMonthlyTrendRegion - Returning ', mvvals
+   #print 'reduceMonthlyTrendRegion - Returning ', mvvals
    return mvvals
 
 # Make sure no one is using this. It should be deleted.
@@ -692,11 +689,11 @@ def reduceAnnTrend(mv, vid=None):
    if timeax is not None and timeax.getBounds()==None:
       timeax._bounds_ = timeax.genGenericBounds()
    if timeax is not None:
-       print 'Calculating seasonal climatology...'
+       #print 'Calculating seasonal climatology...'
        mvann = cdutil.times.YEAR(mv)
    else:
        mvann = mv
-   print 'Calculating land averages...'
+   #print 'Calculating land averages...'
    mvtrend = cdutil.averager(mvann, axis='xy')
    mvtrend.id = vid
    if hasattr(mv, 'units'):
@@ -717,13 +714,9 @@ def reduce2latlon_seasonal_level( mv, season, level, vid=None):
       return mv
 
    levstr = levax.id
-   print levax
-   print levstr
    mvsub = mv(levstr=slice(level, level+1))
-   print mvsub.shape
 
    mvseas = season.climatology(mvsub)
-   print mvseas.shape
 
    if mvseas is None:
       print "WARNING- cannot compute climatology for",mv.id,seasons.seasons
@@ -735,7 +728,6 @@ def reduce2latlon_seasonal_level( mv, season, level, vid=None):
       mvseas.units = mv.units
    delete_singleton_axis(mvseas, vid='time')
    delete_singleton_axis(mvseas, vid=levax)
-   print mvseas.shape
    return mvseas
 
 
@@ -1032,13 +1024,13 @@ def evapfrac(mv1, mv2, mv3, mv4): #, flags, season, region):
    print 'THIS SHOULD NOT BE CALLED -- in evapfrac in computation/reductions.py'
    quit()
    # Basically ripped from the NCL code
-   print '******* IN EVAPFRAC ********'
-   print mv1.id
-   print mv2.id
-   print mv3.id
-   print mv4.id
-   print mv4
-   print type(mv4)
+   #print '******* IN EVAPFRAC ********'
+   #print mv1.id
+   #print mv2.id
+   #print mv3.id
+   #print mv4.id
+   #print mv4
+   #print type(mv4)
 #   print flags
 #   print season
 #   print region
@@ -1091,7 +1083,8 @@ def evapfrac(mv1, mv2, mv3, mv4): #, flags, season, region):
       avmv.units = mv.units
       return avmv
    elif(flags == 'seasonal'):
-      print 'Seasonal'
+       #print 'Seasonal'
+       pass
 
    else:
       return evapfrac
@@ -1610,7 +1603,7 @@ def run_cdscan( fam, famfiles, cache_path=None ):
                 print "WARNING, cannot find time units; will try to continue",famfiles[0]
                 cdscan_line = 'cdscan -q '+'-x '+xml_name+' -e time.units="'+time_units+'" '+\
                     ' '.join(famfiles)
-    print "cdscan_line=",cdscan_line
+    #print "cdscan_line=",cdscan_line
     proc = subprocess.Popen([cdscan_line],shell=True)
     proc_status = proc.wait()
     if proc_status!=0: 
@@ -1757,10 +1750,6 @@ class reduced_variable(ftrow,basic_id):
             vid = self._strid
 
         filename = self.get_variable_file( self.variableid )
-#        print 'FILENAME->', filename
-#        print 'self.varid: ', self.variableid
-#        print 'self._duvs: ', self._duvs
-#        print 'self._rvs:', self._rvs
         if filename is None:
             if self.variableid not in self._duvs:
                 # this belongs in a log file:
