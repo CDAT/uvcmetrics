@@ -232,7 +232,8 @@ class basic_filetable(basic_id):
        The variable is a string, containing as a CF standard name, or equivalent.
        For ranges, None means you want all values."""
        if variable not in self._varindex.keys():
-          print 'couldnt find variable',variable,' in varindex keys - ', self._varindex.keys(),' of',self
+          print 'couldnt find variable',variable,' in varindex keys. Possibly part of a derived variable'
+#          print 'couldnt find variable',variable,' in varindex keys - ', self._varindex.keys(),' of',self
           return None
        candidates = self._varindex[ variable ]
        found = []
