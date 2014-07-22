@@ -693,26 +693,67 @@ class lmwg_plot_set3(lmwg_plot_spec):
          for v in self.albedos.keys():
             self.reduced_variables[v+'_1'] = albedos_redvar(filetable1, 'TREND', self.albedos[v], region=region, flag='MONTHLY')
 
-         vlist = ['ASA_1', 'VBSA_1', 'NBSA_1', 'VWSA_1', 'NWSA_1']
-         for v in vlist:
-            self.single_plotspecs[v] = plotspec(vid=v, zvars=[v], zfunc=(lambda z:z),
-               #z2vars = obs1
-               #z3vars = obs2
-               plottype = self.plottype)
-            self.composite_plotspecs['Albedo_vs_Obs'].append(v)
+         vlist = ['ASA', 'VBSA', 'NBSA', 'VWSA', 'NWSA']
+#         vlist = ['ASA', 'VBSA', 'NBSA', 'VWSA', 'NWSA']
+         # This assumes FT2 is obs. Needs some way to determine if that is true
+         # TODO: ASA is much more complicated than the others.
+         if filetable2 != None:
+            for v in vlist:
+               if v == 'ASA':
+                  pass
+               self.reduced_variables[v+'_2'] = reduced_variable(
+                  variableid = v, filetable=filetable2, reduced_var_id=v+'_2',
+                  reduction_function=(lambda x, vid: reduceRegion(x, region, vid=vid)))
 
+         for v in vlist:
+            self.single_plotspecs[v+'_1'] = plotspec(vid=v+'_1', zvars=[v+'_1'], zfunc=(lambda z:z),
+               plottype = self.plottype)
+            if filetable2 != None:
+               if v == 'ASA':
+                  pass
+               self.single_plotspecs[v+'_1'].z2vars=[v+'_2']
+               self.single_plotspecs[v+'_1'].z2func=(lambda z:z)
+
+            self.composite_plotspecs['Albedo_vs_Obs'].append(v+'_1')
+
+         ### TODO Figure out how to generate Obs ASA
+#         if filetable2 == None:
+#            self.single_plotspecs['ASA_1'] = plotspec(vid='ASA_1', zvars=['ASA_1'], zfunc=(lambda z:z),
+#               plottype = self.plottype)
+#            self.composite_plotspecs['Albedo_vs_Obs'].append('ASA_1')
+         if filetable2 != None:
+            print "NOTE: TODO - NEED TO CALCULATE ASA FROM OBS DATA"
+
+      # No obs, so second DS is models
+      # Plots are RNET and PREC and ET? on same graph
       if 'Moist' in varid:
          red_varlist = ['QVEGE', 'QVEGT', 'QSOIL', 'RAIN', 'SNOW']
          for v in red_varlist:
             self.reduced_variables[v+'_1'] = reduced_variable(
                variableid = v, filetable=filetable1, reduced_var_id=v+'_1',
                reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid)))
-         self.reduced_variables['RNET_1'] = rnet_trend(filetable1, region, 'MONTHLY')
+            if filetable2 != None:
+               self.reduced_variables[v+'_2'] = reduced_variable(
+                  variableid = v, filetable=filetable2, reduced_var_id=v+'_2',
+                  reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid)))
+         self.reduced_variables['RNET_1'] = rnet_redvar(filetable1, 'TREND', region=region, flag='MONTHLY')
          self.derived_variables['ET_1'] = derived_var(
             vid='ET_1', inputs=['QVEGE_1', 'QVEGT_1', 'QSOIL_1'], func=sum3)
          self.derived_variables['PREC_1'] = derived_var(
             vid='PREC_1', inputs=['RAIN_1', 'SNOW_1'], func=aplusb)
+         if filetable2 != None:
+            self.reduced_variables['RNET_2'] = rnet_redvar(filetable2, 'TREND', region=region, flag='MONTHLY')
+            self.derived_variables['ET_2'] = derived_var(
+               vid='ET_2', inputs=['QVEGE_2', 'QVEGT_2', 'QSOIL_2'], func=sum3)
+            self.derived_variables['PREC_2'] = derived_var(
+               vid='PREC_2', inputs=['RAIN_2', 'SNOW_2'], func=aplusb)
 
+# The NCAR plots do something like this; we don't support z3vars yet though, so making it separate plots
+#         self.single_plotspecs['DS_1'] = plotspec(vid='DS_1',
+#            zvars=['ET_1'], zfunc=(lambda z:z),
+#            z2vars=['PREC_1'], z2func=(lambda z:z),
+#            z3vars=['RNET_1'], z3func=(lambda z:z),
+#            plottype = self.plottype)
          self.single_plotspecs['ET_1'] = plotspec(vid='ET_1',
             zvars=['ET_1'], zfunc=(lambda z:z),
             plottype = self.plottype)
@@ -723,10 +764,26 @@ class lmwg_plot_set3(lmwg_plot_spec):
             zvars=['RNET_1'], zfunc=(lambda z:z),
             plottype = self.plottype)
 
+         if filetable2 != None:
+            self.single_plotspecs['ET_2'] = plotspec(vid='ET_2',
+               zvars=['ET_2'], zfunc=(lambda z:z),
+               plottype = self.plottype)
+            self.single_plotspecs['PREC_2'] = plotspec(vid='PREC_2',
+               zvars=['PREC_2'], zfunc=(lambda z:z),
+               plottype = self.plottype)
+            self.single_plotspecs['RNET_2'] = plotspec(vid='RNET_2',
+               zvars=['RNET_2'], zfunc=(lambda z:z),
+               plottype = self.plottype)
          self.composite_plotspecs = {
+#            'Energy_Moisture' : ['DS_1']
             'Energy_Moisture' : ['ET_1', 'RNET_1', 'PREC_1']
          }
+         if filetable2 != None:
+            self.composite_plotspecs['Energy_Moisture'].append('ET_2')
+            self.composite_plotspecs['Energy_Moisture'].append('PREC_2')
+            self.composite_plotspecs['Energy_Moisture'].append('RNET_2')
 
+      # No obs for this, so FT2 should be a 2nd model
       if 'Radiative' in varid:
          self.composite_plotspecs['Radiative_Fluxes'] = []
 
@@ -735,30 +792,40 @@ class lmwg_plot_set3(lmwg_plot_spec):
             self.reduced_variables[v+'_1'] = reduced_variable(
                variableid = v, filetable=filetable1, reduced_var_id=v+'_1',
                reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid)))
-            self.single_plotspecs[v+'_1'] = plotspec(vid=v+'_1', 
+            self.single_plotspecs[v] = plotspec(vid=v+'_1', 
                zvars = [v+'_1'], zfunc=(lambda z:z),
-               #z2vars = obs1
-               #z3vars = obs2
                plottype = self.plottype)
-            self.composite_plotspecs['Radiative_Fluxes'].append(v+'_1')
+            if filetable2 != None:
+               self.reduced_variables[v+'_2'] = reduced_variable(
+                  variableid = v, filetable=filetable2, reduced_var_id=v+'_2',
+                  reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid)))
+               self.single_plotspecs[v].z2vars = [v+'_2']
+               self.single_plotspecs[v].z2func = (lambda z:z)
+               
+            self.composite_plotspecs['Radiative_Fluxes'].append(v)
 
          self.reduced_variables['ASA_1'] =  albedos_redvar(filetable1, 'TREND', ['FSR', 'FSDS'], region=region, flag='MONTHLY')
          self.reduced_variables['RNET_1' ] = rnet_redvar(filetable1, 'TREND', region=region, flag='MONTHLY')
+         if filetable2 != None:
+            self.reduced_variables['ASA_2'] =  albedos_redvar(filetable2, 'TREND', ['FSR', 'FSDS'], region=region, flag='MONTHLY')
+            self.reduced_variables['RNET_2' ] = rnet_redvar(filetable2, 'TREND', region=region, flag='MONTHLY')
 
-         self.single_plotspecs['Albedo_1'] = plotspec(vid='ASA_1',
+         self.single_plotspecs['Albedo'] = plotspec(vid='ASA_1',
             zvars = ['ASA_1'], zfunc=(lambda z:z),
-            #z2vars = obs1,
-            #z3vars = obs2,
             plottype = self.plottype)
-         self.single_plotspecs['NetRadiation_1'] = plotspec(vid='RNET_1',
+         self.single_plotspecs['NetRadiation'] = plotspec(vid='RNET_1',
             zvars = ['RNET_1'], zfunc=(lambda z:z),
-            #z2vars = obs1,
-            #z3vars = obs2,
             plottype = self.plottype)
-         self.composite_plotspecs['Radiative_Fluxes'].append('Albedo_1')
-         self.composite_plotspecs['Radiative_Fluxes'].append('NetRadiation_1')
+         if filetable2 != None:
+            self.single_plotspecs['Albedo'].z2vars = ['ASA_2']
+            self.single_plotspecs['Albedo'].z2func = (lambda z:z)
+            self.single_plotspecs['NetRadiation'].z2vars = ['RNET_2']
+            self.single_plotspecs['NetRadiation'].z2func = (lambda z:z)
 
+         self.composite_plotspecs['Radiative_Fluxes'].append('Albedo')
+         self.composite_plotspecs['Radiative_Fluxes'].append('NetRadiation')
 
+      # No obs for this, so FT2 should be a 2nd model
       if 'Turbulent' in varid:
          self.composite_plotspecs['Turbulent_Fluxes'] = []
 
@@ -767,53 +834,66 @@ class lmwg_plot_set3(lmwg_plot_spec):
             self.reduced_variables[v+'_1'] = reduced_variable(
                variableid = v, filetable=filetable1, reduced_var_id=v+'_1',
                reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid)))
-            self.single_plotspecs[v+'_1'] = plotspec(vid=v+'_1', 
+            if filetable2 != None:
+               self.reduced_variables[v+'_2'] = reduced_variable(
+                  variableid = v, filetable=filetable2, reduced_var_id=v+'_2',
+                  reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid)))
+            self.single_plotspecs[v] = plotspec(vid=v+'_1', 
                zvars = [v+'_1'], zfunc=(lambda z:z),
-               #z2vars = obs1
-               #z3vars = obs2
                plottype = self.plottype)
-            self.composite_plotspecs['Turbulent_Fluxes'].append(v+'_1')
+            if filetable2 != None:
+               self.single_plotspecs[v].z2vars = [v+'_2']
+               self.single_plotspecs[v].z2func = (lambda z:z)
+
+            self.composite_plotspecs['Turbulent_Fluxes'].append(v)
 
          sub_varlist = ['FCTR', 'FGEV', 'FCEV']
          for v in sub_varlist:
             self.reduced_variables[v+'_1'] = reduced_variable(
                variableid = v, filetable=filetable1, reduced_var_id=v+'_1',
                reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid)))
+            if filetable2 != None:
+               self.reduced_variables[v+'_2'] = reduced_variable(
+                  variableid = v, filetable=filetable2, reduced_var_id=v+'_2',
+                  reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid)))
          ### Can we do these with reduceMonthlyTrendRegion? Needs investigation
-         self.derived_variables = {
-            'LHEAT_1': derived_var(
+         self.derived_variables['LHEAT_1'] = derived_var(
                vid='LHEAT_1', inputs=['FCTR_1', 'FGEV_1', 'FCEV_1'], func=sum3)
-            }#,
-            # I believe these are sufficiently covered by the two reduced variable classes below.
-            #'EVAPFRAC_A': derived_var(
-            #   vid='EVAPFRAC_A', inputs=['FCTR', 'FCEV', 'FGEV', 'FSH'], func=evapfrac_special),
-            #'RNET_A': derived_var(
-            #   vid='RNET_A', inputs=['FSA', 'FIRA'], func=aminusb)
-            #}
-
          self.reduced_variables['EVAPFRAC_1'] = evapfrac_redvar(filetable1, 'TREND', region=region, flag='MONTHLY')
-         self.reduced_variables['RNET_1'] = rnet_trend(filetable1, region, 'MONTHLY')
+         self.reduced_variables['RNET_1'] = rnet_redvar(filetable1, 'TREND', region=region, flag='MONTHLY')
+         if filetable2 != None:
+            self.derived_variables['LHEAT_2'] = derived_var(
+               vid='LHEAT_2', inputs=['FCTR_2', 'FGEV_2', 'FCEV_2'], func=sum3)
+            self.reduced_variables['EVAPFRAC_2'] = evapfrac_redvar(filetable2, 'TREND', region=region, flag='MONTHLY')
+            self.reduced_variables['RNET_2'] = rnet_redvar(filetable2, 'TREND', region=region, flag='MONTHLY')
 
-         self.single_plotspecs['LatentHeat_1'] = plotspec(vid='LHEAT_1', 
+
+         self.single_plotspecs['LatentHeat'] = plotspec(vid='LHEAT_1', 
             zvars = ['LHEAT_1'], zfunc=(lambda z:z),
-            #z2vars=obs1,
-            #z3vars = obs2,
             plottype = self.plottype)
-         self.single_plotspecs['EvaporativeFraction_1'] = plotspec(vid='EVAPFRAC_1',
+         self.single_plotspecs['EvaporativeFraction'] = plotspec(vid='EVAPFRAC_1',
             zvars=['EVAPFRAC_1'], zfunc=(lambda z:z),
-            #z2vars=obs1,
-            #z3vars = obs2,
             plottype = self.plottype)
-         self.single_plotspecs['NetRadiation_1'] = plotspec(vid='RNET_1',
+         self.single_plotspecs['NetRadiation'] = plotspec(vid='RNET_1',
             zvars=['RNET_1'], zfunc=(lambda z:z),
-            #z2vars=obs1,
-            #z3vars = obs2,
             plottype = self.plottype)
-         self.composite_plotspecs['Turbulent_Fluxes'].append('EvaporativeFraction_1')
-         self.composite_plotspecs['Turbulent_Fluxes'].append('LatentHeat_1')
-         self.composite_plotspecs['Turbulent_Fluxes'].append('NetRadiation_1')
+         if filetable2 != None:
+            self.single_plotspecs['NetRadiation'].z2vars = ['RNET_2']
+            self.single_plotspecs['NetRadiation'].z2func = (lambda z:z)
+            self.single_plotspecs['LatentHeat'].z2vars = ['LHEAT_2']
+            self.single_plotspecs['LatentHeat'].z2func = (lambda z:z)
+            self.single_plotspecs['EvaporativeFraction'].z2vars = ['EVAPFRAC_2']
+            self.single_plotspecs['EvaporativeFraction'].z2func = (lambda z:z)
 
+         self.composite_plotspecs['Turbulent_Fluxes'].append('EvaporativeFraction')
+         self.composite_plotspecs['Turbulent_Fluxes'].append('LatentHeat')
+         self.composite_plotspecs['Turbulent_Fluxes'].append('NetRadiation')
+
+      ### TODO This requires 2 obs sets, so not supported entirely yet.
       if 'Precip' in varid:
+         print '********************************************************************************************'
+         print '** This requires 2 observation sets to recreate the NCAR plots. That is not supported yet **'
+         print '********************************************************************************************'
          red_varlist = ['SNOWDP', 'TSA', 'SNOW', 'RAIN', 'QOVER', 'QDRAI', 'QRGWL']
          for v in red_varlist:
             self.reduced_variables[v+'_1'] = reduced_variable(
@@ -881,8 +961,32 @@ class lmwg_plot_set3(lmwg_plot_spec):
             'Total_Precipitation':
                ['2mAir_1', 'Prec_1', 'Runoff_1', 'SnowDepth_1']
          }
+      if 'Snow' in varid:
+         print '********************************************************************************************'
+         print '** This requires 2 observation sets to recreate the NCAR plots. That is not supported yet **'
+         print '********************************************************************************************'
+         red_varlist = ['SNOWDP', 'FSNO', 'H2OSNO']
+         pspec_name = 'Snow_vs_Obs'
+         self.composite_plotspecs[pspec_name] = []
+         for v in red_varlist:
+            self.reduced_variables[v+'_1'] = reduced_variable(
+               variableid = v, filetable=filetable1, reduced_var_id=v+'_1',
+               reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid)))
+            self.single_plotspecs[v] = plotspec(vid=v+'_1', 
+               zvars = [v+'_1'], zfunc=(lambda z:z),
+               plottype = self.plottype)
 
-      if 'Carbon' in varid or 'Fire' in varid or 'Hydrology' in varid or 'Snow' in varid:
+            if filetable2 != None and v in filetable2.list_variables():
+               self.reduced_variables[v+'_2'] = reduced_variable(
+                  variableid = v, filetable=filetable2, reduced_var_id=v+'_2',
+                  reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid)))
+               self.single_plotspecs[v].z2vars = [v+'_2']
+               self.single_plotspecs[v].z2func = (lambda z:z)
+
+            self.composite_plotspecs[pspec_name].append(v)
+            
+      # No obs sets for these 3
+      if 'Carbon' in varid or 'Fire' in varid or 'Hydrology' in varid:
          if 'Carbon' in varid:
             red_varlist = ['NEE', 'GPP', 'NPP', 'AR', 'HR', 'ER', 'SUPPLEMENT_TO_SMINN', 'SMINN_LEACHED']
             pspec_name = 'Carbon_Nitrogen_Fluxes'
@@ -892,9 +996,6 @@ class lmwg_plot_set3(lmwg_plot_spec):
          if 'Hydrology' in varid:
             red_varlist = ['WA', 'WT', 'ZWT', 'QCHARGE','FCOV']
             pspec_name = 'Hydrology'
-         if 'Snow' in varid:
-            red_varlist = ['SNOWDP', 'FSNO', 'H2OSNO']
-            pspec_name = 'Snow_vs_Obs'
 
          self.composite_plotspecs[pspec_name] = []
 
@@ -902,16 +1003,18 @@ class lmwg_plot_set3(lmwg_plot_spec):
             self.reduced_variables[v+'_1'] = reduced_variable(
                variableid = v, filetable=filetable1, reduced_var_id=v+'_1',
                reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid)))
-            self.single_plotspecs[v+'_1'] = plotspec(vid=v+'_1', 
+            if filetable2 != None:
+               self.reduced_variables[v+'_2'] = reduced_variable(
+                  variableid = v, filetable=filetable2, reduced_var_id=v+'_2',
+                  reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid)))
+            self.single_plotspecs[v] = plotspec(vid=v+'_1', 
                zvars = [v+'_1'], zfunc=(lambda z:z),
-               #z2vars = obs1
-               #z3vars = obs2
                plottype = self.plottype)
-            self.composite_plotspecs[pspec_name].append(v+'_1')
+            if filetable2 != None:
+               self.single_plotspecs[v].z2vars = [v+'_2']
+               self.single_plotspecs[v].z2func = (lambda z:z)
 
-#         self.composite_plotspecs={
-#            pspec_name: [v+'_1' for v in red_varlist]
-#         }
+            self.composite_plotspecs[pspec_name].append(v)
 
 
       self.computation_planned = True
@@ -1341,7 +1444,7 @@ class lmwg_plot_set6(lmwg_plot_spec):
          #}
 
          self.reduced_variables['EVAPFRAC_1'] = evapfrac_redvar(filetable1, 'TREND', region=region, flag='ANN')
-         self.reduced_variables['RNET_1'] = rnet_trend(filetable1, region, 'ANN')
+         self.reduced_variables['RNET_1'] = rnet_redvar(filetable1, 'TREND', region=region, flag='ANN')
          self.single_plotspecs['LatentHeat_1'] = plotspec(vid='LHEAT_1',
             zvars = ['LHEAT_1'], zfunc=(lambda z:z),
             #z2vars=obs1,
@@ -1363,6 +1466,7 @@ class lmwg_plot_set6(lmwg_plot_spec):
          self.composite_plotspecs['Turbulent_Fluxes'].append('NetRadiation_1')
 
 
+      ### TODO This one requires multiple obs sets
       if 'Precip' in varid:
          self.composite_plotspecs['Total_Precipitation'] = []
          red_varlist=['SNOWDP', 'TSA', 'RAIN', 'SNOW', 'QOVER', 'QDRAI', 'QRGWL']
@@ -1383,6 +1487,7 @@ class lmwg_plot_set6(lmwg_plot_spec):
                #z2vars, #z3vars, 
                plottype = self.plottype)
             self.composite_plotspecs['Total_Precipitation'].append(p)
+
       if 'Radiative' in varid:
          self.composite_plotspecs['Radiative_Fluxes'] = []
          red_varlist = ['FSDS', 'FSA', 'FLDS', 'FIRE', 'FIRA']
@@ -1599,7 +1704,13 @@ class lmwg_plot_set6b(lmwg_plot_spec):
 ###############################################################################
 ###############################################################################
 class lmwg_plot_set7(lmwg_plot_spec):
+#   name = '7 - Line plots, tables, and maps of RTM river flow and discharge to oceans'
     pass
+
+class lmwg_plot_set9(lmwg_plot_spec):
+#   name = '9 - Contour plots and statistics for precipitation and temperature. Statistics include DJF, JJA, and ANN biases, and RMSE, correlation and standard deviation of the annual cycle relative to observations'
+   _derived_varnames = ['PREC', 'ASA']
+   pass
 
 ###############################################################################
 ###############################################################################
@@ -1610,6 +1721,4 @@ class lmwg_plot_set7(lmwg_plot_spec):
 class lmwg_plot_set4(lmwg_plot_spec):
     pass
 class lmwg_plot_set8(lmwg_plot_spec):
-    pass
-class lmwg_plot_set9(lmwg_plot_spec):
     pass

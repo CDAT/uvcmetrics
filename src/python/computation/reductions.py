@@ -652,12 +652,30 @@ def reduceMonthlyRegion(mv, region, vid=None):
    #print 'reduceMonthlyRegion - Returning shape', mvtrend.shape
    return mvtrend
 
+# Used to get just a spatial region average of a var, i.e. when climos are passed in
+def reduceRegion(mv, region, vid=None):
+   if vid == None:
+      vid = 'reduced_'+mv.id
+   timeax = timeAxis(mv)
+   if timeax is not None and timeax.getBounds() == None:
+      timeax._bounds_ = timeax.genGenericBounds()
+   if timeax is not None:
+      # first, spatially subset
+      mvsub = mv(latitude=(region[0], region[1]), longitude=(region[2], region[3]))
+
+   mvvals = cdutil.averager(mvsub, axis='xy')
+   mvvals.id = vid
+   if hasattr(mv, 'units'): mvvals.units = mv.units # probably needs some help
+   #print 'reduceMonthlyTrendRegion - Returning ', mvvals
+   return mvvals
+
+# Make sure no one is using this. It should be deleted.
+
 
 def reduceMonthlyTrendRegion(mv, region, vid=None):
 # it would be nice if it was easy to tell if these climos were already done
 # but annualcycle is pretty fast.
    #print 'IN REDUCEMONTHLYTRENDREGION, vid=', vid, 'mv.id=', mv.id
-   vals = []
    if vid == None:
       vid = 'reduced_'+mv.id
    timeax = timeAxis(mv)
