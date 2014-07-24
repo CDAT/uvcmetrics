@@ -85,8 +85,6 @@ def run_diagnostics_from_options( opts1 ):
     filt1 = None
     filt2 = None
 
-    print opts1['path']
-
     if type(opts1['path']) is str:
         path1 = opts1['path']
     if type(opts1['path']) is list and type(opts1['path'][0]) is str:
@@ -102,11 +100,8 @@ def run_diagnostics_from_options( opts1 ):
     #if len(opts1['new_filter'])>0:
     #    filt1 = opts1['new_filter'][0]
  
-    print "jfp path1=",path1,"filt1=",filt1
     filetable1 = path2filetable( opts1, path=path1, filter=filt1 )
 
-    print 'path2: ', path2
-    print 'opts1 path2: ', opts1['path2']
     if path2 is None:
         if type(opts1['path2']) is str:
             path2 = opts1['path2']
@@ -119,13 +114,11 @@ def run_diagnostics_from_options( opts1 ):
         #if len(opts1['new_filter'])>1:
         #    filt2 = opts1['new_filter'][1]
 
-    print "jfp path2=",path2,"filt2=",filt2
     if path2 is None:
       filetable2 = None
     else:
        filetable2 = path2filetable( opts1, path=path2, filter=filt2 )
 
-    print 'filetable2: ', filetable2
     run_diagnostics_from_filetables( opts1, filetable1, filetable2 )
 
 def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
@@ -134,7 +127,6 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
     an instance of Options."""
 
     if opts['plots'] == True:
-        print 'Initializing vcs for output plots'
         vcanvas = vcs.init()
     outpath = opts['output']
     if outpath is None:
@@ -153,7 +145,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
         seasons = opts.get( 'times', None )
     if seasons is None or seasons==[]:
         seasons = ['ANN']
-        print "Defaulting to season ANN. Please specify one of --seasons/--seasonally, --months/--monthly or --yearly otherwise"
+        print "Defaulting to season ANN. You can specify season with --seasons/--seasonally, --months/--monthly or --yearly otherwise"
     else:
         print "using seasons=",seasons
     if opts['varopts'] is None:
@@ -166,7 +158,6 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
 
         # Find which plotsets the user requested which this package offers:
         sm = pclass.list_diagnostic_sets()  # sm = plot set menu, a dict
-        print "jfp sm=",sm
         if opts['sets'] is None:
             keys = sm.keys()
             keys.sort()
@@ -185,19 +176,16 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
             rname = opts['regions'][0]
         for sname in plotsets:
             sclass = sm[sname]
-            print "jfp sclass.name=",sclass.name
             seasons = list( set(seasons) & set(pclass.list_seasons()) )
             for seasonid in seasons:
-                print "jfp seasonid=",seasonid
                 variables = pclass.list_variables( filetable1, filetable2, sname  )
-                print variables
                 if opts.get('vars',['ALL'])!=['ALL']:
                     variables = list( set(variables) & set(opts.get('vars',[])) )
                     if len(variables)==0 and len(opts.get('vars',[]))>0:
                         print "WARNING: Couldn't find any of the requested variables:",opts['vars']
                         print "among",variables
                 for varid in variables:
-                    print "variable",varid
+                    print "variable",varid,"season",seasonid
                     vard = pclass.all_variables( filetable1, filetable2, sname )
                     var = vard[varid]
 
