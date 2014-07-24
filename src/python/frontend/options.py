@@ -85,9 +85,9 @@ class Options():
       # defined (perhaps in defines.py) 
       # it would clean up a lot of code here, and in amwg/lmwg I think.
       im = ".".join(['metrics', 'packages', packageid, packageid])
-      if packageid == 'lmwg':
+      if packageid.lower() == 'lmwg':
          pclass = getattr(__import__(im, fromlist=['LMWG']), 'LMWG')()
-      elif packageid == 'amwg':
+      elif packageid.lower() == 'amwg':
          pclass = getattr(__import__(im, fromlist=['AMWG']), 'AMWG')()
       diags = pclass.list_diagnostic_sets()
       keys = diags.keys()
@@ -105,18 +105,24 @@ class Options():
       filetable = ft.basic_filetable(dtree, self)
 
       # this needs a filetable probably, or we just define the maximum list of variables somewhere
-      im = ".".join(['metrics', 'packages', package[0], package[0]])
-      if package[0] == 'lmwg':
+      im = ".".join(['metrics', 'packages', package[0].lower()])
+      if package[0].lower() == 'lmwg':
          pclass = getattr(__import__(im, fromlist=['LMWG']), 'LMWG')()
 #         vlist=1
-      elif package[0]=='amwg':
-         pclass = getattr(__import__(im, fromlist=['AMWG']), 'AMWG')()
+      elif package[0].lower()=='amwg':
+        # pclass = getattr(__import__(im, fromlist=['amwg']), 'amwg')()
+         import metrics.packages.amwg.amwg
+         pinstance = metrics.packages.amwg.amwg.AMWG()
+         pclass = None
 #         vlist=None
 
       vlist=None
       # assume we have a path provided
 
-      slist = pclass.list_diagnostic_sets()
+      if pclass:
+         slist = pclass.list_diagnostic_sets()
+      else:
+         slist = pinstance.list_diagnostic_sets()
       keys = slist.keys()
       keys.sort()
       pset_name = None
@@ -191,9 +197,9 @@ class Options():
 #      self._opts['vars'] = [myvars, 'Ocean_Heat']
       # this needs a filetable probably, or we just define the maximum list of variables somewhere
       im = ".".join(['metrics', 'packages', package[0], package[0]])
-      if package[0] == 'lmwg':
+      if package[0].lower() == 'lmwg':
          pclass = getattr(__import__(im, fromlist=['LMWG']), 'LMWG')()
-      elif package[0]=='amwg':
+      elif package[0].lower()=='amwg':
          pclass = getattr(__import__(im, fromlist=['AMWG']), 'AMWG')()
 
       sets = self._opts['sets']
@@ -246,9 +252,9 @@ class Options():
 
       # this needs a filetable probably, or we just define the maximum list of variables somewhere
       im = ".".join(['metrics', 'packages', package[0], package[0]])
-      if package[0] == 'lmwg':
+      if package[0].lower() == 'lmwg':
          pclass = getattr(__import__(im, fromlist=['LMWG']), 'LMWG')()
-      elif package[0]=='amwg':
+      elif package[0].lower()=='amwg':
          pclass = getattr(__import__(im, fromlist=['AMWG']), 'AMWG')()
 
       setname = self._opts['sets'][0]
