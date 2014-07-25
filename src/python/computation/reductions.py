@@ -18,6 +18,7 @@ from metrics.packages.amwg.derivations import press2alt
 from metrics.fileio.filetable import *
 #from climo_test import cdutil_climatology
 import metrics.frontend.defines as defines
+from genutil import *
 
 regridded_vars = {}  # experimental
 
@@ -493,6 +494,98 @@ def reduce2lat_seasonal( mv, seasons=seasonsyr, vid=None ):
     if hasattr(mv,'units'):
         avmv.units = mv.units
     return avmv
+
+# Calculate RMSE between mv1 and mv2. Regrid as appropriate
+def rmse_time(mv1, mv2):
+   mv1, mv2 = reconcile_units(mv1, mv2)
+   if hasattr(mv1, 'units') and hasattr(mv2, 'units') and mv1.units != mv2.units:
+      print 'WARNING - RMSE - variables have different units:', mv1.units, mv2.units
+   axes1 = mv1.getAxisList()
+   axes2 = mv2.getAxisList()
+   if axes1 is None or axes2 is None: 
+      return None
+   mv1new = mv1
+   mv2new = mv2
+   lat1, idx1 = latAxis2 (mv1)
+   lat2, idx2 = latAxis2 (mv2)
+   # assumes we want to regrid on lat/lon.
+   # determine which variable has the coarsest grid
+   if len(axes1[idx1]) < len(axes2[idx2]): 
+      # mv1 is more coarse, regrid to it
+      newgrid = mv1.getGrid()
+      mv2new = mv2.regrid(newgrid)
+   if len(axes1[idx1]) > len(axes2[idx2]): 
+      # mv2 is more coarse, regrid to it
+      newgrid = mv2.getGrid()
+      mv1new = mv1.regrid(newgrid)
+   # we can now calculate rms
+   #### If one of these is obs, do we need to convert 'months' to 't' for example?
+   ### Does mv2 have a axis=t?
+   flag = False
+   for i in range(len(axes1)):
+      if 'axis' in axes1[i].attributes:
+         pass
+      else:
+         print 'axis ', axes1[i].id, ' has no axis attribute'
+         ### Assuming that is a time axis...
+         axes1[i].axis='T'
+         flag = True
+   if flag == True:
+      mv1new.setAxisList(axes1)
+
+   flag = False
+   for i in range(len(axes2)):
+      if 'axis' in axes2[i].attributes:
+         pass
+      else:
+         print 'axis ', axes2[i].id, ' has no axis attribute'
+         ### Assuming that is a time axis...
+         axes2[i].axis='T'
+         flag = True
+   if flag == True:
+      mv2new.setAxisList(axes2)
+
+
+   rmse = statistics.rms(mv1new, mv2new, axis='t')
+   return rmse
+
+# Takes 2 rmse variables in. Could be required to take 2 normal variables and we might have to calculate rmse?
+def rmse_map(mv1, mv2, constant=.1):
+   diff = mv2-mv1
+   absdiff = MV2.absolute(diff)
+   b = MV2.where ( MV2.greater_equal(absdiff, constant), MV2.where(MV2.less(mv2, mv1), 1, 0), 0)
+   g = MV2.where ( MV2.greater_equal(absdiff, constant), MV2.where(MV2.greater(mv2, mv1), 2, 0), 0)
+   vsum = b+g
+   vmap = MV2.where (MV2.equal(vsum, 0), absdiff.missing_value, vsum)
+   return vmap
+
+### NEEDS TESTED
+def corr_map(mv1, mv2, constant=.1):
+   diff = mv2-mv1
+   b = MV2.where(MV2.greater_equal(diff, constant), 1, 0)
+   g = MV2.where(MV2.less_equal(diff, -1*constant), -1, 0)
+   vsum = b+g
+   vmap = MV2.where (MV2.equal(vsum, 0), diff.missing_value, vsum)
+
+def stdev_map(mv1, mv2, obs, constant=.1):
+   diff = mv2-mv1
+   absdiff = MV2.absolute(diff)
+   mv1obs = mv1-obs
+   mv1obs_abs = MV2.absolute(mv1obs)
+   mv2obs = mv2-obs
+   mv2obs_abs = MV2.absolute(mv2obs)
+
+   b = MV2.where( MV2.greater_equal(absdiff, constant), MV2.where(MV2.less_equal(mv2obs_abs, mv1obs_abs), 1, 0), 0)
+   g = MV2.where( MV2.greater_equal(absdiff, constant), MV2.where(MV2.greater(mv2obs_abs, mv1obs_abs), 2, 0), 0)
+   vsum = b+g
+   vmap = MV2.where(MV2.equal(vsum, 0), absdiff.missing_value, vsum)
+
+def bias_map(mv1, mv2, obs, constant=.1):
+   # eww, this one is more complicated, plus need to implement T-test
+   pass
+
+
+
 
 # This could possibly be moved to lmwg, but it is not specific to land.
 def reduceAnnTrendRegionSumLevels(mv, region, slevel, elevel, vid=None):

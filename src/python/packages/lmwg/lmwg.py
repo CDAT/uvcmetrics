@@ -1751,8 +1751,48 @@ class lmwg_plot_set7(lmwg_plot_spec):
 
 class lmwg_plot_set9(lmwg_plot_spec):
 #   name = '9 - Contour plots and statistics for precipitation and temperature. Statistics include DJF, JJA, and ANN biases, and RMSE, correlation and standard deviation of the annual cycle relative to observations'
-   _derived_varnames = ['PREC', 'ASA']
-   pass
+   def __init__(self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None):
+      plot_spec.__init__(self, seasonid)
+
+      self._var_baseid = '_'.join([varid, 'set9'])
+      ft1id,ft2id = filetable_ids(filetable1,filetable2)
+      self.plot1_id = ft1id+'_'+varid
+      if filetable2 is not None:
+         self.plot2_id = ft2id+'_'+varid
+         self.plot3_id = ft1id+' - '+ft2id+'_'+varid
+         self.plotall_id = ft1id+'_'+ft2id+'_'+varid
+      else:
+         self.plot2_id = None
+         self.plot3_id = None
+         self.plotall_id = None
+      if not self.computation_planned:
+         self.plan_computation(filetable1, filetable2, varid, seasonid, region, aux)
+
+   @staticmethod
+   def _list_variables(filetable1, filetable2 = None):
+      varlist = ['RMSE', 'Seasonal_Bias', 'Correlation', 'Standard_Deviation', 'Tables']
+      return varlist
+   @staticmethod
+   def _all_variables(filetable1, filetable2=None):
+      vlist = {}
+      def retvarlist(self):
+         return {'TSA':'TSA', 'PREC':'PREC', 'ASA':'ASA'}
+
+      for vn in lmwg_plot_set9._list_variables(filetable1, filetable2):
+         vlist[vn] = basic_plot_variable
+         if vn != 'Tables':
+            vlist[vn].varoptions = (lambda x: {'TSA':'TSA', 'PREC':'PREC', 'ASA':'ASA'})
+#            retvarlist
+         else:
+            print 'Not assigning retvarlist to tables'
+         
+      return vlist
+
+   def plan_computation(self, filetable1, filetable2, varid, seasonid, region, aux=None):
+      if varid == 'RMSE':
+         v = aux
+
+
 
 ###############################################################################
 ###############################################################################
