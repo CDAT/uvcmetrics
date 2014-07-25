@@ -67,12 +67,6 @@ class Options():
    def listSeasons(self):
       return all_seasons;
 
-   def listPlots(self, sets):
-      # The diags do not have this feature yet. It would be really nice to 
-      # have plot types and descriptions of them rather than the old 
-      # static NCAR "sets" concept
-      return
-
    def listTranslations(self):
       # Somewhere a list needs stored or generatable.
       # Is it going to be class specific? I think probably not, so it could be with all_months or all_seasons
@@ -86,10 +80,12 @@ class Options():
       # it would clean up a lot of code here, and in amwg/lmwg I think.
       im = ".".join(['metrics', 'packages', packageid, packageid])
       if packageid.lower() == 'lmwg':
-         pclass = getattr(__import__(im, fromlist=['LMWG']), 'LMWG')()
+         import metrics.packages.lmwg.lmwg
+         pinstance = metrics.packages.lmwg.lmwg.LMWG()
       elif packageid.lower() == 'amwg':
-         pclass = getattr(__import__(im, fromlist=['AMWG']), 'AMWG')()
-      diags = pclass.list_diagnostic_sets()
+         import metrics.packages.amwg.amwg
+         pinstance = metrics.packages.amwg.amwg.AMWG()
+      diags = pinstance.list_diagnostic_sets()
       keys = diags.keys()
       keys.sort()
       sets = {}
@@ -105,45 +101,60 @@ class Options():
       filetable = ft.basic_filetable(dtree, self)
 
       # this needs a filetable probably, or we just define the maximum list of variables somewhere
-      im = ".".join(['metrics', 'packages', package[0].lower()])
+#      im = ".".join(['metrics', 'packages', package[0].lower()])
       if package[0].lower() == 'lmwg':
-         pclass = getattr(__import__(im, fromlist=['LMWG']), 'LMWG')()
-#         vlist=1
+         import metrics.packages.lmwg.lmwg
+         pinstance = metrics.packages.lmwg.lmwg.LMWG()
       elif package[0].lower()=='amwg':
-        # pclass = getattr(__import__(im, fromlist=['amwg']), 'amwg')()
          import metrics.packages.amwg.amwg
          pinstance = metrics.packages.amwg.amwg.AMWG()
-         pclass = None
-#         vlist=None
 
-      vlist=None
       # assume we have a path provided
 
-      if pclass:
-         slist = pclass.list_diagnostic_sets()
-      else:
-         slist = pinstance.list_diagnostic_sets()
+#      if pclass:
+#         slist = pclass.list_diagnostic_sets()
+#      else:
+      slist = pinstance.list_diagnostic_sets()
       keys = slist.keys()
       keys.sort()
-      pset_name = None
       for k in keys:
          fields = k.split()
          if setname[0] == fields[0]:
-            if vlist ==None:
-               vl = slist[k]._list_variables(filetable)
-            else:
-               vl = slist[k]._list_variables(filetable)
-#               pset = slist[k](filetable, None, None, None, aux=None, vlist=1)
-#               pset_name = k
-#
-#               if pset_name == None:
-#                  print 'DIDNT FIND THE SET'
-#                  quit()
-#               varlist = pset.varlist
-#               print 'VARLIST'
-#               print varlist
-         
-      return
+            vl = slist[k]._list_variables(filetable)
+            print 'Available variabless for set', setname[0], 'in package', package[0],'at path', self._opts['path'][0],':'
+            print vl
+            print 'NOTE: Not all variables make sense for plotting or running diagnostics. Multi-word variable names need enclosed in single quotes:\'var var\''
+            print 'ALL is a valid variable name as well'
+      return 
+
+   def listVarOptions(self, package, setname, varname):
+      import metrics.fileio.filetable as ft
+      import metrics.fileio.findfiles as fi
+      dtree = fi.dirtree_datafiles(self, pathid=0)
+      filetable = ft.basic_filetable(dtree, self)
+
+      if package[0].lower() == 'lmwg':
+         import metrics.packages.lmwg.lmwg
+         pinstance = metrics.packages.lmwg.lmwg.LMWG()
+      elif package[0].lower()=='amwg':
+         import metrics.packages.amwg.amwg
+         pinstance = metrics.packages.amwg.amwg.AMWG()
+
+      slist = pinstance.list_diagnostic_sets()
+      keys = slist.keys()
+      keys.sort()
+      for k in keys:
+         fields = k.split()
+         if setname[0] == fields[0]:
+            vl = slist[k]._all_variables(filetable)
+            for v in varname:
+               if v in vl.keys():
+#                  vo = slist[k][v].varoptions()
+                  vo = vl[v].varoptions()
+                  print 'Variable ', v,'in set', setname[0],'from package',package[0],'at path', self._opts['path'][0],'has options:'
+                  print vo
+
+
 
    def verifyOptions(self):
 
@@ -301,8 +312,8 @@ class Options():
          help="The sets within a diagnostic package to run. Multiple sets can be specified. If multiple packages were specified, the sets specified will be searched for in each package") 
       parser.add_argument('--vars', '--var', '-v', nargs='+', 
          help="Specify variables of interest to process. The default is all variables which can also be specified with the keyword ALL") 
-      parser.add_argument('--list', '-l', nargs=1, choices=['sets', 'vars', 'variables', 'packages', 'seasons', 'plottypes', 'regions', 'translations'], 
-         help="Determine which packages, sets, regions, and variables are available")
+      parser.add_argument('--list', '-l', nargs=1, choices=['sets', 'vars', 'variables', 'packages', 'seasons', 'regions', 'translations', 'options'], 
+         help="Determine which packages, sets, regions, variables, and variable options are available")
          # maybe eventually add compression level too....
       parser.add_argument('--compress', nargs=1, choices=['no', 'yes'],
          help="Turn off netCDF compression. This can be required for other utilities to be able to process the output files (e.g. parallel netCDF based tools") #no compression, add self state
@@ -394,6 +405,15 @@ class Options():
                print 'Must provide a dataset when requesting a variable listing'
                quit()
             self.listVariables(args.packages, args.sets)
+            quit()
+         if args.list[0] == 'options':
+            if args.path!= None:
+               for i in args.path:
+                  self._opts['path'].append(i[0])
+            else:
+               print 'Must provide a dataset when requesting a variable listing'
+               quit()
+            self.listVarOptions(args.packages, args.sets, args.vars)
             quit()
 
       # Generally if we've gotten this far, it means no --list was specified. If we don't have
