@@ -726,6 +726,108 @@ class amwg_plot_set6(amwg_plot_set5and6):
     """
     name = ' 6 - Horizontal Vector Plots of Seasonal Means' 
 
+class basic_pole_variable(basic_plot_variable):
+    """represents a typical variable with a level axis, in a plot set which reduces the level
+    axis."""
+    @staticmethod
+    def varoptions():
+        """returns a represention of options specific to this variable.  That is, how should
+        one reduce the level axis?  The default is to average along that axis.  But other options
+        are to pick out the variable's value at some particular pressure level, e.g. 300 mb.
+        """
+        opts ={
+            " Northern hemisphere":(0.,90.), " Southern hemisphere":(-90.,0) }
+        return opts
+
+class amwg_plot_set7(amwg_plot_spec):
+    """represents one plot from AMWG Diagnostics Plot Set 7
+    NCAR has the same menu for both plot sets, and we want to ease the transition from NCAR
+    diagnostics to these; so both plot sets will be done together here as well.
+    **** SO FAR, PLOT 6 VECTOR PLOTS ARE NOT DONE; ONLY Plot 5 CONTOUR ****
+    Each contour plot is a set of three contour plots: one each for model output, observations, and
+    the difference between the two.  A plot's x-axis is longitude and its y-axis is the latitude;
+    normally a world map will be overlaid.
+    """
+    name = ' 7- Polar Contour and Vector Plots of Seasonal Means'
+    def __init__( self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None ):
+        """filetable1, filetable2 should be filetables for model and obs.
+        varid is a string identifying the variable to be plotted, e.g. 'TREFHT'.
+        seasonid is a string such as 'DJF'."""
+        plot_spec.__init__(self,seasonid)
+        self.plottype = 'Isofill'
+        self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
+
+        self.varid = varid
+        ft1id,ft2id = filetable_ids(filetable1, filetable2)
+        self.plot1_id = ft1id+'_'+varid+'_'+seasonid
+        self.plot2_id = ft2id+'_'+varid+'_'+seasonid
+        self.plot3_id = ft1id+' - '+ft2id+'_'+varid+'_'+seasonid
+        self.plotall_id = ft1id+'_'+ft2id+'_'+varid+'_'+seasonid
+
+        if not self.computation_planned:
+            self.plan_computation( filetable1, filetable2, varid, seasonid, region, aux )
+    @staticmethod
+    def _list_variables( filetable1, filetable2=None ):
+        allvars = amwg_plot_set5and6._all_variables( filetable1, filetable2 )
+        listvars = allvars.keys()
+        listvars.sort()
+        return listvars
+    @staticmethod
+    def _all_variables( filetable1, filetable2=None ):
+        allvars = amwg_plot_spec.package._all_variables( filetable1, filetable2, "amwg_plot_spec" )
+        for varname in amwg_plot_spec.package._list_variables_with_levelaxis(
+            filetable1, filetable2, "amwg_plot_spec" ):
+            allvars[varname] = basic_pole_variable
+        return allvars
+    def plan_computation( self, filetable1, filetable2, varid, seasonid, region=None, aux=None ):
+        """Set up for a lat-lon contour plot, as in plot set 5.  Data is averaged over all other
+        axes."""
+        reduced_varlis = [
+            reduced_variable(
+                variableid=varid, filetable=filetable1, season=self.season,
+                reduction_function=(lambda x,vid: reduce2latlon_seasonal( x(lat=aux), self.season, vid ) ) ),
+            reduced_variable(
+                variableid=varid, filetable=filetable2, season=self.season,
+                reduction_function=(lambda x,vid: reduce2latlon_seasonal( x(lat=aux), self.season, vid ) ) ),
+            ]
+        self.reduced_variables = { v.id():v for v in reduced_varlis }
+        vid1 = rv.dict_id( varid, seasonid, filetable1 )
+        vid2 = rv.dict_id( varid, seasonid, filetable2 )
+
+        self.derived_variables = {}
+        self.single_plotspecs = {
+            self.plot1_id: plotspec(
+                vid = ps.dict_idid(vid1),
+                zvars = [vid1],  zfunc = (lambda z: z),
+                plottype = self.plottype ),
+            self.plot2_id: plotspec(
+                vid = ps.dict_idid(vid2),
+                zvars = [vid2],  zfunc = (lambda z: z),
+                plottype = self.plottype ),
+            self.plot3_id: plotspec(
+                vid = ps.dict_id(varid,'diff',seasonid,filetable1,filetable2),
+                zvars = [vid1,vid2],  zfunc = aminusb_2ax,
+                plottype = self.plottype )         
+            }
+        self.composite_plotspecs = {
+            self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id]
+            }
+        self.computation_planned = True
+    def _results(self, newgrid=0):
+        #pdb.set_trace()
+        results = plot_spec._results(self,newgrid)
+        if results is None: return None
+        psv = self.plotspec_values
+        if self.plot1_id in psv and self.plot2_id in psv and\
+                psv[self.plot1_id] is not None and psv[self.plot2_id] is not None:
+            psv[self.plot1_id].synchronize_ranges(psv[self.plot2_id])
+        for key,val in psv.items():
+            if type(val) is not list: val=[val]
+            for v in val:
+                if v is None: continue
+                v.finalize()
+        return self.plotspec_values[self.plotall_id]
+
 def join(*args):
     """ This function joins the results of several reduced variables into a
     single derived variable.  It is used to produce a contour plot of months
@@ -744,39 +846,6 @@ def join(*args):
     cdutil.times.setTimeBoundsMonthly(T)
     #M.info()
     return M
-def get_path(options, data_type):
-    """this function exists only because of 2 bugs in the gui.
-    at some point it can be eliminated.This is convoluted!"""
-    PATH = options._opts['path']
-    #if data_type == 'obs':
-    #    pdb.set_trace()
-    if type(PATH) == type({}):  #batch mode
-        PATH = options._opts['path']
-        return PATH[data_type]
-    elif type(PATH) == type([]):#gui mode
-        #use obspath instead
-        if data_type == 'obs':
-            PATH = options._opts['obspath']
-        return PATH[0]
-    else:
-        return None
-def make_filetables(FILES, options, data_type):
-    """ The purpose of this function is to create a list of filetables 
-    from a single list of several files.  This function essentially 
-    reproduces the logic found in batch.py.  It's necessary for such a function
-    because it requires data from several files to be merged into a single record
-    of data.  It is more natural that this function become part of the filtables
-    class.
-    """
-    PATH = get_path(options, data_type)
-    filetables = []
-    for FN in FILES:
-        options._opts['filter'] = f_endswith(FN)
-        options._opts['path'] = {data_type: PATH}
-        DF = dirtree_datafiles( options, pathid=data_type)
-        FT = DF.setup_filetable( data_type )
-        filetables += [FT]
-    return filetables
 
 class amwg_plot_set8(amwg_plot_spec): 
     """This class represents one plot from AMWG Diagnostics Plot Set 8.
