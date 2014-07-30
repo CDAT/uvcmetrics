@@ -726,18 +726,6 @@ class amwg_plot_set6(amwg_plot_set5and6):
     """
     name = ' 6 - Horizontal Vector Plots of Seasonal Means' 
 
-class basic_pole_variable(basic_plot_variable):
-    """represents a typical variable with a level axis, in a plot set which reduces the level
-    axis."""
-    @staticmethod
-    def varoptions():
-        """returns a represention of options specific to this variable.  That is, how should
-        one reduce the level axis?  The default is to average along that axis.  But other options
-        are to pick out the variable's value at some particular pressure level, e.g. 300 mb.
-        """
-        opts ={
-            " Northern hemisphere":(0.,90.), " Southern hemisphere":(-90.,0) }
-        return opts
 
 class amwg_plot_set7(amwg_plot_spec):
     """represents one plot from AMWG Diagnostics Plot Set 7
@@ -753,6 +741,8 @@ class amwg_plot_set7(amwg_plot_spec):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the variable to be plotted, e.g. 'TREFHT'.
         seasonid is a string such as 'DJF'."""
+        print "WARNING - 7/30/14: this plot set is not yet operational."  
+        print "It needs fixes to polar plots in uvcdat and changes to uvc_simple_plotspec."
         plot_spec.__init__(self,seasonid)
         self.plottype = 'Isofill'
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
@@ -779,7 +769,7 @@ class amwg_plot_set7(amwg_plot_spec):
             filetable1, filetable2, "amwg_plot_spec" ):
             allvars[varname] = basic_pole_variable
         return allvars
-    def plan_computation( self, filetable1, filetable2, varid, seasonid, region=None, aux=None ):
+    def plan_computation( self, filetable1, filetable2, varid, seasonid, region=None, aux=slice(0,None) ):
         """Set up for a lat-lon contour plot, as in plot set 5.  Data is averaged over all other
         axes."""
         reduced_varlis = [
@@ -813,6 +803,7 @@ class amwg_plot_set7(amwg_plot_spec):
             self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id]
             }
         self.computation_planned = True
+        #pdb.set_trace()
     def _results(self, newgrid=0):
         #pdb.set_trace()
         results = plot_spec._results(self,newgrid)
@@ -827,25 +818,6 @@ class amwg_plot_set7(amwg_plot_spec):
                 if v is None: continue
                 v.finalize()
         return self.plotspec_values[self.plotall_id]
-
-def join(*args):
-    """ This function joins the results of several reduced variables into a
-    single derived variable.  It is used to produce a contour plot of months
-    versus zonal mean.
-    """
-    import cdms2, cdutil
-    #pdb.set_trace()
-    M = cdms2.MV2.masked_array(args)
-    #M.shape
-    M.setAxis(-1,args[0].getAxis(-1))
-    T = cdms2.createAxis(range(len(args)))
-    T.designateTime()
-    T.id="time"
-    T.units = "months starting with JAN"
-    M.setAxis(0,T)
-    cdutil.times.setTimeBoundsMonthly(T)
-    #M.info()
-    return M
 
 class amwg_plot_set8(amwg_plot_spec): 
     """This class represents one plot from AMWG Diagnostics Plot Set 8.
@@ -994,9 +966,9 @@ class amwg_plot_set8(amwg_plot_spec):
       
         self.derived_variables = {}
         #create the derived variables which is the composite of the months
-        self.derived_variables[vidModel] = derived_var(vid=id2str(vidModel), inputs=vidAll[0], func=join) 
+        self.derived_variables[vidModel] = derived_var(vid=id2str(vidModel), inputs=vidAll[0], func=join_data) 
         if self.FT2:
-            self.derived_variables[vidObs]   = derived_var(vid=id2str(vidObs), inputs=vidAll[1], func=join) 
+            self.derived_variables[vidObs]   = derived_var(vid=id2str(vidObs), inputs=vidAll[1], func=join_data) 
             #create the derived variable which is the difference of the composites
             self.derived_variables[vidDiff] = derived_var(vid=id2str(vidDiff), inputs=[vidModel, vidObs], func=aminusb_ax2) 
             

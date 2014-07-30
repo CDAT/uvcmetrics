@@ -1723,6 +1723,26 @@ def run_cdscan( fam, famfiles, cache_path=None ):
         raise Exception("cdscan failed")
     return xml_name
 
+def join_data(*args):
+    """ This function joins the results of several reduced variables into a
+    single derived variable.  It is used to produce a contour plot of months
+    versus zonal mean.
+    """
+    import cdms2, cdutil
+    #pdb.set_trace()
+    M = cdms2.MV2.masked_array(args)
+    #M.shape
+    M.setAxis(-1,args[0].getAxis(-1))
+    T = cdms2.createAxis(range(len(args)))
+    T.designateTime()
+    T.id="time"
+    T.units = "months starting with JAN"
+    M.setAxis(0,T)
+    cdutil.times.setTimeBoundsMonthly(T)
+    #M.info()
+    return M
+
+
 class reduced_variable(ftrow,basic_id):
     """Specifies a 'reduced variable', which is a single-valued part of an output specification.
     This would be a variable(s) and its domain, a reduction function, and perhaps
