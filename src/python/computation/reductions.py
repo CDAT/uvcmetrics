@@ -496,6 +496,11 @@ def reduce2lat_seasonal( mv, seasons=seasonsyr, vid=None ):
     return avmv
 
 # Calculate RMSE between mv1 and mv2. Regrid as appropriate
+# Step 1 - Reconcile units
+# Step 2 - ANNUALCYCLE.climatology(mv1, mv2)
+# Step 3 - Regrid
+# Step 3b - Add a 't' axis if it's not there. Does this need done? Should this need done?
+# Step 4 - RMSE
 def rmse_time(mv1, mv2):
    mv1, mv2 = reconcile_units(mv1, mv2)
    if hasattr(mv1, 'units') and hasattr(mv2, 'units') and mv1.units != mv2.units:
@@ -545,9 +550,76 @@ def rmse_time(mv1, mv2):
    if flag == True:
       mv2new.setAxisList(axes2)
 
-
    rmse = statistics.rms(mv1new, mv2new, axis='t')
    return rmse
+
+# Calculate the correlation between mv1 and mv2. Regrid as appropriate
+# Step 0? - NCL masks off land and glacier. Do we need to do glaciers too?
+# Step 1 - Reconcile units
+# Step 2 - ANNUALCYCLE.climatology(mv1, mv2)
+# Step 3 - Regrid to same grid
+# Step 3b - Add a 't' axis if it's not there. Does this need done? Should this need done?
+# Step 4 - Calculate correlation
+def corr_time(mv1, mv2):
+   mv1, mv2 = reconcile_units(mv1, mv2)
+   if hasattr(mv1, 'units') and hasattr(mv2, 'units') and mv1.units != mv2.units:
+      print 'WARNING - RMSE - variables have different units:', mv1.units, mv2.units
+   axes1 = mv1.getAxisList()
+   axes2 = mv2.getAxisList()
+   if axes1 is None or axes2 is None: 
+      return None
+   mv1new = mv1
+   mv2new = mv2
+   lat1, idx1 = latAxis2 (mv1)
+   lat2, idx2 = latAxis2 (mv2)
+   # assumes we want to regrid on lat/lon.
+   # determine which variable has the coarsest grid
+   if len(axes1[idx1]) < len(axes2[idx2]): 
+      # mv1 is more coarse, regrid to it
+      newgrid = mv1.getGrid()
+      mv2new = mv2.regrid(newgrid)
+   if len(axes1[idx1]) > len(axes2[idx2]): 
+      # mv2 is more coarse, regrid to it
+      newgrid = mv2.getGrid()
+      mv1new = mv1.regrid(newgrid)
+   # we can now calculate correlation
+   #### If one of these is obs, do we need to convert 'months' to 't' for example?
+   ### Does mv2 have a axis=t?
+   flag = False
+   for i in range(len(axes1)):
+      if 'axis' in axes1[i].attributes:
+         pass
+      else:
+         print 'axis ', axes1[i].id, ' has no axis attribute'
+         ### Assuming that is a time axis...
+         axes1[i].axis='T'
+         flag = True
+   if flag == True:
+      mv1new.setAxisList(axes1)
+
+   flag = False
+   for i in range(len(axes2)):
+      if 'axis' in axes2[i].attributes:
+         pass
+      else:
+         print 'axis ', axes2[i].id, ' has no axis attribute'
+         ### Assuming that is a time axis...
+         axes2[i].axis='T'
+         flag = True
+   if flag == True:
+      mv2new.setAxisList(axes2)
+
+   axes1 = mv1new.getAxisList()
+   axes2 = mv2new.getAxisList()
+   # determine which index is T.
+   t = 0
+   if len(axes1[0]) != len(axes2[0]):
+      print 'Need to temporarily reduce one of the two vars first'
+   else:
+      corr = statistics.correlation(mv1new, mv2new, axis='t')
+      return corr
+
+# Calculate the correlation between mv1 and mv2. Regrid as appropriate
 
 # Takes 2 rmse variables in. Could be required to take 2 normal variables and we might have to calculate rmse?
 def rmse_map(mv1, mv2, constant=.1):
