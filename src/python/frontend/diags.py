@@ -217,15 +217,39 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                         res = plot.compute(newgrid=-1) # newgrid=0 for original grid, -1 for coarse
                         if res is not None:
                             if opts['plots'] == True:
+                                tm = diagnostics_template()
+                                # The first plot is blank.  These three lines bypass the relevant bug...
+                                vcanvas.clear()
+                                import numpy
+                                vcanvas.plot( cdms2.createVariable(numpy.random.rand(40,60)), bg=1 )
+                                r = 0
                                 for r in range(len(res)):
+                                   title = res[r].title
                                    for var in res[r].vars:
+                                       
+                                       var.title = title
+                                       # ...But the VCS plot system will overwrite the title line
+                                       # with whatever else it can come up with:
+                                       # long_name, id, and units. Generally the units are harmless,
+                                       # but the rest has to go....
+                                       if hasattr(var,'long_name'):
+                                           del var.long_name
+                                       if hasattr(var,'id'):
+                                           var_id_save = var.id
+                                           var.id = ''         # If id exists, vcs uses it as a plot title
+                                           # and if id doesn't exist, the system will create one before plotting!
+                                       else:
+                                           var_id_save = None
+
                                        vname = varid.replace(' ', '_')
                                        vname = vname.replace('/', '_')
                                        fname = outpath+'/figure-set'+sname[0]+'_'+rname+'_'+seasonid+'_'+vname+'_plot-'+str(r)+'.png'
                                        print "writing png file",fname
                                        vcanvas.clear()
-                                       vcanvas.plot(var, res[r].presentation, bg=1)
-                                       vcanvas.png(fname)
+                                       vcanvas.plot(var, res[r].presentation, template_name='diagnostic', bg=1)
+                                       vcanvas.png( fname )
+                                       if var_id_save is not None:
+                                           var.id = var_id_save
                             # Also, write the nc output files and xml.
                             # Probably make this a command line option.
                             if res.__class__.__name__ is 'uvc_composite_plotspec':
