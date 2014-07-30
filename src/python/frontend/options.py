@@ -24,7 +24,7 @@ class Options():
       self._opts['json'] = False
       self._opts['netcdf'] = False
       self._opts['climatologies'] = True
-      self._opts['plots'] = False
+      self._opts['plots'] = True
       self._opts['precomputed'] = False
 #      self._opts['realm'] = None
       self._opts['packages'] = None
@@ -487,7 +487,7 @@ class Options():
             self._opts['netcdf'] = True
 
       if(args.plots != None):
-         if(args.plots[0] == 'no' or args.plots[0] == 0):
+         if(args.plots[0].lower() == 'no' or args.plots[0] == 0):
             self._opts['plots'] = False
          else:
             self._opts['plots'] = True
