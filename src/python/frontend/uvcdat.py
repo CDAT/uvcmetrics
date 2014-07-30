@@ -632,3 +632,18 @@ class plot_spec(object):
         for p,ps in self.composite_plotspecs.iteritems():
             self.plotspec_values[p] = [ self.plotspec_values[sp] for sp in ps if sp in self.plotspec_values ]
         return self
+
+def diagnostics_template():
+    """creates and returns a VCS template suitable for diagnostics plots"""
+    if 'diagnostic' in vcs.listelements('template'):
+        tm = vcs.gettemplate('diagnostic')
+    else:
+        tm = vcs.createtemplate( 'diagnostic', 'default' )
+        # ...creates a template named 'diagnostic', as a copy of the one named 'default'.
+        tm.title.x = 0.5
+        to = vcs.createtextorientation()
+        to.halign = 'center'
+        tm.title.textorientation = to
+        tm.dataname.priority = 0
+        tm.units.priority = 0
+    return tm
