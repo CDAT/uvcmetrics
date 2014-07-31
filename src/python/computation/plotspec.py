@@ -374,3 +374,10 @@ class basic_level_variable(basic_plot_variable):
             "200 mbar":200, "300 mbar":300, "500 mbar":500, "850 mbar":850 }
         return opts
     
+class basic_pole_variable(basic_plot_variable):
+    """represents a typical variable that reduces the latitude axis."""
+    @staticmethod
+    def varoptions():
+        """returns the hemisphere specific to this variable. """
+        opts ={" Northern Hemisphere":(0.,90.), " Southern Hemisphere":(-90.,0) }
+        return opts
