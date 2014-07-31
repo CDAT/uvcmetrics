@@ -67,7 +67,7 @@ class AMWG(BasicDiagnosticGroup):
             ' 3- Line Plots of  Zonal Means': plot_set3,
             ' 4- Vertical Contour Plots Zonal Means': plot_set4,
             ' 4a- Vertical (XZ) Contour Plots Meridional Means': plot_set4a,
-            ' 5- Horizontal Contour Plots of Seasonal M eans': plot_set5,
+            ' 5- Horizontal Contour Plots of Seasonal Means': plot_set5,
             ' 6- Horizontal Vector Plots of Seasonal Means': plot_set6,
             ' 7- Polar Contour and Vector Plots of Seasonal Means': plot_set7,
             ' 8- Annual Cycle Contour Plots of Zonal Means ': plot_set8,
