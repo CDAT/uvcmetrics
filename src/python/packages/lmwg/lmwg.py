@@ -201,6 +201,7 @@ class lmwg_plot_spec(plot_spec):
 class lmwg_plot_set1(lmwg_plot_spec):
    varlist = []
    name = '1 - Line plots of annual trends in energy balance, soil water/ice and temperature, runoff, snow water/ice, photosynthesis '
+   number = '1'
    _derived_varnames = ['PREC', 'TOTRUNOFF', 'TOTSOILICE', 'TOTSOILLIQ']
 
    ### These are special cased since they have 10 levels plotted. However, they are not "derived" per se.
@@ -395,6 +396,7 @@ class lmwg_plot_set1(lmwg_plot_spec):
 class lmwg_plot_set2(lmwg_plot_spec):
    varlist = []
    name = '2 - Horizontal contour plots of DJF, MAM, JJA, SON, and ANN means'
+   number = '2'
    _derived_varnames = ['EVAPFRAC', 'PREC', 'TOTRUNOFF', 'LHEAT', 'P-E', 'ASA', 'VBSA', 'NBSA', 'VWSA', 'NWSA', 'RNET']
    _level_vars = ['TLAKE', 'SOILLIQ', 'SOILICE', 'H2OSOI', 'TSOI']
    _level_varnames = [x+y for y in ['(1)', '(5)', '(10)'] for x in _level_vars]
@@ -653,6 +655,7 @@ class lmwg_plot_set2(lmwg_plot_spec):
 ### This should be combined with set6. They share lots of common code.
 class lmwg_plot_set3(lmwg_plot_spec):
    name = '3 - Grouped Line plots of monthly climatology: regional air temperature, precipitation, runoff, snow depth, radiative fluxes, and turbulent fluxes'
+   number = '3'
    def __init__(self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None):
       plot_spec.__init__(self, seasonid)
       self.plottype = 'Yxvsx'
@@ -1055,6 +1058,7 @@ class lmwg_plot_set3b(lmwg_plot_spec):
    # top graph would plot both models
    ### TODO: For now this is disabled. I think command line utils and backed vis tools will want this to work though.
 #   name = '3b - Individual Line plots of monthly climatology: regional air temperature, precipitation, runoff, snow depth, radiative fluxes, and turbulent fluxes'
+   number = '3b'
    _derived_varnames = ['EVAPFRAC', 'PREC', 'TOTRUNOFF', 'LHEAT', 'RNET', 'ASA'] #, 'P-E']
    def __init__(self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None):
       plot_spec.__init__(self, seasonid)
@@ -1179,6 +1183,7 @@ class lmwg_plot_set5(lmwg_plot_spec):
    varlist = []
 # Temporarily disable since we don't process tables yet.
 #   name = '5 - Tables of annual means'
+   number = '5'
    def __init__( self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None):
       """filetable1, filetable2 should be filetables for two datasets for now. Need to figure
       out obs data stuff for lmwg at some point
@@ -1340,6 +1345,7 @@ class lmwg_plot_set5(lmwg_plot_spec):
 class lmwg_plot_set6(lmwg_plot_spec):
    varlist = []
    name = '6 - Group Line plots of annual trends in regional soil water/ice and temperature, runoff, snow water/ice, photosynthesis'
+   number = '6'
    def __init__(self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None):
       plot_spec.__init__(self, seasonid)
       self.plottype = 'Yxvsx'
@@ -1622,6 +1628,7 @@ class lmwg_plot_set6(lmwg_plot_spec):
 class lmwg_plot_set6b(lmwg_plot_spec):
    varlist = []
 #   name = '6b - Individual Line plots of annual trends in regional soil water/ice and temperature, runoff, snow water/ice, photosynthesis'
+   number = '6b'
    _derived_varnames = ['LHEAT', 'PREC', 'TOTRUNOFF', 'ALBEDO', 'RNET']
    def __init__(self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None):
       plot_spec.__init__(self, seasonid)
@@ -1747,10 +1754,12 @@ class lmwg_plot_set6b(lmwg_plot_spec):
 ###############################################################################
 class lmwg_plot_set7(lmwg_plot_spec):
 #   name = '7 - Line plots, tables, and maps of RTM river flow and discharge to oceans'
-    pass
+   number = '7'
+   pass
 
 class lmwg_plot_set9(lmwg_plot_spec):
 #   name = '9 - Contour plots and statistics for precipitation and temperature. Statistics include DJF, JJA, and ANN biases, and RMSE, correlation and standard deviation of the annual cycle relative to observations'
+   number = '9'
    def __init__(self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None):
       plot_spec.__init__(self, seasonid)
 
