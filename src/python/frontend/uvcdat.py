@@ -507,6 +507,9 @@ from metrics.packages.diagnostic_groups import *
 class plot_spec(object):
     # ...I made this a new-style class so we can call __subclasses__ .
     package=BasicDiagnosticGroup  # Note that this is a class not an object.
+    name = "plot_spec class"  # anything which will get instantiated should have a real plot set name.
+    number = '0'    # anything which will get instantiated should have the plot set 'number' which appears in its name
+    #                 The number is actually a short string, not a number - e.g. '3' or '4b'.
     def __repr__( self ):
         if hasattr( self, 'plotall_id' ):
             return self.__class__.__name__+'('+self.plotall_id+')'
