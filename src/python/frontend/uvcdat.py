@@ -629,7 +629,10 @@ class plot_spec(object):
                 continue
             #labels = [xlab,ylab,zlab]
             labels = [zlab,z2lab]
-            title = ' '.join(labels)+' '+self._season_displayid  # do this better later
+            if hasattr(ps,'title'):
+                title = ps.title
+            else:
+                title = ' '.join(labels)+' '+self._season_displayid  # do this better later
             # The following line is getting specific to UV-CDAT, although not any GUI...
             self.plotspec_values[p] = uvc_simple_plotspec( vars, self.plottype, labels, title )
         for p,ps in self.composite_plotspecs.iteritems():
