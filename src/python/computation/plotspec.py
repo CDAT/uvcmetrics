@@ -80,7 +80,8 @@ class plotspec(basic_id):
         # yavars=[], yafunc=None, ya1vars=[], ya1func=None,
         zvars=[], zfunc=None, zrangevars=[], zrangefunc=None,
         z2vars=[], z2func=None, z2rangevars=[], z2rangefunc=None,
-        plottype='table'
+        plottype='table',
+        title = None
         ):
         """Initialize a plotspec (plot specification).  Inputs are an id and plot type,
         and lists of x,y,z variables (as keys in the plotvars dictionary), functions to
@@ -188,6 +189,8 @@ class plotspec(basic_id):
         self.z2rangevars = z2rangevars
         self.z2rangefunc = z2rangefunc
         self.plottype = plottype
+        if title is not None:
+            self.title = title
 
     @classmethod
     def dict_id( cls, varid, varmod, seasonid, ft1, ft2=None ):
