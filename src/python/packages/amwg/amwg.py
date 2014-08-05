@@ -57,7 +57,8 @@ class AMWG(BasicDiagnosticGroup):
         plot_sets = psets
         for cl in psets:
             plot_sets = plot_sets + cl.__subclasses__()
-        return { aps.name:aps for aps in plot_sets if hasattr(aps,'name') }
+        return { aps.name:aps for aps in plot_sets if
+                 hasattr(aps,'name') and aps.name.find('dummy')<0 }
         #return { aps.name:(lambda ft1, ft2, var, seas: aps(ft1,ft2,var,seas,self))
         #         for aps in plot_sets if hasattr(aps,'name') }
         """ was:
@@ -754,7 +755,7 @@ class amwg_plot_set7(amwg_plot_spec):
     the difference between the two.  A plot's x-axis is longitude and its y-axis is the latitude;
     normally a world map will be overlaid.
     """
-    name = ' 7- Polar Contour and Vector Plots of Seasonal Means'
+    name = '7- Polar Contour and Vector Plots of Seasonal Means'
     number = '7'
     def __init__( self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None ):
         """filetable1, filetable2 should be filetables for model and obs.
