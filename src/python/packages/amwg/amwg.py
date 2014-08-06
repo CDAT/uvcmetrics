@@ -1105,7 +1105,7 @@ class amwg_plot_set9(amwg_plot_spec):
 
         #create the derived variable which is the difference        
         self.derived_variables = {}
-        self.derived_variables[vid3] = derived_var(vid=vid3, inputs=[vid1, vid2], func=aminusb) 
+        self.derived_variables[vid3] = derived_var(vid=vid3, inputs=[vid1, vid2], func=aminusb_2ax) 
             
         self.single_plotspecs = {
             self.plot1_id: plotspec(
