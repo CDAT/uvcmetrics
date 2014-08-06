@@ -147,10 +147,11 @@ class basic_filetable(basic_id):
        self._idnumber = basic_filetable.nfiletables
        basic_filetable.nfiletables += 1
     def root_dir(self):
-       """returns a root directory for the files in this filetable"""
+       """returns a root directory for the files in this filetable
+       (returns just one even if there be more than one)"""
        if self._filelist is None: return None
-       file0 = self._filelist._root
-       return os.path.dirname( os.path.abspath(os.path.expanduser(file0)) )
+       file0 = self._filelist._root[0]
+       return os.path.abspath(os.path.expanduser(file0))
        #return file0
     def cache_path(self):
        """returns the path to a directory suitable for cache files"""
