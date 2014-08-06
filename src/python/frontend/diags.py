@@ -218,13 +218,10 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                         if res is not None:
                             if opts['plots'] == True:
                                 tm = diagnostics_template()
-                                # The first plot is blank.  These three lines bypass the relevant bug...
-                                vcanvas.clear()
-                                import numpy
-                                vcanvas.plot( cdms2.createVariable(numpy.random.rand(40,60)), bg=1 )
                                 r = 0
                                 for r in range(len(res)):
                                    title = res[r].title
+                                   vcanvas.clear()
                                    for var in res[r].vars:
                                        
                                        var.title = title
@@ -245,11 +242,11 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                        vname = vname.replace('/', '_')
                                        fname = outpath+'/figure-set'+sname[0]+'_'+rname+'_'+seasonid+'_'+vname+'_plot-'+str(r)+'.png'
                                        print "writing png file",fname
-                                       vcanvas.clear()
+                                       #res[r].presentation.script("jeff.json")   #example of writing a json file
                                        vcanvas.plot(var, res[r].presentation, template_name='diagnostic', bg=1)
-                                       vcanvas.png( fname )
                                        if var_id_save is not None:
                                            var.id = var_id_save
+                                   vcanvas.png( fname )
                             # Also, write the nc output files and xml.
                             # Probably make this a command line option.
                             if res.__class__.__name__ is 'uvc_composite_plotspec':
