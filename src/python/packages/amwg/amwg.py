@@ -755,8 +755,8 @@ class amwg_plot_set7(amwg_plot_spec):
     the difference between the two.  A plot's x-axis is longitude and its y-axis is the latitude;
     normally a world map will be overlaid.
     """
-    name = '7- Polar Contour and Vector Plots of Seasonal Means'
-    number = '7'
+    #name = '7- Polar Contour and Vector Plots of Seasonal Means'
+    #number = '7'
     def __init__( self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the variable to be plotted, e.g. 'TREFHT'.
@@ -764,7 +764,7 @@ class amwg_plot_set7(amwg_plot_spec):
         print "WARNING - 7/30/14: this plot set is not yet operational."  
         print "It needs fixes to polar plots in uvcdat and changes to uvc_simple_plotspec."
         plot_spec.__init__(self,seasonid)
-        self.plottype = 'Isofill'
+        self.plottype = 'Isofill_polar'
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
 
         self.varid = varid
@@ -856,6 +856,7 @@ class amwg_plot_set8(amwg_plot_spec):
     BATCH = False
     GUI   = False
     SAVEPATH = None
+    STOP = False
     def set_mode(self, filetable):
         options = filetable._filelist.opts
         PATH = options._opts['path']
@@ -918,9 +919,12 @@ class amwg_plot_set8(amwg_plot_spec):
         """filetable1, should be a directory filetable for each model.
         varid is a string, e.g. 'TREFHT'.  The zonal mean is computed for each month. """
 
+        WARNING = " files must end in xx_climo.nc where xx in 01, ..., 12"
+        
+        print WARNING
         self.season = seasonid     
         self.set_mode(filetable1)
-        
+    
         #create filetable1 fie list
         options = filetable1._filelist.opts
         FILES1 = self.get_monthly_files(filetable1._filelist.files)
@@ -928,6 +932,8 @@ class amwg_plot_set8(amwg_plot_spec):
         self.filetables = [self.make_filetables(FILES1, options, 'model')]
         filetable1 = self.reset_path(options, filetable1)
     
+        self.STOP = (FILES1 == [])
+        
         #if 2nd filetable then create their file list
         self.FT2 = (filetable2 != None)
         if self.FT2:
@@ -936,7 +942,13 @@ class amwg_plot_set8(amwg_plot_spec):
             options = self.set_path(options, 'obs')
             self.filetables += [self.make_filetables(FILES2, options, 'obs')]
             filetable2 = self.reset_path(options, filetable2)
-            
+            self.STOP = self.STOP and (FILES2 == [])
+     
+        if self.STOP:
+            print "no files found"
+            print WARNING
+            return None
+        
         plot_spec.__init__(self, seasonid)
         self.plottype = 'Isofill'
         self._seasonid = seasonid
@@ -950,7 +962,7 @@ class amwg_plot_set8(amwg_plot_spec):
         self.plotall_id = '_'.join([ft1id,ft2id, varid, seasonid])
         if not self.computation_planned:
             self.plan_computation( filetable1, filetable2, varid, seasonid )
-                
+
     def plan_computation( self, filetable1, filetable2, varid, seasonid ):
         import numpy as np
         self.computation_planned = False
@@ -974,7 +986,7 @@ class amwg_plot_set8(amwg_plot_spec):
 
                 self.reduced_variables[RV.id()] = RV   
                 VIDs += [VID]
-            vidAll += [VIDs]
+            vidAll += [VIDs]                
         
         #generate composite identifier
         vidModel = dv.dict_id(varid, 'ZonalMean model', self._seasonid, filetable1)
@@ -1014,6 +1026,9 @@ class amwg_plot_set8(amwg_plot_spec):
         self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
         self.computation_planned = True
     def _results(self, newgrid=0):
+        if self.STOP:
+            return None
+        #pdb.set_trace()
         results = plot_spec._results(self, newgrid)
         if results is None:
             print "WARNING, AMWG plot set 8 found nothing to plot"

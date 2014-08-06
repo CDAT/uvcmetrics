@@ -43,11 +43,12 @@ path2 = os.path.join(os.environ["HOME"],  'Documents/Climatology/ClimateData/obs
 #cmip5 test path2 = os.path.join(os.environ["HOME"],'cmip5/')
 tmppth = os.path.join(os.environ['HOME'], "Documents/Climatology/ClimateData/tmp")
 print tmppth
+#tmppth = os.environ['HOME']
 outpath = os.path.join(os.environ['HOME'],"Documents/Climatology/ClimateData/diagout")
 if not os.path.exists(tmppth):
     os.makedirs(tmppth)
 filt1 = None
-filt1 = f_endswith("JJA_climo.nc")
+filt1 = f_endswith("_climo.nc")
 #filt2 = f_endswith("JJA_climo.nc")
 #pdb.set_trace()
 #if 'DJF' in filt1 and 'JJA' in filt2:
@@ -83,7 +84,7 @@ datafiles2 = dirtree_datafiles( opts2, pathid='obs')#, obsid = 'obs' )
 filetable2 = datafiles2.setup_filetable( "obs" )
 #print filetable2._id
 
-filetable2 = None
+#filetable2 = None
 
 number_diagnostic_plots = 0
 dm = diagnostics_menu()
@@ -105,8 +106,8 @@ for pname,pclass in dm.items():
         #if sclass.name != ' 5 - Horizontal Contour Plots of Seasonal Means':
         #if sclass.name != ' 6 - Horizontal Vector Plots of Seasonal Means':
         #if sclass.name == '2 - Horizontal contour plots of DJF, MAM, JJA, SON, and ANN means':
-        if sclass.name != ' 7- Polar Contour and Vector Plots of Seasonal Means':
-        #if sclass.name != ' 8- Annual Cycle Contour Plots of Zonal Means ':
+        #if sclass.name != ' 7- Polar Contour and Vector Plots of Seasonal Means':
+        if sclass.name != '8 - Annual Cycle Contour Plots of Zonal Means ':
         #if sclass.name != ' 9- Horizontal Contour Plots of DJF-JJA Differences':
             continue   # for testing, only do one plot set
         print "jfp sname=",sname
@@ -131,7 +132,7 @@ for pname,pclass in dm.items():
                 if type(varopt) == type({}):
                     keys = varopt.keys()
                     varopt = [varopt[keys[1]]]
-                pdb.set_trace()
+                #pdb.set_trace()
                 if varopt is None:
                     varopt = [None]
                 for aux in varopt:
