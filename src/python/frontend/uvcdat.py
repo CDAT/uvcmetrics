@@ -2,7 +2,7 @@
 
 # Functions callable from the UV-CDAT GUI.
 
-import hashlib, os, pickle, sys, os, math
+import hashlib, os, pickle, sys, os, math, pdb
 from metrics import *
 from metrics.fileio.filetable import *
 from metrics.fileio.findfiles import *
@@ -193,6 +193,10 @@ class uvc_simple_plotspec():
                 ptype="Yxvsx"
             elif presentation == "Isofill":
                 self.presentation = vcsx.createisofill()
+            elif presentation == "Isofill_polar":
+                self.presentation = vcsx.createisofill()  
+                self.presentation.projection = 'polar'     
+                ptype = "Isofill"       
             elif presentation == "Vector":
                 self.presentation = vcsx.createvector()
             elif presentation == "Boxfill":
