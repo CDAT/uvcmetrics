@@ -942,7 +942,7 @@ class amwg_plot_set8(amwg_plot_spec):
             options = self.set_path(options, 'obs')
             self.filetables += [self.make_filetables(FILES2, options, 'obs')]
             filetable2 = self.reset_path(options, filetable2)
-            self.STOP = self.STOP and (FILES2 == [])
+            self.STOP = self.STOP or (FILES2 == [])
      
         if self.STOP:
             print "no files found"
