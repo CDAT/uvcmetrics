@@ -34,20 +34,46 @@
 # run_diagnostics_from_filetables( opts, filetable1, filetable2 )
 #
 
-import hashlib, os, pickle, sys, os, time
+import hashlib, os, pickle, sys, os, time, re
 from metrics import *
 from metrics.fileio.filetable import *
 from metrics.fileio.findfiles import *
 from metrics.computation.reductions import *
+# These next 5 liens really shouldn't be necessary. We should have a top level 
+# file in packages/ that import them all. Otherwise, this needs done in every
+# script that does anything with diags, and would need updated if new packages
+# are added, etc. 
 from metrics.packages.amwg import *
 from metrics.packages.amwg.derivations.vertical import *
 from metrics.packages.amwg.plot_data import plotspec, derived_var
 from metrics.packages.amwg.derivations import *
+from metrics.packages.lmwg import *
 from metrics.packages.diagnostic_groups import *
 from metrics.frontend.uvcdat import *
 from metrics.frontend.options import *
 from pprint import pprint
+import metrics.frontend.defines as defines
 import cProfile
+
+def mysort( lis ):
+    lis.sort()
+    return lis
+
+def setnum( setname ):
+    """extracts the plot set number from the full plot set name, and returns the number.
+    The plot set name should begin with the set number, e.g.
+       setname = ' 2- Line Plots of Annual Implied Northward Transport'"""
+    mo = re.search( r'\d', setname )   # matches decimal digits
+    if mo is None:
+        return None
+    index1 = mo.start()                        # index of first match
+    mo = re.search( r'\D', setname[index1:] )  # matches anything but decimal digits
+    if mo is None:                             # everything past the first digit is another digit
+        setnumber = setname[index1:]
+    else:
+        index2 = mo.start()                    # index of first match
+        setnumber = setname[index1:index1+index2]
+    return setnumber
 
 def run_diagnostics_from_options( opts1 ):
     # Input is one or two instances of Options, normally two.
@@ -68,27 +94,30 @@ def run_diagnostics_from_options( opts1 ):
         path1 = pathdict[1]
         if 2 in pathdict:
             path2 = pathdict[2]
+        opts1['path'] = pathdict
     if type(opts1['filter']) is str:
         filt1 = opts1['filter']
     #if len(opts1['new_filter'])>0:
     #    filt1 = opts1['new_filter'][0]
  
-    print "Diagnostics path1=",path1,"filter1=",filt1
     filetable1 = path2filetable( opts1, path=path1, filter=filt1 )
 
     if path2 is None:
         if type(opts1['path2']) is str:
             path2 = opts1['path2']
-        if type(opts1['path2']) is list and type(opts1['path2'][0]) is str:
-            path2 = opts1['path2'][0]
+        if type(opts1['path2']) is list and len(opts1['path2']) != 0:
+            if type(opts1['path2'][0]) is str:
+               path2 = opts1['path2'][0]
     if path2 is not None:
         if type(opts1['filter2']) is str:
             filt2 = opts1['filter2']
         #if len(opts1['new_filter'])>1:
         #    filt2 = opts1['new_filter'][1]
 
-    print "Diagnostics path2=",path2,"filter2=",filt2
-    filetable2 = path2filetable( opts1, path=path2, filter=filt2 )
+    if path2 is None:
+      filetable2 = None
+    else:
+       filetable2 = path2filetable( opts1, path=path2, filter=filt2 )
 
     run_diagnostics_from_filetables( opts1, filetable1, filetable2 )
 
@@ -97,66 +126,135 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
     Most other choices, such as the plot sets, variables, and seasons, are specified in opts,
     an instance of Options."""
 
+    if opts['plots'] == True:
+        vcanvas = vcs.init()
     outpath = opts['output']
     if outpath is None:
         outpath = os.path.join(os.environ['HOME'],"tmp","diagout")
+
+    # Note:verifyOptions() should prevent this from being none. There used to be a quit() in
+    # there but I removed it. (BES)
     if opts['packages'] is None:
-        packages = ['AMWG']
+        print 'Please specify a package name'
+        quit()
+#        packages = ['AMWG']
     else:
         packages = opts['packages']
     seasons = opts.get( 'seasons', None )
-    if seasons is None:
+    if seasons is None or seasons==[]:
         seasons = opts.get( 'times', None )
-    if seasons is None:
+    if seasons is None or seasons==[]:
         seasons = ['ANN']
-        print "Diagnostics defaulting to season ANN"
+        print "Defaulting to season ANN. You can specify season with --seasons/--seasonally, --months/--monthly or --yearly otherwise"
     else:
-        print "Diagnostics from opts, using seasons=",seasons
+        print "using seasons=",seasons
     if opts['varopts'] is None:
         opts['varopts'] = [None]
 
     number_diagnostic_plots = 0
-    dm = diagnostics_menu()
+    dm = diagnostics_menu()                 # dm = diagnostics menu (packages), a dict
     for pname in packages:
         pclass = dm[pname]()
-        sm = pclass.list_diagnostic_sets()
-        # TO DO: more flexibility in how plot sets are identified.  And intersect requested with possible.
+        # Find which plotsets the user requested which this package offers:
+        sm = pclass.list_diagnostic_sets()  # sm = plot set menu, a dict
         if opts['sets'] is None:
             keys = sm.keys()
             keys.sort()
             plotsets = [ keys[1] ]
+            print "plot sets not specified, defaulting to",plotsets[0]
         else:
-            plotsets = opts['sets']
+            ps = opts['sets']
+            sndic = { setnum(s):s for s in sm.keys() }   # plot set number:name
+            plotsets = [ sndic[setnum(x)] for x in ps if setnum(x) in sndic ]
+
+        if opts['regions'] == None:
+            region = defines.all_regions['Global']
+            rname = 'Global'
+        else:
+            region = defines.all_regions[opts['regions'][0]]
+            rname = opts['regions'][0]
         for sname in plotsets:
             sclass = sm[sname]
-            print "Diagnostics set =",sclass.name
             seasons = list( set(seasons) & set(pclass.list_seasons()) )
             for seasonid in seasons:
-                print "Diagnostics season =",seasonid
                 variables = pclass.list_variables( filetable1, filetable2, sname  )
                 if opts.get('vars',['ALL'])!=['ALL']:
                     variables = list( set(variables) & set(opts.get('vars',[])) )
                     if len(variables)==0 and len(opts.get('vars',[]))>0:
                         print "WARNING: Couldn't find any of the requested variables:",opts['vars']
+                        print "among",variables
                 for varid in variables:
-                    print "Diagnostics variable =",varid
+                    print "variable",varid,"season",seasonid
                     vard = pclass.all_variables( filetable1, filetable2, sname )
                     var = vard[varid]
-                    varopts = var.varoptions()
-                    if varopts is None:
+
+                    # Find variable options.  If none were requested, that means "all".
+                    vvaropts = var.varoptions()
+                    if vvaropts is None:
+                        if len(opts['varopts'])>0:
+                            if opts['varopts']!=[None]:
+                                print "WARNING: no variable options are available, but these were requested:",\
+                                opts['varopts']
+                                print "Continuing as though no variable options were requested."
+                        vvaropts = {None:None}
                         varopts = [None]
-                    varopts = list( set(varopts) & set(opts['varopts']) )
+                    else:
+                        if len(opts['varopts'])==0:
+                            varopts = vvaropts.keys()
+                        else:
+                            if opts['varopts']==[] or opts['varopts']==[None]:
+                                opts['varopts'] = [ None, 'default', ' default' ]
+                            varopts = list( set(vvaropts.keys()) & set(opts['varopts']) )
+                            if varopts==[]:
+                                print "WARNING: requested varopts incompatible with available varopts"
+                                print "requeseted varopts=",opts['varopts']
+                                print "available varopts for variable",varid,"are",vvaropts.keys()
+                                print "No plots will be made."
+
                     for aux in varopts:
-                        plot = sclass( filetable1, filetable2, varid, seasonid, aux )
+                        plot = sclass( filetable1, filetable2, varid, seasonid, region, vvaropts[aux] )
                         res = plot.compute(newgrid=-1) # newgrid=0 for original grid, -1 for coarse
                         if res is not None:
+                            if opts['plots'] == True:
+                                tm = diagnostics_template()
+                                r = 0
+                                for r in range(len(res)):
+                                   title = res[r].title
+                                   vcanvas.clear()
+                                   for var in res[r].vars:
+                                       
+                                       var.title = title
+                                       # ...But the VCS plot system will overwrite the title line
+                                       # with whatever else it can come up with:
+                                       # long_name, id, and units. Generally the units are harmless,
+                                       # but the rest has to go....
+                                       if hasattr(var,'long_name'):
+                                           del var.long_name
+                                       if hasattr(var,'id'):
+                                           var_id_save = var.id
+                                           var.id = ''         # If id exists, vcs uses it as a plot title
+                                           # and if id doesn't exist, the system will create one before plotting!
+                                       else:
+                                           var_id_save = None
+
+                                       vname = varid.replace(' ', '_')
+                                       vname = vname.replace('/', '_')
+                                       fname = outpath+'/figure-set'+sname[0]+'_'+rname+'_'+seasonid+'_'+vname+'_plot-'+str(r)+'.png'
+                                       print "writing png file",fname
+                                       #res[r].presentation.script("jeff.json")   #example of writing a json file
+                                       vcanvas.plot(var, res[r].presentation, template_name='diagnostic', bg=1)
+                                       if var_id_save is not None:
+                                           var.id = var_id_save
+                                   vcanvas.png( fname )
+                            # Also, write the nc output files and xml.
+                            # Probably make this a command line option.
                             if res.__class__.__name__ is 'uvc_composite_plotspec':
                                 resc = res
                             else:
                                 resc = uvc_composite_plotspec( res )
                             number_diagnostic_plots += 1
                             filenames = resc.write_plot_data("xml-NetCDF", outpath )
-                            print "wrote plot data",resc.title," to",filenames
+                            print "wrote plots",resc.title," to",filenames
 
     print "total number of (compound) diagnostic plots generated =", number_diagnostic_plots
 

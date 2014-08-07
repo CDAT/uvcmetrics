@@ -49,7 +49,7 @@ all_regions = {
 "N. Hemisphere Land": [0, 90, -180, 180],  
 "S. Hemisphere Land": [-90, 0, -180, 180],  
 "Global": [-90, 90, -180, 180],
-"User defined": [],
+#"User defined": [0, 0, 0, 0],
 }
 
 # Right now, this is just used for web page generation. 
@@ -68,7 +68,7 @@ region_categories = {
 
 
 all_months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
-all_seasons = ['DJF', 'MAM', 'JJA', 'SON', 'ASO', 'FMA'] # The last 2 were in some obs sets
+all_seasons = all_months+['ANN', 'DJF', 'MAM', 'JJA', 'SON', 'ASO', 'FMA'] # The last 2 were in some obs sets
 
 # I'd like these to move to a packages/defines.py, but the current design
 # doesn't favor that

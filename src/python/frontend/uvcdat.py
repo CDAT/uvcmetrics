@@ -2,7 +2,7 @@
 
 # Functions callable from the UV-CDAT GUI.
 
-import hashlib, os, pickle, sys, os, math
+import hashlib, os, pickle, sys, os, math, pdb
 from metrics import *
 from metrics.fileio.filetable import *
 from metrics.fileio.findfiles import *
@@ -162,11 +162,8 @@ class uvc_composite_plotspec():
         for p in self.plots:
             filenames += p.write_plot_data( contents_format, where )
 
-        #print "jfp format=",format
-        #print "jfp where=",where
         filename = self.outfile( format, where )
         filenames.append(filename)
-        #print "jfp filename=",filename
         writer = open( filename, 'w' )    # later, choose a better name and a path!
         writer.write("<plotdata>\n")
         for p in self.plots:
@@ -199,6 +196,10 @@ class uvc_simple_plotspec():
                 ptype="Yxvsx"
             elif presentation == "Isofill":
                 self.presentation = vcs.createisofill()
+            elif presentation == "Isofill_polar":
+                self.presentation = vcs.createisofill()  
+                self.presentation.projection = 'polar'     
+                ptype = "Isofill"       
             elif presentation == "Vector":
                 self.presentation = vcs.createvector()
             elif presentation == "Boxfill":
@@ -242,10 +243,15 @@ class uvc_simple_plotspec():
         """By the time this is called, all synchronize operations should have been done.  But even
         so, each variable has a min and max and a min and max for each of its axes.  We need to
         simplify further for the plot package."""
-        if self.presentation.g_name=='G1d' or self.presentation.__class__.__name__=="G1d" or\
-                self.presentation.g_name=='Gfi' or self.presentation.__class__.__name__=="Gfi":
+        # old test:
         #if self.presentation.__class__.__name__=="GYx" or\
         #        self.presentation.__class__.__name__=="Gfi":
+        # interim test here and below.  Once all the is* functions work, I should
+        # drop the tests on self.presentation.__class__.__name__ :
+        if vcs.isyxvsx(self.presentation) or\
+                vcs.isisofill(self.presentation) or\
+                self.presentation.__class__.__name__=="GYx" or\
+                self.presentation.__class__.__name__=="G1d":
             var = self.vars[0]
             axmax = self.axmax[var.id]
             axmin = self.axmin[var.id]
@@ -257,7 +263,9 @@ class uvc_simple_plotspec():
                     axmin[ax] = min(axmin[ax],self.axmin[v.id][ax])
                 varmax = max(varmax,self.varmax[v.id])
                 varmin = min(varmin,self.varmin[v.id])
-            if self.presentation.g_name=='G1d' or self.presentation.__class__.__name__=="G1d":
+            if vcs.isyxvsx(self.presentation) or\
+                    self.presentation.__class__.__name__=="GYx" or\
+                    self.presentation.__class__.__name__=="G1d":
                 if len(axmax.keys())<=0:
                     return None
                 # VCS Yxvsx
@@ -266,7 +274,7 @@ class uvc_simple_plotspec():
                 self.presentation.datawc_x2 = axmax[ax]
                 self.presentation.datawc_y1 = varmin
                 self.presentation.datawc_y2 = varmax
-            elif self.presentation.__class__.__name__=="Gfi":
+            elif vcs.isisofill(self.presentation) or self.presentation.__class__.__name__=="Gfi":
                 # VCS Isofill
                 # First we have to identify which axes will be plotted as X and Y.
                 # The following won't cover all cases, but does cover what we have:
@@ -345,7 +353,6 @@ class uvc_simple_plotspec():
         for vid in var_ids:
             vids = vid+self_suffix
             vidp = vid+pset_suffix
-            #print "first one jfp vid,vids,vidp=",vid,vids,vidp
             varmax = max( self.varmax[vids], pset.varmax[vidp] )
             varmin = min( self.varmin[vids], pset.varmin[vidp] )
             self.varmax[vids] = varmax
@@ -380,7 +387,6 @@ class uvc_simple_plotspec():
             varmin = self.varmin[vids]
             for i in range(len(psets)):
                 vidp = vid+pset_suffices[i]
-                #print "second one jfp vid,vids,vidp=",vid,vids,vidp
                 varmax = max( varmax, psets[i].varmax[vidp] )
                 varmin = min( varmin, psets[i].varmin[vidp] )
             self.varmax[vids] = varmax
@@ -415,7 +421,6 @@ class uvc_simple_plotspec():
         else:
             fname = (self.title.strip()+'.nc').replace(' ','_')
         filename = os.path.join(where,fname)
-        #print "output to",filename
         return filename
     def write_plot_data( self, format="", where="" ):
         # This is just experimental code, so far.
@@ -443,7 +448,6 @@ class uvc_simple_plotspec():
         writer.presentation = self.ptype
         plot_these = []
         for zax in self.vars:
-            #print "jfp zax.id=",zax.id
             writer.write( zax )
             plot_these.append( zax.id )
         writer.plot_these = ' '.join(plot_these)
@@ -510,6 +514,9 @@ from metrics.packages.diagnostic_groups import *
 class plot_spec(object):
     # ...I made this a new-style class so we can call __subclasses__ .
     package=BasicDiagnosticGroup  # Note that this is a class not an object.
+    name = "dummy plot_spec class"  # anything which will get instantiated should have a real plot set name.
+    number = '0'    # anything which will get instantiated should have the plot set 'number' which appears in its name
+    #                 The number is actually a short string, not a number - e.g. '3' or '4b'.
     def __repr__( self ):
         if hasattr( self, 'plotall_id' ):
             return self.__class__.__name__+'('+self.plotall_id+')'
@@ -565,60 +572,28 @@ class plot_spec(object):
         In the future regrid>0 will mean regrid everything to the finest grid and regrid<0
         will mean regrid everything to the coarsest grid."""
         for v in self.reduced_variables.keys():
-            print 'CALLING REDUCE ON v = ', v
             value = self.reduced_variables[v].reduce(None)
             self.variable_values[v] = value  # could be None
         postponed = []   # derived variables we won't do right away
         for v in self.derived_variables.keys():
-            print 'CALLING DERIVE on v = ', v
             value = self.derived_variables[v].derive(self.variable_values)
             if value is None:
                 # couldn't compute v - probably it depends on another derived variables which
                 # hasn't been computed yet
-                print 'VALUE WAS NONE, POSTPONING v=',v
                 postponed.append(v)
             else:
                 self.variable_values[v] = value
         for v in postponed:   # Finish up with derived variables
-            print 'IN POSTPONE DERIVE on v=', v
             value = self.derived_variables[v].derive(self.variable_values)
             self.variable_values[v] = value  # could be None
         varvals = self.variable_values
-        #print "jfp in _results, varvals keys,types=",[ (k,type(v)) for k,v in varvals.iteritems() ]
         for p,ps in self.single_plotspecs.iteritems():
             print "uvcdat preparing data for",ps._strid
             try:
-                # print "jfp ps.xvars=",ps.xvars,ps.x1vars,ps.x2vars,ps.x3vars
-                # print "jfp ps.yvars=",ps.yvars,ps.y1vars,ps.y2vars,ps.y3vars
-                # print "jfp ps.yavars=",ps.yavars,ps.ya1vars
-                #print "jfp ps.zvars=",ps.zvars,ps.zrangevars
-                # xrv = [ varvals[k] for k in ps.xvars ]
-                # x1rv = [ varvals[k] for k in ps.x1vars ]
-                # x2rv = [ varvals[k] for k in ps.x2vars ]
-                # x3rv = [ varvals[k] for k in ps.x3vars ]
-                # yrv = [ varvals[k] for k in ps.yvars ]
-                # y1rv = [ varvals[k] for k in ps.y1vars]
-                # y2rv = [ varvals[k] for k in ps.y2vars ]
-                # y3rv = [ varvals[k] for k in ps.y3vars ]
-                # yarv = [ varvals[k] for k in ps.yavars ]
-                # ya1rv = [ varvals[k] for k in ps.ya1vars ]
                 zrv = [ varvals[k] for k in ps.zvars ]
                 zrrv = [ varvals[k] for k in ps.zrangevars ]
                 z2rv = [ varvals[k] for k in ps.z2vars ]
                 z2rrv = [ varvals[k] for k in ps.z2rangevars ]
-                # xax = apply( ps.xfunc, xrv )
-                # x1ax = apply( ps.x1func, x1rv )
-                # x2ax = apply( ps.x2func, x2rv )
-                # x3ax = apply( ps.x3func, x3rv )
-                # yax = apply( ps.yfunc, yrv )
-                # y1ax = apply( ps.y1func, y1rv )
-                # y2ax = apply( ps.y2func, y2rv )
-                # y3ax = apply( ps.y3func, y3rv )
-            # not used yet yaax = apply( ps.yafunc, yarv )
-                # if any([a is None for a in ya1rv]):
-                #     print "WARNING - cannot compute results involving ya1ax, ya1vars=",ps.ya1vars
-                #     continue
-                # ya1ax = apply( ps.ya1func, ya1rv )
                 if any([a is None for a in zrv]):
                     print "WARNING - cannot compute results involving zax, zvars=",ps.zvars
                     print "missing results for",[k for k in ps.zvars if varvals[k] is None]
@@ -637,42 +612,9 @@ class plot_spec(object):
                     print "due to exception",e
                 self.plotspec_values[p] = None
                 continue
-            # not used yet zr = apply( ps.zrangefunc, zrrv )
             vars = []
-            # The x or x,y vars will hopefully appear as axes of the y or z
-            # vars.  This needs more work; but for now we never want x vars here:
-            # xlab=""
-            # ylab=""
             zlab=""
             z2lab=""
-            # if xax is not None:
-            #     xlab += ' '+xax.id
-            # if x1ax is not None:
-            #     xlab += ' '+x1ax.id
-            # if x2ax is not None:
-            #     xlab += ', '+x2ax.id
-            # if x3ax is not None:
-            #     xlab += ', '+x3ax.id
-            # if yax is not None:
-            #     vars.append( yax )
-            #     new_id = self._build_label( yrv, p )
-            #     yax.id = new_id
-            #     ylab += ' '+yax.id
-            # if y1ax is not None:
-            #     vars.append( y1ax )
-            #     new_id = self._build_label( y1rv, p )
-            #     y1ax.id = new_id
-            #     ylab += ' '+y1ax.id
-            # if y2ax is not None:
-            #     vars.append( y2ax )
-            #     new_id = self._build_label( y2rv, p )
-            #     y2ax.id = new_id
-            #     ylab += ', '+y2ax.id
-            # if y3ax is not None:
-            #     vars.append( y3ax )
-            #     new_id = self._build_label( y3rv, p )
-            #     y3ax.id = new_id
-            #     ylab += ', '+y3ax.id
             if zax is not None:
                 if hasattr(zax,'regridded') and newgrid!=0:
                     vars.append( regridded_vars[zax.regridded] )
@@ -694,9 +636,27 @@ class plot_spec(object):
                 continue
             #labels = [xlab,ylab,zlab]
             labels = [zlab,z2lab]
-            title = ' '.join(labels)+' '+self._season_displayid  # do this better later
+            if hasattr(ps,'title'):
+                title = ps.title
+            else:
+                title = ' '.join(labels)+' '+self._season_displayid  # do this better later
             # The following line is getting specific to UV-CDAT, although not any GUI...
             self.plotspec_values[p] = uvc_simple_plotspec( vars, self.plottype, labels, title )
         for p,ps in self.composite_plotspecs.iteritems():
             self.plotspec_values[p] = [ self.plotspec_values[sp] for sp in ps if sp in self.plotspec_values ]
         return self
+
+def diagnostics_template():
+    """creates and returns a VCS template suitable for diagnostics plots"""
+    if 'diagnostic' in vcs.listelements('template'):
+        tm = vcs.gettemplate('diagnostic')
+    else:
+        tm = vcs.createtemplate( 'diagnostic', 'default' )
+        # ...creates a template named 'diagnostic', as a copy of the one named 'default'.
+        tm.title.x = 0.5
+        to = vcs.createtextorientation()
+        to.halign = 'center'
+        tm.title.textorientation = to
+        tm.dataname.priority = 0
+        tm.units.priority = 0
+    return tm

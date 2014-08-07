@@ -147,10 +147,11 @@ class basic_filetable(basic_id):
        self._idnumber = basic_filetable.nfiletables
        basic_filetable.nfiletables += 1
     def root_dir(self):
-       """returns a root directory for the files in this filetable"""
+       """returns a root directory for the files in this filetable
+       (returns just one even if there be more than one)"""
        if self._filelist is None: return None
-       file0 = self._filelist._root
-       return os.path.dirname( os.path.abspath(os.path.expanduser(file0)) )
+       file0 = self._filelist._root[0]
+       return os.path.abspath(os.path.expanduser(file0))
        #return file0
     def cache_path(self):
        """returns the path to a directory suitable for cache files"""
@@ -179,8 +180,8 @@ class basic_filetable(basic_id):
            dfile = cdms2.open( fileid )
         except cdms2.error.CDMSError as e:
            # probably "Cannot open file", but whatever the problem is, don't bother with it.
-           print "Couldn't add file",filep
-           print "This might just be an unsupported file type"
+           #print "Couldn't add file",filep
+           #print "This might just be an unsupported file type"
            return
         filesupp = get_datafile_filefmt( dfile, options )
         vars = filesupp.interesting_variables()
@@ -232,7 +233,8 @@ class basic_filetable(basic_id):
        The variable is a string, containing as a CF standard name, or equivalent.
        For ranges, None means you want all values."""
        if variable not in self._varindex.keys():
-          print 'couldnt find variable',variable,' in varindex keys - ', self._varindex.keys(),' of',self
+          print 'couldnt find variable',variable,' in varindex keys. Possibly part of a derived variable'
+#          print 'couldnt find variable',variable,' in varindex keys - ', self._varindex.keys(),' of',self
           return None
        candidates = self._varindex[ variable ]
        found = []
@@ -304,12 +306,11 @@ class NCAR_filefmt(basic_filefmt):
       self.opts = options
       
 
-      varlist = self.opts._opts['vars']
-      if 'ALL' in varlist:
-         self._all_interesting_names = self._dfile.variables.keys()
-      else:
-         self._all_interesting_names = varlist
-
+      #varlist = self.opts._opts['vars']
+      # But we can't limit _all_interesting names to varlist!
+      # varlist is only variables the user finds interesting, and may not include
+      # other variables which we may later need to compute them.
+      self._all_interesting_names = self._dfile.variables.keys()
 
    def get_timerange(self):
       if 'time' not in self._dfile.axes:
@@ -476,8 +477,8 @@ class CF_filefmt(basic_filefmt):
        # print "will check variables",self._dfile.variables.keys()
        for var in self._dfile.variables.keys():
           standard_name = getattr( self._dfile[var], 'standard_name', None )
-          if standard_name!=None:
-             print "  ",var," has standard name",standard_name
+#          if standard_name!=None:
+             #print "  ",var," has standard name",standard_name
           #if standard_name in\
           #       self._all_interesting_standard_names:
           #   iv.append(standard_name)
