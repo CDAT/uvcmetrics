@@ -401,6 +401,20 @@ class amwg_plot_set4(amwg_plot_spec):
         self.plotall_id = '_'.join([ft1id,ft2id,varid,seasonid])
         if not self.computation_planned:
             self.plan_computation( filetable1, filetable2, varid, seasonid )
+    @staticmethod
+    def _list_variables( filetable1, filetable2=None ):
+        allvars = amwg_plot_set4._all_variables( filetable1, filetable2 )
+        listvars = allvars.keys()
+        listvars.sort()
+        print "amwg plot set 4 listvars=",listvars
+        return listvars
+    @staticmethod
+    def _all_variables( filetable1, filetable2=None ):
+        allvars = {}
+        for varname in amwg_plot_spec.package._list_variables_with_levelaxis(
+            filetable1, filetable2, "amwg_plot_spec" ):
+            allvars[varname] = basic_level_variable
+        return allvars
     def reduced_variables_press_lev( self, filetable, varid, seasonid, ftno=None ):
         if filetable is None:
             return {}
