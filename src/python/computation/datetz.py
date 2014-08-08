@@ -5,6 +5,7 @@ This module offers extensions to the standard python 2.3+
 datetime module.
 """
 # copied from dateutil/parser.py, so we don't have to include dateutil in the UV-CDAT distribution.
+# I deleted the tzwin,tzwinlocal stuff.
 __author__ = "Gustavo Niemeyer <gustavo@niemeyer.net>"
 __license__ = "PSF License"
 
@@ -19,12 +20,7 @@ parser = None
 rrule = None
 
 __all__ = ["tzutc", "tzoffset", "tzlocal", "tzfile", "tzrange",
-           "tzstr", "tzical", "tzwin", "tzwinlocal", "gettz"]
-
-try:
-    from dateutil.tzwin import tzwin, tzwinlocal
-except (ImportError, OSError):
-    tzwin, tzwinlocal = None, None
+           "tzstr", "tzical", "gettz"]
 
 ZERO = datetime.timedelta(0)
 EPOCHORDINAL = datetime.datetime.utcfromtimestamp(0).toordinal()
@@ -480,7 +476,7 @@ class tzrange(datetime.tzinfo):
                  start=None, end=None):
         global relativedelta
         if not relativedelta:
-            from dateutil import relativedelta
+            from daterelativedelta import relativedelta
         self._std_abbr = stdabbr
         self._dst_abbr = dstabbr
         if stdoffset is not None:
@@ -557,7 +553,7 @@ class tzstr(tzrange):
     def __init__(self, s):
         global parser
         if not parser:
-            from dateutil import parser
+            from dateparser import parser
         self._s = s
 
         res = parser._parsetz(s)
@@ -703,7 +699,7 @@ class tzical:
     def __init__(self, fileobj):
         global rrule
         if not rrule:
-            from dateutil import rrule
+            from daterrule import rrule
 
         if isinstance(fileobj, basestring):
             self._s = fileobj
@@ -925,14 +921,11 @@ def gettz(name=None):
                     pass
             else:
                 tz = None
-                if tzwin:
-                    try:
-                        tz = tzwin(name)
-                    except OSError:
-                        pass
-                if not tz:
-                    from dateutil.zoneinfo import gettz
-                    tz = gettz(name)
+                #jfp Omit the following three lines.  If we don't have a zone info file (we
+                #jfp don't), they have no effect...
+                #if not tz:
+                #    from dateutil.zoneinfo import gettz
+                #    tz = gettz(name)
                 if not tz:
                     for c in name:
                         # name must have at least one offset to be a tzstr
