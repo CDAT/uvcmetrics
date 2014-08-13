@@ -195,7 +195,9 @@ class uvc_simple_plotspec():
                 self.presentation = vcsx.createisofill()
             elif presentation == "Isofill_polar":
                 self.presentation = vcsx.createisofill()  
-                self.presentation.projection = 'polar'     
+                PROJECTION = vcs.createprojection()
+                PROJECTION.type=-3
+                self.presentation.projection = PROJECTION    
                 ptype = "Isofill"       
             elif presentation == "Vector":
                 self.presentation = vcsx.createvector()

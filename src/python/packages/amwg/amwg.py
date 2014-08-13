@@ -755,8 +755,8 @@ class amwg_plot_set7(amwg_plot_spec):
     the difference between the two.  A plot's x-axis is longitude and its y-axis is the latitude;
     normally a world map will be overlaid.
     """
-    #name = '7- Polar Contour and Vector Plots of Seasonal Means'
-    #number = '7'
+    name = '7- Polar Contour and Vector Plots of Seasonal Means'
+    number = '7'
     def __init__( self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the variable to be plotted, e.g. 'TREFHT'.
