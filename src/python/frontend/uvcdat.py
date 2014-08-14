@@ -197,7 +197,7 @@ class uvc_simple_plotspec():
                 self.presentation = vcsx.createisofill()  
                 PROJECTION = vcs.createprojection()
                 PROJECTION.type=-3
-                self.presentation.projection = PROJECTION    
+                self.presentation.projection = PROJECTION
                 ptype = "Isofill"       
             elif presentation == "Vector":
                 self.presentation = vcsx.createvector()
@@ -287,10 +287,12 @@ class uvc_simple_plotspec():
                 else:
                     return None
                 # Now send the plotted min,max for the X,Y axes to the graphics:
-                self.presentation.datawc_x1 = axmin[axx]
-                self.presentation.datawc_x2 = axmax[axx]
-                self.presentation.datawc_y1 = axmin[axy]
-                self.presentation.datawc_y2 = axmax[axy]
+                # and if it is not a polar projection
+                if vcs.getprojection(self.presentation.projection)._type!=-3:
+                   self.presentation.datawc_x1 = axmin[axx]
+                   self.presentation.datawc_x2 = axmax[axx]
+                   self.presentation.datawc_y1 = axmin[axy]
+                   self.presentation.datawc_y2 = axmax[axy]
                 # The variable min and max, varmin and varmax, should be passed on to the graphics
                 # for setting the contours.  But apparently you can't tell VCS just the min and max;
                 # you have to give it all the contour levels.  So...

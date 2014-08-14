@@ -761,22 +761,19 @@ class amwg_plot_set6(amwg_plot_set5and6):
     number = '6'
 
 class amwg_plot_set7(amwg_plot_spec):
-    """represents one plot from AMWG Diagnostics Plot Set 7
-    NCAR has the same menu for both plot sets, and we want to ease the transition from NCAR
-    diagnostics to these; so both plot sets will be done together here as well.
-    **** SO FAR, PLOT 6 VECTOR PLOTS ARE NOT DONE; ONLY Plot 5 CONTOUR ****
-    Each contour plot is a set of three contour plots: one each for model output, observations, and
+    """This represents one plot from AMWG Diagnostics Plot Set 7
+    Each graphic is a set of three polar contour plots: model output, observations, and
     the difference between the two.  A plot's x-axis is longitude and its y-axis is the latitude;
-    normally a world map will be overlaid.
+    normally a world map will be overlaid using stereographic projection. The user selects the
+    hemisphere.
     """
-    name = '7- Polar Contour and Vector Plots of Seasonal Means'
+    name = '7 - Polar Contour and Vector Plots of Seasonal Means'
     number = '7'
-    def __init__( self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None ):
+    def __init__( self, filetable1, filetable2, varid, seasonid=None, region=None, aux=slice(0,None) ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the variable to be plotted, e.g. 'TREFHT'.
         seasonid is a string such as 'DJF'."""
-        print "WARNING - 7/30/14: this plot set is not yet operational."  
-        print "It needs fixes to polar plots in uvcdat and changes to uvc_simple_plotspec."
+
         plot_spec.__init__(self,seasonid)
         self.plottype = 'Isofill_polar'
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
@@ -804,15 +801,15 @@ class amwg_plot_set7(amwg_plot_spec):
             allvars[varname] = basic_pole_variable
         return allvars
     def plan_computation( self, filetable1, filetable2, varid, seasonid, region=None, aux=slice(0,None) ):
-        """Set up for a lat-lon contour plot, as in plot set 5.  Data is averaged over all other
-        axes."""
+        """Set up for a lat-lon polar contour plot.  Data is averaged over all other axes."""
+
         reduced_varlis = [
             reduced_variable(
                 variableid=varid, filetable=filetable1, season=self.season,
-                reduction_function=(lambda x,vid: reduce2latlon_seasonal( x(lat=aux), self.season, vid ) ) ),
+                reduction_function=(lambda x,vid: reduce2latlon_seasonal( x(latitude=aux, longitude=(0, 360)), self.season, vid ) ) ),
             reduced_variable(
                 variableid=varid, filetable=filetable2, season=self.season,
-                reduction_function=(lambda x,vid: reduce2latlon_seasonal( x(lat=aux), self.season, vid ) ) ),
+                reduction_function=(lambda x,vid: reduce2latlon_seasonal( x(latitude=aux, longitude=(0, 360)), self.season, vid ) ) ),
             ]
         self.reduced_variables = { v.id():v for v in reduced_varlis }
         vid1 = rv.dict_id( varid, seasonid, filetable1 )
@@ -839,7 +836,7 @@ class amwg_plot_set7(amwg_plot_spec):
         self.computation_planned = True
         #pdb.set_trace()
     def _results(self, newgrid=0):
-        #pdb.set_trace()
+        pdb.set_trace()
         results = plot_spec._results(self,newgrid)
         if results is None: return None
         psv = self.plotspec_values

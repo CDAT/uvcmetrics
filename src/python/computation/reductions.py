@@ -531,7 +531,7 @@ def rmse_time(mv1, mv2):
       if 'axis' in axes1[i].attributes:
          pass
       else:
-         print 'axis ', axes1[i].id, ' has no axis attribute'
+         #print 'axis ', axes1[i].id, ' has no axis attribute'
          ### Assuming that is a time axis...
          axes1[i].axis='T'
          flag = True
@@ -543,7 +543,7 @@ def rmse_time(mv1, mv2):
       if 'axis' in axes2[i].attributes:
          pass
       else:
-         print 'axis ', axes2[i].id, ' has no axis attribute'
+         #print 'axis ', axes2[i].id, ' has no axis attribute'
          ### Assuming that is a time axis...
          axes2[i].axis='T'
          flag = True
