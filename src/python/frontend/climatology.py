@@ -5,6 +5,9 @@
 # variables, with the time often restricted to a month or season.
 # This is basically a simplified version of plot_data.py.
 
+# Example of running this from the shell:
+# python climatology.py --path <location of inputs> --output <where to put outputs> --seasons SON DJF --vars TREFHT
+
 # TO DO >>>> run argument: dict of attribute:value to be written out as file global attributes.
 
 import cdms2, math
@@ -77,7 +80,7 @@ class climatology_variance( reduced_variable ):
                 reduction_function=(lambda x,vid=None: reduce_time_seasonal(x,season)),
                 duvs={ varname+'_var':duv }, rvs=rvs )
 
-def compute_and_write_climatologies( varkeys, reduced_variables, season, case='', variant='' ):
+def compute_and_write_climatologies( varkeys, reduced_variables, season, case='', variant='', path='' ):
     """Computes climatologies and writes them to a file.
     Inputs: varkeys, names of variables whose climatologies are to be computed
             reduced_variables, dict (key:rv) where key is a variable name and rv an instance
@@ -106,7 +109,7 @@ def compute_and_write_climatologies( varkeys, reduced_variables, season, case=''
     filename = case + variant + season + "_climo.nc"
     # ...actually we want to write this to a full directory structure like
     #    root/institute/model/realm/run_name/season/
-    g = cdms2.open( filename, 'w' )    # later, choose a better name and a path!
+    g = cdms2.open( os.path.join(path,filename), 'w' )    # later, choose a better name and a path!
     for key in varkeys:
         if key in reduced_variables:
             var = reduced_variables[key]
@@ -123,18 +126,18 @@ def compute_and_write_climatologies( varkeys, reduced_variables, season, case=''
     g.close()
     return varvals,case
 
-def test_driver(opts):
+def climo_driver(opts):
     """ Test driver for setting up data for plots"""
     # This script should just generate climos 
-    opts._opts['plots'] = False
+    opts['plots'] = False
     datafiles1 = dirtree_datafiles(opts, pathid = 0)
     filetable1 = basic_filetable(datafiles1, opts)
 
-    myvars = opts._opts['vars']
+    myvars = opts['vars']
     if myvars == ['ALL']:
         myvars = filetable1.list_variables() 
 
-    cseasons = opts._opts['times']
+    cseasons = opts['times']
     if cseasons == []:
        print 'Defaulting to all seasons'
        cseasons = ['ANN','DJF','MAM','JJA','SON',
@@ -167,17 +170,15 @@ def test_driver(opts):
         #varkeys = varkeys[0:2]  # quick version for testing
 
         casename = ''
-        if opts._opts['dsnames'] != []:
-           casename = opts._opts['dsnames'][0]
+        if opts['dsnames'] != []:
+           casename = opts['dsnames'][0]
            print 'Using ', casename,' as dataset name'
-        rvs,case = compute_and_write_climatologies( varkeys, reduced_variables1, season, casename)
-
-        # Repeat for var**2.  Later I'll change this to (var-climo(var))**2/(N-1)
-        # using the (still-in-memory) data in the dict reduced_variables.
-        #print "jfp\ndoing sq..."
-        #reduced_variables2 = { var+'_'+season:climatology_squared_variable(var,filetable1,season)
-        #                       for var in filetable1.list_variables() }
-        #compute_and_write_climatologies( varkeys, reduced_variables2, season, case, 'sq' )
+        if opts['outputdir'] is not None and opts['outputdir']!='':
+            outdir = opts['outputdir']
+        else:
+            outdir = ''
+        rvs,case = compute_and_write_climatologies( varkeys, reduced_variables1, season, casename,
+                                                    path=outdir )
 
         # Repeat for variance, climatology of (var-climo(var))**2/(N-1)
         # using the (still-in-memory) data in the dict reduced_variables.
@@ -185,10 +186,11 @@ def test_driver(opts):
 #        reduced_variables3 = { var+'_'+season:
 #                                   climatology_variance(var,filetable1,season,rvs=rvs)
 #                               for var in filetable1.list_variables() }
-#        compute_and_write_climatologies( varkeys, reduced_variables3, season, case, 'var' )
+#        compute_and_write_climatologies( varkeys, reduced_variables3, season, case, 'var',
+#                                         path=outdir )
 
 if __name__ == '__main__':
    o = Options()
    o.processCmdLine()
    o.verifyOptions()
-   test_driver(o)
+   climo_driver(o)
