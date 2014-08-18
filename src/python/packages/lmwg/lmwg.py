@@ -158,15 +158,8 @@ class LMWG(BasicDiagnosticGroup):
         plot_sets = psets
         for cl in psets:
             plot_sets = plot_sets + cl.__subclasses__()
-        foo2 = {}
-        for aps in plot_sets:
-         if hasattr(aps, 'name'):
-            foo2[aps.name] = aps
-
-#        foo = { aps.name:aps for aps in plot_sets if hasattr(aps,'name') }
-        return foo2
-        #return { aps.name:(lambda ft1, ft2, var, seas: aps(ft1,ft2,var,seas,self))
-        #         for aps in plot_sets if hasattr(aps,'name') }
+        return { aps.name:aps for aps in plot_sets if
+                 hasattr(aps,'name') and aps.name.find('dummy')<0 }
 
 class lmwg_plot_spec(plot_spec):
     package = LMWG  # Note that this is a class not an object.. 
