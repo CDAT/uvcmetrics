@@ -85,17 +85,18 @@ def get_datafile_filefmt( dfile, options):
        # and do so, but it's minimal, without most of the useful CF features (e.g.
        # where are bounds for the lat axis?).
        # The same applies to the dataset xml file produced by cdscan from such files.
+    if hasattr(dfile,'season') or dfile.id[-9:]=="_climo.nc":
+          return NCAR_climo_filefmt( dfile, options )
+    else:
+          return NCAR_filefmt( dfile, options )
+    # Formerly got preference over above two NCAR lines; but for the moment we
+    # really don't want this for the data we have...
     if((hasattr(dfile,'Conventions') and dfile.Conventions[0:2]=='CF') or \
        (hasattr(dfile,'conventions') and dfile.conventions[0:2]=='CF')):
        # Really this filefmt assumes more than CF-compliant - it requires standard
        # but optional features such as standard_name and bounds attribures.  Eventually
        # I should put in a check for that.
        return CF_filefmt( dfile )
-    else:
-       if hasattr(dfile,'season') or dfile.id[-9:]=="_climo.nc":
-          return NCAR_climo_filefmt( dfile, options )
-       else:
-          return NCAR_filefmt( dfile, options )
        # Formerly this was "return Unknown_filefmt()" but I have some obs data from NCAR
        # which has no global attributes which would tell you what kind of file it is.
        # Nevertheless the one I am looking at has lots of clues, e.g. variable and axis names.
