@@ -59,28 +59,6 @@ class AMWG(BasicDiagnosticGroup):
             plot_sets = plot_sets + cl.__subclasses__()
         return { aps.name:aps for aps in plot_sets if
                  hasattr(aps,'name') and aps.name.find('dummy')<0 }
-        #return { aps.name:(lambda ft1, ft2, var, seas: aps(ft1,ft2,var,seas,self))
-        #         for aps in plot_sets if hasattr(aps,'name') }
-        """ was:
-        return {
-            ' 1- Table of Global and Regional Means and RMS Error': plot_set1,
-            ' 2- Line Plots of Annual Implied Northward Transport': plot_set2,
-            ' 3- Line Plots of  Zonal Means': plot_set3,
-            ' 4- Vertical Contour Plots Zonal Means': plot_set4,
-            ' 4a- Vertical (XZ) Contour Plots Meridional Means': plot_set4a,
-            ' 5- Horizontal Contour Plots of Seasonal Means': plot_set5,
-            ' 6- Horizontal Vector Plots of Seasonal Means': plot_set6,
-            ' 7- Polar Contour and Vector Plots of Seasonal Means': plot_set7,
-            ' 8- Annual Cycle Contour Plots of Zonal Means ': plot_set8,
-            ' 9- Horizontal Contour Plots of DJF-JJA Differences': plot_set9,
-            '10- Annual Cycle Line Plots of Global Mean': plot_set10,
-            '11- Pacific Annual Cycle: plot_set1, Scatter Plots': plot_set11,
-            '12- Vertical Profile from 17 Selected Stations': plot_set12,
-            '13- Cloud Simulators plots': plot_set13,
-            '14- Taylor diagrams': plot_set14,
-            '15- Annual Cycle at Select Stations Plots': plot_set15,
-            }
-         """
 
 class amwg_plot_spec(plot_spec):
     package = AMWG  # Note that this is a class not an object.
