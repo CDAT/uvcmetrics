@@ -10,7 +10,7 @@
 # All inputs through an Options object:
 # opts = Options()
 # opts['cachepath'] = '/tmp'
-# opts['outpath'] = '~/tmp/diagout'
+# opts['outputdir'] = '~/tmp/diagout'
 # opts['packages'] = ['AMWG']
 # opts['sets'] = [' 3 - Line Plots of  Zonal Means']
 # opts['seasons'] = ['DJF','JJA']
@@ -24,7 +24,7 @@
 # This has more possibilities for extension:
 # opts = Options()
 # opts['cachepath'] = '/tmp'
-# opts['outpath'] = '~/tmp/diagout'
+# opts['outputdir'] = '~/tmp/diagout'
 # opts['packages'] = ['AMWG']
 # opts['sets'] = [' 3 - Line Plots of  Zonal Means']
 # opts['seasons'] = ['DJF','JJA']
@@ -128,9 +128,9 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
 
     if opts['plots'] == True:
         vcanvas = vcs.init()
-    outpath = opts['output']
-    if outpath is None:
-        outpath = os.path.join(os.environ['HOME'],"tmp","diagout")
+    outdir = opts['outputdir']
+    if outdir is None:
+        outdir = os.path.join(os.environ['HOME'],"tmp","diagout")
 
     # Note:verifyOptions() should prevent this from being none. There used to be a quit() in
     # there but I removed it. (BES)
@@ -240,7 +240,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
 
                                        vname = varid.replace(' ', '_')
                                        vname = vname.replace('/', '_')
-                                       fname = outpath+'/figure-set'+sname[0]+'_'+rname+'_'+seasonid+'_'+vname+'_plot-'+str(r)+'.png'
+                                       fname = outdir+'/figure-set'+sname[0]+'_'+rname+'_'+seasonid+'_'+vname+'_plot-'+str(r)+'.png'
                                        print "writing png file",fname
                                        #res[r].presentation.script("jeff.json")   #example of writing a json file
                                        vcanvas.plot(var, res[r].presentation, template_name='diagnostic', bg=1)
@@ -254,7 +254,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                             else:
                                 resc = uvc_composite_plotspec( res )
                             number_diagnostic_plots += 1
-                            filenames = resc.write_plot_data("xml-NetCDF", outpath )
+                            filenames = resc.write_plot_data("xml-NetCDF", outdir )
                             print "wrote plots",resc.title," to",filenames
 
     print "total number of (compound) diagnostic plots generated =", number_diagnostic_plots

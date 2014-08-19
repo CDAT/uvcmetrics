@@ -4,7 +4,7 @@ import argparse
 ### TODO: Seperate subclasses for datasets vs obs 
 
 
-import cdms2
+import cdms2, os
 import metrics.packages as packages
 from defines import *
 
@@ -42,6 +42,7 @@ class Options():
       self._opts['path2'] = []
       self._opts['obspath'] = []
       self._opts['output'] = None
+      self._opts['outputdir'] = None
       self._opts['start'] = -1
       self._opts['end'] = -1
       self._opts['cachepath'] = '/tmp'
@@ -318,7 +319,9 @@ class Options():
       parser.add_argument('--compress', nargs=1, choices=['no', 'yes'],
          help="Turn off netCDF compression. This can be required for other utilities to be able to process the output files (e.g. parallel netCDF based tools") #no compression, add self state
       parser.add_argument('--output', '-o', nargs=1, 
-         help="Specify an output base name. Typically, seasonal information will get postpended to this. For example -o myout will generate myout-JAN.nc, myout-FEB.nc, etc")
+         help="Specify an output base name. Typically, seasonal or other information will get appended to this. For example -o myout might generate myout-JAN.nc, myout-FEB.nc, etc")
+      parser.add_argument('--outputdir', '-O', nargs=1,
+         help="Directory in which output files will be written." )
       parser.add_argument('--seasons', nargs='+', choices=all_seasons,
          help="Specify which seasons to generate climatoogies for")
       parser.add_argument('--years', nargs='+',
@@ -504,9 +507,14 @@ class Options():
          for i in args.name:
             self._opts['dsnames'].append(i[0])
 
-      # Specify an output path
+      # Specify an output path (base filename and directory name)
       if(args.output != None):
          self._opts['output'] = args.output[0]
+      if(args.outputdir != None):
+         if not os.path.isdir(args.outputdir[0]):
+            print "ERROR, output directory",args.outputdir[0],"does not exist!"
+            quit()
+         self._opts['outputdir'] = args.outputdir[0]
 
       if(args.translate != 'y'):
          print args.translate
