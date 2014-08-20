@@ -208,8 +208,7 @@ class lmwg_plot_set1(lmwg_plot_spec):
       ft1id,ft2id = filetable_ids(filetable1,filetable2)
       self.plot1_id = ft1id+'_'+varid
       if filetable2 is not None:
-         self.plot2_id = ft2id+'_'+varid
-         self.plot3_id = ft1id+' - '+ft2id+'_'+varid
+         self.plot2_id = ft1id+' - '+ft2id+'_'+varid
          self.plotall_id = ft1id+'_'+ft2id+'_'+varid
       else:
          self.plotall_id = filetable1._strid+'_'+varid
@@ -303,7 +302,6 @@ class lmwg_plot_set1(lmwg_plot_spec):
                vid=varid+'_1', inputs=in1, func=myfunc)
 
             if filetable2 != None: ### Assume ft2 is 2nd model
-               #print 'This is assuming 2nd dataset is also model output'
                for v in red_vars:
                   self.reduced_variables[v+'_2'] = reduced_variable(
                      variableid = v, filetable=filetable2, reduced_var_id = v+'_2',
@@ -354,16 +352,15 @@ class lmwg_plot_set1(lmwg_plot_spec):
          self.composite_plotspecs[self.plotall_id] = [self.plot1_id]
 
          if filetable2 != None:
+            # Add to plot 1
+            self.single_plotspecs[self.plot1_id].z2vars = [varid+'_2']
+            self.single_plotspecs[self.plot1_id].z2func = (lambda z:z)
+
             self.single_plotspecs[self.plot2_id] = plotspec(
-               vid=varid+'_2',
-               zvars = [varid+'_2'], zfunc=(lambda z: z),
-               plottype = self.plottype)
-            self.single_plotspecs[self.plot3_id] = plotspec(
                vid=varid+'_1-'+varid+'_2',
                zvars = [varid+'_1', varid+'_2'], zfunc=aminusb,
                plottype = self.plottype)
             self.composite_plotspecs[self.plotall_id].append(self.plot2_id)
-            self.composite_plotspecs[self.plotall_id].append(self.plot3_id)
    
       self.computation_planned = True
 
