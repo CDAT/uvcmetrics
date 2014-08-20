@@ -33,7 +33,7 @@ class TreeView():
       dm = diagnostics_menu()
       p = {}
       for pack in packs:
-         pclass = dm[pack]() # initialize the class
+         pclass = dm[pack.upper()]() # initialize the class
          p['name'] = pack
          p['children'] = []
          for ds in range(len(filetables)):
