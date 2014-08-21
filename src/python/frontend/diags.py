@@ -101,7 +101,8 @@ def run_diagnostics_from_options( opts1 ):
     #if len(opts1['new_filter'])>0:
     #    filt1 = opts1['new_filter'][0]
  
-    filetable1 = path2filetable( opts1, path=path1, filter=filt1 )
+    ft_list = []
+    ft_list.append(path2filetable( opts1, path=path1, filter=filt1 ))
 
     if path2 is None:
         if type(opts1['path2']) is str:
@@ -115,14 +116,12 @@ def run_diagnostics_from_options( opts1 ):
         #if len(opts1['new_filter'])>1:
         #    filt2 = opts1['new_filter'][1]
 
-    if path2 is None:
-      filetable2 = None
-    else:
-       filetable2 = path2filetable( opts1, path=path2, filter=filt2 )
+    if path2 is not None:
+      ft_list.append(path2filetable( opts1, path=path2, filter=filt2 ))
 
-    run_diagnostics_from_filetables( opts1, filetable1, filetable2 )
+    run_diagnostics_from_filetables( opts1, ft_list)
 
-def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
+def run_diagnostics_from_filetables( opts, ft_list):
     """Runs the diagnostics.  The data is specified by the filetables.
     Most other choices, such as the plot sets, variables, and seasons, are specified in opts,
     an instance of Options."""
@@ -179,7 +178,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
             sclass = sm[sname]
             seasons = list( set(seasons) & set(pclass.list_seasons()) )
             for seasonid in seasons:
-                variables = pclass.list_variables( filetable1, filetable2, sname  )
+                variables = pclass.list_variables( ft_list, sname  )
                 if opts.get('vars',['ALL'])!=['ALL']:
                     variables = list( set(variables) & set(opts.get('vars',[])) )
                     if len(variables)==0 and len(opts.get('vars',[]))>0:
@@ -187,7 +186,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                         print "among",variables
                 for varid in variables:
                     print "variable",varid,"season",seasonid
-                    vard = pclass.all_variables( filetable1, filetable2, sname )
+                    vard = pclass.all_variables( ft_list, sname )
                     var = vard[varid]
 
                     # Find variable options.  If none were requested, that means "all".
@@ -214,7 +213,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                 print "No plots will be made."
 
                     for aux in varopts:
-                        plot = sclass( filetable1, filetable2, varid, seasonid, region, vvaropts[aux] )
+                        plot = sclass( ft_list, varid, seasonid, region, vvaropts[aux] )
                         res = plot.compute(newgrid=-1) # newgrid=0 for original grid, -1 for coarse
                         if res is not None:
                             if opts['plots'] == True:

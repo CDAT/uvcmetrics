@@ -99,7 +99,7 @@ class Options():
       import metrics.fileio.filetable as ft
       import metrics.fileio.findfiles as fi
       dtree = fi.dirtree_datafiles(self, pathid=0)
-      filetable = ft.basic_filetable(dtree, self)
+      filetable = [ft.basic_filetable(dtree, self)]
 
       # this needs a filetable probably, or we just define the maximum list of variables somewhere
 #      im = ".".join(['metrics', 'packages', package[0].lower()])
@@ -132,7 +132,7 @@ class Options():
       import metrics.fileio.filetable as ft
       import metrics.fileio.findfiles as fi
       dtree = fi.dirtree_datafiles(self, pathid=0)
-      filetable = ft.basic_filetable(dtree, self)
+      filetable = [ ft.basic_filetable(dtree, self) ]
 
       if package[0].lower() == 'lmwg':
          import metrics.packages.lmwg.lmwg
@@ -193,16 +193,16 @@ class Options():
       myvars = self._opts['vars']
 #      self._opts['vars'] = 'ALL'
       dtree1 = fi.dirtree_datafiles(self, pathid=0)
-      filetable1 = ft.basic_filetable(dtree1, self)
+      ft_list = [ ft.basic_filetable(dtree1, self) ]
       if(len(self._opts['path']) == 2):
          dtree2 = fi.dirtree_datafiles(self, pathid=1)
-         filetable2 = ft.basic_filetable(dtree2, self)
+         ft_list.append(ft.basic_filetable(dtree2, self))
       elif(self._opts['obspath']) != []:
          dtree2 = fi.dirtree_datafiles(self, obsid=0)
-         filetable2 = ft.basic_filetable(dtree2, self)
-      else:
-         filetable2 = None
-         print 'No second dataset for comparison'
+         ft_list.append(ft.basic_filetable(dtree2, self))
+#      else:
+#         filetable2 = None
+#         print 'No second dataset for comparison'
          
       package=self._opts['packages']
 
@@ -228,7 +228,7 @@ class Options():
             if snames == fields[0]:
                for va in varids:
                   for s in seasons:
-                     plot = slist[k](filetable1, filetable2, va, s)
+                     plot = slist[k](ft_list, va, s)
                      res = plot.compute(newgrid=0)
 
                      for r in range(len(res)):
@@ -249,16 +249,13 @@ class Options():
       import metrics.fileio.filetable as ft
       import metrics.fileio.findfiles as fi
       dtree1 = fi.dirtree_datafiles(self, pathid=0)
-      filetable1 = ft.basic_filetable(dtree1, self)
+      ft_list = [ ft.basic_filetable(dtree1, self) ]
       if(len(self._opts['path']) == 2):
          dtree2 = fi.dirtree_datafiles(self, pathid=1)
-         filetable2 = ft.basic_filetable(dtree2, self)
+         ft_list.append( ft.basic_filetable(dtree2, self) )
       elif(self._opts['obspath']) != []:
          dtree2 = fi.dirtree_datafiles(self, obs=1)
-         filetable2 = ft.basic_filetable(dtree2, self)
-      else:
-         filetable2 = None
-         print 'No second dataset for comparison'
+         ft_list.append( ft.basic_filetable(dtree2, self) )
          
       package=self._opts['packages']
 
@@ -280,7 +277,7 @@ class Options():
       for k in keys:
          fields = k.split()
          if setname[0] == fields[0]:
-            plot = slist[k](filetable1, filetable2, varid, seasonid)
+            plot = slist[k](ft_list, varid, seasonid)
             res = plot.compute()
             v.plot(res[0].vars, res[0].presentation, bg=1)
             v.png('output.png')

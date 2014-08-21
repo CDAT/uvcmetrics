@@ -131,11 +131,11 @@ def climo_driver(opts):
     # This script should just generate climos 
     opts['plots'] = False
     datafiles1 = dirtree_datafiles(opts, pathid = 0)
-    filetable1 = basic_filetable(datafiles1, opts)
+    ft_list = [basic_filetable(datafiles1, opts)]
 
     myvars = opts['vars']
     if myvars == ['ALL']:
-        myvars = filetable1.list_variables() 
+        myvars = ft_list[0].list_variables() 
 
     cseasons = opts['times']
     if cseasons == []:
@@ -150,7 +150,7 @@ def climo_driver(opts):
     for season in cseasons:
         print 'Processing ', season
 
-        reduced_variables1 = { var+'_'+season:climatology_variable(var,filetable1,season)
+        reduced_variables1 = { var+'_'+season:climatology_variable(var,ft_list[0],season)
                                for var in myvars }
         # example:             for var in ['TREFHT','FLNT','SOILC']}
         #reduced_variables = {

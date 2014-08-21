@@ -89,9 +89,9 @@ if __name__ == '__main__':
    print o['path']
    if type(o['path']) is list and type(o['path'][0]) is str:
       print 'Creating filetable...'
-      filetable1 = path2filetable(o, path=o['path'][0], filter=None)
+      filetable1 = [ path2filetable(o, path=o['path'][0], filter=None) ]
       print 'Done creating filetable...'
    tree=TreeView()
-   tree.makeTree(o, [filetable1], packages=['LMWG'])
+   tree.makeTree(o, filetable1, packages=['LMWG'])
    # need to make a filetable
 

@@ -14,7 +14,7 @@ class BasicDiagnosticGroup():
     # AMWG, LMWG, etc. should inherit from this.
     def __repr__( self ):
         return self.__class__.__name__+' object'
-    def list_variables( self, filetable1, filetable2=None, diagnostic_set="" ):
+    def list_variables( self, ft_list, diagnostic_set="" ):
         """returns a sorted list of variable ids (strings) found in both filetables provided.
         This method _may_ also return names of variables which can be derived from the variables
         in the filtables.
@@ -23,38 +23,40 @@ class BasicDiagnosticGroup():
         This is meant an aid in writing menus for UV-CDAT, but may have other uses.
         """
         return []
-    def all_variables( self, filetable1, filetable2=None, diagnostic_set_name="" ):
+    def all_variables( self, ft_list, diagnostic_set_name="" ):
         """like list_variables but returns a dict, varname:varclass items suitable for a meniu.
         Instantiation is like newvar = varclass( varname, diagnpstoc_set_name, package )
         """
         if diagnostic_set_name!="":
             dset = self.list_diagnostic_sets().get( diagnostic_set_name, None )
             if dset is None:
-                varlist = self._list_variables( filetable1, filetable2 )
+                varlist = self._list_variables( ft_list )
             else:   # Note that dset is a class not an object.
-                return dset._all_variables( filetable1, filetable2 )
+                return dset._all_variables( ft_list )
         else:
-            varlist = self._list_variables( filetable1, filetable2 )
+            varlist = self._list_variables( ft_list )
         from metrics.computation.plotspec import basic_plot_variable
         return { vn: basic_plot_variable for vn in varlist }
     @staticmethod
-    def _all_variables( filetable1, filetable2=None, diagnostic_set_name="" ):
-        varlist = BasicDiagnosticGroup._list_variables( filetable1, filetable2, diagnostic_set_name )
+    def _all_variables( ft_list, diagnostic_set_name="" ):
+        varlist = BasicDiagnosticGroup._list_variables( ft_list, diagnostic_set_name )
         from metrics.computation.plotspec import basic_plot_variable
         return { vn: basic_plot_variable for vn in varlist }
     @staticmethod
-    def _list_variables( filetable1, filetable2=None, diagnostic_set_name="" ):
+    def _list_variables( ft_list, diagnostic_set_name="" ):
         """a generic implementation of the list_variables method, should be a good
         starting point for developing something for a particular diagnostic group"""
-        if filetable1 is None: return []
-        vars1 = filetable1.list_variables()
-        if not isinstance( filetable2, basic_filetable ): return vars1
-        if filetable2.nrows()==0: return vars1
-        vars2 = filetable2.list_variables()
-        varset = set(vars1).intersection(set(vars2))
-        vars = list(varset)
-        vars.sort()
-        return vars
+        if len(ft_list) == 0: return []
+
+        v1 = ft_list[0].list_variables()
+        for f in ft_list[1:]:
+          if f.nrows() == 0: pass
+          if not isinstance(f, basic_filetable): pass
+          v2 = f.list_variables()
+          varset = set(v1).intersection(set(v2))
+          v1 = list(varset)
+          v1.sort()
+        return v1
     def list_diagnostic_sets( self ):
         """returns a dict.  The keys are menu items for choosing a diagnostic set (aka plot set).
         Each value is the corresponding class to be instantiated, which can describe the diagnostic
