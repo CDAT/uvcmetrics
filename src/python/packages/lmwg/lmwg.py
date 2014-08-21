@@ -464,6 +464,7 @@ class lmwg_plot_set2(lmwg_plot_spec):
       # The simple, linear derived variables
       if varid == 'PREC' or varid == 'TOTRUNOFF' or varid == 'LHEAT':
          self.composite_plotspecs = {}
+         self.single_plotspecs = {}
          if varid == 'PREC':
             red_vars = ['RAIN', 'SNOW']
             myfunc = aplusb
@@ -492,24 +493,24 @@ class lmwg_plot_set2(lmwg_plot_spec):
             self.derived_variables[varid+'_2'] = derived_var(
                   vid=varid+'_2', inputs=in2, func = myfunc)
 
-         self.single_plotspecs[varid+'_1'] = plotspec(
-            vid = varid+'_1',
-            zvars = [varid+'_1'], zfunc = (lambda z: z),
+         self.single_plotspecs[self.plot1_id] = plotspec(
+            vid=varid+'_1',
+            zvars = [varid+'_1'], zfunc = (lambda z:z),
             plottype = self.plottype)
 
-         self.composite_plotspecs[self.plotall_id] = [varid+'_1']
+         self.composite_plotspecs[self.plotall_id] = [self.plot1_id]
 
          if filetable2 != None and varid is 'LHEAT':
-            self.single_plotspecs[varid+'_2'] = plotspec(
+            self.single_plotspecs[self.plot2_id] = plotspec(
                vid = varid+'_2',
                zvars = [varid+'_2'], zfunc = (lambda z: z),
                plottype = self.plottype)
-            self.single_plotspecs[varid+'_3'] = plotspec(
+            self.single_plotspecs[self.plot3_id] = plotspec(
                vid=varid+'_3',
                zvars = [varid+'_1', varid+'_2'], zfunc=aminusb,
                plottype = self.plottype)
-            self.composite_plotspecs[self.plotall_id].append(varid+'_2')
-            self.composite_plotspecs[self.plotall_id].append(varid+'_3')
+            self.composite_plotspecs[self.plotall_id].append(self.plot2_id)
+            self.composite_plotspecs[self.plotall_id].append(self.plot3_id)
 
 
          if filetable2 != None and (varid is 'PREC' or varid is 'TOTRUNOFF'):
@@ -522,14 +523,14 @@ class lmwg_plot_set2(lmwg_plot_spec):
             self.reduced_variables[v+'_2'] = reduced_variable(
                variableid = v, filetable=filetable2, reduced_var_id=v+'_2',
                reduction_function=(lambda x, vid: reduce2latlon_seasonal(x, self.season, vid)))
-            self.single_plotspecs[v+'_2'] = plotspec(
+            self.single_plotspecs[self.plot2_id] = plotspec(
                vid=v+'_2', zvars = [v+'_2'], zfunc = (lambda z: z),
                plottype = self.plottype)
-            self.single_plotspecs[varid+'_3'] = plotspec(
+            self.single_plotspecs[self.plot3_id] = plotspec(
                vid=varid+'_3', zvars = [varid+'_1', v+'_2'], zfunc = aminusb,
                plottype = self.plottype)
-            self.composite_plotspecs[self.plotall_id].append(v+'_2')
-            self.composite_plotspecs[self.plotall_id].append(varid+'_3')
+            self.composite_plotspecs[self.plotall_id].append(self.plot2_id)
+            self.composite_plotspecs[self.plotall_id].append(self.plot3_id)
 
       if varid == 'VBSA' or varid == 'NBSA' or varid == 'VWSA' or varid == 'NWSA' or varid == 'ASA':
          self.reduced_variables[varid+'_1'] = albedos_redvar(filetable1, 'SEASONAL', self.albedos[varid], season=self.season)
@@ -542,9 +543,9 @@ class lmwg_plot_set2(lmwg_plot_spec):
 
       # These 3 only exist as model vs model (no model vs obs) comparisons, so ft2 is not special cased
       if varid == 'RNET':
-         self.reduced_variables['RNET_1'] = rnet_seasonal(filetable1, self.season)
+         self.reduced_variables['RNET_1'] = rnet_redvar(filetable1, 'SEASONAL', season=self.season)
          if filetable2 != None:
-            self.reduced_variables['RNET_2'] = rnet_seasonal(filetable2, self.season)
+            self.reduced_variables['RNET_2'] = rnet_redvar(filetable2, 'SEASONAL', season=self.season)
 
       if varid == 'EVAPFRAC':
          self.reduced_variables['EVAPFRAC_1'] = evapfrac_redvar(filetable1, 'SEASONAL', season=self.season)
@@ -606,7 +607,9 @@ class lmwg_plot_set2(lmwg_plot_spec):
 #                  vid='PREC_2', inputs=['RAIN_2', 'SNOW_2'], func=aplusb)
    
       # level_varnames already did their plots
+      print 'checking for single == None'
       if self.single_plotspecs == None:
+         print 'it was none'
          self.single_plotspecs = {}
          self.composite_plotspecs = {}
          self.single_plotspecs[self.plot1_id] = plotspec(
@@ -1255,29 +1258,45 @@ class lmwg_plot_set5(lmwg_plot_spec):
          self.computation_planned = True
          return
 
-      if 'Biogeophysics' in varid and 'Table' in varid:
+      if 'Biogeophysics' in varid: 
          region = defines.all_regions['Global']
          _derived_varnames = ['PREC', 'RNET', 'LHEAT']
          _red_vars = ['TSA', 'RAIN', 'SNOW', 'SNOWDP', 'FSNO', 'H2OSNO', 'FSH', 'FSDS', 'FSA', 'FLDS', 
                       'FIRE', 'FCTR', 'FCEV', 'FGEV', 'FGR', 'FSM', 'TLAI', 'LAISUN', 'LAISHA', 'QOVER', 
                       'QDRAI', 'QRGWL', 'WA', 'WT', 'ZWT', 'QCHARGE', 'FCOV', 'CO2_PPMV']
+         for v in _red_vars:
+            self.reduced_variables[v+'_1'] = reduced_variable(variableid = v,
+               filetable = filetable1, reduced_var_id=v+'_1',
+               reduction_function=(lambda x, vid: reduceAnnTrendRegionSingle(x, region, vid=vid)))
+            if 'Difference' in varid:
+               self.reduced_variables[v+'_2'] = reduced_variable(variableid = v,
+                  filetable = filetable2, reduced_var_id=v+'_2',
+                  reduction_function=(lambda x, vid: reduceAnnTrendRegionSingle(x, region, vid=vid)))
+               self.derived_variables[v+'_diff'] = derived_var(vid=v+'_diff', inputs=[v+'_1', v+'_2'], func=aminusb)
+
          for v in self.albedos.keys():
             self.reduced_variable[v+'_1'] = albedos_redvar(filetable1, 'SINGLE', self.albedos[v], region=region)
-            if filetable2 != None:
-               self.reduced_variable[v+'_2'] = albedos_redvar(filetable2, 'SINGLE', self.albedos[v], region=region)
+            if 'Difference' in varid:
+               if filetable2 != None:
+                  self.reduced_variable[v+'_2'] = albedos_redvar(filetable2, 'SINGLE', self.albedos[v], region=region)
+                  self.derived_variables[v+'_diff'] = derived_var(vid=v+'_diff', inputs=[v+'_1', v+'_2'], func = aminusb)
 
          self.reduced_variables['RNET_1'] = rnet_redvar(filetable1, 'SINGLE', region=region)
          # Is this correct, or do these need to do the math in a different order?
          self.derived_variables['PREC_1'] = derived_var(vid='PREC_1', inputs=['RAIN_1', 'SNOW_1'], func=aplusb)
          self.derived_variables['LHEAT_1'] = derived_var(vid='LHEAT_1', inputs=['FCTR_1', 'FGEV_1', 'FCEV_1'], func=sum3)
-         if filetable2 != None:
-            self.reduced_variables['RNET_2'] = rnet_redvar(filetable2, 'SINGLE', region=region)
-            # Is this correct, or do these need to do the math in a different order?
-            self.derived_variables['PREC_2'] = derived_var(vid='PREC_2', inputs=['RAIN_2', 'SNOW_2'], func=aplusb)
-            self.derived_variables['LHEAT_2'] = derived_var(vid='LHEAT_2', inputs=['FCTR_2', 'FGEV_2', 'FCEV_2'], func=sum3)
+         if 'Difference' in varid:
+            if filetable2 != None:
+               self.reduced_variables['RNET_2'] = rnet_redvar(filetable2, 'SINGLE', region=region)
+               # Is this correct, or do these need to do the math in a different order?
+               self.derived_variables['PREC_2'] = derived_var(vid='PREC_2', inputs=['RAIN_2', 'SNOW_2'], func=aplusb)
+               self.derived_variables['LHEAT_2'] = derived_var(vid='LHEAT_2', inputs=['FCTR_2', 'FGEV_2', 'FCEV_2'], func=sum3)
+               self.reduced_variables['RNET_diff'] = derived_var(vid='RNET_diff', inputs=['RNET_1', 'RNET_2'], func=aminusb)
+               # Is this correct, or do these need to do the math in a different order?
+               self.derived_variables['PREC_diff'] = derived_var(vid='PREC_diff', inputs=['PREC_1', 'PREC_2'], func=aminusb)
+               self.derived_variables['LHEAT_diff'] = derived_var(vid='LHEAT_diff', inputs=['LHEAT_1', 'LHEAT_2' ], func=aminusb)
 
-
-      if 'Carbon' in varid and 'Table' in varid:
+      if 'Carbon' in varid:
          region = defines.all_regions['Global']
          _red_vars = ['NEE', 'NEP', 'GPP', 'PSNSUN_TO_CPOOL', 'PSNSHADE_TO_CPOOL', 'NPP', 'AGNPP', 'BGNPP', 
               'MR', 'GR', 'AR', 'LITHR', 'SOMHR', 'HR', 'RR', 'SR', 'ER', 'LEAFC', 'XSMRPOOL', 'SOIL3C', 'SOIL4C', 
@@ -1290,16 +1309,18 @@ class lmwg_plot_set5(lmwg_plot_spec):
               'FROOTC_LOSS', 'LEAFC_ALLOC', 'LEAFC_LOSS', 'LITTERC', 'LITTERC_HR', 'LITTERC_LOSS', 'SOILC', 'SOILC_HR', 
               'SOILC_LOSS', 'WOODC', 'WOODC_ALLOC',  'WOODC_LOSS']
 
-      for v in _red_vars:
-         self.reduced_variables[v+'_1'] = reduced_variable(variableid = v,
-            filetable=filetable1, reduced_var_id=v+'_1', 
-            reduction_function=(lambda x, vid: reduceAnnTrendRegionSingle(x, region, vid=vid)))
-         if filetable2 != None:
-            self.reduced_variables[v+'_2'] = reduced_variable(variableid = v,
-               filetable=filetable2, reduced_var_id=v+'_2', 
+         for v in _red_vars:
+            self.reduced_variables[v+'_1'] = reduced_variable(variableid = v,
+               filetable=filetable1, reduced_var_id=v+'_1', 
                reduction_function=(lambda x, vid: reduceAnnTrendRegionSingle(x, region, vid=vid)))
+            if 'Differencein' in varid:
+               if filetable2 != None:
+                  self.reduced_variables[v+'_2'] = reduced_variable(variableid = v,
+                     filetable=filetable2, reduced_var_id=v+'_2', 
+                     reduction_function=(lambda x, vid: reduceAnnTrendRegionSingle(x, region, vid=vid)))
+                  self.derived_variables[v+'_diff'] = derived_var(
+                     vid=v+'_diff', inputs=[v+'_1', v+'_2'], func=aminusb)
 
-      
       self.computation_planned = True
 
    def _results(self,newgrid=0):
@@ -1321,6 +1342,7 @@ class lmwg_plot_set5(lmwg_plot_spec):
          value = self.derived_variables[v].derive(self.variable_values)
          self.variable_values[v] = value
       varvals = self.variable_values
+      print varvals
       
 
 
