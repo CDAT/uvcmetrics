@@ -757,6 +757,7 @@ def reduceAnnTrendSingle(mv, vid=None):
    return mvtrend
 
 # First, does an annual climatology, then reduces to a region, then to a final single value over the time axis
+# This is primarily for land set 5 (table views) but could be used in general for single-value tables
 def reduceAnnTrendRegionSingle(mv, region, vid=None):
    if vid == None:
       vid = 'reduced_'+mv.id

@@ -1,4 +1,4 @@
-#!/usr/local/uvcdat/1.3.1/bin/python
+#!/usr/bin/env python
 
 # High-level functions to convert data to climatology files.
 # These are, in my understanding, files which have a time-average of the original
