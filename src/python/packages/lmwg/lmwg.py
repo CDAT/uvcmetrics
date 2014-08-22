@@ -670,8 +670,8 @@ class lmwg_plot_set3(lmwg_plot_spec):
    def _list_variables(filetable1=None, filetable2 = None):
       # conceivably these could be the same names as the composite plot IDs but this is not a problem now.
       # see _results() for what I'm getting at
-      varlist = ['Total Precip/Runoff/SnowDepth', 'Radiative Fluxes', 'Turbulent Fluxes', 'Carbon/Nitrogen Fluxes',
-                 'Fire Fluxes', 'Energy/Moist Control of Evap', 'Snow vs Obs', 'Albedo vs Obs', 'Hydrology']
+      varlist = ['Total_Precip_Runoff_SnowDepth', 'Radiative_Fluxes', 'Turbulent_Fluxes', 'Carbon_Nitrogen_Fluxes',
+                 'Fire_Fluxes', 'Energy_Moist_Control_of_Evap', 'Snow_vs_Obs', 'Albedo_vs_Obs', 'Hydrology']
       return varlist
 
    @staticmethod
@@ -1378,7 +1378,7 @@ class lmwg_plot_set6(lmwg_plot_spec):
 
    @staticmethod
    def _list_variables(filetable1, filetable2 = None):
-      varlist = ['Total_Precip', 'Radiative_Fluxes', 'Turbulent_Fluxes', 'Carbon/Nitrogen_Fluxes',
+      varlist = ['Total_Precip', 'Radiative_Fluxes', 'Turbulent_Fluxes', 'Carbon_Nitrogen_Fluxes',
                  'Fire_Fluxes', 'Soil_Temp', 'SoilLiq_Water', 'SoilIce', 'TotalSoilIce_TotalSoilH2O', 'TotalSnowH2O_TotalSnowIce', 'Hydrology']
       return varlist
    @staticmethod
