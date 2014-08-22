@@ -263,4 +263,6 @@ if __name__ == '__main__':
    o = Options()
    o.processCmdLine()
    o.verifyOptions()
+   import pdb
+   pdb.set_trace()
    run_diagnostics_from_options(o)
