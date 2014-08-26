@@ -8,59 +8,76 @@ import cdms2, os
 import metrics.packages as packages
 from defines import *
 
+# per-dataset options. dstype could go away in theory but it makes it much easier to tell
+# if we need to do per-variable translations and some other things. perhaps I will try
+# to minimize how much code looks at it at the expense of more if() checks
+class dsOptions():
+   def __init__(self, path=None, dfilter=None, dstype=None, dsname=None):
+      self.reltime = None
+      self.bounds = None
+      self.start = -1
+      self.end = -1
+      self.isClimo = False
+      self.dfilter = dfilter
+      self.path = path
+      self.dstype = dstype
+      self.dsname = dsname
+   def __str__(self):
+      return("""
+         dsOptions - path %s, filter %s, type %s, isClimo: %s""" % (self.path, self.dfilter, self.dstype, self.isClimo))
+
 class Options():
    def __init__(self):
+      self.translate = True # Do we need to 'translate' model names to obs names and vice versa?
+      self.translations = {} # A dictionary for model<->obs names
 
-      self._opts = {}
+      # Output options
+      # Should we create compressed netCDF files? This can be slow and incompatible with other utilites
+      self.compress = False 
+      self.json = False
+      self.netcdf = False
+      self.plots = True
+      # Should we save the climatologies that might get produced?
+      self.write_climos = True
+      self.outputdir = None
+      self.outputname = None
+      self.cachepath = '/tmp'
 
-      # some default valeus for some of the options
-      self._opts['translate'] = True
-      self._opts['translations'] = {}
-      self._opts['compress'] = False
-      self._opts['seasonally'] = False # These don't really get used, but are set anyway.
-      self._opts['monthly'] = False # These don't really get used, but are set anyway.
-      self._opts['yearly'] = False # These don't really get used, but are set anyway.
-      self._opts['times'] = [] # This is where seasonal/monthly/yearly choices end up
-      self._opts['json'] = False
-      self._opts['netcdf'] = False
-      self._opts['climatologies'] = True
-      self._opts['plots'] = True
-      self._opts['precomputed'] = False
-#      self._opts['realm'] = None
-      self._opts['packages'] = None
-      self._opts['vars'] = ['ALL']
-      self._opts['sets'] = None
-      self._opts['years'] = None
-      self._opts['reltime'] = None
-      self._opts['bounds'] = None
-      self._opts['dsnames'] = []
-      self._opts['user_filter'] = False
-      self._opts['filter'] = None
-      self._opts['filter2'] = None
-      self._opts['new_filter'] = []
-      self._opts['path'] = []
-      self._opts['path2'] = []
-      self._opts['obspath'] = []
-      self._opts['output'] = None
-      self._opts['outputdir'] = None
-      self._opts['start'] = -1
-      self._opts['end'] = -1
-      self._opts['cachepath'] = '/tmp'
-      self._opts['varopts'] = None
-      self._opts['regions'] = None
+      # Time-related options
+      self.times = [] # This is the final list of CDMS "season" IDs eg JAN, MAM, or ANN
+      self.years = None # This has to be special cased for someone asking for JAN for years X Y Z
 
-      # There is no support for maintaining realm distinctions. 
-      # At one point, I was thinking you could specify a realm and get a 
-      # list of valid packages for that realm, but that appears to be 
-      # unnecessary.
-#      self.realm_types = packages.all_realms
+      # The specific diag details
+      self.packages = None
+      # Should vars be a dict with opts e.g. var1: None var2: 100, etc??
+      self.vlist = ['ALL']
+      self.varopts = None
+      self.sets = None
+      self.regions = None
+      self.datasets = []
+      self.verbose = 0
+
       self.all_packages = packages.package_names
-
-   def __getitem__(self, opt):
-      return self._opts[opt]
-
-   def __setitem__(self, key, value): 
-      self._opts[key] = value
+   def __str__(self):
+      rval = """
+         Options class -- Translate %s, Compress %s, JSON %s, netCDF %s, Plots %s
+         Write_climos %s, output dir %s, output prefix %s, cache path %s, 
+         times %s,
+         years %s,
+         packages %s, sets %s regions %s, verbose %s
+         vlist %s
+         varopts %s
+""" % (self.translate, self.compress, self.json, self.netcdf, self.plots, self.write_climos,
+      self.outputdir, self.outputname, self.cachepath, self.times, self.years,
+      self.packages, self.sets, self.regions, self.verbose,
+      self.vlist, self.varopts)
+      if self.datasets != None:
+         index = 0
+         for ds in self.datasets:
+            rval = rval + 'dataset: ' + str(index) + str(ds) + '\n'
+            index = index+1
+      return rval;
+      
 
    def get(self, opt, default=None):
       return self._opts.get(opt,default)
@@ -76,10 +93,6 @@ class Options():
       return
 
    def listSets(self, packageid, key=None):
-      # I don't know of a better way to do this. I'd rather have these
-      # defined (perhaps in defines.py) 
-      # it would clean up a lot of code here, and in amwg/lmwg I think.
-      im = ".".join(['metrics', 'packages', packageid, packageid])
       if packageid.lower() == 'lmwg':
          import metrics.packages.lmwg.lmwg
          pinstance = metrics.packages.lmwg.lmwg.LMWG()
@@ -98,11 +111,12 @@ class Options():
    def listVariables(self, package, setname):
       import metrics.fileio.filetable as ft
       import metrics.fileio.findfiles as fi
-      dtree = fi.dirtree_datafiles(self, pathid=0)
-      filetable = [ft.basic_filetable(dtree, self)]
+      dtree_list = []
+      ft_list = []
+      for f in range(len(self.datasets)):
+         dtree_list.append(fi.dirtree_datafiles(self, pathid=f))
+         ft_list.append(ft.basic_filetable(dtree, self))
 
-      # this needs a filetable probably, or we just define the maximum list of variables somewhere
-#      im = ".".join(['metrics', 'packages', package[0].lower()])
       if package[0].lower() == 'lmwg':
          import metrics.packages.lmwg.lmwg
          pinstance = metrics.packages.lmwg.lmwg.LMWG()
@@ -110,18 +124,13 @@ class Options():
          import metrics.packages.amwg.amwg
          pinstance = metrics.packages.amwg.amwg.AMWG()
 
-      # assume we have a path provided
-
-#      if pclass:
-#         slist = pclass.list_diagnostic_sets()
-#      else:
       slist = pinstance.list_diagnostic_sets()
       keys = slist.keys()
       keys.sort()
       for k in keys:
          fields = k.split()
          if setname[0] == fields[0]:
-            vl = slist[k]._list_variables(filetable)
+            vl = slist[k]._list_variables(ft_list) # This should handle the intersection of fts
             print 'Available variabless for set', setname[0], 'in package', package[0],'at path', self._opts['path'][0],':'
             print vl
             print 'NOTE: Not all variables make sense for plotting or running diagnostics. Multi-word variable names need enclosed in single quotes:\'var var\''
@@ -131,8 +140,11 @@ class Options():
    def listVarOptions(self, package, setname, varname):
       import metrics.fileio.filetable as ft
       import metrics.fileio.findfiles as fi
-      dtree = fi.dirtree_datafiles(self, pathid=0)
-      filetable = [ ft.basic_filetable(dtree, self) ]
+      dtree_list = []
+      ft_list = []
+      for f in range(len(self.datasets)):
+         dtree_list.append(fi.dirtree_datafiles(self, pathid=f))
+         ft_list.append(ft.basic_filetable(dtree, self))
 
       if package[0].lower() == 'lmwg':
          import metrics.packages.lmwg.lmwg
@@ -147,12 +159,12 @@ class Options():
       for k in keys:
          fields = k.split()
          if setname[0] == fields[0]:
-            vl = slist[k]._all_variables(filetable)
+            vl = slist[k]._all_variables(ft_list)
             for v in varname:
                if v in vl.keys():
 #                  vo = slist[k][v].varoptions()
                   vo = vl[v].varoptions()
-                  print 'Variable ', v,'in set', setname[0],'from package',package[0],'at path', self._opts['path'][0],'has options:'
+                  print 'Variable ', v,'in set', setname[0],'from package',package[0],'at path', self.datasets[0].path,'has options:'
                   print vo
 
 
@@ -164,215 +176,173 @@ class Options():
    # need an option for that ignore option?
    # Other thigns to (eventually) verify:
    #    1) Start/end years are valid and within the range specified
+   # Make sure cachepath exists if specified
    
-      if(self._opts['path'] == []):
-         if(self._opts['list'] == None):
-            print 'One or more path arguements is required'
+      if len(self.datasets) == 0:
+         print 'One or more path arguements is required'
+         quit()
+      for f in self.datasets:
+         if f.path == []:
+            print 'At a minimum a path must be specified for each dataset'
             quit()
-# This creates a mess inside diags.py.... commenting out the quits for now
-      if(self._opts['plots'] == True):
-#         if(self._opts['realm'] == None):
-#            print 'Please specify a realm type if you want to generate plots'
-#            quit()
-         if(self._opts['packages'] == None):
+
+      if(self.plots == True):
+         if(self.packages == None):
             print 'Please specify a package name if you want to generate plots'
 #            quit()
-         if(self._opts['sets'] == None):
+         if(self.sets == None):
             print 'Please specify set names if you want to generate plots'
 #            quit()
-         if(self._opts['path'] == None):
+         if len(self.datasets) == 0:
+            print 'Please specify a path to the dataset if you want to generate plots'
+#            quit()
+         if self.datasets[0].path == None:
             print 'Please specify a path to the dataset if you want to generate plots'
 #            quit()
 
+   # More checks could go here.
 
-   def plotMultiple(self):
-      import metrics.fileio.filetable as ft
-      import metrics.fileio.findfiles as fi
-         
-      # temporarily replace variables
-      myvars = self._opts['vars']
-#      self._opts['vars'] = 'ALL'
-      dtree1 = fi.dirtree_datafiles(self, pathid=0)
-      ft_list = [ ft.basic_filetable(dtree1, self) ]
-      if(len(self._opts['path']) == 2):
-         dtree2 = fi.dirtree_datafiles(self, pathid=1)
-         ft_list.append(ft.basic_filetable(dtree2, self))
-      elif(self._opts['obspath']) != []:
-         dtree2 = fi.dirtree_datafiles(self, obsid=0)
-         ft_list.append(ft.basic_filetable(dtree2, self))
-#      else:
-#         filetable2 = None
-#         print 'No second dataset for comparison'
-         
-      package=self._opts['packages']
-
-#      self._opts['vars'] = [myvars, 'Ocean_Heat']
-      # this needs a filetable probably, or we just define the maximum list of variables somewhere
-      im = ".".join(['metrics', 'packages', package[0], package[0]])
-      if package[0].lower() == 'lmwg':
-         pclass = getattr(__import__(im, fromlist=['LMWG']), 'LMWG')()
-      elif package[0].lower()=='amwg':
-         pclass = getattr(__import__(im, fromlist=['AMWG']), 'AMWG')()
-
-      sets = self._opts['sets']
-      varids = self._opts['vars']
-      seasons = self._opts['times']
-      slist = pclass.list_diagnostic_sets()
-      skeys = slist.keys()
-      skeys.sort()
-      import vcs
-      v = vcs.init()
-      for k in skeys:
-         fields = k.split()
-         for snames in sets:
-            if snames == fields[0]:
-               for va in varids:
-                  for s in seasons:
-                     plot = slist[k](ft_list, va, s)
-                     res = plot.compute(newgrid=0)
-
-                     for r in range(len(res)):
-#                        v = res[r].vcsobj
-                        v.clear()
-                        v.plot(res[r].vars, res[r].presentation, bg=1)
-                        if(len(self._opts['dsnames']) != 0):
-                        ### TODO If dsnames gets implemented, need to set a short name for ds3, ie, "ds 1 - ds 2" or something
-                           fname = self._opts['dsnames'][r]+'-set'+fields[0]+s+va+'.png'
-                        else:
-                           fname = 'output-set'+fields[0]+s+va+'plot-'+str(r)+'.png'
-                        v.png(fname)
-
-
-   def plotSingle(self):
-      # no need for this function really...
-      quit()
-      import metrics.fileio.filetable as ft
-      import metrics.fileio.findfiles as fi
-      dtree1 = fi.dirtree_datafiles(self, pathid=0)
-      ft_list = [ ft.basic_filetable(dtree1, self) ]
-      if(len(self._opts['path']) == 2):
-         dtree2 = fi.dirtree_datafiles(self, pathid=1)
-         ft_list.append( ft.basic_filetable(dtree2, self) )
-      elif(self._opts['obspath']) != []:
-         dtree2 = fi.dirtree_datafiles(self, obs=1)
-         ft_list.append( ft.basic_filetable(dtree2, self) )
-         
-      package=self._opts['packages']
-
-      # this needs a filetable probably, or we just define the maximum list of variables somewhere
-      im = ".".join(['metrics', 'packages', package[0], package[0]])
-      if package[0].lower() == 'lmwg':
-         pclass = getattr(__import__(im, fromlist=['LMWG']), 'LMWG')()
-      elif package[0].lower()=='amwg':
-         pclass = getattr(__import__(im, fromlist=['AMWG']), 'AMWG')()
-
-      setname = self._opts['sets'][0]
-      varid = self._opts['vars'][0]
-      seasonid = self._opts['times'][0]
-      slist = pclass.list_diagnostic_sets()
-      keys = slist.keys()
-      keys.sort()
-      import vcs
-#      v = vcs.init()
-      for k in keys:
-         fields = k.split()
-         if setname[0] == fields[0]:
-            plot = slist[k](ft_list, varid, seasonid)
-            res = plot.compute()
-            v.plot(res[0].vars, res[0].presentation, bg=1)
-            v.png('output.png')
-            
       
    def processCmdLine(self):
       parser = argparse.ArgumentParser(
          description='UV-CDAT Climate Modeling Diagnostics', 
          usage='%(prog)s --path1 [options]')
 
+      # Various path things.
+      # This is slightly tweaked from version 1.0
+      # --path implies no filtering will be needed/required
+      # --pathfilter takes a path and then a filter for that particular path
+      # --obspath implies no filtering will be needed/required and that the path is an obs set
+      # --obspathfilter takes a path and a filter for the given obs dataset
+      # --fulldataset - allows all of the options at one time for no confusion
+      # --fullobsset - same 
+
+      # Dataset-specific options
+      # First, the easiest ones to process.
+      parser.add_argument('--fulldataset', action='append', nargs='+',
+         help="""Fully specify all options for one dataset in a single option\n
+               Options are (in order) [path] [filter] [climoflag] {shortname} {reltime} {bounds} {starttime} {endtime}\n
+               Optional arguments can be left out or specified as 'None'""")
+               
+      parser.add_argument('--fullobsset', action='append', nargs='+',
+         help="""Fully specify all options for one obs dataset in a single option\n
+               Options are (in order) [path] [filter] [climoflag] {shortname} {reltime} {bounds} {starttime} {endtime}\n
+               Optional arguments can be left out or specified as 'None'""")
+
+      # These are the next most common and we will assume they do NOT need any other options.
+      parser.add_argument('--pathfilt', '-P', action='append', nargs=2,
+         help="Path to dataset with filter. Specify the path and then the filter. Note: This assuems defaults for all other options for this dataset")
+      parser.add_argument('--obspathfilt', action='append', nargs=2,
+         help="Used to specify a path and filter to an observation dataset. Note: This assuems defaults for all other options for this dataset")
+
+
+      # These make things more complicated.
       parser.add_argument('--path', '-p', action='append', nargs=1, 
-         help="Path(s) to dataset(s). This is required.  If two paths need different filters, set one here and one in path2.")
-      parser.add_argument('--path2', '-q', action='append', nargs=1, 
-         help="Path to a second dataset.")
+         help="""Path to a dataset. This option assumes no filtering will be required.\n
+               Any additional dataset specific options are assumed to belong to this\n
+               path instance until another --path/--pathfill/--fulldataset option""")
       parser.add_argument('--obspath', action='append', nargs=1,
-                          help="Path to an observational dataset")
+         help="""Path to a dataset that will be marked as an observational dataset. \n
+               This option assumes no filtering is required. Any additional dataset specific\n
+               options are assumed to belong to this obspath instance until another --obspath/--obspathfill/--fullobsset option""")
+
+      parser.add_argument('--filter', action='append', nargs=1,
+         help="Provide a filter. This will be applied to the last provided --path option")
+      parser.add_argument('--precomputed', nargs=1, action='append', choices=['no','yes'], 
+         help="Specifies whether this path contains pre-computed climatology files vs raw data.")
+      parser.add_argument('--timebounds', nargs=1, action='append', choices=['daily', 'monthly', 'yearly'],
+         help="Specify the time bounds for this dataset")
+      parser.add_argument('--dsname', action='append', nargs=1,
+         help="Specify optional short names for the datasets for plot titles, etc") 
+      parser.add_argument('--reltime', action='append', nargs=1,
+         help="Specify a relative time such as 'months since 01-01'")
+      parser.add_argument('--starttime', nargs=1,
+         help="Specify a start time in the dataset. Useful for comparing subsets of a single dataset or when a run has not yet completed")
+      parser.add_argument('--endtime', nargs=1, 
+         help="Specify an end time in the dataset. Useful for comparing subsets of a single dataset or when a run has not yet completed")
+
+      # Generic options
       parser.add_argument('--cachepath', nargs=1,
          help="Path for temporary and cachced files. Defaults to /tmp")
-#      parser.add_argument('--realm', '-r', nargs=1, choices=self.realm_types,
-#         help="The realm type. Current valid options are 'land' and 'atmosphere'")
-      parser.add_argument('--filter', '-f', nargs=1, 
-         help="A filespec filter. This will be applied to the dataset path(s) (--path option) to narrow down file choices.")
-      parser.add_argument('--filter2', '-g', nargs=1, 
-         help="A filespec filter. This will be applied to the second dataset path (--path2 option) to narrow down file choices.")
-      parser.add_argument('--new_filter', '-F', action='append', nargs=1, 
-         help="A filespec filter. This will be applied to the corresponding dataset path to narrow down file choices.")
+      parser.add_argument('--verbose', '-V', action='count',
+         help="Increase the verbosity level. Each -v option increases the verbosity more.") # count
+
+      # Output-control options
+      parser.add_argument('--outputdir', nargs=1,
+         help="Path to place output files")
+      parser.add_argument('--outputname', nargs=1,
+         help="Prefix for output file names")
+      parser.add_argument('--json', '-j', nargs=1, choices=['no', 'yes'],
+         help="Produce JSON output files as part of climatology generation. Defaults to no") # same
+      parser.add_argument('--netcdf', '-n', nargs=1, choices=['no', 'yes'],
+         help="Produce NetCDF output files as part of climatology generation. Defaults to yes") # same
+      parser.add_argument('--plots', '-t', nargs=1, choices=['no','yes'],
+         help="Specifies whether or not plots should be generated. Defaults to yes")
+      parser.add_argument('--climatologies', '-c', nargs=1, choices=['no','yes'],
+         help="Specifies whether or not climatologies should be generated")
+      parser.add_argument('--compress', nargs=1, choices=['no', 'yes', 1, 2, 3, 4, 5, 6, 7, 8, 9],
+         help="Turn off netCDF compression. This can be required for other utilities to be able to process the output files (e.g. parallel netCDF based tools") #no compression, add self state
+
+      # Provide the user with options based on previously supplied input
+      parser.add_argument('--list', '-l', nargs=1, choices=['sets', 'vars', 'variables', 'packages', 'seasons', 'regions', 'translations', 'options', 'coords'], 
+         help="Determine which packages, sets, regions, variables, and variable options are available")
+
+      # Diag specific options
       parser.add_argument('--packages', '--package', '-k', nargs='+', 
          help="The diagnostic packages to run against the dataset(s). Multiple packages can be specified.")
       parser.add_argument('--sets', '--set', '-s', nargs='+', 
          help="The sets within a diagnostic package to run. Multiple sets can be specified. If multiple packages were specified, the sets specified will be searched for in each package") 
       parser.add_argument('--vars', '--var', '-v', nargs='+', 
          help="Specify variables of interest to process. The default is all variables which can also be specified with the keyword ALL") 
-      parser.add_argument('--list', '-l', nargs=1, choices=['sets', 'vars', 'variables', 'packages', 'seasons', 'regions', 'translations', 'options'], 
-         help="Determine which packages, sets, regions, variables, and variable options are available")
-         # maybe eventually add compression level too....
-      parser.add_argument('--compress', nargs=1, choices=['no', 'yes'],
-         help="Turn off netCDF compression. This can be required for other utilities to be able to process the output files (e.g. parallel netCDF based tools") #no compression, add self state
-      parser.add_argument('--output', '-o', nargs=1, 
-         help="Specify an output base name. Typically, seasonal or other information will get appended to this. For example -o myout might generate myout-JAN.nc, myout-FEB.nc, etc")
-      parser.add_argument('--outputdir', '-O', nargs=1,
-         help="Directory in which output files will be written." )
+      parser.add_argument('--varopts', nargs='+',
+         help="Variable auxillary options")
+      parser.add_argument('--regions', '--region', nargs='+', choices=all_regions.keys(),
+         help="Specify a geographical region of interest. Note: Multi-word regions need single quoted, e.g. 'Central Canada'")
+      parser.add_argument('--translate', nargs='?', default='y',
+         help="Enable translation for obs sets to datasets. Optional provide a colon separated input to output list e.g. DSVAR1:OBSVAR1")
+
+
+      # Time-based options, e.g. seasons/months/years/etc
       parser.add_argument('--seasons', nargs='+', choices=all_seasons,
          help="Specify which seasons to generate climatoogies for")
       parser.add_argument('--years', nargs='+',
          help="Specify which years to include when generating climatologies") 
       parser.add_argument('--months', nargs='+', choices=all_months,
          help="Specify which months to generate climatologies for")
-      parser.add_argument('--climatologies', '-c', nargs=1, choices=['no','yes'],
-         help="Specifies whether or not climatologies should be generated")
-      parser.add_argument('--plots', '-t', nargs=1, choices=['no','yes'],
-         help="Specifies whether or not plots should be generated")
-      parser.add_argument('--plottype', nargs=1)
-      parser.add_argument('--precomputed', nargs=1, choices=['no','yes'], 
-         help="Specifies whether standard climatologies are stored with the dataset (*-JAN.nc, *-FEB.nc, ... *-DJF.nc, *-year0.nc, etc")
-      parser.add_argument('--json', '-j', nargs=1, choices=['no', 'yes'],
-         help="Produce JSON output files as part of climatology generation") # same
-      parser.add_argument('--netcdf', '-n', nargs=1, choices=['no', 'yes'],
-         help="Produce NetCDF output files as part of climatology generation") # same
       parser.add_argument('--seasonally', action='store_true',
          help="Produce climatologies for all of the defined seasons. To get a list of seasons, run --list seasons")
       parser.add_argument('--monthly', action='store_true',
          help="Produce climatologies for all predefined months")
       parser.add_argument('--yearly', action='store_true',
          help="Produce annual climatogolies for all years in the dataset")
-      parser.add_argument('--timestart', nargs=1,
-         help="Specify the starting time for the dataset, such as 'months since Jan 2000'")
-      parser.add_argument('--timebounds', nargs=1, choices=['daily', 'monthly', 'yearly'],
-         help="Specify the time boudns for the dataset")
-      parser.add_argument('--verbose', '-V', action='count',
-         help="Increase the verbosity level. Each -v option increases the verbosity more.") # count
-      parser.add_argument('--name', action='append', nargs=1,
-         help="Specify option names for the datasets for plot titles, etc") #optional name for the set
-      # This will be the standard list of region names NCAR has
-      parser.add_argument('--regions', '--region', nargs='+', choices=all_regions.keys(),
-         help="Specify a geographical region of interest. Note: Multi-word regions need quoted, e.g. 'Central Canada'")
-      parser.add_argument('--starttime', nargs=1,
-         help="Specify a start time in the dataset")
-      parser.add_argument('--endtime', nargs=1, 
-         help="Specify an end time in the dataset")
-      parser.add_argument('--translate', nargs='?', default='y',
-         help="Enable translation for obs sets to datasets. Optional provide a colon separated input to output list e.g. DSVAR1:OBSVAR1")
-      parser.add_argument('--varopts', nargs='+',
-         help="Variable auxillary options")
 
 
-
+      ### Actually parse the command line arguments now.
       args = parser.parse_args()
 
-      if(args.list != None):
+
+      ### Process the command line options now.
+
+      # Determine verbose level since this influences things like processPathOptions()
+      self.verbose = args.verbose
+
+      # First, if --list was specified, we need to deal with it.
+      if args.list != None:
+         # What do they want listed?
          if args.list[0] == 'translations':
-            print "Default variable translations: "
+            print 'Default variable tanslations: '
             self.listTranslations()
+            if args.translate is not None and args.translate is not 'no':
+               print 'User specific translations: '
+               print args.translate
             quit()
+
          if args.list[0] == 'regions':
-            print "Available geographical regions: ", all_regions.keys()
+            print 'Available geographical regions: ', all_regions.keys()
+            quit()
+         
+         if args.list[0] == 'coords':
+            print 'All defined regions: ', all_regions
             quit()
 
          if args.list[0] == 'seasons':
@@ -384,7 +354,6 @@ class Options():
             print self.all_packages.keys()
             quit()
 
-         
          if args.list[0] == 'sets':
             if args.packages == None:
                print "Please specify package before requesting available diags sets"
@@ -398,93 +367,98 @@ class Options():
             quit()
                
          if args.list[0] == 'variables' or args.list[0] == 'vars':
-            if args.path != None:
-               for i in args.path:
-                  self._opts['path'].append(i[0])
-            else:
-               print 'Must provide a dataset when requesting a variable listing'
-               quit()
+
+            self.processPathOptions(args)
+
             self.listVariables(args.packages, args.sets)
+
             quit()
+
          if args.list[0] == 'options':
-            if args.path!= None:
-               for i in args.path:
-                  self._opts['path'].append(i[0])
-            else:
-               print 'Must provide a dataset when requesting a variable listing'
-               quit()
+            self.processPathOptions(args)
+
             self.listVarOptions(args.packages, args.sets, args.vars)
+
             quit()
 
-      # Generally if we've gotten this far, it means no --list was specified. If we don't have
-      # at least a path, we should exit.
-      if(args.path != None):
-         for i in args.path:
-            self._opts['path'].append(i[0])
-      else:
-         print 'Must specify a path or the --list option at a minimum.'
-         quit()
-      if(args.path2 != None):
-         for i in args.path2:
-            self._opts['path2'].append(i[0])
+      # If we got this far, the first thing we should do is process all path information.
+      self.processPathOptions(args)
 
-      if(args.obspath != None):
-         for i in args.obspath:
-            self._opts['obspath'].append(i[0])
-
-      # TODO: Should some pre-defined filters be "nameable" here?
-      if(args.filter != None): # Only supports one filter argument, see filter2.
-         self._opts['filter'] = args.filter[0]
-         self._opts['user_filter'] = True
-#         for i in args.filter:
-#            self._opts['filter'].append(i[0])
-      if(args.filter2 != None): # This is a second filter argument.
-         self._opts['filter2'] = args.filter2[0]
-         self._opts['user_filter'] = True
-      if(args.new_filter != None):  # like filter but with multiple arguments
-         for i in args.new_filter:
-            self._opts['new_filter'].append(i[0])
+      # Now, deal with some of the other options.
 
       if(args.cachepath != None):
-         self._opts['cachepath'] = args.cachepath[0]
+         self.cachepath = args.cachepath[0]
 
-      self._opts['seasonally'] = args.seasonally
-      self._opts['monthly'] = args.monthly
 
+      # Time-based options
+      if args.seasonally:
+         self.times.extend(all_seasons)
+      if args.monthly:
+         self.times.extend(all_months)
+      if args.yearly:
+         self.times.append('ANN')
+      # This allows specific individual months to be added to the list of climatologies
+      if(args.months != None):
+         if(args.monthly == True):
+            print "Please specify just one of --monthly or --months"
+            quit()
+         else:
+            mlist = [x for x in all_months if x in args.months]
+            self.times.extend(mlist)
+
+      if(args.seasons != None):
+         if(args.seasonally == True):
+            print "Please specify just one of --seasonally or --seasons"
+            quit()
+         else:
+            slist = [x for x in all_seasons if x in args.seasons]
+            self.times.extend(slist)
+
+      # This allows specific individual years to be added to the list of climatologies.
+      # Note: Checking for valid input is impossible until we look at the dataset
+      # This has to be special cased since typically someone will be saying
+      # "Generate climatologies for seasons for years X, Y, and Z of my dataset"
+      if(args.years != None):
+         if(args.yearly == True):
+            print "Please specify just one of --yearly or --years"
+            quit()
+         else:
+            self.years = args.years
+
+      # TODO This should probably be a dictionary of var:opt
       if(args.varopts != None):
-         self._opts['varopts'] = args.varopts
-
-      if(args.starttime != None):
-         self._opts['start'] = args.starttime[0]
-
-      if(args.endtime != None):
-         self._opts['end'] = args.endtime[0]
+         self.varopts = args.varopts
 
       # I checked; these are global and it doesn't seem to matter if you import cdms2 multiple times;
       # they are still set after you set them once in the python process.
       if(args.compress != None):
-         if(args.compress[0] == 'no'):
-            self._opts['compress'] = False
+         if type(args.compress[0]) is str and args.compress[0].lower() == 'no':
+            self.compress = False
             cdms2.setNetcdfShuffleFlag(0)
             cdms2.setNetcdfDeflateFlag(0)
             cdms2.setNetcdfDeflateLevelFlag(0)
          else:
-            self._opts['compress'] = True
+            if type(args.compress[0]) is str and args.compress[0].lower() == 'yes':
+               level = 9
+            else:
+               level = args.compress[0]
+            self.compress = True
             cdms2.setNetcdfShuffleFlag(1)
             cdms2.setNetcdfDeflateFlag(1)
-            cdms2.setNetcdfDeflateLevelFlag(9)
+            cdms2.setNetcdfDeflateLevelFlag(level)
 
+      # Output control options
       if(args.json != None):
-         if(args.json[0] == 'no'):
-            self._opts['json'] = False
+         if(args.json[0].lower()  == 'no'):
+            self.json = False
          else:
-            self._opts['json'] = True
+            self.json = True
 
       if(args.netcdf != None):
-         if(args.netcdf[0] == 'no'):
-            self._opts['netcdf'] = False
+         if(args.netcdf[0].lower() == 'no'):
+            self.netcdf = False
          else:
-            self._opts['netcdf'] = True
+            self.netcdf = True
 
       if(args.plots != None):
          if(args.plots[0].lower() == 'no' or args.plots[0] == 0):
@@ -493,40 +467,26 @@ class Options():
             self._opts['plots'] = True
 
       if(args.climatologies != None):
-         if(args.climatologies[0] == 'no'):
-            self._opts['climatologies'] = False
+         if(args.climatologies[0].lower() == 'no'):
+            self.write_climos= False
          else:
-            self._opts['climatologies'] = True
-
-      self._opts['verbose'] = args.verbose
-
-      if(args.name != None):
-         for i in args.name:
-            self._opts['dsnames'].append(i[0])
+            self.write_climos = True
 
       # Specify an output path (base filename and directory name)
-      if(args.output != None):
-         self._opts['output'] = args.output[0]
+      if(args.outputname != None):
+         self.outputname = args.output[0]
       if(args.outputdir != None):
          if not os.path.isdir(args.outputdir[0]):
             print "ERROR, output directory",args.outputdir[0],"does not exist!"
             quit()
-         self._opts['outputdir'] = args.outputdir[0]
+         self.outputdir = args.outputdir[0]
 
-      if(args.translate != 'y'):
-         print args.translate
-         print self._opts['translate']
-         quit()
-      # Timestart assumes a string like "months since 2000". I can't find documentation on
-      # toRelativeTime() so I have no idea how to check for valid input
-      # This is required for some of the land model sets I've seen
-      if(args.timestart != None):
-         self._opts['reltime'] = args.timestart
-         
-      # cdutil.setTimeBounds{bounds}(variable)
-      if(args.timebounds != None):
-         self._opts['bounds'] = args.timebounds
+#      if(args.translate != 'y'):
+#         print args.translate
+#         print self._opts['translate']
+#         quit()
 
+      ### Diagnostic options
       # Check if a user specified package actually exists
       # Note: This is case sensitive.....
       if(args.packages != None):
@@ -542,8 +502,26 @@ class Options():
             print 'Valid package names: ', self.all_packages.keys()
             quit()
          else:
-            self._opts['packages'] = plist
+            self.packages = plist
 
+
+      # Given user-selected packages, check for user specified sets
+      # Note: If multiple packages have the same set names, then they are all added to the list.
+      # This might be bad since there is no differentiation of lwmg['id==set'] and lmwg2['id==set']
+      if(self.packages == None and args.sets != None):
+         print 'No package specified'
+         self.sets = args.sets
+
+      if(args.sets != None and self.packages != None):
+         self.sets = args.sets
+         # unfortuantely, we have to go through all of this....
+         # there should be a non-init of the class method to list sets/packages/etc,
+         # ie a dictionary perhaps?
+         ### Just accept the user passed in value for now. This makes a mess in diags.py
+
+      # TODO: Check against an actual list of variables from the set
+      if args.vars != None:
+         self.vlist = args.vars
 
       # TODO: Requires exact case; probably make this more user friendly and look for mixed case
       if(args.regions != None):
@@ -552,104 +530,128 @@ class Options():
             if x in all_regions.keys():
                rlist.append(x)
          print 'REGIONS: ', rlist
-         self._opts['regions'] = rlist
+         self.regions = rlist
 
-      # Given user-selected packages, check for user specified sets
-      # Note: If multiple packages have the same set names, then they are all added to the list.
-      # This might be bad since there is no differentiation of lwmg['id==set'] and lmwg2['id==set']
-      if(self._opts['packages'] == None and args.sets != None):
-         print 'No package specified'
-         self._opts['sets'] = args.sets
-
-      if(args.sets != None and self._opts['packages'] != None):
-         self._opts['sets'] = args.sets
-         # unfortuantely, we have to go through all of this....
-         # there should be a non-init of the class method to list sets/packages/etc,
-         # ie a dictionary perhaps?
-         ### Just accept the user passed in value for now. This makes a mess in diags.py
-##         sets = []
-##         import metrics.fileio.filetable as ft
-##         import metrics.fileio.findfiles as fi
-##         dtree = fi.dirtree_datafiles(self, pathid=0)
-##         filetable = ft.basic_filetable(dtree, self)
-##         package = self._opts['packages']
-##
-##         # this needs a filetable probably, or we just define the maximum list of variables somewhere
-##         print package[0]
-##         package[0] = package[0].lower()
-##         print package[0]
-##
-##
-##         # There are all sorts of circular dependencies here if we import diagnostic_groups
-##         im = ".".join(['metrics', 'packages', package[0], package[0]])
-##         if package[0] == 'lmwg' or package[0] == 'LMWG':
-##            pclass = getattr(__import__(im, fromlist=['LMWG']), 'LMWG')()
-##         elif package[0]=='amwg' or package[0] == 'AMWG':
-##            pclass = getattr(__import__(im, fromlist=['AMWG']), 'AMWG')()
-##
-##         # there doesn't appear to be a way to change filetables after a class has been init'ed.
-##         # is init expensive? not too bad currently, but that could be added perhaps.
-##         slist = pclass.list_diagnostic_sets()
-##         keys = slist.keys()
-##         keys.sort()
-##         for k in keys:
-##            fields = k.split()
-##            for user in args.sets:
-##               if user == fields[0]:
-##                  sets.append(user)
-##         self._opts['sets'] = sets
-
-      # TODO: Check against an actual list of variables from the set
-      if args.vars != None:
-         self._opts['vars'] = args.vars
-
-      # If --yearly is set, then we will add 'ANN' to the list of climatologies
-      if(args.yearly == True):
-         self._opts['yearly'] = True
-         self._opts['times'].append('ANN')
-
-      # If --monthly is set, we add all months to the list of climatologies
-      if(args.monthly == True):
-         self._opts['monthly'] = True
-         self._opts['times'].extend(all_months)
-
-      # If --seasonally is set, we add all 4 seasons to the list of climatologies
-      if(args.seasonally == True):
-         self._opts['seasonally'] = True
-         self._opts['times'].extend(all_seasons)
-
-      # This allows specific individual months to be added to the list of climatologies
-      if(args.months != None):
-         if(args.monthly == True):
-            print "Please specify just one of --monthly or --months"
-            quit()
+   def processPathOptions(self, args):
+      # First, the easy ones.
+      if self.verbose >= 2:
+         print 'In processPathOptions()'
+      index = 0
+      if args.fulldataset is not None or args.fullobsset is not None:
+         if args.fulldataset == None:
+            sets = args.fullobsset
+         elif args.fullobsset == None:
+            sets = args.fulldataset
          else:
-            mlist = [x for x in all_months if x in args.months]
-            self._opts['times'] = self._opts['times']+mlist
+            sets = args.fulldataset+args.fullobsset
+         for ds in sets:
+            if self.verbose >= 3:
+               print 'processPathOptions() fulldata/obs: ', ds
+            self.datasets.append(dsOptions(path=ds[0], dfilter=ds[1]))
+            self.datasets[index].isClimo = ds[2]
+            # Other options are optional.
+            if len(ds) == 3:
+               self.datasets[index].dsname = ds[3]
+            if len(ds) == 4:
+               self.datasets[index].reltime = ds[4]
+            if len(ds) == 5:
+               self.datasets[index].bounds = ds[5]
+            if len(ds) == 6:
+               self.datasets[index].starttime = ds[6]
+            if len(ds) == 7:
+               self.datasets[index].endtime = ds[7]
+            if args.fullobsset is not None and ds in args.fullobsset:
+               self.datasets[index].dstype = 'obs'
+            if args.fulldataset is not None and ds in args.fulldataset:
+               self.datasets[index].dstype = 'model'
+            index = index+1
 
-      # This allows specific individual years to be added to the list of climatologies.
-      # Note: Checkign for valid input is impossible until we look at the dataset
-      # This has to be special cased since typically someone will be saying
-      # "Generate climatologies for seasons for years X, Y, and Z of my dataset"
-      if(args.years != None):
-         if(args.yearly == True):
-            print "Please specify just one of --yearly or --years"
-            quit()
+      # Next most complicated; pathfilts. Assumes ONLY path+filter arguments
+      if args.pathfilt is not None or args.obspathfilt is not None:
+         if args.pathfilt is None:
+            sets = args.obspathfilt
+         elif args.obspathfilt is None:
+            sets = args.pathfilt
          else:
-            self._opts['years'] = args.years
+            sets = args.obspathfilt+args.pathfilt
+         for ds in sets:
+            if self.verbose >= 3:
+               print 'processPathOptions() obs/pathfilt: ', ds
+            self.datasets.append(dsOptions(path=ds[0], dfilter=ds[1]))
+            # assume defaults for everything else
+            if args.pathfilt is not None and ds in args.pathfilt:
+               self.datasets[index].dstype = 'model'
+            if args.obspathfile is not None and ds in args.obspathfilt:
+               self.datasets[index].dstype = 'obs'
+            index = index+1
 
-      if(args.seasons != None):
-         if(args.seasonally == True):
-            print "Please specify just one of --seasonally or --seasons"
-            quit()
+      # most general
+      # This assumes/requires a 1:1 mapping of options. So if a user wants to have no
+      # filter on one set but does want a filter on another, they'd have to do --filter None
+      # on the first one (or alter the order, or use --pathfilt)
+      if args.path is not None or args.obspath is not None:
+         if args.path is None:
+            sets = args.obspath
+         elif args.obspath is None:
+            sets = args.path
          else:
-            slist = [x for x in all_seasons if x in args.seasons]
-            self._opts['times'] = self._opts['times']+slist
+            sets = args.obspath + sets.path
 
+         for ds in sets:
+            if self.verbose >= 3:
+               print 'processPathOptions() obs/path: ', ds
+            subIndex = 0
+            incflag = 0
+            self.datasets.append(dsOptions(path=ds[0]))
+            if args.obspath is not None and ds in args.obspath:
+               self.datasets[index].dstype = 'obs'
+            if args.path is not None and ds in args.path:
+               self.datasets[index].dstype = 'model'
+            if args.filter is not None:
+               self.datasets[index].dfilter = args.filter[subIndex]
+               incflag = 1
+            if args.timebounds is not None:
+               self.datasets[index].bounds = args.timebounds[subIndex]
+               incflag = 1
+            if args.starttime is not None:
+               self.datasets[index].start = args.starttime[subIndex]
+               incflag = 1
+            if args.endtime is not None:
+               self.datasets[index].end = args.endtime[subIndex]
+               incflag = 1
+            if args.dsname is not None:
+               self.datasets[index].dsname = args.dsname[subIndex]
+               incflag = 1
+            if args.reltime is not None:
+               self.datasets[index].reltime = args.reltime[subIndex]
+               incflag = 1
+            if args.precomputed is not None:
+               self.datasets[index].isClimo = args.precomputed[subIndex]
+               incflag = 1
+            if incflag == 1:
+               subIndex = subIndex+1
+               incflag = 0
+            index = index+1
+      if len(self.datasets) == 0:
+         print 'Couldnt process dataset-related options. Aborting'
+         print args
+      if self.verbose >=2:
+         print 'Leaving processPathOpts()'
+      if self.verbose >= 3:
+         print 'datasets: ', self.datasets
+
+         
+
+
+
+      
 
 
 if __name__ == '__main__':
    o = Options()
    o.processCmdLine()
-   print o._opts
+   print o
+
+XXXX some issue with indexing for this case:
+python src/python/frontend/options.py -VVV --path /Users/bs1/data/ --packages LMWG  --filter None --path /Users/bs1/data2 --filter foo
 
