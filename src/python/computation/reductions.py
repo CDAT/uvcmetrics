@@ -1136,7 +1136,9 @@ def aminusb0( mv1, mv2 ):
 def adivb(mv1, mv2):
    """ returns mv1/mv2; they should be dimensioned alike.
    Primarily used for ASA - all sky albedo in LMWG but generally useful function"""
-   mv = mv1/mv2
+   # This should probably be more of an abs(value - epsilon) check
+   denom = MV2.where(MV2.equal(mv2, 0.), mv2.missing_value, mv2)
+   mv = mv1/denom
    if hasattr(mv, 'long_name'):
       if mv.long_name == mv1.long_name:
          mv.long_name = ''
