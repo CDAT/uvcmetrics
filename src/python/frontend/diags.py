@@ -154,7 +154,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
     number_diagnostic_plots = 0
     dm = diagnostics_menu()                 # dm = diagnostics menu (packages), a dict
     for pname in packages:
-        pclass = dm[pname]()
+        pclass = dm[pname.upper()]()
 
         # Find which plotsets the user requested which this package offers:
         sm = pclass.list_diagnostic_sets()  # sm = plot set menu, a dict
