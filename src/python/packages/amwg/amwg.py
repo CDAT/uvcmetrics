@@ -69,6 +69,9 @@ class amwg_plot_spec(plot_spec):
     def _all_variables( filetable1, filetable2=None ):
         return amwg_plot_spec.package._all_variables( filetable1, filetable2, "amwg_plot_spec" )
 
+# plot set classes in other files:
+#from metrics.packages.amwg.amwg1 import *
+
 # plot set classes we need which I haven't done yet:
 class amwg_plot_set4a(amwg_plot_spec):
     pass
@@ -579,7 +582,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
                 vid = ps.dict_id(varid,'diff',seasonid,filetable1,filetable2),
                 zvars = [vid1,vid2],  zfunc = aminusb_2ax,
                 plottype = self.plottype,
-                title = ' '.join([varid,seasonid,filetable1._strid,'-',filetable2._strid]) ),
+                title = ' '.join([varid,seasonid,filetable1._strid,'-',filetable2._strid]) )
         self.composite_plotspecs = {
             self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id, self.plot1var_id ]
             }
