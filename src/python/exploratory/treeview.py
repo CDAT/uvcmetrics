@@ -26,14 +26,17 @@ class TreeView():
          packs = packages
 
       if len(filetables) == 1:
-         filetables.append(None)
+         ft2 = None
+      else:
+         ft2 = filetables[1]
 
+      print 'ft len----> ', len(filetables)
       join = '|'
       baseurl = 'baseurl:'
       dm = diagnostics_menu()
       p = {}
       for pack in packs:
-         pclass = dm[pack]() # initialize the class
+         pclass = dm[pack.upper()]() # initialize the class
          p['name'] = pack
          p['children'] = []
          for ds in range(len(filetables)):
@@ -50,7 +53,7 @@ class TreeView():
                sets = {}
                sets['name'] = s
                sets['children'] = []
-               variables = pclass.list_variables( filetables[0], filetables[1], s )
+               variables = pclass.list_variables( filetables[0], ft2, s )
                for v in variables:
                   var = {}
                   var['name'] = v
@@ -64,7 +67,7 @@ class TreeView():
                dataset['children'].append(sets)
             p['children'].append(dataset)
          self.tree['children'].append(p)
-         print self.tree
+#         print self.tree
 
          return self.tree
    def dump(self, filename=None):

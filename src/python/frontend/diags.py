@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # Script for running diagnostics.
 # Command-line usage example:
 #
