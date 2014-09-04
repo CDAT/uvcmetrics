@@ -23,14 +23,7 @@ from genutil import *
 
 regridded_vars = {}  # experimental
 
-seasonsDJF=cdutil.times.Seasons(['DJF'])
-seasonsJJA=cdutil.times.Seasons(['JJA'])
-seasons2=cdutil.times.Seasons(['DJF','JJA'])
-seasons4=cdutil.times.Seasons(['DJF','MAM','JJA','SON'])
 seasonsyr=cdutil.times.Seasons('JFMAMJJASOND')
-seasonsmons=cdutil.times.Seasons(
-    ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'])
-
 
 # >>>> TO DO: accomodate more names for the level axis.  Much of this can be
 # >>>> done simply by adding more names in levAxis().  Search on 'lev' for the rest.
@@ -445,6 +438,7 @@ def reduce2lat_seasonal( mv, seasons=seasonsyr, vid=None ):
     return avmv
 
 # Calculate RMSE between mv1 and mv2. Regrid as appropriate
+# This is used by land set 9, but might be generally usable
 # Step 1 - Reconcile units
 # Step 2 - ANNUALCYCLE.climatology(mv1, mv2)
 # Step 3 - Regrid
@@ -503,6 +497,7 @@ def rmse_time(mv1, mv2):
    return rmse
 
 # Calculate the correlation between mv1 and mv2. Regrid as appropriate
+# This is used by land set 9 but might be generally usable
 # Step 0? - NCL masks off land and glacier. Do we need to do glaciers too?
 # Step 1 - Reconcile units
 # Step 2 - ANNUALCYCLE.climatology(mv1, mv2)
@@ -568,9 +563,9 @@ def corr_time(mv1, mv2):
       corr = statistics.correlation(mv1new, mv2new, axis='t')
       return corr
 
-# Calculate the correlation between mv1 and mv2. Regrid as appropriate
 
 # Takes 2 rmse variables in. Could be required to take 2 normal variables and we might have to calculate rmse?
+# Also, we might want to specify constant somehow.
 def rmse_map(mv1, mv2, constant=.1):
    diff = mv2-mv1
    absdiff = MV2.absolute(diff)
@@ -580,7 +575,7 @@ def rmse_map(mv1, mv2, constant=.1):
    vmap = MV2.where (MV2.equal(vsum, 0), absdiff.missing_value, vsum)
    return vmap
 
-### NEEDS TESTED
+# Basically the same as rmse_map, but the math is different.
 def corr_map(mv1, mv2, constant=.1):
    diff = mv2-mv1
    b = MV2.where(MV2.greater_equal(diff, constant), 1, 0)
@@ -605,10 +600,10 @@ def bias_map(mv1, mv2, obs, constant=.1):
    # eww, this one is more complicated, plus need to implement T-test
    pass
 
-
-
-
 # This could possibly be moved to lmwg, but it is not specific to land.
+# Does a yearly climatology, then spatial reduction over a subregion, then returns
+# an MV that is the sum of a given level axis range
+# This could probably just call reduceAnnTrendRegionLevel() in a loop and calculate the sum
 def reduceAnnTrendRegionSumLevels(mv, region, slevel, elevel, vid=None):
    timeax = timeAxis(mv)
    if timeax is not None and timeax.getBounds() == None:
@@ -680,14 +675,11 @@ def reduceAnnTrendRegionLevel(mv, region, level, vid=None):
    #print 'Returning mvvar: ', mvvar
    return mvvar
 
-def reduceRegion(mv, r, vid=None):
-   #print 'IN REDUCE REGION, region: ', defines.all_regions[r]
-   mvsub = mv(latitude=(r1, r2), longitude=(r3, r4))
-   rv = cdutil.averager(mvsub, axis='xy')
-   return rv
-
-
-def reduceAnnTrendSingle(mv, vid=None):
+# This computes avg ( avg(year1), avg(year2), ... avg(yearN)) 
+# to get a single value over the global that would then be reduced 
+# spatially. used by land set 5, part 1
+def reduceAnnSingle(mv, vid=None):
+#   print 'reduceAnnSingle - mv: ', mv
    if vid == None:
       vid = 'reduced_'+mv.id
 
@@ -703,31 +695,13 @@ def reduceAnnTrendSingle(mv, vid=None):
    mvtrend.id = vid
    if hasattr(mv, 'units'):
        mvtrend.units = mv.units # probably needs some help
+#   print 'reduceAnnSingle on ', mv.id, 'shape: ', mvtrend.shape
    return mvtrend
 
-# First, does an annual climatology, then reduces to a region, then to a final single value over the time axis
-# This is primarily for land set 5 (table views) but could be used in general for single-value tables
-def reduceAnnTrendRegionSingle(mv, region, vid=None):
-   if vid == None:
-      vid = 'reduced_'+mv.id
 
-   timeax = timeAxis(mv)
-   if timeax is not None and timeax.getBounds() == None:
-      timeax._bounds_ = timeax.genGenericBounds()
-   if timeax is not None:
-      mvsub = mv(latitude=(region[0], region[1]), longitude=(region[2], region[3]))
-      mvann = cdutil.times.YEAR(mvsub) 
-   else:
-      mvann = mv
-
-   mvtrend = cdutil.averager(mvann, axis='xyt')
-   mvtrend.id = vid
-   if hasattr(mv, 'units'):
-       mvtrend.units = mv.units # probably needs some help
-   return mvtrend
-
-def reduceAnnTrendRegion(mv, region, vid=None):
+def reduceAnnTrendRegion(mv, region, single=False, vid=None):
 # Need to compute year1, year2, ... yearN individual climatologies then get a line plot.
+#   print 'mv passed in:', mv
    if vid == None:
       vid = 'reduced_'+mv.id
 
@@ -739,14 +713,21 @@ def reduceAnnTrendRegion(mv, region, vid=None):
       mvann = cdutil.times.YEAR(mvsub) 
    else:
       mvann = mv
+   axisstr = 'xy'
+   if single is True:
+      # This is primarily for table views (e.g. land set 5)
+      print 'Doing single value reduction'
+      axisstr = 'xyt'
+   else:
+      print 'NOT doing single value reduction'
 
    #print 'Calculating land averages...'
-   mvtrend = cdutil.averager(mvann, axis='xy')
+   mvtrend = cdutil.averager(mvann, axis=axisstr)
    mvtrend.id = vid
    if hasattr(mv, 'units'):
        mvtrend.units = mv.units # probably needs some help
-   #print 'Returning mvtrend: ', mvtrend
-   #print 'shape: ', mvtrend.shape
+#   if mvtrend.shape == ():
+#      print 'Returning single point; This could be an invalid input dataset for this diagnostic'
    return mvtrend
 
 # Used for lmwg set 3
@@ -769,22 +750,19 @@ def reduceMonthlyRegion(mv, region, vid=None):
 
 # Used to get just a spatial region average of a var, i.e. when climos are passed in
 def reduceRegion(mv, region, vid=None):
+   print 'in reduce region. region/mv: ', region, mv.id
+#   quit()
    if vid == None:
       vid = 'reduced_'+mv.id
-   timeax = timeAxis(mv)
-   if timeax is not None and timeax.getBounds() == None:
-      timeax._bounds_ = timeax.genGenericBounds()
-   if timeax is not None:
-      # first, spatially subset
-      mvsub = mv(latitude=(region[0], region[1]), longitude=(region[2], region[3]))
-
+   mvsub = mv(latitude=(region[0], region[1]), longitude=(region[2], region[3]))
+#   print 'about to call averager on mvsub: ', mvsub.shape
+#   print 'mv going in:', mvsub
    mvvals = cdutil.averager(mvsub, axis='xy')
    mvvals.id = vid
+#   print 'done calling averager on mvsub', mvsub.id
    if hasattr(mv, 'units'): mvvals.units = mv.units # probably needs some help
    #print 'reduceMonthlyTrendRegion - Returning ', mvvals
    return mvvals
-
-# Make sure no one is using this. It should be deleted.
 
 
 def reduceMonthlyTrendRegion(mv, region, vid=None):
@@ -809,29 +787,6 @@ def reduceMonthlyTrendRegion(mv, region, vid=None):
    if hasattr(mv, 'units'): mvvals.units = mv.units # probably needs some help
    #print 'reduceMonthlyTrendRegion - Returning ', mvvals
    return mvvals
-
-# Make sure no one is using this. It should be deleted.
-def reduceAnnTrend(mv, vid=None):
-   print'THIS FUNCTION WAS DEPRECATED FOR ReduceAnnTrendRegion(region=global)'
-   quit()
-   # This does a annual climatology, then a spatial average of a variable. result is basically a list
-   if vid == None:
-      vid = 'reduced_'+mv.id
-
-   timeax = timeAxis(mv)
-   if timeax is not None and timeax.getBounds()==None:
-      timeax._bounds_ = timeax.genGenericBounds()
-   if timeax is not None:
-       #print 'Calculating seasonal climatology...'
-       mvann = cdutil.times.YEAR(mv)
-   else:
-       mvann = mv
-   #print 'Calculating land averages...'
-   mvtrend = cdutil.averager(mvann, axis='xy')
-   mvtrend.id = vid
-   if hasattr(mv, 'units'):
-       mvtrend.units = mv.units # should be units/sq meter I assume
-   return mvtrend
 
 def reduce2latlon_seasonal_level( mv, season, level, vid=None):
 # I wonder if this can be done faster somehow? need to ask Charles
@@ -1149,84 +1104,6 @@ def adivb(mv1, mv2):
 def dummy(mv, vid=None):
    return mv
 
-# This is no longer used. Make sure no one is using it, then delete it.
-def evapfrac(mv1, mv2, mv3, mv4): #, flags, season, region):
-   print 'THIS SHOULD NOT BE CALLED -- in evapfrac in computation/reductions.py'
-   quit()
-   # Basically ripped from the NCL code
-   #print '******* IN EVAPFRAC ********'
-   #print mv1.id
-   #print mv2.id
-   #print mv3.id
-   #print mv4.id
-   #print mv4
-   #print type(mv4)
-#   print flags
-#   print season
-#   print region
-   flags = None
-   lheat = mv1+mv2+mv3
-   fsh = mv4
-
-   denom = lheat+fsh
-
-   if fsh.min() < 0.:
-      denom_nz1 = MV2.where(MV2.less(fsh, 0.), fsh.missing_value, denom)
-
-   if lheat.min() < 0.:
-      denom_nz2 = MV2.where(MV2.less(lheat, 0.), lheat.missing_value, denom_nz1)
-
-   denom_nz = MV2.where(MV2.less(denom_nz2, 0.), denom_nz2.missing_value, denom_nz2)
-
-   evap = lheat / denom_nz
-   # This cleans up the graphs a bit. Lots of values were like 1e-30 but they were missing_values in the plots
-   # at NCAR
-   evapfrac = MV2.where(MV2.less_equal(evap, 0.000000001), evap.missing_value, evap)
-
-   evapfrac.id = 'evapfrac'
-
-   if(flags == 'latlon_seasonal'):
-      timeax = timeAxis(evapfrac)
-      if timeax is None or len(timeax)<=1:
-         print 'No time axis, bailing'
-         mvret = evapfrac
-      else:
-         if timeax.getBounds()==None:
-            timeax._bounds_ = timeax.genGenericBounds()
-         evapfrac_seas = seasons.climatology(evapfrac)
-    
-      axes = allAxes( evapfrac )
-      axis_names = [ a.id for a in axes if a.id!='lat' and a.id!='lon' and a.id!='time']
-      axes_string = '('+')('.join(axis_names)+')'
-
-      if len(axes_string)>2:
-         for axis in mvseas.getAxisList():
-            if axis.getBounds() is None:
-               axis._bounds_ = axis.genGenericBounds()
-            avmv = averager( evapfrac_seas, axis=axes_string )
-      else:
-           avmv = evapfrac_seas
-      if avmv is None: return avmv
-      avmv.id = evapfrac.id
-      if hasattr(mv,'units'): avmv.units = mv.units
-      avmv = delete_singleton_axis( avmv, vid='time' )
-      avmv.units = mv.units
-      return avmv
-   elif(flags == 'seasonal'):
-       #print 'Seasonal'
-       pass
-
-   else:
-      return evapfrac
-
-def pminuse(rain, snow, qsoil, qvege, qvegt):
-   prec = rain+snow
-   et = qsoil+qvege+qvegt
-   mv = prec - et
-   mv.id = 'P-E'
-   return mv
-
-
 def ab_ratio(mv1, mv2):
    mv = mv1
 #   print 'denom min: ', mv2.min()
@@ -1240,8 +1117,9 @@ def ab_ratio(mv1, mv2):
          mv.long_name = ''
    return mv
 
-
-def qvegep_special(mv1, mv2, mv3):
+### This function is pretty much lmwg specific but is in here for now
+def canopy_special(mv1, mv2, mv3):
+#   print 'in canopy_special'
    p=mv2+mv3  #rain+snow
    rv = mv1 #qvege
 
@@ -1257,6 +1135,7 @@ def qvegep_special(mv1, mv2, mv3):
    rv.units=''
    return rv
 
+### This function is pretty much lmwg specific but is in here for now
 def evapfrac_special(mv1, mv2, mv3, mv4):
    """returns evaporative fraction """
    lht = mv1+mv2+mv3
