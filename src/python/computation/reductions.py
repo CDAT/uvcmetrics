@@ -95,6 +95,17 @@ def timeAxis( mv ):
         if ax.id=='time': time_axis = ax
     return time_axis
 
+def timeAxis2( mv ):
+    "returns the time axis, if any, of a variable mv; and the index in its axis list"
+    if mv is None: return None
+    timeAxis = None
+    idx = None
+    for i,ax in enumerate(allAxes(mv)):
+        if ax.id=='time':
+            timeAxis = ax
+            idx = i
+    return timeAxis,idx
+
 def tllAxes( mv ):
     "returns the time,latitude, and longitude axes, if any, of a variable mv"
     if mv is None: return None
@@ -436,6 +447,83 @@ def reduce2lat_seasonal( mv, seasons=seasonsyr, vid=None ):
     if hasattr(mv,'units'):
         avmv.units = mv.units
     return avmv
+
+
+"""
+def ttest_time(mv1, mv2, mv3):
+# mv1 = case1
+# mv2 = case2
+# mv3 = obs
+# Everything needs down-interpolated to obs' dimensionality first.
+   mv3, mv1 = reconcile_units(mv3, mv1)
+   mv3, mv2 = reconcile_units(mv3, mv2)
+   ax1 = mv1.getAxisList()
+   ax2 = mv2.getAxisList()
+   ax3 = mv3.getAxisList()
+
+   if ax1 is None or ax2 is None:
+      return None
+   mv1new = mv1
+   mv2new = mv2
+   lat1, idx1 = latAxis2(mv1)
+   lat2, idx2 = latAxis2(mv2)
+   lat3, idx3 = latAxis2(mv3)
+
+   # Regrid if necessary. This makes the two modesl the lesser
+   # of the two grid sizes.
+   if len(ax1[idx1]) < len(ax2[idx2]):
+      newgrid = mv1.getGrid()
+      mv2new = mv2.regrid(newgrid)
+   if len(ax1[idx1]) > len(ax2[idx2]):
+      newgrid = mv2.getGrid()
+      mv1new = mv1.regrid(newgrid)
+
+   modellat = min(len(ax1[idx1]), len(ax2[idx2]))
+   if len(ax3[idx3] < modellat):
+      newgrid = mv1new.getGrid()
+      mv3new = mv3.regrid(newgrid)
+
+
+   # NCL code interpolates up, ie, obs is scaled to model grid with linint2 function
+   t_ax, t_idx = timeAxis2(mv1new)
+   # get basic numpy arrays
+   v1 = mv1new.asma()
+   v2 = mv2new.asma()
+   import scipy.stats
+
+   t, prob = scipy.stats.ttest_ind(v1, v2, axis=t_idx, equal_var=False)
+   # The NCAR code interpolates obs res UP to model res.
+   # It also does pretty much everything with the interpolated vars, so so shall we.
+   v1_avg = cdutil.averager(mv1new, axis=t_ax)
+   v2_avg = cdutil.averager(mv2new, axis=t_ax)
+   v3_avg = cdutil.averager(mv3new, axis=t_ax)
+
+   diff13 = MV2.absolute(v1_avg - v3_avg)
+   diff23 = MV2.where(MV2.absolute(v2_avg - v3_avg)
+
+   p1 = MV2.where( MV2.greater(diff13, diff23), MV2.where(MV2.less(prob, .1), 5, 0), 0)
+   p2 = MV2.where( MV2.greater(diff23, diff13), MV2.where(MV2.less(prob, .1), 10, 0), 0)
+   #### Implement my own ttest_ind I think
+   ## Welch's t-test:
+   # 
+
+   pmap = p1+p2
+   
+
+   # Can this be done with MV2.{} stuff?
+   # If diff13 and diff23 are not missing values
+   #    If prob is not missing
+   #        if diff13 > diff23
+   #            if prob < constant
+   #                prob = 10
+   #        else
+   #            if prob < constant
+   #                prob = 5
+
+"""
+
+
+
 
 # Calculate RMSE between mv1 and mv2. Regrid as appropriate
 # This is used by land set 9, but might be generally usable
@@ -1238,6 +1326,7 @@ def aminusb_ax2( mv1, mv2 ):
     return aminusb
 
 def reconcile_units( mv1, mv2 ):
+# This probably needs expanded to be more general purpose for unit conversions.
     if hasattr(mv1,'units') and hasattr(mv2,'units') and mv1.units!=mv2.units:
         if mv1.units=='mb':
             mv1.units = 'mbar' # udunits uses mb for something else
