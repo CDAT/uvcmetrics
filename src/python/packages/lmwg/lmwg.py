@@ -73,7 +73,7 @@ class rnet_redvar( reduced_variable ):
          reduced_variable.__init__(
             self, variableid='RNET_A',
             filetable=filetable,
-            reduction_function=(lambda x, vid=None: reduceAnnTrendRegionSingle(x, region, vid=vid)),
+            reduction_function=(lambda x, vid=None: reduceAnnTrendRegion(x, region, single=True, vid=vid)),
             duvs={'RNET_A':duv})
 
 class albedos_redvar( reduced_variable ):
@@ -102,8 +102,8 @@ class albedos_redvar( reduced_variable ):
       if fn == 'SINGLE':
          reduced_variable.__init__(
             self, variableid=vname,
-            filetable=filetable1,
-            reduction_function=(lambda x, vid: reduceAnnTrendRegionSingle(x, region, vid=vid)),
+            filetable=filetable,
+            reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, single=True, vid=vid)),
             duvs={vname:duv})
 
 # A couple only used for one set, so don't need more generalized.
@@ -116,14 +116,33 @@ class pminuse_seasonal( reduced_variable ):
          reduction_function=(lambda x, vid=None: reduce2latlon_seasonal(x, season, vid=vid)),
          duvs={'P-E_A':duv})
 
-class qvegepTrendRegionSingle( reduced_variable ):
-   def __init__(self, filetable, region):
-      duv = derived_var('QVEGEP_A', inputs=['QVEGE', 'RAIN',' SNOW'], func=qvegep_special)
+class canopyevapTrend( reduced_variable ):
+# Canopy evap = qvege/(rain+snow)
+   def __init__(self, filetable):
+      duv = derived_var('CE_A', inputs=['QVEGE', 'RAIN','SNOW'], func=canopy_special)
+      print 'in canopyevap.'
       reduced_variable.__init__(
-         self, variableid='QVEGEP_A',
+         self, variableid='CE_A',
          filetable=filetable,
-         reduction_function=(lambda x, vid: reduceAnnTrendRegionSingle(x, region, vid=vid)),
-         duvs={'QVEGEP_A':duv})
+         reduction_function=(lambda x, vid=None: reduceAnnSingle(x, vid=vid)),
+         duvs={'CE_A':duv})
+
+class prereduce ( reduced_variable ):
+   def __init__(self, filetable, var, region):
+      duv = derived_var(var+'_'+region, inputs=[var], func=reduceAnnSingle)
+      reduced_variable.__init__(
+         self, variableid=var+'_'+region, filetable=filetable, 
+         reduction_function=(lambda x, vid=None: reduceRegion(x, defines.all_regions[region], vid=vid)),
+         duvs={var+'_'+region:duv})
+
+class co2ppmvTrendRegionSingle( reduced_variable ):
+   def __init__(self, filetable, region):
+      duv = derived_var('CO2_PPMV_A', inputs=['PCO2', 'PBOT'], func=adivb)
+      reduced_variable.__init__(
+         self, variableid='CO2_PPMV_A',
+         filetable=filetable,
+         reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, single=True, vid=vid)),
+         duvs={'CO2_PPMV_A':duv})
 
 class LMWG(BasicDiagnosticGroup):
     #This class defines features unique to the LMWG Diagnostics.
@@ -1174,14 +1193,9 @@ class lmwg_plot_set3b(lmwg_plot_spec):
 
 class lmwg_plot_set5(lmwg_plot_spec):
    varlist = []
-# Temporarily disable since we don't process tables yet.
-#   name = '5 - Tables of annual means'
+   name = '5 - Tables of annual means'
    number = '5'
    def __init__( self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None):
-      """filetable1, filetable2 should be filetables for two datasets for now. Need to figure
-      out obs data stuff for lmwg at some point
-      varid is a string identifying the variable to be plotted, e.g. 'TREFHT'.
-      seasonid is a string such as 'DJF'."""
       plot_spec.__init__(self,seasonid)
       self.plottype = 'Isofill'
       if self._seasonid == 'ANN':
@@ -1204,9 +1218,10 @@ class lmwg_plot_set5(lmwg_plot_spec):
 
    @staticmethod
    def _list_variables( filetable1, filetable2=None ):
-      varlist = ['Regional Hydrologic Cycle - Table', 'Global Biogeophysics - Table', 'Global Carbon/Nitrogen - Table',
-                 'Regional Hydrologic Cycle - Difference', 'Global Biogeophysics - Difference', 
-                 'Global Carbon/Nitrogen - Difference']
+      varlist = ['Regional Hydrologic Cycle - Table', 'Global Biogeophysics - Table', 'Global Carbon/Nitrogen - Table']
+      if filetable2 != None:
+         varlist.extend( [ 'Regional Hydrologic Cycle - Difference', 'Global Biogeophysics - Difference', 
+                 'Global Carbon/Nitrogen - Difference'])
       return varlist
 
    @staticmethod
@@ -1215,88 +1230,118 @@ class lmwg_plot_set5(lmwg_plot_spec):
       return vlist
 
    def plan_computation( self, filetable1, filetable2, varid, seasonid, region=None, aux=None):
+      self.hasregions = 0
+      self.twosets = 0
+      self.differences = 0
+      self.setname = ''
       self.reduced_variables = {}
       self.derived_variables = {}
-      if 'Regional' in varid and 'Table' in varid:
-         print 'Not implemented yet'
-         quit()
-         # Basically need to do annual reductions, then for all regions, provide a single number
-         # This should probably do the climatology first, then loop over the regions but that will
-         # require some special casing.
-#         _derived_varnames = ['PREC','QVEGEP', 'TOTRUNOFF']
-#         _red_vars = ['FCEV', 'FCTR', 'FGEV', 'RAIN', 'SNOW', 'QOVER', 'QDRAI', 'QRGWL']
-#
-#         self.reduced_variables['FCEV_1'] = reduced_variable(variableid = 'FCEV',
-#            filetable=filetable1, reduced_var_id='FCEV_1',
-#            reduction_function=(lambda x, vid: reduceAnnTrendSingle(x, vid=vid)))
-#         for r in defines.all_regions.keys():
-#         print 'self var vals: ', self.variable_values
-#         r = 'Global'
-#         inp = ['FCEV_1', r ]
-#         self.variable_values['region'] = r
-#         self.derived_variables['FCEV_'+r+'_1'] = derived_var(vid='FCEV_'+r+'_1', inputs=inp, func=reduceRegion)
+      self.derived_variables1 = None
+      self.reduced_variables1 = None
+      import sys # needed for the "pretty" table output
 
-#         for v in _red_vars:
-#            self.reduced_variables[v+'_1'] = reduced_variable(variableid = v,
-#               filetable=filetable1, reduced_var_id=v+'_1', 
-#               reduction_function=(lambda x, vid: reduceAnnTrendSingle(x, vid=vid)))
-#            if filetable2 != None:
-#               self.reduced_variables[v+'_2'] = reduced_variable(variableid = v,
-#                  filetable=filetable2, reduced_var_id=v+'_2', 
-#                  reduction_function=(lambda x, vid: reduceAnnTrendSingle(x, region, vid=vid)))
-##         self.reduced_variables['QVEGEP_1'] = qvegepTrendSingle(filetable1)
-#         self.reduced_variables['PREC_1'] = derived_var(vid='PREC_1', inputs=['RAIN_1', 'SNOW_1'], func=aplusb)
-#         self.derived_variables['TOTRUNOFF_1'] = derived_var(vid='TOTRUNOFF_1', inputs=['QOVER_1', 'QDRAI_1',' QRGWL_1'], func=sum3)
-#
-#         for r in defines.all_regions.keys():
-#            for v in _red_vars:
-#               vname = v+'_'+r
-#               self.reduced_variables[vname+'_1'] = reduced_variable(variableid = v+'_1',
-#                  filetable=filetable1, reduced_var_id=vname+'_1',
-#                  reduction_function=(lambda x, vid: reduceRegion(x, r, vid=vid)))
+      if 'Regional' in varid:
+         # This one will take 2 passes over the input list for efficiency.
+         self.derived_variables1 = {}
+         self.reduced_variables1 = {}
+         # For each var:
+         #     reduce temporarily
+         #     for each region:
+         #         reduce spatially to a single value
+         # Of course, some of these are overly complicated nonlinear variables
+         self.hasregions = 1
+         self.setnmae = 'DIAG SET 5: REGIONAL HYDROLOGIC CYCLE OVER LAND'
+         # Do the initial temporar reductions on Global
+         region = defines.all_regions['Global']
+         _red_vars = ['RAIN', 'SNOW', 'QVEGE', 'QVEGT', 'QSOIL', 'QOVER', 'QDRAI', 'QRGWL']
+         _derived_varnames = ['PREC', 'CE', 'TOTRUNOFF']
+         self.display_vars = ['PREC', 'QVEGE', 'QVEGEP', 'QVEGT', 'QSOIL', 'TOTRUNOFF']
 
-         self.computation_planned = True
-         return
+         for v in _red_vars:
+            self.reduced_variables1[v+'_1'] = reduced_variable(variableid = v,
+               filetable = filetable1, reduced_var_id=v+'_1',
+               reduction_function = (lambda x, vid: reduceAnnSingle(x, vid=vid)))
+
+         self.reduced_variables1['QVEGEP_1'] = canopyevapTrend(filetable1)
+         self.derived_variables1['TOTRUNOFF_1'] = derived_var(vid='TOTRUNOFF_1', inputs=['QOVER_1', 'QDRAI_1', 'QRGWL_1'], func=sum3)
+         self.derived_variables1['PREC_1'] = derived_var(vid='PREC_1', inputs=['RAIN_1', 'SNOW_1'], func=aplusb)
+
+         # Ok, assume the first pass variables are done. Now, reduce regions.
+         for v in self.display_vars:
+            for r in defines.all_regions.keys():
+               self.derived_variables[v+'_'+r+'_1'] = derived_var(vid=v+'_'+r+'_1', inputs=[v+'_1'], special_value=r, func=reduceRegion)
+
+         if filetable2 != None:
+            self.twosets = 1
+            for v in _red_vars:
+               self.reduced_variables1[v+'_2'] = reduced_variable(variableid = v,
+                  filetable = filetable2, reduced_var_id=v+'_2',
+                  reduction_function = (lambda x, vid: reduceAnnSingle(x, vid=vid)))
+            self.reduced_variables1['QVEGEP_2'] = canopyevapTrend(filetable2)
+            self.derived_variables1['TOTRUNOFF_2'] = derived_var(vid='TOTRUNOFF_2', inputs=['QOVER_2', 'QDRAI_2', 'QRGWL_2'], func=sum3)
+            self.derived_variables1['PREC_2'] = derived_var(vid='PREC_2', inputs=['RAIN_2', 'SNOW_2'], func=aplusb)
+
+            if 'Difference' in varid:
+               self.difference = 1
+            for v in self.display_vars:
+               for r in defines.all_regions.keys():
+                  self.derived_variables[v+'_'+r+'_2'] = derived_var(vid=v+'_'+r+'_2', inputs=[v+'_2'], special_value=r, func=reduceRegion)
+                  if self.difference == 1:
+                     self.derived_variables[v+'_'+r+'_diff'] = derived_var(vid=v+'_'+r+'_diff', inputs=[v+'_'+r+'_1', v+'_'+r+'_2'], func=aminusb)
 
       if 'Biogeophysics' in varid: 
+         self.setname = 'DIAG SET 5: CLM ANNUAL MEANS OVER LAND'
          region = defines.all_regions['Global']
-         _derived_varnames = ['PREC', 'RNET', 'LHEAT']
+         _derived_varnames = ['PREC', 'RNET', 'LHEAT', 'CO2_PPMV', 'ET']
          _red_vars = ['TSA', 'RAIN', 'SNOW', 'SNOWDP', 'FSNO', 'H2OSNO', 'FSH', 'FSDS', 'FSA', 'FLDS', 
-                      'FIRE', 'FCTR', 'FCEV', 'FGEV', 'FGR', 'FSM', 'TLAI', 'LAISUN', 'LAISHA', 'QOVER', 
-                      'QDRAI', 'QRGWL', 'WA', 'WT', 'ZWT', 'QCHARGE', 'FCOV', 'CO2_PPMV']
+                      'FIRE', 'FCTR', 'FCEV', 'FGEV', 'FGR', 'FSM', 'TLAI', 'TSAI', 'LAISUN', 'LAISHA', 'QOVER', 
+                      'QDRAI', 'QRGWL', 'WA', 'WT', 'ZWT', 'QCHARGE', 'FCOV', 'QVEGE', 'QVEGT', 'QSOIL']
+         self.display_vars = ['TSA', 'PREC', 'RAIN', 'SNOW', 'SNOWDP', 'FSNO','H2OSNO', 'VBSA', 'NBSA','VWSA','NWSA',
+         'RNET','LHEAT','FSH','FSDS','FSA','FLDS','FIRE','FCTR','FCEV','FGEV','FGR','FSM','TLAI','TSAI','LAISUN','LAISHA','ET','QOVER',
+         'QDRAI','QRGWL','WA','WT','ZWT','QCHARGE','FCOV','CO2_PPMV']
          for v in _red_vars:
             self.reduced_variables[v+'_1'] = reduced_variable(variableid = v,
                filetable = filetable1, reduced_var_id=v+'_1',
-               reduction_function=(lambda x, vid: reduceAnnTrendRegionSingle(x, region, vid=vid)))
-            if 'Difference' in varid:
+               reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, single=True, vid=vid)))
+            if filetable2 != None:
+               self.twosets = 1
                self.reduced_variables[v+'_2'] = reduced_variable(variableid = v,
                   filetable = filetable2, reduced_var_id=v+'_2',
-                  reduction_function=(lambda x, vid: reduceAnnTrendRegionSingle(x, region, vid=vid)))
-               self.derived_variables[v+'_diff'] = derived_var(vid=v+'_diff', inputs=[v+'_1', v+'_2'], func=aminusb)
+                  reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, single=True, vid=vid)))
+               if 'Difference' in varid:
+                  self.differences = 1
+                  self.derived_variables[v+'_diff'] = derived_var(vid=v+'_diff', inputs=[v+'_1', v+'_2'], func=aminusb_2ax)
 
          for v in self.albedos.keys():
-            self.reduced_variable[v+'_1'] = albedos_redvar(filetable1, 'SINGLE', self.albedos[v], region=region)
+            self.reduced_variables[v+'_1'] = albedos_redvar(filetable1, 'SINGLE', self.albedos[v], region=region)
+            if filetable2 != None:
+               self.reduced_variables[v+'_2'] = albedos_redvar(filetable2, 'SINGLE', self.albedos[v], region=region)
             if 'Difference' in varid:
-               if filetable2 != None:
-                  self.reduced_variable[v+'_2'] = albedos_redvar(filetable2, 'SINGLE', self.albedos[v], region=region)
-                  self.derived_variables[v+'_diff'] = derived_var(vid=v+'_diff', inputs=[v+'_1', v+'_2'], func = aminusb)
+               self.derived_variables[v+'_diff'] = derived_var(vid=v+'_diff', inputs=[v+'_1', v+'_2'], func = aminusb_2ax)
 
+         self.derived_variables['ET_1'] = derived_var(vid='ET_1', inputs=['QVEGE_1', 'QVEGT_1', 'QSOIL_1'], func=sum3)
+         self.reduced_variables['CO2_PPMV_1'] = co2ppmvTrendRegionSingle(filetable1, region=region)
          self.reduced_variables['RNET_1'] = rnet_redvar(filetable1, 'SINGLE', region=region)
          # Is this correct, or do these need to do the math in a different order?
          self.derived_variables['PREC_1'] = derived_var(vid='PREC_1', inputs=['RAIN_1', 'SNOW_1'], func=aplusb)
          self.derived_variables['LHEAT_1'] = derived_var(vid='LHEAT_1', inputs=['FCTR_1', 'FGEV_1', 'FCEV_1'], func=sum3)
+         if filetable2 != None:
+            self.derived_variables['ET_2'] = derived_var(vid='ET_2', inputs=['QVEGE_2', 'QVEGT_2', 'QSOIL_2'], func=sum3)
+            self.reduced_variables['CO2_PPMV_2'] = co2ppmvTrendRegionSingle(filetable2, region=region)
+            self.reduced_variables['RNET_2'] = rnet_redvar(filetable2, 'SINGLE', region=region)
+            # Is this correct, or do these need to do the math in a different order?
+            self.derived_variables['PREC_2'] = derived_var(vid='PREC_2', inputs=['RAIN_2', 'SNOW_2'], func=aplusb)
+            self.derived_variables['LHEAT_2'] = derived_var(vid='LHEAT_2', inputs=['FCTR_2', 'FGEV_2', 'FCEV_2'], func=sum3)
          if 'Difference' in varid:
-            if filetable2 != None:
-               self.reduced_variables['RNET_2'] = rnet_redvar(filetable2, 'SINGLE', region=region)
-               # Is this correct, or do these need to do the math in a different order?
-               self.derived_variables['PREC_2'] = derived_var(vid='PREC_2', inputs=['RAIN_2', 'SNOW_2'], func=aplusb)
-               self.derived_variables['LHEAT_2'] = derived_var(vid='LHEAT_2', inputs=['FCTR_2', 'FGEV_2', 'FCEV_2'], func=sum3)
-               self.reduced_variables['RNET_diff'] = derived_var(vid='RNET_diff', inputs=['RNET_1', 'RNET_2'], func=aminusb)
-               # Is this correct, or do these need to do the math in a different order?
-               self.derived_variables['PREC_diff'] = derived_var(vid='PREC_diff', inputs=['PREC_1', 'PREC_2'], func=aminusb)
-               self.derived_variables['LHEAT_diff'] = derived_var(vid='LHEAT_diff', inputs=['LHEAT_1', 'LHEAT_2' ], func=aminusb)
+            self.derived_variables['ET_diff'] = derived_var(vid='ET_diff', inputs=['ET_1', 'ET_2' ], func=aminusb)
+            self.derived_variables['CO2_PPMV_diff'] = derived_var(vid='CO2_PPMV_diff', inputs=['CO2_PPMV_1', 'CO2_PPMV_2'], func=aminusb)
+            self.reduced_variables['RNET_diff'] = derived_var(vid='RNET_diff', inputs=['RNET_1', 'RNET_2'], func=aminusb)
+            # Is this correct, or do these need to do the math in a different order?
+            self.derived_variables['PREC_diff'] = derived_var(vid='PREC_diff', inputs=['PREC_1', 'PREC_2'], func=aminusb)
+            self.derived_variables['LHEAT_diff'] = derived_var(vid='LHEAT_diff', inputs=['LHEAT_1', 'LHEAT_2' ], func=aminusb)
 
       if 'Carbon' in varid:
+         self.setname = 'DIAG SET 5: CN ANNUAL MEANS OVER LAND'
          region = defines.all_regions['Global']
          _red_vars = ['NEE', 'NEP', 'GPP', 'PSNSUN_TO_CPOOL', 'PSNSHADE_TO_CPOOL', 'NPP', 'AGNPP', 'BGNPP', 
               'MR', 'GR', 'AR', 'LITHR', 'SOMHR', 'HR', 'RR', 'SR', 'ER', 'LEAFC', 'XSMRPOOL', 'SOIL3C', 'SOIL4C', 
@@ -1308,42 +1353,162 @@ class lmwg_plot_set5(lmwg_plot_spec):
               'FIRESEASONL', 'FIRE_PROB', 'ANN_FAREA_BURNED', 'MEAN_FIRE_PROB', 'CWDC_HR', 'CWDC_LOSS', 'FROOTC_ALLOC', 
               'FROOTC_LOSS', 'LEAFC_ALLOC', 'LEAFC_LOSS', 'LITTERC', 'LITTERC_HR', 'LITTERC_LOSS', 'SOILC', 'SOILC_HR', 
               'SOILC_LOSS', 'WOODC', 'WOODC_ALLOC',  'WOODC_LOSS']
+         # No derived vars, so the table is everything above
+         self.display_vars = _red_vars
 
          for v in _red_vars:
             self.reduced_variables[v+'_1'] = reduced_variable(variableid = v,
                filetable=filetable1, reduced_var_id=v+'_1', 
-               reduction_function=(lambda x, vid: reduceAnnTrendRegionSingle(x, region, vid=vid)))
-            if 'Differencein' in varid:
-               if filetable2 != None:
-                  self.reduced_variables[v+'_2'] = reduced_variable(variableid = v,
-                     filetable=filetable2, reduced_var_id=v+'_2', 
-                     reduction_function=(lambda x, vid: reduceAnnTrendRegionSingle(x, region, vid=vid)))
+               reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, single=True, vid=vid)))
+            if filetable2 != None:
+               self.twosets = 1
+               self.reduced_variables[v+'_2'] = reduced_variable(variableid = v,
+                  filetable=filetable2, reduced_var_id=v+'_2', 
+                  reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, single=True, vid=vid)))
+               if 'Difference' in varid:
+                  self.differences = 1
                   self.derived_variables[v+'_diff'] = derived_var(
-                     vid=v+'_diff', inputs=[v+'_1', v+'_2'], func=aminusb)
+                     vid=v+'_diff', inputs=[v+'_1', v+'_2'], func=aminusb_2ax)
 
       self.computation_planned = True
 
    def _results(self,newgrid=0):
-      #print 'red var keys:', self.reduced_variables.keys()
+      # Do we have some first-pass variables to do?
+      if self.reduced_variables1 != None:
+         for v in self.reduced_variables1.keys():
+            value = self.reduced_variables1[v].reduce(None)
+            self.variable_values[v] = value
+      if self.derived_variables1 != None:
+         for v in self.derived_variables1.keys():
+            value = self.derived_variables1[v].derive(self.variable_values)
+            self.variable_values[v] = value
+
       for v in self.reduced_variables.keys():
+         print 'trying to reduce ', v
          value = self.reduced_variables[v].reduce(None)
          self.variable_values[v] = value
       postponed = []
-      #print 'derived var keys:', self.derived_variables.keys()
       for v in self.derived_variables.keys():
          value = self.derived_variables[v].derive(self.variable_values)
          if value is None:
-            #print 'postponing ', v
+#            print 'postponing ', v
             postponed.append(v)
          else:
             self.variable_values[v] = value
       for v in postponed:
-         #print 'Working on postponed var', v
+#         print 'Working on postponed var', v
          value = self.derived_variables[v].derive(self.variable_values)
          self.variable_values[v] = value
+
       varvals = self.variable_values
-      print varvals
-      
+
+      if self.hasregions == 1:
+         # An attempt to make this look pretty....
+         rk = defines.all_regions.keys()
+         rk.sort()
+         maxl = max(map(len, rk))
+
+         # Headers
+         sys.stdout.write('%s' % self.setname)
+         if self.differences == 1:
+            print ' - DIFFERENCE (case1 - case2)'
+         else:
+            sys.stdout.write('\n')
+
+         print 'TEST CASE (case1): '
+         print 'REFERENCE CASE (case2): '
+         if self.differences == 1:
+            print 'DIFFERENCE: '
+         print 'Variables:'
+         print '\t\t\t PREC = ppt: rain+snow ((mm/y))'
+         print '\t\t\t QVEGE = canopy evaporation ((mm/y))'
+         print '\t\t\t QVEGEP = canopy evap:QVEGE/(RAIN+SNOW)*100 ((%))'
+         print '\t\t\t QVEGT = canopy transpiration ((mm/y))'
+         print '\t\t\t QSOIL = ground evaporation ((mm/y))'
+         print '\t\t\t TOTRUNOFF = Runoff:qover+qdrai+qrgwl ((mm/y))'
+         print '%-*s\tPREC(mm/y)\t\tQVEGE(mm/y)\t\tQVEGEP(%%)\t\t\tQVEGT\t\t\tQSOIL(mm/y)\t\tTOTRUNOFF(mm/y)' % ((maxl+3), 'Region')
+
+
+         if self.twosets == 1:
+            print 'case1\t\tcase2\t\tcase1\t\tcase2\t\tcase1\t\tcase2\t\tcase1\t\tcase2\t\tcase1\t\tcase2\t\tcase1\t\tcase2'
+         else:
+            if self.differences == 1:
+               print 'diff\t\tdiff\t\tdiff\t\tdiff\t\tdiff\t\tdiff'
+            else:
+               print '\t\t\t\t\t\tcase1\t\t\tcase1\t\t\tcase1\t\t\t\tcase1\t\t\tcase1\t\t\tcase1'
+
+#         sys.stdout.write(ostr % ' ')
+         if self.differences == 1:
+            sys.stdout.write('\t')
+         print '\t\t\t\t\t\tppt: rain+snow\tcanopy evaporation\tcanopy evap:QVEGE/(RAIN+SNOW)*100\tcanopy transpiration\tground evaporation\tRunoff:qover+qdrai+qrgwl'
+
+         # Dump out the data now
+         for r in rk:
+            ostr = '%-'+str(maxl+3)+'s\t'
+            sys.stdout.write(ostr % r)
+            sys.stdout.write('%8.3f\t' % varvals['PREC_'+r+'_1'])
+            if self.twosets == 1:
+               sys.stdout.write('%8.3f\t' % varvals['PREC_'+r+'_2'])
+            else:
+               sys.stdout.write('\t')
+            sys.stdout.write('%8.3f\t' % varvals['QVEGE_'+r+'_1'])
+            if self.twosets == 1:
+               sys.stdout.write('%8.3f\t' % varvals['QVEGE_'+r+'_2'])
+            else:
+               sys.stdout.write('\t')
+            sys.stdout.write('%8.3f\t' % varvals['QVEGEP_'+r+'_1'])
+            if self.twosets == 1:
+               sys.stdout.write('%8.3f\t' % varvals['QVEGEP_'+r+'_2'])
+            else:
+               sys.stdout.write('\t\t')
+            sys.stdout.write('%8.3f\t' % varvals['QVEGT_'+r+'_1'])
+            if self.twosets == 1:
+               sys.stdout.write('%8.3f\t' % varvals['QVEGT_'+r+'_2'])
+            else:
+               sys.stdout.write('\t')
+            sys.stdout.write('%8.3f\t' % varvals['QSOIL_'+r+'_1'])
+            if self.twosets == 1:
+               sys.stdout.write('%8.3f\t' % varvals['QSOIL_'+r+'_2'])
+            else:
+               sys.stdout.write('\t\t')
+            sys.stdout.write('%8.3f\t' % varvals['TOTRUNOFF_'+r+'_1'])
+            if self.twosets == 1:
+               sys.stdout.write('%8.3f\t' % varvals['TOTRUNOFF_'+r+'_2'])
+            sys.stdout.write('\n')
+
+      else: # var 2 or 3
+         from metrics.packages.lmwg.defines import varinfo
+         descmax = max(map(len, [varinfo[x]['desc'] for x in self.display_vars]))
+         unitmax = max(map(len, [varinfo[x]['RepUnits'] for x in self.display_vars]))
+         varmax  = max(map(len, self.display_vars))
+         print 'desc: ', descmax, 'unit: ', unitmax, 'var: ', varmax
+
+         if self.difference == 0:
+            print 'DATA SET 5: CLM ANNUAL MEANS OVER LAND - DIFFERENCE (case1 - case2)'
+            print 'TEST CASE (case1): '
+            print 'REFERENCE CASE (case2): '
+            print 'DIFFERENCE: '
+            print '%-*s %-12s' % (varmax+descmax+unitmax, 'Variable', 'case1-case2')
+            for v in self.display_vars:
+               if varvals[v+'_1'] == None:
+#                  print v,' was none. setting to -999.000'
+                  varvals[v+'_1'] = -999.000
+               sys.stdout.write('%-*s(%-*s) %-*s %8.3f' % (varmax, v, unitmax, varinfo[v]['RepUnits'], descmax, varinfo[v]['desc'], varvals[v+'_1']))
+               if self.twosets == 1:
+                  sys.stdout.write(' %8.3f' % varvals[v+'_2'])
+               sys.stdout.write('\n')
+         else:
+            print 'DATA SET 5: CLM ANNUAL MEANS OVER LAND - DIFFERENCE (case1 - case2)'
+            print 'TEST CASE (case1): '
+            print 'REFERENCE CASE (case2): '
+            print 'DIFFERENCE: '
+            print '%-*s %-12s' % (varmax+descmax+unitmax, 'Variable', 'case1-case2')
+            for v in self.display_vars:
+               if varvals[v+'_diff'] == None:
+                  varvals[v+'_diff'] = -999.00
+               sys.stdout.write('%-*s(%-*s) %-*s %10.7f\n' % (varmax, v, unitmax, varinfo[v]['RepUnits'], descmax, varinfo[v]['desc'], varvals[v+'_diff']))
+
+         
 
 
 ###############################################################################
