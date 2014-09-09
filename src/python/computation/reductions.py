@@ -287,7 +287,78 @@ def reduce2scalar_zonal( mv, latmin=-90, latmax=90, vid=None ):
     avmv = averager( mv2, axis=axes_string )
     avmv.id = vid   # Note that the averager function returns a variable with meaningless id.
     if hasattr(mv,'units'):
-        ammv.units = mv.units
+        avmv.units = mv.units
+
+    return avmv
+
+def reduce2scalar_seasonal_zonal( mv, seasons=seasonsyr, latmin=-90, latmax=90, vid=None ):
+    """returns the mean of the variable over the supplied latitude range (in degrees, based
+    on values of lat, not lat_bnds).
+    The computed quantity is a scalar but is returned as a cdms2 variable, i.e. a MV.
+    The input mv is a cdms2 variable too.
+    This function uses the cdms2 avarager() function to handle weights and do averages
+    Time is restriced to the specified season.
+    """
+    if vid==None:
+        vid = 'reduced_'+mv.id
+    axes = allAxes( mv )
+    ilat = None
+    for i,ax in enumerate(axes):
+        if ax.id=='lat': ilat = i
+    # reduce size of lat axis to (latmin,latmax)
+    # Let's home a direct search will be fast enough:
+    lataxis = latAxis( mv )
+    lmin = -1
+    lmax = len(lataxis)
+    if lataxis[0]>=latmin: lmin = 0
+    if lataxis[-1]<=latmax: lmax = len(lataxis)-1
+    if lmin==-1 or lmax==len(lataxis):
+        for l,ax in enumerate(lataxis):
+            if lmin==-1 and ax>=latmin: lmin = max( 0, l )
+            if lmax==len(lataxis) and ax>=latmax: lmax = min( l, len(lataxis) )
+    lataxis_shrunk = lataxis.subaxis(lmin,lmax)
+    mv2shape = list(mv.shape)
+    mv2shape[ilat] = lmax-lmin+1
+    axes[ilat] = lataxis_shrunk
+    mvd1 = numpy.delete( mv, slice(0,lmin), ilat )
+    mvdata = numpy.delete( mvd1, slice(lmax-lmin,len(lataxis)-lmin), ilat )
+    mv2 = cdms2.createVariable( mvdata, axes=axes )
+
+    timeax = timeAxis(mv2)
+    if timeax is None or len(timeax)<=1:
+        mvseas = mv2
+    else:
+        if timeax.getBounds()==None:
+            timeax._bounds_ = timeax.genGenericBounds()
+        if timeax.units=='months':
+            # Special check necessary for LEGATES obs data, because
+            # climatology() won't accept this incomplete specification
+            timeax.units = 'months since 0001-01-01'
+        mvseas = seasons.climatology(mv2)
+        if mvseas is None:
+            # Among other cases, this can happen if mv has all missing values.
+            return None
+    # If the time axis has only one point (as it should by now, if it exists at all),
+    # the next, averager(), step can't use it because it may not have bounds (or they
+    # would be as meaningless as the time value itself).  So get rid of it now:
+    mvseas = delete_singleton_axis( mvseas, vid='time' )
+    axes = allAxes( mvseas )
+
+    for ax in axes:
+        if ax.isTime():
+            continue
+        if ax.getBounds() is None:
+            ax._bounds_ = ax.genGenericBounds()  # needed for averager()
+    
+    axis_names = [ a.id for a in axes ]
+    axes_string = '('+')('.join(axis_names)+')'
+    if len(axes_string)>2:
+        avmv = averager( mvseas, axis=axes_string )
+    else:
+        avmv = mvseas
+    avmv.id = vid   # Note that the averager function returns a variable with meaningless id.
+    if hasattr(mv,'units'):
+        avmv.units = mv.units
 
     return avmv
 
@@ -307,35 +378,12 @@ def reduce2scalar( mv, vid=None ):
 
     return avmv
 
-def reduce2lat_old( mv, vid=None ):
+def reduce2lat( mv, vid=None ):
     """returns the mean of the variable over all axes but latitude, as a cdms2 variable, i.e. a MV.
     The input mv is a also cdms2 variable, assumed to be indexed as is usual for CF-compliant
     variables, i.e. mv(time,lat,lon).  At present, no other axes (e.g. level) are supported.
     At present mv must depend on all three axes.
     """
-    # >>> For now, I'm assuming that the only axes are time,lat,lon
-    # And I'm assuming equal spacing in lon (so all longitudes contribute equally to the average)
-    # If they aren't, it's best to use area from cell_measures attribute if available; otherwise
-    # compute it with lat_bnds, lon_bnds etc.
-    # If I base another reduction function on this one, it's important to note that an average
-    # in the lat direction will unavoidably need weights, because of the geometry.
-
-    if vid==None:
-        vid = 'reduced_'+mv.id
-    time_axis, lat_axis, lon_axis = tllAxes( mv )
-
-    mvta = timeave_old( mv )
-
-    zm = numpy.zeros( mvta.shape[0] )
-    for i in range(len(lat_axis)):
-        for j in range(len(lon_axis)):
-            zm[i] += mvta[i,j]
-        zm[i] /= len(lon_axis)
-    zmv = cdms2.createVariable( zm, axes=[lat_axis], id=vid )
-    return zmv
-
-def reduce2lat( mv, vid=None ):
-    """as reduce2lat_old, but uses the averager module for greater capabilities"""
     if vid==None:   # Note that the averager function returns a variable with meaningless id.
         vid = 'reduced_'+mv.id
     axes = allAxes( mv )
