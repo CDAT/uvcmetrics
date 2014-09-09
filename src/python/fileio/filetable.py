@@ -135,9 +135,11 @@ class basic_filetable(basic_id):
         self._filelist = filelist # just used for __repr__ and root_dir
         self._cache_path=options._opts['cachepath']
         if filelist is None: return
+        self._files = []
 
         for filep in filelist.files:
             self.addfile( filep, options )
+            self._files.append(filep)
     def __repr__(self):
        return 'filetable from '+str(self._filelist)[:100]+'...'
     def full_repr(self):
