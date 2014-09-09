@@ -20,8 +20,8 @@ class amwg_plot_set1(amwg_plot_spec):
         { 'var':'RESTOA', 'obs':'ERBE'},
         { 'var':'SOLIN', 'obs':'CERES-EBAF'},
         { 'var':'SOLIN', 'obs':'CERES'},
-        { 'var':'CLDTOT', 'obs':'ISCCP'},
-        { 'var':'CLDTOT', 'obs':'CLOUDSAT'},
+        { 'var':'CLDTOT', 'obs':'ISCCP', 'units':'percent' },
+        { 'var':'CLDTOT', 'obs':'CLOUDSAT', 'units':'percent' },
         { 'var':'FLDS', 'obs':'ISCCP'},
         { 'var':'FLNS', 'obs':'ISCCP'},
         { 'var':'FLUT', 'obs':'CERES-EBAF'},
@@ -53,8 +53,8 @@ class amwg_plot_set1(amwg_plot_spec):
         { 'var':'PREH2O', 'obs':'JRA25'},
         { 'var':'PREH2O', 'obs':'ERAI'},
         { 'var':'PREH2O', 'obs':'ERA40'},
-        { 'var':'PSL', 'obs':'JRA25'},
-        { 'var':'PSL', 'obs':'ERAI'},
+        { 'var':'PSL', 'obs':'JRA25', 'units':'millibar' },
+        { 'var':'PSL', 'obs':'ERAI', 'units':'millibar' },
         { 'var':'SHFLX', 'obs':'JRA25'},
         { 'var':'SHFLX', 'obs':'NCEP'},
         { 'var':'SHFLX', 'obs':'LARYEA'},
@@ -91,7 +91,8 @@ class amwg_plot_set1(amwg_plot_spec):
     class myrow:
         # represents a row of the output table.  Here's an example of what a table row would look like:
         # TREFHT_LEGATES   298.423             298.950            -0.526         1.148
-        def __init__( self, filetable1, filetable2, seasonid='ANN', domain='global', var='TREFHT', obs=None, lev=None ):
+        def __init__( self, filetable1, filetable2, seasonid='ANN', domain='global', var='TREFHT',
+                      obs=None, lev=None, units=None ):
             # inputs are test (model) and control (obs) filetables, a season name (e.g. 'DJF'),
             # a domain name (e.g. 'tropics'), a variable name (e.g. 'TREFHT'),
             # an obs name (e.g. 'CERES'), and, if necessary, a level in millibars.
@@ -111,6 +112,8 @@ class amwg_plot_set1(amwg_plot_spec):
             self.var = var
             self.obs = obs
             self.lev = lev
+            self.units = units   # The output table doesn't mention units, but they are essential
+            #                      because different datasets may use different units.
 
         def fpfmt( self, num ):
             """No standard floating-point format (e,f,g) will do what we need, so this switches between f and e"""
@@ -135,6 +138,7 @@ class amwg_plot_set1(amwg_plot_spec):
                         (lambda x,vid=None: reduce2scalar_seasonal_zonal(x,self.season,domrange[0],domrange[1],vid=vid))
                     )
                 rrv = rv.reduce()
+                rrv = convert_variable( rrv, self.units )
                 if rrv.shape!=():
                     print "WARNING: reduced variable",rrv.id,"for table has more than one data point"
                 return float(rrv.data)
@@ -172,7 +176,7 @@ class amwg_plot_set1(amwg_plot_spec):
             obs = spec.get('obs',None)
             row = self.myrow( filetable1, filetable2,
                               seasonid=seasonid, domain=domain, var=spec['var'],
-                              obs=obs, lev=spec.get('lev',None) )
+                              obs=obs, lev=spec.get('lev',None), units=spec.get('units',None) )
             row.compute()
             self.rows.append( row )
         self.reduced_variables = {}
