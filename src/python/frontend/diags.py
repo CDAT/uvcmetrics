@@ -180,6 +180,10 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
             seasons = list( set(seasons) & set(pclass.list_seasons()) )
             for seasonid in seasons:
                 variables = pclass.list_variables( filetable1, filetable2, sname  )
+                if sclass.number=='1':
+                    # Plot set 1 (the table) ignores variable specifications - it does all variables in
+                    # its internal list.  To make the code work unchanged, choose one:
+                    variables = variables[:1]
                 if opts.get('vars',['ALL'])!=['ALL']:
                     variables = list( set(variables) & set(opts.get('vars',[])) )
                     if len(variables)==0 and len(opts.get('vars',[]))>0:
@@ -252,10 +256,14 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                             # Probably make this a command line option.
                             if res.__class__.__name__ is 'uvc_composite_plotspec':
                                 resc = res
+                                filenames = resc.write_plot_data("xml-NetCDF", outdir )
+                            elif res.__class__.__name__ is 'amwg_plot_set1':
+                                resc = res
+                                filenames = resc.write_plot_data("text", outdir)
                             else:
                                 resc = uvc_composite_plotspec( res )
+                                filenames = resc.write_plot_data("xml-NetCDF", outdir )
                             number_diagnostic_plots += 1
-                            filenames = resc.write_plot_data("xml-NetCDF", outdir )
                             print "wrote plots",resc.title," to",filenames
 
     print "total number of (compound) diagnostic plots generated =", number_diagnostic_plots
