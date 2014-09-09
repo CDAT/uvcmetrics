@@ -70,7 +70,7 @@ class amwg_plot_spec(plot_spec):
         return amwg_plot_spec.package._all_variables( filetable1, filetable2, "amwg_plot_spec" )
 
 # plot set classes in other files:
-#from metrics.packages.amwg.amwg1 import *
+from metrics.packages.amwg.amwg1 import *
 
 # plot set classes we need which I haven't done yet:
 class amwg_plot_set4a(amwg_plot_spec):
