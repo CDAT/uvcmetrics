@@ -6,8 +6,58 @@
 # DIAG Set 1 - Tables of global, tropical, and extratropical DJF, JJA, ANN means and RMSE
 
 from metrics.packages.amwg.amwg import amwg_plot_spec
+from metrics.packages.amwg.derivations.vertical import *
 from metrics.computation.reductions import *
+from metrics.computation.plotspec import *
+from metrics.common.utilities import *
 import cdutil.times, numpy
+
+# The following two functions were originally in plot set 4, but I moved them out because they
+# are needed also for plot set 1.
+def reduced_variables_press_lev( filetable, varid, season, rf=None):
+    """Returns a dictionary of a reduced variable for the specified variable id (string) and season
+    using the supplied filetable.  The variable must have a level axis using pressure coordinates.
+    The reduction function may be supplied as rf but will default to that used in AMWG plot set 4.
+    """
+    season = season2Season(season)
+    if filetable is None:
+        return {}
+    if rf is None:  # default can't be specified in the args because it depends on season
+        rf = (lambda x,vid=None,season=season: reduce2levlat_seasonal(x,season,vid=vid)) 
+    reduced_varlis = [
+        reduced_variable(
+            variableid=varid, filetable=filetable, season=season,
+            reduction_function=rf ) ]
+    reduced_variables = { v.id():v for v in reduced_varlis }
+    return reduced_variables
+def reduced_variables_hybrid_lev( filetable, varid, season, rf=None, rf_PS=None ):
+    """Returns a dictionary of a reduced variable for the specified variable id (string) and season
+    using the supplied filetable.  The variable must have a level axis using hybrid coordinates.
+    Some of the reduction functions may be supplied but will default to that used in AMWG plot set 4:
+    rf for the variable varid and rf_PS for PS
+    """
+    season = season2Season(season)
+    if filetable is None:
+        return {}
+    if rf is None:  # default can't be specified in the args because it depends on season
+        rf=(lambda x,vid=None,season=season: reduce2levlat_seasonal(x,season,vid=vid))
+    if rf_PS is None:  # default can't be specified in the args because it depends on season
+        rf_PS=(lambda x,vid=None,season=season: reduce2lat_seasonal(x,season,vid=vid))
+    reduced_varlis = [
+        reduced_variable(
+            variableid=varid, filetable=filetable, season=season,
+            reduction_function=rf ),
+        reduced_variable(      # hyam=hyam(lev)
+            variableid='hyam', filetable=filetable, season=season,
+            reduction_function=(lambda x,vid=None: x) ),
+        reduced_variable(      # hybm=hybm(lev)
+            variableid='hybm', filetable=filetable, season=season,
+            reduction_function=(lambda x,vid=None: x) ),
+        reduced_variable(
+            variableid='PS', filetable=filetable, season=season,
+            reduction_function=rf_PS ) ]
+    reduced_variables = { v.id():v for v in reduced_varlis }
+    return reduced_variables
 
 class amwg_plot_set1(amwg_plot_spec):
     name = '1 - Tables of global, tropical, and extratropical DJF, JJA, ANN means and RMSE'
@@ -131,17 +181,42 @@ class amwg_plot_set1(amwg_plot_spec):
             if filetable is None:
                 return -999.000
             if filetable.find_files( self.var ):
-                domrange = amwg_plot_set1.domains[self.domain]
-                rv = reduced_variable(
-                    variableid=self.var, filetable=filetable, season=self.season,
-                    reduction_function=\
-                        (lambda x,vid=None: reduce2scalar_seasonal_zonal(x,self.season,domrange[0],domrange[1],vid=vid))
-                    )
-                rrv = rv.reduce()
-                rrv = convert_variable( rrv, self.units )
-                if rrv.shape!=():
-                    print "WARNING: reduced variable",rrv.id,"for table has more than one data point"
-                return float(rrv.data)
+                if self.lev is not None:
+                    # We have to compute on a level surface.
+                    if self.var not in filetable.list_variables_with_levelaxis():
+                        return -999.000
+                    # The specified level is in millibars.  Do we have hybrid level coordinates?
+                    ft_hyam = filetable.find_files('hyam')
+                    hybrid = ft_hyam is not None and ft_hyam!=[]    # true iff filetable uses hybrid level coordinates
+                    if hybrid: # hybrid level coordinates
+                        reduced_variables = reduced_variables_hybrid_lev( filetable, self.var, self.season )
+                        vid1=dv.dict_id(self.var,'lev',self.season,filetable)
+                        derived_variables = { vid1: derived_var(
+                                vid=vid1, inputs=[reduced_variable.dict_id(self.var,self.season,filetable),
+                                                  reduced_variable.dict_id('hyam',self.season,filetable),
+                                                  reduced_variable.dict_id('hybm',self.season,filetable),
+                                                  reduced_variable.dict_id('PS',self.season,filetable),
+                                                  reduced_variable.dict_id(self.var,self.season,filetable) ],
+                                func=verticalize ) }
+                    else: # pressure level coordinates in millibars, as "mbar"
+                        # There are other possibilities, but we aren't checking yet.
+                        reduced_variables = reduced_variables_press_lev( filetable, self.var, self.season )
+                        derived_variables = {}
+                
+                    # >>>> WORK IN PROGRESS <<<<
+                    return -999.000
+                else:
+                    domrange = amwg_plot_set1.domains[self.domain]
+                    rv = reduced_variable(
+                        variableid=self.var, filetable=filetable, season=self.season,
+                        reduction_function=\
+                            (lambda x,vid=None: reduce2scalar_seasonal_zonal(x,self.season,domrange[0],domrange[1],vid=vid))
+                        )
+                    rrv = rv.reduce()
+                    rrv = convert_variable( rrv, self.units )
+                    if rrv.shape!=():
+                        print "WARNING: reduced variable",rrv.id,"for table has more than one data point"
+                    return float(rrv.data)
             else:
                 # It's a more complicated calculation, which we can treat as a derived variable.
                 # >>>>TO DO<<<<
