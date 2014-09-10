@@ -158,8 +158,7 @@ def fix_time_units( timeunits ):
     return since+new_date
 
 def reduce2scalar_zonal( mv, latmin=-90, latmax=90, vid=None ):
-    """returns the mean of the variable over the supplied latitude range (in degrees, based
-    on values of lat, not lat_bnds)
+    """returns the mean of the variable over the supplied latitude range.
     The computed quantity is a scalar but is returned as a cdms2 variable, i.e. a MV.
     The input mv is a cdms2 variable too.
     This function uses the cdms2 avarager() function to handle weights and do averages
@@ -178,8 +177,7 @@ def reduce2scalar_zonal( mv, latmin=-90, latmax=90, vid=None ):
     return avmv
 
 def reduce2scalar_seasonal_zonal( mv, seasons=seasonsyr, latmin=-90, latmax=90, vid=None ):
-    """returns the mean of the variable over the supplied latitude range (in degrees, based
-    on values of lat, not lat_bnds).
+    """returns the mean of the variable over the supplied latitude range (in degrees).
     The computed quantity is a scalar but is returned as a cdms2 variable, i.e. a MV.
     The input mv is a cdms2 variable too.
     This function uses the cdms2 avarager() function to handle weights and do averages
@@ -227,6 +225,36 @@ def reduce2scalar_seasonal_zonal( mv, seasons=seasonsyr, latmin=-90, latmax=90, 
         avmv.units = mv.units
 
     return avmv
+
+def reduce2scalar_seasonal_zonal_level( mv, seasons=seasonsyr, latmin=-90, latmax=90, level=None,
+                                        vid=None ):
+    """returns the mean of the variable at the supplied level and over the supplied latitude range
+    The computed quantity is a scalar but is returned as a cdms2 variable, i.e. a MV.
+    The input mv is a cdms2 variable too.  Its level axis *must* have pressure levels in millibars,
+    expressed as units=='mbar'.
+    This function uses the cdms2 avarager() function to handle weights and do averages
+    Time is restriced to the specified season.  Latitude and longitude units are degrees.
+    Level units is millibars.
+    """
+    levax = levAxis(mv)
+    if level is None or levax is None:
+        return reduce2scalar_seasonal_zonal( mv, seasons, latmin, latmax, vid )
+
+    # Check whether mv has pressure levels in mbar as required.  Conversions must be done prior to
+    # calling this function because conversion from hybrid levels requires several other variables.
+    if not hasattr(levax,'units'):
+        print "ERROR: In reduce2scalar_seasonal_zonal_level, variable",mv.id,"has level axis without units!"
+        return None
+    if levax.units!='mbar':
+        print "ERROR: In reduce2scalar_seasonal_zonal_level, variable",mv.id,"has level axis units",levax.units,"!"
+        print "Level axis units should be 'mbar'."
+        return None
+
+    mvl = select_lev( mv, level )   # mv restricted (approximately) to the specified level
+    if mvl is None:
+        return None
+    return reduce2scalar_seasonal_zonal( mv, seasons, latmin, latmax, vid )
+
 
 def reduce2scalar( mv, vid=None ):
     """averages mv over the full range all axes, to a single scalar.
