@@ -129,7 +129,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
 
     if opts['plots'] == True:
         vcanvas = vcs.init()
-    outdir = opts['outputdir']
+    outdir = opts['output']
     if outdir is None:
         outdir = os.path.join(os.environ['HOME'],"tmp","diagout")
 
@@ -265,5 +265,5 @@ if __name__ == '__main__':
    o.processCmdLine()
    o.verifyOptions()
    import pdb
-   pdb.set_trace()
+   #pdb.set_trace()
    run_diagnostics_from_options(o)

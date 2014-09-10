@@ -2,7 +2,39 @@
 
 # Top-leve definition of AMWG Diagnostics.
 # AMWG = Atmospheric Model Working Group
+def my_reduce2scalar( mv, month, vid=None ):
+    """averages mv over the full range all axes, to a single scalar.
+    Uses the averager module for greater capabilities"""
 
+    if vid==None:   # Note that the averager function returns a variable with meaningless id.
+        vid = 'reduced_'+mv.id
+    axes = allAxes( mv )
+    axis_names = [ a.id for a in axes ]
+    axis_names = []
+    slices = []
+    for a in axes:
+        #pdb.set_trace()
+        if a.getBounds() is not None:
+            #print a.id, ' has valid bounds', type(a.getBounds())
+            axis_names += [a.id]
+        if a.id == 'time':
+            s = slice(month, month+1)
+        if a.id != 'time':
+            s = slice(0, None)
+        else:
+            s = slice(0,1)
+        slices += [s]
+        #print s
+    mv_new = mv[slices[0], slices[1], slices[2], slices[3]]
+    axes_string = '('+')('.join(axis_names)+')'
+    #print vid, axes_string, mv_new.shape
+    #pdb.set_trace()
+    avmv = averager( mv_new, axis=axes_string )
+    avmv.id = vid
+    if hasattr(mv,'units'):
+        avmv.units = mv.units
+
+    return avmv
 import pdb
 from metrics.packages.diagnostic_groups import *
 from metrics.computation.reductions import *
@@ -814,7 +846,7 @@ class amwg_plot_set7(amwg_plot_spec):
         self.computation_planned = True
         #pdb.set_trace()
     def _results(self, newgrid=0):
-        pdb.set_trace()
+        #pdb.set_trace()
         results = plot_spec._results(self,newgrid)
         if results is None: return None
         psv = self.plotspec_values
@@ -841,103 +873,23 @@ class amwg_plot_set8(amwg_plot_spec):
     # Here, the plotspec contains the variables themselves.
     name = '8 - Annual Cycle Contour Plots of Zonal Means '
     number = '8'
-    months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'] 
-    BATCH = False
-    GUI   = False
-    SAVEPATH = None
-    STOP = False
-    def set_mode(self, filetable):
-        options = filetable._filelist.opts
-        PATH = options._opts['path']
-        self.BATCH = ( type(PATH) == type({}) ) 
-        self.GUI   = ( type(PATH) == type([]) )
-    def get_path(self, options, data_type):
-        """this function exists only because of 2 bugs in the gui.
-        at some point it can be eliminated.This is convoluted!"""
-        PATH = options._opts['path']          
-        if self.BATCH:  #dictionary
-            return PATH[data_type]
-        if self.GUI: #list
-            #in gui mode use the obspath instead of path
-            #note this is a bug in the gui interface
-            if data_type == 'obs':
-                PATH = options._opts['obspath']            
-            return PATH[0]
-        return None
-    def set_path(self, options, data_type):
-        """ Set the path to the correct path. 
-        Save the current path before setting it to the correct path."""
-        PATH = self.get_path(options, data_type)
-        self.SAVEPATH = options._opts['path']
-        options._opts['path'] = {data_type: PATH}
-        return options
-    def reset_path(self, options, filetable):
-        options._opts['path'] = self.SAVEPATH
-        filetable._filelist.opts = options
-        return filetable
-    def get_monthly_files(self, files):
-        """ create the list of files from the filetables object"""
-        import string
-        FILES = []
-        for month in self.months:
-            for FN in files:
-                #strip off the slashes to get file name
-                FN = string.split(FN, '/')
-                FN = FN[-1]
-                if FN.endswith(month + '_climo.nc'):
-                    FILES += [FN]    
-                    break
-        return FILES    
-    def make_filetables(self, FILES, options, data_type):
-        """ The purpose of this function is to create a list of filetables 
-        from a single list of several files.  This function essentially 
-        reproduces the logic found in batch.py.  It's necessary for such a function
-        because it requires data from several files to be merged into a single record
-        of data.  It is more natural that this function become part of the filtables
-        class.
-        """
-        filetables = []
-        for FN in FILES:
-            options._opts['filter'] = f_endswith(FN)
-            DF = dirtree_datafiles( options, pathid=data_type)
-            FT = DF.setup_filetable( data_type )
-            filetables += [FT]
-        return filetables
 
     def __init__( self, filetable1, filetable2, varid, seasonid='ANN', region=None, aux=None ):
         """filetable1, should be a directory filetable for each model.
         varid is a string, e.g. 'TREFHT'.  The zonal mean is computed for each month. """
-
-        WARNING = " files must end in xx_climo.nc where xx in 01, ..., 12"
         
-        print WARNING
-        self.season = seasonid     
-        self.set_mode(filetable1)
-    
-        #create filetable1 fie list
-        options = filetable1._filelist.opts
-        FILES1 = self.get_monthly_files(filetable1._filelist.files)
-        options = self.set_path(options, 'model')
-        self.filetables = [self.make_filetables(FILES1, options, 'model')]
-        filetable1 = self.reset_path(options, filetable1)
-    
-        self.STOP = (FILES1 == [])
-        
-        #if 2nd filetable then create their file list
+        self.season = seasonid          
+        self.FT1 = (filetable1 != None)
         self.FT2 = (filetable2 != None)
-        if self.FT2:
-            options = filetable2._filelist.opts
-            FILES2 = self.get_monthly_files(filetable2._filelist.files)
-            options = self.set_path(options, 'obs')
-            self.filetables += [self.make_filetables(FILES2, options, 'obs')]
-            filetable2 = self.reset_path(options, filetable2)
-            self.STOP = self.STOP or (FILES2 == [])
-     
-        if self.STOP:
-            print "no files found"
-            print WARNING
-            return None
         
+        self.CONTINUE = self.FT1
+        if not self.CONTINUE:
+            print "user must specify a file table"
+            return None
+        self.filetables = [filetable1]
+        if self.FT2:
+            self.filetables +=[filetable2]
+    
         plot_spec.__init__(self, seasonid)
         self.plottype = 'Isofill'
         self._seasonid = seasonid
@@ -953,31 +905,31 @@ class amwg_plot_set8(amwg_plot_spec):
             self.plan_computation( filetable1, filetable2, varid, seasonid )
 
     def plan_computation( self, filetable1, filetable2, varid, seasonid ):
-        import numpy as np
-        self.computation_planned = False
 
-        #check if there is data to process
+        self.computation_planned = False
         
         #setup the reduced variables
         self.reduced_variables = {}
-        vidAll = []
+        vidAll = {}
         for FT in self.filetables:
+            #pdb.set_trace()
             VIDs = []
-            for i, month in enumerate(self.months):
+            for i in range(1, 13):
+                month = cdutil.times.getMonthString(i)
                 #pdb.set_trace()
                 #create identifiers
-                VID = rv.dict_id(varid, month, FT[i])
-                RF = (lambda x, vid=id2str(VID):reduce2lat_seasonal(x, cdutil.times.Seasons(month), vid=vid))
+                VID = rv.dict_id(varid, month, FT)
+                RF = (lambda x, vid=id2str(VID), month=VID[2]:reduce2lat_seasonal(x, seasons=cdutil.times.Seasons(month), vid=vid))
                 RV = reduced_variable(variableid = varid, 
-                                      filetable = FT[i], 
-                                      season = cdutil.times.Seasons(month), 
+                                      filetable = FT, 
+                                      season = cdutil.times.Seasons(VID[2]), 
                                       reduction_function =  RF)
 
-                self.reduced_variables[RV.id()] = RV   
+
+                self.reduced_variables[RV.id()] = RV
                 VIDs += [VID]
-            vidAll += [VIDs]                
-        
-        #generate composite identifier
+            vidAll[FT] = VIDs               
+        #print self.reduced_variables.keys()
         vidModel = dv.dict_id(varid, 'ZonalMean model', self._seasonid, filetable1)
         if self.FT2:
             vidObs  = dv.dict_id(varid, 'ZonalMean obs', self._seasonid, filetable2)
@@ -988,35 +940,35 @@ class amwg_plot_set8(amwg_plot_spec):
       
         self.derived_variables = {}
         #create the derived variables which is the composite of the months
-        self.derived_variables[vidModel] = derived_var(vid=id2str(vidModel), inputs=vidAll[0], func=join_data) 
+        #print vidAll[filetable1]
+        self.derived_variables[vidModel] = derived_var(vid=id2str(vidModel), inputs=vidAll[filetable1], func=join_data) 
         if self.FT2:
-            self.derived_variables[vidObs]   = derived_var(vid=id2str(vidObs), inputs=vidAll[1], func=join_data) 
+            #print vidAll[filetable2]
+            self.derived_variables[vidObs] = derived_var(vid=id2str(vidObs), inputs=vidAll[filetable2], func=join_data) 
             #create the derived variable which is the difference of the composites
             self.derived_variables[vidDiff] = derived_var(vid=id2str(vidDiff), inputs=[vidModel, vidObs], func=aminusb_ax2) 
             
-        #create composite plots 
+        #create composite plots np.transpose zfunc = (lambda x: x), zfunc = (lambda z:z),
         self.single_plotspecs = {
             self.plot1_id: plotspec(vid = ps.dict_idid(vidModel), 
                                     zvars = [vidModel],
-                                    zfunc = (lambda x: np.transpose(x)), 
+                                    zfunc = (lambda x: MV2.transpose(x)),
                                     plottype = self.plottype )}
         if self.FT2:
             self.single_plotspecs[self.plot2_id] = \
-                           plotspec(vid = ps.dict_idid(vidObs), 
-                                    zvars=[vidObs], 
-                                    zfunc = (lambda z: np.transpose(z)),
-                                    plottype = self.plottype )
+                               plotspec(vid = ps.dict_idid(vidObs), 
+                                        zvars=[vidObs],   
+                                        zfunc = (lambda x: MV2.transpose(x)),                                
+                                        plottype = self.plottype )
             self.single_plotspecs[self.plot3_id] = \
-                           plotspec(vid = ps.dict_idid(vidDiff), 
-                                    zvars = [vidDiff],
-                                    zfunc = (lambda x: np.transpose(x)), 
-                                    plottype = self.plottype )
+                               plotspec(vid = ps.dict_idid(vidDiff), 
+                                        zvars = [vidDiff],
+                                        zfunc = (lambda x: MV2.transpose(x)),
+                                        plottype = self.plottype )
             
         self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
         self.computation_planned = True
     def _results(self, newgrid=0):
-        if self.STOP:
-            return None
         #pdb.set_trace()
         results = plot_spec._results(self, newgrid)
         if results is None:
@@ -1033,7 +985,7 @@ class amwg_plot_set8(amwg_plot_spec):
                 if v is None: continue
                 v.finalize()
         return self.plotspec_values[self.plotall_id]
-
+    
 class amwg_plot_set9(amwg_plot_spec): 
     """This class represents one plot from AMWG Diagnostics Plot Set 9.
     Each such plot is a set of three contour plots: two for the model output and
@@ -1147,3 +1099,148 @@ class amwg_plot_set9(amwg_plot_spec):
                 if v is None: continue
                 v.finalize()
         return self.plotspec_values[self.plotall_id]
+
+class amwg_plot_set10(amwg_plot_spec, basic_id):
+    """represents one plot from AMWG Diagnostics Plot Set 3.
+    Each such plot is a pair of plots: a 2-line plot comparing model with obs, and
+    a 1-line plot of the model-obs difference.  A plot's x-axis is latitude, and
+    its y-axis is the specified variable.  The data presented is a climatological mean - i.e.,
+    time-averaged with times restricted to the specified season, DJF, JJA, or ANN."""
+    # N.B. In plot_data.py, the plotspec contained keys identifying reduced variables.
+    # Here, the plotspec contains the variables themselves.
+    name = '10 - Annual Line Plots of  Global Means'
+    number = '10'
+    months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']
+    
+    def __init__( self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None ):
+        """filetable1, filetable2 should be filetables for model and obs.
+        varid is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'."""
+        basic_id.__init__(self, varid, seasonid)
+        plot_spec.__init__(self, seasonid)
+        self.plottype = 'Yxvsx'
+        self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
+        if not self.computation_planned:
+            self.plan_computation( filetable1, filetable2, varid, seasonid )
+    def plan_computation( self, filetable1, filetable2, varid, seasonid ):
+
+        vidAll = []        
+        for FT in [filetable1, filetable2]:
+            VIDs = []
+            for i in range(1, 13):
+                month = cdutil.times.getMonthString(i)
+                #pdb.set_trace()
+                #create identifiers
+                VID = rv.dict_id(varid, month, FT)
+                RF = (lambda x, vid=id2str(VID), month = cdutil.times.getMonthIndex(VID[2])[0]-1:my_reduce2scalar(x, month, vid=vid))
+                RV = reduced_variable(variableid = varid, 
+                                      filetable = FT, 
+                                      season = cdutil.times.Seasons(month), 
+                                      reduction_function =  RF)
+    
+    
+                self.reduced_variables[id2str(VID)] = RV   
+                VIDs += [VID]
+            vidAll += [VID]
+
+        #self.reduced_variables = {'rv_T_MAY_ft0_obs_atmos': self.reduced_variables['rv_T_MAY_ft0_obs_atmos']}
+        #print self.reduced_variables.keys()
+        vidModel = dv.dict_id(varid, 'model', self._seasonid, filetable1)
+        vidObs   = dv.dict_id(varid, 'obs',   self._seasonid, filetable2)
+      
+        #create the derived variables which is the composite of the months
+        #pdb.set_trace()
+        model = derived_var(vid=id2str(vidModel), inputs=vidAll[0], func=join_data) 
+        obs   = derived_var(vid=id2str(vidObs),   inputs=vidAll[1], func=join_data) 
+        self.derived_variables = {vidModel: model, vidObs: obs}
+        #model = reduced_variable(variableid = varid, 
+        #                         filetable = filetable1, 
+        #                         season = cdutil.times.Seasons(seasonid),  
+        #                         reduction_function = join_data) 
+        #obs   = reduced_variable(variableid = varid, 
+        #                         filetable = filetable2, 
+        #                         season = cdutil.times.Seasons(seasonid),  
+        #                         reduction_function = join_data)         
+        #self.reduced_variables.update({vidModel: model, vidObs: obs})
+        
+        #self.plot = basic_two_line_plot( model, obs )
+        #self.single_plotspecs[id2str(vidModel)]  vid=vidModel,
+        self.single_plotspecs = {}
+        pdb.set_trace()
+        self.plot = plotspec(vidModel, 
+                             zvars = [vidModel],
+                             zfunc = (lambda y: y),
+                             z2vars = [vidObs],
+                             z2func = (lambda z: z),
+                             plottype = self.plottype,
+                             title = 'test') 
+    def from_plot_set_3(self):
+        zvar = reduced_variable(
+            variableid=varid,
+            filetable=filetable1, season=self.season,
+            reduction_function=(lambda x,vid=None: reduce2scalar(x, vid=vid)) )
+        self.reduced_variables[zvar._strid] = zvar
+        #self.reduced_variables[varid+'_1'] = zvar
+        #zvar._vid = varid+'_1'      # _vid is deprecated
+        z2var = reduced_variable(
+            variableid=varid,
+            filetable=filetable2, season=self.season,
+            reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,self.season,vid=vid)) )
+        self.reduced_variables[z2var._strid] = z2var
+        #self.reduced_variables[varid+'_2'] = z2var
+        #z2var._vid = varid+'_2'      # _vid is deprecated
+        self.plot_a = basic_two_line_plot( zvar, z2var )
+        ft1id,ft2id = filetable_ids(filetable1,filetable2)
+        vid = '_'.join([self._id[0],self._id[1],ft1id,ft2id,'diff'])
+        # ... e.g. CLT_DJF_ft1_ft2_diff
+        self.plot_b = one_line_diff_plot( zvar, z2var, vid )
+        self.computation_planned = True
+    def _results(self,newgrid=0):
+        # At the moment this is very specific to plot set 3.  Maybe later I'll use a
+        # more general method, to something like what's in plot_data.py, maybe not.
+        # later this may be something more specific to the needs of the UV-CDAT GUI
+        #pdb.set_trace()
+        results = plot_spec._results(self,newgrid)
+        if results is None: return None
+        model = self.plot.zvars[0]
+        obs   = self.plot.z2vars[0]
+        modelName = model._filetable._strid
+        obsName   = obs._filetable._strid
+        TITLE = ' '.join([self._id[0],self._id[1], self._id[2], modelName,'and', obsName])
+        modelVar = self.variable_values[model._strid]
+        obsVar  = self.variable_values[obs._strid]
+        plot_val = uvc_plotspec([modelVar, obsVar],
+                                self.plotstype, 
+                                labels=[modelName, obsName],
+                                title=TITLE)
+        plot_val.finalize()
+        return [ plot_val]
+    
+        zvar = self.plot_a.zvars[0]
+        z2var = self.plot_a.z2vars[0]
+        #zval = zvar.reduce()
+        zval = self.variable_values[zvar._strid]
+        #zval = self.variable_values[zvar._vid] # _vid is deprecated
+        if zval is None: return None
+        zunam = zvar._filetable._strid  # part of y1 distinguishing it from y2, e.g. ft_1
+        zval.id = '_'.join([self._id[0],self._id[1],zunam])
+        z2val = self.variable_values[z2var._strid]
+        if z2val is None:
+            z2unam = ''
+            zdiffval = None
+        else:
+            z2unam = z2var._filetable._strid  # part of y2 distinguishing it from y1, e.g. ft_2
+            z2val.id = '_'.join([self._id[0],self._id[1],z2unam])
+            zdiffval = apply( self.plot_b.zfunc, [zval,z2val] )
+            zdiffval.id = '_'.join([self._id[0],self._id[1],
+                                    zvar._filetable._strid, z2var._filetable._strid, 'diff'])
+        # ... e.g. CLT_DJF_set3_CAM456_NCEP_diff
+        plot_a_val = uvc_plotspec(
+            [v for v in [zval,z2val] if v is not None],'Yxvsx', labels=[zunam,z2unam],
+            title=' '.join([self._id[0],self._id[1],self._id[2],zunam,'and',z2unam]))
+        plot_b_val = uvc_plotspec(
+            [v for v in [zdiffval] if v is not None],'Yxvsx', labels=['difference'],
+            title=' '.join([self._id[0],self._id[1],self._id[2],zunam,'-',z2unam]))
+        plot_a_val.synchronize_ranges(plot_b_val)
+        plot_a_val.finalize()
+        plot_b_val.finalize()
+        return [ plot_a_val, plot_b_val ]
