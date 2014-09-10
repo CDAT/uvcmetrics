@@ -16,6 +16,7 @@ from unidata import udunits
 from cdutil import averager
 from metrics.packages.amwg.derivations import press2alt
 from metrics.fileio.filetable import *
+from metrics.computation.units import *
 #from climo_test import cdutil_climatology
 import metrics.frontend.defines as defines
 from genutil import *
@@ -156,100 +157,6 @@ def fix_time_units( timeunits ):
         new_date = new_date[0:pre_yr]+yr_ad+new_date[pre_yr+len(yr_bc)]
     return since+new_date
 
-def restrict_lat( mv, latmin, latmax ):
-    """Input is a variable which depends on latitude.
-    This function will copy it to a new variable, except that the new variable's
-    latitude axis will be restricted to latmin<=lat<=latmax; and of course the
-    data will be restricted to correspond."""
-    if latmin==-90: latmin = -91  # just to make sure
-    if latmax==90:  latmax = 91
-
-    # axes
-    latax,idx = latAxis2(mv)
-    if latax is None: return None
-    imin = min( [i for i in range(len(latax)) if latax[i]>=latmin and latax[i]<=latmax ] )
-    imax = max( [i for i in range(len(latax)) if latax[i]>=latmin and latax[i]<=latmax ] )
-    newlatax = latax.subaxis( imin, imax+1 )
-    # TO DO: use latax.bounds (if present) for newlatax.bounds
-    # At the moment, I'm working with data for which latax.bounds doesn't exist.
-    # At the moment, we don't need bounds.  This would get us through if necessary:
-    # newlatax.bounds = newlatax.genGenericBounds()
-    newaxes = list( allAxes(mv) ) # shallow copy
-    newaxes[idx] = newlatax
-
-    # shrink the data to match the shrunk lat axis
-    # >>> This is a very dangerous way to code, and in fact won't work if there be missing data.
-    # >>> Generally if you directly address the data attribute, something will go wrong.
-    # >>> At the moment, however, this function isn't getting called by anything
-    print "WARNING, restrict_lat doesn't work if there is missing data"
-    newmv_shape = list( mv.shape )
-    newmv_shape[idx] = imax+1 - imin
-    if imin>0:
-        nd = numpy.delete( mv.data, slice(0,imin), idx ) # doesn't change mv
-    else:
-        nd = mv
-    lenidx  = nd.shape[idx]
-    if lenidx > newmv_shape[idx]:
-        newdata = numpy.delete( nd.data, slice(imax+1-imin,lenidx), idx )
-    else:
-        newdata = nd
-
-    # new variable
-    newmv = cdms2.createVariable( newdata, copy=True, axes=newaxes, id=mv.id )
-    if hasattr(mv,'units'):
-        newmv.units = mv.units
-    return newmv
-
-def reduce2scalar_zonal_old( mv, latmin=-90, latmax=90, vid=None ):
-    """returns the mean of the variable over the supplied latitude range (in degrees, based
-    on values of lat, not lat_bnds)
-    The computed quantity is a scalar but is returned as a cdms2 variable, i.e. a MV.
-    The input mv is a cdms2 variable, assumed to be indexed as is usual for CF-compliant variables,
-    i.e. mv(time,lat,lon).  At present, no other axes (e.g. level) are supported.
-    At present mv must depend on all three axes.
-    ....This function is deprecated - use the version which uses the avarager() function....
-    """
-    # For now, I'm assuming that the only axes are time,lat,lon - so that zm is a scalar.
-    # And I'm assuming equal spacing in lon (so all longitudes contribute equally to the average)
-    # If they aren't, it's best to use area from cell_measures attribute if available; otherwise
-    # compute it with lat_bnds, lon_bnds etc.
-    if vid==None:
-        vid = 'reduced_'+mv.id
-    time,lat,lon = tllAxes(mv)
-    if hasattr(mv.parent,'variables'):
-        fil = mv.parent # mv is a fileVariable and fil is a file.
-        lat_bnds = fil[lat.bounds]
-    else:
-        lataxis = latAxis(mv)   # mv is a TransientVariable
-        lat_bnds = lataxis._bounds_
-
-    mvta = timeave_old( mv )
-
-    # In computing the average, we use area weighting.
-    # Sometimes the area is available in cell_measures, but for now I'll just use the backup method:
-    # The area of a lonlat cell is   R^2*delta(lon)*delta(sin(lat)).
-    # With equally spaced lon, we don't need delta(lon) for weights.
-    # I'll assume that lat,lon are in degrees, which is the only way I've ever seen them.
-    wgtsum = 0
-    zm = 0
-    for i,lati in enumerate(lat):
-        # The following test could be sped up a lot, because lat[i] is ordered...
-        # >>> to do: partial overlaps
-        if latmin<=lati and lati<latmax:
-            latlo = lat_bnds[i,0]
-            lathi = lat_bnds[i,1]
-            wgti = sin(radians(lathi))-sin(radians(latlo))
-            zi = 0.0
-            for j in range(len(lon)):
-                zi += mvta[i,j]
-            zi *= wgti
-            wgtsum += wgti*len(lon)
-            zm += zi
-    zm /= wgtsum
-    # zm is a scalar, so createVariable gets no axes argument:
-    zmv = cdms2.createVariable( zm, id=vid )
-    return zmv
-
 def reduce2scalar_zonal( mv, latmin=-90, latmax=90, vid=None ):
     """returns the mean of the variable over the supplied latitude range (in degrees, based
     on values of lat, not lat_bnds)
@@ -259,35 +166,65 @@ def reduce2scalar_zonal( mv, latmin=-90, latmax=90, vid=None ):
     """
     if vid==None:
         vid = 'reduced_'+mv.id
-    axes = allAxes( mv )
-    ilat = None
-    for i,ax in enumerate(axes):
-        if ax.id=='lat': ilat = i
-    # reduce size of lat axis to (latmin,latmax)
-    # Let's home a direct search will be fast enough:
-    lataxis = latAxis( mv )
-    lmin = -1
-    lmax = len(lataxis)
-    if lataxis[0]>=latmin: lmin = 0
-    if lataxis[-1]<=latmax: lmax = len(lataxis)-1
-    if lmin==-1 or lmax==len(lataxis):
-        for l,ax in enumerate(lataxis):
-            if lmin==-1 and ax>=latmin: lmin = max( 0, l )
-            if lmax==len(lataxis) and ax>=latmax: lmax = min( l, len(lataxis) )
-    lataxis_shrunk = lataxis.subaxis(lmin,lmax)
-    mv2shape = list(mv.shape)
-    mv2shape[ilat] = lmax-lmin+1
-    axes[ilat] = lataxis_shrunk
-    mvd1 = numpy.delete( mv, slice(0,lmin), ilat )
-    mvdata = numpy.delete( mvd1, slice(lmax-lmin,len(lataxis)-lmin), ilat )
-    mv2 = cdms2.createVariable( mvdata, axes=axes )
+    mv2 = mv(latitude=(latmin, latmax))
 
     axis_names = [ a.id for a in axes ]
     axes_string = '('+')('.join(axis_names)+')'
     avmv = averager( mv2, axis=axes_string )
     avmv.id = vid   # Note that the averager function returns a variable with meaningless id.
     if hasattr(mv,'units'):
-        ammv.units = mv.units
+        avmv.units = mv.units
+
+    return avmv
+
+def reduce2scalar_seasonal_zonal( mv, seasons=seasonsyr, latmin=-90, latmax=90, vid=None ):
+    """returns the mean of the variable over the supplied latitude range (in degrees, based
+    on values of lat, not lat_bnds).
+    The computed quantity is a scalar but is returned as a cdms2 variable, i.e. a MV.
+    The input mv is a cdms2 variable too.
+    This function uses the cdms2 avarager() function to handle weights and do averages
+    Time is restriced to the specified season.
+    """
+    if vid==None:
+        vid = 'reduced_'+mv.id
+    # reduce size of lat axis to (latmin,latmax)
+    mv2 = mv(latitude=(latmin, latmax))
+
+    timeax = timeAxis(mv2)
+    if timeax is None or len(timeax)<=1:
+        mvseas = mv2
+    else:
+        if timeax.getBounds()==None:
+            timeax._bounds_ = timeax.genGenericBounds()
+        if timeax.units=='months':
+            # Special check necessary for LEGATES obs data, because
+            # climatology() won't accept this incomplete specification
+            timeax.units = 'months since 0001-01-01'
+        mvseas = seasons.climatology(mv2)
+        if mvseas is None:
+            # Among other cases, this can happen if mv has all missing values.
+            return None
+    # If the time axis has only one point (as it should by now, if it exists at all),
+    # the next, averager(), step can't use it because it may not have bounds (or they
+    # would be as meaningless as the time value itself).  So get rid of it now:
+    mvseas = delete_singleton_axis( mvseas, vid='time' )
+    axes = allAxes( mvseas )
+
+    for ax in axes:
+        if ax.isTime():
+            continue
+        if ax.getBounds() is None:
+            ax._bounds_ = ax.genGenericBounds()  # needed for averager()
+    
+    axis_names = [ a.id for a in axes ]
+    axes_string = '('+')('.join(axis_names)+')'
+    if len(axes_string)>2:
+        avmv = averager( mvseas, axis=axes_string )
+    else:
+        avmv = mvseas
+    avmv.id = vid   # Note that the averager function returns a variable with meaningless id.
+    if hasattr(mv,'units'):
+        avmv.units = mv.units
 
     return avmv
 
@@ -309,35 +246,12 @@ def reduce2scalar( mv, vid=None ):
 
     return avmv
 
-def reduce2lat_old( mv, vid=None ):
+def reduce2lat( mv, vid=None ):
     """returns the mean of the variable over all axes but latitude, as a cdms2 variable, i.e. a MV.
     The input mv is a also cdms2 variable, assumed to be indexed as is usual for CF-compliant
     variables, i.e. mv(time,lat,lon).  At present, no other axes (e.g. level) are supported.
     At present mv must depend on all three axes.
     """
-    # >>> For now, I'm assuming that the only axes are time,lat,lon
-    # And I'm assuming equal spacing in lon (so all longitudes contribute equally to the average)
-    # If they aren't, it's best to use area from cell_measures attribute if available; otherwise
-    # compute it with lat_bnds, lon_bnds etc.
-    # If I base another reduction function on this one, it's important to note that an average
-    # in the lat direction will unavoidably need weights, because of the geometry.
-
-    if vid==None:
-        vid = 'reduced_'+mv.id
-    time_axis, lat_axis, lon_axis = tllAxes( mv )
-
-    mvta = timeave_old( mv )
-
-    zm = numpy.zeros( mvta.shape[0] )
-    for i in range(len(lat_axis)):
-        for j in range(len(lon_axis)):
-            zm[i] += mvta[i,j]
-        zm[i] /= len(lon_axis)
-    zmv = cdms2.createVariable( zm, axes=[lat_axis], id=vid )
-    return zmv
-
-def reduce2lat( mv, vid=None ):
-    """as reduce2lat_old, but uses the averager module for greater capabilities"""
     if vid==None:   # Note that the averager function returns a variable with meaningless id.
         vid = 'reduced_'+mv.id
     axes = allAxes( mv )
@@ -1055,18 +969,6 @@ def levvar( mv ):
                                   attributes={'units':lev_axis.units},
                                   copy=True )
     return levmv
-
-def pressures_in_mb( pressures ):
-    """From a variable or axis of pressures, this function
-    converts to millibars, and returns the result as a numpy array."""
-    if not hasattr( pressures, 'units' ): return None
-    if pressures.units=='mb':
-        pressures.units = 'mbar' # udunits uses mb for something else
-        return pressures[:]
-    tmp = udunits(1.0,pressures.units)
-    s,i = tmp.how('mbar')
-    pressmb = s*pressures[:] + i
-    return pressmb
 
 def heightvar( mv ):
     """returns a transient variable which is dimensioned along the lev (level) axis

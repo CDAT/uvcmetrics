@@ -101,9 +101,10 @@ class amwg_plot_spec(plot_spec):
     def _all_variables( filetable1, filetable2=None ):
         return amwg_plot_spec.package._all_variables( filetable1, filetable2, "amwg_plot_spec" )
 
+# plot set classes in other files:
+from metrics.packages.amwg.amwg1 import *
+
 # plot set classes we need which I haven't done yet:
-class amwg_plot_set1(amwg_plot_spec):
-    pass
 class amwg_plot_set4a(amwg_plot_spec):
     pass
 class amwg_plot_set7(amwg_plot_spec):
@@ -590,28 +591,30 @@ class amwg_plot_set5and6(amwg_plot_spec):
         vid2 = rv.dict_id( varid, seasonid, filetable2 )
         vid1var = rv.dict_id( varid+'_var', seasonid, filetable1 )
         self.derived_variables = {}
-        self.single_plotspecs = {
-            self.plot1_id: plotspec(
+        self.single_plotspecs = {}
+        if filetable1 is not None:
+            self.single_plotspecs[self.plot1_id] = plotspec(
                 vid = ps.dict_idid(vid1),
                 zvars = [vid1],  zfunc = (lambda z: z),
                 plottype = self.plottype,
-                title = ' '.join([varid,seasonid,filetable1._strid]) ),
-            self.plot2_id: plotspec(
-                vid = ps.dict_idid(vid2),
-                zvars = [vid2],  zfunc = (lambda z: z),
-                plottype = self.plottype,
-                title = ' '.join([varid,seasonid,filetable2._strid]) ),
-            self.plot3_id: plotspec(
-                vid = ps.dict_id(varid,'diff',seasonid,filetable1,filetable2),
-                zvars = [vid1,vid2],  zfunc = aminusb_2ax,
-                plottype = self.plottype,
-                title = ' '.join([varid,seasonid,filetable1._strid,'-',filetable2._strid]) ),
-            self.plot1var_id: plotspec(
+                title = ' '.join([varid,seasonid,filetable1._strid]) )
+            self.single_plotspecs[self.plot1var_id] = plotspec(
                 vid = ps.dict_idid(vid1var),
                 zvars = [vid1var],  zfunc = (lambda z: z),
                 plottype = self.plottype,
                 title = ' '.join([varid,seasonid,filetable1._strid,'variance']) )
-            }
+        if filetable2 is not None:
+            self.single_plotspecs[self.plot2_id] = plotspec(
+                vid = ps.dict_idid(vid2),
+                zvars = [vid2],  zfunc = (lambda z: z),
+                plottype = self.plottype,
+                title = ' '.join([varid,seasonid,filetable2._strid]) )
+        if filetable1 is not None and filetable2 is not None:
+            self.single_plotspecs[self.plot3_id] = plotspec(
+                vid = ps.dict_id(varid,'diff',seasonid,filetable1,filetable2),
+                zvars = [vid1,vid2],  zfunc = aminusb_2ax,
+                plottype = self.plottype,
+                title = ' '.join([varid,seasonid,filetable1._strid,'-',filetable2._strid]) )
         self.composite_plotspecs = {
             self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id, self.plot1var_id ]
             }
