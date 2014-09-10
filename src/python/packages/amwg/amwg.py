@@ -395,30 +395,9 @@ class amwg_plot_set4(amwg_plot_spec):
             allvars[varname] = basic_level_variable
         return allvars
     def reduced_variables_press_lev( self, filetable, varid, seasonid, ftno=None ):
-        if filetable is None:
-            return {}
-        reduced_varlis = [
-            reduced_variable(
-                variableid=varid, filetable=filetable, season=self.season,
-                reduction_function=(lambda x,vid=None: reduce2levlat_seasonal(x,self.season,vid=vid)) ) ]
-        reduced_variables = { v.id():v for v in reduced_varlis }
-        return reduced_variables
+        return reduced_variables_press_lev( filetable, varid, self.season )
     def reduced_variables_hybrid_lev( self, filetable, varid, seasonid, ftno=None ):
-        reduced_varlis = [
-            reduced_variable(
-                variableid=varid, filetable=filetable, season=self.season,
-                reduction_function=(lambda x,vid=None: reduce2levlat_seasonal(x,self.season,vid=vid)) ),
-            reduced_variable(      # hyam=hyam(lev)
-                variableid='hyam', filetable=filetable, season=self.season,
-                reduction_function=(lambda x,vid=None: x) ),
-            reduced_variable(      # hybm=hybm(lev)
-                variableid='hybm', filetable=filetable, season=self.season,
-                reduction_function=(lambda x,vid=None: x) ),
-            reduced_variable(
-                variableid='PS', filetable=filetable, season=self.season,
-                reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,self.season,vid=vid)) ) ]
-        reduced_variables = { v.id():v for v in reduced_varlis }
-        return reduced_variables
+        return reduced_variables_hybrid_lev( filetable, varid, self.season )
     def plan_computation( self, filetable1, filetable2, varid, seasonid ):
         ft1_hyam = filetable1.find_files('hyam')
         if filetable2 is None:
