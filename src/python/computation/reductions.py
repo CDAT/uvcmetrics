@@ -2,7 +2,7 @@
 
 # Data reduction functions.
 
-import sys, traceback
+import sys, traceback, pdb
 import cdms2, math, itertools, operator, numpy, subprocess, re, MV2
 import hashlib, os
 from pprint import pprint
@@ -259,12 +259,14 @@ def reduce2scalar_seasonal_zonal_level( mv, seasons=seasonsyr, latmin=-90, latma
 def reduce2scalar( mv, vid=None ):
     """averages mv over the full range all axes, to a single scalar.
     Uses the averager module for greater capabilities"""
+
     if vid==None:   # Note that the averager function returns a variable with meaningless id.
         vid = 'reduced_'+mv.id
     axes = allAxes( mv )
     axis_names = [ a.id for a in axes ]
     axes_string = '('+')('.join(axis_names)+')'
-
+    print vid, axes_string, mv.shape
+    pdb.set_trace()
     avmv = averager( mv, axis=axes_string )
     avmv.id = vid
     if hasattr(mv,'units'):
@@ -398,6 +400,7 @@ def reduce2lat_seasonal( mv, seasons=seasonsyr, vid=None ):
     is specified as an object of type cdutil.ties.Seasons, and defaults to the whole year.
     The returned variable will still have a time axis, with one value per season specified.
     """
+
     if vid==None:
         vid = 'reduced_'+mv.id
     # Note that the averager function returns a variable with meaningless id.
@@ -473,7 +476,7 @@ def rmse_time(mv1, mv2):
       if 'axis' in axes1[i].attributes:
          pass
       else:
-         print 'axis ', axes1[i].id, ' has no axis attribute'
+         #print 'axis ', axes1[i].id, ' has no axis attribute'
          ### Assuming that is a time axis...
          axes1[i].axis='T'
          flag = True
@@ -485,7 +488,7 @@ def rmse_time(mv1, mv2):
       if 'axis' in axes2[i].attributes:
          pass
       else:
-         print 'axis ', axes2[i].id, ' has no axis attribute'
+         #print 'axis ', axes2[i].id, ' has no axis attribute'
          ### Assuming that is a time axis...
          axes2[i].axis='T'
          flag = True
@@ -1726,7 +1729,7 @@ def run_cdscan( fam, famfiles, cache_path=None ):
         raise Exception("cdscan failed")
     return xml_name
 
-def join_data(*args):
+def join_data(*args ):
     """ This function joins the results of several reduced variables into a
     single derived variable.  It is used to produce a contour plot of months
     versus zonal mean.
@@ -1739,7 +1742,7 @@ def join_data(*args):
     T = cdms2.createAxis(range(len(args)))
     T.designateTime()
     T.id="time"
-    T.units = "months starting with JAN"
+    T.units = "months since 1800"
     M.setAxis(0,T)
     cdutil.times.setTimeBoundsMonthly(T)
     #M.info()
@@ -1874,6 +1877,7 @@ class reduced_variable(ftrow,basic_id):
         with elements of the form (variable id):(reduced_var object).  There is no check for
         circularity!
         """
+
         if self._filetable is None:
             print "ERROR no data found for reduced variable",self.variableid
             print "in",self.timerange, self.latrange, self.lonrange, self.levelrange

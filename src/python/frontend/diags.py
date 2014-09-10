@@ -129,7 +129,11 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
 
     if opts['plots'] == True:
         vcanvas = vcs.init()
-    outdir = opts['outputdir']
+        vcanvas.setcolormap('bl_to_darkred') #Set the colormap to the NCAR colors
+        vcanvas2 = vcs.init()
+	vcanvas2.portrait()
+        vcanvas2.setcolormap('bl_to_darkred') #Set the colormap to the NCAR colors
+    outdir = opts['output']
     if outdir is None:
         outdir = os.path.join(os.environ['HOME'],"tmp","diagout")
 
@@ -222,9 +226,18 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                         res = plot.compute(newgrid=-1) # newgrid=0 for original grid, -1 for coarse
                         if res is not None:
                             if opts['plots'] == True:
-                                tm = diagnostics_template()
+#DEAN
+#                                tm = diagnostics_template()
+				tm=vcanvas.gettemplate('UVWG')
                                 r = 0
                                 for r in range(len(res)):
+#DEAN
+                                   if r == 0:
+                                      tm2=vcanvas.gettemplate('UVWG_1of3')
+                                   elif r == 1:
+                                      tm2=vcanvas.gettemplate('UVWG_2of3')
+                                   elif r == 2:
+                                      tm2=vcanvas.gettemplate('UVWG_3of3')
                                    title = res[r].title
                                    vcanvas.clear()
                                    for var in res[r].vars:
@@ -248,7 +261,13 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                        fname = outdir+'/figure-set'+sname[0]+'_'+rname+'_'+seasonid+'_'+vname+'_plot-'+str(r)+'.png'
                                        print "writing png file",fname
                                        #res[r].presentation.script("jeff.json")   #example of writing a json file
-                                       vcanvas.plot(var, res[r].presentation, template_name='diagnostic', bg=1)
+#DEAN
+                                       tm.source.priority = 0
+                                       tm.dataname.priority = 0
+                                       tm.title.priority = 1
+                                       tm.comment1.priority = 0
+                                       vcanvas.plot(var, res[r].presentation, tm, bg=1, title=title, units=var.units, source="this is the source")
+                                       vcanvas2.plot(var, res[r].presentation, tm2, bg=1)
                                        if var_id_save is not None:
                                            var.id = var_id_save
                                    vcanvas.png( fname )
@@ -265,6 +284,11 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                 filenames = resc.write_plot_data("xml-NetCDF", outdir )
                             number_diagnostic_plots += 1
                             print "wrote plots",resc.title," to",filenames
+#DEAN
+                    r+=1
+                    fname = outdir+'/figure-set'+sname[0]+'_'+rname+'_'+seasonid+'_'+vname+'_plot-'+str(r)+'.png'
+                    vcanvas2.png( fname )
+
 
     print "total number of (compound) diagnostic plots generated =", number_diagnostic_plots
 
@@ -272,4 +296,6 @@ if __name__ == '__main__':
    o = Options()
    o.processCmdLine()
    o.verifyOptions()
+   import pdb
+   #pdb.set_trace()
    run_diagnostics_from_options(o)

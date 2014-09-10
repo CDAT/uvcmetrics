@@ -382,5 +382,5 @@ class basic_pole_variable(basic_plot_variable):
     @staticmethod
     def varoptions():
         """returns the hemisphere specific to this variable. """
-        opts ={" Northern Hemisphere":(0.,90.), " Southern Hemisphere":(-90.,0) }
+        opts ={" Northern Hemisphere":(90, 0.), " Southern Hemisphere":(-90.,0) }
         return opts
