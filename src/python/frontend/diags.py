@@ -224,14 +224,16 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                     for aux in varopts:
                         plot = sclass( filetable1, filetable2, varid, seasonid, region, vvaropts[aux] )
                         res = plot.compute(newgrid=-1) # newgrid=0 for original grid, -1 for coarse
-                        if res is not None:
+                        if res is not None and len(res)>0:
                             if opts['plots'] == True:
 #DEAN
 #                                tm = diagnostics_template()
 				tm=vcanvas.gettemplate('UVWG')
-                                r = 0
+                                rdone = 0
                                 for r in range(len(res)):
 #DEAN
+                                   if res[r] is None:
+                                       continue
                                    if r == 0:
                                       tm2=vcanvas.gettemplate('UVWG_1of3')
                                    elif r == 1:
@@ -256,7 +258,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                        else:
                                            var_id_save = None
 
-                                       vname = varid.replace(' ', '_')
+                                       vname = var.id.replace(' ', '_')
                                        vname = vname.replace('/', '_')
                                        fname = outdir+'/figure-set'+sname[0]+'_'+rname+'_'+seasonid+'_'+vname+'_plot-'+str(r)+'.png'
                                        print "writing png file",fname
@@ -271,6 +273,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                        if var_id_save is not None:
                                            var.id = var_id_save
                                    vcanvas.png( fname )
+                                   rdone += 1
                             # Also, write the nc output files and xml.
                             # Probably make this a command line option.
                             if res.__class__.__name__ is 'uvc_composite_plotspec':
@@ -285,9 +288,10 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                             number_diagnostic_plots += 1
                             print "wrote plots",resc.title," to",filenames
 #DEAN
-                    r+=1
-                    fname = outdir+'/figure-set'+sname[0]+'_'+rname+'_'+seasonid+'_'+vname+'_plot-'+str(r)+'.png'
-                    vcanvas2.png( fname )
+                            vname = varid.replace(' ', '_')
+                            vname = vname.replace('/', '_')
+                            fname = outdir+'/figure-set'+sname[0]+'_'+rname+'_'+seasonid+'_'+vname+'_plot-'+str(r)+'.png'
+                            vcanvas2.png( fname )
 
 
     print "total number of (compound) diagnostic plots generated =", number_diagnostic_plots
