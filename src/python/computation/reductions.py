@@ -245,7 +245,9 @@ def reduce2scalar_seasonal_zonal_level( mv, seasons=seasonsyr, latmin=-90, latma
     if not hasattr(levax,'units'):
         print "ERROR: In reduce2scalar_seasonal_zonal_level, variable",mv.id,"has level axis without units!"
         return None
-    if levax.units!='mbar':
+    if levax.units=='millibar' or levax.units=='millibars' or levax.units=='mbars' or levax.units=='mb':
+        levax.units='mbar'
+    elif levax.units!='mbar':
         print "ERROR: In reduce2scalar_seasonal_zonal_level, variable",mv.id,"has level axis units",levax.units,"!"
         print "Level axis units should be 'mbar'."
         return None
@@ -253,7 +255,7 @@ def reduce2scalar_seasonal_zonal_level( mv, seasons=seasonsyr, latmin=-90, latma
     mvl = select_lev( mv, level )   # mv restricted (approximately) to the specified level
     if mvl is None:
         return None
-    return reduce2scalar_seasonal_zonal( mv, seasons, latmin, latmax, vid )
+    return reduce2scalar_seasonal_zonal( mvl, seasons, latmin, latmax, vid )
 
 
 def reduce2scalar( mv, vid=None ):
@@ -1762,7 +1764,7 @@ class reduced_variable(ftrow,basic_id):
                       latrange=None, lonrange=None, levelrange=None,\
                       season=seasonsyr, region=None, reduced_var_id=None,\
                       reduction_function=(lambda x,vid=None: x),\
-                      filetable=None, axes=None, duvs={}, rvs={}
+                      filetable=None, filefilter=None, axes=None, duvs={}, rvs={}
                   ):
         self._season = season
         self._region = region # this could probably change lat/lon range, or lat/lon ranges could be passed in
@@ -1783,6 +1785,7 @@ class reduced_variable(ftrow,basic_id):
         if filetable==None:
             print "ERROR.  No filetable specified for reduced_variable instance",variableid
         self._filetable = filetable
+        self._filefilter = filefilter  # used to filter results of search in filetable
         self._file_attributes = {}
         self._duvs = duvs
         self._rvs = rvs
@@ -1790,14 +1793,14 @@ class reduced_variable(ftrow,basic_id):
         return self._strid
 
     @classmethod
-    def dict_id( cls, varid, seasonid, ft ):
+    def dict_id( cls, varid, seasonid, ft, ff=None ):
         """varid, seasonid are strings identifying a variable name (usually of a model output
-        variable) and season, ft is a filetable.  This method constructs and returns an id for
-        the corresponding reduced_variable object."""
+        variable) and season, ft is a filetable.  ff is an optional filefilter.
+        This method constructs and returns an id for the corresponding reduced_variable object."""
         if ft is None:
             return None
         else:
-            return basic_id._dict_id( cls, varid, seasonid, ft._strid )
+            return basic_id._dict_id( cls, varid, seasonid, ft._strid, str(ff) )
 
     def extract_filefamilyname( self, filename ):
         """From a filename, extracts the first part of the filename as the possible
@@ -1826,7 +1829,8 @@ class reduced_variable(ftrow,basic_id):
         rows = self._filetable.find_files( variableid, time_range=self.timerange,
                                            lat_range=self.latrange, lon_range=self.lonrange,
                                            level_range=self.levelrange,
-                                           seasonid=self._season.seasons[0] )
+                                           seasonid=self._season.seasons[0],
+                                           filefilter=self._filefilter )
         if rows==None or len(rows)<=0:
             return None
 
