@@ -252,13 +252,14 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                        if hasattr(var,'long_name'):
                                            del var.long_name
                                        if hasattr(var,'id'):
+                                           vname = var.id.replace(' ', '_')
                                            var_id_save = var.id
                                            var.id = ''         # If id exists, vcs uses it as a plot title
                                            # and if id doesn't exist, the system will create one before plotting!
                                        else:
+                                           vname = varid.replace(' ', '_')
                                            var_id_save = None
 
-                                       vname = var.id.replace(' ', '_')
                                        vname = vname.replace('/', '_')
                                        fname = outdir+'/figure-set'+sname[0]+'_'+rname+'_'+seasonid+'_'+vname+'_plot-'+str(r)+'.png'
                                        print "writing png file",fname
@@ -269,7 +270,9 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                        tm.title.priority = 1
                                        tm.comment1.priority = 0
                                        vcanvas.plot(var, res[r].presentation, tm, bg=1, title=title, units=var.units, source="this is the source")
-                                       vcanvas2.plot(var, res[r].presentation, tm2, bg=1)
+                                       if r<3:
+                                           # We need more templates so we can have >3 plots in vcanvas2!
+                                           vcanvas2.plot(var, res[r].presentation, tm2, bg=1)
                                        if var_id_save is not None:
                                            var.id = var_id_save
                                    vcanvas.png( fname )
