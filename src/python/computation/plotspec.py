@@ -366,17 +366,20 @@ class basic_plot_variable():
 class basic_level_variable(basic_plot_variable):
     """represents a typical variable with a level axis, in a plot set which reduces the level
     axis."""
-    @staticmethod
-    def varoptions():
-        """returns a represention of options specific to this variable.  That is, how should
-        one reduce the level axis?  The default is to average along that axis.  But other options
-        are to pick out the variable's value at some particular pressure level, e.g. 300 mb.
+    pass
+    
+class level_variable_for_amwg_set5(basic_level_variable):
+    """represents a level variable, but has options for AMWG plot set 5"""
+    def varoptions(*args,**kwargs):
+        """returns a represention of options specific to this variable.  Example dict items:
+         'vertical average':'vertavg'
+         '300 mbar level value':300
         """
-        opts ={
+        opts = {
             " default":"vertical average", " vertical average":"vertical average",
             "200 mbar":200, "300 mbar":300, "500 mbar":500, "850 mbar":850 }
         return opts
-    
+
 class basic_pole_variable(basic_plot_variable):
     """represents a typical variable that reduces the latitude axis."""
     @staticmethod
