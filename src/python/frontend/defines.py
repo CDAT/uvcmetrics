@@ -48,7 +48,13 @@ all_regions = {
 "Tibetan Plaeau": [30, 40, 80, 100],
 "N. Hemisphere Land": [0, 90, -180, 180],  
 "S. Hemisphere Land": [-90, 0, -180, 180],  
+
 "Global": [-90, 90, -180, 180],
+'global': [-90,90, -180, 180],
+'tropics': [-20,20, -180, 180],
+'southern extratropics': [-90,-20, -180, 180],
+'northern extratropics': [20,90, -180, 180]
+
 #"User defined": [0, 0, 0, 0],
 }
 
