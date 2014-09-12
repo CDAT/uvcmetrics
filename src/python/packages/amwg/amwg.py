@@ -543,7 +543,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
         allvars = amwg_plot_spec.package._all_variables( filetable1, filetable2, "amwg_plot_spec" )
         for varname in amwg_plot_spec.package._list_variables_with_levelaxis(
             filetable1, filetable2, "amwg_plot_spec" ):
-            allvars[varname] = basic_level_variable
+            allvars[varname] = level_variable_for_amwg_set5
         return allvars
     def plan_computation( self, filetable1, filetable2, varid, seasonid, region=None, aux=None ):
         if isinstance(aux,Number):
