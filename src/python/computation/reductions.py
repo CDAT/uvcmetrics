@@ -1495,22 +1495,6 @@ def timeave_seasonal( mv, seasons=seasonsyr ):
     """
     return seasons.climatology(mv)
 
-def timeave_old( mv ):
-    """Returns a time average of the cdms2 variable mv.
-    mv is a cdms2 variable, assumed to be time-dependent and indexed as is usual for CF-compliant
-    variables, i.e. mv(time,...).
-    What's returned is a numpy array, not a cdms2 variable.  (I may change this in the future).
-    """
-    # I haven't thought yet about how missing values would work with this...
-    # If time intervals be unequal, this will have to be changed...
-    sh = mv.shape    # e.g. [312,90,144] for t,lat,lon
-    n = sh[0]
-    # BTW, this is the size of everything else:
-    # n2 = reduce( operator.mul, sh[1:] ) # e.g. 90*144=12960
-    mvta = numpy.sum( mv.__array__(), axis=0 )
-    mvta /= n
-    return mvta
-
 def minmin_maxmax( *args ):
     """returns a TransientVariable containing the minimum and maximum values of all the variables
     provided as arguments"""
