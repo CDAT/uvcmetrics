@@ -370,6 +370,7 @@ class basic_level_variable(basic_plot_variable):
     
 class level_variable_for_amwg_set5(basic_level_variable):
     """represents a level variable, but has options for AMWG plot set 5"""
+    @staticmethod
     def varoptions(*args,**kwargs):
         """returns a represention of options specific to this variable.  Example dict items:
          'vertical average':'vertavg'
@@ -377,7 +378,9 @@ class level_variable_for_amwg_set5(basic_level_variable):
         """
         opts = {
             " default":"vertical average", " vertical average":"vertical average",
-            "200 mbar":200, "300 mbar":300, "500 mbar":500, "850 mbar":850 }
+            "200 mbar":200, "300 mbar":300, "500 mbar":500, "850 mbar":850,
+            "200":200, "300":300, "500":500, "850":850,
+            }
         return opts
 
 class basic_pole_variable(basic_plot_variable):
