@@ -1147,7 +1147,7 @@ class amwg_plot_set10(amwg_plot_spec, basic_id):
         #self.plot = basic_two_line_plot( model, obs )
         #self.single_plotspecs[id2str(vidModel)]  vid=vidModel,
         self.single_plotspecs = {}
-        pdb.set_trace()
+        #pdb.set_trace()
         self.plot = plotspec(vidModel, 
                              zvars = [vidModel],
                              zfunc = (lambda y: y),
