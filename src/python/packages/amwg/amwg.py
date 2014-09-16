@@ -502,7 +502,7 @@ class amwg_plot_set4(amwg_plot_spec):
             if type(val) is not list: val=[val]
             for v in val:
                 if v is None: continue
-                v.finalize()
+                v.finalize(flip_y=True)
         return self.plotspec_values[self.plotall_id]
 
 class amwg_plot_set5and6(amwg_plot_spec):
