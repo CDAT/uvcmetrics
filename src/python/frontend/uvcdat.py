@@ -238,10 +238,12 @@ class uvc_simple_plotspec():
                                    if ax is not None}
         self.finalized = False
 
-    def finalize( self ):
+    def finalize( self, flip_x=False, flip_y=False ):
         """By the time this is called, all synchronize operations should have been done.  But even
         so, each variable has a min and max and a min and max for each of its axes.  We need to
-        simplify further for the plot package."""
+        simplify further for the plot package.
+        The options flip_x and flip_y may be set to True to flip the axis.  That is, in x right
+        to left and left to right, and in y top to bottom and bottom to top."""
         # old test:
         #if self.presentation.__class__.__name__=="GYx" or\
         #        self.presentation.__class__.__name__=="Gfi":
@@ -269,10 +271,18 @@ class uvc_simple_plotspec():
                     return None
                 # VCS Yxvsx
                 ax = axmax.keys()[0]
-                self.presentation.datawc_x1 = axmin[ax]
-                self.presentation.datawc_x2 = axmax[ax]
-                self.presentation.datawc_y1 = varmin
-                self.presentation.datawc_y2 = varmax
+                if flip_x:
+                    self.presentation.datawc_x2 = axmin[ax]
+                    self.presentation.datawc_x1 = axmax[ax]
+                else:
+                    self.presentation.datawc_x1 = axmin[ax]
+                    self.presentation.datawc_x2 = axmax[ax]
+                if flip_y:
+                    self.presentation.datawc_y2 = varmin
+                    self.presentation.datawc_y1 = varmax
+                else:
+                    self.presentation.datawc_y1 = varmin
+                    self.presentation.datawc_y2 = varmax
             elif vcs.isisofill(self.presentation) or self.presentation.__class__.__name__=="Gfi":
                 # VCS Isofill
                 # First we have to identify which axes will be plotted as X and Y.
@@ -289,10 +299,18 @@ class uvc_simple_plotspec():
                 # Now send the plotted min,max for the X,Y axes to the graphics:
                 # and if it is not a polar projection
                 if vcs.getprojection(self.presentation.projection)._type!=-3:
-                   self.presentation.datawc_x1 = axmin[axx]
-                   self.presentation.datawc_x2 = axmax[axx]
-                   self.presentation.datawc_y1 = axmin[axy]
-                   self.presentation.datawc_y2 = axmax[axy]
+                    if flip_x:
+                        self.presentation.datawc_x2 = axmin[axx]
+                        self.presentation.datawc_x1 = axmax[axx]
+                    else:
+                        self.presentation.datawc_x1 = axmin[axx]
+                        self.presentation.datawc_x2 = axmax[axx]
+                    if flip_y:
+                        self.presentation.datawc_y2 = axmin[axy]
+                        self.presentation.datawc_y1 = axmax[axy]
+                    else:
+                        self.presentation.datawc_y1 = axmin[axy]
+                        self.presentation.datawc_y2 = axmax[axy]
                 # The variable min and max, varmin and varmax, should be passed on to the graphics
                 # for setting the contours.  But apparently you can't tell VCS just the min and max;
                 # you have to give it all the contour levels.  So...
