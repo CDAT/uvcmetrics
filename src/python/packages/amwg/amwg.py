@@ -1110,7 +1110,7 @@ class amwg_plot_set10(amwg_plot_spec, basic_id):
         
         #create the plot spec
         self.single_plotspecs = {}
-<<<<<<< HEAD
+
         self.single_plotspecs[self.plot_id] = plotspec(self.plot_id, 
                                                        zvars = [self.vidModel],
                                                        zfunc = (lambda y: y),
@@ -1118,36 +1118,7 @@ class amwg_plot_set10(amwg_plot_spec, basic_id):
                                                        z2func = (lambda z: z),
                                                        plottype = self.plottype)
 
-=======
-        #pdb.set_trace()
-        self.plot = plotspec(vidModel, 
-                             zvars = [vidModel],
-                             zfunc = (lambda y: y),
-                             z2vars = [vidObs],
-                             z2func = (lambda z: z),
-                             plottype = self.plottype,
-                             title = 'test') 
-    def from_plot_set_3(self):
-        zvar = reduced_variable(
-            variableid=varid,
-            filetable=filetable1, season=self.season,
-            reduction_function=(lambda x,vid=None: reduce2scalar(x, vid=vid)) )
-        self.reduced_variables[zvar._strid] = zvar
-        #self.reduced_variables[varid+'_1'] = zvar
-        #zvar._vid = varid+'_1'      # _vid is deprecated
-        z2var = reduced_variable(
-            variableid=varid,
-            filetable=filetable2, season=self.season,
-            reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,self.season,vid=vid)) )
-        self.reduced_variables[z2var._strid] = z2var
-        #self.reduced_variables[varid+'_2'] = z2var
-        #z2var._vid = varid+'_2'      # _vid is deprecated
-        self.plot_a = basic_two_line_plot( zvar, z2var )
-        ft1id,ft2id = filetable_ids(filetable1,filetable2)
-        vid = '_'.join([self._id[0],self._id[1],ft1id,ft2id,'diff'])
-        # ... e.g. CLT_DJF_ft1_ft2_diff
-        self.plot_b = one_line_diff_plot( zvar, z2var, vid )
->>>>>>> 641e459021d4fff19d13e2995bd755e8941062af
+
         self.computation_planned = True
 
     def _results(self,newgrid=0):
