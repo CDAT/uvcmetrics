@@ -223,8 +223,10 @@ class plotspec(basic_id):
                 return cls.dict_id( None, None, None, None, None )
             else:
                 print "ERROR.  Bad input to plotspec.dict_idid(), not a tuple.  Value is"
-                print otherid
+                print otherid, type(otherid)
                 return None
+        if otherid[0]=='rv' and len(otherid)==5 and otherid[4] is None or otherid[4]=='None':
+            otherid = otherid[:4]
         if otherid[0]=='rv' and len(otherid)==4:
             varid = otherid[1]
             varmod = ''
@@ -242,7 +244,7 @@ class plotspec(basic_id):
                 ft2 = otherid[5]
         else:
             print "ERROR.  Bad input to plotspec.dict_idid(), wrong class slot or wrong length."
-            print otherid
+            print otherid, type(otherid)
             return None
         return cls.dict_id( varid, varmod, seasonid, ft1, ft2 )
 
