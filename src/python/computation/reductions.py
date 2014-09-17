@@ -363,8 +363,12 @@ def reduce2latlon( mv, vid=None ):
         return mv
     axes_string = '('+')('.join(axis_names)+')'
     for ax in axes:
+        if ax.getBounds() is None and hasattr(ax,'bounds')  and not (hasattr(ax,'_bounds_') and ax._bounds_ is not None):
+            if hasattr(ax,'parent') and ax.parent is not None:
+                ax._bounds_ = ax.parent.variables(ax.bounds)
         # The averager insists on bounds.  Sometimes they don't exist, especially for obs.
-        if ax.id!='lat' and ax.id!='lon' and not hasattr( ax, 'bounds' ):
+        #if ax.id!='lat' and ax.id!='lon' and not hasattr( ax, 'bounds' ):
+        if ax.getBounds() is None and not ax.isLatitude() and not ax.isLongitude():
             ax.setBounds( ax.genGenericBounds() )
     avmv = averager( mv, axis=axes_string )
     avmv.id = vid
@@ -1721,7 +1725,7 @@ def join_data(*args ):
     versus zonal mean.
     """
     import cdms2, cdutil
-    pdb.set_trace()
+    #pdb.set_trace()
     M = cdms2.MV2.masked_array(args)
     #M.shape
     M.setAxis(-1,args[0].getAxis(-1))
