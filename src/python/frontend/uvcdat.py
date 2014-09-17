@@ -356,7 +356,7 @@ class uvc_simple_plotspec():
         """
         self.synchronize_values( pset )
         self.synchronize_axes(pset)
-    def synchronize_values( self, pset, suffix_length=2 ):
+    def synchronize_values( self, pset, suffix_length=0 ):
         "the part of synchronize_ranges for variable values only"
         sl = -suffix_length
         if sl==0:
@@ -366,12 +366,19 @@ class uvc_simple_plotspec():
             self_suffix = self.vars[0].id[sl:]
             pset_suffix = pset.vars[0].id[sl:]
         if sl==0:
-            var_ids = set([v.id for v in self.vars]) & set([v.id for v in pset.vars])
+            # var_ids = set([v.id for v in self.vars]) & set([v.id for v in pset.vars])
+            s_var_d = { v.id.split('_')[1]:v.id for v in self.vars }
+            p_var_d = { v.id.split('_')[1]:v.id for v in pset.vars }
         else:
-            var_ids = set([v.id[:sl] for v in self.vars]) & set([v.id[:sl] for v in pset.vars])
+            # var_ids = set([v.id[:sl] for v in self.vars]) & set([v.id[:sl] for v in pset.vars])
+            s_var_d = { v.id[sl:]:v.id for v in self.vars }
+            p_var_d = { v.id[sl:]:v.id for v in pset.vars }
+        var_ids = set(s_var_d.keys()) & set(p_var_d.keys())
         for vid in var_ids:
-            vids = vid+self_suffix
-            vidp = vid+pset_suffix
+            #vids = vid+self_suffix
+            #vidp = vid+pset_suffix
+            vids = s_var_d[vid]
+            vidp = p_var_d[vid]
             varmax = max( self.varmax[vids], pset.varmax[vidp] )
             varmin = min( self.varmin[vids], pset.varmin[vidp] )
             self.varmax[vids] = varmax
