@@ -2,39 +2,7 @@
 
 # Top-leve definition of AMWG Diagnostics.
 # AMWG = Atmospheric Model Working Group
-def my_reduce2scalar( mv, month, vid=None ):
-    """averages mv over the full range all axes, to a single scalar.
-    Uses the averager module for greater capabilities"""
 
-    if vid==None:   # Note that the averager function returns a variable with meaningless id.
-        vid = 'reduced_'+mv.id
-    axes = allAxes( mv )
-    axis_names = [ a.id for a in axes ]
-    axis_names = []
-    slices = []
-    for a in axes:
-        #pdb.set_trace()
-        if a.getBounds() is not None:
-            #print a.id, ' has valid bounds', type(a.getBounds())
-            axis_names += [a.id]
-        if a.id == 'time':
-            s = slice(month, month+1)
-        if a.id != 'time':
-            s = slice(0, None)
-        else:
-            s = slice(0,1)
-        slices += [s]
-        #print s
-    mv_new = mv[slices[0], slices[1], slices[2], slices[3]]
-    axes_string = '('+')('.join(axis_names)+')'
-    #print vid, axes_string, mv_new.shape
-    #pdb.set_trace()
-    avmv = averager( mv_new, axis=axes_string )
-    avmv.id = vid
-    if hasattr(mv,'units'):
-        avmv.units = mv.units
-
-    return avmv
 import pdb
 from metrics.packages.diagnostic_groups import *
 from metrics.computation.reductions import *
@@ -1104,146 +1072,89 @@ class amwg_plot_set9(amwg_plot_spec):
         return self.plotspec_values[self.plotall_id]
 
 class amwg_plot_set10(amwg_plot_spec, basic_id):
-    """represents one plot from AMWG Diagnostics Plot Set 3.
-    Each such plot is a pair of plots: a 2-line plot comparing model with obs, and
-    a 1-line plot of the model-obs difference.  A plot's x-axis is latitude, and
+    """represents one plot from AMWG Diagnostics Plot Set 10.
+    The  plot is a plot of 2 curves comparing model with obs.  The x-axis is month of the year and
     its y-axis is the specified variable.  The data presented is a climatological mean - i.e.,
-    time-averaged with times restricted to the specified season, DJF, JJA, or ANN."""
+    time-averaged with times restricted to the specified month."""
     # N.B. In plot_data.py, the plotspec contained keys identifying reduced variables.
     # Here, the plotspec contains the variables themselves.
     name = '10 - Annual Line Plots of  Global Means'
     number = '10'
-    months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']
-    
-    def __init__( self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None ):
+ 
+    def __init__( self, filetable1, filetable2, varid, seasonid='ANN', region=None, aux=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'."""
         basic_id.__init__(self, varid, seasonid)
         plot_spec.__init__(self, seasonid)
         self.plottype = 'Yxvsx'
-        self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
+        self.season = cdutil.times.Seasons(self._seasonid)
+        ft1id, ft2id = filetable_ids(filetable1, filetable2)
+        self.plot_id = '_'.join([ft1id, ft2id, varid, self.plottype])
+        self.computation_planned = False
         if not self.computation_planned:
             self.plan_computation( filetable1, filetable2, varid, seasonid )
-    def plan_computation( self, filetable1, filetable2, varid, seasonid ):
 
-        vidAll = []        
+    def plan_computation( self, filetable1, filetable2, varid, seasonid ):
+        
+        self.reduced_variables = {}
+        vidAll = {}        
         for FT in [filetable1, filetable2]:
             VIDs = []
             for i in range(1, 13):
                 month = cdutil.times.getMonthString(i)
                 #pdb.set_trace()
                 #create identifiers
-                VID = rv.dict_id(varid, month, FT)
-                RF = (lambda x, vid=id2str(VID), month = cdutil.times.getMonthIndex(VID[2])[0]-1:my_reduce2scalar(x, month, vid=vid))
+                VID = rv.dict_id(varid, month, FT) #cdutil.times.getMonthIndex(VID[2])[0]-1
+                RF = (lambda x, vid=id2str(VID), month = VID[2]:reduce2scalar_seasonal_zonal(x, seasons=cdutil.times.Seasons(month), vid=vid))
                 RV = reduced_variable(variableid = varid, 
                                       filetable = FT, 
                                       season = cdutil.times.Seasons(month), 
                                       reduction_function =  RF)
     
-    
-                self.reduced_variables[id2str(VID)] = RV   
+                VID = id2str(VID)
+                self.reduced_variables[VID] = RV   
                 VIDs += [VID]
-            vidAll += [VID]
-
-        #self.reduced_variables = {'rv_T_MAY_ft0_obs_atmos': self.reduced_variables['rv_T_MAY_ft0_obs_atmos']}
+            vidAll[FT] = VIDs 
         #print self.reduced_variables.keys()
-        vidModel = dv.dict_id(varid, 'model', self._seasonid, filetable1)
-        vidObs   = dv.dict_id(varid, 'obs',   self._seasonid, filetable2)
-      
+        
+        #create the identifiers 
+        vidModel = dv.dict_id(varid, 'model', "", filetable1)
+        vidObs   = dv.dict_id(varid, 'obs',   "", filetable2)
+        self.vidModel = id2str(vidModel)
+        self.vidObs   = id2str(vidObs)
+
         #create the derived variables which is the composite of the months
         #pdb.set_trace()
-        model = derived_var(vid=id2str(vidModel), inputs=vidAll[0], func=join_data) 
-        obs   = derived_var(vid=id2str(vidObs),   inputs=vidAll[1], func=join_data) 
-        self.derived_variables = {vidModel: model, vidObs: obs}
-        #model = reduced_variable(variableid = varid, 
-        #                         filetable = filetable1, 
-        #                         season = cdutil.times.Seasons(seasonid),  
-        #                         reduction_function = join_data) 
-        #obs   = reduced_variable(variableid = varid, 
-        #                         filetable = filetable2, 
-        #                         season = cdutil.times.Seasons(seasonid),  
-        #                         reduction_function = join_data)         
-        #self.reduced_variables.update({vidModel: model, vidObs: obs})
+        model = derived_var(vid=self.vidModel, inputs=vidAll[filetable1], func=join_1d_data) 
+        obs   = derived_var(vid=self.vidObs,   inputs=vidAll[filetable2], func=join_1d_data) 
+        self.derived_variables = {self.vidModel: model, self.vidObs: obs}
         
-        #self.plot = basic_two_line_plot( model, obs )
-        #self.single_plotspecs[id2str(vidModel)]  vid=vidModel,
+        #create the plot spec
         self.single_plotspecs = {}
-        pdb.set_trace()
-        self.plot = plotspec(vidModel, 
-                             zvars = [vidModel],
-                             zfunc = (lambda y: y),
-                             z2vars = [vidObs],
-                             z2func = (lambda z: z),
-                             plottype = self.plottype,
-                             title = 'test') 
-    def from_plot_set_3(self):
-        zvar = reduced_variable(
-            variableid=varid,
-            filetable=filetable1, season=self.season,
-            reduction_function=(lambda x,vid=None: reduce2scalar(x, vid=vid)) )
-        self.reduced_variables[zvar._strid] = zvar
-        #self.reduced_variables[varid+'_1'] = zvar
-        #zvar._vid = varid+'_1'      # _vid is deprecated
-        z2var = reduced_variable(
-            variableid=varid,
-            filetable=filetable2, season=self.season,
-            reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,self.season,vid=vid)) )
-        self.reduced_variables[z2var._strid] = z2var
-        #self.reduced_variables[varid+'_2'] = z2var
-        #z2var._vid = varid+'_2'      # _vid is deprecated
-        self.plot_a = basic_two_line_plot( zvar, z2var )
-        ft1id,ft2id = filetable_ids(filetable1,filetable2)
-        vid = '_'.join([self._id[0],self._id[1],ft1id,ft2id,'diff'])
-        # ... e.g. CLT_DJF_ft1_ft2_diff
-        self.plot_b = one_line_diff_plot( zvar, z2var, vid )
+        self.single_plotspecs[self.plot_id] = plotspec(self.plot_id, 
+                                                       zvars = [self.vidModel],
+                                                       zfunc = (lambda y: y),
+                                                       z2vars = [self.vidObs ],
+                                                       z2func = (lambda z: z),
+                                                       plottype = self.plottype)
+
         self.computation_planned = True
+
     def _results(self,newgrid=0):
-        # At the moment this is very specific to plot set 3.  Maybe later I'll use a
-        # more general method, to something like what's in plot_data.py, maybe not.
-        # later this may be something more specific to the needs of the UV-CDAT GUI
         #pdb.set_trace()
-        results = plot_spec._results(self,newgrid)
+        results = plot_spec._results(self, newgrid)
         if results is None: return None
-        model = self.plot.zvars[0]
-        obs   = self.plot.z2vars[0]
-        modelName = model._filetable._strid
-        obsName   = obs._filetable._strid
-        TITLE = ' '.join([self._id[0],self._id[1], self._id[2], modelName,'and', obsName])
-        modelVar = self.variable_values[model._strid]
-        obsVar  = self.variable_values[obs._strid]
-        plot_val = uvc_plotspec([modelVar, obsVar],
-                                self.plotstype, 
-                                labels=[modelName, obsName],
-                                title=TITLE)
+        psv = self.plotspec_values
+        #print self.plotspec_values.keys()
+
+        model = self.single_plotspecs[self.plot_id].zvars[0]
+        obs   = self.single_plotspecs[self.plot_id].z2vars[0]
+        modelVal = self.variable_values[model]
+        obsVal  = self.variable_values[obs]        
+                
+        plot_val = uvc_plotspec([modelVal, obsVal],
+                                self.plottype, 
+                                title=self.plot_id)
         plot_val.finalize()
         return [ plot_val]
     
-        zvar = self.plot_a.zvars[0]
-        z2var = self.plot_a.z2vars[0]
-        #zval = zvar.reduce()
-        zval = self.variable_values[zvar._strid]
-        #zval = self.variable_values[zvar._vid] # _vid is deprecated
-        if zval is None: return None
-        zunam = zvar._filetable._strid  # part of y1 distinguishing it from y2, e.g. ft_1
-        zval.id = '_'.join([self._id[0],self._id[1],zunam])
-        z2val = self.variable_values[z2var._strid]
-        if z2val is None:
-            z2unam = ''
-            zdiffval = None
-        else:
-            z2unam = z2var._filetable._strid  # part of y2 distinguishing it from y1, e.g. ft_2
-            z2val.id = '_'.join([self._id[0],self._id[1],z2unam])
-            zdiffval = apply( self.plot_b.zfunc, [zval,z2val] )
-            zdiffval.id = '_'.join([self._id[0],self._id[1],
-                                    zvar._filetable._strid, z2var._filetable._strid, 'diff'])
-        # ... e.g. CLT_DJF_set3_CAM456_NCEP_diff
-        plot_a_val = uvc_plotspec(
-            [v for v in [zval,z2val] if v is not None],'Yxvsx', labels=[zunam,z2unam],
-            title=' '.join([self._id[0],self._id[1],self._id[2],zunam,'and',z2unam]))
-        plot_b_val = uvc_plotspec(
-            [v for v in [zdiffval] if v is not None],'Yxvsx', labels=['difference'],
-            title=' '.join([self._id[0],self._id[1],self._id[2],zunam,'-',z2unam]))
-        plot_a_val.synchronize_ranges(plot_b_val)
-        plot_a_val.finalize()
-        plot_b_val.finalize()
-        return [ plot_a_val, plot_b_val ]
