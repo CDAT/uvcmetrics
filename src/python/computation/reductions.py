@@ -1478,9 +1478,11 @@ def aminusb_1ax( mv1, mv2 ):
     axis2 = allAxes(mv2)[0]
     if len(axis1)<=len(axis2):
         a = mv1
-        b = numpy.interp( axis1[:], axis2[:], mv2[:], left=missing, right=missing )
+        b0 = numpy.interp( axis1[:], axis2[:], mv2[:], left=missing, right=missing )
+        b = cdms2.createVariable( b0, mask=[ True if bb==missing else False for bb in b0[:] ], axes=[axis1] )
     else:
-        a = numpy.interp( axis2[:], axis1[:], mv1[:], left=missing, right=missing )
+        a0 = numpy.interp( axis2[:], axis1[:], mv1[:], left=missing, right=missing )
+        a = cdms2.createVariable( a0, mask=[ True if aa==missing else False for aa in a0[:] ], axes=[axis2] )
         b = mv2
     aminusb = a - b
     aminusb.id = mv1.id
