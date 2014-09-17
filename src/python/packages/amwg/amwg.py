@@ -381,7 +381,7 @@ class amwg_plot_set3(amwg_plot_spec,basic_id):
         plot_b_val = uvc_plotspec(
             [v for v in [zdiffval] if v is not None],'Yxvsx', labels=['difference'],
             title=' '.join([self._id[0],self._id[1],self._id[2],zunam,'-',z2unam]))
-        plot_a_val.synchronize_ranges(plot_b_val)
+        # no, we don't want same range for values & difference! plot_a_val.synchronize_ranges(plot_b_val)
         plot_a_val.finalize()
         plot_b_val.finalize()
         return [ plot_a_val, plot_b_val ]
@@ -498,6 +498,8 @@ class amwg_plot_set4(amwg_plot_spec):
         if self.plot1_id in psv and self.plot2_id in psv and\
                 psv[self.plot1_id] is not None and psv[self.plot2_id] is not None:
             psv[self.plot1_id].synchronize_ranges(psv[self.plot2_id])
+        else:
+            print "WARNING not synchronizing ranges for",self.plot1_id,"and",self.plot2_id
         for key,val in psv.items():
             if type(val) is not list: val=[val]
             for v in val:
@@ -727,6 +729,8 @@ class amwg_plot_set5and6(amwg_plot_spec):
         if self.plot1_id in psv and self.plot2_id in psv and\
                 psv[self.plot1_id] is not None and psv[self.plot2_id] is not None:
             psv[self.plot1_id].synchronize_ranges(psv[self.plot2_id])
+        else:
+            print "WARNING not synchronizing ranges for",self.plot1_id,"and",self.plot2_id
         for key,val in psv.items():
             if type(val) is not list: val=[val]
             for v in val:
@@ -835,6 +839,8 @@ class amwg_plot_set7(amwg_plot_spec):
         if self.plot1_id in psv and self.plot2_id in psv and\
                 psv[self.plot1_id] is not None and psv[self.plot2_id] is not None:
             psv[self.plot1_id].synchronize_ranges(psv[self.plot2_id])
+        else:
+            print "WARNING not synchronizing ranges for",self.plot1_id,"and",self.plot2_id
         for key,val in psv.items():
             if type(val) is not list: val=[val]
             for v in val:
