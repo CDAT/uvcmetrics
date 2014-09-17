@@ -60,6 +60,39 @@ class f_startswith(basic_filter):
     def __repr__( self ):
         return basic_filter.__repr__(self)+'("'+self._startstring+'")'
 
+class f_basename(basic_filter):
+    """requires the basename (normally the filename of a path) to be begin with the specified string + '_'."""
+    def __init__( self, inpstring ):
+        self._basestring = inpstring+'_'
+    def __call__( self, filen ):
+        bn = os.path.basename(filen)
+        return bn.find(self._basestring)==0
+    def __repr__( self ):
+        return basic_filter.__repr__(self)+'("'+self._basestring+'")'
+
+class f_climoname(basic_filter):
+    """requires the filename to follow the usual climatology file format, e.g. SPAM_DJF_climo.nc,
+    with a specified root name, e.g. SPAM."""
+    def __init__( self, rootstring ):
+        self._rootstring = rootstring
+    def __call__( self, filen ):
+        bn = os.path.basename(filen)
+        matchobject = re.search( r"_\w\w\w_climo\.nc$", bn )
+        if matchobject is None: return False
+        idx = matchobject.start()
+        return bn == self._rootstring + bn[idx:]
+    def __repr__( self ):
+        return basic_filter.__repr__(self)+'("'+self._rootstring+'")'
+
+class f_contains(basic_filter):
+    """requires name to contain with a specified string."""
+    def __init__( self, contstring ):
+        self._contstring = contstring
+    def __call__( self, filen ):
+        return filen.find(self._contstring)>=0
+    def __repr__( self ):
+        return basic_filter.__repr__(self)+'("'+self._contstring+'")'
+
 class f_and(basic_binary_filter):
     def __call__( self, filen ):
         return self._f1(filen) and self._f2(filen)
@@ -328,4 +361,5 @@ if __name__ == '__main__':
    o.processCmdLine()
    # pathid 0 is the minimum required to get this far in processCmdLine()
    datafiles = dirtree_datafiles(o, pathid=0)
+
 

@@ -10,8 +10,9 @@ from unidata import udunits
 # Each key of the following dictionary is a unit not supported by udunits; or (e.g. 'mb')
 # supported only with a meaning differing from that conventional in climate science.
 # Each value is a synonymous unit which is supported by udunits.
+# NOTES: 'gpm' appears in JRA25_ANN_climo.nc, probably stands for "geopotential meters".
 unit_synonyms = {
-    'mb':'millibar', 'pa':'pascal'
+    'mb':'millibar', 'pa':'pascal', 'gpm':'meters'
     }
 
 # Each key of the following dictionary is a unit not supported by udunits in a manner appropriate
@@ -51,7 +52,8 @@ def convert_variable( var, target_units ):
         var.units = u
     try:
         s,o = udunits(1.0,var.units).how(target_units)
-    except TypeError:
+    except TypeError as e:
+        print "WARNING, could not convert units from",var.units,"to",target_units
         return var
     var = s*var + o
     var.units = target_units

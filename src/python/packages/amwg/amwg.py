@@ -395,30 +395,9 @@ class amwg_plot_set4(amwg_plot_spec):
             allvars[varname] = basic_level_variable
         return allvars
     def reduced_variables_press_lev( self, filetable, varid, seasonid, ftno=None ):
-        if filetable is None:
-            return {}
-        reduced_varlis = [
-            reduced_variable(
-                variableid=varid, filetable=filetable, season=self.season,
-                reduction_function=(lambda x,vid=None: reduce2levlat_seasonal(x,self.season,vid=vid)) ) ]
-        reduced_variables = { v.id():v for v in reduced_varlis }
-        return reduced_variables
+        return reduced_variables_press_lev( filetable, varid, self.season )
     def reduced_variables_hybrid_lev( self, filetable, varid, seasonid, ftno=None ):
-        reduced_varlis = [
-            reduced_variable(
-                variableid=varid, filetable=filetable, season=self.season,
-                reduction_function=(lambda x,vid=None: reduce2levlat_seasonal(x,self.season,vid=vid)) ),
-            reduced_variable(      # hyam=hyam(lev)
-                variableid='hyam', filetable=filetable, season=self.season,
-                reduction_function=(lambda x,vid=None: x) ),
-            reduced_variable(      # hybm=hybm(lev)
-                variableid='hybm', filetable=filetable, season=self.season,
-                reduction_function=(lambda x,vid=None: x) ),
-            reduced_variable(
-                variableid='PS', filetable=filetable, season=self.season,
-                reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,self.season,vid=vid)) ) ]
-        reduced_variables = { v.id():v for v in reduced_varlis }
-        return reduced_variables
+        return reduced_variables_hybrid_lev( filetable, varid, self.season )
     def plan_computation( self, filetable1, filetable2, varid, seasonid ):
         ft1_hyam = filetable1.find_files('hyam')
         if filetable2 is None:
@@ -491,7 +470,7 @@ class amwg_plot_set4(amwg_plot_spec):
             if type(val) is not list: val=[val]
             for v in val:
                 if v is None: continue
-                v.finalize()
+                v.finalize(flip_y=True)
         return self.plotspec_values[self.plotall_id]
 
 class amwg_plot_set5and6(amwg_plot_spec):
@@ -532,7 +511,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
         allvars = amwg_plot_spec.package._all_variables( filetable1, filetable2, "amwg_plot_spec" )
         for varname in amwg_plot_spec.package._list_variables_with_levelaxis(
             filetable1, filetable2, "amwg_plot_spec" ):
-            allvars[varname] = basic_level_variable
+            allvars[varname] = level_variable_for_amwg_set5
         return allvars
     def plan_computation( self, filetable1, filetable2, varid, seasonid, region=None, aux=None ):
         if isinstance(aux,Number):
@@ -1131,6 +1110,7 @@ class amwg_plot_set10(amwg_plot_spec, basic_id):
         
         #create the plot spec
         self.single_plotspecs = {}
+<<<<<<< HEAD
         self.single_plotspecs[self.plot_id] = plotspec(self.plot_id, 
                                                        zvars = [self.vidModel],
                                                        zfunc = (lambda y: y),
@@ -1138,6 +1118,36 @@ class amwg_plot_set10(amwg_plot_spec, basic_id):
                                                        z2func = (lambda z: z),
                                                        plottype = self.plottype)
 
+=======
+        #pdb.set_trace()
+        self.plot = plotspec(vidModel, 
+                             zvars = [vidModel],
+                             zfunc = (lambda y: y),
+                             z2vars = [vidObs],
+                             z2func = (lambda z: z),
+                             plottype = self.plottype,
+                             title = 'test') 
+    def from_plot_set_3(self):
+        zvar = reduced_variable(
+            variableid=varid,
+            filetable=filetable1, season=self.season,
+            reduction_function=(lambda x,vid=None: reduce2scalar(x, vid=vid)) )
+        self.reduced_variables[zvar._strid] = zvar
+        #self.reduced_variables[varid+'_1'] = zvar
+        #zvar._vid = varid+'_1'      # _vid is deprecated
+        z2var = reduced_variable(
+            variableid=varid,
+            filetable=filetable2, season=self.season,
+            reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,self.season,vid=vid)) )
+        self.reduced_variables[z2var._strid] = z2var
+        #self.reduced_variables[varid+'_2'] = z2var
+        #z2var._vid = varid+'_2'      # _vid is deprecated
+        self.plot_a = basic_two_line_plot( zvar, z2var )
+        ft1id,ft2id = filetable_ids(filetable1,filetable2)
+        vid = '_'.join([self._id[0],self._id[1],ft1id,ft2id,'diff'])
+        # ... e.g. CLT_DJF_ft1_ft2_diff
+        self.plot_b = one_line_diff_plot( zvar, z2var, vid )
+>>>>>>> 641e459021d4fff19d13e2995bd755e8941062af
         self.computation_planned = True
 
     def _results(self,newgrid=0):

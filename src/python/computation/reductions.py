@@ -158,8 +158,7 @@ def fix_time_units( timeunits ):
     return since+new_date
 
 def reduce2scalar_zonal( mv, latmin=-90, latmax=90, vid=None ):
-    """returns the mean of the variable over the supplied latitude range (in degrees, based
-    on values of lat, not lat_bnds)
+    """returns the mean of the variable over the supplied latitude range.
     The computed quantity is a scalar but is returned as a cdms2 variable, i.e. a MV.
     The input mv is a cdms2 variable too.
     This function uses the cdms2 avarager() function to handle weights and do averages
@@ -178,8 +177,7 @@ def reduce2scalar_zonal( mv, latmin=-90, latmax=90, vid=None ):
     return avmv
 
 def reduce2scalar_seasonal_zonal( mv, seasons=seasonsyr, latmin=-90, latmax=90, vid=None ):
-    """returns the mean of the variable over the supplied latitude range (in degrees, based
-    on values of lat, not lat_bnds).
+    """returns the mean of the variable over the supplied latitude range (in degrees).
     The computed quantity is a scalar but is returned as a cdms2 variable, i.e. a MV.
     The input mv is a cdms2 variable too.
     This function uses the cdms2 avarager() function to handle weights and do averages
@@ -227,6 +225,38 @@ def reduce2scalar_seasonal_zonal( mv, seasons=seasonsyr, latmin=-90, latmax=90, 
         avmv.units = mv.units
 
     return avmv
+
+def reduce2scalar_seasonal_zonal_level( mv, seasons=seasonsyr, latmin=-90, latmax=90, level=None,
+                                        vid=None ):
+    """returns the mean of the variable at the supplied level and over the supplied latitude range
+    The computed quantity is a scalar but is returned as a cdms2 variable, i.e. a MV.
+    The input mv is a cdms2 variable too.  Its level axis *must* have pressure levels in millibars,
+    expressed as units=='mbar'.
+    This function uses the cdms2 avarager() function to handle weights and do averages
+    Time is restriced to the specified season.  Latitude and longitude units are degrees.
+    Level units is millibars.
+    """
+    levax = levAxis(mv)
+    if level is None or levax is None:
+        return reduce2scalar_seasonal_zonal( mv, seasons, latmin, latmax, vid )
+
+    # Check whether mv has pressure levels in mbar as required.  Conversions must be done prior to
+    # calling this function because conversion from hybrid levels requires several other variables.
+    if not hasattr(levax,'units'):
+        print "ERROR: In reduce2scalar_seasonal_zonal_level, variable",mv.id,"has level axis without units!"
+        return None
+    if levax.units=='millibar' or levax.units=='millibars' or levax.units=='mbars' or levax.units=='mb':
+        levax.units='mbar'
+    elif levax.units!='mbar':
+        print "ERROR: In reduce2scalar_seasonal_zonal_level, variable",mv.id,"has level axis units",levax.units,"!"
+        print "Level axis units should be 'mbar'."
+        return None
+
+    mvl = select_lev( mv, level )   # mv restricted (approximately) to the specified level
+    if mvl is None:
+        return None
+    return reduce2scalar_seasonal_zonal( mvl, seasons, latmin, latmax, vid )
+
 
 def reduce2scalar( mv, vid=None ):
     """averages mv over the full range all axes, to a single scalar.
@@ -1463,22 +1493,6 @@ def timeave_seasonal( mv, seasons=seasonsyr ):
     """
     return seasons.climatology(mv)
 
-def timeave_old( mv ):
-    """Returns a time average of the cdms2 variable mv.
-    mv is a cdms2 variable, assumed to be time-dependent and indexed as is usual for CF-compliant
-    variables, i.e. mv(time,...).
-    What's returned is a numpy array, not a cdms2 variable.  (I may change this in the future).
-    """
-    # I haven't thought yet about how missing values would work with this...
-    # If time intervals be unequal, this will have to be changed...
-    sh = mv.shape    # e.g. [312,90,144] for t,lat,lon
-    n = sh[0]
-    # BTW, this is the size of everything else:
-    # n2 = reduce( operator.mul, sh[1:] ) # e.g. 90*144=12960
-    mvta = numpy.sum( mv.__array__(), axis=0 )
-    mvta /= n
-    return mvta
-
 def minmin_maxmax( *args ):
     """returns a TransientVariable containing the minimum and maximum values of all the variables
     provided as arguments"""
@@ -1750,7 +1764,7 @@ class reduced_variable(ftrow,basic_id):
                       latrange=None, lonrange=None, levelrange=None,\
                       season=seasonsyr, region=None, reduced_var_id=None,\
                       reduction_function=(lambda x,vid=None: x),\
-                      filetable=None, axes=None, duvs={}, rvs={}
+                      filetable=None, filefilter=None, axes=None, duvs={}, rvs={}
                   ):
         self._season = season
         self._region = region # this could probably change lat/lon range, or lat/lon ranges could be passed in
@@ -1771,6 +1785,7 @@ class reduced_variable(ftrow,basic_id):
         if filetable==None:
             print "ERROR.  No filetable specified for reduced_variable instance",variableid
         self._filetable = filetable
+        self._filefilter = filefilter  # used to filter results of search in filetable
         self._file_attributes = {}
         self._duvs = duvs
         self._rvs = rvs
@@ -1778,14 +1793,14 @@ class reduced_variable(ftrow,basic_id):
         return self._strid
 
     @classmethod
-    def dict_id( cls, varid, seasonid, ft ):
+    def dict_id( cls, varid, seasonid, ft, ff=None ):
         """varid, seasonid are strings identifying a variable name (usually of a model output
-        variable) and season, ft is a filetable.  This method constructs and returns an id for
-        the corresponding reduced_variable object."""
+        variable) and season, ft is a filetable.  ff is an optional filefilter.
+        This method constructs and returns an id for the corresponding reduced_variable object."""
         if ft is None:
             return None
         else:
-            return basic_id._dict_id( cls, varid, seasonid, ft._strid )
+            return basic_id._dict_id( cls, varid, seasonid, ft._strid, str(ff) )
 
     def extract_filefamilyname( self, filename ):
         """From a filename, extracts the first part of the filename as the possible
@@ -1814,7 +1829,8 @@ class reduced_variable(ftrow,basic_id):
         rows = self._filetable.find_files( variableid, time_range=self.timerange,
                                            lat_range=self.latrange, lon_range=self.lonrange,
                                            level_range=self.levelrange,
-                                           seasonid=self._season.seasons[0] )
+                                           seasonid=self._season.seasons[0],
+                                           filefilter=self._filefilter )
         if rows==None or len(rows)<=0:
             return None
 

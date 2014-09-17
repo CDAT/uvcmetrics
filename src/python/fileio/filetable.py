@@ -4,9 +4,22 @@
 #   file_id,  variable_id,  time_range,  lat_range,  lon_range,  level_range
 # subject to change!
 
-import sys, os, cdms2, pprint
+import sys, os, cdms2, re
 from metrics.frontend.options import Options
 from metrics.common import *
+from pprint import pprint
+
+def parse_climo_filename(filename):
+    """Tests whether a filename is in the standard format for a climatology file, e.g.
+    CLOUDSAT_ANN_climo.nc.  If not, returns None.
+    If so, returns a tuple representing the components of the filename.
+    """
+    matchobject = re.search( r"_\w\w\w_climo\.nc$", filename )
+    if matchobject is None:
+        return None
+    # climatology file, e.g. CRU_JJA_climo.nc
+    idx = matchobject.start()
+    return (filename[0:idx], filename[idx+1:idx+4])   # e.g. ('CRU','JJA')
 
 class drange:
    def __init__( self, low=None, high=None, units=None ):
@@ -198,8 +211,11 @@ class basic_filetable(basic_id):
                 varaxisnames = [a[0].id for a in dfile[var].domain]
                 if 'time' in varaxisnames:
                    timern = timerange
+                elif parse_climo_filename(fileid):    # filename like foo_SSS_climo.nc is a climatology file for season SSS.
+                   (root,season)=parse_climo_filename(fileid)
+                   timern = season
                 elif hasattr(dfile,'season'):  # climatology file
-                   timern = timerange   # this should be the season
+                   timern = timerange   # this should be the season like the above example
                 else:
                    timern = None
                 if 'lat' in varaxisnames:
@@ -228,12 +244,13 @@ class basic_filetable(basic_id):
 
     def find_files( self, variable, time_range=None,
                     lat_range=drange(), lon_range=drange(), level_range=drange(),
-                    seasonid=None):
+                    seasonid=None, filefilter=None):
        """This method is intended for creating a plot.
        This finds and returns a list of files needed to cover the supplied variable and time and
        space ranges.
        The returned list may contain more or less than requested, but will be the best available.
        The variable is a string, containing as a CF standard name, or equivalent.
+       A filter filefilter may be supplied, to restrict which files will be found.
        For ranges, None means you want all values."""
        if variable not in self._varindex.keys():
           print 'couldnt find variable',variable,' in varindex keys. Possibly part of a derived variable'
@@ -250,7 +267,11 @@ class basic_filetable(basic_id):
                     lat_range.overlaps_with( ftrow.latrange ) and\
                     lon_range.overlaps_with( ftrow.lonrange ) and\
                     level_range.overlaps_with( ftrow.levelrange ):
-                found.append( ftrow )
+                if filefilter is None:
+                   found.append( ftrow )
+                else:
+                   if filefilter(ftrow.fileid):
+                      found.append( ftrow )
           if found==[]:
              # No suitable season matches (climatology files) found, we will have to use
              # time-dependent data.  Theoretically we could have to use both climatology
@@ -259,7 +280,11 @@ class basic_filetable(basic_id):
                 if lat_range.overlaps_with( ftrow.latrange ) and\
                        lon_range.overlaps_with( ftrow.lonrange ) and\
                        level_range.overlaps_with( ftrow.levelrange ):
-                   found.append( ftrow )
+                   if filefilter is None:
+                      found.append( ftrow )
+                   else:
+                      if filefilter(ftrow.fileid):
+                         found.append( ftrow )
        else:
           for ftrow in candidates:
                 if time_range is None and\
@@ -271,7 +296,11 @@ class basic_filetable(basic_id):
                        lat_range.overlaps_with( ftrow.latrange ) and\
                        lon_range.overlaps_with( ftrow.lonrange ) and\
                        level_range.overlaps_with( ftrow.levelrange ):
-                   found.append( ftrow )
+                   if filefilter is None:
+                      found.append( ftrow )
+                   else:
+                      if filefilter(ftrow.fileid):
+                         found.append( ftrow )
        return found
     def list_variables(self):
        vars = list(set([ r.variableid for r in self._table ]))
