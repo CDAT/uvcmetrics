@@ -279,7 +279,6 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                    rdone += 1
                             # Also, write the nc output files and xml.
                             # Probably make this a command line option.
-                            print "jfp res=",res,"is not none, about to write_plot_data"
                             if res.__class__.__name__ is 'uvc_composite_plotspec':
                                 resc = res
                                 filenames = resc.write_plot_data("xml-NetCDF", outdir )
@@ -289,10 +288,11 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                             number_diagnostic_plots += 1
                             print "wrote plots",resc.title," to",filenames
 #DEAN
-                            vname = varid.replace(' ', '_')
-                            vname = vname.replace('/', '_')
-                            fname = outdir+'/figure-set'+sname[0]+'_'+rname+'_'+seasonid+'_'+vname+'_plot-'+str(r)+'.png'
-                            vcanvas2.png( fname )
+                            if opts['plots']==True:
+                                vname = varid.replace(' ', '_')
+                                vname = vname.replace('/', '_')
+                                fname = outdir+'/figure-set'+sname[0]+'_'+rname+'_'+seasonid+'_'+vname+'_plot-'+str(r)+'.png'
+                                vcanvas2.png( fname )
                         elif res is not None:
                             # but len(res)==0, probably plot set 1
                             if res.__class__.__name__ is 'amwg_plot_set1':
