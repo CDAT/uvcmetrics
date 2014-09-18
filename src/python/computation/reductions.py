@@ -901,6 +901,9 @@ def reduce2latlon_seasonal( mv, season, vid=None ):
     avmv = delete_singleton_axis( avmv, vid='time' )
     if hasattr(mv,'units'):
         avmv.units = mv.units
+    # >>> special ad-hoc code.  The target units should be provided in an argument, not by this if statement>>>>
+        if avmv.units=="Pa" or avmv.units.lower()=="pascal" or avmv.units.lower()=="pascals":
+            avmv = convert_variable( avmv, "millibar" )
     return avmv
 
 def reduce_time_seasonal( mv, seasons=seasonsyr, vid=None ):
