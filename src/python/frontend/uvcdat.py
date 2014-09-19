@@ -180,7 +180,7 @@ class uvc_simple_plotspec():
     # re presentation (plottype): Yxvsx is a line plot, for Y=Y(X).  It can have one or several lines.
     # Isofill is a contour plot.  To make it polar, set projection=polar.  I'll
     # probably communicate that by passing a name "Isofill_polar".
-    def __init__( self, pvars, presentation, labels=[], title=''):
+    def __init__( self, pvars, presentation, labels=[], title='', source=''):
         if len(pvars)<=0:
             zerovar = cdms2.createVariable([[0,0,0],[0,0,0]])
             zerovar.id = 'zero'
@@ -215,6 +215,7 @@ class uvc_simple_plotspec():
         self.vars = pvars
         self.labels = labels
         self.title = title
+        self.source = source
         self.type = ptype
         self.ptype = ptype
         # Initial ranges - may later be changed to coordinate with related plots:
@@ -667,7 +668,7 @@ class plot_spec(object):
             else:
                 title = ' '.join(labels)+' '+self._season_displayid  # do this better later
             # The following line is getting specific to UV-CDAT, although not any GUI...
-            self.plotspec_values[p] = uvc_simple_plotspec( vars, self.plottype, labels, title )
+            self.plotspec_values[p] = uvc_simple_plotspec( vars, self.plottype, labels, title, ps.source )
         for p,ps in self.composite_plotspecs.iteritems():
             self.plotspec_values[p] = [ self.plotspec_values[sp] for sp in ps if sp in self.plotspec_values ]
         return self
