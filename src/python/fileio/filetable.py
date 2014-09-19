@@ -171,6 +171,12 @@ class basic_filetable(basic_id):
        file0 = self._filelist._root[0]
        return os.path.abspath(os.path.expanduser(file0))
        #return file0
+    def source(self):
+       """returns a string describing the sources of this filetable's data"""
+       ftid = self.id()  # e.g. ("ft0","cam_output") after the directory cam_output/
+       if len(ftid)>2:
+          ftid=ftid[2]   # e.g. "cam_output  or "obs_data NCEP"
+       return ftid
     def cache_path(self):
        """returns the path to a directory suitable for cache files"""
        try:
