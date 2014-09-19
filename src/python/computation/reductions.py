@@ -923,7 +923,11 @@ def reduce_time_seasonal( mv, seasons=seasonsyr, vid=None ):
         print "WARNING- no time axis in",mv.id
         return mv
     if len(timeax)<=1:
-        return mv
+        avmv = delete_singleton_axis( mv, vid='time' )
+        avmv.id = vid
+        if hasattr( mv, 'units' ):
+            avmv.units = mv.units
+        return avmv
     if timeax.getBounds()==None:
         timeax._bounds_ = timeax.genGenericBounds()
     mvseas = seasons.climatology(mv)
