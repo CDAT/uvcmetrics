@@ -73,15 +73,11 @@ class dv(derived_var):
 class plotspec(basic_id):
     def __init__(
         self, vid,
-        # xvars=[], xfunc=None, x1vars=[], x1func=None,
-        # x2vars=[], x2func=None, x3vars=[], x3func=None,
-        # yvars=[], yfunc=None, y1vars=[], y1func=None,
-        # y2vars=[], y2func=None, y3vars=[], y3func=None,
-        # yavars=[], yafunc=None, ya1vars=[], ya1func=None,
         zvars=[], zfunc=None, zrangevars=[], zrangefunc=None,
         z2vars=[], z2func=None, z2rangevars=[], z2rangefunc=None,
         plottype='table',
-        title = None
+        title = None,
+        source = ''
         ):
         """Initialize a plotspec (plot specification).  Inputs are an id and plot type,
         and lists of x,y,z variables (as keys in the plotvars dictionary), functions to
@@ -96,56 +92,6 @@ class plotspec(basic_id):
             basic_id.__init__(self,*vid)
         else:
             basic_id.__init__(self,vid)
-        # if xfunc==None:
-        #     if len(xvars)==0:
-        #         xfunc = (lambda: None)
-        #     else:
-        #         xfunc = (lambda x: x)
-        # if x1func==None:
-        #     if len(x1vars)==0:
-        #         x1func = (lambda: None)
-        #     else:
-        #         x1func = (lambda x: x)
-        # if x2func==None:
-        #     if len(x2vars)==0:
-        #         x2func = (lambda: None)
-        #     else:
-        #         x2func = (lambda x: x)
-        # if x3func==None:
-        #     if len(x3vars)==0:
-        #         x3func = (lambda: None)
-        #     else:
-        #         x3func = (lambda x: x)
-        # if yfunc==None:
-        #     if len(yvars)==0:
-        #         yfunc = (lambda: None)
-        #     else:
-        #         yfunc = (lambda y: y)
-        # if y1func==None:
-        #     if len(y1vars)==0:
-        #         y1func = (lambda: None)
-        #     else:
-        #         y1func = (lambda y: y)
-        # if y2func==None:
-        #     if len(y2vars)==0:
-        #         y2func = (lambda: None)
-        #     else:
-        #         y2func = (lambda y: y)
-        # if y3func==None:
-        #     if len(y3vars)==0:
-        #         y3func = (lambda: None)
-        #     else:
-        #         y3func = (lambda y: y)
-        # if yafunc==None:
-        #     if len(yavars)==0:
-        #         yafunc = (lambda: None)
-        #     else:
-        #         yafunc = (lambda ya: ya)
-        # if ya1func==None:
-        #     if len(ya1vars)==0:
-        #         ya1func = (lambda: None)
-        #     else:
-        #         ya1func = (lambda ya: ya)
         if zfunc==None:
             if len(zvars)==0:
                 zfunc = (lambda: None)
@@ -160,26 +106,6 @@ class plotspec(basic_id):
                 z2func = (lambda z2: z2)
         if z2rangefunc==None:
             z2rangefunc = (lambda: None)
-        # self.xfunc = xfunc
-        # self.xvars = xvars
-        # self.x1func = x1func
-        # self.x1vars = x1vars
-        # self.x2func = x2func
-        # self.x2vars = x2vars
-        # self.x3func = x3func
-        # self.x3vars = x3vars
-        # self.yfunc = yfunc
-        # self.yvars = yvars
-        # self.y1func = y1func
-        # self.y1vars = y1vars
-        # self.y2func = y2func
-        # self.y2vars = y2vars
-        # self.y3func = y3func
-        # self.y3vars = y3vars
-        # self.yafunc = yafunc
-        # self.yavars = yavars
-        # self.ya1func = ya1func
-        # self.ya1vars = ya1vars
         self.zfunc = zfunc
         self.zvars = zvars
         self.zrangevars = zrangevars
@@ -191,6 +117,7 @@ class plotspec(basic_id):
         self.plottype = plottype
         if title is not None:
             self.title = title
+        self.source = source
 
     @classmethod
     def dict_id( cls, varid, varmod, seasonid, ft1, ft2=None ):
