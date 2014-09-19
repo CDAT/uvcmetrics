@@ -1808,8 +1808,10 @@ class reduced_variable(ftrow,basic_id):
         This method constructs and returns an id for the corresponding reduced_variable object."""
         if ft is None:
             return None
+        elif ff is None:
+            return basic_id._dict_id( cls, varid, seasonid, ft._strid, '' )
         else:
-            return basic_id._dict_id( cls, varid, seasonid, ft._strid, str(ff) )
+            return basic_id._dict_id( cls, varid, seasonid, ft._strid, ff.mystr() )
 
     def extract_filefamilyname( self, filename ):
         """From a filename, extracts the first part of the filename as the possible
