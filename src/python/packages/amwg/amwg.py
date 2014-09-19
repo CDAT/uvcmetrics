@@ -439,19 +439,28 @@ class amwg_plot_set4(amwg_plot_spec):
                 func=verticalize )
         else:
             vid2 = rv.dict_id(varid,seasonid,filetable2)
+        ft1id = filetable1.id()  # typically ft0_cam_output after the directory cam_output/
+        if len(ft1id)>2:
+            ft1id=ft1id[2]       # typically cam_output
+        ft2id = filetable2.id()  # typically ft1_obs_data_5.6 after the directory obs_data_5.6/
+        if len(ft2id)>2:
+            ft2id=ft2id[2]       # typically obs_data_5.6
         self.single_plotspecs = {
             self.plot1_id: plotspec(
                 vid = ps.dict_idid(vid1), zvars=[vid1], zfunc=(lambda z: z),
                 plottype = self.plottype,
-                title = ' '.join([varid,seasonid,filetable1._strid]) ),
+                title = ' '.join([varid,seasonid,filetable1._strid]),
+                source = ft1id ),
             self.plot2_id: plotspec(
                 vid = ps.dict_idid(vid2), zvars=[vid2], zfunc=(lambda z: z),
                 plottype = self.plottype,
-                title = ' '.join([varid,seasonid,filetable2._strid]) ),
+                title = ' '.join([varid,seasonid,filetable2._strid]),
+                source = ft2id ),
             self.plot3_id: plotspec(
                 vid = ps.dict_id(varid,'diff',seasonid,filetable1,filetable2), zvars=[vid1,vid2],
                 zfunc=aminusb_2ax, plottype = self.plottype,
-                title = ' '.join([varid,seasonid,filetable1._strid,'-',filetable2._strid]) )
+                title = ' '.join([varid,seasonid,filetable1._strid,'-',filetable2._strid]),
+                source = 'difference' )
             }
         self.composite_plotspecs = {
             self.plotall_id: [self.plot1_id, self.plot2_id, self.plot3_id ]
