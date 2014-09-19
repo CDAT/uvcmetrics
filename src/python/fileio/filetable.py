@@ -122,6 +122,9 @@ class basic_filetable(basic_id):
     nfiletables = 0
 
     def __init__( self, filelist, opts, ftid=''):
+        """filelist is a list of strings, each of which is the path to a file.
+        ftid is a human-readable id string.  In common use, it comes via a method
+        dirtree_datafiles.short_name from the name of the directory containing the files."""
         try:
          # is this a dirtree that was passed, or a directory?
          options = filelist.opts
@@ -134,7 +137,6 @@ class basic_filetable(basic_id):
         self.initialize_idnumber()
         basic_id.__init__( self, self._idnumber, ftid )
         
-        """filelist is a list of strings, each of which is the path to a file"""
         self._table = []     # will be built from the filelist, see below
         # We have two indices, one by file and one by variable.
         # the value is always a list of rows of the table.
