@@ -443,14 +443,15 @@ class uvc_simple_plotspec():
                 pset.axmin[vidp][aid] = axmins[aid]
         
     def outfile( self, format="", where="" ):
+        """returns a filename for writing out this plot"""
         if len(self.title)<=0:
             fname = 'foo'
         else:
-            fname = (self.title.strip()+'.nc').replace(' ','_')
+            fname = '_'.join([self.title.strip(),self.source]).replace(' ','_') + '.nc'
         filename = os.path.join(where,fname)
         return filename
     def write_plot_data( self, format="", where="" ):
-        # This is just experimental code, so far.
+        """Writes the plot's data in the specified file format and to the location given."""
         if format=="" or format=="NetCDF" or format=="NetCDF file":
             format = "NetCDF file"
         elif format=="JSON string":
