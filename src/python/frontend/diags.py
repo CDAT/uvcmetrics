@@ -276,8 +276,8 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                            vcanvas2.plot(var, res[r].presentation, tm2, bg=1)
                                        if var_id_save is not None:
                                            var.id = var_id_save
-                                   vcanvas.png( fname )
-                                   rdone += 1
+                                       vcanvas.png( fname )
+                                       rdone += 1
                             # Also, write the nc output files and xml.
                             # Probably make this a command line option.
                             if res.__class__.__name__ is 'uvc_composite_plotspec':
