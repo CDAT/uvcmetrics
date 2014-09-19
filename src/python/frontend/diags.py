@@ -270,7 +270,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                        tm.title.priority = 1
                                        tm.comment1.priority = 0
                                        vcanvas.plot(var, res[r].presentation, tm, bg=1, title=title, units=getattr(var,'units',''),
-                                                    source="this is the source")
+                                                    source=res[r].source )
                                        if r<3:
                                            # We need more templates so we can have >3 plots in vcanvas2!
                                            vcanvas2.plot(var, res[r].presentation, tm2, bg=1)
