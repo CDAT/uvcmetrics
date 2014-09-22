@@ -426,6 +426,7 @@ class Options():
             self._opts['path'].append(i[0])
       else:
          print 'Must specify a path or the --list option at a minimum.'
+         print 'For help, type "diags --help".'
          quit()
       if(args.path2 != None):
          for i in args.path2:

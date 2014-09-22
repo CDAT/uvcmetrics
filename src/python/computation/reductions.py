@@ -363,8 +363,12 @@ def reduce2latlon( mv, vid=None ):
         return mv
     axes_string = '('+')('.join(axis_names)+')'
     for ax in axes:
+        if ax.getBounds() is None and hasattr(ax,'bounds')  and not (hasattr(ax,'_bounds_') and ax._bounds_ is not None):
+            if hasattr(ax,'parent') and ax.parent is not None:
+                ax._bounds_ = ax.parent.variables(ax.bounds)
         # The averager insists on bounds.  Sometimes they don't exist, especially for obs.
-        if ax.id!='lat' and ax.id!='lon' and not hasattr( ax, 'bounds' ):
+        #if ax.id!='lat' and ax.id!='lon' and not hasattr( ax, 'bounds' ):
+        if ax.getBounds() is None and not ax.isLatitude() and not ax.isLongitude():
             ax.setBounds( ax.genGenericBounds() )
     avmv = averager( mv, axis=axes_string )
     avmv.id = vid
@@ -897,6 +901,9 @@ def reduce2latlon_seasonal( mv, season, vid=None ):
     avmv = delete_singleton_axis( avmv, vid='time' )
     if hasattr(mv,'units'):
         avmv.units = mv.units
+    # >>> special ad-hoc code.  The target units should be provided in an argument, not by this if statement>>>>
+        if avmv.units=="Pa" or avmv.units.lower()=="pascal" or avmv.units.lower()=="pascals":
+            avmv = convert_variable( avmv, "millibar" )
     return avmv
 
 def reduce_time_seasonal( mv, seasons=seasonsyr, vid=None ):
@@ -916,7 +923,11 @@ def reduce_time_seasonal( mv, seasons=seasonsyr, vid=None ):
         print "WARNING- no time axis in",mv.id
         return mv
     if len(timeax)<=1:
-        return mv
+        avmv = delete_singleton_axis( mv, vid='time' )
+        avmv.id = vid
+        if hasattr( mv, 'units' ):
+            avmv.units = mv.units
+        return avmv
     if timeax.getBounds()==None:
         timeax._bounds_ = timeax.genGenericBounds()
     mvseas = seasons.climatology(mv)
@@ -1476,9 +1487,11 @@ def aminusb_1ax( mv1, mv2 ):
     axis2 = allAxes(mv2)[0]
     if len(axis1)<=len(axis2):
         a = mv1
-        b = numpy.interp( axis1[:], axis2[:], mv2[:], left=missing, right=missing )
+        b0 = numpy.interp( axis1[:], axis2[:], mv2[:], left=missing, right=missing )
+        b = cdms2.createVariable( b0, mask=[ True if bb==missing else False for bb in b0[:] ], axes=[axis1] )
     else:
-        a = numpy.interp( axis2[:], axis1[:], mv1[:], left=missing, right=missing )
+        a0 = numpy.interp( axis2[:], axis1[:], mv1[:], left=missing, right=missing )
+        a = cdms2.createVariable( a0, mask=[ True if aa==missing else False for aa in a0[:] ], axes=[axis2] )
         b = mv2
     aminusb = a - b
     aminusb.id = mv1.id
@@ -1800,8 +1813,10 @@ class reduced_variable(ftrow,basic_id):
         This method constructs and returns an id for the corresponding reduced_variable object."""
         if ft is None:
             return None
+        elif ff is None:
+            return basic_id._dict_id( cls, varid, seasonid, ft._strid, '' )
         else:
-            return basic_id._dict_id( cls, varid, seasonid, ft._strid, str(ff) )
+            return basic_id._dict_id( cls, varid, seasonid, ft._strid, ff.mystr() )
 
     def extract_filefamilyname( self, filename ):
         """From a filename, extracts the first part of the filename as the possible

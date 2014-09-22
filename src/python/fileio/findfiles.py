@@ -23,6 +23,11 @@ class basic_filter:
         return True
     def __repr__( self ):
         return self.__class__.__name__
+    def mystr( self ):
+        """used for building plot titles.
+        returns a string summarizing what makes this filter different from others.
+        If no such string can be identified, this returns ''"""
+        return ''
 
 class basic_binary_filter(basic_filter):
     def __init__( self, f1, f2 ):
@@ -59,6 +64,8 @@ class f_startswith(basic_filter):
         return filen.find(self._startstring)==0
     def __repr__( self ):
         return basic_filter.__repr__(self)+'("'+self._startstring+'")'
+    def mystr( self ):
+        return self._startstring
 
 class f_basename(basic_filter):
     """requires the basename (normally the filename of a path) to be begin with the specified string + '_'."""
@@ -69,6 +76,8 @@ class f_basename(basic_filter):
         return bn.find(self._basestring)==0
     def __repr__( self ):
         return basic_filter.__repr__(self)+'("'+self._basestring+'")'
+    def mystr( self ):
+        return self._basestring
 
 class f_climoname(basic_filter):
     """requires the filename to follow the usual climatology file format, e.g. SPAM_DJF_climo.nc,
@@ -83,6 +92,8 @@ class f_climoname(basic_filter):
         return bn == self._rootstring + bn[idx:]
     def __repr__( self ):
         return basic_filter.__repr__(self)+'("'+self._rootstring+'")'
+    def mystr( self ):
+        return self._rootstring
 
 class f_contains(basic_filter):
     """requires name to contain with a specified string."""
@@ -284,8 +295,12 @@ class dirtree_datafiles( basic_datafiles ):
     def short_name(self):
         if self.opts.get('dsname',None) != None and pathid != None:
             return self.opts['dsname'][pathid]
+        elif len(self._filt.mystr())>0:
+            return ','.join(['_'.join([os.path.basename(str(r)),self._filt.mystr()])
+                             for r in self._root])   # <base directory> <filter name>
         else:
-            return ','.join([os.path.basename(str(r)) for r in self._root])
+            return ','.join([os.path.basename(str(r))
+                             for r in self._root])   # <base directory> <filter name>
 
     def long_name(self):
         return ' '.join( [ self.__class__.__name__,

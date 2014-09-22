@@ -122,6 +122,9 @@ class basic_filetable(basic_id):
     nfiletables = 0
 
     def __init__( self, filelist, opts, ftid=''):
+        """filelist is a list of strings, each of which is the path to a file.
+        ftid is a human-readable id string.  In common use, it comes via a method
+        dirtree_datafiles.short_name from the name of the directory containing the files."""
         try:
          # is this a dirtree that was passed, or a directory?
          options = filelist.opts
@@ -134,7 +137,6 @@ class basic_filetable(basic_id):
         self.initialize_idnumber()
         basic_id.__init__( self, self._idnumber, ftid )
         
-        """filelist is a list of strings, each of which is the path to a file"""
         self._table = []     # will be built from the filelist, see below
         # We have two indices, one by file and one by variable.
         # the value is always a list of rows of the table.
@@ -169,6 +171,12 @@ class basic_filetable(basic_id):
        file0 = self._filelist._root[0]
        return os.path.abspath(os.path.expanduser(file0))
        #return file0
+    def source(self):
+       """returns a string describing the sources of this filetable's data"""
+       ftid = self.id()  # e.g. ("ft0","cam_output") after the directory cam_output/
+       if len(ftid)>2:
+          ftid=ftid[2]   # e.g. "cam_output  or "obs_data NCEP"
+       return ftid
     def cache_path(self):
        """returns the path to a directory suitable for cache files"""
        try:

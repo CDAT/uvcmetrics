@@ -59,7 +59,7 @@ setup (name = "metrics",
                    ],
        package_dir = packages,
        scripts = ["src/python/packages/wgne/scripts/wgne_metrics_driver.py",
-                  "src/python/frontend/diags.py",
+                  "src/python/frontend/diags",
                   "src/python/frontend/climatology.py"],
        #include_dirs = [numpy.lib.utils.get_include()],
        #       ext_modules = [

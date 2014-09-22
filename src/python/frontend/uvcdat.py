@@ -180,7 +180,7 @@ class uvc_simple_plotspec():
     # re presentation (plottype): Yxvsx is a line plot, for Y=Y(X).  It can have one or several lines.
     # Isofill is a contour plot.  To make it polar, set projection=polar.  I'll
     # probably communicate that by passing a name "Isofill_polar".
-    def __init__( self, pvars, presentation, labels=[], title=''):
+    def __init__( self, pvars, presentation, labels=[], title='', source=''):
         if len(pvars)<=0:
             zerovar = cdms2.createVariable([[0,0,0],[0,0,0]])
             zerovar.id = 'zero'
@@ -217,6 +217,7 @@ class uvc_simple_plotspec():
         self.vars = pvars
         self.labels = labels
         self.title = title
+        self.source = source
         self.type = ptype
         self.ptype = ptype
         # Initial ranges - may later be changed to coordinate with related plots:
@@ -374,7 +375,7 @@ class uvc_simple_plotspec():
         """
         self.synchronize_values( pset )
         self.synchronize_axes(pset)
-    def synchronize_values( self, pset, suffix_length=2 ):
+    def synchronize_values( self, pset, suffix_length=0 ):
         "the part of synchronize_ranges for variable values only"
         sl = -suffix_length
         if sl==0:
@@ -384,12 +385,19 @@ class uvc_simple_plotspec():
             self_suffix = self.vars[0].id[sl:]
             pset_suffix = pset.vars[0].id[sl:]
         if sl==0:
-            var_ids = set([v.id for v in self.vars]) & set([v.id for v in pset.vars])
+            # var_ids = set([v.id for v in self.vars]) & set([v.id for v in pset.vars])
+            s_var_d = { v.id.split('_')[1]:v.id for v in self.vars }
+            p_var_d = { v.id.split('_')[1]:v.id for v in pset.vars }
         else:
-            var_ids = set([v.id[:sl] for v in self.vars]) & set([v.id[:sl] for v in pset.vars])
+            # var_ids = set([v.id[:sl] for v in self.vars]) & set([v.id[:sl] for v in pset.vars])
+            s_var_d = { v.id[sl:]:v.id for v in self.vars }
+            p_var_d = { v.id[sl:]:v.id for v in pset.vars }
+        var_ids = set(s_var_d.keys()) & set(p_var_d.keys())
         for vid in var_ids:
-            vids = vid+self_suffix
-            vidp = vid+pset_suffix
+            #vids = vid+self_suffix
+            #vidp = vid+pset_suffix
+            vids = s_var_d[vid]
+            vidp = p_var_d[vid]
             varmax = max( self.varmax[vids], pset.varmax[vidp] )
             varmin = min( self.varmin[vids], pset.varmin[vidp] )
             self.varmax[vids] = varmax
@@ -453,14 +461,15 @@ class uvc_simple_plotspec():
                 pset.axmin[vidp][aid] = axmins[aid]
         
     def outfile( self, format="", where="" ):
+        """returns a filename for writing out this plot"""
         if len(self.title)<=0:
             fname = 'foo'
         else:
-            fname = (self.title.strip()+'.nc').replace(' ','_')
+            fname = '_'.join([self.title.strip(),self.source]).replace(' ','_') + '.nc'
         filename = os.path.join(where,fname)
         return filename
     def write_plot_data( self, format="", where="" ):
-        # This is just experimental code, so far.
+        """Writes the plot's data in the specified file format and to the location given."""
         if format=="" or format=="NetCDF" or format=="NetCDF file":
             format = "NetCDF file"
         elif format=="JSON string":
@@ -678,7 +687,7 @@ class plot_spec(object):
             else:
                 title = ' '.join(labels)+' '+self._season_displayid  # do this better later
             # The following line is getting specific to UV-CDAT, although not any GUI...
-            self.plotspec_values[p] = uvc_simple_plotspec( vars, self.plottype, labels, title )
+            self.plotspec_values[p] = uvc_simple_plotspec( vars, self.plottype, labels, title, ps.source )
         for p,ps in self.composite_plotspecs.iteritems():
             self.plotspec_values[p] = [ self.plotspec_values[sp] for sp in ps if sp in self.plotspec_values ]
         return self
