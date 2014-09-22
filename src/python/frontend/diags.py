@@ -240,6 +240,22 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                       tm2=vcanvas.gettemplate('UVWG_2of3')
                                    elif r == 2:
                                       tm2=vcanvas.gettemplate('UVWG_3of3')
+                                   
+                                   #added to correct label problems on plot set 8
+                                   tm.xlabel1.priority = 1
+                                   tm.ylabel1.priority = 1
+                                   tm.ytic1.priority = 1
+                                   tm.ymintic1.priority = 1
+                                   tm.xtic1.priority = 1
+                                   tm.xmintic1.priority = 1    
+                                                                  
+                                   tm2.xlabel1.priority = 1
+                                   tm2.ylabel1.priority = 1
+                                   tm2.ytic1.priority = 1
+                                   tm2.ymintic1.priority = 1
+                                   tm2.xtic1.priority = 1
+                                   tm2.xmintic1.priority = 1                                   
+
                                    title = res[r].title
                                    vcanvas.clear()
                                    for var in res[r].vars:
