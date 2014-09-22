@@ -305,6 +305,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
     print "total number of (compound) diagnostic plots generated =", number_diagnostic_plots
 
 if __name__ == '__main__':
+   print "UV-CDAT Diagnostics, command-line version"
    o = Options()
    o.processCmdLine()
    o.verifyOptions()
