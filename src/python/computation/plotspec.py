@@ -8,7 +8,7 @@ from metrics.computation.reductions import *
 import sys, traceback
 
 class derived_var(basic_id):
-    def __init__( self, vid, inputs=[], outputs=['output'], func=(lambda: None) ):
+    def __init__( self, vid, inputs=[], outputs=['output'], func=(lambda: None), special_value=None ):
         """Arguments:
         vid, an id for this dervied variable;
         func=function to compute values of this variable;
@@ -25,6 +25,15 @@ class derived_var(basic_id):
         self._outputs = outputs
         self._func = func
         self._file_attributes = {}
+        # This is primarily used for 2-phase derived variables where we need to pass in a
+        # special value that wouldn't be part of the input dictionary. The current example is
+        # passing in a region for land set 5 when we compute reduced/derived variables, then
+        # construct new variables based on those which all require a 'region' argument.
+        # I could see this being used for passing in seasons perhaps as well, and perhaps
+        # any other arbitary sort of argument. Perhaps there is a better way of doing this,
+        # but this is what worked for me in land.
+        #   -BES
+        self._special = special_value
     def derive( self, inpdict ):
         """Compute the derived variable.  inpdict is a dictionary of input names (ids) and
         values, and will be used to get the input values from the input names in self._inputs.
@@ -35,6 +44,11 @@ class derived_var(basic_id):
         string (By convention we say 'seasonid' for a string and 'season' for a cdutil.times.Seasons
         object)."""
         # error from checking this way!... if None in [ vardict[inp] for inp in self._inputs ]:
+        if self._special != None:
+           # First, we have to add to inpdict to make sure the special_value isn't thrown away.
+           inpdict[self._special] = self._special
+           # Then we need to add it to inputs
+           self._inputs.append(self._special)
         dictvals = [ inpdict.get(inp,None) for inp in self._inputs ]
         nonevals = [nn for nn in dictvals if nn is None]
         if len(nonevals)>0:
