@@ -1,53 +1,186 @@
-### TODO: This isn't used, but something like this might make it easier to add new (similar) sets, esp ones that
-### aren't primarily clones of existing NCAR diags.
-package_name = "lmwg"
-package_raelm = "land"
-
-package_ids = ['set1', 'set2', 'set3', 'set4', 'set5', 'set6', 'set7', 'set8', 'set9']
-#eventually, we should do more with the other keys, but for now most of the code will just key off set names
-package_sets ={
-   'set1': {'id': 'set1', 
-    'name': 'Line Plots of Annual Trends in Energy Balance, Soil water/ice temperature, runoff, snow water/ice, photosynthesis', 
-    'type': 'line', 
-    'climatology': ['annual'], 
-    'status':'active'},
-   'set2': {'id':'set2',
-    'name': 'Horizontal contour plots of DJF, MAM, JJA, SON, and ANN means', 
-    'type':'contour',
-    'climatology': ['seasonal', 'annual'], 
-    'status':'active'},
-   'set3': {'id':'set3',
-    'name': 'Line plots of monthly climatology: regional air temperature, precipitation, runoff, snow depth, radiative fluxes, and turbulent fluxes', 
-    'type':'line', 
-    'climatologies':['monthly'], 
-    'status':'active'},
-   'set4': {'id':'set4',
-    'name':'Vertical Profiles at selected land raobs stations',
-    'type':None,
-    'climatologies':[],
-    'status':'inactive'},
-   'set5': {'id':'set5',
-    'name':'Tables of annual means',
-    'type':'table',
-    'climatologies':['annual'],
-    'status':'active'},
-   'set6': {'id':'set6',
-    'name':'Line plotso f annual trends in regional soil water/ice and temperature, runoff, snow, water/ice, photosynthesis',
-    'type':'regionalline',
-    'climatologies':['annual'],
-    'status':'active'},
-   'set7': {'id':'set7',
-    'name':'Line plots, tables, and maps of RTM river flow and discharge to oceans',
-    'type':['line','table','maps'],
-    'climatologies':['annual'],
-    'status':'active'},
-   'set8': {'id':'set8',
-    'name':'Line and contour plots of Ocean/Land.Atmosphere CO2 Exchange',
-    'type':['line','countour'],
-    'climatologies':None,
-    'status':'inactive'},
-   'set9': {'id':'set9',
-    'name':'Contour plots and statistics for precipitation and temperature. Statistics include DJF, JJA, and ANN biases and RMSE, correlation and standard deviation of the annual cycle relative to observations',
-    'type':'contour',
-    'climatologies':['annual', 'seasonal'],
-    'status':'inactive'}}
+varinfo={}
+varinfo['PFT_FIRE_CLOSS']={'RepUnits': 'PgC/y', 'sets': [1, 2, 3, 5, 6], 'NatUnits': 'gC/m^2/s', 'desc': 'total pft-level fire C loss'}
+varinfo['SNOWDP']={'RepUnits': 'NA', 'sets': [2, 3, 5, 6], 'NatUnits': 'm', 'desc': 'snow height'}
+varinfo['LITHR']={'RepUnits': 'PgC/y', 'sets': [1, 2, 5], 'NatUnits': 'gC/m^2/s', 'desc': 'litter hetereotrophic respiration'}
+varinfo['QSOIL']={'RepUnits': 'mm/d', 'sets': [1, 2, 5], 'NatUnits': 'mm/s', 'desc': 'ground evaporation'}
+varinfo['WA']={'RepUnits': 'mm', 'sets': [1, 2, 3, 5, 6], 'NatUnits': 'mm', 'desc': 'water in the unconfined aquifer'}
+varinfo['FSA']={'RepUnits': 'NA', 'sets': [2, 3, 5, 6], 'NatUnits': 'W/m^2', 'desc': 'absorbed solar radiation'}
+varinfo['GROSS_NMIN']={'RepUnits': 'TgN/y', 'sets': [1, 2, 5], 'NatUnits': 'gN/m^2/s', 'desc': 'Gross N Mineralization'}
+varinfo['ACTUAL_IMMOB']={'RepUnits': 'TgN/y', 'sets': [1, 2, 5], 'NatUnits': 'gN/m^2/s', 'desc': 'Actual Immobilization'}
+varinfo['ZBOT']={'RepUnits': 'NA', 'sets': [2], 'NatUnits': 'm', 'desc': 'atmospheric reference height'}
+varinfo['WT']={'RepUnits': 'mm', 'sets': [1, 2, 3, 5, 6], 'NatUnits': 'mm', 'desc': 'total water storage'}
+varinfo['LHEAT']={'RepUnits': 'NA', 'sets': [2, 3, 5, 6], 'NatUnits': 'W/m^2', 'desc': 'latent heat:FCTR+FCEV+FGEV'}
+varinfo['NBSA']={'RepUnits': 'NA', 'sets': [2, 3, 5], 'NatUnits': 'proportion', 'desc': 'near-IR black-sky albedo'}
+varinfo['SNOWAGE']={'RepUnits': 'NA', 'sets': [2], 'NatUnits': 'unitless', 'desc': 'snow age'}
+varinfo['POTENTIAL_IMMOB']={'RepUnits': 'TgN/y', 'sets': [1, 2, 5], 'NatUnits': 'gN/m^2/s', 'desc': 'Potential Immobilization'}
+varinfo['RR']={'RepUnits': 'PgC/y', 'sets': [1, 2, 5], 'NatUnits': 'gC/m^2/s', 'desc': 'root respiration (fine root MR + total root GR)'}
+varinfo['FSNO']={'RepUnits': 'NA', 'sets': [2, 3, 5], 'NatUnits': 'unitless', 'desc': 'fraction of ground covered by snow'}
+varinfo['FGR']={'RepUnits': 'NA', 'sets': [2, 3, 5, 6], 'NatUnits': 'W/m^2', 'desc': 'heat flux into snow/soil (includes snow melt)'}
+varinfo['CWDC_LOSS']={'RepUnits': 'PgC/y', 'sets': [1, 2, 5], 'NatUnits': 'gC/m2s', 'desc': 'Coarse Woody Debris C Loss'}
+varinfo['FSH']={'RepUnits': 'NA', 'sets': [2, 3, 5, 6], 'NatUnits': 'W/m^2', 'desc': 'sensible heat'}
+varinfo['SOIL3N']={'RepUnits': 'TgN', 'sets': [1, 2, 5], 'NatUnits': 'gN/m^2', 'desc': 'soil organic matter N (slow pool)'}
+varinfo['LITTERC']={'RepUnits': 'PgC', 'sets': [1, 2, 5], 'NatUnits': 'gC/m2', 'desc': 'Total Litter C'}
+varinfo['SOIL3C']={'RepUnits': 'PgC', 'sets': [1, 2, 5], 'NatUnits': 'gC/m^2', 'desc': 'Soil organic matter C (slow pool)'}
+varinfo['FSDSVDLN']={'RepUnits': 'NA', 'sets': [2], 'NatUnits': 'W/m^2', 'desc': 'direct vis incident solar radiation at local noon'}
+varinfo['LIVESTEMC']={'RepUnits': 'PgC', 'sets': [1, 2, 5], 'NatUnits': 'gC/m^2', 'desc': 'live stem C'}
+varinfo['QBOT']={'RepUnits': 'NA', 'sets': [2], 'NatUnits': 'kg/kg', 'desc': 'atmospheric specific humidity'}
+varinfo['GR']={'RepUnits': 'PgC/y', 'sets': [1, 2, 5], 'NatUnits': 'gC/m^2/s', 'desc': 'total growth respiration'}
+varinfo['TBOT']={'RepUnits': 'NA', 'sets': [2], 'NatUnits': 'K', 'desc': 'atmospheric air temperature'}
+varinfo['RETRANSN']={'RepUnits': 'TgN', 'sets': [1, 2, 5], 'NatUnits': 'gN/m^2', 'desc': 'plant pool of retranslocated N'}
+varinfo['XIM']={'RepUnits': 'NA', 'sets': [2], 'NatUnits': '+/-1', 'desc': 'moisture index'}
+varinfo['FLDS']={'RepUnits': 'NA', 'sets': [2, 3, 5, 6], 'NatUnits': 'W/m^2', 'desc': 'atmospheric longwave radiation'}
+varinfo['VWSA']={'RepUnits': 'NA', 'sets': [2, 3, 5], 'NatUnits': 'proportion', 'desc': 'visible white-sky albedo'}
+varinfo['AGNPP']={'RepUnits': 'PgC/y', 'sets': [1, 2, 5], 'NatUnits': 'gC/m^2/s', 'desc': 'above ground net primary production'}
+varinfo['GPP']={'RepUnits': 'PgC/y', 'sets': [1, 2, 3, 5, 6], 'NatUnits': 'gC/m^2/s', 'desc': 'gross primary production'}
+varinfo['TAUX']={'RepUnits': 'NA', 'sets': [2], 'NatUnits': 'kg/m/s^2', 'desc': 'zonal surface stress'}
+varinfo['FIRE_PROB']={'RepUnits': '0-1', 'sets': [1, 2, 3, 5, 6], 'NatUnits': '0-1', 'desc': 'daily fire probability'}
+varinfo['FSRNI']={'RepUnits': 'NA', 'sets': [2], 'NatUnits': 'W/m^2', 'desc': 'diffuse nir reflected solar radiation'}
+varinfo['RSSUN']={'RepUnits': 's/m', 'sets': [1, 2], 'NatUnits': 's/m', 'desc': 'Sunlit leaf stomatal resistance'}
+varinfo['FIRESEASONL']={'RepUnits': 'days', 'sets': [1, 2, 3, 5, 6], 'NatUnits': 'days', 'desc': 'annual fire season length'}
+varinfo['SOIL4N']={'RepUnits': 'TgN', 'sets': [1, 2, 5], 'NatUnits': 'gN/m^2', 'desc': 'Soil organic matter N (slowest pool)'}
+varinfo['FSDSNDLN']={'RepUnits': 'NA', 'sets': [2], 'NatUnits': 'W/m^2', 'desc': 'direct nir incident solar radiation at local noon'}
+varinfo['RNET']={'RepUnits': 'NA', 'sets': [2, 3, 5, 6], 'NatUnits': 'W/m^2', 'desc': 'net radiation:fsa-fira'}
+varinfo['SOIL4C']={'RepUnits': 'PgC', 'sets': [1, 2, 5], 'NatUnits': 'gC/m^2', 'desc': 'Soil organic matter C (slowest pool)'}
+varinfo['NPP']={'RepUnits': 'PgC/y', 'sets': [1, 2, 3, 5, 6], 'NatUnits': 'gC/m^2/s', 'desc': 'net primary production'}
+varinfo['TLAI']={'RepUnits': 'm2/m2', 'sets': [1, 2, 3, 5, 6], 'NatUnits': 'm2/m2', 'desc': 'total one-sided leaf area index'}
+varinfo['FSDS']={'RepUnits': 'NA', 'sets': [2, 3, 5, 6], 'NatUnits': 'W/m^2', 'desc': 'atmospheric incident solar radiation'}
+varinfo['FSDSVI']={'RepUnits': 'NA', 'sets': [2], 'NatUnits': 'W/m^2', 'desc': 'diffuse vis incident solar radiation'}
+varinfo['LAISHA']={'RepUnits': 'm^2/m^2', 'sets': [1, 2, 5], 'NatUnits': 'm^2/m^2', 'desc': 'Shaded Projected Leaf Area Index'}
+varinfo['TREFMXAV']={'RepUnits': 'K', 'sets': [2], 'NatUnits': 'K', 'desc': 'daily maximum of average 2m temperature'}
+varinfo['HR']={'RepUnits': 'PgC/y', 'sets': [1, 2, 3, 5, 6], 'NatUnits': 'gC/m^2/s', 'desc': 'total hetereotrophic respiration'}
+varinfo['TOTVEGC']={'RepUnits': 'PgC', 'sets': [1, 2, 5], 'NatUnits': 'gC/m^2', 'desc': 'total vegetation C, excluding cpool'}
+varinfo['Q2M']={'RepUnits': 'NA', 'sets': [2], 'NatUnits': 'kg/kg', 'desc': '2m specific humidity'}
+varinfo['FSDSVD']={'RepUnits': 'NA', 'sets': [2], 'NatUnits': 'W/m^2', 'desc': 'direct vis incident solar radiation'}
+varinfo['TSA']={'RepUnits': 'K', 'sets': [1, 2, 3, 5, 6, 9], 'NatUnits': 'K', 'desc': '2m air temperature'}
+varinfo['QDRIP']={'RepUnits': 'mm/y', 'sets': [2], 'NatUnits': 'mm/s', 'desc': 'throughfall'}
+varinfo['PREC']={'RepUnits': 'mm/d', 'sets': [1, 2, 3, 5, 6, 9], 'NatUnits': 'mm/s', 'desc': 'ppt: rain+snow'}
+varinfo['QCHARGE']={'RepUnits': 'mm/d', 'sets': [1, 2, 3, 5, 6], 'NatUnits': 'mm/s', 'desc': 'aquifer recharge rate'}
+varinfo['SOMHR']={'RepUnits': 'PgC/y', 'sets': [1, 2, 5], 'NatUnits': 'gC/m^2/s', 'desc': 'SOM hetereotrophic respiration'}
+varinfo['SMINN']={'RepUnits': 'TgN', 'sets': [1, 2, 5], 'NatUnits': 'gN/m^2', 'desc': 'soil mineral N'}
+varinfo['H2OCAN']={'RepUnits': 'NA', 'sets': [2], 'NatUnits': 'mm', 'desc': 'intercepted water'}
+varinfo['ZWT']={'RepUnits': 'm', 'sets': [1, 2, 3, 5, 6], 'NatUnits': 'm', 'desc': 'water table depth'}
+varinfo['ALBEDO']={'RepUnits': '% reflected ', 'sets': [3, 6], 'NatUnits': 'proportion', 'desc': 'all-sky albedo:FSR/FSDS'}
+varinfo['FCEV']={'RepUnits': 'NA', 'sets': [2, 3, 5, 6], 'NatUnits': 'W/m^2', 'desc': 'canopy evaporation'}
+varinfo['SOILC_HR']={'RepUnits': 'PgC/y', 'sets': [1, 2, 5], 'NatUnits': 'gC/m2s', 'desc': 'Soil C hetereotrophic respiration'}
+varinfo['TOTCOLC']={'RepUnits': 'PgC', 'sets': [1, 2, 5], 'NatUnits': 'gC/m^2', 'desc': 'total ecosystem C, incl veg and cpool'}
+varinfo['SABV']={'RepUnits': 'NA', 'sets': [2], 'NatUnits': 'W/m^2', 'desc': 'solar rad absorbed by vegetation'}
+varinfo['COL_NTRUNC']={'RepUnits': 'TgN', 'sets': [1, 5], 'NatUnits': 'gN/m^2', 'desc': 'column-level sink for N truncation'}
+varinfo['FSRNDLN']={'RepUnits': 'NA', 'sets': [2], 'NatUnits': 'W/m^2', 'desc': 'direct nir reflected solar radiation at local noon'}
+varinfo['ERRSEB']={'RepUnits': 'NA', 'sets': [2], 'NatUnits': 'W/m^2', 'desc': 'surface energy conservation error'}
+varinfo['QVEGT']={'RepUnits': 'mm/d', 'sets': [1, 2, 5], 'NatUnits': 'mm/s', 'desc': 'canopy transpiration'}
+varinfo['TAUY']={'RepUnits': 'NA', 'sets': [2], 'NatUnits': 'kg/m/s^2', 'desc': 'meridional surface stress'}
+varinfo['ERRH2O']={'RepUnits': 'NA', 'sets': [2], 'NatUnits': 'mm', 'desc': 'total water conservation error'}
+varinfo['SABG']={'RepUnits': 'NA', 'sets': [2], 'NatUnits': 'W/m^2', 'desc': 'solar rad absorbed by ground'}
+varinfo['CPOOL']={'RepUnits': 'PgC', 'sets': [1, 2, 5], 'NatUnits': 'gC/m^2', 'desc': 'temporary photosynthate C pool'}
+varinfo['TOTLITC']={'RepUnits': 'PgC', 'sets': [1, 2, 5], 'NatUnits': 'gC/m^2', 'desc': 'total litter carbon'}
+varinfo['EVAPFRAC']={'RepUnits': 'NA', 'sets': [2, 3], 'NatUnits': 'unitless', 'desc': 'LHEAT/(LHEAT+FSH)'}
+varinfo['PFT_CTRUNC']={'RepUnits': 'PgC', 'sets': [1, 5], 'NatUnits': 'gC/m^2', 'desc': 'pft-level sink for C truncation'}
+varinfo['LIVECROOTC']={'RepUnits': 'PgC', 'sets': [1, 2, 5], 'NatUnits': 'gC/m^2', 'desc': 'live coarse root carbon'}
+varinfo['FIRA']={'RepUnits': 'NA', 'sets': [2, 3, 6], 'NatUnits': 'W/m^2', 'desc': 'net infrared (longwave) radiation'}
+varinfo['SOILLIQ']={'RepUnits': 'kg/m^2', 'sets': [1, 2], 'NatUnits': 'kg/m^2', 'desc': 'soil liquid water : layers 1-10'}
+varinfo['SOILC_LOSS']={'RepUnits': 'PgC/y', 'sets': [1, 2, 5], 'NatUnits': 'gC/m2s', 'desc': 'Soil C Loss'}
+varinfo['COL_FIRE_CLOSS']={'RepUnits': 'PgC/y', 'sets': [1, 2, 3, 5, 6], 'NatUnits': 'gC/m^2/s', 'desc': 'total column-level fire C loss'}
+varinfo['TREFMNAV']={'RepUnits': 'K', 'sets': [2], 'NatUnits': 'K', 'desc': 'daily minimum of average 2m temperature'}
+varinfo['SOILICE']={'RepUnits': 'kg/m^2', 'sets': [1, 2], 'NatUnits': 'kg/m^2', 'desc': 'soil ice : layers 1-10'}
+varinfo['COL_FIRE_NLOSS']={'RepUnits': 'TgN/y', 'sets': [1, 2, 3, 5, 6], 'NatUnits': 'gN/m^2/s', 'desc': 'total column-level fire N loss'}
+varinfo['ER']={'RepUnits': 'PgC/y', 'sets': [1, 2, 3, 5, 6], 'NatUnits': 'gC/m^2/s', 'desc': 'total ecosystem respiration (AR + HR)'}
+varinfo['QDRAI']={'RepUnits': 'mm/d', 'sets': [1, 2, 5], 'NatUnits': 'mm/s', 'desc': 'sub-surface drainage'}
+varinfo['WOODC']={'RepUnits': 'PgC', 'sets': [1, 2, 5], 'NatUnits': 'gC/m2', 'desc': 'Wood C'}
+varinfo['FCOV']={'RepUnits': 'unitless [0-1]', 'sets': [1, 2, 3, 5, 6], 'NatUnits': 'unitless [0-1]', 'desc': 'fractional area with water table at surface'}
+varinfo['TSAI']={'RepUnits': 'm2/m2', 'sets': [1, 2, 5], 'NatUnits': 'm2/m2', 'desc': 'total one-sided stem area index'}
+varinfo['FSRVDLN']={'RepUnits': 'NA', 'sets': [2], 'NatUnits': 'W/m^2', 'desc': 'direct vis reflected solar radiation at local noon'}
+varinfo['ESAI']={'RepUnits': 'm2/m2', 'sets': [1, 2], 'NatUnits': 'm2/m2', 'desc': 'exposed one-sided stem area index'}
+varinfo['FPSN']={'RepUnits': 'PgC/y', 'sets': [1, 2], 'NatUnits': 'umol/m^2/s', 'desc': 'photosynthesis'}
+varinfo['MR']={'RepUnits': 'PgC/y', 'sets': [1, 2, 5], 'NatUnits': 'gC/m^2/s', 'desc': 'maintenance respiration'}
+varinfo['FSH_G']={'RepUnits': 'NA', 'sets': [2], 'NatUnits': 'W/m^2', 'desc': 'sensible heat from ground'}
+varinfo['SNOWICE']={'RepUnits': 'kg/m^2', 'sets': [1, 2], 'NatUnits': 'kg/m^2', 'desc': 'snow ice'}
+varinfo['WIND']={'RepUnits': 'NA', 'sets': [2], 'NatUnits': 'm/s', 'desc': 'atmospheric wind velocity magnitude'}
+varinfo['PSNSHADE_TO_CPOOL']={'RepUnits': 'PgC/y', 'sets': [1, 2, 5], 'NatUnits': 'gC/m^2/s', 'desc': 'GPP from Shaded Canopy'}
+varinfo['RETRANSN_TO_NPOOL']={'RepUnits': 'TgN/y', 'sets': [1, 2, 5], 'NatUnits': 'gN/m^2/s', 'desc': 'Retranslocated N to NPool'}
+varinfo['QVEGE']={'RepUnits': 'mm/y', 'sets': [2, 5], 'NatUnits': 'mm/s', 'desc': 'canopy evaporation'}
+varinfo['CANOPY_EVAPORATION']={'RepUnits': 'mm/d', 'sets': [1], 'NatUnits': 'mm/s', 'desc': 'Canopy Evaporation'}
+varinfo['SMINN_TO_NPOOL']={'RepUnits': 'TgN/y', 'sets': [1, 2, 5], 'NatUnits': 'gN/m^2/s', 'desc': 'Mineral N to NPool'}
+varinfo['CWDC_HR']={'RepUnits': 'PgC/y', 'sets': [1, 2, 5], 'NatUnits': 'gC/m2s', 'desc': 'Coarse Woody Debris C Hetereotrophic respiration'}
+varinfo['NEE']={'RepUnits': 'PgC/y', 'sets': [1, 2, 3, 5, 6], 'NatUnits': 'gC/m^2/s', 'desc': 'net ecosys exchange of C;incl fire flx;pos for source'}
+varinfo['FSM']={'RepUnits': 'NA', 'sets': [2, 5], 'NatUnits': 'W/m^2', 'desc': 'snow melt heat flux'}
+varinfo['FROOTC_LOSS']={'RepUnits': 'PgC/m2y', 'sets': [1, 2, 5], 'NatUnits': 'gC/m2s', 'desc': 'Fine root C Loss'}
+varinfo['FSR']={'RepUnits': 'NA', 'sets': [2], 'NatUnits': 'W/m^2', 'desc': 'reflected solar radiation'}
+varinfo['FGNET']={'RepUnits': 'NA', 'sets': [2], 'NatUnits': 'W/m^2', 'desc': 'net ground heat flux:fgr-fsm'}
+varinfo['ET']={'RepUnits': 'mm/d ', 'sets': [3, 5], 'NatUnits': 'mm/s', 'desc': 'Evapotranspiration'}
+varinfo['NEP']={'RepUnits': 'PgC/y', 'sets': [1, 2, 3, 5, 6], 'NatUnits': 'gC/m^2/s', 'desc': 'net ecosystem production;excl fire flx;pos for sink'}
+varinfo['ANN_FAREA_BURNED']={'RepUnits': 'proportion', 'sets': [1, 2, 3, 5, 6], 'NatUnits': 'proportion', 'desc': 'annual total fractional area burned'}
+varinfo['SMINN_LEACHED']={'RepUnits': 'TgN/y', 'sets': [1, 2, 3, 5, 6], 'NatUnits': 'gN/m^2/s', 'desc': 'Nitrogen Leached'}
+varinfo['ERRSOL']={'RepUnits': 'NA', 'sets': [2], 'NatUnits': 'W/m^2', 'desc': 'solar radiation conservation error'}
+varinfo['TLAKE']={'RepUnits': 'NA', 'sets': [2], 'NatUnits': 'K', 'desc': 'lake temperature'}
+varinfo['BGNPP']={'RepUnits': 'PgC/y', 'sets': [1, 2, 5], 'NatUnits': 'gC/m^2/s', 'desc': 'below ground net primary production'}
+varinfo['ASA']={'RepUnits': 'NA', 'sets': [2, 3, 9], 'NatUnits': 'proportion', 'desc': 'all-sky albedo:FSR/FSDS'}
+varinfo['PFT_FIRE_NLOSS']={'RepUnits': 'TgN/y', 'sets': [1, 2, 3, 5, 6], 'NatUnits': 'gN/m^2/s', 'desc': 'total pft-level fire N loss'}
+varinfo['FSRND']={'RepUnits': 'NA', 'sets': [2], 'NatUnits': 'W/m^2', 'desc': 'direct nir reflected solar radiation'}
+varinfo['LEAFC_ALLOC']={'RepUnits': 'PgC/m2y', 'sets': [1, 2, 5], 'NatUnits': 'gC/m2s', 'desc': 'Leaf C Allocation'}
+varinfo['TOTRUNOFF']={'RepUnits': 'mm/d', 'sets': [1, 2, 3, 5, 6], 'NatUnits': 'mm/s', 'desc': 'Runoff:qover+qdrai+qrgwl'}
+varinfo['CO2_PPMV']={'RepUnits': 'ppmv', 'sets': [1, 5], 'NatUnits': 'ppmv', 'desc': 'CO2 concentration'}
+varinfo['BTRAN']={'RepUnits': 'unitless', 'sets': [1, 2, 3, 6], 'NatUnits': 'unitless', 'desc': 'transpiration beta factor'}
+varinfo['SNOWLIQ']={'RepUnits': 'kg/m^2', 'sets': [1, 2], 'NatUnits': 'kg/m^2', 'desc': 'snow liquid water'}
+varinfo['FSRVI']={'RepUnits': 'NA', 'sets': [2], 'NatUnits': 'W/m^2', 'desc': 'diffuse vis reflected solar radiation'}
+varinfo['FSDSND']={'RepUnits': 'NA', 'sets': [2], 'NatUnits': 'W/m^2', 'desc': 'direct nir incident solar radiation'}
+varinfo['FSDSNI']={'RepUnits': 'NA', 'sets': [2], 'NatUnits': 'W/m^2', 'desc': 'diffuse nir incident solar radiation'}
+varinfo['CWDC']={'RepUnits': 'PgC', 'sets': [1, 2, 5], 'NatUnits': 'gC/m^2', 'desc': 'coarse woody debris carbon'}
+varinfo['FCTR']={'RepUnits': 'NA', 'sets': [2, 3, 5, 6], 'NatUnits': 'W/m^2', 'desc': 'canopy transpiration'}
+varinfo['LEAFC']={'RepUnits': 'PgC', 'sets': [1, 2, 5], 'NatUnits': 'gC/m^2', 'desc': 'leaf carbon'}
+varinfo['P-E']={'RepUnits': 'NA', 'sets': [2], 'NatUnits': 'mm/s', 'desc': 'PREC-ET'}
+varinfo['SR']={'RepUnits': 'PgC/y', 'sets': [1, 2, 5], 'NatUnits': 'gC/m^2/s', 'desc': 'total soil respiration (HR + root resp)'}
+varinfo['SUPPLEMENT_TO_SMINN']={'RepUnits': 'TgN/y', 'sets': [1, 2, 3, 5, 6], 'NatUnits': 'gN/m^2/s', 'desc': 'supplement to mineral nitrogen'}
+varinfo['NDEP_TO_SMINN']={'RepUnits': 'TgN/y', 'sets': [1, 2, 5], 'NatUnits': 'gN/m^2/s', 'desc': 'nitrogen deposition'}
+varinfo['RSSHA']={'RepUnits': 's/m', 'sets': [1, 2], 'NatUnits': 's/m', 'desc': 'shaded leaf stomatal resistance'}
+varinfo['FSH_V']={'RepUnits': 'NA', 'sets': [2], 'NatUnits': 'W/m^2', 'desc': 'sensible heat from vegetation'}
+varinfo['XSMRPOOL']={'RepUnits': 'PgC', 'sets': [1, 2, 5], 'NatUnits': 'gC/m^2', 'desc': 'Temporary Photosynthate C Pool'}
+varinfo['FGEV']={'RepUnits': 'NA', 'sets': [2, 3, 5, 6], 'NatUnits': 'W/m^2', 'desc': 'ground evaporation'}
+varinfo['QOVER']={'RepUnits': 'mm/d', 'sets': [1, 2, 5], 'NatUnits': 'mm/s', 'desc': 'surface runoff'}
+varinfo['DEADSTEMC']={'RepUnits': 'PgC', 'sets': [1, 2, 5], 'NatUnits': 'gC/m^2', 'desc': 'dead stem carbon'}
+varinfo['QMELT']={'RepUnits': 'mm/y', 'sets': [2], 'NatUnits': 'mm/s', 'desc': 'snow melt'}
+varinfo['MEAN_FIRE_PROB']={'RepUnits': 'proportion', 'sets': [1, 2, 3, 5, 6], 'NatUnits': '0-1', 'desc': 'e-folding mean of daily fire probability'}
+varinfo['COL_CTRUNC']={'RepUnits': 'PgC', 'sets': [1, 5], 'NatUnits': 'gC/m^2', 'desc': 'column-level sink for C truncation'}
+varinfo['LEAFC_LOSS']={'RepUnits': 'PgC/m2y', 'sets': [1, 2, 5], 'NatUnits': 'gC/m2s', 'desc': 'Leaf C Loss'}
+varinfo['NET_NMIN']={'RepUnits': 'TgN/y', 'sets': [1, 2, 5], 'NatUnits': 'gN/m^2/s', 'desc': 'Net N Mineralization'}
+varinfo['SNOW']={'RepUnits': 'NA', 'sets': [2, 5], 'NatUnits': 'mm/s', 'desc': 'atmospheric snow'}
+varinfo['TOTSOMC']={'RepUnits': 'PgC', 'sets': [1, 2, 5], 'NatUnits': 'gC/m^2', 'desc': 'total SOM carbon'}
+varinfo['FROOTC']={'RepUnits': 'PgC', 'sets': [1, 2, 5], 'NatUnits': 'gC/m^2', 'desc': 'fine root carbon'}
+varinfo['ELAI']={'RepUnits': 'm2/m2', 'sets': [1, 2], 'NatUnits': 'm2/m2', 'desc': 'exposed one-sided leaf area index'}
+varinfo['TOTSOILLIQ']={'RepUnits': 'kg/m^2', 'sets': [1], 'NatUnits': 'kg/m^2', 'desc': 'total soil liquid water'}
+varinfo['SOILC']={'RepUnits': 'PgC', 'sets': [1, 2, 5], 'NatUnits': 'gC/m2', 'desc': 'soil organic matter C (fast pool)'}
+varinfo['H2OSOI']={'RepUnits': 'NA', 'sets': [2], 'NatUnits': 'mm3/mm3', 'desc': 'volumetric soil water'}
+varinfo['NDEPLOY']={'RepUnits': 'TgN/y', 'sets': [1, 2, 5], 'NatUnits': 'gN/m^2/s', 'desc': 'Total N Deployed in New Growth'}
+varinfo['TV']={'RepUnits': 'NA', 'sets': [2], 'NatUnits': 'K', 'desc': 'vegetation temperature'}
+varinfo['PSNSUN_TO_CPOOL']={'RepUnits': 'PgC/y', 'sets': [1, 2, 5], 'NatUnits': 'gC/m^2/s', 'desc': 'GPP from Sunlit Canopy'}
+varinfo['FROOTC_ALLOC']={'RepUnits': 'PgC/m2y', 'sets': [1, 2, 5], 'NatUnits': 'gC/m2s', 'desc': 'Fine root C allocation'}
+varinfo['WOODC_ALLOC']={'RepUnits': 'PgC/y', 'sets': [1, 2, 5], 'NatUnits': 'gC/m2s', 'desc': 'Wood C Allocation'}
+varinfo['TOTECOSYSC']={'RepUnits': 'PgC', 'sets': [1, 2, 5], 'NatUnits': 'gC/m^2', 'desc': 'total ecosystem C, incl veg but excl cpool'}
+varinfo['TOTSOILICE']={'RepUnits': 'kg/m^2', 'sets': [1], 'NatUnits': 'kg/m^2', 'desc': 'soil ice'}
+varinfo['QRGWL']={'RepUnits': 'mm/d', 'sets': [1, 2, 5], 'NatUnits': 'mm/s', 'desc': 'surface runoff at glaciers, wetlands, lakes'}
+varinfo['TG']={'RepUnits': 'NA', 'sets': [2], 'NatUnits': 'K', 'desc': 'ground temperature'}
+varinfo['QINFL']={'RepUnits': 'mm/d', 'sets': [1, 2], 'NatUnits': 'mm/s', 'desc': 'infiltration'}
+varinfo['VBSA']={'RepUnits': 'NA', 'sets': [2, 3, 5], 'NatUnits': 'proportion', 'desc': 'visible black-sky albedo'}
+varinfo['TOTECOSYSN']={'RepUnits': 'TgN', 'sets': [1], 'NatUnits': 'gN/m^2', 'desc': 'total ecosystem N'}
+varinfo['TSNOW']={'RepUnits': 'NA', 'sets': [2], 'NatUnits': 'K', 'desc': 'snow temperature'}
+varinfo['FSRVD']={'RepUnits': 'NA', 'sets': [2], 'NatUnits': 'W/m^2', 'desc': 'direct vis reflected solar radiation'}
+varinfo['FPG']={'RepUnits': 'proportion', 'sets': [1, 2, 5], 'NatUnits': 'proportion', 'desc': 'fraction of potential GPP'}
+varinfo['TSOI']={'RepUnits': 'K', 'sets': [1, 2], 'NatUnits': 'K', 'desc': 'soil temperature : layers 1-10'}
+varinfo['FIRE']={'RepUnits': 'NA', 'sets': [2, 3, 5, 6], 'NatUnits': 'W/m^2', 'desc': 'emitted infrared (longwave) radiation'}
+varinfo['QINTR']={'RepUnits': 'mm/d', 'sets': [1, 2], 'NatUnits': 'mm/s', 'desc': 'interception'}
+varinfo['FPI']={'RepUnits': 'proportion', 'sets': [1, 2, 5], 'NatUnits': 'proportion', 'desc': 'fraction of potential immobilization'}
+varinfo['RAIN']={'RepUnits': 'NA', 'sets': [2, 5], 'NatUnits': 'mm/s', 'desc': 'atmospheric rain'}
+varinfo['LITTERC_HR']={'RepUnits': 'PgC/m2y', 'sets': [1, 2, 5], 'NatUnits': 'gC/m2s', 'desc': 'Litter Hetereotrophic Respiration'}
+varinfo['AR']={'RepUnits': 'PgC/y', 'sets': [1, 2, 3, 5, 6], 'NatUnits': 'gC/m^2/s', 'desc': 'autotrophic respiration (MR + GR)'}
+varinfo['PFT_NTRUNC']={'RepUnits': 'TgN', 'sets': [1, 5], 'NatUnits': 'gN/m^2', 'desc': 'pft-level sink for N truncation'}
+varinfo['QVEGEP']={'RepUnits': '%', 'sets': [5], 'NatUnits': '%', 'desc': 'canopy evap:QVEGE/(RAIN+SNOW)*100'}
+varinfo['ERRSOI']={'RepUnits': 'NA', 'sets': [2], 'NatUnits': 'W/m^2', 'desc': 'soil/lake energy conservation error'}
+varinfo['LITTERC_LOSS']={'RepUnits': 'PgC/m2y', 'sets': [1, 2, 5], 'NatUnits': 'gC/m2s', 'desc': 'Litter C Loss'}
+varinfo['DEADCROOTC']={'RepUnits': 'PgC', 'sets': [1, 2, 5], 'NatUnits': 'gC/m^2', 'desc': 'dead coarse root carbon'}
+varinfo['H2OSNO']={'RepUnits': 'NA', 'sets': [2, 3, 5], 'NatUnits': 'mm', 'desc': 'total snow water equiv (SNOWICE + SNOWLIQ)'}
+varinfo['LAISUN']={'RepUnits': 'm^2/m^2', 'sets': [1, 2, 5], 'NatUnits': 'm2/m2', 'desc': 'Sunlit Projected Leaf Area Index'}
+varinfo['SOILPSI']={'RepUnits': 'MPa', 'sets': [1], 'NatUnits': 'MPa', 'desc': 'Soil Water Potential in Each Soil Layer'}
+varinfo['WOODC_LOSS']={'RepUnits': 'PgC/y', 'sets': [1, 2, 5], 'NatUnits': 'gC/m2s', 'desc': 'Wood C Loss'}
+varinfo['THBOT']={'RepUnits': 'NA', 'sets': [2], 'NatUnits': 'K', 'desc': 'atmospheric air potential temperature'}
+varinfo['DENIT']={'RepUnits': 'TgN/y', 'sets': [1, 2, 5], 'NatUnits': 'gN/m^2/s', 'desc': 'Total Denitrification'}
+varinfo['NWSA']={'RepUnits': 'NA', 'sets': [2, 3, 5], 'NatUnits': 'proportion', 'desc': 'near-IR white-sky albedo'}
+varinfo['NFIX_TO_SMINN']={'RepUnits': 'TgN/y', 'sets': [1, 2, 5], 'NatUnits': 'gN/m^2/s', 'desc': 'nitrogen fixation'}
