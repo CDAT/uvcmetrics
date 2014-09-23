@@ -13,6 +13,9 @@ from metrics.packages.amwg.derivations.ncl_isms import *
 from metrics.packages.amwg.derivations.vertical import *
 from pprint import pprint
 
+import cdutil.times
+seasonsDJF=cdutil.times.Seasons(['DJF'])
+seasonsJJA=cdutil.times.Seasons(['JJA'])
 
 def test_driver( path1, path2=None, filt2=None ):
     """ Test driver for setting up data for plots"""
