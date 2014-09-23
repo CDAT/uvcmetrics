@@ -197,6 +197,11 @@ class amwg_plot_set2(amwg_plot_spec):
                                       'indian_heat_transport', 'global_heat_transport' ]),
                 func=(lambda: ncep_ocean_heat_transport(filetable2) ) )
             }
+        ft1src = filetable1.source()
+        try:
+            ft2src = filetable2.source()
+        except:
+            ft2src = ''
         self.single_plotspecs = {
             'CAM_NCEP_HEAT_TRANSPORT_GLOBAL': plotspec(
                 vid='CAM_NCEP_HEAT_TRANSPORT_GLOBAL',
@@ -212,7 +217,7 @@ class amwg_plot_set2(amwg_plot_spec):
                 z2func=(lambda z: z[1][3]),
                 plottype = self.plottype,
                 title = 'CAM & NCEP HEAT_TRANSPORT GLOBAL',
-                source = filetable1.source() ),
+                source = ft1src ),
             'CAM_NCEP_HEAT_TRANSPORT_PACIFIC': plotspec(
                 vid='CAM_NCEP_HEAT_TRANSPORT_PACIFIC',
                 # x1vars=['FSNS_ANN_latlon_1'], x1func=latvar,
@@ -227,7 +232,7 @@ class amwg_plot_set2(amwg_plot_spec):
                 z2func=(lambda y: y[1][0]),
                 plottype = self.plottype,
                 title = 'CAM & NCEP HEAT_TRANSPORT PACIFIC',
-                source = filetable1.source() ),
+                source = ft1src ),
             'CAM_NCEP_HEAT_TRANSPORT_ATLANTIC': plotspec(
                 vid='CAM_NCEP_HEAT_TRANSPORT_ATLANTIC',
                 # x1vars=['FSNS_ANN_latlon_1'], x1func=latvar,
@@ -242,7 +247,7 @@ class amwg_plot_set2(amwg_plot_spec):
                 z2func=(lambda y: y[1][1]),
                 plottype = self.plottype ,
                 title = 'CAM & NCEP HEAT_TRANSPORT ATLANTIC',
-                source = filetable1.source() ),
+                source = ft1src ),
             'CAM_NCEP_HEAT_TRANSPORT_INDIAN': plotspec(
                 vid='CAM_NCEP_HEAT_TRANSPORT_INDIAN',
                 # x1vars=['FSNS_ANN_latlon_1'], x1func=latvar,
@@ -257,7 +262,7 @@ class amwg_plot_set2(amwg_plot_spec):
                 z2func=(lambda y: y[1][2]),
                 plottype = self.plottype,
                 title = 'CAM & NCEP HEAT_TRANSPORT INDIAN',
-                source = filetable1.source() ),
+                source = ft1src ),
             }
         self.composite_plotspecs = {
             'CAM_NCEP_HEAT_TRANSPORT_ALL':
@@ -347,15 +352,20 @@ class amwg_plot_set3(amwg_plot_spec,basic_id):
             zdiffval.id = '_'.join([self._id[0],self._id[1],
                                     zvar._filetable._strid, z2var._filetable._strid, 'diff'])
         # ... e.g. CLT_DJF_set3_CAM456_NCEP_diff
+        ft1src = zvar._filetable.source()
+        try:
+            ft2src = z2var._filetable.source()
+        except:
+            ft2src = ''
         plot_a_val = uvc_plotspec(
             [v for v in [zval,z2val] if v is not None],'Yxvsx', labels=[zunam,z2unam],
             #title=' '.join([self._id[0],self._id[1],self._id[2],zunam,'and',z2unam]),
             title = ' '.join([self._id[0],self._id[1],self._id[2]]),
-            source = ','.join([zvar._filetable.source(),z2var._filetable.source()] ))
+            source = ','.join([ft1src,ft2src] ))
         plot_b_val = uvc_plotspec(
             [v for v in [zdiffval] if v is not None],'Yxvsx', labels=['difference'],
             title=' '.join([self._id[0],self._id[1],self._id[2],'difference']),
-            source = ','.join([zvar._filetable.source(),z2var._filetable.source()] ))
+            source = ','.join([ft1src,ft2src] ))
         # no, we don't want same range for values & difference! plot_a_val.synchronize_ranges(plot_b_val)
         plot_a_val.finalize()
         plot_b_val.finalize()
@@ -446,22 +456,27 @@ class amwg_plot_set4(amwg_plot_spec):
                 func=verticalize )
         else:
             vid2 = rv.dict_id(varid,seasonid,filetable2)
+        ft1src = filetable1.source()
+        try:
+            ft2src = filetable1.source()
+        except:
+            ft2src = ''
         self.single_plotspecs = {
             self.plot1_id: plotspec(
                 vid = ps.dict_idid(vid1), zvars=[vid1], zfunc=(lambda z: z),
                 plottype = self.plottype,
                 title = ' '.join([varid,seasonid,'(1)']),
-                source = filetable1.source() ),
+                source = ft1src ),
             self.plot2_id: plotspec(
                 vid = ps.dict_idid(vid2), zvars=[vid2], zfunc=(lambda z: z),
                 plottype = self.plottype,
                 title = ' '.join([varid,seasonid,'(2)']),
-                source = filetable2.source() ),
+                source = ft2src ),
             self.plot3_id: plotspec(
                 vid = ps.dict_id(varid,'diff',seasonid,filetable1,filetable2), zvars=[vid1,vid2],
                 zfunc=aminusb_2ax, plottype = self.plottype,
                 title = ' '.join([varid,seasonid,'(1)-(2)']),
-                source = ', '.join([filetable1.source(),filetable2.source()]) )
+                source = ', '.join([ft1src,ft2src]) )
             }
         self.composite_plotspecs = {
             self.plotall_id: [self.plot1_id, self.plot2_id, self.plot3_id ]
@@ -551,6 +566,11 @@ class amwg_plot_set5and6(amwg_plot_spec):
         vid1var = rv.dict_id( varid+'_var', seasonid, filetable1 )
         self.derived_variables = {}
         self.single_plotspecs = {}
+        ft1src = filetable1.source()
+        try:
+            ft2src = filetable2.source()
+        except:
+            ft2src = ''
         if filetable1 is not None:
             self.single_plotspecs[self.plot1_id] = plotspec(
                 vid = ps.dict_idid(vid1),
@@ -558,14 +578,14 @@ class amwg_plot_set5and6(amwg_plot_spec):
                 plottype = self.plottype,
                 #title = ' '.join([varid,seasonid,filetable1._strid]) )
                 title = ' '.join([varid,seasonid,'(1)']),
-                source = filetable1.source() )
+                source = ft1src )
             self.single_plotspecs[self.plot1var_id] = plotspec(
                 vid = ps.dict_idid(vid1var),
                 zvars = [vid1var],  zfunc = (lambda z: z),
                 plottype = self.plottype,
                 #title = ' '.join([varid,seasonid,filetable1._strid,'variance']) )
                 title = ' '.join([varid,seasonid,'1 variance']),
-                source = filetable1.source() )
+                source = ft1src )
         if filetable2 is not None:
             self.single_plotspecs[self.plot2_id] = plotspec(
                 vid = ps.dict_idid(vid2),
@@ -573,7 +593,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
                 plottype = self.plottype,
                 #title = ' '.join([varid,seasonid,filetable2._strid]) )
                 title = ' '.join([varid,seasonid,'(2)']),
-                source = filetable2.source() )
+                source = ft2src )
         if filetable1 is not None and filetable2 is not None:
             self.single_plotspecs[self.plot3_id] = plotspec(
                 vid = ps.dict_id(varid,'diff',seasonid,filetable1,filetable2),
@@ -581,7 +601,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
                 plottype = self.plottype,
                 #title = ' '.join([varid,seasonid,filetable1._strid,'-',filetable2._strid]) )
                 title = ' '.join([varid,seasonid,'(1)-(2)']),
-                source = ', '.join([filetable1.source(),filetable2.source()]) )
+                source = ', '.join([ft1src,ft2src]) )
         self.composite_plotspecs = {
             self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id, self.plot1var_id ]
             }
@@ -634,6 +654,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
                                func=verticalize ),
             vidl1: derived_var( vid=vidl1, inputs=[vid1], func=(lambda z: select_lev(z,pselect))) }
 
+        ft1src = filetable1.source()
         self.single_plotspecs = {
             self.plot1_id: plotspec(
                 # was vid = varid+'_1',
@@ -643,7 +664,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
                 plottype = self.plottype,
                 #title = ' '.join([varid,seasonid,filetable1._strid,'at',str(pselect)]) ) }
                 title = ' '.join([varid,seasonid,'at',str(pselect),'(1)']),
-                source = filetable1.source() ) }
+                source = ft1src ) }
            
         if filetable2 is None:
             self.reduced_variables = { v.id():v for v in reduced_varlis }
@@ -694,6 +715,10 @@ class amwg_plot_set5and6(amwg_plot_spec):
                                                          func=(lambda z: select_lev(z,pselect) ) )
         self.reduced_variables = { v.id():v for v in reduced_varlis }
 
+        try:
+            ft2src = filetable2.source()
+        except:
+            ft2src = ''
         self.single_plotspecs[self.plot2_id] = plotspec(
                 #was vid = varid+'_2',
                 vid = ps.dict_idid(vidl2),
@@ -701,7 +726,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
                 plottype = self.plottype,
                 #title = ' '.join([varid,seasonid,filetable2._strid,'at',str(pselect)]) )
                 title = ' '.join([varid,seasonid,'at',str(pselect),'(2)']),
-                source = filetable2.source() )
+                source = ft2src )
         self.single_plotspecs[self.plot3_id] = plotspec(
                 #was vid = varid+'_diff',
                 vid = ps.dict_id(varid,'diff',seasonid,filetable1,filetable2),
@@ -709,7 +734,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
                 plottype = self.plottype,
                 #title = ' '.join([varid,seasonid,filetable1._strid,'-',filetable2._strid,'at',str(pselect)]) )
                 title = ' '.join([varid,seasonid,'at',str(pselect),'(1)-(2)']),
-                source = ', '.join([filetable1.source(),filetable2.source()]) )
+                source = ', '.join([ft1src,ft2src]) )
         self.composite_plotspecs = {
             self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id ]
             }
