@@ -205,6 +205,8 @@ class uvc_simple_plotspec():
                 self.presentation = vcsx.createboxfill()
             elif presentation == "Isoline":
                 self.presentation = vcsx.createisoline()
+            elif presentation == "Scatter":
+                self.presentation = vcs.createscatter()
             else:
                 print "ERROR, uvc_plotspec doesn't recognize presentation",presentation
                 self.presentation = "Isofill"  # try to go on
@@ -295,6 +297,22 @@ class uvc_simple_plotspec():
                 elif 'Y' in axaxi.keys() and 'Z' in axaxi.keys():
                     axx = axaxi['Y']
                     axy = axaxi['Z']
+                #added case of time vs variable
+                elif 'T' in axaxi.keys() and 'Y' in axaxi.keys():
+                    axx = axaxi['T']
+                    axy = axaxi['Y']
+                    if axx == 'time':
+                        t=var.getTime()
+                        if 'units' in dir(t) and t.units == "months since 1800":
+                            time_lables = {}
+                            months_names = ["JAN","FEB","MAR","APR","MAY","JUN",
+                                            "JUL","AUG","SEP","OCT","NOV","DEC"]              
+                            tc=t.asComponentTime()
+                            for i, v in enumerate(t):
+                                time_lables[v] = months_names[tc[i].month-1]
+                            self.presentation.xticlabels1 = time_lables
+                            self.presentation.datawc_timeunits = t.units
+                            #self.presentation.list()
                 else:
                     return None
                 # Now send the plotted min,max for the X,Y axes to the graphics:

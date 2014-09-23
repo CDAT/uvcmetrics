@@ -1741,6 +1741,7 @@ def join_data(*args ):
     T.id="time"
     T.units = "months since 1800"
     M.setAxis(0,T)
+    M.units = args[0].units
     cdutil.times.setTimeBoundsMonthly(T)
     #M.info()
     return M
@@ -1756,7 +1757,7 @@ def join_1d_data(*args ):
     T = cdms2.createAxis(numpy.arange(nargs, dtype='d'))
     T.designateTime()
     T.id="time"
-    T.units = "months since 1800"
+    T.units = "months"
     cdutil.times.setTimeBoundsMonthly(T)
     M = cdms2.createVariable(args)  
     M.units = args[0].units

@@ -81,8 +81,8 @@ class amwg_plot_set8(amwg_plot_spec):
     pass  
 class amwg_plot_set10(amwg_plot_spec):
     pass
-class amwg_plot_set11(amwg_plot_spec):
-    pass
+#class amwg_plot_set11(amwg_plot_spec):
+#    pass
 class amwg_plot_set12(amwg_plot_spec):
     pass
 class amwg_plot_set13(amwg_plot_spec):
@@ -1194,3 +1194,97 @@ class amwg_plot_set10(amwg_plot_spec, basic_id):
         plot_val.finalize()
         return [ plot_val]
     
+class amwg_plot_set11(amwg_plot_spec):
+    name = '11 - Pacific annual cycle, Scatter plots'
+    number = '11'
+    def __init__( self, filetable1, filetable2, varid, seasonid='ANN', region=None, aux=None ):
+        """filetable1, filetable2 should be filetables for each model.
+        varid is a string, e.g. 'TREFHT'.  The seasonal difference is Seasonid
+        It is is a string, e.g. 'DJF-JJA'. """
+        import string
+        print 'plot set 11'
+        
+        plot_spec.__init__(self, seasonid)
+        self.plottype = 'Scatter'
+        self._seasonid = seasonid
+        self.season = cdutil.times.Seasons(self._seasonid) 
+        ft1id, ft2id = filetable_ids(filetable1, filetable2)
+        self.datatype = ['model', 'obs']
+        self.filetables = [filetable1, filetable2]
+        self.filetable_ids = [ft1id, ft2id]
+        self.seasons = ['ANN', 'DJF', 'JJA']
+        self.vars = ['LWCF', 'SWCF']
+        
+        self.plot_ids = []
+        vars_id = '_'.join(self.vars)
+        for ft in self.filetable_ids:
+            for season in self.seasons:
+                plot_id = '_'.join([ft,  season])
+                self.plot_ids += [plot_id]
+        
+        self.plotall_id = '_'.join([ft1id,ft2id, 'WarmPool', seasonid])
+        if not self.computation_planned:
+            self.plan_computation( filetable1, filetable2, varid, seasonid )
+    def plan_computation( self, filetable1, filetable2, varid, seasonid ):
+        self.computation_planned = False
+        #check if there is data to process
+        ft1_valid = False
+        ft2_valid = False
+        if filetable1 is not None and filetable2 is not None:
+            ft1 = filetable1.find_files(self.vars[0])
+            ft2 = filetable2.find_files(self.vars[1])
+            ft1_valid = ft1 is not None and ft1!=[]    # true iff filetable1 uses hybrid level coordinates
+            ft2_valid = ft2 is not None and ft2!=[]    # true iff filetable2 uses hybrid level coordinates
+        else:
+            print "ERROR: user must specify 2 data files"
+            return None
+        if not ft1_valid or not ft2_valid:
+            return None
+ 
+        for ft in self.filetables:
+            for season in self.seasons:
+                for var in self.vars:
+                    VID = rv.dict_id(var, season, ft)
+                    VID = id2str(VID)
+                    print VID
+                    RV = reduced_variable( variableid=var, 
+                                           filetable=ft, 
+                                           season=cdutil.times.Seasons(season), 
+                                           reduction_function=( lambda x, vid=VID:x) ) 
+                    self.reduced_variables[VID] = RV                    
+
+        self.rv_pairs = []
+        i = 0
+        while i <= 10:
+            self.rv_pairs += [(self.reduced_variables.keys()[i], self.reduced_variables.keys()[i+1])]
+            i += 2
+        
+        self.single_plotspecs = {}
+        for i, plot_id in enumerate(self.plot_ids):
+            zvars, z2vars = self.rv_pairs[i]
+            self.single_plotspecs[plot_id] = plotspec(vid = plot_id, 
+                                                      zvars=[zvars], 
+                                                      zfunc = (lambda x: x),
+                                                      z2vars = [z2vars],
+                                                      z2func = (lambda x: x),
+                                                      plottype = self.plottype )
+    
+        self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
+        self.computation_planned = True
+    def _results(self, newgrid=0):
+        pdb.set_trace()
+        results = plot_spec._results(self, newgrid)
+        if results is None:
+            print "WARNING, AMWG plot set 9 found nothing to plot"
+            return None
+        psv = self.plotspec_values
+        if self.plot_ids[0] in psv and self.plot_ids[0] is not None:
+            for  plot_id in self.plot_ids[1:]:
+                if plot_id in psv and plot_id is not None:
+                    psv[plot_id].synchronize_ranges(psv[self.plot_ids[0]])
+        for key,val in psv.items():
+            if type(val) is not list: val=[val]
+            for v in val:
+                if v is None: continue
+                v.finalize()
+        return self.plotspec_values[self.plotall_id]
