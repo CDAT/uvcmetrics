@@ -258,8 +258,23 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
 
                                    title = res[r].title
                                    vcanvas.clear()
-                                   for var in res[r].vars:
-                                       
+                                   if vcs.isvector(res[r].presentation) or res[r].presentation.__class__.__name__=="Gv":
+                                       # vector plot, it consumes pairs of variables, make the pairs.
+                                       #>>>> I've not verified they will be ordered right for this<<<<
+                                       vars = res[r].vars[0::2]
+                                       vars2 = res[r].vars[1::2]
+                                       if hasattr( res[r],'strideX' ):
+                                           strideX = res[r].strideX
+                                           strideY = res[r].strideY
+                                       else:
+                                           strideX = 1
+                                           strideY = 1
+                                   else:
+                                       vars = res[r].vars
+                                       vars2 = vars # dummy
+                                   for i in range(len(vars)):
+                                       var = vars[i]
+                                       var2 = vars2[i]
                                        var.title = title
                                        # ...But the VCS plot system will overwrite the title line
                                        # with whatever else it can come up with:
@@ -285,11 +300,19 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                        tm.dataname.priority = 0
                                        tm.title.priority = 1
                                        tm.comment1.priority = 0
-                                       vcanvas.plot(var, res[r].presentation, tm, bg=1, title=title, units=getattr(var,'units',''),
-                                                    source=res[r].source )
-                                       if r<3:
-                                           # We need more templates so we can have >3 plots in vcanvas2!
-                                           vcanvas2.plot(var, res[r].presentation, tm2, bg=1)
+                                       if vcs.isvector(res[r].presentation) or res[r].presentation.__class__.__name__=="Gv":
+                                           vcanvas.plot( var[::strideY,::strideX], var2[::strideY,::strideX], res[r].presentation, tm, bg=1 )
+                                                                  # first plot is all black, second plot works
+                                           vcanvas.plot(var[::strideY,::strideX], var2[::strideY,::strideX], res[r].presentation, tm, bg=1,
+                                                        title=title, units=getattr(var,'units',''),
+                                                        source=res[r].source )
+                                       else:
+                                           vcanvas.plot(var, res[r].presentation, tm, bg=1,
+                                                        title=title, units=getattr(var,'units',''),
+                                                        source=res[r].source )
+                                           if r<3:
+                                               # We need more templates so we can have >3 plots in vcanvas2!
+                                               vcanvas2.plot(var, res[r].presentation, tm2, bg=1)
                                        if var_id_save is not None:
                                            var.id = var_id_save
                                        vcanvas.png( fname )
@@ -306,10 +329,13 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                             print "wrote plots",resc.title," to",filenames
 #DEAN
                             if opts['plots']==True:
-                                vname = varid.replace(' ', '_')
-                                vname = vname.replace('/', '_')
-                                fname = outdir+'/figure-set'+sname[0]+'_'+rname+'_'+seasonid+'_'+vname+'_plot-'+str(r)+'.png'
-                                vcanvas2.png( fname )
+                                if vcs.isvector(res[r].presentation) or res[r].presentation.__class__.__name__=="Gv":
+                                    pass  # for now
+                                else:
+                                    vname = varid.replace(' ', '_')
+                                    vname = vname.replace('/', '_')
+                                    fname = outdir+'/figure-set'+sname[0]+'_'+rname+'_'+seasonid+'_'+vname+'_plot-'+str(r)+'.png'
+                                    vcanvas2.png( fname )
                         elif res is not None:
                             # but len(res)==0, probably plot set 1
                             if res.__class__.__name__ is 'amwg_plot_set1':
