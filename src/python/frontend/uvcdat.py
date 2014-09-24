@@ -11,6 +11,7 @@ from metrics.packages.amwg import *
 from metrics.packages.amwg.derivations.vertical import *
 from metrics.computation.plotspec import plotspec, derived_var
 from metrics.common.version import version
+from metrics.common.utilities import *
 from metrics.packages.amwg.derivations import *
 from pprint import pprint
 import cProfile
@@ -214,7 +215,7 @@ class uvc_simple_plotspec():
             self.presentation = presentation
         ## elif presentation == "":
         ##     self.resentation = vcsx.create
-        self.vars = pvars
+        self.vars = pvars # vars[i] is either a cdms2 variable or a tuple of variables
         self.labels = labels
         self.title = title
         self.source = source
@@ -231,14 +232,24 @@ class uvc_simple_plotspec():
         self.axmin = {}
         self.axax = {}
         for var in pvars:
-            self.varmax[var.id] = var.max()
-            self.varmin[var.id] = var.min()
-            self.axmax[var.id]  = { ax[0].id:max(ax[0][:]) for ax in var._TransientVariable__domain[:]
-                                    if ax is not None }
-            self.axmin[var.id]  = { ax[0].id:min(ax[0][:]) for ax in var._TransientVariable__domain[:]
-                                    if ax is not None}
-            self.axax[var.id]  = { ax[0].id:ax[0].axis for ax in var._TransientVariable__domain[:]
-                                   if ax is not None}
+            if type(var) is tuple:
+                self.varmax[seqgetattr(var,'id','')] = -1.0e20  # var is for vector plot, don't need max
+                self.varmin[seqgetattr(var,'id','')] = 1.0e20   # var is for vector plot, don't need min
+                self.axmax[seqgetattr(var,'id','')]  = { ax[0].id:max(ax[0][:]) for ax in var[0]._TransientVariable__domain[:]
+                                        if ax is not None }
+                self.axmin[seqgetattr(var,'id','')]  = { ax[0].id:min(ax[0][:]) for ax in var[0]._TransientVariable__domain[:]
+                                        if ax is not None}
+                self.axax[seqgetattr(var,'id','')]  = { ax[0].id:ax[0].axis for ax in var[0]._TransientVariable__domain[:]
+                                       if ax is not None}
+            else:
+                self.varmax[seqgetattr(var,'id','')] = var.max()
+                self.varmin[seqgetattr(var,'id','')] = var.min()
+                self.axmax[seqgetattr(var,'id','')]  = { ax[0].id:max(ax[0][:]) for ax in var._TransientVariable__domain[:]
+                                        if ax is not None }
+                self.axmin[seqgetattr(var,'id','')]  = { ax[0].id:min(ax[0][:]) for ax in var._TransientVariable__domain[:]
+                                        if ax is not None}
+                self.axax[seqgetattr(var,'id','')]  = { ax[0].id:ax[0].axis for ax in var._TransientVariable__domain[:]
+                                       if ax is not None}
         self.finalized = False
 
     def finalize( self, flip_x=False, flip_y=False ):
@@ -258,14 +269,14 @@ class uvc_simple_plotspec():
                 self.presentation.__class__.__name__=="G1d" or\
                 self.presentation.__class__.__name__=="Gv":
             var = self.vars[0]
-            axmax = self.axmax[var.id]
-            axmin = self.axmin[var.id]
-            varmax = self.varmax[var.id]
-            varmin = self.varmin[var.id]
+            axmax = self.axmax[seqgetattr(var,'id','')]
+            axmin = self.axmin[seqgetattr(var,'id','')]
+            varmax = self.varmax[seqgetattr(var,'id','')]
+            varmin = self.varmin[seqgetattr(var,'id','')]
             for v in self.vars[1:]:
                 for ax in axmax.keys():
-                    axmax[ax] = max(axmax[ax],self.axmax[v.id][ax])
-                    axmin[ax] = min(axmin[ax],self.axmin[v.id][ax])
+                    axmax[ax] = max(axmax[ax],self.axmax[seqgetattr(v,'id','')][ax])
+                    axmin[ax] = min(axmin[ax],self.axmin[seqgetattr(v,'id','')][ax])
                 varmax = max(varmax,self.varmax[v.id])
                 varmin = min(varmin,self.varmin[v.id])
             if vcs.isyxvsx(self.presentation) or\
@@ -291,7 +302,7 @@ class uvc_simple_plotspec():
                 # VCS Isofill
                 # First we have to identify which axes will be plotted as X and Y.
                 # The following won't cover all cases, but does cover what we have:
-                axaxi = {ax:id for id,ax in self.axax[var.id].items()}
+                axaxi = {ax:id for id,ax in self.axax[seqgetattr(var,'id','')].items()}
                 if 'X' in axaxi.keys() and 'Y' in axaxi.keys():
                     axx = axaxi['X']
                     axy = axaxi['Y']
@@ -358,11 +369,17 @@ class uvc_simple_plotspec():
                 ##self.presentation.fillareacolors=[32,48,64,80,96,112,128,144,160,176,240]
             elif vcs.isvector(self.presentation) or self.presentation.__class__.__name__=="Gv":
                 vec = self.presentation
-                vec.scale = min(vcsx.bgX,vcsx.bgY)/ 150.
-                nlats = latAxis(self.vars[0]).shape[0]
-                nlons = lonAxis(self.vars[1]).shape[0]
-                self.strideX = 0.7* vcsx.bgX/nlons
-                self.strideY = 0.5* vcsx.bgY/nlats
+                vec.scale = min(vcsx.bgX,vcsx.bgY)/ 200.
+                if hasattr(self.vars[0],'__getitem__'):
+                    v = self.vars[0][0]
+                    w = self.vars[0][1]
+                else:   # We shouldn't get here, but may as well try to make it work reasonably:
+                    v = self.vars[0]
+                    v = self.vars[1]
+                nlats = latAxis(v).shape[0]
+                nlons = lonAxis(w).shape[0]
+                self.strideX = 0.6* vcsx.bgX/nlons
+                self.strideY = 0.4* vcsx.bgY/nlats
         else:
             print "ERROR cannot identify graphics method",self.presentation.__class__.__name__
 
@@ -387,6 +404,8 @@ class uvc_simple_plotspec():
         self.synchronize_axes(pset)
     def synchronize_values( self, pset, suffix_length=0 ):
         "the part of synchronize_ranges for variable values only"
+        if type(self.vars[0]) is tuple:
+            print "ERROR synchronize_values hasn't been implemented for tuples",self.vars[0]
         sl = -suffix_length
         if sl==0:
             self_suffix = ""
@@ -417,6 +436,8 @@ class uvc_simple_plotspec():
     def synchronize_many_values( self, psets, suffix_length=0 ):
         """the part of synchronize_ranges for variable values only - except that psets is a list of
         uvc_plotset instances.  Thus we can combine ranges of many variable values."""
+        if type(vars[0]) is tuple:
+            print "ERROR synchronize_many_values hasn't been implemented for tuples",vars[0]
         sl = -suffix_length
         if sl==0:
             self_suffix = ""
@@ -452,6 +473,8 @@ class uvc_simple_plotspec():
                 psets[i].varmin[vidp] = varmin
     def synchronize_axes( self, pset ):
         "the part of synchronize_ranges for axes only"
+        if type(self.vars[0]) is tuple:
+            print "ERROR synchronize_axes hasn't been implemented for tuples",self.vars[0]
         self_suffix = self.vars[0].id[-2:]
         pset_suffix = pset.vars[0].id[-2:]
         var_ids = set([v.id[:-2] for v in self.vars]) & set([v.id[:-2] for v in pset.vars])
@@ -505,7 +528,7 @@ class uvc_simple_plotspec():
         plot_these = []
         for zax in self.vars:
             writer.write( zax )
-            plot_these.append( zax.id )
+            plot_these.append( str(seqgetattr(zax,'id','')) )
         writer.plot_these = ' '.join(plot_these)
         # Once the finalized method guarantees that varmax,varmin are numbers...
         #if self.finalized==True:
@@ -654,11 +677,7 @@ class plot_spec(object):
                     print "WARNING - cannot compute results involving zax, zvars=",ps.zvars
                     print "missing results for",[k for k in ps.zvars if varvals[k] is None]
                     continue
-                print "jfp zrv maxes=",[z.max() for z in zrv]
-                print "jfp zfunc=",ps.zfunc
                 zax = apply( ps.zfunc, zrv )
-                print "jfp zax maxes=",[z.max() for z in zax]
-                print "jfp zax ids=",[z.id for z in zax]
                 if any([a is None for a in z2rv]):
                     print "WARNING - cannot compute results involving z2ax, z2vars=",ps.z2vars
                     print "missing results for",[k for k in ps.z2vars if varvals[k] is None]
@@ -675,19 +694,15 @@ class plot_spec(object):
             vars = []
             zlab=""
             z2lab=""
-            if type(zax) is not tuple:
-                zax = [zax]  # the usual case
-            for za in zax: # for vector plots, zax is 2 variables.  Otherwise it's 1.
-                if za is not None:
-                    if hasattr(za,'regridded') and newgrid!=0:
-                        vars.append( regridded_vars[za.regridded] )
-                    else:
-                        print "jfp appending to vars:",za.id
-                        vars.append( za )
-                    new_id = self._build_label( zrv, p )
-                    #doesn't work for vector plots: za.id = new_id
-                    zlab += ' '+za.id
-            print "jfp2 vars has",[v.id for v in vars],len(vars)
+            if zax is not None:
+                if hasattr(zax,'regridded') and newgrid!=0:
+                    vars.append( regridded_vars[za.regridded] )
+                else:
+                    vars.append( zax )
+                new_id = self._build_label( zrv, p )
+                if type(zax) is not tuple:
+                    zax.id = new_id
+                    zlab += ' '+zax.id
             if z2ax is not None:
                 if hasattr(z2ax,'regridded') and newgrid!=0:
                     vars.append( regridded_vars[z2ax.regridded] )
@@ -699,7 +714,6 @@ class plot_spec(object):
             if vars==[]:
                 self.plotspec_values[p] = None
                 continue
-            print "jfp3 vars has",[v.id for v in vars],len(vars)
             #labels = [xlab,ylab,zlab]
             labels = [zlab,z2lab]
             if hasattr(ps,'title'):
@@ -707,7 +721,6 @@ class plot_spec(object):
             else:
                 title = ' '.join(labels)+' '+self._season_displayid  # do this better later
             # The following line is getting specific to UV-CDAT, although not any GUI...
-            print "jfp making uvc_simple_plotspec with vars",[v.id for v in vars],len(vars)
             self.plotspec_values[p] = uvc_simple_plotspec( vars, self.plottype, labels, title, ps.source )
         for p,ps in self.composite_plotspecs.iteritems():
             self.plotspec_values[p] = [ self.plotspec_values[sp] for sp in ps if sp in self.plotspec_values ]
