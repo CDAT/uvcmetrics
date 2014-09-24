@@ -255,7 +255,8 @@ class uvc_simple_plotspec():
         if vcs.isyxvsx(self.presentation) or\
                 vcs.isisofill(self.presentation) or\
                 self.presentation.__class__.__name__=="GYx" or\
-                self.presentation.__class__.__name__=="G1d":
+                self.presentation.__class__.__name__=="G1d" or\
+                self.presentation.__class__.__name__=="Gv":
             var = self.vars[0]
             axmax = self.axmax[var.id]
             axmin = self.axmin[var.id]
@@ -355,6 +356,15 @@ class uvc_simple_plotspec():
                 #colors =  [int(round(a*cmin+(nlevels-a)*cmax)) for a in nlrange]
                 #self.presentation.fillareacolors = colors
                 ##self.presentation.fillareacolors=[32,48,64,80,96,112,128,144,160,176,240]
+            elif vcs.isvector(self.presentation) or self.presentation.__class__.__name__=="Gv":
+                vec = self.presentation
+                vec.scale = min(vcsx.bgX,vcsx.bgY)/ 150.
+                nlats = latAxis(self.vars[0]).shape[0]
+                nlons = lonAxis(self.vars[1]).shape[0]
+                self.strideX = 0.7* vcsx.bgX/nlons
+                self.strideY = 0.5* vcsx.bgY/nlats
+        else:
+            print "ERROR cannot identify graphics method",self.presentation.__class__.__name__
 
     def __repr__(self):
         return ("uvc_plotspec %s: %s\n" % (self.presentation,self.title))
@@ -644,7 +654,11 @@ class plot_spec(object):
                     print "WARNING - cannot compute results involving zax, zvars=",ps.zvars
                     print "missing results for",[k for k in ps.zvars if varvals[k] is None]
                     continue
+                print "jfp zrv maxes=",[z.max() for z in zrv]
+                print "jfp zfunc=",ps.zfunc
                 zax = apply( ps.zfunc, zrv )
+                print "jfp zax maxes=",[z.max() for z in zax]
+                print "jfp zax ids=",[z.id for z in zax]
                 if any([a is None for a in z2rv]):
                     print "WARNING - cannot compute results involving z2ax, z2vars=",ps.z2vars
                     print "missing results for",[k for k in ps.z2vars if varvals[k] is None]
@@ -661,14 +675,19 @@ class plot_spec(object):
             vars = []
             zlab=""
             z2lab=""
-            if zax is not None:
-                if hasattr(zax,'regridded') and newgrid!=0:
-                    vars.append( regridded_vars[zax.regridded] )
-                else:
-                    vars.append( zax )
-                new_id = self._build_label( zrv, p )
-                zax.id = new_id
-                zlab += ' '+zax.id
+            if type(zax) is not tuple:
+                zax = [zax]  # the usual case
+            for za in zax: # for vector plots, zax is 2 variables.  Otherwise it's 1.
+                if za is not None:
+                    if hasattr(za,'regridded') and newgrid!=0:
+                        vars.append( regridded_vars[za.regridded] )
+                    else:
+                        print "jfp appending to vars:",za.id
+                        vars.append( za )
+                    new_id = self._build_label( zrv, p )
+                    #doesn't work for vector plots: za.id = new_id
+                    zlab += ' '+za.id
+            print "jfp2 vars has",[v.id for v in vars],len(vars)
             if z2ax is not None:
                 if hasattr(z2ax,'regridded') and newgrid!=0:
                     vars.append( regridded_vars[z2ax.regridded] )
@@ -680,6 +699,7 @@ class plot_spec(object):
             if vars==[]:
                 self.plotspec_values[p] = None
                 continue
+            print "jfp3 vars has",[v.id for v in vars],len(vars)
             #labels = [xlab,ylab,zlab]
             labels = [zlab,z2lab]
             if hasattr(ps,'title'):
@@ -687,7 +707,12 @@ class plot_spec(object):
             else:
                 title = ' '.join(labels)+' '+self._season_displayid  # do this better later
             # The following line is getting specific to UV-CDAT, although not any GUI...
+            print "jfp making uvc_simple_plotspec with vars",[v.id for v in vars],len(vars)
             self.plotspec_values[p] = uvc_simple_plotspec( vars, self.plottype, labels, title, ps.source )
+        for p,ps in self.composite_plotspecs.iteritems():
+            self.plotspec_values[p] = [ self.plotspec_values[sp] for sp in ps if sp in self.plotspec_values ]
+        # The point of building composite_plotspecs values a second time is that we may have a
+        # composite of composites...
         for p,ps in self.composite_plotspecs.iteritems():
             self.plotspec_values[p] = [ self.plotspec_values[sp] for sp in ps if sp in self.plotspec_values ]
         return self
