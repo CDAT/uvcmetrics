@@ -862,39 +862,41 @@ class amwg_plot_set6(amwg_plot_spec):
         print "jfp vid*:",vid_cont1,vid_cont2,vid_vec1,vid_vec11,vid_vec12,vid_vec2,vid_vec21,vid_vec22
         if filetable1 is not None:
             # Draw two plots, contour and vector, over one another to get a single plot.
+            # Only one needs title,source.
             contplot = plotspec(
                 vid = ps.dict_idid(vid_cont1),  zvars = [vid_cont2],  zfunc = (lambda z: z),
                 plottype = self.plottype[0],
-                title = ' '.join([varid,seasonid,'(1)']),  source=ft1src )
+                title = '', source='' )
             vecplot = plotspec(
                 vid = ps.dict_idid(vid_vec1), zvars=[vid_vec11,vid_vec12], zfunc = (lambda z,w: (z,w)),
                 plottype = self.plottype[1],
-                title = '', source='' )
+                title = ' '.join([varid,seasonid,'(1)']),  source=ft1src )
             #self.single_plotspecs[self.plot1_id] = [contplot,vecplot]
             self.single_plotspecs[self.plot1_id+'c'] = contplot
             self.single_plotspecs[self.plot1_id+'v'] = vecplot
         if filetable2 is not None:
             # Draw two plots, contour and vector, over one another to get a single plot.
+            # Only one needs title,source.
             contplot = plotspec(
                 vid = ps.dict_idid(vid_cont2),  zvars = [vid_cont2],  zfunc = (lambda z: z),
                 plottype = self.plottype[0],
-                title = ' '.join([varid,seasonid,'(2)']),  source=ft2src )
+                title = '', source='' )
             vecplot = plotspec(
                 vid = ps.dict_idid(vid_vec2), zvars=[vid_vec21,vid_vec22], zfunc = None,
                 plottype = self.plottype[1],
-                title = '', source='' )
+                title = ' '.join([varid,seasonid,'(2)']),  source=ft2src )
             self.single_plotspecs[self.plot2_id] = [contplot,vecplot]
         if filetable1 is not None and filetable2 is not None:
             contplot = plotspec(
                 vid = ps.dict_id(var_cont,'diff',seasonid,filetable1,filetable2),
                 zvars = [vid_cont1,vid_cont2],  zfunc = aminusb_2ax,
-                plottype = self.plottype[0],
-                title = ' '.join([varid,seasonid,'(1)-(2)']),  source = ', '.join([ft1src,ft2src]) )
+                plottype = self.plottype[0], title='', source='' )
             vecplot = plotspec(
                 vid = ps.dictid(vid_vec2,'diff',seasonid,filetable1,filetable2),
                 zvars = [vid_vec11,vid_vec12,vid_vec21,vid_vec22],
                 zfunc = (lambda z1,w1,z2,w2: [aminusb_2ax(z1,z2),aminusb_2ax(w1,w2)]),
-                plottype = self.plottype[1], title='', source='' )
+                plottype = self.plottype[1],
+                title = ' '.join([varid,seasonid,'(1)-(2)']),  source = ', '.join([ft1src,ft2src]) )
             self.single_plotspecs[self.plot3_id] = [contplot,vecplot]
         # initially we're not plotting the contour part of the plots....
         self.composite_plotspecs = {
