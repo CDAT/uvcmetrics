@@ -20,3 +20,30 @@ def season2Season(season):
         return cdutil.times.Seasons(seasonid)
     else:
         return season
+
+def seqgetattr( z, attr, default=None ):
+    """like getattr (with a specified default), but on sequences returns a sequence of
+    getattr results.  On sequences, the returned sequence is generally a list, but will be a tuple
+    if the input be a tuple."""
+    if hasattr( z, '__iter__') and not hasattr( z, '__cdms_internals__'):
+        za = map( (lambda w,attr=attr,default=default: seqgetattr(w,attr,default)), z )
+        if type(z) is tuple:
+            za = tuple(za)
+        return za
+    else:
+        return getattr( z, attr, default )
+
+def seqsetattr( z, attr, value ):
+    """like setattr, but on sequences (lists or tuples) acts on their elements."""
+    if hasattr( z, '__iter__') and not hasattr( z, '__cdms_internals__'):
+        map( (lambda w,attr=attr,value=value: seqsetattr(w,attr,value)), z )
+    else:
+        setattr( z, attr, value )
+
+def seqhasattr( z, attr ):
+    """like hasattr, but on sequences checks all their elements."""
+    if hasattr( z, '__iter__') and not hasattr( z, '__cdms_internals__'):
+        return all([ seqhasattr( w, attr ) for w in z ])
+    else:
+        return hasattr( z, attr )
+
