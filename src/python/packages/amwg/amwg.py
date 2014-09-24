@@ -501,10 +501,9 @@ class amwg_plot_set4(amwg_plot_spec):
         return self.plotspec_values[self.plotall_id]
 
 class amwg_plot_set5and6(amwg_plot_spec):
-    """represents one plot from AMWG Diagnostics Plot Sets 5 and 6
+    """represents one plot from AMWG Diagnostics Plot Sets 5 and 6  <actually only the contours, set 5>
     NCAR has the same menu for both plot sets, and we want to ease the transition from NCAR
     diagnostics to these; so both plot sets will be done together here as well.
-    **** SO FAR, PLOT 6 VECTOR PLOTS ARE NOT DONE; ONLY Plot 5 CONTOUR ****
     Each contour plot is a set of three contour plots: one each for model output, observations, and
     the difference between the two.  A plot's x-axis is longitude and its y-axis is the latitude;
     normally a world map will be overlaid.
@@ -763,15 +762,168 @@ class amwg_plot_set5(amwg_plot_set5and6):
     name = '5 - Horizontal Contour Plots of Seasonal Means'
     number = '5'
     
-class amwg_plot_set6(amwg_plot_set5and6):
+class amwg_plot_set6old(amwg_plot_set5and6):
     """represents one plot from AMWG Diagnostics Plot Set 6
-    **** SO FAR, PLOT 6 VECTOR PLOTS ARE NOT DONE; ONLY Plot 5 CONTOUR ****
     Each contour plot is a set of three contour plots: one each for model output, observations, and
+    the difference between the two.  A plot's x-axis is longitude and its y-axis is the latitude;
+    normally a world map will be overlaid. """
+    name = '6old - Horizontal Contour Plots of Seasonal Means'
+    number = '6old'
+    
+class amwg_plot_set6(amwg_plot_spec):
+    """represents one plot from AMWG Diagnostics Plot Set 6
+    This is a vector+contour plot - the contour plot shows magnitudes and the vector plot shows both
+    directions and magnitudes.  Unlike NCAR's diagnostics, our AMWG plot set 6 uses a different
+    menu from set 5.
+    Each compound plot is a set of three simple plots: one each for model output, observations, and
     the difference between the two.  A plot's x-axis is longitude and its y-axis is the latitude;
     normally a world map will be overlaid.
     """
     name = '6 - Horizontal Vector Plots of Seasonal Means' 
     number = '6'
+    standard_variables = { 'STRESS':['STRESS_MAG','TAUX','TAUY'] }
+    # ...built-in variables.   The key is the name, as the user specifies it.
+    # The value is a list of the required data variables.
+    #... If this works, I'll make it universal, defaulting to {}.  For plot set 6, the first
+    # data variable will be used for the contour plot, and the other two for the vector plot.
+    def __init__( self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None ):
+        """filetable1, filetable2 should be filetables for model and obs.
+        varid is a string identifying the variable to be plotted, e.g. 'STRESS'.
+        seasonid is a string such as 'DJF'."""
+        plot_spec.__init__(self,seasonid)
+        # self.plottype = ['Isofill','Vector']  <<<< later we'll add contour plots
+        self.plottype = 'Vector'
+        self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
+
+        self.varid = varid
+        ft1id,ft2id = filetable_ids(filetable1,filetable2)
+        self.plot1_id = ft1id+'_'+varid+'_'+seasonid
+        self.plot2_id = ft2id+'_'+varid+'_'+seasonid
+        self.plot3_id = ft1id+' - '+ft2id+'_'+varid+'_'+seasonid
+        self.plotall_id = ft1id+'_'+ft2id+'_'+varid+'_'+seasonid
+
+        if not self.computation_planned:
+            self.plan_computation( filetable1, filetable2, varid, seasonid, region, aux )
+    @staticmethod
+    def _list_variables( filetable1, filetable2=None ):
+        return amwg_plot_set6.standard_variables.keys()
+    @staticmethod
+    def _all_variables( filetable1, filetable2=None ):
+        return { vn:basic_plot_variable for vn in amwg_plot_set6._list_variables( filetable1, filetable2 ) }
+    def plan_computation( self, filetable1, filetable2, varid, seasonid, region=None, aux=None ):
+        if aux is None:
+            return self.plan_computation_normal_contours( filetable1, filetable2, varid, seasonid, region, aux )
+        else:
+            print "ERROR plot set 6 does not support auxiliary variable aux=",aux
+            return None
+    def plan_computation_normal_contours( self, filetable1, filetable2, varid, seasonid, region=None, aux=None ):
+        """Set up for a lat-lon contour plot, as in plot set 5.  Data is averaged over all other
+        axes."""
+        try:
+            var_cont = self.standard_variables[varid][0]     # e.g. 'STRESS_MAG'
+            vars_vec = ( self.standard_variables[varid][1], self.standard_variables[varid][2] )
+            #      ... e.g. ('TAUX','TAUY')
+            vars = self.standard_variables[varid]            # e.g. ['STRESS_MAG','TAUX','TAUY']
+        except:
+            print "ERROR cannot find suitable standard_variables for varid=",varid
+            return None
+        reduced_vardic = {}
+        reduced_varlis = []
+        for var in vars:
+            if filetable1 is not None:
+                reduced_vardic[(var,1)] =\
+                    reduced_variable(
+                        variableid=var, filetable=filetable1, season=self.season,
+                        reduction_function=(lambda x,vid: reduce2latlon_seasonal( x, self.season, vid ) ) )
+            if filetable2 is not None:
+                reduced_vardic[(var,2)] =\
+                    reduced_variable(
+                        variableid=var, filetable=filetable2, season=self.season,
+                        reduction_function=(lambda x,vid: reduce2latlon_seasonal( x, self.season, vid ) ) )
+                reduced_varlis += [reduced_vardic[(var,1)],reduced_vardic[(var,2)]]
+            else:
+                reduced_varlis += [reduced_vardic[(var,1)]]
+        self.reduced_variables = { v.id():v for v in reduced_varlis }
+        self.derived_variables = {}
+        self.single_plotspecs = {}
+        ft1src = filetable1.source()
+        try:
+            ft2src = filetable2.source()
+        except:
+            ft2src = ''
+        vid_cont1 = rv.dict_id( var_cont, seasonid, filetable1 )
+        vid_cont2 = rv.dict_id( var_cont, seasonid, filetable2 )
+        vid_vec1 = rv.dict_id( ','.join(vars_vec), seasonid, filetable1 )
+        vid_vec11 = rv.dict_id( vars_vec[0], seasonid, filetable1 )
+        vid_vec12 = rv.dict_id( vars_vec[1], seasonid, filetable1 )
+        vid_vec2 = rv.dict_id( ','.join(vars_vec), seasonid, filetable2 )
+        vid_vec21 = rv.dict_id( vars_vec[0], seasonid, filetable2 )
+        vid_vec22 = rv.dict_id( vars_vec[1], seasonid, filetable2 )
+        print "jfp vid*:",vid_cont1,vid_cont2,vid_vec1,vid_vec11,vid_vec12,vid_vec2,vid_vec21,vid_vec22
+        if filetable1 is not None:
+            # Draw two plots, contour and vector, over one another to get a single plot.
+            contplot = plotspec(
+                vid = ps.dict_idid(vid_cont1),  zvars = [vid_cont2],  zfunc = (lambda z: z),
+                plottype = self.plottype[0],
+                title = ' '.join([varid,seasonid,'(1)']),  source=ft1src )
+            vecplot = plotspec(
+                vid = ps.dict_idid(vid_vec1), zvars=[vid_vec11,vid_vec12], zfunc = (lambda z,w: (z,w)),
+                plottype = self.plottype[1],
+                title = '', source='' )
+            #self.single_plotspecs[self.plot1_id] = [contplot,vecplot]
+            self.single_plotspecs[self.plot1_id+'c'] = contplot
+            self.single_plotspecs[self.plot1_id+'v'] = vecplot
+        if filetable2 is not None:
+            # Draw two plots, contour and vector, over one another to get a single plot.
+            contplot = plotspec(
+                vid = ps.dict_idid(vid_cont2),  zvars = [vid_cont2],  zfunc = (lambda z: z),
+                plottype = self.plottype[0],
+                title = ' '.join([varid,seasonid,'(2)']),  source=ft2src )
+            vecplot = plotspec(
+                vid = ps.dict_idid(vid_vec2), zvars=[vid_vec21,vid_vec22], zfunc = None,
+                plottype = self.plottype[1],
+                title = '', source='' )
+            self.single_plotspecs[self.plot2_id] = [contplot,vecplot]
+        if filetable1 is not None and filetable2 is not None:
+            contplot = plotspec(
+                vid = ps.dict_id(var_cont,'diff',seasonid,filetable1,filetable2),
+                zvars = [vid_cont1,vid_cont2],  zfunc = aminusb_2ax,
+                plottype = self.plottype[0],
+                title = ' '.join([varid,seasonid,'(1)-(2)']),  source = ', '.join([ft1src,ft2src]) )
+            vecplot = plotspec(
+                vid = ps.dictid(vid_vec2,'diff',seasonid,filetable1,filetable2),
+                zvars = [vid_vec11,vid_vec12,vid_vec21,vid_vec22],
+                zfunc = (lambda z1,w1,z2,w2: [aminusb_2ax(z1,z2),aminusb_2ax(w1,w2)]),
+                plottype = self.plottype[1], title='', source='' )
+            self.single_plotspecs[self.plot3_id] = [contplot,vecplot]
+        # initially we're not plotting the contour part of the plots....
+        self.composite_plotspecs = {
+            #self.plot1_id: [ self.plot1_id+'c', self.plot1_id+'v' ],
+            self.plot1_id: [ self.plot1_id+'v' ],
+            #self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id ]
+            self.plotall_id: [self.plot1_id+'v']  # temporary<<<<<<<<<
+            }
+        print "jfp composite_plotspecs"
+        pprint(self.composite_plotspecs)
+        self.computation_planned = True
+    def _results(self,newgrid=0):
+        results = plot_spec._results(self,newgrid)
+        if results is None: return None
+        psv = self.plotspec_values
+        if self.plot1_id in psv and self.plot2_id in psv and\
+                psv[self.plot1_id] is not None and psv[self.plot2_id] is not None:
+            psv[self.plot1_id].synchronize_ranges(psv[self.plot2_id])
+        else:
+            print "WARNING not synchronizing ranges for",self.plot1_id,"and",self.plot2_id
+        print "jfp psv="
+        pprint(psv)
+        for key,val in psv.items():
+            if type(val) is not list: val=[val]
+            for v in val:
+                if v is None: continue
+                v.finalize()
+        return self.plotspec_values[self.plotall_id]
+
 
 class amwg_plot_set7(amwg_plot_spec):
     """This represents one plot from AMWG Diagnostics Plot Set 7
