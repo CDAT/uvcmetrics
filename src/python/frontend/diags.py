@@ -258,35 +258,29 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
 
                                    title = res[r].title
                                    vcanvas.clear()
-                                   if vcs.isvector(res[r].presentation) or res[r].presentation.__class__.__name__=="Gv":
-                                       # vector plot, it consumes pairs of variables, make the pairs.
-                                       #>>>> I've not verified they will be ordered right for this<<<<
-                                       vars = res[r].vars[0::2]
-                                       vars2 = res[r].vars[1::2]
-                                       if hasattr( res[r],'strideX' ):
-                                           strideX = res[r].strideX
-                                           strideY = res[r].strideY
-                                       else:
-                                           strideX = 1
-                                           strideY = 1
-                                   else:
-                                       vars = res[r].vars
-                                       vars2 = vars # dummy
-                                   for i in range(len(vars)):
-                                       var = vars[i]
-                                       var2 = vars2[i]
-                                       var.title = title
+                                   for var in res[r].vars:
+                                       seqsetattr(var,'title',title)
                                        # ...But the VCS plot system will overwrite the title line
                                        # with whatever else it can come up with:
                                        # long_name, id, and units. Generally the units are harmless,
                                        # but the rest has to go....
-                                       if hasattr(var,'long_name'):
-                                           del var.long_name
-                                       if hasattr(var,'id'):
-                                           vname = var.id.replace(' ', '_')
-                                           var_id_save = var.id
-                                           var.id = ''         # If id exists, vcs uses it as a plot title
-                                           # and if id doesn't exist, the system will create one before plotting!
+                                       if seqhasattr(var,'long_name'):
+                                           if type(var) is tuple:
+                                               for v in var:
+                                                   del v.long_name
+                                           else:
+                                               del var.long_name
+                                       if seqhasattr(var,'id'):
+                                           if type(var) is tuple:   # only for vector plots
+                                               vname = ','.join( seqgetattr(var,'id','') )
+                                               vname = vname.replace(' ', '_')
+                                               var_id_save = seqgetattr(var,'id','')
+                                               seqsetattr( var,'id','' )
+                                           else:
+                                               vname = var.id.replace(' ', '_')
+                                               var_id_save = var.id
+                                               var.id = ''         # If id exists, vcs uses it as a plot title
+                                               # and if id doesn't exist, the system will create one before plotting!
                                        else:
                                            vname = varid.replace(' ', '_')
                                            var_id_save = None
@@ -301,11 +295,17 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                        tm.title.priority = 1
                                        tm.comment1.priority = 0
                                        if vcs.isvector(res[r].presentation) or res[r].presentation.__class__.__name__=="Gv":
-                                           vcanvas.plot( var[::strideY,::strideX], var2[::strideY,::strideX], res[r].presentation, tm, bg=1 )
-                                                                  # first plot is all black, second plot works
-                                           vcanvas.plot(var[::strideY,::strideX], var2[::strideY,::strideX], res[r].presentation, tm, bg=1,
-                                                        title=title, units=getattr(var,'units',''),
-                                                        source=res[r].source )
+                                           strideX = res[r].strideX
+                                           strideY = res[r].strideY
+                                           vcanvas.plot( var[0][::strideY,::strideX],
+                                                         var[1][::strideY,::strideX], res[r].presentation, tm, bg=1,
+                                                         title=title, units=getattr(var,'units',''),
+                                                         source=res[r].source )
+                                           # first plot is all black, second plot works
+                                           vcanvas.plot( var[0][::strideY,::strideX],
+                                                         var[1][::strideY,::strideX], res[r].presentation, tm, bg=1,
+                                                         title=title, units=getattr(var,'units',''),
+                                                         source=res[r].source )
                                        else:
                                            vcanvas.plot(var, res[r].presentation, tm, bg=1,
                                                         title=title, units=getattr(var,'units',''),
@@ -314,7 +314,11 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                                # We need more templates so we can have >3 plots in vcanvas2!
                                                vcanvas2.plot(var, res[r].presentation, tm2, bg=1)
                                        if var_id_save is not None:
-                                           var.id = var_id_save
+                                           if type(var_id_save) is str:
+                                               var.id = var_id_save
+                                           else:
+                                               for i in range(len(var_id_save)):
+                                                   v[i].id = var_id_save[i]
                                        vcanvas.png( fname )
                                        rdone += 1
                             # Also, write the nc output files and xml.
