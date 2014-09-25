@@ -318,7 +318,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                                var.id = var_id_save
                                            else:
                                                for i in range(len(var_id_save)):
-                                                   v[i].id = var_id_save[i]
+                                                   var[i].id = var_id_save[i]
                                        vcanvas.png( fname )
                                        rdone += 1
                             # Also, write the nc output files and xml.
