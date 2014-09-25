@@ -184,7 +184,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
             seasons = list( set(seasons) & set(pclass.list_seasons()) )
             for seasonid in seasons:
                 variables = pclass.list_variables( filetable1, filetable2, sname  )
-                if sclass.number=='1':
+                if sclass.number=='1' and pname.upper() == 'AMWG':
                     # Plot set 1 (the table) ignores variable specifications - it does all variables in
                     # its internal list.  To make the code work unchanged, choose one:
                     variables = variables[:1]
