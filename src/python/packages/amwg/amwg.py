@@ -779,8 +779,8 @@ class amwg_plot_set6(amwg_plot_spec):
     the difference between the two.  A plot's x-axis is longitude and its y-axis is the latitude;
     normally a world map will be overlaid.
     """
-    #name = '6 - Horizontal Vector Plots of Seasonal Means' 
-    #number = '6'
+    name = '6 - (Experimental, doesnt work with GUI) Horizontal Vector Plots of Seasonal Means' 
+    number = '6'
     standard_variables = { 'STRESS':[['STRESS_MAG','TAUX','TAUY'],['TAUX','TAUY']] }
     # ...built-in variables.   The key is the name, as the user specifies it.
     # The value is a lists of lists of the required data variables. If the dict item is, for
@@ -881,7 +881,6 @@ class amwg_plot_set6(amwg_plot_spec):
         reduced_vardic = {}
         reduced_varlis = []
         if filetable1 is not None:
-            print "jfp vars1=",vars1
             for var in vars1:
                 reduced_vardic[(var,1)] =\
                     reduced_variable(
@@ -889,14 +888,12 @@ class amwg_plot_set6(amwg_plot_spec):
                         reduction_function=(lambda x,vid=None: reduce2latlon_seasonal( x, self.season, vid ) ) )
                 reduced_varlis.append( reduced_vardic[(var,1)] )
         if filetable2 is not None:
-            print "jfp vars2=",vars2
             for var in vars2:
                 reduced_vardic[(var,2)] =\
                     reduced_variable(
                         variableid=var, filetable=filetable2, season=self.season,
                         reduction_function=(lambda x,vid=None: reduce2latlon_seasonal( x, self.season, vid ) ) )
                 reduced_varlis.append( reduced_vardic[(var,2)] )
-        print "jfp reduced variable keys=",reduced_vardic.keys()
         self.reduced_variables = { v.id():v for v in reduced_varlis }
         self.single_plotspecs = {}
         ft1src = filetable1.source()
@@ -910,8 +907,8 @@ class amwg_plot_set6(amwg_plot_spec):
         vid_vec2 = rv.dict_id( ','.join(vars_vec2), seasonid, filetable2 )
         vid_vec21 = rv.dict_id( vars_vec2[0], seasonid, filetable2 )
         vid_vec22 = rv.dict_id( vars_vec2[1], seasonid, filetable2 )
-        print "jfp ft1 vid*:",vid_cont1,vid_vec1,vid_vec11,vid_vec12
-        print "jfp ft2 vid*:",vid_cont2,vid_vec2,vid_vec21,vid_vec22
+        #print "jfp ft1 vid*:",vid_cont1,vid_vec1,vid_vec11,vid_vec12
+        #print "jfp ft2 vid*:",vid_cont2,vid_vec2,vid_vec21,vid_vec22
         plot_type_temp = ['Isofill','Vector'] # can't use self.plottype yet because don't support it elsewhere as a list or tuple <<<<<
         if vars1 is not None:
             # Draw two plots, contour and vector, over one another to get a single plot.
@@ -954,9 +951,9 @@ class amwg_plot_set6(amwg_plot_spec):
             self.single_plotspecs[self.plot3_id+'c'] = contplot
             self.single_plotspecs[self.plot3_id+'v'] = vecplot
         # initially we're not plotting the contour part of the plots....
-        for pln,pl in self.single_plotspecs.iteritems(): #jfp
-            print "jfp single plot",pln,pl.plottype
-            print "jfp            ",pl.zvars
+        #for pln,pl in self.single_plotspecs.iteritems(): #jfp
+        #    print "jfp single plot",pln,pl.plottype
+        #    print "jfp            ",pl.zvars
         self.composite_plotspecs = {
             #self.plot1_id: [ self.plot1_id+'c', self.plot1_id+'v' ],
             self.plot1_id: [ self.plot1_id+'v' ],
