@@ -318,6 +318,15 @@ class basic_filetable(basic_id):
        vars = list(set([ r.variableid for r in self._table if r.haslevel]))
        vars.sort()
        return vars
+    def has_variables( self, varlist ):
+       """Returns True if this filetable has entries for every variable in the supplied sequence of
+       variable names (strings); otherwise False."""
+       fvars = set([ r.variableid for r in self._table ])
+       svars = set(varlist)
+       if len(svars-fvars)>0:
+          return False
+       else:
+          return True
             
 class basic_filefmt:
     """Children of this class contain methods which support specific file types,
