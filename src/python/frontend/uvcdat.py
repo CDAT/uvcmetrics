@@ -369,17 +369,24 @@ class uvc_simple_plotspec():
                 ##self.presentation.fillareacolors=[32,48,64,80,96,112,128,144,160,176,240]
             elif vcs.isvector(self.presentation) or self.presentation.__class__.__name__=="Gv":
                 vec = self.presentation
-                vec.scale = min(vcsx.bgX,vcsx.bgY)/ 200.
-                if hasattr(self.vars[0],'__getitem__'):
+                #vec.scale = min(vcsx.bgX,vcsx.bgY)/ 200. # preferred
+                vec.scale = min(vcsx.bgX,vcsx.bgY)/ 150.
+                if hasattr(self.vars[0],'__getitem__') and not hasattr( self.vars[0], '__cdms_internals__'):
+                    # generally a tuple of variables - we need 2 variables to describe a vector
                     v = self.vars[0][0]
                     w = self.vars[0][1]
-                else:   # We shouldn't get here, but may as well try to make it work reasonably:
+                else:   # We shouldn't get here, but may as well try to make it work if possible:
+                    print "WARNING trying to make a vector plot without tuples!  Variables involved are:"
                     v = self.vars[0]
+                    print "variable",v.id
                     v = self.vars[1]
+                    print "variable",v.id
                 nlats = latAxis(v).shape[0]
                 nlons = lonAxis(w).shape[0]
-                self.strideX = 0.6* vcsx.bgX/nlons
-                self.strideY = 0.4* vcsx.bgY/nlats
+                #self.strideX = 0.6* vcsx.bgX/nlons   # preferred
+                #self.strideY = 0.4* vcsx.bgY/nlats
+                self.strideX = 1.0* vcsx.bgX/nlons
+                self.strideY = 0.8* vcsx.bgY/nlats
         else:
             print "ERROR cannot identify graphics method",self.presentation.__class__.__name__
 
@@ -436,8 +443,8 @@ class uvc_simple_plotspec():
     def synchronize_many_values( self, psets, suffix_length=0 ):
         """the part of synchronize_ranges for variable values only - except that psets is a list of
         uvc_plotset instances.  Thus we can combine ranges of many variable values."""
-        if type(vars[0]) is tuple:
-            print "ERROR synchronize_many_values hasn't been implemented for tuples",vars[0]
+        if type(self.vars[0]) is tuple:
+            print "ERROR synchronize_many_values hasn't been implemented for tuples",self.vars[0]
         sl = -suffix_length
         if sl==0:
             self_suffix = ""
@@ -666,6 +673,7 @@ class plot_spec(object):
             value = self.derived_variables[v].derive(self.variable_values)
             self.variable_values[v] = value  # could be None
         varvals = self.variable_values
+
         for p,ps in self.single_plotspecs.iteritems():
             print "uvcdat preparing data for",ps._strid
             try:
@@ -721,13 +729,18 @@ class plot_spec(object):
             else:
                 title = ' '.join(labels)+' '+self._season_displayid  # do this better later
             # The following line is getting specific to UV-CDAT, although not any GUI...
-            self.plotspec_values[p] = uvc_simple_plotspec( vars, self.plottype, labels, title, ps.source )
+            # >>>> jfp a bad hack for temporary use - I MUST MUST MUST get plot_type out of something else!!!>>>>
+            if type(vars[0])==tuple:
+                plot_type_temp = 'Vector'
+            elif vars[0].id.find('STRESS_MAG')>0:
+                plot_type_temp = 'Isofill'
+            else:
+                plot_type_temp = self.plottype
+            self.plotspec_values[p] = uvc_simple_plotspec( vars, plot_type_temp, labels, title, ps.source )
         for p,ps in self.composite_plotspecs.iteritems():
             self.plotspec_values[p] = [ self.plotspec_values[sp] for sp in ps if sp in self.plotspec_values ]
-        # The point of building composite_plotspecs values a second time is that we may have a
-        # composite of composites...
-        for p,ps in self.composite_plotspecs.iteritems():
-            self.plotspec_values[p] = [ self.plotspec_values[sp] for sp in ps if sp in self.plotspec_values ]
+        # note: we may have to += other lists into the same ...[p]
+        # note: if we have a composite of composites we can deal with it by building a second time
         return self
 
 def diagnostics_template():
