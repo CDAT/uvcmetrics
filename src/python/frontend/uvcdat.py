@@ -139,7 +139,7 @@ class uvc_composite_plotspec():
         if len(self.title)<=0:
             fname = 'foo.xml'
         else:
-            fname = (self.title.strip()+'.xml').replace(' ','_')[:115]  # 115 is to constrain file size
+            fname = (self.title.strip()+'.xml').replace(' ','_').replace('/','_')[:115]  # 115 is to constrain file size
             fname = fname+'.xml'
         filename = os.path.join(where,fname)
         #print "output to",filename
@@ -465,7 +465,7 @@ class uvc_simple_plotspec():
         if len(self.title)<=0:
             fname = 'foo'
         else:
-            fname = '_'.join([self.title.strip(),self.source]).replace(' ','_') + '.nc'
+            fname = '_'.join([self.title.strip(),self.source]).replace(' ','_').replace('/','_') + '.nc'
         filename = os.path.join(where,fname)
         return filename
     def write_plot_data( self, format="", where="" ):
