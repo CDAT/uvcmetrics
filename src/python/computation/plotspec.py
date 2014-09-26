@@ -64,6 +64,7 @@ class derived_var(basic_id):
             #output._vid = self._vid      # self._vid is deprecated
             self.adopt( output )  # output gets ids of self
             self._file_attributes.update( getattr(output,'_file_attributes',{}) )
+        output.id = output._id[1]  # e.g. _id=('dv','STRESS_MAG','','ANN','ft0_cam_output'), id='STRESS_MAG'
         return output
     @classmethod
     def dict_id( cls, varid, varmod, seasonid, ft1, ft2=None ):
