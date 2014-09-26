@@ -818,82 +818,97 @@ class amwg_plot_set6(amwg_plot_spec):
         else:
             print "ERROR plot set 6 does not support auxiliary variable aux=",aux
             return None
+    def STRESS_setup( self, filetable, varid, seasonid ):
+        """sets up reduced & derived variables for the STRESS (ocean wind stress) variable.
+        Updates self.derived variables.
+        Returns several variable names and lists of variable names.
+        """
+        vars = None
+        if filetable is not None:
+            for dvars in self.standard_variables[varid]:   # e.g. dvars=['STRESS_MAG','TAUX','TAUY']
+                if filetable.has_variables(dvars):
+                    vars = dvars                           # e.g. ['STRESS_MAG','TAUX','TAUY']
+                    break
+        if vars==['STRESS_MAG','TAUX','TAUY']:
+            rvars = vars  # variable names which will become reduced variables
+            dvars = []    # variable names which will become reduced variables
+            var_cont = vars[0]                # for contour plot
+            vars_vec = ( vars[1], vars[2] )  # for vector plot
+            vid_cont = rv.dict_id( var_cont, seasonid, filetable )
+        elif vars==['TAUX','TAUY']:
+            rvars = vars            # variable names which will become reduced variables
+            dvars = ['STRESS_MAG']  # variable names which will become reduced variables
+            var_cont = dv.dict_id( 'STRESS_MAG', '', seasonid, filetable )
+            tau_x = rv.dict_id('TAUX',seasonid,filetable)
+            tau_y = rv.dict_id('TAUY',seasonid,filetable)
+            self.derived_variables[var_cont] =\
+                derived_var( vid=var_cont, inputs=[tau_x,tau_y], func=abnorm )
+            vars_vec = ( vars[0], vars[1] )  # for vector plot
+            vid_cont = var_cont
+        else:
+            rvars = []
+            dvars = []
+            var_cont = ''
+            vars_vec = ['','']
+            vid_cont = ''
+        #if 'TAUX' in vars_vec and 'TAUY' in vars_vec and filetable.filefmt.find('CAM')>=0:
+        #    # TAUX,TAUY could have one sign or another depending on your point of view.
+        #    # If they're from CAM, we have to change the sign to standardize that.
+        #    # The usual obs climo files have the 'standard' signs, so they can be skipped here.
+        #    # Sometime it may be better to do this in a more general-purpose way, and elsewhere.
+        #    # >>>> TO DO: impose an ocean mask on TAUX,TAUY <<<<
+        #    for TAU in ['TAUX','TAUY']:
+        #        tau = rv.dict_id(TAU,seasonid,filetable)
+        #        self.derived_variables[TAU] =\
+        #            derived_var( vid=TAU, inputs=[tau], func=minusb )
+        #    print "jfp applied minusb to TAUX,TAUY for",filetable
+        #else:
+        #    print "jfp didn't apply minusb to TAUX,TAUY for",filetable
+        return vars, rvars, dvars, var_cont, vars_vec, vid_cont
+    def STRESS_rvs( self, filetable, rvars ):
+        """returns a list of reduced variables needed for the STRESS variable computation,
+        and orginating from the specified filetable.  rvars lists the variables needed."""
+        if filetable is None:
+            return []
+        reduced_vars = []
+        for var in rvars:
+            if var in ['TAUX','TAUY'] and filetable.filefmt.find('CAM')>=0:
+                # We'll cheat a bit and change the sign as well as reducing dimensionality.
+                # The issue is that sign conventions differ in CAM output and the obs files.
+                # >>>> TO DO >>>> TAUX,TAUY need to get an ocean mask as well here >>>>
+                reduced_vars.append( reduced_variable(
+                        variableid=var, filetable=filetable, season=self.season,
+                        reduction_function=(lambda x,vid=None:
+                                                minusb(reduce2latlon_seasonal( x, self.season, vid )) ) ))
+            else:
+                reduced_vars.append( reduced_variable(
+                        variableid=var, filetable=filetable, season=self.season,
+                        reduction_function=(lambda x,vid=None:
+                                                reduce2latlon_seasonal( x, self.season, vid ) ) ))
+
+        return reduced_vars
     def plan_computation_normal_contours( self, filetable1, filetable2, varid, seasonid, region=None, aux=None ):
         """Set up for a lat-lon contour plot, as in plot set 5.  Data is averaged over all other
         axes."""
         self.derived_variables = {}
         try:
-            vars1 = None
-            vars2 = None
-            if filetable1 is not None:
-                for dvars in self.standard_variables[varid]:    # e.g. dvars=['STRESS_MAG','TAUX','TAUY']
-                    if filetable1.has_variables(dvars):
-                        vars1 = dvars                           # e.g. ['STRESS_MAG','TAUX','TAUY']
-                        break
-            if filetable2 is not None:
-                for dvars in self.standard_variables[varid]:    # e.g. dvars=['STRESS_MAG','TAUX','TAUY']
-                    if filetable2.has_variables(dvars):
-                        vars2 = dvars                           # e.g. ['STRESS_MAG','TAUX','TAUY']
-                        break
             if varid=='STRESS':
-                if vars1==['STRESS_MAG','TAUX','TAUY']:
-                    var_cont1 = vars1[0]                # for contour plot
-                    vars_vec1 = ( vars1[1], vars1[2] )  # for vector plot
-                    vid_cont1 = rv.dict_id( var_cont1, seasonid, filetable1 )
-                elif vars1==['TAUX','TAUY']:
-                    var_cont1 = dv.dict_id( 'STRESS_MAG', '', seasonid, filetable1 )
-                    tau_x = rv.dict_id('TAUX',seasonid,filetable1)
-                    tau_y = rv.dict_id('TAUY',seasonid,filetable1)
-                    self.derived_variables[var_cont1] =\
-                        derived_var( vid=var_cont1, inputs=[tau_x,tau_y],
-                                     func=(lambda x,y: numpy.ma.sqrt(x*x+y*y ) ))
-                    vars_vec1 = ( vars1[0], vars1[1] )  # for vector plot
-                    vid_cont1 = var_cont1
-                else:
-                    var_cont1 = ''
-                    vars_vec1 = ['','']
-                    vid_cont1 = ''
-                if vars2==['STRESS_MAG','TAUX','TAUY']:
-                    var_cont2 = vars2[0]                # for contour plot
-                    vars_vec2 = ( vars2[1], vars2[2] )  # for vector plot
-                    vid_cont2 = rv.dict_id( var_cont2, seasonid, filetable2 )
-                elif vars2==['TAUX','TAUY']:
-                    var_cont2 = dv.dict_id( 'STRESS_MAG', '', seasonid, filetable2 )
-                    tau_x = rv.dict_id('TAUX',seasonid,filetable2)
-                    tau_y = rv.dict_id('TAUY',seasonid,filetable2)
-                    self.derived_variables[var_cont2] =\
-                        derived_var( vid=var_cont2, inputs=[tau_x,tau_y],
-                                     func=(lambda x,y: numpy.ma.sqrt(x*x+y*y ) ))
-                    vars_vec2 = ( vars2[0], vars2[1] )  # for vector plot
-                    vid_cont2 = var_cont2
-                else:
-                    var_cont2 = ''
-                    vars_vec2 = ['','']
-                    vid_cont2 = ''
+                vars1,rvars1,dvars1,var_cont1,vars_vec1,vid_cont1 =\
+                    self.STRESS_setup( filetable1, varid, seasonid )
+                vars2,rvars2,dvars2,var_cont2,vars_vec2,vid_cont2 =\
+                    self.STRESS_setup( filetable2, varid, seasonid )
                 if vars1 is None and vars2 is None:
                     raise Exception("cannot find standard variables in data 2")
             else:
                 print "ERROR, AMWG plot set 6 does not yet support",varid
                 return None
-        except:
+        except Exception as e:
             print "ERROR cannot find suitable standard_variables in data for varid=",varid
+            print "exception is",e
             return None
-        reduced_vardic = {}
         reduced_varlis = []
-        if filetable1 is not None:
-            for var in vars1:
-                reduced_vardic[(var,1)] =\
-                    reduced_variable(
-                        variableid=var, filetable=filetable1, season=self.season,
-                        reduction_function=(lambda x,vid=None: reduce2latlon_seasonal( x, self.season, vid ) ) )
-                reduced_varlis.append( reduced_vardic[(var,1)] )
-        if filetable2 is not None:
-            for var in vars2:
-                reduced_vardic[(var,2)] =\
-                    reduced_variable(
-                        variableid=var, filetable=filetable2, season=self.season,
-                        reduction_function=(lambda x,vid=None: reduce2latlon_seasonal( x, self.season, vid ) ) )
-                reduced_varlis.append( reduced_vardic[(var,2)] )
+        reduced_varlis += self.STRESS_rvs( filetable1, rvars1 )
+        reduced_varlis += self.STRESS_rvs( filetable2, rvars2 )
         self.reduced_variables = { v.id():v for v in reduced_varlis }
         self.single_plotspecs = {}
         ft1src = filetable1.source()
