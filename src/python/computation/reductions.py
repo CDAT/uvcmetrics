@@ -742,6 +742,7 @@ def reduceAnnTrendRegionLevel(mv, region, level, vid=None):
       mvann = mv
 
    mvtrend = cdutil.averager(mvann, axis='xy')
+   mvtrend.id = vid
 
    levax = levAxis(mvtrend)
 
@@ -756,6 +757,7 @@ def reduceAnnTrendRegionLevel(mv, region, level, vid=None):
    else:
       print 'ERROR, reduceAnnTrendRegionLevel() only supports level axis as 1st or 2nd axis of reduced variable'
       return None
+   mvvar = delete_singleton_axis(mvvar, vid=levax.id)
 
    mvvar.id = vid
    if hasattr(mv, 'units'):
@@ -907,8 +909,8 @@ def reduce2latlon_seasonal_level( mv, season, level, vid=None):
    mvseas.id = vid
    if hasattr(mv,'units'):
       mvseas.units = mv.units
-   delete_singleton_axis(mvseas, vid='time')
-   delete_singleton_axis(mvseas, vid=levax)
+   mvseas = delete_singleton_axis(mvseas, vid='time')
+   mvseas = delete_singleton_axis(mvseas, vid=levax)
    return mvseas
 
 
