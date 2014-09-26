@@ -235,20 +235,20 @@ class uvc_simple_plotspec():
             if type(var) is tuple:
                 self.varmax[seqgetattr(var,'id','')] = -1.0e20  # var is for vector plot, don't need max
                 self.varmin[seqgetattr(var,'id','')] = 1.0e20   # var is for vector plot, don't need min
-                self.axmax[seqgetattr(var,'id','')]  = { ax[0].id:max(ax[0][:]) for ax in var[0]._TransientVariable__domain[:]
+                self.axmax[seqgetattr(var,'id','')]  = { ax[0].id:max(ax[0][:]) for ax in var[0].getDomain()[:]
                                         if ax is not None }
-                self.axmin[seqgetattr(var,'id','')]  = { ax[0].id:min(ax[0][:]) for ax in var[0]._TransientVariable__domain[:]
+                self.axmin[seqgetattr(var,'id','')]  = { ax[0].id:min(ax[0][:]) for ax in var[0].getDomain()[:]
                                         if ax is not None}
-                self.axax[seqgetattr(var,'id','')]  = { ax[0].id:ax[0].axis for ax in var[0]._TransientVariable__domain[:]
+                self.axax[seqgetattr(var,'id','')]  = { ax[0].id:ax[0].axis for ax in var[0].getDomain()[:]
                                        if ax is not None}
             else:
                 self.varmax[seqgetattr(var,'id','')] = var.max()
                 self.varmin[seqgetattr(var,'id','')] = var.min()
-                self.axmax[seqgetattr(var,'id','')]  = { ax[0].id:max(ax[0][:]) for ax in var._TransientVariable__domain[:]
+                self.axmax[seqgetattr(var,'id','')]  = { ax[0].id:max(ax[0][:]) for ax in var.getDomain()[:]
                                         if ax is not None }
-                self.axmin[seqgetattr(var,'id','')]  = { ax[0].id:min(ax[0][:]) for ax in var._TransientVariable__domain[:]
+                self.axmin[seqgetattr(var,'id','')]  = { ax[0].id:min(ax[0][:]) for ax in var.getDomain()[:]
                                         if ax is not None}
-                self.axax[seqgetattr(var,'id','')]  = { ax[0].id:ax[0].axis for ax in var._TransientVariable__domain[:]
+                self.axax[seqgetattr(var,'id','')]  = { ax[0].id:ax[0].axis for ax in var.getDomain()[:]
                                        if ax is not None}
         self.finalized = False
 
@@ -490,8 +490,8 @@ class uvc_simple_plotspec():
         for vid in var_ids:
             vids = vid+self_suffix
             vidp = vid+pset_suffix
-            ax_ids = set([ ax[0].id for ax in vards[vids]._TransientVariable__domain ]) & \
-                set([ ax[0].id for ax in vardp[vidp]._TransientVariable__domain ])
+            ax_ids = set([ ax[0].id for ax in vards[vids].getDomain() ]) & \
+                set([ ax[0].id for ax in vardp[vidp].getDomain() ])
             axmaxs = { aid: max( self.axmax[vids][aid], pset.axmax[vidp][aid] ) for aid in ax_ids }
             axmins = { aid: min( self.axmin[vids][aid], pset.axmin[vidp][aid] ) for aid in ax_ids }
             for aid in ax_ids:
@@ -704,7 +704,7 @@ class plot_spec(object):
             z2lab=""
             if zax is not None:
                 if hasattr(zax,'regridded') and newgrid!=0:
-                    vars.append( regridded_vars[za.regridded] )
+                    vars.append( regridded_vars[zax.regridded] )
                 else:
                     vars.append( zax )
                 new_id = self._build_label( zrv, p )
@@ -732,7 +732,7 @@ class plot_spec(object):
             # >>>> jfp a bad hack for temporary use - I MUST MUST MUST get plot_type out of something else!!!>>>>
             if type(vars[0])==tuple:
                 plot_type_temp = 'Vector'
-            elif vars[0].id.find('STRESS_MAG')>0:
+            elif vars[0].id.find('STRESS_MAG')>=0:
                 plot_type_temp = 'Isofill'
             else:
                 plot_type_temp = self.plottype
