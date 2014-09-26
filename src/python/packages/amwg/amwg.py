@@ -974,7 +974,7 @@ class amwg_plot_set6(amwg_plot_spec):
             self.plot1_id: [ self.plot1_id+'v' ],
             self.plot2_id: [ self.plot2_id+'v' ],
             #self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id ]
-            self.plotall_id: [self.plot1_id+'v',self.plot2_id+'v']  # temporary<<<<<<<<<
+            self.plotall_id: [self.plot1_id+'v',self.plot2_id+'v',self.plot3_id+'v']  # temporary<<<<<<<<<
             }
         self.computation_planned = True
     def _results(self,newgrid=0):
