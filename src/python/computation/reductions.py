@@ -1162,6 +1162,29 @@ def sum3(mv1, mv2, mv3):
          mv.long_name = ''
    return mv
 
+def abnorm(mv1,mv2):
+    """computes the norm n=sqrt(a^2+b^2) where a and b are values of mv1 and mv2.
+    N.B. This calculation is done point-by-point.
+    mv1,mv2 should have the same domain, i.e. dimensioned alike.  The returned
+    variable will also be defined on this domain.
+    """
+    # The sqrt expression could be just stuck in a lambda, and most everything would be right,
+    # but the axes would miss some attributes we need.  So... 
+    data = numpy.ma.sqrt(mv1*mv1+mv2*mv2 )
+    # data's axes differ from those of mv1, e.g. isLatitude() doesn't work
+    mv = cdms2.createVariable( data, axes=[a[0] for a in mv1.getDomain()] )
+    return mv
+
+def minusb(mv2):
+   """ returns -mv2"""
+   if  mv2 is None:
+       return None
+   mv = - mv2   # this preserves the mask, units, and much else; but not id.
+   #  In some cases the *name attributes need changing, in other cases not.
+   # For now, I'm doing this so it works in the only case where this is called.
+   mv.id = mv2.id
+   return mv
+
 def aminusb(mv1, mv2):
    """ returns mv1-mv2; they should be dimensioned alike."""
    if mv1 is None or mv2 is None:
