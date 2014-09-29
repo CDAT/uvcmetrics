@@ -52,8 +52,9 @@ class ftrow:
     There will be no more than that - if you want more information you can open the file.
     If the file has several variables, there will be several rows for the file."""
     # One can think of lots of cases where this is too simple, but it's a start.
-    def __init__( self, fileid, variableid, timerange, latrange, lonrange, levelrange=None ):
+    def __init__( self, fileid, variableid, timerange, latrange, lonrange, levelrange=None, filefmt=None ):
         self.fileid = fileid          # file name
+        self.filetype = filefmt       # file format/type, e.g. "NCAR CAM" or "CF CMIP5"
         self.variableid = variableid  # variable name
         if timerange is None:
            self.timerange = drange()
@@ -87,11 +88,11 @@ def get_datafile_filefmt( dfile, options):
     """dfile is an open datafile.  If the file type is recognized,
     then this will return an object with methods needed to support that file type."""
     if hasattr(dfile, 'source') and \
-      (dfile.source.find('CAM') or dfile.source.find('CCSM') or \
-       dfile.source.find('CSEM') or dfile.source.find('CLM') or \
-       dfile.source.find('Community')):
+      (dfile.source.find('CAM')>=0 or dfile.source.find('CCSM')>=0 or \
+       dfile.source.find('CSEM')>=0 or dfile.source.find('CLM')>=0 or \
+       dfile.source.find('Community')>=0):
        if hasattr(dfile,'season') or dfile.id[-9:]=="_climo.nc":
-          return NCAR_climo_filefmt( dfile, options )
+          return NCAR_CESM_climo_filefmt( dfile, options )
        else:
           return NCAR_filefmt( dfile, options )
        # Note that NCAR Histoy Tape files are marked as supporting the CF Conventions
@@ -151,6 +152,8 @@ class basic_filetable(basic_id):
         self._cache_path=options._opts['cachepath']
         if filelist is None: return
         self._files = []
+        self.filefmt = None     # file type, e.g. "NCAR CAM" or "CF CMIP5", as for ftrow
+        # ... self.filefmt=="various" if more than one file type contributes to this filetable.
 
         for filep in filelist.files:
             self.addfile( filep, options )
@@ -208,6 +211,10 @@ class basic_filetable(basic_id):
            #print "This might just be an unsupported file type"
            return
         filesupp = get_datafile_filefmt( dfile, options )
+        if self.filefmt is None:
+           self.filefmt = filesupp.name
+        elif self.filefmt!= filesupp.name:
+           self.filefmt = "various"
         vars = filesupp.interesting_variables()
         if len(vars)>0:
             timerange = filesupp.get_timerange()
@@ -238,7 +245,7 @@ class basic_filetable(basic_id):
                    levrn = levelrange
                 else:
                    levrn = None
-                newrow = ftrow( fileid, variableid, timern, latrn, lonrn, levrn )
+                newrow = ftrow( fileid, variableid, timern, latrn, lonrn, levrn, filefmt=filesupp.name )
                 self._table.append( newrow )
                 if fileid in self._fileindex.keys():
                     self._fileindex[fileid].append(newrow)
@@ -318,11 +325,21 @@ class basic_filetable(basic_id):
        vars = list(set([ r.variableid for r in self._table if r.haslevel]))
        vars.sort()
        return vars
+    def has_variables( self, varlist ):
+       """Returns True if this filetable has entries for every variable in the supplied sequence of
+       variable names (strings); otherwise False."""
+       fvars = set([ r.variableid for r in self._table ])
+       svars = set(varlist)
+       if len(svars-fvars)>0:
+          return False
+       else:
+          return True
             
 class basic_filefmt:
     """Children of this class contain methods which support specific file types,
     and are used to build the file table.  Maybe later we'll put here methods
     to support other functionality."""
+    name = ""
     def get_timerange(self): return None
     def get_latrange(self): return None
     def get_lonrange(self): return None
@@ -336,6 +353,7 @@ class Unknown_filefmt(basic_filefmt):
 class NCAR_filefmt(basic_filefmt):
    """NCAR History Tape format, used by CAM,CCSM,CESM.  This class works off a derived
    xml file produced with cdscan."""
+   name = "NCAR CAM"
    def __init__(self,dfile, options):
       """dfile is an open file.  It must be an xml file produced by cdscan,
       combining NCAR History Tape format files."""
@@ -470,6 +488,7 @@ class NCAR_filefmt(basic_filefmt):
       #return None
 
 class NCAR_climo_filefmt(NCAR_filefmt):
+   name = "NCAR climo"
    def standardize_season( self, season ):
       """Converts the input season string to one of the standard 3-letter ones:
       ANN,DJF,MAM,JJA,SON,JAN,FEB,MAR,...DEC.  Strings which will be converted
@@ -498,9 +517,14 @@ class NCAR_climo_filefmt(NCAR_filefmt):
          season=self._dfile.id[-12:-9]
       return self.standardize_season(season)
 
+class NCAR_CESM_climo_filefmt(NCAR_climo_filefmt):
+   """climatologies in NCAR history tape format, derived from CESM/CCSM/CAM model output"""
+   name = "NCAR CAM climo"
+
 class CF_filefmt(basic_filefmt):
     """NetCDF file conforming to the CF Conventions, and using useful CF featues
     such as standard_name and bounds."""
+    name = "CF"
     def __init__(self,dfile):
         """dfile is an open file"""
         # There are many possible interesting variables!

@@ -1,4 +1,7 @@
 from metrics.computation.reductions import *
+import cdutil.times
+seasonsDJF = cdutil.times.Seasons(['DJF'])
+seasonsJJA = cdutil.times.Seasons(['JJA'])
 
 reduced_variables = {
     'hyam_1': reduced_variable(

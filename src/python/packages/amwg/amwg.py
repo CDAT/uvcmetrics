@@ -197,6 +197,11 @@ class amwg_plot_set2(amwg_plot_spec):
                                       'indian_heat_transport', 'global_heat_transport' ]),
                 func=(lambda: ncep_ocean_heat_transport(filetable2) ) )
             }
+        ft1src = filetable1.source()
+        try:
+            ft2src = filetable2.source()
+        except:
+            ft2src = ''
         self.single_plotspecs = {
             'CAM_NCEP_HEAT_TRANSPORT_GLOBAL': plotspec(
                 vid='CAM_NCEP_HEAT_TRANSPORT_GLOBAL',
@@ -212,7 +217,7 @@ class amwg_plot_set2(amwg_plot_spec):
                 z2func=(lambda z: z[1][3]),
                 plottype = self.plottype,
                 title = 'CAM & NCEP HEAT_TRANSPORT GLOBAL',
-                source = filetable1.source() ),
+                source = ft1src ),
             'CAM_NCEP_HEAT_TRANSPORT_PACIFIC': plotspec(
                 vid='CAM_NCEP_HEAT_TRANSPORT_PACIFIC',
                 # x1vars=['FSNS_ANN_latlon_1'], x1func=latvar,
@@ -227,7 +232,7 @@ class amwg_plot_set2(amwg_plot_spec):
                 z2func=(lambda y: y[1][0]),
                 plottype = self.plottype,
                 title = 'CAM & NCEP HEAT_TRANSPORT PACIFIC',
-                source = filetable1.source() ),
+                source = ft1src ),
             'CAM_NCEP_HEAT_TRANSPORT_ATLANTIC': plotspec(
                 vid='CAM_NCEP_HEAT_TRANSPORT_ATLANTIC',
                 # x1vars=['FSNS_ANN_latlon_1'], x1func=latvar,
@@ -242,7 +247,7 @@ class amwg_plot_set2(amwg_plot_spec):
                 z2func=(lambda y: y[1][1]),
                 plottype = self.plottype ,
                 title = 'CAM & NCEP HEAT_TRANSPORT ATLANTIC',
-                source = filetable1.source() ),
+                source = ft1src ),
             'CAM_NCEP_HEAT_TRANSPORT_INDIAN': plotspec(
                 vid='CAM_NCEP_HEAT_TRANSPORT_INDIAN',
                 # x1vars=['FSNS_ANN_latlon_1'], x1func=latvar,
@@ -257,7 +262,7 @@ class amwg_plot_set2(amwg_plot_spec):
                 z2func=(lambda y: y[1][2]),
                 plottype = self.plottype,
                 title = 'CAM & NCEP HEAT_TRANSPORT INDIAN',
-                source = filetable1.source() ),
+                source = ft1src ),
             }
         self.composite_plotspecs = {
             'CAM_NCEP_HEAT_TRANSPORT_ALL':
@@ -347,15 +352,20 @@ class amwg_plot_set3(amwg_plot_spec,basic_id):
             zdiffval.id = '_'.join([self._id[0],self._id[1],
                                     zvar._filetable._strid, z2var._filetable._strid, 'diff'])
         # ... e.g. CLT_DJF_set3_CAM456_NCEP_diff
+        ft1src = zvar._filetable.source()
+        try:
+            ft2src = z2var._filetable.source()
+        except:
+            ft2src = ''
         plot_a_val = uvc_plotspec(
             [v for v in [zval,z2val] if v is not None],'Yxvsx', labels=[zunam,z2unam],
             #title=' '.join([self._id[0],self._id[1],self._id[2],zunam,'and',z2unam]),
             title = ' '.join([self._id[0],self._id[1],self._id[2]]),
-            source = ','.join([zvar._filetable.source(),z2var._filetable.source()] ))
+            source = ','.join([ft1src,ft2src] ))
         plot_b_val = uvc_plotspec(
             [v for v in [zdiffval] if v is not None],'Yxvsx', labels=['difference'],
             title=' '.join([self._id[0],self._id[1],self._id[2],'difference']),
-            source = ','.join([zvar._filetable.source(),z2var._filetable.source()] ))
+            source = ','.join([ft1src,ft2src] ))
         # no, we don't want same range for values & difference! plot_a_val.synchronize_ranges(plot_b_val)
         plot_a_val.finalize()
         plot_b_val.finalize()
@@ -446,22 +456,27 @@ class amwg_plot_set4(amwg_plot_spec):
                 func=verticalize )
         else:
             vid2 = rv.dict_id(varid,seasonid,filetable2)
+        ft1src = filetable1.source()
+        try:
+            ft2src = filetable1.source()
+        except:
+            ft2src = ''
         self.single_plotspecs = {
             self.plot1_id: plotspec(
                 vid = ps.dict_idid(vid1), zvars=[vid1], zfunc=(lambda z: z),
                 plottype = self.plottype,
                 title = ' '.join([varid,seasonid,'(1)']),
-                source = filetable1.source() ),
+                source = ft1src ),
             self.plot2_id: plotspec(
                 vid = ps.dict_idid(vid2), zvars=[vid2], zfunc=(lambda z: z),
                 plottype = self.plottype,
                 title = ' '.join([varid,seasonid,'(2)']),
-                source = filetable2.source() ),
+                source = ft2src ),
             self.plot3_id: plotspec(
                 vid = ps.dict_id(varid,'diff',seasonid,filetable1,filetable2), zvars=[vid1,vid2],
                 zfunc=aminusb_2ax, plottype = self.plottype,
                 title = ' '.join([varid,seasonid,'(1)-(2)']),
-                source = ', '.join([filetable1.source(),filetable2.source()]) )
+                source = ', '.join([ft1src,ft2src]) )
             }
         self.composite_plotspecs = {
             self.plotall_id: [self.plot1_id, self.plot2_id, self.plot3_id ]
@@ -486,10 +501,9 @@ class amwg_plot_set4(amwg_plot_spec):
         return self.plotspec_values[self.plotall_id]
 
 class amwg_plot_set5and6(amwg_plot_spec):
-    """represents one plot from AMWG Diagnostics Plot Sets 5 and 6
+    """represents one plot from AMWG Diagnostics Plot Sets 5 and 6  <actually only the contours, set 5>
     NCAR has the same menu for both plot sets, and we want to ease the transition from NCAR
     diagnostics to these; so both plot sets will be done together here as well.
-    **** SO FAR, PLOT 6 VECTOR PLOTS ARE NOT DONE; ONLY Plot 5 CONTOUR ****
     Each contour plot is a set of three contour plots: one each for model output, observations, and
     the difference between the two.  A plot's x-axis is longitude and its y-axis is the latitude;
     normally a world map will be overlaid.
@@ -551,6 +565,11 @@ class amwg_plot_set5and6(amwg_plot_spec):
         vid1var = rv.dict_id( varid+'_var', seasonid, filetable1 )
         self.derived_variables = {}
         self.single_plotspecs = {}
+        ft1src = filetable1.source()
+        try:
+            ft2src = filetable2.source()
+        except:
+            ft2src = ''
         if filetable1 is not None:
             self.single_plotspecs[self.plot1_id] = plotspec(
                 vid = ps.dict_idid(vid1),
@@ -558,14 +577,14 @@ class amwg_plot_set5and6(amwg_plot_spec):
                 plottype = self.plottype,
                 #title = ' '.join([varid,seasonid,filetable1._strid]) )
                 title = ' '.join([varid,seasonid,'(1)']),
-                source = filetable1.source() )
+                source = ft1src )
             self.single_plotspecs[self.plot1var_id] = plotspec(
                 vid = ps.dict_idid(vid1var),
                 zvars = [vid1var],  zfunc = (lambda z: z),
                 plottype = self.plottype,
                 #title = ' '.join([varid,seasonid,filetable1._strid,'variance']) )
                 title = ' '.join([varid,seasonid,'1 variance']),
-                source = filetable1.source() )
+                source = ft1src )
         if filetable2 is not None:
             self.single_plotspecs[self.plot2_id] = plotspec(
                 vid = ps.dict_idid(vid2),
@@ -573,7 +592,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
                 plottype = self.plottype,
                 #title = ' '.join([varid,seasonid,filetable2._strid]) )
                 title = ' '.join([varid,seasonid,'(2)']),
-                source = filetable2.source() )
+                source = ft2src )
         if filetable1 is not None and filetable2 is not None:
             self.single_plotspecs[self.plot3_id] = plotspec(
                 vid = ps.dict_id(varid,'diff',seasonid,filetable1,filetable2),
@@ -581,7 +600,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
                 plottype = self.plottype,
                 #title = ' '.join([varid,seasonid,filetable1._strid,'-',filetable2._strid]) )
                 title = ' '.join([varid,seasonid,'(1)-(2)']),
-                source = ', '.join([filetable1.source(),filetable2.source()]) )
+                source = ', '.join([ft1src,ft2src]) )
         self.composite_plotspecs = {
             self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id, self.plot1var_id ]
             }
@@ -634,6 +653,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
                                func=verticalize ),
             vidl1: derived_var( vid=vidl1, inputs=[vid1], func=(lambda z: select_lev(z,pselect))) }
 
+        ft1src = filetable1.source()
         self.single_plotspecs = {
             self.plot1_id: plotspec(
                 # was vid = varid+'_1',
@@ -643,7 +663,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
                 plottype = self.plottype,
                 #title = ' '.join([varid,seasonid,filetable1._strid,'at',str(pselect)]) ) }
                 title = ' '.join([varid,seasonid,'at',str(pselect),'(1)']),
-                source = filetable1.source() ) }
+                source = ft1src ) }
            
         if filetable2 is None:
             self.reduced_variables = { v.id():v for v in reduced_varlis }
@@ -694,6 +714,10 @@ class amwg_plot_set5and6(amwg_plot_spec):
                                                          func=(lambda z: select_lev(z,pselect) ) )
         self.reduced_variables = { v.id():v for v in reduced_varlis }
 
+        try:
+            ft2src = filetable2.source()
+        except:
+            ft2src = ''
         self.single_plotspecs[self.plot2_id] = plotspec(
                 #was vid = varid+'_2',
                 vid = ps.dict_idid(vidl2),
@@ -701,7 +725,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
                 plottype = self.plottype,
                 #title = ' '.join([varid,seasonid,filetable2._strid,'at',str(pselect)]) )
                 title = ' '.join([varid,seasonid,'at',str(pselect),'(2)']),
-                source = filetable2.source() )
+                source = ft2src )
         self.single_plotspecs[self.plot3_id] = plotspec(
                 #was vid = varid+'_diff',
                 vid = ps.dict_id(varid,'diff',seasonid,filetable1,filetable2),
@@ -709,7 +733,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
                 plottype = self.plottype,
                 #title = ' '.join([varid,seasonid,filetable1._strid,'-',filetable2._strid,'at',str(pselect)]) )
                 title = ' '.join([varid,seasonid,'at',str(pselect),'(1)-(2)']),
-                source = ', '.join([filetable1.source(),filetable2.source()]) )
+                source = ', '.join([ft1src,ft2src]) )
         self.composite_plotspecs = {
             self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id ]
             }
@@ -738,15 +762,242 @@ class amwg_plot_set5(amwg_plot_set5and6):
     name = '5 - Horizontal Contour Plots of Seasonal Means'
     number = '5'
     
-class amwg_plot_set6(amwg_plot_set5and6):
+class amwg_plot_set6old(amwg_plot_set5and6):
     """represents one plot from AMWG Diagnostics Plot Set 6
-    **** SO FAR, PLOT 6 VECTOR PLOTS ARE NOT DONE; ONLY Plot 5 CONTOUR ****
     Each contour plot is a set of three contour plots: one each for model output, observations, and
+    the difference between the two.  A plot's x-axis is longitude and its y-axis is the latitude;
+    normally a world map will be overlaid. """
+    #name = '6old - Horizontal Contour Plots of Seasonal Means'
+    #number = '6old'
+    
+class amwg_plot_set6(amwg_plot_spec):
+    """represents one plot from AMWG Diagnostics Plot Set 6
+    This is a vector+contour plot - the contour plot shows magnitudes and the vector plot shows both
+    directions and magnitudes.  Unlike NCAR's diagnostics, our AMWG plot set 6 uses a different
+    menu from set 5.
+    Each compound plot is a set of three simple plots: one each for model output, observations, and
     the difference between the two.  A plot's x-axis is longitude and its y-axis is the latitude;
     normally a world map will be overlaid.
     """
-    name = '6 - Horizontal Vector Plots of Seasonal Means' 
+    name = '6 - (Experimental, doesnt work with GUI) Horizontal Vector Plots of Seasonal Means' 
     number = '6'
+    standard_variables = { 'STRESS':[['STRESS_MAG','TAUX','TAUY'],['TAUX','TAUY']] }
+    # ...built-in variables.   The key is the name, as the user specifies it.
+    # The value is a lists of lists of the required data variables. If the dict item is, for
+    # example, V:[[a,b,c],[d,e]] then V can be computed either as V(a,b,c) or as V(d,e).
+    # The first in the list (e.g. [a,b,c]) is to be preferred.
+    #... If this works, I'll make it universal, defaulting to {}.  For plot set 6, the first
+    # data variable will be used for the contour plot, and the other two for the vector plot.
+    def __init__( self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None ):
+        """filetable1, filetable2 should be filetables for model and obs.
+        varid is a string identifying the variable to be plotted, e.g. 'STRESS'.
+        seasonid is a string such as 'DJF'."""
+        plot_spec.__init__(self,seasonid)
+        # self.plottype = ['Isofill','Vector']  <<<< later we'll add contour plots
+        self.plottype = 'Vector'
+        self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
+
+        self.varid = varid
+        ft1id,ft2id = filetable_ids(filetable1,filetable2)
+        self.plot1_id = ft1id+'_'+varid+'_'+seasonid
+        self.plot2_id = ft2id+'_'+varid+'_'+seasonid
+        self.plot3_id = ft1id+' - '+ft2id+'_'+varid+'_'+seasonid
+        self.plotall_id = ft1id+'_'+ft2id+'_'+varid+'_'+seasonid
+
+        if not self.computation_planned:
+            self.plan_computation( filetable1, filetable2, varid, seasonid, region, aux )
+    @staticmethod
+    def _list_variables( filetable1, filetable2=None ):
+        return amwg_plot_set6.standard_variables.keys()
+    @staticmethod
+    def _all_variables( filetable1, filetable2=None ):
+        return { vn:basic_plot_variable for vn in amwg_plot_set6._list_variables( filetable1, filetable2 ) }
+    def plan_computation( self, filetable1, filetable2, varid, seasonid, region=None, aux=None ):
+        if aux is None:
+            return self.plan_computation_normal_contours( filetable1, filetable2, varid, seasonid, region, aux )
+        else:
+            print "ERROR plot set 6 does not support auxiliary variable aux=",aux
+            return None
+    def STRESS_setup( self, filetable, varid, seasonid ):
+        """sets up reduced & derived variables for the STRESS (ocean wind stress) variable.
+        Updates self.derived variables.
+        Returns several variable names and lists of variable names.
+        """
+        vars = None
+        if filetable is not None:
+            for dvars in self.standard_variables[varid]:   # e.g. dvars=['STRESS_MAG','TAUX','TAUY']
+                if filetable.has_variables(dvars):
+                    vars = dvars                           # e.g. ['STRESS_MAG','TAUX','TAUY']
+                    break
+        if vars==['STRESS_MAG','TAUX','TAUY']:
+            rvars = vars  # variable names which will become reduced variables
+            dvars = []    # variable names which will become reduced variables
+            var_cont = vars[0]                # for contour plot
+            vars_vec = ( vars[1], vars[2] )  # for vector plot
+            vid_cont = rv.dict_id( var_cont, seasonid, filetable )
+        elif vars==['TAUX','TAUY']:
+            rvars = vars            # variable names which will become reduced variables
+            dvars = ['STRESS_MAG']  # variable names which will become reduced variables
+            var_cont = dv.dict_id( 'STRESS_MAG', '', seasonid, filetable )
+            tau_x = rv.dict_id('TAUX',seasonid,filetable)
+            tau_y = rv.dict_id('TAUY',seasonid,filetable)
+            self.derived_variables[var_cont] =\
+                derived_var( vid=var_cont, inputs=[tau_x,tau_y], func=abnorm )
+            vars_vec = ( vars[0], vars[1] )  # for vector plot
+            vid_cont = var_cont
+        else:
+            rvars = []
+            dvars = []
+            var_cont = ''
+            vars_vec = ['','']
+            vid_cont = ''
+        #if 'TAUX' in vars_vec and 'TAUY' in vars_vec and filetable.filefmt.find('CAM')>=0:
+        #    # TAUX,TAUY could have one sign or another depending on your point of view.
+        #    # If they're from CAM, we have to change the sign to standardize that.
+        #    # The usual obs climo files have the 'standard' signs, so they can be skipped here.
+        #    # Sometime it may be better to do this in a more general-purpose way, and elsewhere.
+        #    # >>>> TO DO: impose an ocean mask on TAUX,TAUY <<<<
+        #    for TAU in ['TAUX','TAUY']:
+        #        tau = rv.dict_id(TAU,seasonid,filetable)
+        #        self.derived_variables[TAU] =\
+        #            derived_var( vid=TAU, inputs=[tau], func=minusb )
+        #    print "jfp applied minusb to TAUX,TAUY for",filetable
+        #else:
+        #    print "jfp didn't apply minusb to TAUX,TAUY for",filetable
+        return vars, rvars, dvars, var_cont, vars_vec, vid_cont
+    def STRESS_rvs( self, filetable, rvars ):
+        """returns a list of reduced variables needed for the STRESS variable computation,
+        and orginating from the specified filetable.  rvars lists the variables needed."""
+        if filetable is None:
+            return []
+        reduced_vars = []
+        for var in rvars:
+            if var in ['TAUX','TAUY'] and filetable.filefmt.find('CAM')>=0:
+                # We'll cheat a bit and change the sign as well as reducing dimensionality.
+                # The issue is that sign conventions differ in CAM output and the obs files.
+                # >>>> TO DO >>>> TAUX,TAUY need to get an ocean mask as well here >>>>
+                reduced_vars.append( reduced_variable(
+                        variableid=var, filetable=filetable, season=self.season,
+                        reduction_function=(lambda x,vid=None:
+                                                minusb(reduce2latlon_seasonal( x, self.season, vid )) ) ))
+            else:
+                reduced_vars.append( reduced_variable(
+                        variableid=var, filetable=filetable, season=self.season,
+                        reduction_function=(lambda x,vid=None:
+                                                reduce2latlon_seasonal( x, self.season, vid ) ) ))
+
+        return reduced_vars
+    def plan_computation_normal_contours( self, filetable1, filetable2, varid, seasonid, region=None, aux=None ):
+        """Set up for a lat-lon contour plot, as in plot set 5.  Data is averaged over all other
+        axes."""
+        self.derived_variables = {}
+        try:
+            if varid=='STRESS':
+                vars1,rvars1,dvars1,var_cont1,vars_vec1,vid_cont1 =\
+                    self.STRESS_setup( filetable1, varid, seasonid )
+                vars2,rvars2,dvars2,var_cont2,vars_vec2,vid_cont2 =\
+                    self.STRESS_setup( filetable2, varid, seasonid )
+                if vars1 is None and vars2 is None:
+                    raise Exception("cannot find standard variables in data 2")
+            else:
+                print "ERROR, AMWG plot set 6 does not yet support",varid
+                return None
+        except Exception as e:
+            print "ERROR cannot find suitable standard_variables in data for varid=",varid
+            print "exception is",e
+            return None
+        reduced_varlis = []
+        reduced_varlis += self.STRESS_rvs( filetable1, rvars1 )
+        reduced_varlis += self.STRESS_rvs( filetable2, rvars2 )
+        self.reduced_variables = { v.id():v for v in reduced_varlis }
+        self.single_plotspecs = {}
+        ft1src = filetable1.source()
+        try:
+            ft2src = filetable2.source()
+        except:
+            ft2src = ''
+        vid_vec1 = rv.dict_id( ','.join(vars_vec1), seasonid, filetable1 )
+        vid_vec11 = rv.dict_id( vars_vec1[0], seasonid, filetable1 )
+        vid_vec12 = rv.dict_id( vars_vec1[1], seasonid, filetable1 )
+        vid_vec2 = rv.dict_id( ','.join(vars_vec2), seasonid, filetable2 )
+        vid_vec21 = rv.dict_id( vars_vec2[0], seasonid, filetable2 )
+        vid_vec22 = rv.dict_id( vars_vec2[1], seasonid, filetable2 )
+        #print "jfp ft1 vid*:",vid_cont1,vid_vec1,vid_vec11,vid_vec12
+        #print "jfp ft2 vid*:",vid_cont2,vid_vec2,vid_vec21,vid_vec22
+        plot_type_temp = ['Isofill','Vector'] # can't use self.plottype yet because don't support it elsewhere as a list or tuple <<<<<
+        if vars1 is not None:
+            # Draw two plots, contour and vector, over one another to get a single plot.
+            # Only one needs title,source.
+            contplot = plotspec(
+                vid = ps.dict_idid(vid_cont1),  zvars = [vid_cont1],  zfunc = (lambda z: z),
+                plottype = plot_type_temp[0],
+                title = '', source='' )
+            vecplot = plotspec(
+                vid = ps.dict_idid(vid_vec1), zvars=[vid_vec11,vid_vec12], zfunc = (lambda z,w: (z,w)),
+                plottype = plot_type_temp[1],
+                title = ' '.join([varid,seasonid,'(1)']),  source=ft1src )
+            #self.single_plotspecs[self.plot1_id] = [contplot,vecplot]
+            self.single_plotspecs[self.plot1_id+'c'] = contplot
+            self.single_plotspecs[self.plot1_id+'v'] = vecplot
+        if vars2 is not None:
+            # Draw two plots, contour and vector, over one another to get a single plot.
+            # Only one needs title,source.
+            contplot = plotspec(
+                vid = ps.dict_idid(vid_cont2),  zvars = [vid_cont2],  zfunc = (lambda z: z),
+                plottype = plot_type_temp[0],
+                title = '', source='' )
+            vecplot = plotspec(
+                vid = ps.dict_idid(vid_vec2), zvars=[vid_vec21,vid_vec22], zfunc = (lambda z,w: (z,w)),
+                plottype = plot_type_temp[1],
+                title = ' '.join([varid,seasonid,'(2)']),  source=ft2src )
+            self.single_plotspecs[self.plot2_id+'c'] = contplot
+            self.single_plotspecs[self.plot2_id+'v'] = vecplot
+        if vars1 is not None and vars2 is not None:
+            contplot = plotspec(
+                vid = ps.dict_id(var_cont1,'diff',seasonid,filetable1,filetable2),
+                zvars = [vid_cont1,vid_cont2],  zfunc = aminusb_2ax,
+                plottype = plot_type_temp[0], title='', source='' )
+            vecplot = plotspec(
+                vid = ps.dict_id(vid_vec2,'diff',seasonid,filetable1,filetable2),
+                zvars = [vid_vec11,vid_vec12,vid_vec21,vid_vec22],
+                zfunc = (lambda z1,w1,z2,w2: (aminusb_2ax(z1,z2),aminusb_2ax(w1,w2))),
+                plottype = plot_type_temp[1],
+                title = ' '.join([varid,seasonid,'(1)-(2)']),  source = ', '.join([ft1src,ft2src]) )
+            self.single_plotspecs[self.plot3_id+'c'] = contplot
+            self.single_plotspecs[self.plot3_id+'v'] = vecplot
+        # initially we're not plotting the contour part of the plots....
+        #for pln,pl in self.single_plotspecs.iteritems(): #jfp
+        #    print "jfp single plot",pln,pl.plottype
+        #    print "jfp            ",pl.zvars
+        self.composite_plotspecs = {
+            #self.plot1_id: [ self.plot1_id+'c', self.plot1_id+'v' ],
+            self.plot1_id: [ self.plot1_id+'v' ],
+            self.plot2_id: [ self.plot2_id+'v' ],
+            #self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id ]
+            self.plotall_id: [self.plot1_id+'v',self.plot2_id+'v',self.plot3_id+'v']  # temporary<<<<<<<<<
+            }
+        self.computation_planned = True
+    def _results(self,newgrid=0):
+        results = plot_spec._results(self,newgrid)
+        if results is None: return None
+        psv = self.plotspec_values
+        # >>>> synchronize_ranges is a bit more complicated because plot1_id,plot2_id aren't
+        # >>>> here the names of single_plotspecs members, and should be for synchronize_ranges.
+        # >>>> And the result of one sync of 2 plots will apply to 4 plots, not just those 2.
+        # >>>> So for now, don't do it...
+        #if self.plot1_id in psv and self.plot2_id in psv and\
+        #        psv[self.plot1_id] is not None and psv[self.plot2_id] is not None:
+        #    psv[self.plot1_id].synchronize_ranges(psv[self.plot2_id])
+        #else:
+        #    print "WARNING not synchronizing ranges for",self.plot1_id,"and",self.plot2_id
+        print "WARNING not synchronizing ranges for AMWG plot set 6"
+        for key,val in psv.items():
+            if type(val) is not list: val=[val]
+            for v in val:
+                if v is None: continue
+                v.finalize()
+        return self.plotspec_values[self.plotall_id]
+
 
 class amwg_plot_set7(amwg_plot_spec):
     """This represents one plot from AMWG Diagnostics Plot Set 7

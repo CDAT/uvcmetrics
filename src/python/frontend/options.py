@@ -124,7 +124,7 @@ class Options():
             vl = slist[k]._list_variables(filetable)
             print 'Available variabless for set', setname[0], 'in package', package[0],'at path', self._opts['path'][0],':'
             print vl
-            print 'NOTE: Not all variables make sense for plotting or running diagnostics. Multi-word variable names need enclosed in single quotes:\'var var\''
+            print 'NOTE: Not all variables make sense for plotting or running diagnostics. Multi-word variable names need enclosed in single quotes:\'word1 word2\''
             print 'ALL is a valid variable name as well'
       return 
 
