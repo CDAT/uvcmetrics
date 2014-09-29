@@ -131,7 +131,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
         vcanvas = vcs.init()
         vcanvas.setcolormap('bl_to_darkred') #Set the colormap to the NCAR colors
         vcanvas2 = vcs.init()
-	vcanvas2.portrait()
+        vcanvas2.portrait()
         vcanvas2.setcolormap('bl_to_darkred') #Set the colormap to the NCAR colors
     outdir = opts['output']
     if outdir is None:
@@ -258,7 +258,8 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
 
                                    title = res[r].title
                                    vcanvas.clear()
-                                   for var in res[r].vars:
+                                   
+                                   for varIndex, var in enumerate(res[r].vars):
                                        
                                        var.title = title
                                        # ...But the VCS plot system will overwrite the title line
@@ -266,6 +267,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                        # long_name, id, and units. Generally the units are harmless,
                                        # but the rest has to go....
                                        if hasattr(var,'long_name'):
+                                           print var.long_name
                                            del var.long_name
                                        if hasattr(var,'id'):
                                            vname = var.id.replace(' ', '_')
@@ -285,14 +287,37 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                        tm.dataname.priority = 0
                                        tm.title.priority = 1
                                        tm.comment1.priority = 0
-                                       vcanvas.plot(var, res[r].presentation, tm, bg=1, title=title, units=getattr(var,'units',''),
-                                                    source=res[r].source )
-                                       if r<3:
-                                           # We need more templates so we can have >3 plots in vcanvas2!
-                                           vcanvas2.plot(var, res[r].presentation, tm2, bg=1)
-                                       if var_id_save is not None:
-                                           var.id = var_id_save
-                                       vcanvas.png( fname )
+
+                                       if vcs.isscatter(res[r].presentation):
+                                           if varIndex == 0:
+                                               #first pass through just save the array
+                                               xvar = var.flatten()
+                                           else:
+                                               #second pass through plot the 2 variables
+                                               yvar = var.flatten()
+                                               #if r == len(res)-1:
+                                               #    res[r].presentation.list()
+                                               #    pdb.set_trace()
+                                               vcanvas.plot(xvar, yvar, res[r].presentation, tm, bg=1, title=title, units=getattr(xvar,'units',''),
+                                                        source=res[r].source )
+                                               vcanvas.png( fname )
+
+                                           #if r<3:
+                                           #    # We need more templates so we can have >3 plots in vcanvas2!
+                                               vcanvas2.plot(xvar, yvar, res[r].presentation, tm2, bg=1)     
+                                           if var_id_save is not None:
+                                               var.id = var_id_save
+                                           #vcanvas.png( fname )
+                                       else:                                      
+                                           vcanvas.plot(var, res[r].presentation, tm, bg=1, title=title, units=getattr(var,'units',''),
+                                                        source=res[r].source )
+                                           if r<3:
+                                               # We need more templates so we can have >3 plots in vcanvas2!
+                                               pdb.set_trace()
+                                               vcanvas2.plot(var, res[r].presentation, tm2, bg=1)
+                                           if var_id_save is not None:
+                                               var.id = var_id_save
+                                           vcanvas.png( fname )
                                        rdone += 1
                             # Also, write the nc output files and xml.
                             # Probably make this a command line option.
@@ -305,7 +330,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                             number_diagnostic_plots += 1
                             print "wrote plots",resc.title," to",filenames
 #DEAN
-                            if opts['plots']==True:
+                            if opts['plots']==True and vcanvas2 != None:
                                 vname = varid.replace(' ', '_')
                                 vname = vname.replace('/', '_')
                                 fname = outdir+'/figure-set'+sname[0]+'_'+rname+'_'+seasonid+'_'+vname+'_plot-'+str(r)+'.png'

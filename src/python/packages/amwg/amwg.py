@@ -1192,12 +1192,12 @@ class amwg_plot_set11(amwg_plot_spec):
         
         self.plot_ids = []
         vars_id = '_'.join(self.vars)
-        for ft in self.filetable_ids:
+        for dt in self.datatype:
             for season in self.seasons:
-                plot_id = '_'.join([ft,  season])
+                plot_id = '_'.join([dt,  season])
                 self.plot_ids += [plot_id]
         
-        self.plotall_id = '_'.join([ft1id,ft2id, 'WarmPool', seasonid])
+        self.plotall_id = '_'.join(self.datatype + ['Warm', 'Pool'])
         if not self.computation_planned:
             self.plan_computation( filetable1, filetable2, varid, seasonid )
     def plan_computation( self, filetable1, filetable2, varid, seasonid ):
@@ -1215,44 +1215,53 @@ class amwg_plot_set11(amwg_plot_spec):
             return None
         if not ft1_valid or not ft2_valid:
             return None
- 
+        VIDs = []
         for ft in self.filetables:
             for season in self.seasons:
                 for var in self.vars:
                     VID = rv.dict_id(var, season, ft)
                     VID = id2str(VID)
-                    print VID
+                    #print VID
                     RV = reduced_variable( variableid=var, 
                                            filetable=ft, 
                                            season=cdutil.times.Seasons(season), 
                                            reduction_function=( lambda x, vid=VID:x) ) 
-                    self.reduced_variables[VID] = RV                    
+                    self.reduced_variables[VID] = RV      
+                    VIDs += [VID]              
 
         self.rv_pairs = []
         i = 0
         while i <= 10:
-            self.rv_pairs += [(self.reduced_variables.keys()[i], self.reduced_variables.keys()[i+1])]
+            #print VIDs[i], VIDs[i+1]
+            self.rv_pairs += [(VIDs[i], VIDs[i+1])]   #( self.reduced_variables[VIDs[i]], self.reduced_variables[VIDs[i+1]] )]
             i += 2
         
         self.single_plotspecs = {}
+        title = self.vars[1] + ' vs ' + self.vars[0]
         for i, plot_id in enumerate(self.plot_ids):
-            zvars, z2vars = self.rv_pairs[i]
+            #zvars, z2vars = self.reduced_variables[VIDs[i]], self.reduced_variables[VIDs[i+1]]
+            xVID, yVID = self.rv_pairs[i]
+            #print xVID, yVID
             self.single_plotspecs[plot_id] = plotspec(vid = plot_id, 
-                                                      zvars=[zvars], 
+                                                      zvars=[xVID], 
                                                       zfunc = (lambda x: x),
-                                                      z2vars = [z2vars],
+                                                      zrangefunc=(lambda x: (x.min(), x.max()) ),
+                                                      z2vars = [yVID],
                                                       z2func = (lambda x: x),
-                                                      plottype = self.plottype )
+                                                      z2rangefunc=(lambda x: (x.min(), x.max()) ),
+                                                      plottype = self.plottype, 
+                                                      title = title)
     
         self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
         self.computation_planned = True
     def _results(self, newgrid=0):
-        pdb.set_trace()
+        #pdb.set_trace()
         results = plot_spec._results(self, newgrid)
         if results is None:
-            print "WARNING, AMWG plot set 9 found nothing to plot"
+            print "WARNING, AMWG plot set 11 found nothing to plot"
             return None
         psv = self.plotspec_values
+        #pdb.set_trace()
         if self.plot_ids[0] in psv and self.plot_ids[0] is not None:
             for  plot_id in self.plot_ids[1:]:
                 if plot_id in psv and plot_id is not None:
@@ -1262,4 +1271,6 @@ class amwg_plot_set11(amwg_plot_spec):
             for v in val:
                 if v is None: continue
                 v.finalize()
+                #self.presentation.xticlabels1 = self.vars[0]
+                #self.presentation.yticlabels1 = self.vars[1]
         return self.plotspec_values[self.plotall_id]
