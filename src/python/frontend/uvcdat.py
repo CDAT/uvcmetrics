@@ -128,11 +128,16 @@ def clear_filetable( search_path, cache_path, search_filter=None ):
         os.remove(cache_path)
 
 class uvc_composite_plotspec():
+    def title( self, p ):
+        if type(p) is tuple:
+            return ' '.join([pp.title for pp in p])
+        else:
+            return p.title
     def __init__( self, uvcps ):
         """uvcps is a list of instances of uvc_simple_plotspec"""
         ups = [p for p in uvcps if p is not None]
         self.plots = ups
-        self.title = ' '.join([p.title for p in ups])
+        self.title = ' '.join([self.title(p) for p in ups])
     def finalize( self ):
         for p in self.plots:
             p.finalize()
@@ -159,6 +164,9 @@ class uvc_composite_plotspec():
 
         filenames = []
         for p in self.plots:
+            if type(p) is tuple:
+                print "ERROR cannot write_plot_data on tuple<<<<<<<<<<<<<<<<<"
+                continue
             filenames += p.write_plot_data( contents_format, where )
 
         filename = self.outfile( format, where )
@@ -166,6 +174,9 @@ class uvc_composite_plotspec():
         writer = open( filename, 'w' )    # later, choose a better name and a path!
         writer.write("<plotdata>\n")
         for p in self.plots:
+            if type(p) is tuple:
+                print "ERROR again, cannot write_plot_data on tuple<<<<<<<<<<<<<<<<<"
+                continue
             pfn = p.outfile(where)
             writer.write( "<ncfile>"+pfn+"</ncfile>\n" )
         writer.write( "</plotdata>\n" )
@@ -677,21 +688,10 @@ class plot_spec(object):
         for p,ps in self.single_plotspecs.iteritems():
             print "uvcdat preparing data for",ps._strid
             try:
-                zrv = [ varvals[k] for k in ps.zvars ]
-                zrrv = [ varvals[k] for k in ps.zrangevars ]
-                z2rv = [ varvals[k] for k in ps.z2vars ]
-                z2rrv = [ varvals[k] for k in ps.z2rangevars ]
-                if any([a is None for a in zrv]):
-                    print "WARNING - cannot compute results involving zax, zvars=",ps.zvars
-                    print "missing results for",[k for k in ps.zvars if varvals[k] is None]
+                zax,zrv  = self.compute_plot_var_value( ps, ps.zvars, ps.zfunc )
+                z2ax,z2rv = self.compute_plot_var_value( ps, ps.z2vars, ps.z2func )
+                if zax is None and z2ax is None:
                     continue
-                zax = apply( ps.zfunc, zrv )
-                if any([a is None for a in z2rv]):
-                    print "WARNING - cannot compute results involving z2ax, z2vars=",ps.z2vars
-                    print "missing results for",[k for k in ps.z2vars if varvals[k] is None]
-                    z2ax = None
-                else:
-                    z2ax = apply( ps.z2func, z2rv )
             except Exception as e:
                 if ps._id != plotspec.dict_id( None, None, None, None, None ):
                     # not an empty plot
@@ -739,9 +739,34 @@ class plot_spec(object):
             self.plotspec_values[p] = uvc_simple_plotspec( vars, plot_type_temp, labels, title, ps.source )
         for p,ps in self.composite_plotspecs.iteritems():
             self.plotspec_values[p] = [ self.plotspec_values[sp] for sp in ps if sp in self.plotspec_values ]
+            # Normally ps is a list of names of a plots, we'll remember its value as a list of their values.
+            if type( ps ) is tuple:
+                # ps is a tuple of names of simple plots which should be overlapped
+                self.plotspec_values[p] = tuple( self.plotspec_values[p] )
+        for p,ps in self.composite_plotspecs.iteritems():
+            self.plotspec_values[p] = [ self.plotspec_values[sp] for sp in ps if sp in self.plotspec_values ]
+            # Normally ps is a list of names of a plots, we'll remember its value as a list of their values.
+            if type( ps ) is tuple:
+                # ps is a tuple of names of simple plots which should be overlapped
+                self.plotspec_values[p] = tuple( self.plotspec_values[p] )
         # note: we may have to += other lists into the same ...[p]
         # note: if we have a composite of composites we can deal with it by building a second time
         return self
+
+    def compute_plot_var_value( self, ps, zvars, zfunc ):
+        """Inputs: a plotspec object, a list zvars of precursor variables, and a function zfunc.
+        This method computes the variable z to be plotted as zfunc(zvars), and returns it.
+        It also returns zrv for use in building a label."""
+        vvals = self.variable_values
+        zrv = [ vvals[k] for k in zvars ]
+        print "jfp compute_plot_var_value, zvars=",zvars
+        if any([a is None for a in zrv]):
+            print "WARNING - cannot compute plot results from zvars=",ps.zvars
+            print "because missing results for",[k for k in ps.zvars if vvals[k] is None]
+            return None, None
+        z = apply( zfunc, zrv )
+        return z, zrv
+        
 
 def diagnostics_template():
     """creates and returns a VCS template suitable for diagnostics plots"""
