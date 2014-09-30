@@ -458,7 +458,7 @@ class amwg_plot_set4(amwg_plot_spec):
             vid2 = rv.dict_id(varid,seasonid,filetable2)
         ft1src = filetable1.source()
         try:
-            ft2src = filetable1.source()
+            ft2src = filetable2.source()
         except:
             ft2src = ''
         self.single_plotspecs = {
