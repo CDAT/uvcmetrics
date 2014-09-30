@@ -830,19 +830,17 @@ class amwg_plot_set6(amwg_plot_spec):
                     vars = dvars                           # e.g. ['STRESS_MAG','TAUX','TAUY']
                     break
         if vars==['STRESS_MAG','TAUX','TAUY']:
-            rvars = vars  # variable names which will become reduced variables
-            dvars = []    # variable names which will become reduced variables
+            rvars = vars  # variable names which may become reduced variables
+            dvars = []    # variable names which will become derived variables
             var_cont = vars[0]                # for contour plot
             vars_vec = ( vars[1], vars[2] )  # for vector plot
             vid_cont = rv.dict_id( var_cont, seasonid, filetable )
+            # BTW, I'll use STRESS_MAG from a climo file (as it is in obs and cam35 e.g.)
+            # but I don't think it is correct, because of its nonlinearity.
         elif vars==['TAUX','TAUY']:
-            rvars = vars            # variable names which will become reduced variables
-            dvars = ['STRESS_MAG']  # variable names which will become reduced variables
+            rvars = vars            # variable names which may become reduced variables
+            dvars = ['STRESS_MAG']  # variable names which will become derived variables
             var_cont = dv.dict_id( 'STRESS_MAG', '', seasonid, filetable )
-            tau_x = rv.dict_id('TAUX',seasonid,filetable)
-            tau_y = rv.dict_id('TAUY',seasonid,filetable)
-            self.derived_variables[var_cont] =\
-                derived_var( vid=var_cont, inputs=[tau_x,tau_y], func=abnorm )
             vars_vec = ( vars[0], vars[1] )  # for vector plot
             vid_cont = var_cont
         else:
@@ -851,46 +849,122 @@ class amwg_plot_set6(amwg_plot_spec):
             var_cont = ''
             vars_vec = ['','']
             vid_cont = ''
-        #if 'TAUX' in vars_vec and 'TAUY' in vars_vec and filetable.filefmt.find('CAM')>=0:
-        #    # TAUX,TAUY could have one sign or another depending on your point of view.
-        #    # If they're from CAM, we have to change the sign to standardize that.
-        #    # The usual obs climo files have the 'standard' signs, so they can be skipped here.
-        #    # Sometime it may be better to do this in a more general-purpose way, and elsewhere.
-        #    # >>>> TO DO: impose an ocean mask on TAUX,TAUY <<<<
-        #    for TAU in ['TAUX','TAUY']:
-        #        tau = rv.dict_id(TAU,seasonid,filetable)
-        #        self.derived_variables[TAU] =\
-        #            derived_var( vid=TAU, inputs=[tau], func=minusb )
-        #    print "jfp applied minusb to TAUX,TAUY for",filetable
-        #else:
-        #    print "jfp didn't apply minusb to TAUX,TAUY for",filetable
         return vars, rvars, dvars, var_cont, vars_vec, vid_cont
-    def STRESS_rvs( self, filetable, rvars ):
+    def STRESS_rvs( self, filetable, rvars, seasonid, vardict ):
         """returns a list of reduced variables needed for the STRESS variable computation,
-        and orginating from the specified filetable.  rvars lists the variables needed."""
+        and orginating from the specified filetable.  Also returned is a partial list of derived
+        variables which will be needed.  The input rvars, a list, names the variables needed."""
         if filetable is None:
-            return []
+            return [],[]
         reduced_vars = []
+        needed_derivedvars = []
         for var in rvars:
             if var in ['TAUX','TAUY'] and filetable.filefmt.find('CAM')>=0:
+                print "jfp filetable",filetable,"is CAM, will apply minusb"
                 # We'll cheat a bit and change the sign as well as reducing dimensionality.
                 # The issue is that sign conventions differ in CAM output and the obs files.
-                # >>>> TO DO >>>> TAUX,TAUY need to get an ocean mask as well here >>>>
-                reduced_vars.append( reduced_variable(
-                        variableid=var, filetable=filetable, season=self.season,
-                        reduction_function=(lambda x,vid=None:
+
+                if filetable.has_variables(['OCNFRAC']):
+                    # Applying the ocean mask will get a derived variable with variableid=var.
+                    reduced_vars.append( reduced_variable(
+                            variableid=var, filetable=filetable, season=self.season,
+                            #reduction_function=(lambda x,vid=var+'_nomask':
+                            reduction_function=(lambda x,vid=None:
                                                 minusb(reduce2latlon_seasonal( x, self.season, vid )) ) ))
+                    needed_derivedvars.append(var)
+                    reduced_vars.append( reduced_variable(
+                            variableid='OCNFRAC', filetable=filetable, season=self.season,
+                            reduction_function=(lambda x,vid=None:
+                                                    reduce2latlon_seasonal( x, self.season, vid ) ) ))
+                elif filetable.has_variables(['ORO']):
+                    # Applying the ocean mask will get a derived variable with variableid=var.
+                    reduced_vars.append( reduced_variable(
+                            variableid=var, filetable=filetable, season=self.season,
+                            reduction_function=(lambda x,vid=var+'_nomask':
+                                                minusb(reduce2latlon_seasonal( x, self.season, vid )) ) ))
+                    needed_derivedvars.append(var)
+                    reduced_vars.append( reduced_variable(
+                            variableid='ORO', filetable=filetable, season=self.season,
+                            reduction_function=(lambda x,vid=None:
+                                                    reduce2latlon_seasonal( x, self.season, vid ) ) ))
+                else:
+                    # No ocean mask available.  Go on without applying one.  But still apply minusb
+                    # because this is a CAM file.
+                    reduced_vars.append( reduced_variable(
+                            variableid=var, filetable=filetable, season=self.season,
+                            reduction_function=(lambda x,vid=None:
+                                                    minusb(reduce2latlon_seasonal( x, self.season, vid )) ) ))
             else:
+                # No ocean mask available and it's not a CAM file; just do an ordinary reduction.
                 reduced_vars.append( reduced_variable(
                         variableid=var, filetable=filetable, season=self.season,
                         reduction_function=(lambda x,vid=None:
                                                 reduce2latlon_seasonal( x, self.season, vid ) ) ))
+                vardict[var] = rv.dict_id( var, seasonid, filetable )
+        return reduced_vars, needed_derivedvars
+    def STRESS_dvs( self, filetable, dvars, seasonid, vardict, vid_cont, vars_vec ):
+        """Updates self.derived_vars and returns with derived variables needed for the STRESS
+        variable computation and orginating from the specified filetable.
+        rvars, a list, names the variables needed.
+        Also, a list of the new drived variables is returned."""
+        if filetable is None:
+            vardict[','] = None
+            return []
+        derived_vars = []
+        for var in dvars:
+            if var in ['TAUX','TAUY']:
+                #tau = rv.dict_id(var+'_nomask',seasonid,filetable)
+                tau = rv.dict_id(var,seasonid,filetable)
+                vid = dv.dict_id( var, '', seasonid, filetable )
+                if filetable.has_variables(['OCNFRAC']):
+                    # Applying the ocean mask will get a derived variable with variableid=var.
+                    ocn_frac = rv.dict_id('OCNFRAC',seasonid,filetable)
+                    new_derived_var = derived_var( vid=vid, inputs=[tau,ocn_frac], outputs=[var],
+                                                   func=mask_OCNFRAC )
+                    derived_vars.append( new_derived_var )
+                    vardict[var] = vid
+                    self.derived_variables[vid] = new_derived_var
+                elif filetable.has_variables(['ORO']):
+                    # Applying the ocean mask will get a derived variable with variableid=var.
+                    oro = rv.dict_id('ORO',seasonid,filetable)
+                    new_derived_var = derived_var( vid=vid, inputs=[tau,oro], outputs=[var],
+                                                   func=mask_ORO )
+                    derived_vars.append( new_derived_var )
+                    vardict[var] = vid
+                    self.derived_variables[vid] = new_derived_var
+                else:
+                    # No ocean mask available.  Go on without applying one.
+                    pass
+            else:
+                pass
 
-        return reduced_vars
+        vecid = ','.join(vars_vec)
+        if filetable.has_variables(['OCNFRAC']) or filetable.has_variables(['ORO']):
+            # TAUX,TAUY are masked as derived variables
+            vardict[vecid] = dv.dict_id( vecid, '', seasonid, filetable )
+        else:
+            vardict[vecid] = rv.dict_id( vecid, seasonid, filetable )
+
+        if tuple(vid_cont) and vid_cont[0]=='dv':  # need to compute STRESS_MAG from TAUX,TAUY
+            if filetable.filefmt.find('CAM')>=0:   # TAUX,TAUY are derived variables
+                    tau_x = dv.dict_id('TAUX','',seasonid,filetable)
+                    tau_y = dv.dict_id('TAUY','',seasonid,filetable)
+            elif filetable.filefmt.find('CAM')>=0:   # TAUX,TAUY are reduced variables
+                    tau_x = rv.dict_id('TAUX',seasonid,filetable)
+                    tau_y = rv.dict_id('TAUY',seasonid,filetable)
+            new_derived_var = derived_var( vid=vid_cont, inputs=[tau_x,tau_y], func=abnorm )
+            derived_vars.append( new_derived_var )
+            vardict['STRESS_MAG'] = vid_cont
+            self.derived_variables[vid_cont] = new_derived_var
+
+        return derived_vars
+
     def plan_computation_normal_contours( self, filetable1, filetable2, varid, seasonid, region=None, aux=None ):
         """Set up for a lat-lon contour plot, as in plot set 5.  Data is averaged over all other
         axes."""
         self.derived_variables = {}
+        vars_vec1 = {}
+        vars_vec2 = {}
         try:
             if varid=='STRESS':
                 vars1,rvars1,dvars1,var_cont1,vars_vec1,vid_cont1 =\
@@ -907,23 +981,31 @@ class amwg_plot_set6(amwg_plot_spec):
             print "exception is",e
             return None
         reduced_varlis = []
-        reduced_varlis += self.STRESS_rvs( filetable1, rvars1 )
-        reduced_varlis += self.STRESS_rvs( filetable2, rvars2 )
+        vardict1 = {'':'nameless_variable'}
+        vardict2 = {'':'nameless_variable'}
+        new_reducedvars, needed_derivedvars = self.STRESS_rvs( filetable1, rvars1, seasonid, vardict1 )
+        reduced_varlis += new_reducedvars
         self.reduced_variables = { v.id():v for v in reduced_varlis }
+        self.STRESS_dvs( filetable1, needed_derivedvars, seasonid, vardict1, vid_cont1, vars_vec1 )
+        new_reducedvars, needed_derivedvars = self.STRESS_rvs( filetable2, rvars2, seasonid, vardict2 )
+        reduced_varlis += new_reducedvars
+        self.STRESS_dvs( filetable2, needed_derivedvars, seasonid, vardict2, vid_cont2, vars_vec2 )
+        self.reduced_variables = { v.id():v for v in reduced_varlis }
+
         self.single_plotspecs = {}
         ft1src = filetable1.source()
         try:
             ft2src = filetable2.source()
         except:
             ft2src = ''
-        vid_vec1 = rv.dict_id( ','.join(vars_vec1), seasonid, filetable1 )
-        vid_vec11 = rv.dict_id( vars_vec1[0], seasonid, filetable1 )
-        vid_vec12 = rv.dict_id( vars_vec1[1], seasonid, filetable1 )
-        vid_vec2 = rv.dict_id( ','.join(vars_vec2), seasonid, filetable2 )
-        vid_vec21 = rv.dict_id( vars_vec2[0], seasonid, filetable2 )
-        vid_vec22 = rv.dict_id( vars_vec2[1], seasonid, filetable2 )
-        #print "jfp ft1 vid*:",vid_cont1,vid_vec1,vid_vec11,vid_vec12
-        #print "jfp ft2 vid*:",vid_cont2,vid_vec2,vid_vec21,vid_vec22
+        vid_vec1 =  vardict1[','.join([vars_vec1[0],vars_vec1[1]])]
+        vid_vec11 = vardict1[vars_vec1[0]]
+        vid_vec12 = vardict1[vars_vec1[1]]
+        vid_vec2 =  vardict2[','.join([vars_vec2[0],vars_vec2[1]])]
+        vid_vec21 = vardict2[vars_vec2[0]]
+        vid_vec22 = vardict2[vars_vec2[1]]
+        print "jfp ft1 vid*:",vid_cont1,vid_vec1,vid_vec11,vid_vec12
+        print "jfp ft2 vid*:",vid_cont2,vid_vec2,vid_vec21,vid_vec22
         plot_type_temp = ['Isofill','Vector'] # can't use self.plottype yet because don't support it elsewhere as a list or tuple <<<<<
         if vars1 is not None:
             # Draw two plots, contour and vector, over one another to get a single plot.
@@ -955,7 +1037,7 @@ class amwg_plot_set6(amwg_plot_spec):
         if vars1 is not None and vars2 is not None:
             contplot = plotspec(
                 vid = ps.dict_id(var_cont1,'diff',seasonid,filetable1,filetable2),
-                zvars = [vid_cont1,vid_cont2],  zfunc = aminusb_2ax,
+                zvars = [vid_cont1,vid_cont2],  zfunc = aminusb_2ax,  # This is difference of magnitudes; sdb mag of diff!!!
                 plottype = plot_type_temp[0], title='', source='' )
             vecplot = plotspec(
                 vid = ps.dict_id(vid_vec2,'diff',seasonid,filetable1,filetable2),
@@ -970,11 +1052,11 @@ class amwg_plot_set6(amwg_plot_spec):
         #    print "jfp single plot",pln,pl.plottype
         #    print "jfp            ",pl.zvars
         self.composite_plotspecs = {
-            #self.plot1_id: [ self.plot1_id+'c', self.plot1_id+'v' ],
-            self.plot1_id: [ self.plot1_id+'v' ],
-            self.plot2_id: [ self.plot2_id+'v' ],
-            #self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id ]
-            self.plotall_id: [self.plot1_id+'v',self.plot2_id+'v',self.plot3_id+'v']  # temporary<<<<<<<<<
+            self.plot1_id: ( self.plot1_id+'c', self.plot1_id+'v' ),
+            #self.plot1_id: [ self.plot1_id+'v' ],
+            self.plot2_id: ( self.plot2_id+'c', self.plot2_id+'v' ),
+            self.plot3_id: ( self.plot3_id+'c', self.plot3_id+'v' ),
+            self.plotall_id: [self.plot1_id, self.plot2_id, self.plot3_id]
             }
         self.computation_planned = True
     def _results(self,newgrid=0):
@@ -992,9 +1074,11 @@ class amwg_plot_set6(amwg_plot_spec):
         #    print "WARNING not synchronizing ranges for",self.plot1_id,"and",self.plot2_id
         print "WARNING not synchronizing ranges for AMWG plot set 6"
         for key,val in psv.items():
-            if type(val) is not list: val=[val]
+            if type(val) is not list and type(val) is not tuple: val=[val]
             for v in val:
                 if v is None: continue
+                if type(v) is tuple:
+                    continue  # finalize has already been called for this, it comes from plotall_id but also has its own entry
                 v.finalize()
         return self.plotspec_values[self.plotall_id]
 
