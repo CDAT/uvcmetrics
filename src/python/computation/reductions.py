@@ -1127,7 +1127,8 @@ def interp2( newaxis1, mv ):
     so as to match the new axis (which should be coarser, i.e. fewer points),
     and returns a numpy array of the interpolated values.
     The first axis is normally levels, and isn't expected to be very large (usually <20; surely <50)
-    There shall be no more than two axes."""
+    There shall be just two axes."""
+    # Actually I'm using this for lat-lon too now.
     missing = mv.get_fill_value()
     axes = allAxes(mv)
     if len(newaxis1[:])>len(axes[1][:]): return mv
@@ -1136,8 +1137,9 @@ def interp2( newaxis1, mv ):
         new_vals[i,:] = numpy.interp(  newaxis1[:], axes[1][:], mv[i,:], left=missing, right=missing )
         # numpy.interp loses the mask, and I want to propagate it!  But we can separately interpolate
         # the mask - which numpy.interp treats False as 0, True as 1:
-        new_vals.mask[i,:] = ( numpy.interp( newaxis1[:], axes[1][:], mv.mask[i,:], left=missing,
-                                             right=missing ) )>0
+        if len(mv.mask.shape)>=2:
+            new_vals.mask[i,:] = ( numpy.interp( newaxis1[:], axes[1][:], mv.mask[i,:], left=missing,
+                                                 right=missing ) )>0
     return new_vals
 
 def aplusb0(mv1, mv2 ):
