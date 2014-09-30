@@ -274,7 +274,6 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                      
                                        for varIndex, var in enumerate(rsr.vars):
                                            savePNG = True
-                                           var.title = title
                                            seqsetattr(var,'title',title)
 
                                            # ...But the VCS plot system will overwrite the title line
@@ -309,7 +308,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                                tm.title.priority = 1
                                                tm.comment1.priority = 0
 
-                                           if vcs.isscatter(res[r].presentation):
+                                           if vcs.isscatter(rsr.presentation):
                                                if varIndex == 0:
                                                    #first pass through just save the array
                                                    xvar = var.flatten()
@@ -318,36 +317,36 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                                    #second pass through plot the 2 variables
                                                    yvar = var.flatten()
                                                    #if r == len(res)-1:
-                                                   #    res[r].presentation.list()
+                                                   #    rsr.presentation.list()
                                                    #    pdb.set_trace()
-                                                   vcanvas.plot(xvar, yvar, res[r].presentation, tm, bg=1, title=title, units=getattr(xvar,'units',''),
-                                                            source=res[r].source )
+                                                   vcanvas.plot(xvar, yvar, rsr.presentation, tm, bg=1, title=title, units=getattr(xvar,'units',''),
+                                                            source=rsr.source )
                                                    savePNG = True
 
                                                #if r<3:
                                                #    # We need more templates so we can have >3 plots in vcanvas2!
-                                                   vcanvas2.plot(xvar, yvar, res[r].presentation, tm2, bg=1)     
+                                                   vcanvas2.plot(xvar, yvar, rsr.presentation, tm2, bg=1)     
 
-                                           elif vcs.isvector(res[r].presentation) or res[r].presentation.__class__.__name__=="Gv":
-                                               strideX = res[r].strideX
-                                               strideY = res[r].strideY
+                                           elif vcs.isvector(rsr.presentation) or rsr.presentation.__class__.__name__=="Gv":
+                                               strideX = rsr.strideX
+                                               strideY = rsr.strideY
                                                vcanvas.plot( var[0][::strideY,::strideX],
-                                                             var[1][::strideY,::strideX], res[r].presentation, tm, bg=1,
+                                                             var[1][::strideY,::strideX], rsr.presentation, tm, bg=1,
                                                              title=title, units=getattr(var,'units',''),
-                                                             source=res[r].source )
+                                                             source=rsr.source )
                                                # first plot is all black, second plot works
                                                vcanvas.plot( var[0][::strideY,::strideX],
-                                                             var[1][::strideY,::strideX], res[r].presentation, tm, bg=1,
+                                                             var[1][::strideY,::strideX], rsr.presentation, tm, bg=1,
                                                              title=title, units=getattr(var,'units',''),
-                                                             source=res[r].source )
+                                                             source=rsr.source )
 
                                            else:
-                                               vcanvas.plot(var, res[r].presentation, tm, bg=1,
+                                               vcanvas.plot(var, rsr.presentation, tm, bg=1,
                                                             title=title, units=getattr(var,'units',''),
-                                                            source=res[r].source )
+                                                            source=rsr.source )
                                                if r<3:
                                                    # We need more templates so we can have >3 plots in vcanvas2!
-                                                   vcanvas2.plot(var, res[r].presentation, tm2, bg=1)
+                                                   vcanvas2.plot(var, rsr.presentation, tm2, bg=1)
                                            if var_id_save is not None:
                                                if type(var_id_save) is str:
                                                    var.id = var_id_save
