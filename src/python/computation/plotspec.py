@@ -52,6 +52,7 @@ class derived_var(basic_id):
         dictvals = [ inpdict.get(inp,None) for inp in self._inputs ]
         nonevals = [nn for nn in dictvals if nn is None]
         if len(nonevals)>0:
+            print "cannot yet derive",self._id,"because missing inputs",nonevals
             return None
         output = apply( self._func, [ inpdict[inp] for inp in self._inputs ] )
         if type(output) is tuple or type(output) is list:
