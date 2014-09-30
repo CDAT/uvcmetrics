@@ -774,7 +774,6 @@ class plot_spec(object):
         It also returns zrv for use in building a label."""
         vvals = self.variable_values
         zrv = [ vvals[k] for k in zvars ]
-        print "jfp compute_plot_var_value, zvars=",zvars
         if any([a is None for a in zrv]):
             print "WARNING - cannot compute plot results from zvars=",ps.zvars
             print "because missing results for",[k for k in ps.zvars if vvals[k] is None]
