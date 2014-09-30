@@ -230,9 +230,11 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
 #                                tm = diagnostics_template()
 				tm=vcanvas.gettemplate('UVWG')
                                 rdone = 0
-                                for r in range(len(res)):
+                                print "jfp res=",
+                                pprint(res) #jfp
+                                for r,resr in enumerate(res):
 #DEAN
-                                   if res[r] is None:
+                                   if resr is None:
                                        continue
                                    if r == 0:
                                       tm2=vcanvas.gettemplate('UVWG_1of3')
@@ -256,71 +258,83 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                    tm2.xtic1.priority = 1
                                    tm2.xmintic1.priority = 1                                   
 
-                                   title = res[r].title
+                                   if type(resr) is not tuple:
+                                       resr = (resr, None )
                                    vcanvas.clear()
-                                   for var in res[r].vars:
-                                       seqsetattr(var,'title',title)
-                                       # ...But the VCS plot system will overwrite the title line
-                                       # with whatever else it can come up with:
-                                       # long_name, id, and units. Generally the units are harmless,
-                                       # but the rest has to go....
-                                       if seqhasattr(var,'long_name'):
-                                           if type(var) is tuple:
-                                               for v in var:
-                                                   del v.long_name
-                                           else:
-                                               del var.long_name
-                                       if seqhasattr(var,'id'):
-                                           if type(var) is tuple:   # only for vector plots
-                                               vname = ','.join( seqgetattr(var,'id','') )
-                                               vname = vname.replace(' ', '_')
-                                               var_id_save = seqgetattr(var,'id','')
-                                               seqsetattr( var,'id','' )
-                                           else:
-                                               vname = var.id.replace(' ', '_')
-                                               var_id_save = var.id
-                                               var.id = ''         # If id exists, vcs uses it as a plot title
-                                               # and if id doesn't exist, the system will create one before plotting!
+                                   # ... Thus all members of resr and all variables of rsr will be
+                                   # plotted in the same plot...
+                                   for rsr in resr:
+                                       if rsr is None:
+                                           continue
                                        else:
-                                           vname = varid.replace(' ', '_')
-                                           var_id_save = None
+                                           rsr_presentation = rsr.presentation
+                                       print "jfp rsr=",rsr
+                                       title = rsr.title
 
-                                       vname = vname.replace('/', '_')
-                                       fname = outdir+'/figure-set'+sname[0]+'_'+rname+'_'+seasonid+'_'+vname+'_plot-'+str(r)+'.png'
-                                       print "writing png file",fname
-                                       #res[r].presentation.script("jeff.json")   #example of writing a json file
-#DEAN
-                                       tm.source.priority = 0
-                                       tm.dataname.priority = 0
-                                       tm.title.priority = 1
-                                       tm.comment1.priority = 0
-                                       if vcs.isvector(res[r].presentation) or res[r].presentation.__class__.__name__=="Gv":
-                                           strideX = res[r].strideX
-                                           strideY = res[r].strideY
-                                           vcanvas.plot( var[0][::strideY,::strideX],
-                                                         var[1][::strideY,::strideX], res[r].presentation, tm, bg=1,
-                                                         title=title, units=getattr(var,'units',''),
-                                                         source=res[r].source )
-                                           # first plot is all black, second plot works
-                                           vcanvas.plot( var[0][::strideY,::strideX],
-                                                         var[1][::strideY,::strideX], res[r].presentation, tm, bg=1,
-                                                         title=title, units=getattr(var,'units',''),
-                                                         source=res[r].source )
-                                       else:
-                                           vcanvas.plot(var, res[r].presentation, tm, bg=1,
-                                                        title=title, units=getattr(var,'units',''),
-                                                        source=res[r].source )
-                                           if r<3:
-                                               # We need more templates so we can have >3 plots in vcanvas2!
-                                               vcanvas2.plot(var, res[r].presentation, tm2, bg=1)
-                                       if var_id_save is not None:
-                                           if type(var_id_save) is str:
-                                               var.id = var_id_save
+                                       for var in rsr.vars:
+                                           seqsetattr(var,'title',title)
+                                           # ...But the VCS plot system will overwrite the title line
+                                           # with whatever else it can come up with:
+                                           # long_name, id, and units. Generally the units are harmless,
+                                           # but the rest has to go....
+                                           if seqhasattr(var,'long_name'):
+                                               if type(var) is tuple:
+                                                   for v in var:
+                                                       del v.long_name
+                                               else:
+                                                   del var.long_name
+                                           if seqhasattr(var,'id'):
+                                               if type(var) is tuple:   # only for vector plots
+                                                   vname = ','.join( seqgetattr(var,'id','') )
+                                                   vname = vname.replace(' ', '_')
+                                                   var_id_save = seqgetattr(var,'id','')
+                                                   seqsetattr( var,'id','' )
+                                               else:
+                                                   vname = var.id.replace(' ', '_')
+                                                   var_id_save = var.id
+                                                   var.id = ''         # If id exists, vcs uses it as a plot title
+                                                   # and if id doesn't exist, the system will create one before plotting!
                                            else:
-                                               for i in range(len(var_id_save)):
-                                                   var[i].id = var_id_save[i]
-                                       vcanvas.png( fname )
-                                       rdone += 1
+                                               vname = varid.replace(' ', '_')
+                                               var_id_save = None
+
+                                           vname = vname.replace('/', '_')
+                                           fname = outdir+'/figure-set'+sname[0]+'_'+rname+'_'+seasonid+'_'+vname+'_plot-'+str(r)+'.png'
+                                           print "writing png file",fname
+                                           #rsr_presentation.script("jeff.json")   #example of writing a json file
+    #DEAN
+                                           tm.source.priority = 0
+                                           tm.dataname.priority = 0
+                                           tm.title.priority = 1
+                                           tm.comment1.priority = 0
+                                           if vcs.isvector(rsr_presentation) or rsr_presentation.__class__.__name__=="Gv":
+                                               strideX = rsr.strideX
+                                               strideY = rsr.strideY
+                                               vcanvas.plot( var[0][::strideY,::strideX],
+                                                             var[1][::strideY,::strideX], rsr.presentation, tm, bg=1,
+                                                             title=title, units=getattr(var,'units',''),
+                                                             source=rsr.source )
+                                               # first plot is all black, second plot works
+                                               vcanvas.plot( var[0][::strideY,::strideX],
+                                                             var[1][::strideY,::strideX], rsr.presentation, tm, bg=1,
+                                                             title=title, units=getattr(var,'units',''),
+                                                             source=rsr.source )
+                                           else:
+                                               vcanvas.plot(var, rsr.presentation, tm, bg=1,
+                                                            title=title, units=getattr(var,'units',''),
+                                                            source=rsr.source )
+                                               if r<3:
+                                                   # We need more templates so we can have >3 plots in vcanvas2!
+                                                   vcanvas2.plot(var, rsr.presentation, tm2, bg=1)
+                                           if var_id_save is not None:
+                                               if type(var_id_save) is str:
+                                                   var.id = var_id_save
+                                               else:
+                                                   for i in range(len(var_id_save)):
+                                                       var[i].id = var_id_save[i]
+                                           vcanvas.png( fname )
+                                           rdone += 1
+
                             # Also, write the nc output files and xml.
                             # Probably make this a command line option.
                             if res.__class__.__name__ is 'uvc_composite_plotspec':
@@ -333,7 +347,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                             print "wrote plots",resc.title," to",filenames
 #DEAN
                             if opts['plots']==True:
-                                if vcs.isvector(res[r].presentation) or res[r].presentation.__class__.__name__=="Gv":
+                                if vcs.isvector(rsr_presentation) or rsr_presentation.__class__.__name__=="Gv":
                                     pass  # for now
                                 else:
                                     vname = varid.replace(' ', '_')
