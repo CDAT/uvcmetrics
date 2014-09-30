@@ -2,7 +2,7 @@
 
 # Functions callable from the UV-CDAT GUI.
 
-import hashlib, os, pickle, sys, os, math, pdb
+import hashlib, os, pickle, sys, os, math, pdb, string
 from metrics import *
 from metrics.fileio.filetable import *
 from metrics.fileio.findfiles import *
@@ -218,7 +218,10 @@ class uvc_simple_plotspec():
             elif presentation == "Isoline":
                 self.presentation = vcsx.createisoline()
             elif presentation == "Scatter":
-                self.presentation = vcs.createscatter()
+                self.presentation = vcsx.getscatter('default')#vcsx.createscatter()
+                self.presentation.linewidth = 0
+                self.presentation.merkercolor = 242
+                self.presentation.markersize = 20
             else:
                 print "ERROR, uvc_plotspec doesn't recognize presentation",presentation
                 self.presentation = "Isofill"  # try to go on
@@ -274,6 +277,7 @@ class uvc_simple_plotspec():
         #        self.presentation.__class__.__name__=="Gfi":
         # interim test here and below.  Once all the is* functions work, I should
         # drop the tests on self.presentation.__class__.__name__ :
+        
         if vcs.isyxvsx(self.presentation) or\
                 vcs.isisofill(self.presentation) or\
                 self.presentation.__class__.__name__=="GYx" or\
@@ -290,7 +294,17 @@ class uvc_simple_plotspec():
                     axmin[ax] = min(axmin[ax],self.axmin[seqgetattr(v,'id','')][ax])
                 varmax = max(varmax,self.varmax[v.id])
                 varmin = min(varmin,self.varmin[v.id])
-            if vcs.isyxvsx(self.presentation) or\
+            if vcs.isscatter(self.presentation):
+                #pdb.set_trace()
+                ylabel, xlabel = string.split(self.title, ' vs ')
+                self.presentation.xticlabels1 = {1:'20', 2: xlabel}
+                self.presentation.yticlabels1 = {1:'40', 2: ylabel}
+                self.presentation.list()
+                #self.presentation.datawc_x1 = 0.
+                #self.presentation.datawc_x2 = 120.
+                #self.presentation.datawc_y1 = -120.
+                #self.presentation.datawc_y2 = 0.                             
+            elif vcs.isyxvsx(self.presentation) or\
                     self.presentation.__class__.__name__=="GYx" or\
                     self.presentation.__class__.__name__=="G1d":
                 if len(axmax.keys())<=0:
@@ -309,6 +323,7 @@ class uvc_simple_plotspec():
                 else:
                     self.presentation.datawc_y1 = varmin
                     self.presentation.datawc_y2 = varmax
+      
             elif vcs.isisofill(self.presentation) or self.presentation.__class__.__name__=="Gfi":
                 # VCS Isofill
                 # First we have to identify which axes will be plotted as X and Y.
