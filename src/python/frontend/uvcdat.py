@@ -206,7 +206,7 @@ class uvc_simple_plotspec():
             elif presentation == "Isofill":
                 self.presentation = vcsx.createisofill()
             elif presentation == "Isofill_polar":
-                self.presentation = vcsx.createisofill()  
+                self.presentation = vcsx.createisofill()
                 PROJECTION = vcs.createprojection()
                 PROJECTION.type=-3
                 self.presentation.projection = PROJECTION
@@ -396,7 +396,8 @@ class uvc_simple_plotspec():
             elif vcs.isvector(self.presentation) or self.presentation.__class__.__name__=="Gv":
                 vec = self.presentation
                 #vec.scale = min(vcsx.bgX,vcsx.bgY)/ 200. # preferred
-                vec.scale = min(vcsx.bgX,vcsx.bgY)/ 150.
+                #vec.scale = min(vcsx.bgX,vcsx.bgY)/ 150.
+                vec.scale = min(vcsx.bgX,vcsx.bgY)/ 30.
                 if hasattr(self.vars[0],'__getitem__') and not hasattr( self.vars[0], '__cdms_internals__'):
                     # generally a tuple of variables - we need 2 variables to describe a vector
                     v = self.vars[0][0]
@@ -411,8 +412,8 @@ class uvc_simple_plotspec():
                 nlons = lonAxis(w).shape[0]
                 #self.strideX = 0.6* vcsx.bgX/nlons   # preferred
                 #self.strideY = 0.4* vcsx.bgY/nlats
-                self.strideX = 1.0* vcsx.bgX/nlons
-                self.strideY = 0.8* vcsx.bgY/nlats
+                self.strideX = int( 1.0* vcsx.bgX/nlons )
+                self.strideY = int( 0.8* vcsx.bgY/nlats )
         else:
             print "ERROR cannot identify graphics method",self.presentation.__class__.__name__
 
