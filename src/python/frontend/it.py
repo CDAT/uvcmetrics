@@ -50,14 +50,15 @@ def return_templates_graphic_methods(canvas1=None, gms=None, ovly=None, onPage=N
              else:                # overlay plot use DUD - only plot the data
                 tmmobs.append( canvas1.createtemplate('UVWG1D_DUD_%dof2_'%ct + (str(random.random())[2:]), 'UVWG1D_DUD_%dof2'%ct) )
 
-          elif onPage == 3:
+          elif onPage == 3 or onPage>3 and ct<3:
              if ovly[i] == 0:     # use full template
                 ct += 1
                 tmmobs.append( canvas1.createtemplate('UVWG_%dof3_'%ct + (str(random.random())[2:]), 'UVWG_%dof3'%ct) )
              else:                # overlay plot use DUD - only plot the data
                 tmmobs.append( canvas1.createtemplate('UVWG_DUD_%dof3_'%ct + (str(random.random())[2:]), 'UVWG_DUD_%dof3'%ct) )
           else:
-             return (None, None, None)
+             tmmobs.append(None)  #jfp
+             #return (None, None, None)
       return (gmobs, tmobs, tmmobs)
    else:
       return (None, None, None)
