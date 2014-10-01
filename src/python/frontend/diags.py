@@ -330,7 +330,8 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
 
                                                #if r<3:
                                                #    # We need more templates so we can have >3 plots in vcanvas2!
-                                                   vcanvas2.plot(xvar, yvar, rsr.presentation, tm2, bg=1)     
+                                                   if tm2 is not None:
+                                                       vcanvas2.plot(xvar, yvar, rsr.presentation, tm2, bg=1)     
 
                                            elif vcs.isvector(rsr.presentation) or rsr.presentation.__class__.__name__=="Gv":
                                                strideX = rsr.strideX
@@ -380,7 +381,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                 if vcs.isvector(rsr_presentation) or rsr_presentation.__class__.__name__=="Gv":
                                     pass  # for now
                                 else:
-                                    if tm2 is not None:
+                                    if tmmobs[0] is not None:  # If anything was plotted to vcanvas2
                                         vname = varid.replace(' ', '_')
                                         vname = vname.replace('/', '_')
                                         fname = outdir+'/figure-set'+snum+'_'+rname+'_'+seasonid+'_'+vname+'_plot-'+str(r)+'.png'
