@@ -182,6 +182,8 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
             region = defines.all_regions[opts['regions'][0]]
             rname = opts['regions'][0]
         for sname in plotsets:
+            print "plot set",sname
+            snum = sname.strip().split(' ')[0]
             sclass = sm[sname]
             seasons = list( set(seasons) & set(pclass.list_seasons()) )
             for seasonid in seasons:
@@ -307,7 +309,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                                    # and if id doesn't exist, the system will create one before plotting!
 
                                                vname = vname.replace('/', '_')
-                                               fname = outdir+'/figure-set'+sname[0]+'_'+rname+'_'+seasonid+'_'+vname+'_plot-'+str(r)+'.png'
+                                               fname = outdir+'/figure-set'+snum+'_'+rname+'_'+seasonid+'_'+vname+'_plot-'+str(r)+'.png'
                                                print "writing png file",fname
                                                #rsr_presentation.script("jeff.json")   #example of writing a json file
 
@@ -349,7 +351,11 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                                             source=rsr.source )
                                                #if r<3:
                                                #    # We need more templates so we can have >3 plots in vcanvas2!
-                                               vcanvas2.plot(var, rsr.presentation, tm2, bg=1)
+                                               try:
+                                                   if tm2 is not None:
+                                                       vcanvas2.plot(var, rsr.presentation, tm2, bg=1)
+                                               except vcs.error.vcsError as e:
+                                                   print "ERROR making summary plot:",e
                                            if var_id_save is not None:
                                                if type(var_id_save) is str:
                                                    var.id = var_id_save
@@ -360,23 +366,24 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                                vcanvas.png( fname )
 
                                            rdone += 1
-                                # Also, write the nc output files and xml.
-                                # Probably make this a command line option.
-                                if res.__class__.__name__ is 'uvc_composite_plotspec':
-                                    resc = res
-                                    filenames = resc.write_plot_data("xml-NetCDF", outdir )
+                            # Also, write the nc output files and xml.
+                            # Probably make this a command line option.
+                            if res.__class__.__name__ is 'uvc_composite_plotspec':
+                                resc = res
+                                filenames = resc.write_plot_data("xml-NetCDF", outdir )
+                            else:
+                                resc = uvc_composite_plotspec( res )
+                                filenames = resc.write_plot_data("xml-NetCDF", outdir )
+                            number_diagnostic_plots += 1
+                            print "wrote plots",resc.title," to",filenames
+                            if opts['plots']==True:
+                                if vcs.isvector(rsr_presentation) or rsr_presentation.__class__.__name__=="Gv":
+                                    pass  # for now
                                 else:
-                                    resc = uvc_composite_plotspec( res )
-                                    filenames = resc.write_plot_data("xml-NetCDF", outdir )
-                                number_diagnostic_plots += 1
-                                print "wrote plots",resc.title," to",filenames
-                                if opts['plots']==True:
-                                    if vcs.isvector(rsr_presentation) or rsr_presentation.__class__.__name__=="Gv":
-                                        pass  # for now
-                                    else:
+                                    if tm2 is not None:
                                         vname = varid.replace(' ', '_')
                                         vname = vname.replace('/', '_')
-                                        fname = outdir+'/figure-set'+sname[0]+'_'+rname+'_'+seasonid+'_'+vname+'_plot-'+str(r)+'.png'
+                                        fname = outdir+'/figure-set'+snum+'_'+rname+'_'+seasonid+'_'+vname+'_plot-'+str(r)+'.png'
                                         vcanvas2.png( fname )
 
                         elif res is not None:
