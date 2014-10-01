@@ -56,6 +56,7 @@ from pprint import pprint
 from metrics.common.utilities import *
 import metrics.frontend.defines as defines
 import cProfile
+from metrics.frontend.it import *
 
 def mysort( lis ):
     lis.sort()
@@ -227,38 +228,45 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                         res = plot.compute(newgrid=-1) # newgrid=0 for original grid, -1 for coarse
                         if res is not None and len(res)>0:
                             if opts['plots'] == True:
-#DEAN
-#                                tm = diagnostics_template()
-				tm=vcanvas.gettemplate('UVWG')
                                 rdone = 0
-                                print "jfp res=",
-                                pprint(res) #jfp
+
+                                # At this loop level we are making one compound plot.  In consists
+                                # of "single plots", each of which we would normally call "one" plot.
+                                # But some "single plots" are made by drawing multiple "simple plots",
+                                # One on top of the other.  VCS draws one simple plot at a time.
+                                # Here we'll count up the plots and run through them to build lists
+                                # of graphics methods and overlay statuses.
+                                nsingleplots = len(res)
+                                nsimpleplots = nsingleplots + sum([len(resr)-1 for resr in res if type(resr) is tuple])
+                                gms = nsimpleplots * [None]
+                                ovly = nsimpleplots * [0]
+                                onPage = nsingleplots
+                                ir = 0
                                 for r,resr in enumerate(res):
-#DEAN
+                                    if type(resr) is tuple:
+                                        for jr,rsr in enumerate(resr):
+                                            gms[ir] = resr[jr].ptype.lower()
+                                            ovly[ir] = jr
+                                            ir += 1
+                                    elif resr is not None:
+                                        gms[ir] = resr.ptype.lower()
+                                        ovly[ir] = 0
+                                        ir += 1
+                                # Now get the templates which correspond to the graphics methods and overlay statuses.
+                                # tmobs[ir] is the template for plotting a simple plot on a page
+                                #   which has just one single-plot - that's vcanvas
+                                # tmmobs[ir] is the template for plotting a simple plot on a page
+                                #   which has the entire compound plot - that's vcanvas2
+                                gmobs, tmobs, tmmobs = return_templates_graphic_methods( vcanvas, gms, ovly, onPage )
+
+                                ir = -1
+                                for r,resr in enumerate(res):
+                                   ir += 1
+                                   tm = tmobs[ir]
+                                   tm2 = tmmobs[ir]
                                    if resr is None:
                                        continue
-                                   if r == 0:
-                                      tm2=vcanvas.gettemplate('UVWG_1of3')
-                                   elif r == 1:
-                                      tm2=vcanvas.gettemplate('UVWG_2of3')
-                                   elif r == 2:
-                                      tm2=vcanvas.gettemplate('UVWG_3of3')
                                    
-                                   #added to correct label problems on plot set 8
-                                   tm.xlabel1.priority = 1
-                                   tm.ylabel1.priority = 1
-                                   tm.ytic1.priority = 1
-                                   tm.ymintic1.priority = 1
-                                   tm.xtic1.priority = 1
-                                   tm.xmintic1.priority = 1    
-                                                                  
-                                   tm2.xlabel1.priority = 1
-                                   tm2.ylabel1.priority = 1
-                                   tm2.ytic1.priority = 1
-                                   tm2.ymintic1.priority = 1
-                                   tm2.xtic1.priority = 1
-                                   tm2.xmintic1.priority = 1                                   
-
                                    if type(resr) is not tuple:
                                        resr = (resr, None )
                                    vcanvas.clear()
@@ -269,7 +277,6 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                            continue
                                        else:
                                            rsr_presentation = rsr.presentation
-                                       print "jfp rsr=",rsr
                                        title = rsr.title
                      
                                        for varIndex, var in enumerate(rsr.vars):
@@ -303,10 +310,6 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                                fname = outdir+'/figure-set'+sname[0]+'_'+rname+'_'+seasonid+'_'+vname+'_plot-'+str(r)+'.png'
                                                print "writing png file",fname
                                                #rsr_presentation.script("jeff.json")   #example of writing a json file
-                                               tm.source.priority = 0
-                                               tm.dataname.priority = 0
-                                               tm.title.priority = 1
-                                               tm.comment1.priority = 0
 
                                            if vcs.isscatter(rsr.presentation):
                                                if varIndex == 0:
@@ -344,9 +347,9 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                                vcanvas.plot(var, rsr.presentation, tm, bg=1,
                                                             title=title, units=getattr(var,'units',''),
                                                             source=rsr.source )
-                                               if r<3:
-                                                   # We need more templates so we can have >3 plots in vcanvas2!
-                                                   vcanvas2.plot(var, rsr.presentation, tm2, bg=1)
+                                               #if r<3:
+                                               #    # We need more templates so we can have >3 plots in vcanvas2!
+                                               vcanvas2.plot(var, rsr.presentation, tm2, bg=1)
                                            if var_id_save is not None:
                                                if type(var_id_save) is str:
                                                    var.id = var_id_save
