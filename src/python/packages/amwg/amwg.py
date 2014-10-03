@@ -1421,7 +1421,7 @@ class amwg_plot_set10(amwg_plot_spec, basic_id):
         return [ plot_val]
     
 class amwg_plot_set11(amwg_plot_spec):
-    name = '11 - Pacific annual cycle, Scatter plots'
+    name = '11 - Pacific annual cycle, Scatter plots:incomplete'
     number = '11'
     def __init__( self, filetable1, filetable2, varid, seasonid='ANN', region=None, aux=None ):
         """filetable1, filetable2 should be filetables for each model.
@@ -1525,3 +1525,275 @@ class amwg_plot_set11(amwg_plot_spec):
                 #self.presentation.xticlabels1 = self.vars[0]
                 #self.presentation.yticlabels1 = self.vars[1]
         return self.plotspec_values[self.plotall_id]
+
+class amwg_plot_set12(amwg_plot_spec):
+    name = '12 - Vertical Profiles at 17 selected raobs stations:incomplete'
+    number = '12'
+    def __init__( self, filetable1, filetable2, varid, seasonid='ANN', region=None, aux=None ):
+        """filetable1, filetable2 should be filetables for each model.
+        varid is a string, e.g. 'TREFHT'.  The seasonal difference is Seasonid
+        It is is a string, e.g. 'DJF-JJA'. """
+        import string
+        print 'plot set 12'
+        
+        plot_spec.__init__(self, seasonid)
+        self.plottype = 'Scatter'
+        self._seasonid = seasonid
+        self.season = cdutil.times.Seasons(self._seasonid) 
+        ft1id, ft2id = filetable_ids(filetable1, filetable2)
+        self.datatype = ['model', 'obs']
+        self.filetables = [filetable1, filetable2]
+        self.filetable_ids = [ft1id, ft2id]
+        self.months = ['JAN', 'APR', 'JUL', 'AUG']
+        self.vars = [varid, 'PS']
+        
+        self.plot_ids = []
+        vars_id = '_'.join(self.vars)
+        #for dt in self.datatype:
+        for month in self.months:
+            plot_id = '_'.join(['month',  month])
+            self.plot_ids += [plot_id]
+        print self.plot_ids
+        
+        self.plotall_id = '_'.join(self.datatype + ['Warm', 'Pool'])
+        if not self.computation_planned:
+            self.plan_computation( filetable1, filetable2, varid, seasonid )
+    def plan_computation( self, filetable1, filetable2, varid, seasonid ):
+        self.computation_planned = False
+        #check if there is data to process
+        ft1_valid = False
+        ft2_valid = False
+        if filetable1 is not None and filetable2 is not None:
+            ft1 = filetable1.find_files(self.vars[0])
+            ft2 = filetable2.find_files(self.vars[1])
+            ft1_valid = ft1 is not None and ft1!=[]    # true iff filetable1 uses hybrid level coordinates
+            ft2_valid = ft2 is not None and ft2!=[]    # true iff filetable2 uses hybrid level coordinates
+        else:
+            print "ERROR: user must specify 2 data files"
+            return None
+        if not ft1_valid or not ft2_valid:
+            return None
+        VIDs = []
+        
+        for ft in self.filetables:
+            for month in self.months:
+                for var in self.vars:
+                    VID = rv.dict_id(var, month, ft)
+                    VID = id2str(VID)
+                    print VID
+                    RV = reduced_variable( variableid=var, 
+                                           filetable=ft, 
+                                           season=cdutil.times.Seasons(month), 
+                                           reduction_function=( lambda x, vid=VID:x) ) 
+                    self.reduced_variables[VID] = RV      
+                    VIDs += [VID]              
+
+        self.rv_model_pairs = []
+        i = 0
+        while i <= 6:
+            #print VIDs[i], VIDs[i+1]
+            self.rv_model_pairs += [(VIDs[i], VIDs[i+1])]   #( self.reduced_variables[VIDs[i]], self.reduced_variables[VIDs[i+1]] )]
+            i += 2
+        print self.rv_model_pairs
+
+        self.rv_obs_pairs = []
+        i = 8
+        while i <= 14:
+            #print VIDs[i], VIDs[i+1]
+            self.rv_obs_pairs += [(VIDs[i], VIDs[i+1])]   #( self.reduced_variables[VIDs[i]], self.reduced_variables[VIDs[i+1]] )]
+            i += 2
+        print self.rv_obs_pairs
+
+        self.single_plotspecs = {}
+        title = self.vars[1] + ' vs ' + self.vars[0]
+        for i, plot_id in enumerate(self.plot_ids):
+            #zvars, z2vars = self.reduced_variables[VIDs[i]], self.reduced_variables[VIDs[i+1]]
+            x1VID, y1VID = self.rv_obs_pairs[i]
+            x2VID, y2VID = self.rv_model_pairs[i]
+            #print xVID, yVID
+            self.single_plotspecs[plot_id] = plotspec(vid = plot_id, 
+                                                      zvars  = [y1VID], 
+                                                      zfunc = (lambda x: x),
+                                                      zrangefunc=(lambda x: (x.min(), x.max()) ),
+                                                      z2vars = [x1VID],
+                                                      z2func = (lambda x: x),
+                                                      z2rangefunc=(lambda x: (x.min(), x.max()) ),
+                                                      z3vars = [y2VID],
+                                                      z3func = (lambda x: x),
+                                                      z3rangefunc=(lambda x: (x.min(), x.max()) ),
+                                                      z4vars = [x2VID],
+                                                      z4func = (lambda x: x),
+                                                      z4rangefunc=(lambda x: (x.min(), x.max()) ),
+                                                      plottype = self.plottype, 
+                                                      title = title)
+    
+        self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
+        self.computation_planned = True
+
+    def _results(self, newgrid=0):
+        #pdb.set_trace()
+        results = plot_spec._results(self, newgrid)
+        if results is None:
+            print "WARNING, AMWG plot set 12 found nothing to plot"
+            return None
+        psv = self.plotspec_values
+        #pdb.set_trace()
+        if self.plot_ids[0] in psv and self.plot_ids[0] is not None:
+            for  plot_id in self.plot_ids[1:]:
+                if plot_id in psv and plot_id is not None:
+                    psv[plot_id].synchronize_ranges(psv[self.plot_ids[0]])
+        for key,val in psv.items():
+            if type(val) is not list: val=[val]
+            for v in val:
+                if v is None: continue
+                v.finalize()
+                #self.presentation.xticlabels1 = self.vars[0]
+                #self.presentation.yticlabels1 = self.vars[1]
+        return self.plotspec_values[self.plotall_id]
+
+def centered_RMS_difference(mv1, mv2):
+    #pdb.set_trace()
+    mv1_mean = mv1.mean()
+    #kludge for mismatch in dimensions
+    mv2_mean = mv2[0,:,:].mean()
+    x = aminusb_2ax(mv1-mv1_mean, mv2[0,:,:]-mv2_mean)
+    rms_diff = MV2.sqrt((x**2).mean())
+    return MV2.array([rms_diff])
+
+def join_scalar_data(*args ):
+    """ This function joins the results of several reduced variables into a
+    single derived variable.  It is used to produce a line plot of months
+    versus zonal mean.
+    """
+    import cdms2, cdutil, numpy
+    #pdb.set_trace()
+    nargs = len(args)
+    M = []
+    for arg in args:
+        M += [arg[0]]
+    M = numpy.array(M)
+    M.shape = (2, nargs/2)
+    M = MV2.array(M)
+    #print M
+    #M.info()
+    return M
+class amwg_plot_set14(amwg_plot_spec):
+    name = '14 - Taylor diagrams: incomplete'
+    number = '14'
+    def __init__( self, filetable1, filetable2, varid, seasonid='ANN', region=None, aux=None ):
+        """filetable1, filetable2 should be filetables for each model.
+        varid is a string, e.g. 'TREFHT'.  The seasonal difference is Seasonid
+        It is is a string, e.g. 'DJF-JJA'. """
+        import string
+        
+        plot_spec.__init__(self, seasonid)
+        self.plottype = 'Taylor'
+        self._seasonid = seasonid
+        self.season = cdutil.times.Seasons(self._seasonid) 
+        ft1id, ft2id = filetable_ids(filetable1, filetable2)
+        self.datatype = ['model', 'obs']
+        self.filetables = [filetable1, filetable2]
+        self.filetable_ids = [ft1id, ft2id]
+        self.vars = [varid]
+        
+        self.plot_ids = []
+        vars_id = '_'.join(self.vars)
+        #for dt in self.datatype:
+        plot_id = 'Taylor'
+        self.plot_ids += [plot_id]
+        #print self.plot_ids
+        
+        #self.plotall_id = '_'.join(self.datatype + ['Warm', 'Pool'])
+        if not self.computation_planned:
+            self.plan_computation( filetable1, filetable2, varid, seasonid )
+    def plan_computation( self, filetable1, filetable2, varid, seasonid ):
+        self.computation_planned = False
+        #check if there is data to process
+        ft1_valid = False
+        ft2_valid = False
+        #if filetable1 is not None and filetable2 is not None:
+        #    ft1 = filetable1.find_files(self.vars[0])
+        #    ft2 = filetable2.find_files(self.vars[1])
+        #    ft1_valid = ft1 is not None and ft1!=[]    # true iff filetable1 uses hybrid level coordinates
+        #    ft2_valid = ft2 is not None and ft2!=[]    # true iff filetable2 uses hybrid level coordinates
+        #else:
+        #    print "ERROR: user must specify 2 data files"
+        #    return None
+        #if not ft1_valid or not ft2_valid:
+        #    return None
+        
+        RVs = {}  
+        for dt, ft in zip(self.datatype, self.filetables):
+            for var in self.vars:
+                #rv for the data
+                VID_data = rv.dict_id(var, 'data', ft)
+                VID_data = id2str(VID_data)
+                #print VID_data
+                RV = reduced_variable( variableid=var, 
+                                       filetable=ft, 
+                                       season=cdutil.times.Seasons(seasonid), 
+                                       reduction_function=( lambda x, vid=VID_data:x ) ) 
+                self.reduced_variables[VID_data] = RV     
+                
+                #rv for its variance
+                VID_var = rv.dict_id(var, 'variance', ft)
+                VID_var = id2str(VID_var)
+                #print VID_var
+                RV = reduced_variable( variableid=var, 
+                                       filetable=ft, 
+                                       season=cdutil.times.Seasons(seasonid), 
+                                       reduction_function=( lambda x, vid=VID_var:MV2.array([x.var()]) ) ) 
+                self.reduced_variables[VID_var] = RV     
+
+                RVs[(var, dt)] = (VID_data, VID_var)     
+                   
+        #generate derived variables for centered RMS difference
+        nvars = len(self.vars)
+        DVs = {}
+        for var in self.vars:
+            Vobs   = RVs[var, 'obs'][0]
+            Vmodel = RVs[var, 'model'][0]
+            DV = var+'_RMS_CD'
+            #print Vobs
+            #print Vmodel
+            #print DV
+            DVs['RMS_CD', var] = DV
+            self.derived_variables[DV] = derived_var(vid=DV, inputs=[Vobs, Vmodel], func=centered_RMS_difference) 
+        
+        pairs = []
+        for var in self.vars:
+            for dt in self.datatype:
+                pairs += [RVs[var, dt][1], DVs['RMS_CD', var]]
+        #print pairs
+        #correlation coefficient 
+        self.derived_variables['TaylorData']   = derived_var(vid='TaylorData',   inputs=pairs,   func=join_scalar_data) 
+        #self.derived_variables['modelData'] = derived_var(vid='modelData', inputs=RVs['model']+DVs['RMS_CD'], func=join_scalar_data)         
+        
+        self.single_plotspecs = {}
+        title = "Taylor diagram"
+
+        self.single_plotspecs['Taylor'] = plotspec(vid = 'Taylor',
+                                                zvars  = ['TaylorData'],
+                                                zfunc = (lambda x: x),
+                                                plottype = self.plottype,
+                                                title = title)
+    
+        #self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
+        self.computation_planned = True
+
+    def _results(self, newgrid=0):
+        #pdb.set_trace()
+        results = plot_spec._results(self, newgrid)
+        if results is None:
+            print "WARNING, AMWG plot set 12 found nothing to plot"
+            return None
+        psv = self.plotspec_values
+        #pdb.set_trace()
+        for key,val in psv.items():
+            if type(val) is not list: val=[val]
+            for v in val:
+                if v is None: continue
+                v.finalize()
+                #self.presentation.xticlabels1 = self.vars[0]
+                #self.presentation.yticlabels1 = self.vars[1]
+        return self.plotspec_values

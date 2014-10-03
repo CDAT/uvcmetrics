@@ -307,14 +307,25 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                                #first pass through just save the array
                                                xvar = var.flatten()
                                                savePNG = False
-                                           else:
+                                           elif varIndex == 1:
                                                #second pass through plot the 2 variables
                                                yvar = var.flatten()
                                                #if r == len(res)-1:
                                                #    res[r].presentation.list()
-                                               #    pdb.set_trace()
+                                               #pdb.set_trace()
                                                vcanvas.plot(xvar, yvar, res[r].presentation, tm, bg=1, title=title, units=getattr(xvar,'units',''),
                                                         source=res[r].source )
+                                           elif varIndex == 3:
+                                               #third pass through just save the array
+                                               xvar = var.flatten()            
+                                           else:
+                                               #fourth pass through plot the 2 variables
+                                               yvar = var.flatten()
+                                               res[r].presentation.linewidth = 10
+                                               vcanvas.plot(xvar, yvar, res[r].presentation, tm, bg=1)    
+                                                                                                                             
+                                           #save the png file for the last variable
+                                           if varIndex+1 == len(res[r].vars):
                                                savePNG = True
 
                                            #if r<3:
