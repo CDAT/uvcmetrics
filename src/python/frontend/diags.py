@@ -123,7 +123,8 @@ def run_diagnostics_from_options( opts1 ):
        filetable2 = path2filetable( opts1, path=path2, filter=filt2 )
 
     run_diagnostics_from_filetables( opts1, filetable1, filetable2 )
-def processScatterPlot(res, tm, tm2,  varIndex, var, vcanvas, vcanvas2):
+def processScatterPlot(res):
+    global varIndex, var, xvar, yvar, vcanvas, vcanvas2, tm, tm2
     if varIndex == 0:
         #first pass through just save the array
         xvar = var.flatten()
@@ -152,7 +153,7 @@ def processScatterPlot(res, tm, tm2,  varIndex, var, vcanvas, vcanvas2):
     #if r<3:
     #    # We need more templates so we can have >3 plots in vcanvas2!
         vcanvas2.plot(xvar, yvar, res.presentation, tm2, bg=1)     
-    return vcanvas, vcanvas2, savePng
+    return savePNG
     
 def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
     """Runs the diagnostics.  The data is specified by the filetables.
@@ -227,6 +228,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                     if len(variables)==0 and len(opts.get('vars',[]))>0:
                         print "WARNING: Couldn't find any of the requested variables:",opts['vars']
                         print "among",variables
+                varIndex = 0
                 for varid in variables:
                     print "variable",varid,"season",seasonid
                     vard = pclass.all_variables( filetable1, filetable2, sname )
@@ -322,7 +324,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                        tm.comment1.priority = 0
 
                                        if vcs.isscatter(res[r].presentation):
-                                           vcanvas, vcanvas2, savePng = processScatterPlot(res, tm, tm2,  varIndex, var, vcanvas, vcanvas2) 
+                                           savePNG = processScatterPlot(res[r]) 
 
                                        elif vcs.isvector(res[r].presentation) or res[r].presentation.__class__.__name__=="Gv":
                                            strideX = res[r].strideX
@@ -336,26 +338,26 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                                          var[1][::strideY,::strideX], res[r].presentation, tm, bg=1,
                                                          title=title, units=getattr(var,'units',''),
                                                          source=res[r].source )
+                                       else:
+                                           vcanvas.plot(var, rsr.presentation, tm, bg=1,
+                                                        title=title, units=getattr(var,'units',''),
+                                                        source=rsr.source )
+                                           #if r<3:
+                                           #    # We need more templates so we can have >3 plots in vcanvas2!
+                                           try:
+                                               if tm2 is not None:
+                                                   vcanvas2.plot(var, rsr.presentation, tm2, bg=1)
+                                           except vcs.error.vcsError as e:
+                                               print "ERROR making summary plot:",e
+                                       if var_id_save is not None:
+                                           if type(var_id_save) is str:
+                                               var.id = var_id_save
                                            else:
-                                               vcanvas.plot(var, rsr.presentation, tm, bg=1,
-                                                            title=title, units=getattr(var,'units',''),
-                                                            source=rsr.source )
-                                               #if r<3:
-                                               #    # We need more templates so we can have >3 plots in vcanvas2!
-                                               try:
-                                                   if tm2 is not None:
-                                                       vcanvas2.plot(var, rsr.presentation, tm2, bg=1)
-                                               except vcs.error.vcsError as e:
-                                                   print "ERROR making summary plot:",e
-                                           if var_id_save is not None:
-                                               if type(var_id_save) is str:
-                                                   var.id = var_id_save
-                                               else:
-                                                   for i in range(len(var_id_save)):
-                                                       var[i].id = var_id_save[i]
-                                           if savePNG:
-                                               vcanvas.png( fname )
-                                           rdone += 1
+                                               for i in range(len(var_id_save)):
+                                                   var[i].id = var_id_save[i]
+                                       if savePNG:
+                                           vcanvas.png( fname )
+                                       rdone += 1
                             # Also, write the nc output files and xml.
                             # Probably make this a command line option.
                             if res.__class__.__name__ is 'uvc_composite_plotspec':
