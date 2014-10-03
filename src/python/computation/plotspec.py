@@ -52,6 +52,7 @@ class derived_var(basic_id):
         dictvals = [ inpdict.get(inp,None) for inp in self._inputs ]
         nonevals = [nn for nn in dictvals if nn is None]
         if len(nonevals)>0:
+            print "cannot yet derive",self._id,"because missing inputs",nonevals
             return None
         output = apply( self._func, [ inpdict[inp] for inp in self._inputs ] )
         if type(output) is tuple or type(output) is list:
@@ -64,7 +65,8 @@ class derived_var(basic_id):
             #output._vid = self._vid      # self._vid is deprecated
             self.adopt( output )  # output gets ids of self
             self._file_attributes.update( getattr(output,'_file_attributes',{}) )
-        output.id = output._id[1]  # e.g. _id=('dv','STRESS_MAG','','ANN','ft0_cam_output'), id='STRESS_MAG'
+        if hasattr(output,'__cdms_internals__'):  # probably a mv
+            output.id = output._id[1]  # e.g. _id=('dv','STRESS_MAG','','ANN','ft0_cam_output'), id='STRESS_MAG'
         return output
     @classmethod
     def dict_id( cls, varid, varmod, seasonid, ft1, ft2=None ):
