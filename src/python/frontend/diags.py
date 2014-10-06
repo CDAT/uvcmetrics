@@ -200,10 +200,10 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                 for varid in variables:
                     print "variable",varid,"season",seasonid
                     vard = pclass.all_variables( filetable1, filetable2, sname )
-                    var = vard[varid]
+                    plotvar = vard[varid]
 
                     # Find variable options.  If none were requested, that means "all".
-                    vvaropts = var.varoptions()
+                    vvaropts = plotvar.varoptions()
                     if vvaropts is None:
                         if len(opts['varopts'])>0:
                             if opts['varopts']!=[None]:
