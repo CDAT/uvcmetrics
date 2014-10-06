@@ -92,6 +92,8 @@ class plotspec(basic_id):
         self, vid,
         zvars=[], zfunc=None, zrangevars=[], zrangefunc=None,
         z2vars=[], z2func=None, z2rangevars=[], z2rangefunc=None,
+        z3vars=[], z3func=None, z3rangevars=[], z3rangefunc=None,
+        z4vars=[], z4func=None, z4rangevars=[], z4rangefunc=None,
         plottype='table',
         title = None,
         source = ''
@@ -127,10 +129,22 @@ class plotspec(basic_id):
         self.zvars = zvars
         self.zrangevars = zrangevars
         self.zrangefunc = zrangefunc
+        
         self.z2func = z2func
         self.z2vars = z2vars
         self.z2rangevars = z2rangevars
         self.z2rangefunc = z2rangefunc
+        
+        self.z3func = z3func
+        self.z3vars = z3vars
+        self.z3rangevars = z3rangevars
+        self.z3rangefunc = z3rangefunc
+        
+        self.z4func = z4func
+        self.z4vars = z4vars
+        self.z4rangevars = z4rangevars
+        self.z4rangefunc = z4rangefunc
+        
         self.plottype = plottype
         if title is not None:
             self.title = title

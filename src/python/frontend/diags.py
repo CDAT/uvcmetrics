@@ -123,7 +123,38 @@ def run_diagnostics_from_options( opts1 ):
        filetable2 = path2filetable( opts1, path=path2, filter=filt2 )
 
     run_diagnostics_from_filetables( opts1, filetable1, filetable2 )
-
+def processScatterPlot(res):
+    global varIndex, var, xvar, yvar, vcanvas, vcanvas2, tm, tm2
+    if varIndex == 0:
+        #first pass through just save the array
+        xvar = var.flatten()
+        savePNG = False
+    elif varIndex == 1:
+        #second pass through plot the 2 variables
+        yvar = var.flatten()
+        #if r == len(res)-1:
+        #    res[r].presentation.list()
+        #pdb.set_trace()
+        vcanvas.plot(xvar, yvar, res.presentation, tm, bg=1, title=title, units=getattr(xvar,'units',''),
+                 source=res.source )
+    elif varIndex == 3:
+        #third pass through just save the array
+        xvar = var.flatten()            
+    else:
+        #fourth pass through plot the 2 variables
+        yvar = var.flatten()
+        res.presentation.linewidth = 10
+        vcanvas.plot(xvar, yvar, res.presentation, tm, bg=1)    
+                                                                                      
+    #save the png file for the last variable
+    if varIndex+1 == len(res.vars):
+        savePNG = True
+    
+    #if r<3:
+    #    # We need more templates so we can have >3 plots in vcanvas2!
+        vcanvas2.plot(xvar, yvar, res.presentation, tm2, bg=1)     
+    return savePNG
+    
 def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
     """Runs the diagnostics.  The data is specified by the filetables.
     Most other choices, such as the plot sets, variables, and seasons, are specified in opts,
@@ -197,6 +228,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                     if len(variables)==0 and len(opts.get('vars',[]))>0:
                         print "WARNING: Couldn't find any of the requested variables:",opts['vars']
                         print "among",variables
+                varIndex = 0
                 for varid in variables:
                     print "variable",varid,"season",seasonid
                     vard = pclass.all_variables( filetable1, filetable2, sname )
@@ -278,95 +310,54 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                        if rsr is None:
                                            continue
                                        else:
-                                           rsr_presentation = rsr.presentation
-                                       title = rsr.title
-                     
-                                       for varIndex, var in enumerate(rsr.vars):
-                                           savePNG = True
-                                           seqsetattr(var,'title',title)
+                                           vname = varid.replace(' ', '_')
+                                           var_id_save = None
 
-                                           # ...But the VCS plot system will overwrite the title line
-                                           # with whatever else it can come up with:
-                                           # long_name, id, and units. Generally the units are harmless,
-                                           # but the rest has to go....
+                                       vname = vname.replace('/', '_')
+                                       fname = outdir+'/figure-set'+sname[0]+'_'+rname+'_'+seasonid+'_'+vname+'_plot-'+str(r)+'.png'
+                                       print "writing png file",fname
+                                       #res[r].presentation.script("jeff.json")   #example of writing a json file
+#DEAN
+                                       tm.source.priority = 0
+                                       tm.dataname.priority = 0
+                                       tm.title.priority = 1
+                                       tm.comment1.priority = 0
 
-                                           if seqhasattr(var,'long_name'):
-                                               if type(var) is tuple:
-                                                   for v in var:
-                                                       del v.long_name
-                                               else:
-                                                   del var.long_name
-                                           if seqhasattr(var,'id'):
-                                               if type(var) is tuple:   # only for vector plots
-                                                   vname = ','.join( seqgetattr(var,'id','') )
-                                                   vname = vname.replace(' ', '_')
-                                                   var_id_save = seqgetattr(var,'id','')
-                                                   seqsetattr( var,'id','' )
-                                               else:
-                                                   vname = var.id.replace(' ', '_')
-                                                   var_id_save = var.id
-                                                   var.id = ''         # If id exists, vcs uses it as a plot title
-                                                   # and if id doesn't exist, the system will create one before plotting!
+                                       if vcs.isscatter(res[r].presentation):
+                                           savePNG = processScatterPlot(res[r]) 
 
-                                               vname = vname.replace('/', '_')
-                                               fname = outdir+'/figure-set'+snum+'_'+rname+'_'+seasonid+'_'+vname+'_plot-'+str(r)+'.png'
-                                               print "writing png file",fname
-                                               #rsr_presentation.script("jeff.json")   #example of writing a json file
-
-                                           if vcs.isscatter(rsr.presentation):
-                                               if varIndex == 0:
-                                                   #first pass through just save the array
-                                                   xvar = var.flatten()
-                                                   savePNG = False
-                                               else:
-                                                   #second pass through plot the 2 variables
-                                                   yvar = var.flatten()
-                                                   #if r == len(res)-1:
-                                                   #    rsr.presentation.list()
-                                                   #    pdb.set_trace()
-                                                   vcanvas.plot(xvar, yvar, rsr.presentation, tm, bg=1, title=title, units=getattr(xvar,'units',''),
-                                                            source=rsr.source )
-                                                   savePNG = True
-
-                                               #if r<3:
-                                               #    # We need more templates so we can have >3 plots in vcanvas2!
-                                                   if tm2 is not None:
-                                                       vcanvas2.plot(xvar, yvar, rsr.presentation, tm2, bg=1)     
-
-                                           elif vcs.isvector(rsr.presentation) or rsr.presentation.__class__.__name__=="Gv":
-                                               strideX = rsr.strideX
-                                               strideY = rsr.strideY
-                                               vcanvas.plot( var[0][::strideY,::strideX],
-                                                             var[1][::strideY,::strideX], rsr.presentation, tm, bg=1,
-                                                             title=title, units=getattr(var,'units',''),
-                                                             source=rsr.source )
-                                               # first plot is all black, second plot works
-                                               vcanvas.plot( var[0][::strideY,::strideX],
-                                                             var[1][::strideY,::strideX], rsr.presentation, tm, bg=1,
-                                                             title=title, units=getattr(var,'units',''),
-                                                             source=rsr.source )
-
+                                       elif vcs.isvector(res[r].presentation) or res[r].presentation.__class__.__name__=="Gv":
+                                           strideX = res[r].strideX
+                                           strideY = res[r].strideY
+                                           vcanvas.plot( var[0][::strideY,::strideX],
+                                                         var[1][::strideY,::strideX], res[r].presentation, tm, bg=1,
+                                                         title=title, units=getattr(var,'units',''),
+                                                         source=res[r].source )
+                                           # first plot is all black, second plot works
+                                           vcanvas.plot( var[0][::strideY,::strideX],
+                                                         var[1][::strideY,::strideX], res[r].presentation, tm, bg=1,
+                                                         title=title, units=getattr(var,'units',''),
+                                                         source=res[r].source )
+                                       else:
+                                           vcanvas.plot(var, rsr.presentation, tm, bg=1,
+                                                        title=title, units=getattr(var,'units',''),
+                                                        source=rsr.source )
+                                           #if r<3:
+                                           #    # We need more templates so we can have >3 plots in vcanvas2!
+                                           try:
+                                               if tm2 is not None:
+                                                   vcanvas2.plot(var, rsr.presentation, tm2, bg=1)
+                                           except vcs.error.vcsError as e:
+                                               print "ERROR making summary plot:",e
+                                       if var_id_save is not None:
+                                           if type(var_id_save) is str:
+                                               var.id = var_id_save
                                            else:
-                                               vcanvas.plot(var, rsr.presentation, tm, bg=1,
-                                                            title=title, units=getattr(var,'units',''),
-                                                            source=rsr.source )
-                                               #if r<3:
-                                               #    # We need more templates so we can have >3 plots in vcanvas2!
-                                               try:
-                                                   if tm2 is not None:
-                                                       vcanvas2.plot(var, rsr.presentation, tm2, bg=1)
-                                               except vcs.error.vcsError as e:
-                                                   print "ERROR making summary plot:",e
-                                           if var_id_save is not None:
-                                               if type(var_id_save) is str:
-                                                   var.id = var_id_save
-                                               else:
-                                                   for i in range(len(var_id_save)):
-                                                       var[i].id = var_id_save[i]
-                                           if savePNG:
-                                               vcanvas.png( fname )
-
-                                           rdone += 1
+                                               for i in range(len(var_id_save)):
+                                                   var[i].id = var_id_save[i]
+                                       if savePNG:
+                                           vcanvas.png( fname )
+                                       rdone += 1
                             # Also, write the nc output files and xml.
                             # Probably make this a command line option.
                             if res.__class__.__name__ is 'uvc_composite_plotspec':

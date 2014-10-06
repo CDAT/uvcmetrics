@@ -218,10 +218,12 @@ class uvc_simple_plotspec():
             elif presentation == "Isoline":
                 self.presentation = vcsx.createisoline()
             elif presentation == "Scatter":
-                self.presentation = vcsx.getscatter('default')#vcsx.createscatter()
+                self.presentation = vcsx.getscatter('default')#vcsx.createscatter() doesn't work
                 self.presentation.linewidth = 0
                 self.presentation.merkercolor = 242
-                self.presentation.markersize = 20
+                self.presentation.markersize = 100
+            elif presentation == "Taylor":
+                self.presentation = vcsx.createtaylordiagram()
             else:
                 print "ERROR, uvc_plotspec doesn't recognize presentation",presentation
                 self.presentation = "Isofill"  # try to go on
@@ -297,9 +299,9 @@ class uvc_simple_plotspec():
             if vcs.isscatter(self.presentation):
                 #pdb.set_trace()
                 ylabel, xlabel = string.split(self.title, ' vs ')
-                self.presentation.xticlabels1 = {1:'20', 2: xlabel}
-                self.presentation.yticlabels1 = {1:'40', 2: ylabel}
-                self.presentation.list()
+                #self.presentation.xticlabels1 = {1:'20', 2: xlabel}
+                #self.presentation.yticlabels1 = {1:'40', 2: ylabel}
+                #self.presentation.list()
                 #self.presentation.datawc_x1 = 0.
                 #self.presentation.datawc_x2 = 120.
                 #self.presentation.datawc_y1 = -120.
