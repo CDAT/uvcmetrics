@@ -299,13 +299,17 @@ class uvc_simple_plotspec():
             if vcs.isscatter(self.presentation):
                 #pdb.set_trace()
                 ylabel, xlabel = string.split(self.title, ' vs ')
-                #self.presentation.xticlabels1 = {1:'20', 2: xlabel}
-                #self.presentation.yticlabels1 = {1:'40', 2: ylabel}
+                MIN = 0.0
+                MAX = 120.
+                self.presentation.xticlabels1 = vcs.mklabels(vcs.mkscale(MIN, MAX))
                 #self.presentation.list()
-                #self.presentation.datawc_x1 = 0.
-                #self.presentation.datawc_x2 = 120.
+                self.presentation.datawc_x1 = MIN
+                self.presentation.datawc_x2 = MAX
+                self.presentation.xticlabels2 = {(MIN+MAX)/2.: xlabel}
+                #self.presentation.yticlabels1 = {1:'40', 2: ylabel}
                 #self.presentation.datawc_y1 = -120.
-                #self.presentation.datawc_y2 = 0.                             
+                #self.presentation.datawc_y2 = 0.    
+                self.presentation.list()                         
             elif vcs.isyxvsx(self.presentation) or\
                     self.presentation.__class__.__name__=="GYx" or\
                     self.presentation.__class__.__name__=="G1d":
