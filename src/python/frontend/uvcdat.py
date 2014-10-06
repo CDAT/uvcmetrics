@@ -401,9 +401,7 @@ class uvc_simple_plotspec():
                 ##self.presentation.fillareacolors=[32,48,64,80,96,112,128,144,160,176,240]
             elif vcs.isvector(self.presentation) or self.presentation.__class__.__name__=="Gv":
                 vec = self.presentation
-                #vec.scale = min(vcsx.bgX,vcsx.bgY)/ 200. # preferred
-                #vec.scale = min(vcsx.bgX,vcsx.bgY)/ 150.
-                vec.scale = min(vcsx.bgX,vcsx.bgY)/ 30.
+                vec.scale = min(vcsx.bgX,vcsx.bgY)/ 10.
                 if hasattr(self.vars[0],'__getitem__') and not hasattr( self.vars[0], '__cdms_internals__'):
                     # generally a tuple of variables - we need 2 variables to describe a vector
                     v = self.vars[0][0]
@@ -416,10 +414,8 @@ class uvc_simple_plotspec():
                     print "variable",v.id
                 nlats = latAxis(v).shape[0]
                 nlons = lonAxis(w).shape[0]
-                #self.strideX = 0.6* vcsx.bgX/nlons   # preferred
-                #self.strideY = 0.4* vcsx.bgY/nlats
-                self.strideX = int( 1.0* vcsx.bgX/nlons )
-                self.strideY = int( 0.8* vcsx.bgY/nlats )
+                self.strideX = int( 0.9* vcsx.bgX/nlons )
+                self.strideY = int( 0.6* vcsx.bgY/nlats )
         else:
             print "ERROR cannot identify graphics method",self.presentation.__class__.__name__
 
