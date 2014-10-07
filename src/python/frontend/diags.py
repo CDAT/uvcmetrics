@@ -254,12 +254,21 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                         gms[ir] = resr.ptype.lower()
                                         ovly[ir] = 0
                                         ir += 1
+                                if None in gms:
+                                    print "WARNING, missing a graphics method. gms=",gms
                                 # Now get the templates which correspond to the graphics methods and overlay statuses.
                                 # tmobs[ir] is the template for plotting a simple plot on a page
                                 #   which has just one single-plot - that's vcanvas
                                 # tmmobs[ir] is the template for plotting a simple plot on a page
                                 #   which has the entire compound plot - that's vcanvas2
                                 gmobs, tmobs, tmmobs = return_templates_graphic_methods( vcanvas, gms, ovly, onPage )
+                                if 1==0: optional debugging:
+                                    print "tmpl nsingleplots=",nsingleplots,"nsimpleplots=",nsimpleplots
+                                    print "tmpl gms=",gms
+                                    print "tmpl len(res)=",len(res),"ovly=",ovly,"onPage=",onPage
+                                    print "tmpl gmobs=",gmobs
+                                    print "tmpl tmobs=",tmobs
+                                    print "tmpl tmmobs=",tmmobs
 
                                 ir = -1
                                 for r,resr in enumerate(res):
