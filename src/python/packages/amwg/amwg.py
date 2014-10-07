@@ -1155,15 +1155,15 @@ class amwg_plot_set6(amwg_plot_spec):
         return self.plotspec_values[self.plotall_id]
 
 
-class amwg_plot_set7(amwg_plot_spec):
+class xxxamwg_plot_set7(amwg_plot_spec):
     """This represents one plot from AMWG Diagnostics Plot Set 7
     Each graphic is a set of three polar contour plots: model output, observations, and
     the difference between the two.  A plot's x-axis is longitude and its y-axis is the latitude;
     normally a world map will be overlaid using stereographic projection. The user selects the
     hemisphere.
     """
-    name = '7 - Polar Contour and Vector Plots of Seasonal Means'
-    number = '7'
+    #name = '7 - Polar Contour and Vector Plots of Seasonal Means'
+    #number = '7'
     def __init__( self, filetable1, filetable2, varid, seasonid=None, region=None, aux=slice(0,None) ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the variable to be plotted, e.g. 'TREFHT'.
@@ -1576,9 +1576,9 @@ class amwg_plot_set10(amwg_plot_spec, basic_id):
         plot_val.finalize()
         return [ plot_val]
     
-class amwg_plot_set11(amwg_plot_spec):
-    name = '11 - Pacific annual cycle, Scatter plots:incomplete'
-    number = '11'
+class xxxamwg_plot_set11(amwg_plot_spec):
+    #name = '11 - Pacific annual cycle, Scatter plots:incomplete'
+    #number = '11'
     def __init__( self, filetable1, filetable2, varid, seasonid='ANN', region=None, aux=None ):
         """filetable1, filetable2 should be filetables for each model.
         varid is a string, e.g. 'TREFHT'.  The seasonal difference is Seasonid
@@ -1682,9 +1682,9 @@ class amwg_plot_set11(amwg_plot_spec):
                 #self.presentation.yticlabels1 = self.vars[1]
         return self.plotspec_values[self.plotall_id]
 
-class amwg_plot_set12(amwg_plot_spec):
-    name = '12 - Vertical Profiles at 17 selected raobs stations:incomplete'
-    number = '12'
+class xxxamwg_plot_set12(amwg_plot_spec):
+    #name = '12 - Vertical Profiles at 17 selected raobs stations:incomplete'
+    #number = '12'
     def __init__( self, filetable1, filetable2, varid, seasonid='ANN', region=None, aux=None ):
         """filetable1, filetable2 should be filetables for each model.
         varid is a string, e.g. 'TREFHT'.  The seasonal difference is Seasonid
@@ -1833,9 +1833,9 @@ def join_scalar_data(*args ):
     #print M
     #M.info()
     return M
-class amwg_plot_set14(amwg_plot_spec):
-    name = '14 - Taylor diagrams: incomplete'
-    number = '14'
+class xxxamwg_plot_set14(amwg_plot_spec):
+    #name = '14 - Taylor diagrams: incomplete'
+    #number = '14'
     def __init__( self, filetable1, filetable2, varid, seasonid='ANN', region=None, aux=None ):
         """filetable1, filetable2 should be filetables for each model.
         varid is a string, e.g. 'TREFHT'.  The seasonal difference is Seasonid
@@ -1953,3 +1953,155 @@ class amwg_plot_set14(amwg_plot_spec):
                 #self.presentation.xticlabels1 = self.vars[0]
                 #self.presentation.yticlabels1 = self.vars[1]
         return self.plotspec_values
+def reduce2level( mv, seasons=None, vid=None ):
+    """as reduce2lat, but averaging reduces coordinates to (lev,lat)"""
+    if vid==None:   # Note that the averager function returns a variable with meaningless id.
+        vid = 'reduced_'+mv.id
+    if levAxis(mv) is None: return None
+    axes = allAxes( mv )
+    axis_name = None
+    for AXIS in axes:
+        if AXIS.islevel():
+            axis_name = AXIS.id
+            break
+    if axis_name:
+        avmv = averager( mv, axis=axis_name )
+        avmv.id = vid
+        if hasattr(mv,'units'):
+            avmv.units = mv.units
+        return avmv
+    return None
+class xxxamwg_plot_set15(amwg_plot_spec): 
+    """This class represents one plot from AMWG Diagnostics Plot Set 8.
+    Each such plot is a set of three contour plots: two for the model output and
+    the difference between the two.  A plot's x-axis is time  and its y-axis is latitude.
+    The data presented is a climatological zonal mean throughout the year.
+    To generate plots use Dataset 1 in the AMWG diagnostics menu, set path to the directory.
+    Repeat this for observation 1 and then apply.  If only Dataset 1 is specified a plot
+    of the model zonal mean is diaplayed.
+    """
+    # N.B. In plot_data.py, the plotspec contained keys identifying reduced variables.
+    # Here, the plotspec contains the variables themselves.
+    #name = '15 - ARM Sites Annual Cycle Contour Plots:incomplete'
+    #number = '15'
+
+    def __init__( self, filetable1, filetable2, varid, seasonid='ANN', region=None, aux=None ):
+        """filetable1, should be a directory filetable for each model.
+        varid is a string, e.g. 'TREFHT'.  The zonal mean is computed for each month. """
+        
+        self.season = seasonid          
+        self.FT1 = (filetable1 != None)
+        self.FT2 = (filetable2 != None)
+        
+        self.CONTINUE = self.FT1
+        if not self.CONTINUE:
+            print "user must specify a file table"
+            return None
+        self.filetables = [filetable1]
+        if self.FT2:
+            self.filetables +=[filetable2]
+        self.datatype = ['model', 'obs']
+        self.vars = [varid, 'P']
+        
+        plot_spec.__init__(self, seasonid)
+        self.plottype = 'Isofill'
+        self._seasonid = seasonid
+        self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
+        ft1id, ft2id = filetable_ids(filetable1, filetable2)
+
+        self.plot1_id = '_'.join([ft1id, varid, 'composite', 'contour'])
+        if self.FT2:
+            self.plot2_id = '_'.join([ft2id, varid, 'composite', 'contour'])
+            self.plot3_id = '_'.join([ft1id+'-'+ft2id, varid, seasonid, 'contour'])
+        self.plotall_id = '_'.join([ft1id,ft2id, varid, seasonid])
+        if not self.computation_planned:
+            self.plan_computation( filetable1, filetable2, varid, seasonid )
+
+    def plan_computation( self, filetable1, filetable2, varid, seasonid ):
+
+        self.computation_planned = False
+        
+        #setup the reduced variables
+        self.reduced_variables = {}
+        vidAll = {}
+        for FT in self.filetables:
+            #pdb.set_trace()
+            VIDs = []
+            for i in range(1, 13):
+                month = cdutil.times.getMonthString(i)
+                #pdb.set_trace()
+                #create identifiers
+                VID = rv.dict_id(varid, month, FT)
+                RF = (lambda x, varid, vid=id2str(VID), month=VID[2]:reduced_variables_press_lev(x, varid, month, vid=vid))
+                RV = reduced_variable(variableid = varid, 
+                                      filetable = FT, 
+                                      season = cdutil.times.Seasons(VID[2]), 
+                                      reduction_function =  RF)
+
+
+                self.reduced_variables[id2str(VID)] = RV
+                VIDs += [VID]
+            vidAll[FT] = VIDs               
+        print self.reduced_variables.keys()
+        vidModel = dv.dict_id(varid, 'ZonalMean model', self._seasonid, filetable1)
+        if self.FT2:
+            vidObs  = dv.dict_id(varid, 'ZonalMean obs', self._seasonid, filetable2)
+            vidDiff = dv.dict_id(varid, 'ZonalMean difference', self._seasonid, filetable1)
+        else:
+            vidObs  = None
+            vidDiff = None
+        
+        #vidModel = id2str(vidModel)
+        #vidObs = id2str(vidObs)
+        #vidDiff = id2str(vidDiff)
+        
+        self.derived_variables = {}
+        #create the derived variables which is the composite of the months
+        #print vidAll[filetable1]
+        self.derived_variables[vidModel] = derived_var(vid=id2str(vidModel), inputs=vidAll[filetable1], func=join_data) 
+        if self.FT2:
+            #print vidAll[filetable2]
+            self.derived_variables[vidObs] = derived_var(vid=id2str(vidObs), inputs=vidAll[filetable2], func=join_data) 
+            #create the derived variable which is the difference of the composites
+            self.derived_variables[vidDiff] = derived_var(vid=id2str(vidDiff), inputs=[vidModel, vidObs], func=aminusb_ax2) 
+        print self.derived_variables.keys()
+        
+        #create composite plots np.transpose zfunc = (lambda x: x), zfunc = (lambda z:z),
+        self.single_plotspecs = {
+            self.plot1_id: plotspec(vid = ps.dict_idid(vidModel), 
+                                    zvars = [vidModel],
+                                    zfunc = (lambda x: MV2.transpose(x)),
+                                    plottype = self.plottype )}
+        if self.FT2:
+            self.single_plotspecs[self.plot2_id] = \
+                               plotspec(vid = ps.dict_idid(vidObs), 
+                                        zvars=[vidObs],   
+                                        zfunc = (lambda x: MV2.transpose(x)),                                
+                                        plottype = self.plottype )
+            self.single_plotspecs[self.plot3_id] = \
+                               plotspec(vid = ps.dict_idid(vidDiff), 
+                                        zvars = [vidDiff],
+                                        zfunc = (lambda x: MV2.transpose(x)),
+                                        plottype = self.plottype )
+        print self.single_plotspecs.keys()
+        
+        self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
+        self.computation_planned = True
+        pdb.set_trace()
+    def _results(self, newgrid=0):
+        #pdb.set_trace()
+        results = plot_spec._results(self, newgrid)
+        if results is None:
+            print "WARNING, AMWG plot set 15 found nothing to plot"
+            return None
+        psv = self.plotspec_values
+        if self.FT2:
+            if self.plot1_id in psv and self.plot2_id in psv and\
+                    psv[self.plot1_id] is not None and psv[self.plot2_id] is not None:
+                psv[self.plot1_id].synchronize_ranges(psv[self.plot2_id])
+        for key,val in psv.items():
+            if type(val) is not list: val=[val]
+            for v in val:
+                if v is None: continue
+                v.finalize()
+        return self.plotspec_values[self.plotall_id]
