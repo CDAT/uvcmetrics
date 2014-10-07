@@ -61,7 +61,29 @@ class AMWG(BasicDiagnosticGroup):
                  hasattr(aps,'name') and aps.name.find('dummy')<0 }
 
 class amwg_plot_spec(plot_spec):
-    package = AMWG  # Note that this is a class not an object.
+    package = AMWG  # Note that this is a class not an object; also not a string.
+    # Standard variables are derived variables which are as general-interest as most dataset
+    # variables (which soon become reduced variables).  So it makes sense for all plot sets
+    # (for the physical realm) to share them.  We use the derived_var class here to
+    # contain their information ,i.e. inputs and how to compute.  But, if one be used, another
+    # derived_var object will have to be built using the full variable ids, including season
+    # and filetable information.
+    # standard_variables is a dict.  The key is a variable name and the value is a list of
+    # derived_var objects, each of which gives a way to compute the variable.  The first on the
+    # list is the preferred method.  Of course, if the variable be already available as data,
+    # then that is preferred over any computation.
+    standard_variables = {
+        'PRECT':[derived_var(
+                vid='PRECT', inputs=['PRECC','PRECL'], outputs=['PRECT'],
+                func=(lambda a,b,units="mm/day": aplusb(a,b,units) ))],
+        'AODVIS':[derived_var(
+                vid='AODVIS', inputs=['AOD_550'], outputs=['AODVIS'],
+                func=(lambda x: setunits(x,'')) )],
+        'TREFHT':[derived_var(
+                vid='TREFHT', inputs=['TREFHT_LAND'], outputs=['TREFHT'],
+                func=(lambda x: x) )]
+        # AOD normally has no units, but sometimes the units attribute is set anyway.
+        }
     @staticmethod
     def _list_variables( filetable1, filetable2=None ):
         return amwg_plot_spec.package._list_variables( filetable1, filetable2, "amwg_plot_spec" )
@@ -518,6 +540,8 @@ class amwg_plot_set5and6(amwg_plot_spec):
 
         self.varid = varid
         ft1id,ft2id = filetable_ids(filetable1,filetable2)
+        self.reduced_variables = {}
+        self.derived_variables = {}
         self.plot1_id = ft1id+'_'+varid+'_'+seasonid
         self.plot2_id = ft2id+'_'+varid+'_'+seasonid
         self.plot3_id = ft1id+' - '+ft2id+'_'+varid+'_'+seasonid
@@ -533,78 +557,129 @@ class amwg_plot_set5and6(amwg_plot_spec):
         listvars.sort()
         return listvars
     @staticmethod
-    def _all_variables( filetable1, filetable2=None ):
+    def _all_variables( filetable1, filetable2=None, use_standard_vars=True ):
         allvars = amwg_plot_spec.package._all_variables( filetable1, filetable2, "amwg_plot_spec" )
         for varname in amwg_plot_spec.package._list_variables_with_levelaxis(
             filetable1, filetable2, "amwg_plot_spec" ):
             allvars[varname] = level_variable_for_amwg_set5
+        if use_standard_vars:
+            for varname in amwg_plot_spec.standard_variables.keys():
+                allvars[varname] = basic_plot_variable
         return allvars
     def plan_computation( self, filetable1, filetable2, varid, seasonid, region=None, aux=None ):
         if isinstance(aux,Number):
             return self.plan_computation_level_surface( filetable1, filetable2, varid, seasonid, region, aux )
         else:
             return self.plan_computation_normal_contours( filetable1, filetable2, varid, seasonid, region, aux )
-    def plan_computation_normal_contours( self, filetable1, filetable2, varid, seasonid, region=None, aux=None ):
+    def plan_computation_normal_contours( self, filetable1, filetable2, varnom, seasonid, region=None, aux=None ):
         """Set up for a lat-lon contour plot, as in plot set 5.  Data is averaged over all other
         axes."""
-        reduced_varlis = [
-            reduced_variable(
-                variableid=varid, filetable=filetable1, season=self.season,
-                reduction_function=(lambda x,vid: reduce2latlon_seasonal( x, self.season, vid ) ) ),
-            reduced_variable(
-                variableid=varid, filetable=filetable2, season=self.season,
-                reduction_function=(lambda x,vid: reduce2latlon_seasonal( x, self.season, vid ) ) ),
-            reduced_variable(
-                # variance, for when there are variance climatology files
-                variableid=varid+'_var', filetable=filetable1, season=self.season,
-                reduction_function=(lambda x,vid: reduce2latlon_seasonal( x, self.season, vid ) ) )
-            ]
-        self.reduced_variables = { v.id():v for v in reduced_varlis }
-        vid1 = rv.dict_id( varid, seasonid, filetable1 )
-        vid2 = rv.dict_id( varid, seasonid, filetable2 )
-        vid1var = rv.dict_id( varid+'_var', seasonid, filetable1 )
-        self.derived_variables = {}
+        if varnom in filetable1.list_variables():
+            vid1,vid1var = self.vars_normal_contours(
+                filetable1, varnom, seasonid, region=None, aux=None )
+        elif varnom in self.standard_variables.keys():
+            vid1,vid1var = self.vars_stdvar_normal_contours(
+                filetable1, varnom, seasonid, region=None, aux=None )
+        else:
+            return None
+        if varnom in filetable2.list_variables():
+            vid2,vid2var = self.vars_normal_contours(
+                filetable2, varnom, seasonid, region=None, aux=None )
+        elif varnom in self.standard_variables.keys():
+            vid2,vid2var = self.vars_stdvar_normal_contours(
+                filetable2, varnom, seasonid, region=None, aux=None )
+        else:
+            return None
         self.single_plotspecs = {}
         ft1src = filetable1.source()
         try:
             ft2src = filetable2.source()
         except:
             ft2src = ''
+        all_plotnames = []
         if filetable1 is not None:
-            self.single_plotspecs[self.plot1_id] = plotspec(
-                vid = ps.dict_idid(vid1),
-                zvars = [vid1],  zfunc = (lambda z: z),
-                plottype = self.plottype,
-                #title = ' '.join([varid,seasonid,filetable1._strid]) )
-                title = ' '.join([varid,seasonid,'(1)']),
-                source = ft1src )
-            self.single_plotspecs[self.plot1var_id] = plotspec(
-                vid = ps.dict_idid(vid1var),
-                zvars = [vid1var],  zfunc = (lambda z: z),
-                plottype = self.plottype,
-                #title = ' '.join([varid,seasonid,filetable1._strid,'variance']) )
-                title = ' '.join([varid,seasonid,'1 variance']),
-                source = ft1src )
-        if filetable2 is not None:
+            if vid1 is not None:
+                self.single_plotspecs[self.plot1_id] = plotspec(
+                    vid = ps.dict_idid(vid1),
+                    zvars = [vid1],  zfunc = (lambda z: z),
+                    plottype = self.plottype,
+                    #title = ' '.join([varnom,seasonid,filetable1._strid]) )
+                    title = ' '.join([varnom,seasonid,'(1)']),
+                    source = ft1src )
+                all_plotnames.append(self.plot1_id)
+            if vid1var is not None:
+                self.single_plotspecs[self.plot1var_id] = plotspec(
+                    vid = ps.dict_idid(vid1var),
+                    zvars = [vid1var],  zfunc = (lambda z: z),
+                    plottype = self.plottype,
+                    #title = ' '.join([varnom,seasonid,filetable1._strid,'variance']) )
+                    title = ' '.join([varnom,seasonid,'1 variance']),
+                    source = ft1src )
+                all_plotnames.append(self.plot1var_id)
+        if filetable2 is not None and vid1 is not None:
             self.single_plotspecs[self.plot2_id] = plotspec(
                 vid = ps.dict_idid(vid2),
                 zvars = [vid2],  zfunc = (lambda z: z),
                 plottype = self.plottype,
-                #title = ' '.join([varid,seasonid,filetable2._strid]) )
-                title = ' '.join([varid,seasonid,'(2)']),
+                #title = ' '.join([varnom,seasonid,filetable2._strid]) )
+                title = ' '.join([varnom,seasonid,'(2)']),
                 source = ft2src )
-        if filetable1 is not None and filetable2 is not None:
+            all_plotnames.append(self.plot2_id)
+        if filetable1 is not None and filetable2 is not None and vid1 is not None and vid2 is not None:
             self.single_plotspecs[self.plot3_id] = plotspec(
-                vid = ps.dict_id(varid,'diff',seasonid,filetable1,filetable2),
+                vid = ps.dict_id(varnom,'diff',seasonid,filetable1,filetable2),
                 zvars = [vid1,vid2],  zfunc = aminusb_2ax,
                 plottype = self.plottype,
-                #title = ' '.join([varid,seasonid,filetable1._strid,'-',filetable2._strid]) )
-                title = ' '.join([varid,seasonid,'(1)-(2)']),
+                #title = ' '.join([varnom,seasonid,filetable1._strid,'-',filetable2._strid]) )
+                title = ' '.join([varnom,seasonid,'(1)-(2)']),
                 source = ', '.join([ft1src,ft2src]) )
+            all_plotnames.append(self.plot3_id)
         self.composite_plotspecs = {
-            self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id, self.plot1var_id ]
+            self.plotall_id: all_plotnames
             }
         self.computation_planned = True
+    def vars_normal_contours( self, filetable, varnom, seasonid, region=None, aux=None ):
+        reduced_varlis = [
+            reduced_variable(
+                variableid=varnom, filetable=filetable, season=self.season,
+                reduction_function=(lambda x,vid: reduce2latlon_seasonal( x, self.season, vid ) ) ),
+            reduced_variable(
+                # variance, for when there are variance climatology files
+                variableid=varnom+'_var', filetable=filetable, season=self.season,
+                reduction_function=(lambda x,vid: reduce2latlon_seasonal( x, self.season, vid ) ) )
+            ]
+        for v in reduced_varlis:
+            self.reduced_variables[v.id()] = v
+        vid = rv.dict_id( varnom, seasonid, filetable )
+        vidvar = rv.dict_id( varnom+'_var', seasonid, filetable ) # variance
+        return vid, vidvar
+    def vars_stdvar_normal_contours( self, filetable, varnom, seasonid, region=None, aux=None ):
+        """Set up for a lat-lon contour plot, as in plot set 5.  Data is averaged over all other
+        axes.  The variable given by varnom is *not* a data variable suitable for reduction.  It is
+        a standard_variable.  Its inputs will be reduced, then it will be set up as a derived_var.
+        """
+        if varnom not in self.standard_variables:
+            return None,None
+        computable = False
+        for svd in self.standard_variables[varnom]:  # loop over ways to compute varnom
+            invarnoms = svd._inputs
+            if len( set(invarnoms) - set(filetable.list_variables()) )<=0:
+                print "set difference=",set(invarnoms) - set(filetable.list_variables())
+                func = svd._func
+                computable = True
+                break
+        if not computable:
+            return None,None
+        rvs = []
+        for ivn in invarnoms:
+            rv = reduced_variable(
+                variableid=ivn, filetable=filetable, season=self.season,
+                reduction_function=(lambda x,vid: reduce2latlon_seasonal( x, self.season, vid ) ))
+            self.reduced_variables[rv.id()] = rv
+            rvs.append(rv.id())
+        vid = dv.dict_id( varnom, '', seasonid, filetable )
+        self.derived_variables[vid] = derived_var( vid=vid, inputs=rvs, func=func )
+        return vid, None
     def plan_computation_level_surface( self, filetable1, filetable2, varid, seasonid, region, aux ):
         """Set up for a lat-lon contour plot, averaged in other directions - except that if the
         variable to be plotted depend on level, it is not averaged over level.  Instead, the value
@@ -860,7 +935,6 @@ class amwg_plot_set6(amwg_plot_spec):
         needed_derivedvars = []
         for var in rvars:
             if var in ['TAUX','TAUY'] and filetable.filefmt.find('CAM')>=0:
-                print "jfp filetable",filetable,"is CAM, will apply minusb"
                 # We'll cheat a bit and change the sign as well as reducing dimensionality.
                 # The issue is that sign conventions differ in CAM output and the obs files.
 
@@ -1004,8 +1078,6 @@ class amwg_plot_set6(amwg_plot_spec):
         vid_vec2 =  vardict2[','.join([vars_vec2[0],vars_vec2[1]])]
         vid_vec21 = vardict2[vars_vec2[0]]
         vid_vec22 = vardict2[vars_vec2[1]]
-        print "jfp ft1 vid*:",vid_cont1,vid_vec1,vid_vec11,vid_vec12
-        print "jfp ft2 vid*:",vid_cont2,vid_vec2,vid_vec21,vid_vec22
         plot_type_temp = ['Isofill','Vector'] # can't use self.plottype yet because don't support it elsewhere as a list or tuple <<<<<
         if vars1 is not None:
             # Draw two plots, contour and vector, over one another to get a single plot.
