@@ -183,6 +183,13 @@ class uvc_composite_plotspec():
         writer.close()
         return filenames
 
+def get_month_strings(length=15):
+    import cdutil
+    months = []
+    for i in range(1,13): 
+        months += [cdutil.getMonthString(i)[0:length]]
+    return months
+    
 class uvc_simple_plotspec():
     """This is a simplified version of the plotspec class, intended for the UV-CDAT GUI.
     Once it stabilizes, I may replace the plotspec class with this one.
@@ -349,8 +356,7 @@ class uvc_simple_plotspec():
                         t=var.getTime()
                         if 'units' in dir(t) and t.units == "months since 1800":
                             time_lables = {}
-                            months_names = ["JAN","FEB","MAR","APR","MAY","JUN",
-                                            "JUL","AUG","SEP","OCT","NOV","DEC"]              
+                            months_names = get_month_strings(length=3)             
                             tc=t.asComponentTime()
                             for i, v in enumerate(t):
                                 time_lables[v] = months_names[tc[i].month-1]

@@ -1960,17 +1960,17 @@ class xxxamwg_plot_set15(amwg_plot_spec):
                 #pdb.set_trace()
                 #create identifiers
                 VID = rv.dict_id(varid, month, FT)
-                RF = (lambda x, vid=id2str(VID), month=VID[2]:reduce2level(x, seasons=cdutil.times.Seasons(month), vid=vid))
+                RF = (lambda x, varid, vid=id2str(VID), month=VID[2]:reduced_variables_press_lev(x, varid, month, vid=vid))
                 RV = reduced_variable(variableid = varid, 
                                       filetable = FT, 
                                       season = cdutil.times.Seasons(VID[2]), 
                                       reduction_function =  RF)
 
 
-                self.reduced_variables[RV.id()] = RV
+                self.reduced_variables[id2str(VID)] = RV
                 VIDs += [VID]
             vidAll[FT] = VIDs               
-        #print self.reduced_variables.keys()
+        print self.reduced_variables.keys()
         vidModel = dv.dict_id(varid, 'ZonalMean model', self._seasonid, filetable1)
         if self.FT2:
             vidObs  = dv.dict_id(varid, 'ZonalMean obs', self._seasonid, filetable2)
@@ -1978,7 +1978,11 @@ class xxxamwg_plot_set15(amwg_plot_spec):
         else:
             vidObs  = None
             vidDiff = None
-      
+        
+        #vidModel = id2str(vidModel)
+        #vidObs = id2str(vidObs)
+        #vidDiff = id2str(vidDiff)
+        
         self.derived_variables = {}
         #create the derived variables which is the composite of the months
         #print vidAll[filetable1]
@@ -1988,7 +1992,8 @@ class xxxamwg_plot_set15(amwg_plot_spec):
             self.derived_variables[vidObs] = derived_var(vid=id2str(vidObs), inputs=vidAll[filetable2], func=join_data) 
             #create the derived variable which is the difference of the composites
             self.derived_variables[vidDiff] = derived_var(vid=id2str(vidDiff), inputs=[vidModel, vidObs], func=aminusb_ax2) 
-            
+        print self.derived_variables.keys()
+        
         #create composite plots np.transpose zfunc = (lambda x: x), zfunc = (lambda z:z),
         self.single_plotspecs = {
             self.plot1_id: plotspec(vid = ps.dict_idid(vidModel), 
@@ -2006,9 +2011,11 @@ class xxxamwg_plot_set15(amwg_plot_spec):
                                         zvars = [vidDiff],
                                         zfunc = (lambda x: MV2.transpose(x)),
                                         plottype = self.plottype )
-            
+        print self.single_plotspecs.keys()
+        
         self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
         self.computation_planned = True
+        pdb.set_trace()
     def _results(self, newgrid=0):
         #pdb.set_trace()
         results = plot_spec._results(self, newgrid)
