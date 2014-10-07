@@ -262,7 +262,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                 # tmmobs[ir] is the template for plotting a simple plot on a page
                                 #   which has the entire compound plot - that's vcanvas2
                                 gmobs, tmobs, tmmobs = return_templates_graphic_methods( vcanvas, gms, ovly, onPage )
-                                if 1==0: optional debugging:
+                                if 1==1: # optional debugging:
                                     print "tmpl nsingleplots=",nsingleplots,"nsimpleplots=",nsimpleplots
                                     print "tmpl gms=",gms
                                     print "tmpl len(res)=",len(res),"ovly=",ovly,"onPage=",onPage
@@ -335,13 +335,12 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                                    #    pdb.set_trace()
                                                    vcanvas.plot(xvar, yvar, rsr.presentation, tm, bg=1, title=title, units=getattr(xvar,'units',''),
                                                             source=rsr.source )
-                                                   savePNG = True
-
-                                               #if r<3:
-                                               #    # We need more templates so we can have >3 plots in vcanvas2!
+                                               try:
                                                    if tm2 is not None:
-                                                       vcanvas2.plot(xvar, yvar, rsr.presentation, tm2, bg=1)     
-
+                                                       vcanvas2.plot(var, rsr.presentation, tm2, bg=1)
+                                               except vcs.error.vcsError as e:
+                                                   print "ERROR making summary plot:",e
+                                                   savePNG = True
                                            elif vcs.isvector(rsr.presentation) or rsr.presentation.__class__.__name__=="Gv":
                                                strideX = rsr.strideX
                                                strideY = rsr.strideY
@@ -354,13 +353,17 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                                              var[1][::strideY,::strideX], rsr.presentation, tm, bg=1,
                                                              title=title, units=getattr(var,'units',''),
                                                              source=rsr.source )
-
+                                               try:
+                                                   if tm2 is not None:
+                                                       vcanvas2.plot( var[0][::strideY,::strideX],
+                                                                      var[1][::strideY,::strideX],
+                                                                      rsr.presentation, tm2, bg=1 )
+                                               except vcs.error.vcsError as e:
+                                                   print "ERROR making summary plot:",e
                                            else:
                                                vcanvas.plot(var, rsr.presentation, tm, bg=1,
                                                             title=title, units=getattr(var,'units',''),
                                                             source=rsr.source )
-                                               #if r<3:
-                                               #    # We need more templates so we can have >3 plots in vcanvas2!
                                                try:
                                                    if tm2 is not None:
                                                        vcanvas2.plot(var, rsr.presentation, tm2, bg=1)
@@ -387,15 +390,11 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                             number_diagnostic_plots += 1
                             print "wrote plots",resc.title," to",filenames
                             if opts['plots']==True:
-                                if vcs.isvector(rsr_presentation) or rsr_presentation.__class__.__name__=="Gv":
-                                    pass  # for now
-                                else:
-                                    if tmmobs[0] is not None:  # If anything was plotted to vcanvas2
-                                        vname = varid.replace(' ', '_')
-                                        vname = vname.replace('/', '_')
-                                        fname = outdir+'/figure-set'+snum+'_'+rname+'_'+seasonid+'_'+vname+'_plot-'+str(r)+'.png'
-                                        vcanvas2.png( fname )
-
+                                if tmmobs[0] is not None:  # If anything was plotted to vcanvas2
+                                    vname = varid.replace(' ', '_')
+                                    vname = vname.replace('/', '_')
+                                    fname = outdir+'/figure-set'+snum+'_'+rname+'_'+seasonid+'_'+vname+'_plot-'+str(r)+'.png'
+                                    vcanvas2.png( fname )
                         elif res is not None:
                             # but len(res)==0, probably plot set 1
                             if res.__class__.__name__ is 'amwg_plot_set1':
