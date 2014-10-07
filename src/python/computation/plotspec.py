@@ -66,7 +66,7 @@ class derived_var(basic_id):
             self.adopt( output )  # output gets ids of self
             self._file_attributes.update( getattr(output,'_file_attributes',{}) )
         if hasattr(output,'__cdms_internals__'):  # probably a mv
-            output.id = output._id[1]  # e.g. _id=('dv','STRESS_MAG','','ANN','ft0_cam_output'), id='STRESS_MAG'
+            output.id = '_'.join(output._id)
         return output
     @classmethod
     def dict_id( cls, varid, varmod, seasonid, ft1, ft2=None ):
