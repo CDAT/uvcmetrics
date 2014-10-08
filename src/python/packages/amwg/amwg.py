@@ -1576,9 +1576,9 @@ class amwg_plot_set10(amwg_plot_spec, basic_id):
         plot_val.finalize()
         return [ plot_val]
     
-class xxxamwg_plot_set11(amwg_plot_spec):
-    #name = '11 - Pacific annual cycle, Scatter plots:incomplete'
-    #number = '11'
+class amwg_plot_set11(amwg_plot_spec):
+    name = '11 - Pacific annual cycle, Scatter plots:incomplete'
+    number = '11'
     def __init__( self, filetable1, filetable2, varid, seasonid='ANN', region=None, aux=None ):
         """filetable1, filetable2 should be filetables for each model.
         varid is a string, e.g. 'TREFHT'.  The seasonal difference is Seasonid
@@ -1652,10 +1652,10 @@ class xxxamwg_plot_set11(amwg_plot_spec):
             self.single_plotspecs[plot_id] = plotspec(vid = plot_id, 
                                                       zvars=[xVID], 
                                                       zfunc = (lambda x: x),
-                                                      
+
                                                       z2vars = [yVID],
                                                       z2func = (lambda x: x),
-                                            
+
                                                       plottype = self.plottype, 
                                                       title = title)
     

@@ -326,6 +326,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                            if vcs.isscatter(rsr.presentation):
                                                if varIndex == 0:
                                                    #first pass through just save the array
+                                                
                                                    xvar = var.flatten()
                                                    savePNG = False
                                                else:
@@ -334,12 +335,16 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                                    #if r == len(res)-1:
                                                    #    rsr.presentation.list()
                                                    #    pdb.set_trace()
-                                                   vcanvas.plot(xvar, yvar, rsr.presentation, tm, bg=1, title=title,
+                                                   vcanvas.plot(xvar, yvar, 
+                                                                rsr.presentation, tm, bg=1, title=title,
                                                                 units=getattr(xvar,'units',''), source=rsr.source )
                                                try:
-                                                   if tm2 is not None:
-                                                       vcanvas2.plot(var, rsr.presentation, tm2, bg=1, title=title, units=getattr(xvar,'units',''),
+                                                   if tm2 is not None and varIndex+1 == len(res[r].vars):
+                                                       vcanvas2.plot(xvar, yvar, 
+                                                                     rsr.presentation, tm2, bg=1, title=title, 
+                                                                     units=getattr(xvar,'units',''),
                                                             source=rsr.source )
+                                                       savePNG = True
                                                except vcs.error.vcsError as e:
                                                    print "ERROR making summary plot:",e
                                                    savePNG = True
