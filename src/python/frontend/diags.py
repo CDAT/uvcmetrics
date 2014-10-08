@@ -337,7 +337,8 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                                             source=rsr.source )
                                                try:
                                                    if tm2 is not None:
-                                                       vcanvas2.plot(var, rsr.presentation, tm2, bg=1)
+                                                       vcanvas2.plot(var, rsr.presentation, tm2, bg=1, title=title, units=getattr(xvar,'units',''),
+                                                            source=rsr.source )
                                                except vcs.error.vcsError as e:
                                                    print "ERROR making summary plot:",e
                                                    savePNG = True

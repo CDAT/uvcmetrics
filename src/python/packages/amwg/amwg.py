@@ -1644,18 +1644,18 @@ class xxxamwg_plot_set11(amwg_plot_spec):
             i += 2
         
         self.single_plotspecs = {}
-        title = self.vars[1] + ' vs ' + self.vars[0]
+        title = self.vars[0] + ' vs ' + self.vars[1]
         for i, plot_id in enumerate(self.plot_ids):
             #zvars, z2vars = self.reduced_variables[VIDs[i]], self.reduced_variables[VIDs[i+1]]
-            xVID, yVID = self.rv_pairs[i]
-            #print xVID, yVID
+            yVID, xVID = self.rv_pairs[i]
+            #print xVID, yVID z2rangevars=[-120., 0.], zrangevars=[0., 120.],
             self.single_plotspecs[plot_id] = plotspec(vid = plot_id, 
                                                       zvars=[xVID], 
                                                       zfunc = (lambda x: x),
-                                                      zrangevars=[0., 120.],
+                                                      
                                                       z2vars = [yVID],
                                                       z2func = (lambda x: x),
-                                                      z2rangevars=[-120., 0.],
+                                            
                                                       plottype = self.plottype, 
                                                       title = title)
     
