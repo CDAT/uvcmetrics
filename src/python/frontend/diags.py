@@ -129,12 +129,6 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
     Most other choices, such as the plot sets, variables, and seasons, are specified in opts,
     an instance of Options."""
 
-    if opts['plots'] == True:
-        vcanvas = vcs.init()
-        vcanvas.setcolormap('bl_to_darkred') #Set the colormap to the NCAR colors
-        vcanvas2 = vcs.init()
-        vcanvas2.portrait()
-        vcanvas2.setcolormap('bl_to_darkred') #Set the colormap to the NCAR colors
     outdir = opts['output']
     if outdir is None:
         outdir = os.path.join(os.environ['HOME'],"tmp","diagout")
@@ -230,6 +224,12 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                         res = plot.compute(newgrid=-1) # newgrid=0 for original grid, -1 for coarse
                         if res is not None and len(res)>0:
                             if opts['plots'] == True:
+                                vcanvas = vcs.init()
+                                vcanvas.setcolormap('bl_to_darkred') #Set the colormap to the NCAR colors
+                                vcanvas2 = vcs.init()
+                                vcanvas2.portrait()
+                                vcanvas2.setcolormap('bl_to_darkred') #Set the colormap to the NCAR colors
+
                                 rdone = 0
 
                                 # At this loop level we are making one compound plot.  In consists
@@ -318,7 +318,8 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                                    # and if id doesn't exist, the system will create one before plotting!
 
                                                vname = vname.replace('/', '_')
-                                               fname = outdir+'/figure-set'+snum+'_'+rname+'_'+seasonid+'_'+vname+'_plot-'+str(r)+'.png'
+                                               fname = outdir+'/figure-set'+snum+'_'+rname+'_'+seasonid+'_'+\
+                                                   vname+'_plot-'+str(r)+'.png'
                                                print "writing png file",fname
                                                #rsr_presentation.script("jeff.json")   #example of writing a json file
 
@@ -333,8 +334,8 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                                    #if r == len(res)-1:
                                                    #    rsr.presentation.list()
                                                    #    pdb.set_trace()
-                                                   vcanvas.plot(xvar, yvar, rsr.presentation, tm, bg=1, title=title, units=getattr(xvar,'units',''),
-                                                            source=rsr.source )
+                                                   vcanvas.plot(xvar, yvar, rsr.presentation, tm, bg=1, title=title,
+                                                                units=getattr(xvar,'units',''), source=rsr.source )
                                                try:
                                                    if tm2 is not None:
                                                        vcanvas2.plot(var, rsr.presentation, tm2, bg=1)
