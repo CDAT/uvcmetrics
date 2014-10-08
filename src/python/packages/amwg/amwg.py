@@ -1580,10 +1580,10 @@ class xxxamwg_plot_set11(amwg_plot_spec):
             self.single_plotspecs[plot_id] = plotspec(vid = plot_id, 
                                                       zvars=[xVID], 
                                                       zfunc = (lambda x: x),
-                                                      zrangefunc=(lambda x: (x.min(), x.max()) ),
+                                                      zrangevars=[0., 120.],
                                                       z2vars = [yVID],
                                                       z2func = (lambda x: x),
-                                                      z2rangefunc=(lambda x: (x.min(), x.max()) ),
+                                                      z2rangevars=[-120., 0.],
                                                       plottype = self.plottype, 
                                                       title = title)
     
