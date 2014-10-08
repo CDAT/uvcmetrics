@@ -1150,8 +1150,10 @@ def aplusb0(mv1, mv2 ):
          mv.long_name = ''
    return mv
 
-def aplusb(mv1, mv2):
-   """ returns mv1+mv2; they should be dimensioned alike."""
+def aplusb(mv1, mv2, units=None):
+   """ returns mv1+mv2; they should be dimensioned alike, but an attempt will be made to reconcile their units,
+   or change them to supplied units."""
+   mv1,mv2 = reconcile_units(mv1,mv2,units)
    mv = mv1 + mv2
    if hasattr(mv, 'long_name'):
       if mv.long_name == mv1.long_name:
@@ -1357,9 +1359,12 @@ def aminusb_ax2( mv1, mv2 ):
     aminusb.initDomain( ab_axes )
     return aminusb
 
-def reconcile_units( mv1, mv2 ):
+def reconcile_units( mv1, mv2, preferred_units=None ):
+    """Changes the units of variables (instances of TransientVariable) mv1,mv2 to be the same,
+    If preferred units are specified, they will be used if possible."""
 # This probably needs expanded to be more general purpose for unit conversions.
-    if hasattr(mv1,'units') and hasattr(mv2,'units') and mv1.units!=mv2.units:
+    if hasattr(mv1,'units') and hasattr(mv2,'units') and\
+            (preferred_units is not None or mv1.units!=mv2.units):
         if mv1.units=='mb':
             mv1.units = 'mbar' # udunits uses mb for something else
         if mv2.units=='mb':
@@ -1368,11 +1373,24 @@ def reconcile_units( mv1, mv2 ):
             mv1.units = 'mbar/day' # udunits uses mb for something else
         if mv2.units=='mb/day':
             mv2.units = 'mbar/day' # udunits uses mb for something else
+        if preferred_units is None:
+            target_units = mv1.units
+        else:
+            target_units = preferred_units
+            tmp = udunits(1.0,mv1.units)
+            s,i = tmp.how(target_units)  # will raise an exception if conversion not possible
+            mv1 = s*mv1 + i
+            mv1.units = target_units
         tmp = udunits(1.0,mv2.units)
-        s,i = tmp.how(mv1.units)  # will raise an exception if conversion not possible
+        s,i = tmp.how(target_units)  # will raise an exception if conversion not possible
         mv2 = s*mv2 + i
-        mv2.units = mv1.units
+        mv2.units = target_units
     return mv1, mv2
+
+def setunits( mv, units ):
+    """sets mv units and returns mv"""
+    mv.units = units
+    return mv
 
 def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
     """returns a transient variable representing mv1-mv2, where mv1 and mv2 are variables, normally
