@@ -161,6 +161,10 @@ def fix_time_units( timeunits ):
         new_date = new_date[0:pre_yr]+yr_ad+new_date[pre_yr+len(yr_bc)]
     return since+new_date
 
+# >>>>> N.B. All the following reduce2scalar* functions are WRONG because they should weight <<<<
+# >>>>> in the latitude direction, using Gaussian weights gw from the data file if available. <<<<
+# >>>>> However, they aren't very wrong because the averager's default weights are reasonable. <<<<
+
 def reduce2scalar_zonal( mv, latmin=-90, latmax=90, vid=None ):
     """returns the mean of the variable over the supplied latitude range.
     The computed quantity is a scalar but is returned as a cdms2 variable, i.e. a MV.

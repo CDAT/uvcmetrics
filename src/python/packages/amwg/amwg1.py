@@ -5,6 +5,10 @@
 # Here's the title used by NCAR:
 # DIAG Set 1 - Tables of global, tropical, and extratropical DJF, JJA, ANN means and RMSE
 
+# >>>>>>>>> N.B.  All reduce2scalar* calls are potentially WRONG because they should provide <<<<
+# >>>>>>>>> Gaussian weights gw from the data file, if available.  They aren't very wrong <<<<
+# >>>>>>>>> however because the default weighting is reasonable. <<<<<
+
 from pprint import pprint
 from metrics.packages.amwg.amwg import amwg_plot_spec
 from metrics.packages.amwg.derivations.vertical import *
@@ -166,7 +170,10 @@ class amwg_plot_set1(amwg_plot_spec):
             else:
                 print "Building table row for var=",var,"obs=",obs,"lev=",lev
             self.filetable1 = filetable1
-            self.filetable2 = filetable2
+            if obs is None:
+                self.filetable2 = None
+            else:
+                self.filetable2 = filetable2
             self.seasonid = seasonid
             if seasonid=='ANN' or seasonid is None:
                 # cdutil.times.getMonthIndex() (called by climatology()) doesn't recognize 'ANN'
