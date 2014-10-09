@@ -34,8 +34,8 @@ def reduced_variables_press_lev( filetable, varid, season, filefilter=None, rf=N
     reduced_variables = { v.id():v for v in reduced_varlis }
     return reduced_variables
 def reduced_variables_hybrid_lev( filetable, varid, season, filefilter=None, rf=None, rf_PS=None ):
-    """Returns a dictionary of a reduced variable for the specified variable id (string) and season
-    using the supplied filetable.  The variable must have a level axis using hybrid coordinates.
+    """Returns a dictionary of reduced variables needed for the specified variable id (string) and
+    season using the supplied filetable.  The variable must have a level axis using hybrid coordinates.
     Some of the reduction functions may be supplied but will default to that used in AMWG plot set 4:
     rf for the variable varid and rf_PS for PS
     """
@@ -201,6 +201,56 @@ class amwg_plot_set1(amwg_plot_spec):
                 return -999.000
             else:
                 return m1-m2
+        def mean_lev( self, filetable, ffilt, domrange ):
+            """compute and return the mean of a reduced variable at a prescribed level.
+            The returned mean is an mv (cdms2 TransientVariable) whose data is a scalar."""
+            ulev = udunits(self.lev,'mbar')
+            # We have to compute on a level surface.
+            if self.var not in filetable.list_variables_with_levelaxis():
+                return -999.000
+            # The specified level is in millibars.  Do we have hybrid level coordinates?
+            ft_hyam = filetable.find_files('hyam')
+            hybrid = ft_hyam is not None and ft_hyam!=[]    # true iff filetable uses hybrid level coordinates
+            if hybrid: # hybrid level coordinates
+                reduced_variables = reduced_variables_hybrid_lev( filetable, self.var, self.seasonid,
+                                                                  filefilter=ffilt )
+                vid1= dv.dict_id(self.var,'p',self.seasonid,filetable)
+                vidl1=dv.dict_id(self.var,'lp',self.seasonid,filetable)
+                vidm1=dv.dict_id(self.var,'mp',self.seasonid,filetable)
+                derived_variables = { vid1: derived_var(
+                        vid=vid1, inputs=[reduced_variable.dict_id(self.var,self.seasonid,filetable),
+                                          reduced_variable.dict_id('hyam',self.seasonid,filetable),
+                                          reduced_variable.dict_id('hybm',self.seasonid,filetable),
+                                          reduced_variable.dict_id('PS',self.seasonid,filetable),
+                                          reduced_variable.dict_id(self.var,self.seasonid,filetable) ],
+                        func=verticalize ),
+                                      vidl1: derived_var(
+                        vid=vidl1, inputs=[vid1], func=(lambda z: select_lev(z,ulev)) ),
+                                      vidm1: derived_var(
+                        vid=vidm1, inputs=[vidl1], func=\
+                            (lambda x,vid=None: reduce2scalar_seasonal_zonal\
+                                 (x,self.season,domrange[0],domrange[1],vid=vid)) )
+                                      }
+                variable_values = {}  # the following is similar to code in plot_spec._results()
+                for v,rv1 in reduced_variables.iteritems():
+                    value = rv1.reduce(None)
+                    variable_values[v] = value  # could be None
+                value = derived_variables[vid1].derive( variable_values )
+                variable_values[vid1] = value
+                value = derived_variables[vidl1].derive( variable_values )
+                variable_values[vidl1] = value
+                mean1 = derived_variables[vidm1].derive( variable_values )
+            else: # pressure level coordinates in millibars, as "mbar"
+                # There are other possibilities, but we aren't checking yet.
+                reduced_variables = reduced_variables_press_lev(
+                    filetable, self.var, self.seasonid, filefilter=ffilt, rf=\
+                        (lambda x,vid=None,season=self.season: reduce2scalar_seasonal_zonal_level(
+                                x,season,domrange[0],domrange[1],level=ulev,vid=vid)) 
+                    )
+                derived_variables = {}
+                rv1 = reduced_variables[reduced_variables.keys()[0]]
+                mean1 = rv1.reduce()
+            return mean1
         def mean( self, filetable, filefam=None ):
             if filetable is None:
                 return -999.000
@@ -208,55 +258,10 @@ class amwg_plot_set1(amwg_plot_spec):
                 ffilt = f_climoname(filefam)
             else:
                 ffilt = None
+            domrange = amwg_plot_set1.regions[self.region]
             if filetable.find_files( self.var, filefilter=ffilt ):
-                domrange = amwg_plot_set1.regions[self.region]
                 if self.lev is not None:
-                    ulev = udunits(self.lev,'mbar')
-                    # We have to compute on a level surface.
-                    if self.var not in filetable.list_variables_with_levelaxis():
-                        return -999.000
-                    # The specified level is in millibars.  Do we have hybrid level coordinates?
-                    ft_hyam = filetable.find_files('hyam')
-                    hybrid = ft_hyam is not None and ft_hyam!=[]    # true iff filetable uses hybrid level coordinates
-                    if hybrid: # hybrid level coordinates
-                        reduced_variables = reduced_variables_hybrid_lev( filetable, self.var, self.seasonid,
-                                                                          filefilter=ffilt )
-                        vid1= dv.dict_id(self.var,'p',self.seasonid,filetable)
-                        vidl1=dv.dict_id(self.var,'lp',self.seasonid,filetable)
-                        vidm1=dv.dict_id(self.var,'mp',self.seasonid,filetable)
-                        derived_variables = { vid1: derived_var(
-                                vid=vid1, inputs=[reduced_variable.dict_id(self.var,self.seasonid,filetable),
-                                                  reduced_variable.dict_id('hyam',self.seasonid,filetable),
-                                                  reduced_variable.dict_id('hybm',self.seasonid,filetable),
-                                                  reduced_variable.dict_id('PS',self.seasonid,filetable),
-                                                  reduced_variable.dict_id(self.var,self.seasonid,filetable) ],
-                                func=verticalize ),
-                                              vidl1: derived_var(
-                                vid=vidl1, inputs=[vid1], func=(lambda z: select_lev(z,ulev)) ),
-                                              vidm1: derived_var(
-                                vid=vidm1, inputs=[vidl1], func=\
-                                    (lambda x,vid=None: reduce2scalar_seasonal_zonal\
-                                         (x,self.season,domrange[0],domrange[1],vid=vid)) )
-                                              }
-                        variable_values = {}  # the following is similar to code in plot_spec._results()
-                        for v,rv1 in reduced_variables.iteritems():
-                            value = rv1.reduce(None)
-                            variable_values[v] = value  # could be None
-                        value = derived_variables[vid1].derive( variable_values )
-                        variable_values[vid1] = value
-                        value = derived_variables[vidl1].derive( variable_values )
-                        variable_values[vidl1] = value
-                        mean1 = derived_variables[vidm1].derive( variable_values )
-                    else: # pressure level coordinates in millibars, as "mbar"
-                        # There are other possibilities, but we aren't checking yet.
-                        reduced_variables = reduced_variables_press_lev(
-                            filetable, self.var, self.seasonid, filefilter=ffilt, rf=\
-                                (lambda x,vid=None,season=self.season: reduce2scalar_seasonal_zonal_level(
-                                        x,season,domrange[0],domrange[1],level=ulev,vid=vid)) 
-                            )
-                        derived_variables = {}
-                        rv1 = reduced_variables[reduced_variables.keys()[0]]
-                        mean1 = rv1.reduce()
+                    mean1 = self.mean_lev( filetable, ffilt, domrange )
                 else:
                     rv1 = reduced_variable(
                         variableid=self.var, filetable=filetable, season=self.season, filefilter=ffilt,
@@ -273,9 +278,24 @@ class amwg_plot_set1(amwg_plot_spec):
                 return float(mean2.data)
             else:
                 # It's a more complicated calculation, which we can treat as a derived variable.
-                # >>>>TO DO<<<<
-                print "cannot compute mean for",self.var,filetable
-                return -999.000     # In the NCAR table, this number means 'None'.
+                # If it's a standard_variable, we know how to do it...
+                vid,rvs,dvs = amwg_plot_spec.stdvar2var(
+                    self.var, filetable, self.season, reduction_function=\
+                        (lambda x,vid=None,season=self.season,dom0=domrange[0],dom1=domrange[1]:
+                             reduce2scalar_seasonal_zonal(x,season,dom0,dom1,vid=vid) ))
+                if vid is None:
+                    print "cannot compute mean for",self.var,filetable
+                    return -999.000     # In the NCAR table, this number means 'None'.
+                else:
+                    rvvs = {rv.id(): rv.reduce() for rv in rvs }
+                    dvv = dvs[0].derive( rvvs )
+                    if dvv is None:
+                        return -999.000
+                    mean2 = convert_variable( dvv, self.units )
+                    if mean2.shape!=():
+                        print "WARNING: computed mean",mean2.id,"for table has more than one data point"
+                        print mean2
+                    return float(mean2.data)
         def compute(self):
             rowpadded = (self.rowname+10*' ')[:17]
             mean1 = self.mean(self.filetable1)
