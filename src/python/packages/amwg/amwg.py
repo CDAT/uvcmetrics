@@ -90,6 +90,44 @@ class amwg_plot_spec(plot_spec):
     @staticmethod
     def _all_variables( filetable1, filetable2=None ):
         return amwg_plot_spec.package._all_variables( filetable1, filetable2, "amwg_plot_spec" )
+    @staticmethod
+    def stdvar2var( varnom, filetable, season, reduction_function ):
+        """From a variable name, a filetable, and a season, this finds the variable name in
+        standard_variables. If it's there, this method generates a variable as an instance
+        of reduced_variable or derived_var, which represents the variable and how to compute it
+        from the data described by the filetable.
+        Inputs are the variable name (e.g. FLUT, TREFHT), a filetable, a season, and (important!)
+        a reduction function which reduces data variables to reduced variables prior to computing
+        the variable specified by varnom.
+        If successful, this will return (i) a variable id for varnom, including filetable and
+        season; it is the id of the first item in the returned list of derived variables.
+         (ii) a list of reduced_variables needed for computing varnom.  For
+        each such reduced variable rv, it may be placed in a dictionary using rv.id() as its key.
+        (iii) a list of derived variables - normally just the one representing varnom, but
+        in more complicated situations (which haven't been implemented yet) it may be longer.
+        For a member of the list dv, dv.id() is a suitable dictionary key.
+        If unsuccessful, this will return None,None,None.
+        """
+        if varnom not in amwg_plot_spec.standard_variables:
+            return None,None,None
+        computable = False
+        for svd in amwg_plot_spec.standard_variables[varnom]:  # loop over ways to compute varnom
+            invarnoms = svd._inputs
+            if len( set(invarnoms) - set(filetable.list_variables()) )<=0:
+                func = svd._func
+                computable = True
+                break
+        if not computable:
+            return None,None,None
+        rvs = []
+        for ivn in invarnoms:
+            rv = reduced_variable( variableid=ivn, filetable=filetable, season=season,
+                                   reduction_function=reduction_function )
+            rvs.append(rv)
+        seasonid = season.seasons[0]
+        vid = dv.dict_id( varnom, '', seasonid, filetable )
+        dvs = [derived_var( vid=vid, inputs=[rv.id() for rv in rvs], func=func )]
+        return dvs[0].id(), rvs, dvs
 
 # plot set classes in other files:
 from metrics.packages.amwg.amwg1 import *
@@ -658,28 +696,40 @@ class amwg_plot_set5and6(amwg_plot_spec):
         axes.  The variable given by varnom is *not* a data variable suitable for reduction.  It is
         a standard_variable.  Its inputs will be reduced, then it will be set up as a derived_var.
         """
-        if varnom not in self.standard_variables:
+        varid,rvs,dvs = self.stdvar2var(
+            varnom, filetable, self.season, (lambda x,vid,season=self.season:
+                                                 reduce2latlon_seasonal(x, season, vid) ))
+        if varid is None:
             return None,None
-        computable = False
-        for svd in self.standard_variables[varnom]:  # loop over ways to compute varnom
-            invarnoms = svd._inputs
-            if len( set(invarnoms) - set(filetable.list_variables()) )<=0:
-                print "set difference=",set(invarnoms) - set(filetable.list_variables())
-                func = svd._func
-                computable = True
-                break
-        if not computable:
-            return None,None
-        rvs = []
-        for ivn in invarnoms:
-            rv = reduced_variable(
-                variableid=ivn, filetable=filetable, season=self.season,
-                reduction_function=(lambda x,vid: reduce2latlon_seasonal( x, self.season, vid ) ))
+        for rv in rvs:
             self.reduced_variables[rv.id()] = rv
-            rvs.append(rv.id())
-        vid = dv.dict_id( varnom, '', seasonid, filetable )
-        self.derived_variables[vid] = derived_var( vid=vid, inputs=rvs, func=func )
-        return vid, None
+        for dv in dvs:
+            self.derived_variables[dv.id()] = dv
+
+        # This is the former code, which was moved to stdvar2var so other classes may use it:
+        #if varnom not in self.standard_variables:
+        #    return None,None
+        #computable = False
+        #for svd in self.standard_variables[varnom]:  # loop over ways to compute varnom
+        #    invarnoms = svd._inputs
+        #    if len( set(invarnoms) - set(filetable.list_variables()) )<=0:
+        #        func = svd._func
+        #        computable = True
+        #        break
+        #if not computable:
+        #    return None,None
+        #rvs = []
+        #for ivn in invarnoms:
+        #    rv = reduced_variable(
+        #        variableid=ivn, filetable=filetable, season=self.season,
+        #        reduction_function=(lambda x,vid: reduce2latlon_seasonal( x, self.season, vid ) ))
+        #    self.reduced_variables[rv.id()] = rv
+        #    rvs.append(rv.id())
+        #varid = dv.dict_id( varnom, '', seasonid, filetable )
+        #self.derived_variables[varid] = derived_var( vid=varid, inputs=rvs, func=func )
+
+        return varid, None
+
     def plan_computation_level_surface( self, filetable1, filetable2, varid, seasonid, region, aux ):
         """Set up for a lat-lon contour plot, averaged in other directions - except that if the
         variable to be plotted depend on level, it is not averaged over level.  Instead, the value
