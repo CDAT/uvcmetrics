@@ -81,7 +81,10 @@ class amwg_plot_spec(plot_spec):
                 func=(lambda x: setunits(x,'')) )],
         'TREFHT':[derived_var(
                 vid='TREFHT', inputs=['TREFHT_LAND'], outputs=['TREFHT'],
-                func=(lambda x: x) )]
+                func=(lambda x: x) )],
+        'RESTOM':[derived_var(
+                vid='RESTOM', inputs=['FSNT','FLNT'], outputs=['RESTOM'],
+                func=aminusb )]   # RESTOM = net radiative flux
         # AOD normally has no units, but sometimes the units attribute is set anyway.
         }
     @staticmethod
