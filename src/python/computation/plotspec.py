@@ -8,7 +8,7 @@ from metrics.computation.reductions import *
 import sys, traceback
 
 class derived_var(basic_id):
-    def __init__( self, vid, inputs=[], outputs=['output'], func=(lambda: None) ):
+    def __init__( self, vid, inputs=[], outputs=['output'], func=(lambda: None), special_value=None ):
         """Arguments:
         vid, an id for this dervied variable;
         func=function to compute values of this variable;
@@ -25,6 +25,15 @@ class derived_var(basic_id):
         self._outputs = outputs
         self._func = func
         self._file_attributes = {}
+        # This is primarily used for 2-phase derived variables where we need to pass in a
+        # special value that wouldn't be part of the input dictionary. The current example is
+        # passing in a region for land set 5 when we compute reduced/derived variables, then
+        # construct new variables based on those which all require a 'region' argument.
+        # I could see this being used for passing in seasons perhaps as well, and perhaps
+        # any other arbitary sort of argument. Perhaps there is a better way of doing this,
+        # but this is what worked for me in land.
+        #   -BES
+        self._special = special_value
     def derive( self, inpdict ):
         """Compute the derived variable.  inpdict is a dictionary of input names (ids) and
         values, and will be used to get the input values from the input names in self._inputs.
@@ -35,9 +44,15 @@ class derived_var(basic_id):
         string (By convention we say 'seasonid' for a string and 'season' for a cdutil.times.Seasons
         object)."""
         # error from checking this way!... if None in [ vardict[inp] for inp in self._inputs ]:
+        if self._special != None:
+           # First, we have to add to inpdict to make sure the special_value isn't thrown away.
+           inpdict[self._special] = self._special
+           # Then we need to add it to inputs
+           self._inputs.append(self._special)
         dictvals = [ inpdict.get(inp,None) for inp in self._inputs ]
         nonevals = [nn for nn in dictvals if nn is None]
         if len(nonevals)>0:
+            print "cannot yet derive",self._id,"because missing inputs",nonevals
             return None
         output = apply( self._func, [ inpdict[inp] for inp in self._inputs ] )
         if type(output) is tuple or type(output) is list:
@@ -50,6 +65,8 @@ class derived_var(basic_id):
             #output._vid = self._vid      # self._vid is deprecated
             self.adopt( output )  # output gets ids of self
             self._file_attributes.update( getattr(output,'_file_attributes',{}) )
+        if hasattr(output,'__cdms_internals__'):  # probably a mv
+            output.id = '_'.join(output._id)
         return output
     @classmethod
     def dict_id( cls, varid, varmod, seasonid, ft1, ft2=None ):
@@ -73,15 +90,13 @@ class dv(derived_var):
 class plotspec(basic_id):
     def __init__(
         self, vid,
-        # xvars=[], xfunc=None, x1vars=[], x1func=None,
-        # x2vars=[], x2func=None, x3vars=[], x3func=None,
-        # yvars=[], yfunc=None, y1vars=[], y1func=None,
-        # y2vars=[], y2func=None, y3vars=[], y3func=None,
-        # yavars=[], yafunc=None, ya1vars=[], ya1func=None,
         zvars=[], zfunc=None, zrangevars=[], zrangefunc=None,
         z2vars=[], z2func=None, z2rangevars=[], z2rangefunc=None,
+        z3vars=[], z3func=None, z3rangevars=[], z3rangefunc=None,
+        z4vars=[], z4func=None, z4rangevars=[], z4rangefunc=None,
         plottype='table',
-        title = None
+        title = None,
+        source = ''
         ):
         """Initialize a plotspec (plot specification).  Inputs are an id and plot type,
         and lists of x,y,z variables (as keys in the plotvars dictionary), functions to
@@ -96,56 +111,6 @@ class plotspec(basic_id):
             basic_id.__init__(self,*vid)
         else:
             basic_id.__init__(self,vid)
-        # if xfunc==None:
-        #     if len(xvars)==0:
-        #         xfunc = (lambda: None)
-        #     else:
-        #         xfunc = (lambda x: x)
-        # if x1func==None:
-        #     if len(x1vars)==0:
-        #         x1func = (lambda: None)
-        #     else:
-        #         x1func = (lambda x: x)
-        # if x2func==None:
-        #     if len(x2vars)==0:
-        #         x2func = (lambda: None)
-        #     else:
-        #         x2func = (lambda x: x)
-        # if x3func==None:
-        #     if len(x3vars)==0:
-        #         x3func = (lambda: None)
-        #     else:
-        #         x3func = (lambda x: x)
-        # if yfunc==None:
-        #     if len(yvars)==0:
-        #         yfunc = (lambda: None)
-        #     else:
-        #         yfunc = (lambda y: y)
-        # if y1func==None:
-        #     if len(y1vars)==0:
-        #         y1func = (lambda: None)
-        #     else:
-        #         y1func = (lambda y: y)
-        # if y2func==None:
-        #     if len(y2vars)==0:
-        #         y2func = (lambda: None)
-        #     else:
-        #         y2func = (lambda y: y)
-        # if y3func==None:
-        #     if len(y3vars)==0:
-        #         y3func = (lambda: None)
-        #     else:
-        #         y3func = (lambda y: y)
-        # if yafunc==None:
-        #     if len(yavars)==0:
-        #         yafunc = (lambda: None)
-        #     else:
-        #         yafunc = (lambda ya: ya)
-        # if ya1func==None:
-        #     if len(ya1vars)==0:
-        #         ya1func = (lambda: None)
-        #     else:
-        #         ya1func = (lambda ya: ya)
         if zfunc==None:
             if len(zvars)==0:
                 zfunc = (lambda: None)
@@ -160,37 +125,30 @@ class plotspec(basic_id):
                 z2func = (lambda z2: z2)
         if z2rangefunc==None:
             z2rangefunc = (lambda: None)
-        # self.xfunc = xfunc
-        # self.xvars = xvars
-        # self.x1func = x1func
-        # self.x1vars = x1vars
-        # self.x2func = x2func
-        # self.x2vars = x2vars
-        # self.x3func = x3func
-        # self.x3vars = x3vars
-        # self.yfunc = yfunc
-        # self.yvars = yvars
-        # self.y1func = y1func
-        # self.y1vars = y1vars
-        # self.y2func = y2func
-        # self.y2vars = y2vars
-        # self.y3func = y3func
-        # self.y3vars = y3vars
-        # self.yafunc = yafunc
-        # self.yavars = yavars
-        # self.ya1func = ya1func
-        # self.ya1vars = ya1vars
         self.zfunc = zfunc
         self.zvars = zvars
         self.zrangevars = zrangevars
         self.zrangefunc = zrangefunc
+        
         self.z2func = z2func
         self.z2vars = z2vars
         self.z2rangevars = z2rangevars
         self.z2rangefunc = z2rangefunc
+        
+        self.z3func = z3func
+        self.z3vars = z3vars
+        self.z3rangevars = z3rangevars
+        self.z3rangefunc = z3rangefunc
+        
+        self.z4func = z4func
+        self.z4vars = z4vars
+        self.z4rangevars = z4rangevars
+        self.z4rangefunc = z4rangefunc
+        
         self.plottype = plottype
         if title is not None:
             self.title = title
+        self.source = source
 
     @classmethod
     def dict_id( cls, varid, varmod, seasonid, ft1, ft2=None ):
@@ -223,8 +181,10 @@ class plotspec(basic_id):
                 return cls.dict_id( None, None, None, None, None )
             else:
                 print "ERROR.  Bad input to plotspec.dict_idid(), not a tuple.  Value is"
-                print otherid
+                print otherid, type(otherid)
                 return None
+        if otherid[0]=='rv' and len(otherid)==5 and otherid[4] is None or otherid[4]=='None' or otherid[4]=='':
+            otherid = otherid[:4]
         if otherid[0]=='rv' and len(otherid)==4:
             varid = otherid[1]
             varmod = ''
@@ -242,7 +202,7 @@ class plotspec(basic_id):
                 ft2 = otherid[5]
         else:
             print "ERROR.  Bad input to plotspec.dict_idid(), wrong class slot or wrong length."
-            print otherid
+            print otherid, type(otherid)
             return None
         return cls.dict_id( varid, varmod, seasonid, ft1, ft2 )
 
@@ -366,21 +326,27 @@ class basic_plot_variable():
 class basic_level_variable(basic_plot_variable):
     """represents a typical variable with a level axis, in a plot set which reduces the level
     axis."""
-    @staticmethod
-    def varoptions():
-        """returns a represention of options specific to this variable.  That is, how should
-        one reduce the level axis?  The default is to average along that axis.  But other options
-        are to pick out the variable's value at some particular pressure level, e.g. 300 mb.
-        """
-        opts ={
-            " default":"vertical average", " vertical average":"vertical average",
-            "200 mbar":200, "300 mbar":300, "500 mbar":500, "850 mbar":850 }
-        return opts
+    pass
     
+class level_variable_for_amwg_set5(basic_level_variable):
+    """represents a level variable, but has options for AMWG plot set 5"""
+    @staticmethod
+    def varoptions(*args,**kwargs):
+        """returns a represention of options specific to this variable.  Example dict items:
+         'vertical average':'vertavg'
+         '300 mbar level value':300
+        """
+        opts = {
+            " default":"vertical average", " vertical average":"vertical average",
+            "200 mbar":200, "300 mbar":300, "500 mbar":500, "850 mbar":850,
+            "200":200, "300":300, "500":500, "850":850,
+            }
+        return opts
+
 class basic_pole_variable(basic_plot_variable):
     """represents a typical variable that reduces the latitude axis."""
     @staticmethod
     def varoptions():
         """returns the hemisphere specific to this variable. """
-        opts ={" Northern Hemisphere":(0.,90.), " Southern Hemisphere":(-90.,0) }
+        opts ={" Northern Hemisphere":(90, 0.), " Southern Hemisphere":(-90.,0) }
         return opts

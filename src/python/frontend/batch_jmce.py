@@ -98,7 +98,7 @@ for pname,pclass in dm.items():
     sm = package.list_diagnostic_sets()
     print len(sm)
     for sname,sclass in sm.items():
-        print sname
+        print sclass.name
         #pdb.set_trace()
         #if sclass.name != ' 2 - Line Plots of Annual Implied Northward Transport':
         #if sclass.name != ' 3 - Line Plots of  Zonal Means':
@@ -106,8 +106,8 @@ for pname,pclass in dm.items():
         #if sclass.name != ' 5 - Horizontal Contour Plots of Seasonal Means':
         #if sclass.name != ' 6 - Horizontal Vector Plots of Seasonal Means':
         #if sclass.name == '2 - Horizontal contour plots of DJF, MAM, JJA, SON, and ANN means':
-        #if sclass.name != ' 7- Polar Contour and Vector Plots of Seasonal Means':
-        if sclass.name != '8 - Annual Cycle Contour Plots of Zonal Means ':
+        if sclass.name != '7 - Polar Contour and Vector Plots of Seasonal Means':
+        #if sclass.name != '8 - Annual Cycle Contour Plots of Zonal Means ':
         #if sclass.name != ' 9- Horizontal Contour Plots of DJF-JJA Differences':
             continue   # for testing, only do one plot set
         print "jfp sname=",sname
@@ -132,7 +132,7 @@ for pname,pclass in dm.items():
                 if type(varopt) == type({}):
                     keys = varopt.keys()
                     varopt = [varopt[keys[1]]]
-                #pdb.set_trace()
+                
                 if varopt is None:
                     varopt = [None]
                 for aux in varopt:

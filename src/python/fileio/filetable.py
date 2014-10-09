@@ -4,9 +4,22 @@
 #   file_id,  variable_id,  time_range,  lat_range,  lon_range,  level_range
 # subject to change!
 
-import sys, os, cdms2, pprint
+import sys, os, cdms2, re
 from metrics.frontend.options import Options
 from metrics.common import *
+from pprint import pprint
+
+def parse_climo_filename(filename):
+    """Tests whether a filename is in the standard format for a climatology file, e.g.
+    CLOUDSAT_ANN_climo.nc.  If not, returns None.
+    If so, returns a tuple representing the components of the filename.
+    """
+    matchobject = re.search( r"_\w\w\w_climo\.nc$", filename )
+    if matchobject is None:
+        return None
+    # climatology file, e.g. CRU_JJA_climo.nc
+    idx = matchobject.start()
+    return (filename[0:idx], filename[idx+1:idx+4])   # e.g. ('CRU','JJA')
 
 class drange:
    def __init__( self, low=None, high=None, units=None ):
@@ -39,8 +52,9 @@ class ftrow:
     There will be no more than that - if you want more information you can open the file.
     If the file has several variables, there will be several rows for the file."""
     # One can think of lots of cases where this is too simple, but it's a start.
-    def __init__( self, fileid, variableid, timerange, latrange, lonrange, levelrange=None ):
+    def __init__( self, fileid, variableid, timerange, latrange, lonrange, levelrange=None, filefmt=None ):
         self.fileid = fileid          # file name
+        self.filetype = filefmt       # file format/type, e.g. "NCAR CAM" or "CF CMIP5"
         self.variableid = variableid  # variable name
         if timerange is None:
            self.timerange = drange()
@@ -74,28 +88,29 @@ def get_datafile_filefmt( dfile, options):
     """dfile is an open datafile.  If the file type is recognized,
     then this will return an object with methods needed to support that file type."""
     if hasattr(dfile, 'source') and \
-      (dfile.source.find('CAM') or dfile.source.find('CCSM') or \
-       dfile.source.find('CSEM') or dfile.source.find('CLM') or \
-       dfile.source.find('Community')):
+      (dfile.source.find('CAM')>=0 or dfile.source.find('CCSM')>=0 or \
+       dfile.source.find('CSEM')>=0 or dfile.source.find('CLM')>=0 or \
+       dfile.source.find('Community')>=0):
        if hasattr(dfile,'season') or dfile.id[-9:]=="_climo.nc":
-          return NCAR_climo_filefmt( dfile, options )
+          return NCAR_CESM_climo_filefmt( dfile, options )
        else:
           return NCAR_filefmt( dfile, options )
        # Note that NCAR Histoy Tape files are marked as supporting the CF Conventions
        # and do so, but it's minimal, without most of the useful CF features (e.g.
        # where are bounds for the lat axis?).
        # The same applies to the dataset xml file produced by cdscan from such files.
+    if hasattr(dfile,'season') or dfile.id[-9:]=="_climo.nc":
+          return NCAR_climo_filefmt( dfile, options )
+    else:
+          return NCAR_filefmt( dfile, options )
+    # Formerly got preference over above two NCAR lines; but for the moment we
+    # really don't want this for the data we have...
     if((hasattr(dfile,'Conventions') and dfile.Conventions[0:2]=='CF') or \
        (hasattr(dfile,'conventions') and dfile.conventions[0:2]=='CF')):
        # Really this filefmt assumes more than CF-compliant - it requires standard
        # but optional features such as standard_name and bounds attribures.  Eventually
        # I should put in a check for that.
        return CF_filefmt( dfile )
-    else:
-       if hasattr(dfile,'season') or dfile.id[-9:]=="_climo.nc":
-          return NCAR_climo_filefmt( dfile, options )
-       else:
-          return NCAR_filefmt( dfile, options )
        # Formerly this was "return Unknown_filefmt()" but I have some obs data from NCAR
        # which has no global attributes which would tell you what kind of file it is.
        # Nevertheless the one I am looking at has lots of clues, e.g. variable and axis names.
@@ -108,6 +123,9 @@ class basic_filetable(basic_id):
     nfiletables = 0
 
     def __init__( self, filelist, opts, ftid=''):
+        """filelist is a list of strings, each of which is the path to a file.
+        ftid is a human-readable id string.  In common use, it comes via a method
+        dirtree_datafiles.short_name from the name of the directory containing the files."""
         try:
          # is this a dirtree that was passed, or a directory?
          options = filelist.opts
@@ -120,7 +138,6 @@ class basic_filetable(basic_id):
         self.initialize_idnumber()
         basic_id.__init__( self, self._idnumber, ftid )
         
-        """filelist is a list of strings, each of which is the path to a file"""
         self._table = []     # will be built from the filelist, see below
         # We have two indices, one by file and one by variable.
         # the value is always a list of rows of the table.
@@ -134,9 +151,13 @@ class basic_filetable(basic_id):
         self._filelist = filelist # just used for __repr__ and root_dir
         self._cache_path=options._opts['cachepath']
         if filelist is None: return
+        self._files = []
+        self.filefmt = None     # file type, e.g. "NCAR CAM" or "CF CMIP5", as for ftrow
+        # ... self.filefmt=="various" if more than one file type contributes to this filetable.
 
         for filep in filelist.files:
             self.addfile( filep, options )
+            self._files.append(filep)
     def __repr__(self):
        return 'filetable from '+str(self._filelist)[:100]+'...'
     def full_repr(self):
@@ -153,6 +174,12 @@ class basic_filetable(basic_id):
        file0 = self._filelist._root[0]
        return os.path.abspath(os.path.expanduser(file0))
        #return file0
+    def source(self):
+       """returns a string describing the sources of this filetable's data"""
+       ftid = self.id()  # e.g. ("ft0","cam_output") after the directory cam_output/
+       if len(ftid)>2:
+          ftid=ftid[2]   # e.g. "cam_output  or "obs_data NCEP"
+       return ftid
     def cache_path(self):
        """returns the path to a directory suitable for cache files"""
        try:
@@ -184,6 +211,10 @@ class basic_filetable(basic_id):
            #print "This might just be an unsupported file type"
            return
         filesupp = get_datafile_filefmt( dfile, options )
+        if self.filefmt is None:
+           self.filefmt = filesupp.name
+        elif self.filefmt!= filesupp.name:
+           self.filefmt = "various"
         vars = filesupp.interesting_variables()
         if len(vars)>0:
             timerange = filesupp.get_timerange()
@@ -195,8 +226,11 @@ class basic_filetable(basic_id):
                 varaxisnames = [a[0].id for a in dfile[var].domain]
                 if 'time' in varaxisnames:
                    timern = timerange
+                elif parse_climo_filename(fileid):    # filename like foo_SSS_climo.nc is a climatology file for season SSS.
+                   (root,season)=parse_climo_filename(fileid)
+                   timern = season
                 elif hasattr(dfile,'season'):  # climatology file
-                   timern = timerange   # this should be the season
+                   timern = timerange   # this should be the season like the above example
                 else:
                    timern = None
                 if 'lat' in varaxisnames:
@@ -211,7 +245,7 @@ class basic_filetable(basic_id):
                    levrn = levelrange
                 else:
                    levrn = None
-                newrow = ftrow( fileid, variableid, timern, latrn, lonrn, levrn )
+                newrow = ftrow( fileid, variableid, timern, latrn, lonrn, levrn, filefmt=filesupp.name )
                 self._table.append( newrow )
                 if fileid in self._fileindex.keys():
                     self._fileindex[fileid].append(newrow)
@@ -225,12 +259,13 @@ class basic_filetable(basic_id):
 
     def find_files( self, variable, time_range=None,
                     lat_range=drange(), lon_range=drange(), level_range=drange(),
-                    seasonid=None):
+                    seasonid=None, filefilter=None):
        """This method is intended for creating a plot.
        This finds and returns a list of files needed to cover the supplied variable and time and
        space ranges.
        The returned list may contain more or less than requested, but will be the best available.
        The variable is a string, containing as a CF standard name, or equivalent.
+       A filter filefilter may be supplied, to restrict which files will be found.
        For ranges, None means you want all values."""
        if variable not in self._varindex.keys():
           print 'couldnt find variable',variable,' in varindex keys. Possibly part of a derived variable'
@@ -247,7 +282,11 @@ class basic_filetable(basic_id):
                     lat_range.overlaps_with( ftrow.latrange ) and\
                     lon_range.overlaps_with( ftrow.lonrange ) and\
                     level_range.overlaps_with( ftrow.levelrange ):
-                found.append( ftrow )
+                if filefilter is None:
+                   found.append( ftrow )
+                else:
+                   if filefilter(ftrow.fileid):
+                      found.append( ftrow )
           if found==[]:
              # No suitable season matches (climatology files) found, we will have to use
              # time-dependent data.  Theoretically we could have to use both climatology
@@ -256,7 +295,11 @@ class basic_filetable(basic_id):
                 if lat_range.overlaps_with( ftrow.latrange ) and\
                        lon_range.overlaps_with( ftrow.lonrange ) and\
                        level_range.overlaps_with( ftrow.levelrange ):
-                   found.append( ftrow )
+                   if filefilter is None:
+                      found.append( ftrow )
+                   else:
+                      if filefilter(ftrow.fileid):
+                         found.append( ftrow )
        else:
           for ftrow in candidates:
                 if time_range is None and\
@@ -268,7 +311,11 @@ class basic_filetable(basic_id):
                        lat_range.overlaps_with( ftrow.latrange ) and\
                        lon_range.overlaps_with( ftrow.lonrange ) and\
                        level_range.overlaps_with( ftrow.levelrange ):
-                   found.append( ftrow )
+                   if filefilter is None:
+                      found.append( ftrow )
+                   else:
+                      if filefilter(ftrow.fileid):
+                         found.append( ftrow )
        return found
     def list_variables(self):
        vars = list(set([ r.variableid for r in self._table ]))
@@ -278,11 +325,21 @@ class basic_filetable(basic_id):
        vars = list(set([ r.variableid for r in self._table if r.haslevel]))
        vars.sort()
        return vars
+    def has_variables( self, varlist ):
+       """Returns True if this filetable has entries for every variable in the supplied sequence of
+       variable names (strings); otherwise False."""
+       fvars = set([ r.variableid for r in self._table ])
+       svars = set(varlist)
+       if len(svars-fvars)>0:
+          return False
+       else:
+          return True
             
 class basic_filefmt:
     """Children of this class contain methods which support specific file types,
     and are used to build the file table.  Maybe later we'll put here methods
     to support other functionality."""
+    name = ""
     def get_timerange(self): return None
     def get_latrange(self): return None
     def get_lonrange(self): return None
@@ -296,6 +353,7 @@ class Unknown_filefmt(basic_filefmt):
 class NCAR_filefmt(basic_filefmt):
    """NCAR History Tape format, used by CAM,CCSM,CESM.  This class works off a derived
    xml file produced with cdscan."""
+   name = "NCAR CAM"
    def __init__(self,dfile, options):
       """dfile is an open file.  It must be an xml file produced by cdscan,
       combining NCAR History Tape format files."""
@@ -430,6 +488,7 @@ class NCAR_filefmt(basic_filefmt):
       #return None
 
 class NCAR_climo_filefmt(NCAR_filefmt):
+   name = "NCAR climo"
    def standardize_season( self, season ):
       """Converts the input season string to one of the standard 3-letter ones:
       ANN,DJF,MAM,JJA,SON,JAN,FEB,MAR,...DEC.  Strings which will be converted
@@ -458,9 +517,14 @@ class NCAR_climo_filefmt(NCAR_filefmt):
          season=self._dfile.id[-12:-9]
       return self.standardize_season(season)
 
+class NCAR_CESM_climo_filefmt(NCAR_climo_filefmt):
+   """climatologies in NCAR history tape format, derived from CESM/CCSM/CAM model output"""
+   name = "NCAR CAM climo"
+
 class CF_filefmt(basic_filefmt):
     """NetCDF file conforming to the CF Conventions, and using useful CF featues
     such as standard_name and bounds."""
+    name = "CF"
     def __init__(self,dfile):
         """dfile is an open file"""
         # There are many possible interesting variables!

@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # Script for running diagnostics.
 # Command-line usage example:
 #
@@ -10,7 +11,7 @@
 # All inputs through an Options object:
 # opts = Options()
 # opts['cachepath'] = '/tmp'
-# opts['outpath'] = '~/tmp/diagout'
+# opts['outputdir'] = '~/tmp/diagout'
 # opts['packages'] = ['AMWG']
 # opts['sets'] = [' 3 - Line Plots of  Zonal Means']
 # opts['seasons'] = ['DJF','JJA']
@@ -24,7 +25,7 @@
 # This has more possibilities for extension:
 # opts = Options()
 # opts['cachepath'] = '/tmp'
-# opts['outpath'] = '~/tmp/diagout'
+# opts['outputdir'] = '~/tmp/diagout'
 # opts['packages'] = ['AMWG']
 # opts['sets'] = [' 3 - Line Plots of  Zonal Means']
 # opts['seasons'] = ['DJF','JJA']
@@ -52,8 +53,10 @@ from metrics.packages.diagnostic_groups import *
 from metrics.frontend.uvcdat import *
 from metrics.frontend.options import *
 from pprint import pprint
+from metrics.common.utilities import *
 import metrics.frontend.defines as defines
 import cProfile
+from metrics.frontend.it import *
 
 def mysort( lis ):
     lis.sort()
@@ -126,11 +129,9 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
     Most other choices, such as the plot sets, variables, and seasons, are specified in opts,
     an instance of Options."""
 
-    if opts['plots'] == True:
-        vcanvas = vcs.init()
-    outpath = opts['output']
-    if outpath is None:
-        outpath = os.path.join(os.environ['HOME'],"tmp","diagout")
+    outdir = opts['output']
+    if outdir is None:
+        outdir = os.path.join(os.environ['HOME'],"tmp","diagout")
 
     # Note:verifyOptions() should prevent this from being none. There used to be a quit() in
     # there but I removed it. (BES)
@@ -154,7 +155,8 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
     number_diagnostic_plots = 0
     dm = diagnostics_menu()                 # dm = diagnostics menu (packages), a dict
     for pname in packages:
-        pclass = dm[pname]()
+        pclass = dm[pname.upper()]()
+
         # Find which plotsets the user requested which this package offers:
         sm = pclass.list_diagnostic_sets()  # sm = plot set menu, a dict
         if opts['sets'] is None:
@@ -174,10 +176,16 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
             region = defines.all_regions[opts['regions'][0]]
             rname = opts['regions'][0]
         for sname in plotsets:
+            print "plot set",sname
+            snum = sname.strip().split(' ')[0]
             sclass = sm[sname]
             seasons = list( set(seasons) & set(pclass.list_seasons()) )
             for seasonid in seasons:
                 variables = pclass.list_variables( filetable1, filetable2, sname  )
+                if sclass.number=='1' and pname.upper() == 'AMWG':
+                    # Plot set 1 (the table) ignores variable specifications - it does all variables in
+                    # its internal list.  To make the code work unchanged, choose one:
+                    variables = variables[:1]
                 if opts.get('vars',['ALL'])!=['ALL']:
                     variables = list( set(variables) & set(opts.get('vars',[])) )
                     if len(variables)==0 and len(opts.get('vars',[]))>0:
@@ -186,10 +194,10 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                 for varid in variables:
                     print "variable",varid,"season",seasonid
                     vard = pclass.all_variables( filetable1, filetable2, sname )
-                    var = vard[varid]
+                    plotvar = vard[varid]
 
                     # Find variable options.  If none were requested, that means "all".
-                    vvaropts = var.varoptions()
+                    vvaropts = plotvar.varoptions()
                     if vvaropts is None:
                         if len(opts['varopts'])>0:
                             if opts['varopts']!=[None]:
@@ -214,52 +222,201 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                     for aux in varopts:
                         plot = sclass( filetable1, filetable2, varid, seasonid, region, vvaropts[aux] )
                         res = plot.compute(newgrid=-1) # newgrid=0 for original grid, -1 for coarse
-                        if res is not None:
+                        if res is not None and len(res)>0:
                             if opts['plots'] == True:
-                                tm = diagnostics_template()
-                                r = 0
-                                for r in range(len(res)):
-                                   title = res[r].title
-                                   vcanvas.clear()
-                                   for var in res[r].vars:
-                                       
-                                       var.title = title
-                                       # ...But the VCS plot system will overwrite the title line
-                                       # with whatever else it can come up with:
-                                       # long_name, id, and units. Generally the units are harmless,
-                                       # but the rest has to go....
-                                       if hasattr(var,'long_name'):
-                                           del var.long_name
-                                       if hasattr(var,'id'):
-                                           var_id_save = var.id
-                                           var.id = ''         # If id exists, vcs uses it as a plot title
-                                           # and if id doesn't exist, the system will create one before plotting!
-                                       else:
-                                           var_id_save = None
+                                vcanvas = vcs.init()
+                                vcanvas.setcolormap('bl_to_darkred') #Set the colormap to the NCAR colors
+                                vcanvas2 = vcs.init()
+                                vcanvas2.portrait()
+                                vcanvas2.setcolormap('bl_to_darkred') #Set the colormap to the NCAR colors
 
-                                       vname = varid.replace(' ', '_')
-                                       vname = vname.replace('/', '_')
-                                       fname = outpath+'/figure-set'+sname[0]+'_'+rname+'_'+seasonid+'_'+vname+'_plot-'+str(r)+'.png'
-                                       print "writing png file",fname
-                                       #res[r].presentation.script("jeff.json")   #example of writing a json file
-                                       vcanvas.plot(var, res[r].presentation, template_name='diagnostic', bg=1)
-                                       if var_id_save is not None:
-                                           var.id = var_id_save
-                                   vcanvas.png( fname )
+                                rdone = 0
+
+                                # At this loop level we are making one compound plot.  In consists
+                                # of "single plots", each of which we would normally call "one" plot.
+                                # But some "single plots" are made by drawing multiple "simple plots",
+                                # One on top of the other.  VCS draws one simple plot at a time.
+                                # Here we'll count up the plots and run through them to build lists
+                                # of graphics methods and overlay statuses.
+                                nsingleplots = len(res)
+                                nsimpleplots = nsingleplots + sum([len(resr)-1 for resr in res if type(resr) is tuple])
+                                gms = nsimpleplots * [None]
+                                ovly = nsimpleplots * [0]
+                                onPage = nsingleplots
+                                ir = 0
+                                for r,resr in enumerate(res):
+                                    if type(resr) is tuple:
+                                        for jr,rsr in enumerate(resr):
+                                            gms[ir] = resr[jr].ptype.lower()
+                                            ovly[ir] = jr
+                                            ir += 1
+                                    elif resr is not None:
+                                        gms[ir] = resr.ptype.lower()
+                                        ovly[ir] = 0
+                                        ir += 1
+                                if None in gms:
+                                    print "WARNING, missing a graphics method. gms=",gms
+                                # Now get the templates which correspond to the graphics methods and overlay statuses.
+                                # tmobs[ir] is the template for plotting a simple plot on a page
+                                #   which has just one single-plot - that's vcanvas
+                                # tmmobs[ir] is the template for plotting a simple plot on a page
+                                #   which has the entire compound plot - that's vcanvas2
+                                gmobs, tmobs, tmmobs = return_templates_graphic_methods( vcanvas, gms, ovly, onPage )
+                                if 1==1: # optional debugging:
+                                    print "tmpl nsingleplots=",nsingleplots,"nsimpleplots=",nsimpleplots
+                                    print "tmpl gms=",gms
+                                    print "tmpl len(res)=",len(res),"ovly=",ovly,"onPage=",onPage
+                                    print "tmpl gmobs=",gmobs
+                                    print "tmpl tmobs=",tmobs
+                                    print "tmpl tmmobs=",tmmobs
+
+                                ir = -1
+                                for r,resr in enumerate(res):
+                                   ir += 1
+                                   tm = tmobs[ir]
+                                   tm2 = tmmobs[ir]
+                                   if resr is None:
+                                       continue
+                                   
+                                   if type(resr) is not tuple:
+                                       resr = (resr, None )
+                                   vcanvas.clear()
+                                   # ... Thus all members of resr and all variables of rsr will be
+                                   # plotted in the same plot...
+                                   for rsr in resr:
+                                       if rsr is None:
+                                           continue
+                                       else:
+                                           rsr_presentation = rsr.presentation
+                                       title = rsr.title
+                     
+                                       for varIndex, var in enumerate(rsr.vars):
+                                           savePNG = True
+                                           seqsetattr(var,'title',title)
+
+                                           # ...But the VCS plot system will overwrite the title line
+                                           # with whatever else it can come up with:
+                                           # long_name, id, and units. Generally the units are harmless,
+                                           # but the rest has to go....
+
+                                           if seqhasattr(var,'long_name'):
+                                               if type(var) is tuple:
+                                                   for v in var:
+                                                       del v.long_name
+                                               else:
+                                                   del var.long_name
+                                           if seqhasattr(var,'id'):
+                                               if type(var) is tuple:   # only for vector plots
+                                                   vname = ','.join( seqgetattr(var,'id','') )
+                                                   vname = vname.replace(' ', '_')
+                                                   var_id_save = seqgetattr(var,'id','')
+                                                   seqsetattr( var,'id','' )
+                                               else:
+                                                   vname = var.id.replace(' ', '_')
+                                                   var_id_save = var.id
+                                                   var.id = ''         # If id exists, vcs uses it as a plot title
+                                                   # and if id doesn't exist, the system will create one before plotting!
+
+                                               vname = vname.replace('/', '_')
+                                               fname = outdir+'/figure-set'+snum+'_'+rname+'_'+seasonid+'_'+\
+                                                   vname+'_plot-'+str(r)+'.png'
+                                               print "writing png file",fname
+                                               #rsr_presentation.script("jeff.json")   #example of writing a json file
+
+                                           if vcs.isscatter(rsr.presentation):
+                                               if varIndex == 0:
+                                                   #first pass through just save the array
+                                                
+                                                   xvar = var.flatten()
+                                                   savePNG = False
+                                               else:
+                                                   #second pass through plot the 2 variables
+                                                   yvar = var.flatten()
+                                                   #if r == len(res)-1:
+                                                   #    rsr.presentation.list()
+                                                   #    pdb.set_trace()
+                                                   vcanvas.plot(xvar, yvar, 
+                                                                rsr.presentation, tm, bg=1, title=title,
+                                                                units=getattr(xvar,'units',''), source=rsr.source )
+                                               try:
+                                                   if tm2 is not None and varIndex+1 == len(res[r].vars):
+                                                       vcanvas2.plot(xvar, yvar, 
+                                                                     rsr.presentation, tm2, bg=1, title=title, 
+                                                                     units=getattr(xvar,'units',''),
+                                                            source=rsr.source )
+                                                       savePNG = True
+                                               except vcs.error.vcsError as e:
+                                                   print "ERROR making summary plot:",e
+                                                   savePNG = True
+                                           elif vcs.isvector(rsr.presentation) or rsr.presentation.__class__.__name__=="Gv":
+                                               strideX = rsr.strideX
+                                               strideY = rsr.strideY
+                                               vcanvas.plot( var[0][::strideY,::strideX],
+                                                             var[1][::strideY,::strideX], rsr.presentation, tm, bg=1,
+                                                             title=title, units=getattr(var,'units',''),
+                                                             source=rsr.source )
+                                               # first plot is all black, second plot works
+                                               vcanvas.plot( var[0][::strideY,::strideX],
+                                                             var[1][::strideY,::strideX], rsr.presentation, tm, bg=1,
+                                                             title=title, units=getattr(var,'units',''),
+                                                             source=rsr.source )
+                                               try:
+                                                   if tm2 is not None:
+                                                       vcanvas2.plot( var[0][::strideY,::strideX],
+                                                                      var[1][::strideY,::strideX],
+                                                                      rsr.presentation, tm2, bg=1 )
+                                               except vcs.error.vcsError as e:
+                                                   print "ERROR making summary plot:",e
+                                           else:
+                                               vcanvas.plot(var, rsr.presentation, tm, bg=1,
+                                                            title=title, units=getattr(var,'units',''),
+                                                            source=rsr.source )
+                                               try:
+                                                   if tm2 is not None:
+                                                       vcanvas2.plot(var, rsr.presentation, tm2, bg=1)
+                                               except vcs.error.vcsError as e:
+                                                   print "ERROR making summary plot:",e
+                                           if var_id_save is not None:
+                                               if type(var_id_save) is str:
+                                                   var.id = var_id_save
+                                               else:
+                                                   for i in range(len(var_id_save)):
+                                                       var[i].id = var_id_save[i]
+                                           if savePNG:
+                                               vcanvas.png( fname )
+
+                                           rdone += 1
                             # Also, write the nc output files and xml.
                             # Probably make this a command line option.
                             if res.__class__.__name__ is 'uvc_composite_plotspec':
                                 resc = res
+                                filenames = resc.write_plot_data("xml-NetCDF", outdir )
                             else:
                                 resc = uvc_composite_plotspec( res )
+                                filenames = resc.write_plot_data("xml-NetCDF", outdir )
                             number_diagnostic_plots += 1
-                            filenames = resc.write_plot_data("xml-NetCDF", outpath )
                             print "wrote plots",resc.title," to",filenames
+                            if opts['plots']==True:
+                                if tmmobs[0] is not None:  # If anything was plotted to vcanvas2
+                                    vname = varid.replace(' ', '_')
+                                    vname = vname.replace('/', '_')
+                                    fname = outdir+'/figure-set'+snum+'_'+rname+'_'+seasonid+'_'+vname+'_plot-'+str(r)+'.png'
+                                    vcanvas2.png( fname )
+                        elif res is not None:
+                            # but len(res)==0, probably plot set 1
+                            if res.__class__.__name__ is 'amwg_plot_set1':
+                                resc = res
+                                filenames = resc.write_plot_data("text", outdir)
+                                number_diagnostic_plots += 1
+                                print "wrote table",resc.title," to",filenames
 
     print "total number of (compound) diagnostic plots generated =", number_diagnostic_plots
 
 if __name__ == '__main__':
+   print "UV-CDAT Diagnostics, command-line version"
    o = Options()
    o.processCmdLine()
    o.verifyOptions()
+   import pdb
+   #pdb.set_trace()
    run_diagnostics_from_options(o)
