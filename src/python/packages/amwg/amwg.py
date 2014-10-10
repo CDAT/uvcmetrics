@@ -363,29 +363,29 @@ class amwg_plot_set3(amwg_plot_spec,basic_id):
     # Here, the plotspec contains the variables themselves.
     name = '3 - Line Plots of  Zonal Means'
     number = '3'
-    def __init__( self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None ):
+    def __init__( self, filetable1, filetable2, varnom, seasonid=None, region=None, aux=None ):
         """filetable1, filetable2 should be filetables for model and obs.
-        varid is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'."""
-        basic_id.__init__(self,varid,seasonid)
+        varnom is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'."""
+        basic_id.__init__(self,varnom,seasonid)
         plot_spec.__init__(self,seasonid)
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
         if not self.computation_planned:
-            self.plan_computation( filetable1, filetable2, varid, seasonid )
-    def plan_computation( self, filetable1, filetable2, varid, seasonid ):
+            self.plan_computation( filetable1, filetable2, varnom, seasonid )
+    def plan_computation( self, filetable1, filetable2, varnom, seasonid ):
         zvar = reduced_variable(
-            variableid=varid,
+            variableid=varnom,
             filetable=filetable1, season=self.season,
             reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,self.season,vid=vid)) )
         self.reduced_variables[zvar._strid] = zvar
-        #self.reduced_variables[varid+'_1'] = zvar
-        #zvar._vid = varid+'_1'      # _vid is deprecated
+        #self.reduced_variables[varnom+'_1'] = zvar
+        #zvar._vid = varnom+'_1'      # _vid is deprecated
         z2var = reduced_variable(
-            variableid=varid,
+            variableid=varnom,
             filetable=filetable2, season=self.season,
             reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,self.season,vid=vid)) )
         self.reduced_variables[z2var._strid] = z2var
-        #self.reduced_variables[varid+'_2'] = z2var
-        #z2var._vid = varid+'_2'      # _vid is deprecated
+        #self.reduced_variables[varnom+'_2'] = z2var
+        #z2var._vid = varnom+'_2'      # _vid is deprecated
         self.plot_a = basic_two_line_plot( zvar, z2var )
         ft1id,ft2id = filetable_ids(filetable1,filetable2)
         vid = '_'.join([self._id[0],self._id[1],ft1id,ft2id,'diff'])
@@ -624,6 +624,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
             vid1,vid1var = self.vars_stdvar_normal_contours(
                 filetable1, varnom, seasonid, region=None, aux=None )
         else:
+            print "ERROR, variable",varnom,"not found in and cannot be computed from",filetable1
             return None
         if filetable2 is not None and varnom in filetable2.list_variables():
             vid2,vid2var = self.vars_normal_contours(
@@ -659,7 +660,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
                     title = ' '.join([varnom,seasonid,'1 variance']),
                     source = ft1src )
                 all_plotnames.append(self.plot1var_id)
-        if filetable2 is not None and vid1 is not None:
+        if filetable2 is not None and vid2 is not None:
             self.single_plotspecs[self.plot2_id] = plotspec(
                 vid = ps.dict_idid(vid2),
                 zvars = [vid2],  zfunc = (lambda z: z),
