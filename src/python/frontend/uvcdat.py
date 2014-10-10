@@ -189,7 +189,7 @@ def get_month_strings(length=15):
     for i in range(1,13): 
         months += [cdutil.getMonthString(i)[0:length]]
     return months
-    
+
 class uvc_simple_plotspec():
     """This is a simplified version of the plotspec class, intended for the UV-CDAT GUI.
     Once it stabilizes, I may replace the plotspec class with this one.
@@ -789,6 +789,9 @@ class plot_spec(object):
             print "because missing results for",[k for k in ps.zvars if vvals[k] is None]
             return None, None
         z = apply( zfunc, zrv )
+        if hasattr(z,'mask') and z.mask.all():
+            print "ERROR, all values of",z.id,"are missing!"
+            return None,None
         return z, zrv
         
 
