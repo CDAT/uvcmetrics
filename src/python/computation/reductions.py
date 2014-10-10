@@ -2000,6 +2000,8 @@ class reduced_variable(ftrow,basic_id):
             if reduced_data is not None:
                 reduced_data._vid = vid
             f.close()
+        if hasattr(reduced_data,'mask') and reduced_data.mask.all():
+            reduced_data = None
         return reduced_data
 
 class rv(reduced_variable):
