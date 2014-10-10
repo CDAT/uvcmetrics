@@ -111,6 +111,8 @@ class amwg_plot_spec(plot_spec):
         For a member of the list dv, dv.id() is a suitable dictionary key.
         If unsuccessful, this will return None,None,None.
         """
+        if filetable is None:
+            return None,None,None
         if varnom not in amwg_plot_spec.standard_variables:
             return None,None,None
         computable = False
@@ -623,14 +625,14 @@ class amwg_plot_set5and6(amwg_plot_spec):
                 filetable1, varnom, seasonid, region=None, aux=None )
         else:
             return None
-        if varnom in filetable2.list_variables():
+        if filetable2 is not None and varnom in filetable2.list_variables():
             vid2,vid2var = self.vars_normal_contours(
                 filetable2, varnom, seasonid, region=None, aux=None )
         elif varnom in self.standard_variables.keys():
             vid2,vid2var = self.vars_stdvar_normal_contours(
                 filetable2, varnom, seasonid, region=None, aux=None )
         else:
-            return None
+            pass
         self.single_plotspecs = {}
         ft1src = filetable1.source()
         try:
@@ -1174,8 +1176,8 @@ class amwg_plot_set6(amwg_plot_spec):
             self.single_plotspecs[self.plot3_id+'v'] = vecplot
         # initially we're not plotting the contour part of the plots....
         #for pln,pl in self.single_plotspecs.iteritems(): #jfp
-        #    print "jfp single plot",pln,pl.plottype
-        #    print "jfp            ",pl.zvars
+        #    print "dbg single plot",pln,pl.plottype
+        #    print "dbg            ",pl.zvars
         self.composite_plotspecs = {
             self.plot1_id: ( self.plot1_id+'c', self.plot1_id+'v' ),
             #self.plot1_id: [ self.plot1_id+'v' ],
