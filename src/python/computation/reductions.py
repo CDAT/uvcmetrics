@@ -161,15 +161,12 @@ def fix_time_units( timeunits ):
         new_date = new_date[0:pre_yr]+yr_ad+new_date[pre_yr+len(yr_bc)]
     return since+new_date
 
-# >>>>> N.B. All the following reduce2scalar* functions are WRONG because they should weight <<<<
-# >>>>> in the latitude direction, using Gaussian weights gw from the data file if available. <<<<
-# >>>>> However, they aren't very wrong because the averager's default weights are reasonable. <<<<
-
-def reduce2scalar_zonal( mv, latmin=-90, latmax=90, vid=None ):
+def reduce2scalar_zonal( mv, latmin=-90, latmax=90, vid=None, gw=None ):
     """returns the mean of the variable over the supplied latitude range.
     The computed quantity is a scalar but is returned as a cdms2 variable, i.e. a MV.
     The input mv is a cdms2 variable too.
     This function uses the cdms2 avarager() function to handle weights and do averages
+    Latitude weights may be provided as 'gw'.  The averager's default is reasonable, however.
     """
     if vid==None:
         vid = 'reduced_'+mv.id
@@ -177,19 +174,24 @@ def reduce2scalar_zonal( mv, latmin=-90, latmax=90, vid=None ):
 
     axis_names = [ a.id for a in axes ]
     axes_string = '('+')('.join(axis_names)+')'
-    avmv = averager( mv2, axis=axes_string )
+    if gw is None:
+        avmv = averager( mv2, axis=axes_string )
+    else:
+        weights = [ gw if a.isLatitude() else 'weighted' for a in axes ]
+        avmv = averager( mv2, axis=axes_string, combinewts=0, weights=weights )
     avmv.id = vid   # Note that the averager function returns a variable with meaningless id.
     if hasattr(mv,'units'):
         avmv.units = mv.units
 
     return avmv
 
-def reduce2scalar_seasonal_zonal( mv, seasons=seasonsyr, latmin=-90, latmax=90, vid=None ):
+def reduce2scalar_seasonal_zonal( mv, seasons=seasonsyr, latmin=-90, latmax=90, vid=None, gw=None ):
     """returns the mean of the variable over the supplied latitude range (in degrees).
     The computed quantity is a scalar but is returned as a cdms2 variable, i.e. a MV.
     The input mv is a cdms2 variable too.
-    This function uses the cdms2 avarager() function to handle weights and do averages
+    This function uses UV-CDAT's genutil.avarager() function to handle weights and do averages.
     Time is restriced to the specified season.
+    Latitude weights may be provided as 'gw'.  The averager's default is reasonable, however.
     """
     if vid==None:
         vid = 'reduced_'+mv.id
@@ -225,7 +227,11 @@ def reduce2scalar_seasonal_zonal( mv, seasons=seasonsyr, latmin=-90, latmax=90, 
     axis_names = [ a.id for a in axes ]
     axes_string = '('+')('.join(axis_names)+')'
     if len(axes_string)>2:
-        avmv = averager( mvseas, axis=axes_string )
+        if gw is None:
+            avmv = averager( mvseas, axis=axes_string )
+        else:
+            weights = [ gw if a.isLatitude() else 'weighted' for a in axes ]
+            avmv = averager( mvseas, axis=axes_string, combinewts=0, weights=weights )
     else:
         avmv = mvseas
     avmv.id = vid   # Note that the averager function returns a variable with meaningless id.
@@ -235,7 +241,7 @@ def reduce2scalar_seasonal_zonal( mv, seasons=seasonsyr, latmin=-90, latmax=90, 
     return avmv
 
 def reduce2scalar_seasonal_zonal_level( mv, seasons=seasonsyr, latmin=-90, latmax=90, level=None,
-                                        vid=None ):
+                                        vid=None, gw=None ):
     """returns the mean of the variable at the supplied level and over the supplied latitude range
     The computed quantity is a scalar but is returned as a cdms2 variable, i.e. a MV.
     The input mv is a cdms2 variable too.  Its level axis *must* have pressure levels in millibars,
@@ -243,6 +249,7 @@ def reduce2scalar_seasonal_zonal_level( mv, seasons=seasonsyr, latmin=-90, latma
     This function uses the cdms2 avarager() function to handle weights and do averages
     Time is restriced to the specified season.  Latitude and longitude units are degrees.
     Level units is millibars.
+    Latitude weights may be provided as 'gw'.  The averager's default is reasonable, however.
     """
     levax = levAxis(mv)
     if level is None or levax is None:
@@ -263,19 +270,24 @@ def reduce2scalar_seasonal_zonal_level( mv, seasons=seasonsyr, latmin=-90, latma
     mvl = select_lev( mv, level )   # mv restricted (approximately) to the specified level
     if mvl is None:
         return None
-    return reduce2scalar_seasonal_zonal( mvl, seasons, latmin, latmax, vid )
+    return reduce2scalar_seasonal_zonal( mvl, seasons, latmin, latmax, vid, gw )
 
 
-def reduce2scalar( mv, vid=None ):
+def reduce2scalar( mv, vid=None, gw=None ):
     """averages mv over the full range all axes, to a single scalar.
-    Uses the averager module for greater capabilities"""
-
+    Uses the averager module for greater capabilities
+    Latitude weights may be provided as 'gw'.  The averager's default is reasonable, however.
+    """
     if vid==None:   # Note that the averager function returns a variable with meaningless id.
         vid = 'reduced_'+mv.id
     axes = allAxes( mv )
     axis_names = [ a.id for a in axes ]
     axes_string = '('+')('.join(axis_names)+')'
-    avmv = averager( mv, axis=axes_string )
+    if gw is None:
+        avmv = averager( mv, axis=axes_string )
+    else:
+        weights = [ gw if a.isLatitude() else 'weighted' for a in axes ]
+        avmv = averager( mv, axis=axes_string, combinewts=0, weights=weights )
     avmv.id = vid
     if hasattr(mv,'units'):
         avmv.units = mv.units
