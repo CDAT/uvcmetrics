@@ -343,7 +343,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                                        vcanvas2.plot(xvar, yvar, 
                                                                      rsr.presentation, tm2, bg=1, title=title, 
                                                                      units=getattr(xvar,'units',''),
-                                                            source=rsr.source )
+                                                                     source=rsr.source )
                                                        savePNG = True
                                                except vcs.error.vcsError as e:
                                                    print "ERROR making summary plot:",e
@@ -364,7 +364,9 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                                    if tm2 is not None:
                                                        vcanvas2.plot( var[0][::strideY,::strideX],
                                                                       var[1][::strideY,::strideX],
-                                                                      rsr.presentation, tm2, bg=1 )
+                                                                      rsr.presentation, tm2, bg=1,
+                                                                      title=title, units=getattr(var,'units',''),
+                                                                      source=rsr.source )
                                                except vcs.error.vcsError as e:
                                                    print "ERROR making summary plot:",e
                                            else:
@@ -373,7 +375,9 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                                             source=rsr.source )
                                                try:
                                                    if tm2 is not None:
-                                                       vcanvas2.plot(var, rsr.presentation, tm2, bg=1)
+                                                       vcanvas2.plot(var, rsr.presentation, tm2, bg=1,
+                                                                     title=title, units=getattr(var,'units',''),
+                                                                     source=rsr.source )
                                                except vcs.error.vcsError as e:
                                                    print "ERROR making summary plot:",e
                                            if var_id_save is not None:
