@@ -156,7 +156,6 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
     dm = diagnostics_menu()                 # dm = diagnostics menu (packages), a dict
     for pname in packages:
         pclass = dm[pname.upper()]()
-
         # Find which plotsets the user requested which this package offers:
         sm = pclass.list_diagnostic_sets()  # sm = plot set menu, a dict
         if opts['sets'] is None:
@@ -229,8 +228,12 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                 vcanvas2 = vcs.init()
                                 vcanvas2.portrait()
                                 vcanvas2.setcolormap('bl_to_darkred') #Set the colormap to the NCAR colors
-
+                                LINE = vcanvas.createline('LINE', 'default')
+                                LINE.width = 3.0
+                                LINE.type = 'solid'
+                                LINE.color = 242
                                 rdone = 0
+                                #pdb.set_trace()
 
                                 # At this loop level we are making one compound plot.  In consists
                                 # of "single plots", each of which we would normally call "one" plot.
@@ -249,6 +252,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                         for jr,rsr in enumerate(resr):
                                             gms[ir] = resr[jr].ptype.lower()
                                             ovly[ir] = jr
+                                            print ir, ovly[ir], gms[ir]
                                             ir += 1
                                     elif resr is not None:
                                         gms[ir] = resr.ptype.lower()
@@ -261,6 +265,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                 #   which has just one single-plot - that's vcanvas
                                 # tmmobs[ir] is the template for plotting a simple plot on a page
                                 #   which has the entire compound plot - that's vcanvas2
+                                
                                 gmobs, tmobs, tmmobs = return_templates_graphic_methods( vcanvas, gms, ovly, onPage )
                                 if 1==1: # optional debugging:
                                     print "tmpl nsingleplots=",nsingleplots,"nsimpleplots=",nsimpleplots
@@ -269,6 +274,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                     print "tmpl gmobs=",gmobs
                                     print "tmpl tmobs=",tmobs
                                     print "tmpl tmmobs=",tmmobs
+
                                 # gmmobs provides the correct graphics methods to go with the templates.
                                 # Unfortunately, for the moment we have to use rmr.presentation instead
                                 # (below) because it contains some information such as axis and vector
@@ -291,7 +297,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                        tm = tmobs[ir]
                                        tm2 = tmmobs[ir]
                                        title = rsr.title
-                     
+                                       rsr_presentation = rsr.presentation
                                        for varIndex, var in enumerate(rsr.vars):
                                            savePNG = True
                                            seqsetattr(var,'title',title)
@@ -327,25 +333,45 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
 
                                            if vcs.isscatter(rsr.presentation):
                                                if varIndex == 0:
-                                                   #first pass through just save the array
-                                                
+                                                   #first pass through just save the array                   
                                                    xvar = var.flatten()
                                                    savePNG = False
-                                               else:
+                                               elif varIndex == 1:
                                                    #second pass through plot the 2 variables
                                                    yvar = var.flatten()
-                                                   #if r == len(res)-1:
-                                                   #    rsr.presentation.list()
-                                                   #    pdb.set_trace()
+                                                   #pdb.set_trace()
+                                                   if rsr_presentation.overplotline:
+                                                       tm.line1.x1 = tm.box1.x1
+                                                       tm.line1.x2 = tm.box1.x2
+                                                       tm.line1.y1 = tm.box1.y2
+                                                       tm.line1.y2 = tm.box1.y1
+                                                       #pdb.set_trace()
+                                                       tm.line1.line = 'LINE'
+                                                       tm.line1.priority = 1
+                                                       tm2.line1.x1 = tm2.box1.x1
+                                                       tm2.line1.x2 = tm2.box1.x2
+                                                       tm2.line1.y1 = tm2.box1.y2
+                                                       tm2.line1.y2 = tm2.box1.y1
+                                                       tm2.line1.line = 'LINE'
+                                                       tm2.line1.priority = 1                                                   
+                                                       #tm.line1.list()
                                                    vcanvas.plot(xvar, yvar, 
-                                                                rsr.presentation, tm, bg=1, title=title,
+                                                                rsr_presentation, tm, bg=1, title=title,
                                                                 units=getattr(xvar,'units',''), source=rsr.source )
+                                               elif varIndex == 2:
+                                                   #third pass save variable
+                                                   xvar = var.flatten() 
+                                               else:
+                                                   #final pass
+                                                   yvar = var.flatten()
+                                                   vcanvas.plot(xvar, yvar, 
+                                                                rsr_presentation, tm, bg=1, title=title,
+                                                                units=getattr(xvar,'units',''), source=rsr.source )                                                   
                                                try:
-                                                   if tm2 is not None and varIndex+1 == len(res[r].vars):
-                                                       vcanvas2.plot(xvar, yvar, 
-                                                                     rsr.presentation, tm2, bg=1, title=title, 
-                                                                     units=getattr(xvar,'units',''),
-                                                                     source=rsr.source )
+                                                   if tm2 is not None and varIndex+1 == len(rsr.vars):
+                                                       vcanvas2.plot(xvar, yvar,
+                                                                     rsr_presentation, tm2, bg=1, title=title, 
+                                                                     units=getattr(xvar,'units',''), source=rsr.source )
                                                        savePNG = True
                                                except vcs.error.vcsError as e:
                                                    print "ERROR making summary plot:",e

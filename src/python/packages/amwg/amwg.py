@@ -1696,6 +1696,7 @@ class amwg_plot_set11(amwg_plot_spec):
                     self.reduced_variables[VID] = RV      
                     VIDs += [VID]              
 
+        #setup the rdeuced variable pairs
         self.rv_pairs = []
         i = 0
         while i <= 10:
@@ -1704,21 +1705,26 @@ class amwg_plot_set11(amwg_plot_spec):
             i += 2
         
         self.single_plotspecs = {}
+        self.composite_plotspecs[self.plotall_id] = []
         title = self.vars[0] + ' vs ' + self.vars[1]
         for i, plot_id in enumerate(self.plot_ids):
             #zvars, z2vars = self.reduced_variables[VIDs[i]], self.reduced_variables[VIDs[i+1]]
-            yVID, xVID = self.rv_pairs[i]
-            #print xVID, yVID z2rangevars=[-120., 0.], zrangevars=[0., 120.],
+            xVID, yVID = self.rv_pairs[i]
+            #print xVID, yVID z2rangevars=[-120., 0.], zrangevars=[0., 120.], z2vars = [yVID],
             self.single_plotspecs[plot_id] = plotspec(vid = plot_id, 
                                                       zvars=[xVID], 
                                                       zfunc = (lambda x: x),
-
+                                                      zrangevars=[0., 120.],
                                                       z2vars = [yVID],
                                                       z2func = (lambda x: x),
+                                                      z2rangevars=[-120., 0.],
+                                                      plottype = 'Scatter', 
+                                                      title = title,
+                                                      overplotline = True)
 
-                                                      plottype = self.plottype, 
-                                                      title = title)
-    
+            #self.composite_plotspecs[plot_id] = ( plot_id+'scatter', plot_id+'line' )
+            #self.composite_plotspecs[self.plotall_id] += [plot_id]
+
         self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
         self.computation_planned = True
     def _results(self, newgrid=0):
@@ -1729,22 +1735,22 @@ class amwg_plot_set11(amwg_plot_spec):
             return None
         psv = self.plotspec_values
         #pdb.set_trace()
-        if self.plot_ids[0] in psv and self.plot_ids[0] is not None:
-            for  plot_id in self.plot_ids[1:]:
-                if plot_id in psv and plot_id is not None:
-                    psv[plot_id].synchronize_ranges(psv[self.plot_ids[0]])
+        #if self.plot_ids[0] in psv and self.plot_ids[0] is not None:
+        #    for  plot_id in self.plot_ids[1:]:
+        #        if plot_id in psv and plot_id is not None:
+        #            psv[plot_id].synchronize_ranges(psv[self.plot_ids[0]])
         for key,val in psv.items():
-            if type(val) is not list: val=[val]
+            #if type(val) is not list: val=[val]
+            if type(val) is not list and type(val) is not tuple: val=[val]
             for v in val:
                 if v is None: continue
+                if type(v) is tuple:
+                    continue  # finalize has already been called for this, it comes from plotall_id but also has its own entry
                 v.finalize()
-                #self.presentation.xticlabels1 = self.vars[0]
-                #self.presentation.yticlabels1 = self.vars[1]
         return self.plotspec_values[self.plotall_id]
-
-class xxxamwg_plot_set12(amwg_plot_spec):
-    #name = '12 - Vertical Profiles at 17 selected raobs stations:incomplete'
-    #number = '12'
+class amwg_plot_set12(amwg_plot_spec):
+    name = '12 - Vertical Profiles at 17 selected raobs stations:incomplete'
+    number = '12'
     def __init__( self, filetable1, filetable2, varid, seasonid='ANN', region=None, aux=None ):
         """filetable1, filetable2 should be filetables for each model.
         varid is a string, e.g. 'TREFHT'.  The seasonal difference is Seasonid
@@ -1827,23 +1833,24 @@ class xxxamwg_plot_set12(amwg_plot_spec):
             x1VID, y1VID = self.rv_obs_pairs[i]
             x2VID, y2VID = self.rv_model_pairs[i]
             #print xVID, yVID
-            self.single_plotspecs[plot_id] = plotspec(vid = plot_id, 
-                                                      zvars  = [y1VID], 
-                                                      zfunc = (lambda x: x),
-                                                      zrangefunc=(lambda x: (x.min(), x.max()) ),
-                                                      z2vars = [x1VID],
-                                                      z2func = (lambda x: x),
-                                                      z2rangefunc=(lambda x: (x.min(), x.max()) ),
-                                                      z3vars = [y2VID],
-                                                      z3func = (lambda x: x),
-                                                      z3rangefunc=(lambda x: (x.min(), x.max()) ),
-                                                      z4vars = [x2VID],
-                                                      z4func = (lambda x: x),
-                                                      z4rangefunc=(lambda x: (x.min(), x.max()) ),
-                                                      plottype = self.plottype, 
-                                                      title = title)
-    
-        self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
+            self.single_plotspecs[plot_id+'_obs'] = plotspec(vid = plot_id+'_obs', 
+                                                             zvars  = [y1VID, x1VID],
+                                                             zfunc = (lambda z,w: (z,w)),
+                                                             plottype='Scatter', 
+                                                             title = title)
+            self.single_plotspecs[plot_id+'_model'] = plotspec(vid = plot_id+'_model', 
+                                                               zvars = [y2VID, x2VID],
+                                                               zfunc = (lambda z,w: (z,w)),
+                                                               plottype = "Yxvsx", 
+                                                               title = title)
+        #pdb.set_trace()
+        #self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
+        self.composite_plotspecs = {}
+        plotall_id = []
+        for plot_id in self.plot_ids:
+            self.composite_plotspecs[plot_id] = ( plot_id+'_obs', plot_id+'_model' )
+            plotall_id + [plot_id]
+        self.composite_plotspecs[self.plotall_id] = plotall_id
         self.computation_planned = True
 
     def _results(self, newgrid=0):
@@ -1854,16 +1861,23 @@ class xxxamwg_plot_set12(amwg_plot_spec):
             return None
         psv = self.plotspec_values
         #pdb.set_trace()
-        if self.plot_ids[0] in psv and self.plot_ids[0] is not None:
-            for  plot_id in self.plot_ids[1:]:
-                if plot_id in psv and plot_id is not None:
-                    psv[plot_id].synchronize_ranges(psv[self.plot_ids[0]])
+        #if self.plot_ids[0] in psv and self.plot_ids[0] is not None:
+        #    for  plot_id in self.plot_ids[1:]:
+        #        if plot_id in psv and plot_id is not None:
+        #            psv[plot_id].synchronize_ranges(psv[self.plot_ids[0]])
+        #for key,val in psv.items():
+        #    if type(val) is not list: val=[val]
+        #    for v in val:
+        #        if v is None: continue
+        #        v.finalize()
+                #self.presentation.xticlabels1 = self.vars[0]
         for key,val in psv.items():
-            if type(val) is not list: val=[val]
+            if type(val) is not list and type(val) is not tuple: val=[val]
             for v in val:
                 if v is None: continue
+                if type(v) is tuple:
+                    continue  # finalize has already been called for this, it comes from plotall_id but also has its own entry
                 v.finalize()
-                #self.presentation.xticlabels1 = self.vars[0]
                 #self.presentation.yticlabels1 = self.vars[1]
         return self.plotspec_values[self.plotall_id]
 
