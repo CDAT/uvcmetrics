@@ -274,12 +274,14 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                     print "tmpl gmobs=",gmobs
                                     print "tmpl tmobs=",tmobs
                                     print "tmpl tmmobs=",tmmobs
-                                #pdb.set_trace()
+
+                                # gmmobs provides the correct graphics methods to go with the templates.
+                                # Unfortunately, for the moment we have to use rmr.presentation instead
+                                # (below) because it contains some information such as axis and vector
+                                # scaling which is not yet done as part of
+
                                 ir = -1
                                 for r,resr in enumerate(res):
-                                   ir += 1
-                                   tm = tmobs[ir]
-                                   tm2 = tmmobs[ir]
                                    if resr is None:
                                        continue
                                    
@@ -291,9 +293,11 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                    for rsr in resr:
                                        if rsr is None:
                                            continue
-                                       else:
-                                           rsr_presentation = rsr.presentation
+                                       ir += 1
+                                       tm = tmobs[ir]
+                                       tm2 = tmmobs[ir]
                                        title = rsr.title
+                                       rsr_presentation = rsr.presentation
                                        for varIndex, var in enumerate(rsr.vars):
                                            savePNG = True
                                            seqsetattr(var,'title',title)
@@ -325,7 +329,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                                fname = outdir+'/figure-set'+snum+'_'+rname+'_'+seasonid+'_'+\
                                                    vname+'_plot-'+str(r)+'.png'
                                                print "writing png file",fname
-                                               #rsr_presentation.script("jeff.json")   #example of writing a json file
+                                               #rsr.presentation.script("jeff.json")   #example of writing a json file
 
                                            if vcs.isscatter(rsr.presentation):
                                                if varIndex == 0:
@@ -365,7 +369,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                                                 units=getattr(xvar,'units',''), source=rsr.source )                                                   
                                                try:
                                                    if tm2 is not None and varIndex+1 == len(rsr.vars):
-                                                       vcanvas2.plot(xvar, yvar, 
+                                                       vcanvas2.plot(xvar, yvar,
                                                                      rsr_presentation, tm2, bg=1, title=title, 
                                                                      units=getattr(xvar,'units',''), source=rsr.source )
                                                        savePNG = True
@@ -375,20 +379,24 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                            elif vcs.isvector(rsr.presentation) or rsr.presentation.__class__.__name__=="Gv":
                                                strideX = rsr.strideX
                                                strideY = rsr.strideY
+                                               # Note that continents=0 is a useful plot option
                                                vcanvas.plot( var[0][::strideY,::strideX],
-                                                             var[1][::strideY,::strideX], rsr.presentation, tm, bg=1,
+                                                             var[1][::strideY,::strideX], rsr.presentation, tmobs[ir], bg=1,
                                                              title=title, units=getattr(var,'units',''),
                                                              source=rsr.source )
-                                               # first plot is all black, second plot works
-                                               vcanvas.plot( var[0][::strideY,::strideX],
-                                                             var[1][::strideY,::strideX], rsr.presentation, tm, bg=1,
-                                                             title=title, units=getattr(var,'units',''),
-                                                             source=rsr.source )
+                                               # the last two lines shouldn't be here.  These (title,units,source)
+                                               # should come from the contour plot, but that doesn't seem to
+                                               # have them.
                                                try:
                                                    if tm2 is not None:
                                                        vcanvas2.plot( var[0][::strideY,::strideX],
                                                                       var[1][::strideY,::strideX],
-                                                                      rsr.presentation, tm2, bg=1 )
+                                                                      rsr.presentation, tm2, bg=1,
+                                                                      title=title, units=getattr(var,'units',''),
+                                                                      source=rsr.source )
+                                                       # the last two lines shouldn't be here.  These (title,units,source)
+                                                       # should come from the contour plot, but that doesn't seem to
+                                                       # have them.
                                                except vcs.error.vcsError as e:
                                                    print "ERROR making summary plot:",e
                                            else:
@@ -397,7 +405,9 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                                             source=rsr.source )
                                                try:
                                                    if tm2 is not None:
-                                                       vcanvas2.plot(var, rsr.presentation, tm2, bg=1)
+                                                       vcanvas2.plot(var, rsr.presentation, tm2, bg=1,
+                                                                     title=title, units=getattr(var,'units',''),
+                                                                     source=rsr.source )
                                                except vcs.error.vcsError as e:
                                                    print "ERROR making summary plot:",e
                                            if var_id_save is not None:

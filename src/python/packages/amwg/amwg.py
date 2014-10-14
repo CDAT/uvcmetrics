@@ -81,7 +81,10 @@ class amwg_plot_spec(plot_spec):
                 func=(lambda x: setunits(x,'')) )],
         'TREFHT':[derived_var(
                 vid='TREFHT', inputs=['TREFHT_LAND'], outputs=['TREFHT'],
-                func=(lambda x: x) )]
+                func=(lambda x: x) )],
+        'RESTOM':[derived_var(
+                vid='RESTOM', inputs=['FSNT','FLNT'], outputs=['RESTOM'],
+                func=aminusb )]   # RESTOM = net radiative flux
         # AOD normally has no units, but sometimes the units attribute is set anyway.
         }
     @staticmethod
@@ -90,6 +93,46 @@ class amwg_plot_spec(plot_spec):
     @staticmethod
     def _all_variables( filetable1, filetable2=None ):
         return amwg_plot_spec.package._all_variables( filetable1, filetable2, "amwg_plot_spec" )
+    @staticmethod
+    def stdvar2var( varnom, filetable, season, reduction_function ):
+        """From a variable name, a filetable, and a season, this finds the variable name in
+        standard_variables. If it's there, this method generates a variable as an instance
+        of reduced_variable or derived_var, which represents the variable and how to compute it
+        from the data described by the filetable.
+        Inputs are the variable name (e.g. FLUT, TREFHT), a filetable, a season, and (important!)
+        a reduction function which reduces data variables to reduced variables prior to computing
+        the variable specified by varnom.
+        If successful, this will return (i) a variable id for varnom, including filetable and
+        season; it is the id of the first item in the returned list of derived variables.
+         (ii) a list of reduced_variables needed for computing varnom.  For
+        each such reduced variable rv, it may be placed in a dictionary using rv.id() as its key.
+        (iii) a list of derived variables - normally just the one representing varnom, but
+        in more complicated situations (which haven't been implemented yet) it may be longer.
+        For a member of the list dv, dv.id() is a suitable dictionary key.
+        If unsuccessful, this will return None,None,None.
+        """
+        if filetable is None:
+            return None,None,None
+        if varnom not in amwg_plot_spec.standard_variables:
+            return None,None,None
+        computable = False
+        for svd in amwg_plot_spec.standard_variables[varnom]:  # loop over ways to compute varnom
+            invarnoms = svd._inputs
+            if len( set(invarnoms) - set(filetable.list_variables()) )<=0:
+                func = svd._func
+                computable = True
+                break
+        if not computable:
+            return None,None,None
+        rvs = []
+        for ivn in invarnoms:
+            rv = reduced_variable( variableid=ivn, filetable=filetable, season=season,
+                                   reduction_function=reduction_function )
+            rvs.append(rv)
+        seasonid = season.seasons[0]
+        vid = dv.dict_id( varnom, '', seasonid, filetable )
+        dvs = [derived_var( vid=vid, inputs=[rv.id() for rv in rvs], func=func )]
+        return dvs[0].id(), rvs, dvs
 
 # plot set classes in other files:
 from metrics.packages.amwg.amwg1 import *
@@ -320,29 +363,29 @@ class amwg_plot_set3(amwg_plot_spec,basic_id):
     # Here, the plotspec contains the variables themselves.
     name = '3 - Line Plots of  Zonal Means'
     number = '3'
-    def __init__( self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None ):
+    def __init__( self, filetable1, filetable2, varnom, seasonid=None, region=None, aux=None ):
         """filetable1, filetable2 should be filetables for model and obs.
-        varid is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'."""
-        basic_id.__init__(self,varid,seasonid)
+        varnom is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'."""
+        basic_id.__init__(self,varnom,seasonid)
         plot_spec.__init__(self,seasonid)
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
         if not self.computation_planned:
-            self.plan_computation( filetable1, filetable2, varid, seasonid )
-    def plan_computation( self, filetable1, filetable2, varid, seasonid ):
+            self.plan_computation( filetable1, filetable2, varnom, seasonid )
+    def plan_computation( self, filetable1, filetable2, varnom, seasonid ):
         zvar = reduced_variable(
-            variableid=varid,
+            variableid=varnom,
             filetable=filetable1, season=self.season,
             reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,self.season,vid=vid)) )
         self.reduced_variables[zvar._strid] = zvar
-        #self.reduced_variables[varid+'_1'] = zvar
-        #zvar._vid = varid+'_1'      # _vid is deprecated
+        #self.reduced_variables[varnom+'_1'] = zvar
+        #zvar._vid = varnom+'_1'      # _vid is deprecated
         z2var = reduced_variable(
-            variableid=varid,
+            variableid=varnom,
             filetable=filetable2, season=self.season,
             reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,self.season,vid=vid)) )
         self.reduced_variables[z2var._strid] = z2var
-        #self.reduced_variables[varid+'_2'] = z2var
-        #z2var._vid = varid+'_2'      # _vid is deprecated
+        #self.reduced_variables[varnom+'_2'] = z2var
+        #z2var._vid = varnom+'_2'      # _vid is deprecated
         self.plot_a = basic_two_line_plot( zvar, z2var )
         ft1id,ft2id = filetable_ids(filetable1,filetable2)
         vid = '_'.join([self._id[0],self._id[1],ft1id,ft2id,'diff'])
@@ -581,15 +624,16 @@ class amwg_plot_set5and6(amwg_plot_spec):
             vid1,vid1var = self.vars_stdvar_normal_contours(
                 filetable1, varnom, seasonid, region=None, aux=None )
         else:
+            print "ERROR, variable",varnom,"not found in and cannot be computed from",filetable1
             return None
-        if varnom in filetable2.list_variables():
+        if filetable2 is not None and varnom in filetable2.list_variables():
             vid2,vid2var = self.vars_normal_contours(
                 filetable2, varnom, seasonid, region=None, aux=None )
         elif varnom in self.standard_variables.keys():
             vid2,vid2var = self.vars_stdvar_normal_contours(
                 filetable2, varnom, seasonid, region=None, aux=None )
         else:
-            return None
+            pass
         self.single_plotspecs = {}
         ft1src = filetable1.source()
         try:
@@ -616,7 +660,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
                     title = ' '.join([varnom,seasonid,'1 variance']),
                     source = ft1src )
                 all_plotnames.append(self.plot1var_id)
-        if filetable2 is not None and vid1 is not None:
+        if filetable2 is not None and vid2 is not None:
             self.single_plotspecs[self.plot2_id] = plotspec(
                 vid = ps.dict_idid(vid2),
                 zvars = [vid2],  zfunc = (lambda z: z),
@@ -658,28 +702,40 @@ class amwg_plot_set5and6(amwg_plot_spec):
         axes.  The variable given by varnom is *not* a data variable suitable for reduction.  It is
         a standard_variable.  Its inputs will be reduced, then it will be set up as a derived_var.
         """
-        if varnom not in self.standard_variables:
+        varid,rvs,dvs = self.stdvar2var(
+            varnom, filetable, self.season, (lambda x,vid,season=self.season:
+                                                 reduce2latlon_seasonal(x, season, vid) ))
+        if varid is None:
             return None,None
-        computable = False
-        for svd in self.standard_variables[varnom]:  # loop over ways to compute varnom
-            invarnoms = svd._inputs
-            if len( set(invarnoms) - set(filetable.list_variables()) )<=0:
-                print "set difference=",set(invarnoms) - set(filetable.list_variables())
-                func = svd._func
-                computable = True
-                break
-        if not computable:
-            return None,None
-        rvs = []
-        for ivn in invarnoms:
-            rv = reduced_variable(
-                variableid=ivn, filetable=filetable, season=self.season,
-                reduction_function=(lambda x,vid: reduce2latlon_seasonal( x, self.season, vid ) ))
+        for rv in rvs:
             self.reduced_variables[rv.id()] = rv
-            rvs.append(rv.id())
-        vid = dv.dict_id( varnom, '', seasonid, filetable )
-        self.derived_variables[vid] = derived_var( vid=vid, inputs=rvs, func=func )
-        return vid, None
+        for dv in dvs:
+            self.derived_variables[dv.id()] = dv
+
+        # This is the former code, which was moved to stdvar2var so other classes may use it:
+        #if varnom not in self.standard_variables:
+        #    return None,None
+        #computable = False
+        #for svd in self.standard_variables[varnom]:  # loop over ways to compute varnom
+        #    invarnoms = svd._inputs
+        #    if len( set(invarnoms) - set(filetable.list_variables()) )<=0:
+        #        func = svd._func
+        #        computable = True
+        #        break
+        #if not computable:
+        #    return None,None
+        #rvs = []
+        #for ivn in invarnoms:
+        #    rv = reduced_variable(
+        #        variableid=ivn, filetable=filetable, season=self.season,
+        #        reduction_function=(lambda x,vid: reduce2latlon_seasonal( x, self.season, vid ) ))
+        #    self.reduced_variables[rv.id()] = rv
+        #    rvs.append(rv.id())
+        #varid = dv.dict_id( varnom, '', seasonid, filetable )
+        #self.derived_variables[varid] = derived_var( vid=varid, inputs=rvs, func=func )
+
+        return varid, None
+
     def plan_computation_level_surface( self, filetable1, filetable2, varid, seasonid, region, aux ):
         """Set up for a lat-lon contour plot, averaged in other directions - except that if the
         variable to be plotted depend on level, it is not averaged over level.  Instead, the value
@@ -1121,8 +1177,8 @@ class amwg_plot_set6(amwg_plot_spec):
             self.single_plotspecs[self.plot3_id+'v'] = vecplot
         # initially we're not plotting the contour part of the plots....
         #for pln,pl in self.single_plotspecs.iteritems(): #jfp
-        #    print "jfp single plot",pln,pl.plottype
-        #    print "jfp            ",pl.zvars
+        #    print "dbg single plot",pln,pl.plottype
+        #    print "dbg            ",pl.zvars
         self.composite_plotspecs = {
             self.plot1_id: ( self.plot1_id+'c', self.plot1_id+'v' ),
             #self.plot1_id: [ self.plot1_id+'v' ],
