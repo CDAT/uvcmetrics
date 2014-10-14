@@ -96,7 +96,8 @@ class plotspec(basic_id):
         z4vars=[], z4func=None, z4rangevars=[], z4rangefunc=None,
         plottype='table',
         title = None,
-        source = ''
+        source = '',
+        overplotline = False
         ):
         """Initialize a plotspec (plot specification).  Inputs are an id and plot type,
         and lists of x,y,z variables (as keys in the plotvars dictionary), functions to
@@ -149,6 +150,7 @@ class plotspec(basic_id):
         if title is not None:
             self.title = title
         self.source = source
+        self.overplotline = overplotline
 
     @classmethod
     def dict_id( cls, varid, varmod, seasonid, ft1, ft2=None ):

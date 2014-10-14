@@ -199,7 +199,7 @@ class uvc_simple_plotspec():
     # re presentation (plottype): Yxvsx is a line plot, for Y=Y(X).  It can have one or several lines.
     # Isofill is a contour plot.  To make it polar, set projection=polar.  I'll
     # probably communicate that by passing a name "Isofill_polar".
-    def __init__( self, pvars, presentation, labels=[], title='', source=''):
+    def __init__( self, pvars, presentation, labels=[], title='', source='', ranges=None, overplotline=False):
         if len(pvars)<=0:
             zerovar = cdms2.createVariable([[0,0,0],[0,0,0]])
             zerovar.id = 'zero'
@@ -225,10 +225,7 @@ class uvc_simple_plotspec():
             elif presentation == "Isoline":
                 self.presentation = vcsx.createisoline()
             elif presentation == "Scatter":
-                self.presentation = vcsx.getscatter('default')#vcsx.createscatter() doesn't work
-                self.presentation.linewidth = 0
-                self.presentation.merkercolor = 242
-                self.presentation.markersize = 100
+                self.presentation = vcsx.createscatter()
             elif presentation == "Taylor":
                 self.presentation = vcsx.createtaylordiagram()
             else:
@@ -244,6 +241,8 @@ class uvc_simple_plotspec():
         self.source = source
         self.type = ptype
         self.ptype = ptype
+        self.ranges = ranges
+        self.overplotline = overplotline
         # Initial ranges - may later be changed to coordinate with related plots:
         # For each variable named 'v', the i-th member of self.vars, (most often there is just one),
         # varmax[v] is the maximum value of v, varmin[v] is the minimum value of v,
@@ -304,19 +303,30 @@ class uvc_simple_plotspec():
                 varmax = max(varmax,self.varmax[v.id])
                 varmin = min(varmin,self.varmin[v.id])
             if vcs.isscatter(self.presentation):
-                #pdb.set_trace()
                 ylabel, xlabel = string.split(self.title, ' vs ')
-                MIN = 0.0
-                MAX = 120.
-                #self.presentation.xticlabels1 = vcs.mklabels(vcs.mkscale(MIN, MAX))
-                #self.presentation.list()
-                #self.presentation.datawc_x1 = MIN
-                #self.presentation.datawc_x2 = MAX
-                #self.presentation.xticlabels2 = {(MIN+MAX)/2.: xlabel}
-                #self.presentation.yticlabels1 = {1:'40', 2: ylabel}
-                #self.presentation.datawc_y1 = -120.
-                #self.presentation.datawc_y2 = 0.    
-                #self.presentation.list()                         
+                #pdb.set_trace()
+                if self.ranges:
+                    [xMIN, xMAX], [yMIN, yMAX] = self.ranges
+                else:
+                    xMIN = self.axmin[seqgetattr(var,'id','')]
+                    xMAX = self.axmax[seqgetattr(var,'id','')]
+                    yMIN = varmin
+                    yMAX = varmax
+                self.presentation.xticlabels1 = vcs.mklabels(vcs.mkscale(xMIN, xMAX))
+                self.presentation.datawc_x1 = xMIN
+                self.presentation.datawc_x2 = xMAX
+                self.presentation.xticlabels2 = {(xMIN+xMAX)/2.: xlabel}
+                self.presentation.datawc_y1 = yMIN
+                self.presentation.datawc_y2 = yMAX   
+                self.presentation.yticlabels1 = vcs.mklabels(vcs.mkscale(yMIN, yMAX))
+                self.presentation.yticlabels2 = {(yMIN+yMAX)/2.: ylabel}
+                self.presentation.linewidth = 0
+                self.presentation.markercolor = 1
+                self.presentation.markersize = 5
+                #add overplotline is a total kludge
+                self.presentation.overplotline = self.overplotline
+                #self.presentation.list()      
+                #pdb.set_trace()                   
             elif vcs.isyxvsx(self.presentation) or\
                     self.presentation.__class__.__name__=="GYx" or\
                     self.presentation.__class__.__name__=="G1d":
@@ -752,15 +762,34 @@ class plot_spec(object):
                 title = ps.title
             else:
                 title = ' '.join(labels)+' '+self._season_displayid  # do this better later
+                
+            #process the ranges if present
+            zrange = ps.zrangevars
+            z2range = ps.z2rangevars
+            if zrange != None and z2range != None:
+                ranges = (zrange, z2range)
+            else:
+                ranges = None
+            
+            #over plot line flag
+            overplotline = False
+            if  hasattr(ps, 'overplotline'):
+                overplotline = ps.overplotline
+            
             # The following line is getting specific to UV-CDAT, although not any GUI...
             # >>>> jfp a bad hack for temporary use - I MUST MUST MUST get plot_type out of something else!!!>>>>
-            if type(vars[0])==tuple:
-                plot_type_temp = 'Vector'
-            elif vars[0].id.find('STRESS_MAG')>=0:
-                plot_type_temp = 'Isofill'
+            #pdb.set_trace()
+            #new kludge added to handle scatter plots, 10/14/14, JMcE
+            if self.plottype == 'Vector':
+                if type(vars[0])==tuple:
+                    plot_type_temp = 'Vector'
+                elif vars[0].id.find('STRESS_MAG')>=0:
+                    plot_type_temp = 'Isofill'
+                else:
+                    plot_type_temp = self.plottype
             else:
                 plot_type_temp = self.plottype
-            self.plotspec_values[p] = uvc_simple_plotspec( vars, plot_type_temp, labels, title, ps.source )
+            self.plotspec_values[p] = uvc_simple_plotspec( vars, plot_type_temp, labels, title, ps.source, ranges, overplotline )
         for p,ps in self.composite_plotspecs.iteritems():
             self.plotspec_values[p] = [ self.plotspec_values[sp] for sp in ps if sp in self.plotspec_values ]
             # Normally ps is a list of names of a plots, we'll remember its value as a list of their values.
