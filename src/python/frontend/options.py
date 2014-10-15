@@ -120,6 +120,7 @@ class Options():
       slist = pinstance.list_diagnostic_sets()
       keys = slist.keys()
       keys.sort()
+      vl = []
       for k in keys:
          fields = k.split()
          if setname[0] == fields[0]:
@@ -128,6 +129,9 @@ class Options():
             print vl
             print 'NOTE: Not all variables make sense for plotting or running diagnostics. Multi-word variable names need enclosed in single quotes:\'word1 word2\''
             print 'ALL is a valid variable name as well'
+      if vl == []:
+         print 'No variable list returned. Is set',setname[0],'a valid set?'
+         quit()
       return 
 
    def listVarOptions(self, package, setname, varname):
@@ -482,42 +486,37 @@ class Options():
          self._opts['sets'] = args.sets
 
       if(args.sets != None and self._opts['packages'] != None):
-         self._opts['sets'] = args.sets
          # unfortuantely, we have to go through all of this....
          # there should be a non-init of the class method to list sets/packages/etc,
          # ie a dictionary perhaps?
-         ### Just accept the user passed in value for now. This makes a mess in diags.py
-##         sets = []
-##         import metrics.fileio.filetable as ft
-##         import metrics.fileio.findfiles as fi
-##         dtree = fi.dirtree_datafiles(self, pathid=0)
-##         filetable = ft.basic_filetable(dtree, self)
-##         package = self._opts['packages']
-##
-##         # this needs a filetable probably, or we just define the maximum list of variables somewhere
-##         print package[0]
-##         package[0] = package[0].lower()
-##         print package[0]
-##
-##
-##         # There are all sorts of circular dependencies here if we import diagnostic_groups
-##         im = ".".join(['metrics', 'packages', package[0], package[0]])
-##         if package[0] == 'lmwg' or package[0] == 'LMWG':
-##            pclass = getattr(__import__(im, fromlist=['LMWG']), 'LMWG')()
-##         elif package[0]=='amwg' or package[0] == 'AMWG':
-##            pclass = getattr(__import__(im, fromlist=['AMWG']), 'AMWG')()
-##
-##         # there doesn't appear to be a way to change filetables after a class has been init'ed.
-##         # is init expensive? not too bad currently, but that could be added perhaps.
-##         slist = pclass.list_diagnostic_sets()
-##         keys = slist.keys()
-##         keys.sort()
-##         for k in keys:
-##            fields = k.split()
-##            for user in args.sets:
-##               if user == fields[0]:
-##                  sets.append(user)
-##         self._opts['sets'] = sets
+         sets = []
+         import metrics.fileio.filetable as ft
+         import metrics.fileio.findfiles as fi
+         import metrics.packages.diagnostic_groups 
+         package = self._opts['packages']
+         if package[0].lower() == 'lmwg':
+            import metrics.packages.lmwg.lmwg
+         elif package[0].lower()=='amwg':
+            import metrics.packages.amwg.amwg
+         dtree = fi.dirtree_datafiles(self, pathid=0)
+         filetable = ft.basic_filetable(dtree, self)
+         dm = metrics.packages.diagnostic_groups.diagnostics_menu()
+
+         pclass = dm[package[0].upper()]()
+
+         slist = pclass.list_diagnostic_sets()
+         keys = slist.keys()
+         keys.sort()
+         for k in keys:
+            fields = k.split()
+            for user in args.sets:
+               if user == fields[0]:
+                  sets.append(user)
+         self._opts['sets'] = sets
+         if sets != args.sets:
+            print 'sets requested ', args.sets
+            print 'sets available: ', slist
+            exit(1)
 
       # TODO: Check against an actual list of variables from the set
       if args.vars != None:
