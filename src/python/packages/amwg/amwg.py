@@ -633,7 +633,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
             vid2,vid2var = self.vars_stdvar_normal_contours(
                 filetable2, varnom, seasonid, region=None, aux=None )
         else:
-            pass
+            vid2,vid2var = None,None
         self.single_plotspecs = {}
         ft1src = filetable1.source()
         try:
