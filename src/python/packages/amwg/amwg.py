@@ -84,7 +84,10 @@ class amwg_plot_spec(plot_spec):
                 func=(lambda x: x) )],
         'RESTOM':[derived_var(
                 vid='RESTOM', inputs=['FSNT','FLNT'], outputs=['RESTOM'],
-                func=aminusb )]   # RESTOM = net radiative flux
+                func=aminusb )],   # RESTOM = net radiative flux
+        'TGCLDLWP':[derived_var(
+                vid='TGCLDLWP', inputs=['TGCLDLWP_OCEAN'], outputs=['TGCLDLWP'],
+                func=(lambda x: x) ) ]
         # AOD normally has no units, but sometimes the units attribute is set anyway.
         }
     @staticmethod
@@ -467,7 +470,7 @@ class amwg_plot_set4(amwg_plot_spec):
         allvars = amwg_plot_set4._all_variables( filetable1, filetable2 )
         listvars = allvars.keys()
         listvars.sort()
-        print "amwg plot set 4 listvars=",listvars
+#        print "amwg plot set 4 listvars=",listvars
         return listvars
     @staticmethod
     def _all_variables( filetable1, filetable2=None ):
