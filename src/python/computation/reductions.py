@@ -1389,6 +1389,18 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
             mv1.units = 'mbar/day' # udunits uses mb for something else
         if mv2.units=='mb/day':
             mv2.units = 'mbar/day' # udunits uses mb for something else
+        if mv1.units == 'W/m~S~2~N~' or mv1.units == 'W/m~S~2~N':
+            mv1.units = 'W/m^2'
+        if mv2.units == 'W/m~S~2~N~' or mv2.units == 'W/m~S~2~N':
+            mv2.units = 'W/m^2'
+        if mv1.units =='fraction' and mv2.units == 'percent':
+            mv1 = 100*mv1
+            mv1.units='percent'
+            return mv1, mv2
+        if mv2.units =='fraction' and mv1.units == 'percent':
+            mv2 = 100*mv2
+            mv2.units='percent'
+            return mv1, mv2
         if preferred_units is None:
             target_units = mv1.units
         else:
