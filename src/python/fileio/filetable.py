@@ -614,12 +614,12 @@ def is_file_bad( dfile ):
     for axn,ax in dfile.axes.iteritems():
         if not hasattr(ax,'bounds'):
             if len(ax)<=1:
-                print "WARNING, file",dfile.id,"has an axis axis",axn,"with no bounds."
+                print "WARNING, file",dfile.id,"has an axis",axn,"with no bounds."
                 print "As the length is 1, no bounds can be computed."
                 print "Any computation involving this axis is likely to fail."
                 bad = True
             else:
-                print "INFO:  file",dfile.id,"has an axis axis",axn,"with no bounds."
+                print "INFO:  file",dfile.id,"has an axis",axn,"with no bounds."
                 print "An attempt will be made to compute bounds, but that is unreliable compared"
                 print "to bounds provided by the data file."
         if hasattr(ax,'bounds') and ax.bounds not in dfile.variables:
