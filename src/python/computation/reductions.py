@@ -858,9 +858,9 @@ def reduceMonthlyRegion(mv, region, vid=None):
 def reduceRegion(mv, region, vid=None):
    if type(region) is dict:
       r = region[region.keys()[0]]
-      region = defines.all_regions[r]
+      region = defines.all_regions[r]['coords']
    if type(region) is str:
-      r = defines.all_regions[region]
+      r = defines.all_regions[region]['coords']
       region = r
 #   print 'in reduce region. region/mv: ', region, mv.id
    if vid == None:
