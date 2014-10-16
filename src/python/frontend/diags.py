@@ -129,7 +129,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
     Most other choices, such as the plot sets, variables, and seasons, are specified in opts,
     an instance of Options."""
 
-    outdir = opts['output']
+    outdir = opts['outputdir']
     if outdir is None:
         outdir = os.path.join(os.environ['HOME'],"tmp","diagout")
 
@@ -419,7 +419,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                                    for i in range(len(var_id_save)):
                                                        var[i].id = var_id_save[i]
                                            if savePNG:
-                                               vcanvas.png( fname )
+                                               vcanvas.png( fname, ignore_alpha=True )
 
                                            rdone += 1
                             # Also, write the nc output files and xml.
@@ -437,7 +437,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                     vname = varid.replace(' ', '_')
                                     vname = vname.replace('/', '_')
                                     fname = outdir+'/figure-set'+snum+'_'+rname+'_'+seasonid+'_'+vname+'_plot-'+str(r)+'.png'
-                                    vcanvas2.png( fname )
+                                    vcanvas2.png( fname, ignore_alpha=True )
                         elif res is not None:
                             # but len(res)==0, probably plot set 1
                             if res.__class__.__name__ is 'amwg_plot_set1':

@@ -289,10 +289,9 @@ class dirtree_datafiles( basic_datafiles ):
                 self.files += [ os.path.join(dirpath,f) for f in filenames if filt(f) ]
         else:   # no more checking, but still could be valid - maybe its a url or something:
             self.files += [root]
+            print "WARNING - candidate data source",self.files[0],"is not a file or directory.  What is it????"
         if len(self.files)<=0:
             print "WARNING - no files found at",root,"with filter",filt
-        elif len(self.files)==1 and not os.path.isfile(self.files[0]):
-            print "WARNING - candidate data source",self.files[0],"is not a file.  What is it????"
         return self.files
 
     def short_name(self):

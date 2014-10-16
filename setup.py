@@ -62,6 +62,8 @@ setup (name = "metrics",
                   "src/python/frontend/diags",
                   "src/python/frontend/diags.py",
                   "src/python/frontend/climatology.py"],
+       data_files = [("share/uvcmetrics",("share/uvcmetrics.json",)),
+                    ]
        #include_dirs = [numpy.lib.utils.get_include()],
        #       ext_modules = [
        #    Extension('metrics.exts',

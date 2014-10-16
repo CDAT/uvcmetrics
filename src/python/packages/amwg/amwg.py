@@ -633,7 +633,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
             vid2,vid2var = self.vars_stdvar_normal_contours(
                 filetable2, varnom, seasonid, region=None, aux=None )
         else:
-            pass
+            vid2,vid2var = None,None
         self.single_plotspecs = {}
         ft1src = filetable1.source()
         try:
@@ -1138,41 +1138,45 @@ class amwg_plot_set6(amwg_plot_spec):
         if vars1 is not None:
             # Draw two plots, contour and vector, over one another to get a single plot.
             # Only one needs title,source.
+            title = ' '.join([varid,seasonid,'(1)'])
             contplot = plotspec(
                 vid = ps.dict_idid(vid_cont1),  zvars = [vid_cont1],  zfunc = (lambda z: z),
                 plottype = plot_type_temp[0],
-                title = '', source='' )
+                title = title, source=ft1src )
             vecplot = plotspec(
                 vid = ps.dict_idid(vid_vec1), zvars=[vid_vec11,vid_vec12], zfunc = (lambda z,w: (z,w)),
                 plottype = plot_type_temp[1],
-                title = ' '.join([varid,seasonid,'(1)']),  source=ft1src )
+                title = title,  source=ft1src )
             #self.single_plotspecs[self.plot1_id] = [contplot,vecplot]
             self.single_plotspecs[self.plot1_id+'c'] = contplot
             self.single_plotspecs[self.plot1_id+'v'] = vecplot
         if vars2 is not None:
             # Draw two plots, contour and vector, over one another to get a single plot.
             # Only one needs title,source.
+            title = ' '.join([varid,seasonid,'(2)'])
             contplot = plotspec(
                 vid = ps.dict_idid(vid_cont2),  zvars = [vid_cont2],  zfunc = (lambda z: z),
                 plottype = plot_type_temp[0],
-                title = '', source='' )
+                title = title, source=ft2src )
             vecplot = plotspec(
                 vid = ps.dict_idid(vid_vec2), zvars=[vid_vec21,vid_vec22], zfunc = (lambda z,w: (z,w)),
                 plottype = plot_type_temp[1],
-                title = ' '.join([varid,seasonid,'(2)']),  source=ft2src )
+                title = title,  source=ft2src )
             self.single_plotspecs[self.plot2_id+'c'] = contplot
             self.single_plotspecs[self.plot2_id+'v'] = vecplot
         if vars1 is not None and vars2 is not None:
+            title = ' '.join([varid,seasonid,'(1)-(2)'])
+            source = ', '.join([ft1src,ft2src])
             contplot = plotspec(
                 vid = ps.dict_id(var_cont1,'diff',seasonid,filetable1,filetable2),
                 zvars = [vid_cont1,vid_cont2],  zfunc = aminusb_2ax,  # This is difference of magnitudes; sdb mag of diff!!!
-                plottype = plot_type_temp[0], title='', source='' )
+                plottype = plot_type_temp[0], title=title, source=source )
             vecplot = plotspec(
                 vid = ps.dict_id(vid_vec2,'diff',seasonid,filetable1,filetable2),
                 zvars = [vid_vec11,vid_vec12,vid_vec21,vid_vec22],
                 zfunc = (lambda z1,w1,z2,w2: (aminusb_2ax(z1,z2),aminusb_2ax(w1,w2))),
                 plottype = plot_type_temp[1],
-                title = ' '.join([varid,seasonid,'(1)-(2)']),  source = ', '.join([ft1src,ft2src]) )
+                title = title,  source = source )
             self.single_plotspecs[self.plot3_id+'c'] = contplot
             self.single_plotspecs[self.plot3_id+'v'] = vecplot
         # initially we're not plotting the contour part of the plots....
