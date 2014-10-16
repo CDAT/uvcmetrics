@@ -1,4 +1,5 @@
 #import uvcdat
+import os,sys
 import git
 import vcs
 vcs_tmp_canvas = vcs.init()
