@@ -8,7 +8,6 @@ from metrics.packages.diagnostic_groups import *
 from metrics.frontend.amwgmaster import *
 
 db_host = 'acme-dev-0.ornl.gov'
-ds_name = 'test'
 
 #diagspath = '/Users/bs1/uvcdat-devel/build/install/Library/Frameworks/Python.framework/Versions/2.7/bin/diags'
 
@@ -172,11 +171,11 @@ if __name__ == '__main__':
    obspath = ''
    outpath = ''
    sets = None
-   ds_name = ''
+   dsname = ''
    hostname = None
    package = ''
    try:
-      opts, args = getopt.getopt(sys.argv[1:], 'p:m:v:o:s:d:H:',["package=", "model=", "obs=", "output=", "sets=", "ds_name=", "hostname="])
+      opts, args = getopt.getopt(sys.argv[1:], 'p:m:v:o:s:d:H:',["package=", "model=", "obs=", "output=", "sets=", "dsname=", "hostname="])
    except getopt.GetoptError as err:
       print str(err)
 
@@ -193,7 +192,7 @@ if __name__ == '__main__':
       elif opt in ("-s", "--sets"):
          sets = [ arg ]
          print sets
-      elif opt in ("-d", "--ds_name"):
+      elif opt in ("-d", "--dsname"):
          dsname = arg
       elif opt in ("-H", "--hostname"):
          host = arg
