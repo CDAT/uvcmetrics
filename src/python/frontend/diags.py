@@ -220,6 +220,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
 
                     for aux in varopts:
                         plot = sclass( filetable1, filetable2, varid, seasonid, region, vvaropts[aux] )
+                        pdb.set_trace()
                         res = plot.compute(newgrid=-1) # newgrid=0 for original grid, -1 for coarse
                         if res is not None and len(res)>0:
                             if opts['plots'] == True:
@@ -233,7 +234,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                 LINE.type = 'solid'
                                 LINE.color = 242
                                 rdone = 0
-                                #pdb.set_trace()
+                                pdb.set_trace()
 
                                 # At this loop level we are making one compound plot.  In consists
                                 # of "single plots", each of which we would normally call "one" plot.
@@ -265,7 +266,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                 #   which has just one single-plot - that's vcanvas
                                 # tmmobs[ir] is the template for plotting a simple plot on a page
                                 #   which has the entire compound plot - that's vcanvas2
-                                
+                                pdb.set_trace()
                                 gmobs, tmobs, tmmobs = return_templates_graphic_methods( vcanvas, gms, ovly, onPage )
                                 if 1==1: # optional debugging:
                                     print "tmpl nsingleplots=",nsingleplots,"nsimpleplots=",nsimpleplots
@@ -405,6 +406,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                                             source=rsr.source )
                                                try:
                                                    if tm2 is not None:
+                                                       tm2.script('charles_code')
                                                        vcanvas2.plot(var, rsr.presentation, tm2, bg=1,
                                                                      title=title, units=getattr(var,'units',''),
                                                                      source=rsr.source )

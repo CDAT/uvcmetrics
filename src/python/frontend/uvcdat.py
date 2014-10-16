@@ -306,13 +306,14 @@ class uvc_simple_plotspec():
             if vcs.isscatter(self.presentation):
                 ylabel, xlabel = string.split(self.title, ' vs ')
                 #pdb.set_trace()
-                if self.ranges:
+                #in the case of scatter plots there are 2 variables packed together
+                if self.ranges != ([], []):
                     [xMIN, xMAX], [yMIN, yMAX] = self.ranges
                 else:
-                    xMIN = self.axmin[seqgetattr(var,'id','')]
-                    xMAX = self.axmax[seqgetattr(var,'id','')]
-                    yMIN = varmin
-                    yMAX = varmax
+                    xMIN = var[0].min()
+                    xMAX = var[0].max()
+                    yMIN = var[1].min()
+                    yMAX = var[1].max()
                 self.presentation.xticlabels1 = vcs.mklabels(vcs.mkscale(xMIN, xMAX))
                 self.presentation.datawc_x1 = xMIN
                 self.presentation.datawc_x2 = xMAX
@@ -791,6 +792,7 @@ class plot_spec(object):
             else:
                 plot_type_temp = self.plottype
             self.plotspec_values[p] = uvc_simple_plotspec( vars, plot_type_temp, labels, title, ps.source, ranges, overplotline )
+            
         for p,ps in self.composite_plotspecs.iteritems():
             self.plotspec_values[p] = [ self.plotspec_values[sp] for sp in ps if sp in self.plotspec_values ]
             # Normally ps is a list of names of a plots, we'll remember its value as a list of their values.

@@ -1211,15 +1211,15 @@ class amwg_plot_set6(amwg_plot_spec):
         return self.plotspec_values[self.plotall_id]
 
 
-class xxxamwg_plot_set7(amwg_plot_spec):
+class amwg_plot_set7(amwg_plot_spec):
     """This represents one plot from AMWG Diagnostics Plot Set 7
     Each graphic is a set of three polar contour plots: model output, observations, and
     the difference between the two.  A plot's x-axis is longitude and its y-axis is the latitude;
     normally a world map will be overlaid using stereographic projection. The user selects the
     hemisphere.
     """
-    #name = '7 - Polar Contour and Vector Plots of Seasonal Means'
-    #number = '7'
+    name = '7 - Polar Contour and Vector Plots of Seasonal Means'
+    number = '7'
     def __init__( self, filetable1, filetable2, varid, seasonid=None, region=None, aux=slice(0,None) ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the variable to be plotted, e.g. 'TREFHT'.
