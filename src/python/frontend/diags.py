@@ -129,7 +129,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
     Most other choices, such as the plot sets, variables, and seasons, are specified in opts,
     an instance of Options."""
 
-    outdir = opts['output']
+    outdir = opts['outputdir']
     if outdir is None:
         outdir = os.path.join(os.environ['HOME'],"tmp","diagout")
 
