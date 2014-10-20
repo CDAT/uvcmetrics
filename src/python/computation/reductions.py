@@ -1771,6 +1771,7 @@ def run_cdscan( fam, famfiles, cache_path=None ):
     if proc_status!=0: 
         print "ERROR: cdscan terminated with",proc_status
         print 'This is usually fatal. Frequent causes are an extra XML file in the dataset directory'
+        print 'or non-CF compliant input files'
         raise Exception("cdscan failed")
     return xml_name
 
