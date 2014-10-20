@@ -7,8 +7,6 @@ from metrics.fileio.findfiles import *
 from metrics.packages.diagnostic_groups import *
 from metrics.frontend.amwgmaster import *
 
-db_host = 'acme-dev-0.ornl.gov'
-
 #diagspath = '/Users/bs1/uvcdat-devel/build/install/Library/Frameworks/Python.framework/Versions/2.7/bin/diags'
 
 ## This needs some real opts parsing.
@@ -27,6 +25,13 @@ def generatePlots(modelpath, obspath, outpath, pname, sets=None):
          quit()
 
    errlog = open(os.path.join(outpath,'DIAGS_ERROR.log'), 'w')
+   
+   outpath = os.path.join(outpath,pname.lower())
+   try:
+      os.makedirs(outpath)
+   except:
+      print 'Failed to create directory ', outpath
+
 
    # get a list of all obssets
 
@@ -172,15 +177,27 @@ if __name__ == '__main__':
    outpath = ''
    sets = None
    dsname = ''
-   hostname = None
+   hostname = 'acme-dev-0.ornl.gov'
    package = ''
+   dbflag = True
+   dbonly = False
    try:
-      opts, args = getopt.getopt(sys.argv[1:], 'p:m:v:o:s:d:H:',["package=", "model=", "obs=", "output=", "sets=", "dsname=", "hostname="])
+      opts, args = getopt.getopt(sys.argv[1:], 'p:m:v:o:s:d:H:b:',["package=", "model=", "obs=", "output=", "sets=", "dsname=", "hostname=", "db="])
    except getopt.GetoptError as err:
       print str(err)
 
    for opt, arg in opts:
-      if opt in ("-m", "--model"):
+      if opt in ("-b", "--db"):
+         if arg == 'no':
+            dbflag = False
+            dbonly = False
+         if arg == 'only':
+            dbonly = True
+            dbflag = True
+         if arg == 'yes':
+            dbflag = True
+            dbonly = False
+      elif opt in ("-m", "--model"):
          modelpath = arg
       elif opt in ("-v", "--obs"):
          obspath = arg
@@ -195,11 +212,16 @@ if __name__ == '__main__':
       elif opt in ("-d", "--dsname"):
          dsname = arg
       elif opt in ("-H", "--hostname"):
-         host = arg
+         hostname = arg
       else:
         print "Unknown option ", opt
 
-   if modelpath == '' or obspath == '' or outpath == '' or dsname == '' or package == '':
+   # fewer arguments required
+   if dbflag == True and dbonly == True and (modelpath == '' or dsname == '' or package == ''):
+      print 'Please specify --model, --dsname, and --package with the db update'
+      quit()
+
+   if dbonly == False and (modelpath == '' or obspath == '' or outpath == '' or package == '' or dsname == ''):
       print 'Please specify at least:'
       print '   --model=/path for the model output path (e.g. climos.nc)'
       print '   --obspath=/path for the observation sets'
@@ -207,11 +229,19 @@ if __name__ == '__main__':
       print '   --dsname=somename for a short name of the dataset for later referencing'
       print '   --package=amwg for the type of diags to run, e.g. amwg or lmwg'
       print 'Optional:'
-      print '   --hostname=host:port for the hostname where the django app is running'
+      print '   --hostname=host:port for the hostname where the django app is running' 
+      print '     The default is acme-dev-0.ornl.gov'
       print '   --sets=3 to just run a subset of the diagnostic sets'
+      quit()
+
+   if dbonly == True:
+      print 'Updating the remote database only...'
+      postDB(modelpath, dsname, package, host=hostname) 
       quit()
 
    generatePlots(modelpath, obspath, outpath, package, sets=sets)
 
-   postDB(modelpath, dsname, package, host=host) 
+   if dbflag == True:
+      print 'Updating the remote database...'
+      postDB(modelpath, dsname, package, host=hostname) 
 
