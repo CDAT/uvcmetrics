@@ -10,7 +10,7 @@
 
 # TO DO >>>> run argument: dict of attribute:value to be written out as file global attributes.
 
-import cdms2, math
+import cdms2, math, os
 from metrics.fileio.findfiles import *
 from metrics.fileio.filetable import *
 from metrics.computation.reductions import *
@@ -177,6 +177,7 @@ def climo_driver(opts):
             outdir = opts['outputdir']
         else:
             outdir = ''
+        outdir = os.path.join(outdir, 'climos')
         rvs,case = compute_and_write_climatologies( varkeys, reduced_variables1, season, casename,
                                                     path=outdir )
 
