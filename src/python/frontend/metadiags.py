@@ -21,7 +21,7 @@ def generatePlots(modelpath, obspath, outpath, pname, sets=None):
          os.mkdir(outpath)
          outlog = open(os.path.join(outpath,'DIAGS_OUTPUT.log'), 'w')
       except: 
-         print 'Couldnt create output log - ', outpath,'/DIAGS_OUTPUT.log'
+         print 'Couldnt create output log - %s/DIAGS_OUTPUT.log' % outpath
          quit()
 
    errlog = open(os.path.join(outpath,'DIAGS_ERROR.log'), 'w')
@@ -182,9 +182,11 @@ if __name__ == '__main__':
    dbflag = True
    dbonly = False
    try:
-      opts, args = getopt.getopt(sys.argv[1:], 'p:m:v:o:s:d:H:b:',["package=", "model=", "obs=", "output=", "sets=", "dsname=", "hostname=", "db="])
+      opts, args = getopt.getopt(sys.argv[1:], 'p:m:v:o:s:d:H:b:',["package=", "model=", "path=", "obs=", "obspath=", "output=", "outpath=", "outputdir=", "sets=", "dsname=", "hostname=", "db="])
    except getopt.GetoptError as err:
+      print 'Error processing command line arguments'
       print str(err)
+      quit()
 
    for opt, arg in opts:
       if opt in ("-b", "--db"):
@@ -197,14 +199,14 @@ if __name__ == '__main__':
          if arg == 'yes':
             dbflag = True
             dbonly = False
-      elif opt in ("-m", "--model"):
+      elif opt in ("-m", "--model", "--path"):
          modelpath = arg
-      elif opt in ("-v", "--obs"):
+      elif opt in ("-v", "--obs", "--obspath"):
          obspath = arg
       elif opt in ("-p", "--package"):
          package = arg.upper()
          print package
-      elif opt in ("-o", "--output"):
+      elif opt in ("-o", "--output", "--outputdir", "--outpath"):
          outpath = arg
       elif opt in ("-s", "--sets"):
          sets = [ arg ]
@@ -228,10 +230,12 @@ if __name__ == '__main__':
       print '   --outpath=/path for where to put the png files'
       print '   --dsname=somename for a short name of the dataset for later referencing'
       print '   --package=amwg for the type of diags to run, e.g. amwg or lmwg'
-      print 'Optional:'
       print '   --hostname=host:port for the hostname where the django app is running' 
+      print 'Optional:'
       print '     The default is acme-dev-0.ornl.gov'
       print '   --sets=3 to just run a subset of the diagnostic sets'
+      print '   --db only -- Just update the database of datasets on {hostname}'
+      print '   --db no -- Do not update the database of datasets on {hostname}'
       quit()
 
    if dbonly == True:
