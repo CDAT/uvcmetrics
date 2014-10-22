@@ -210,6 +210,7 @@ class basic_filetable(basic_id):
            #print "Couldn't add file",filep
            #print "This might just be an unsupported file type"
            return
+        is_file_bad( dfile )
         filesupp = get_datafile_filefmt( dfile, options )
         if self.filefmt is None:
            self.filefmt = filesupp.name
@@ -602,6 +603,35 @@ class CF_filefmt(basic_filefmt):
         hi = max( levelaxis[0], levelaxis[-1] )
         units = levelaxis.units
         return drange( lo, hi, units )
+
+def is_file_bad( dfile ):
+    """The input dfile is an open file.
+    We expect all files to be CF compliant, and a bit more.
+    This function will check for some kinds of non-compliance or other badness,
+    and print a warning if such a problem is found.
+    """
+    bad = False
+    for axn,ax in dfile.axes.iteritems():
+        if not hasattr(ax,'bounds'):
+            if len(ax)<=1:
+                print "WARNING, file",dfile.id,"has an axis",axn,"with no bounds."
+                print "As the length is 1, no bounds can be computed."
+                print "Any computation involving this axis is likely to fail."
+                bad = True
+            else:
+                print "INFO:  file",dfile.id,"has an axis",axn,"with no bounds."
+                print "An attempt will be made to compute bounds, but that is unreliable compared"
+                print "to bounds provided by the data file."
+        if hasattr(ax,'bounds') and ax.bounds not in dfile.variables:
+            print "WARNING, file",dfile.id
+            print "has an axis",axn,"whose bounds",ax.bounds,"do not exist!"
+            print "This file is not CF-compliant, so calculations involving this axis may well fail."
+            bad = True
+        if hasattr(ax,'_FillValue') and ax._FillValue in ax:
+            print "WARNING, file",dfile.id,"has an axis",axn,"with a missing value"
+            print "This file is not CF-compliant, so calculations involving this axis may well fail."
+            bad = True
+    return bad
 
 if __name__ == '__main__':
    o = Options()
