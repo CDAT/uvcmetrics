@@ -612,6 +612,7 @@ def is_file_bad( dfile ):
     """
     bad = False
     for axn,ax in dfile.axes.iteritems():
+        # Maybe these warnings should be supressed if for the time axis of a climo file...
         if not hasattr(ax,'bounds'):
             if len(ax)<=1:
                 print "WARNING, file",dfile.id,"has an axis",axn,"with no bounds."
