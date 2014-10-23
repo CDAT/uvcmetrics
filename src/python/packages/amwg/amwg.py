@@ -1215,15 +1215,15 @@ class amwg_plot_set6(amwg_plot_spec):
         return self.plotspec_values[self.plotall_id]
 
 
-class xxxamwg_plot_set7(amwg_plot_spec):
+class amwg_plot_set7(amwg_plot_spec):
     """This represents one plot from AMWG Diagnostics Plot Set 7
     Each graphic is a set of three polar contour plots: model output, observations, and
     the difference between the two.  A plot's x-axis is longitude and its y-axis is the latitude;
     normally a world map will be overlaid using stereographic projection. The user selects the
     hemisphere.
     """
-    #name = '7 - Polar Contour and Vector Plots of Seasonal Means'
-    #number = '7'
+    name = '7 - Polar Contour and Vector Plots of Seasonal Means'
+    number = '7'
     def __init__( self, filetable1, filetable2, varid, seasonid=None, region=None, aux=slice(0,None) ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the variable to be plotted, e.g. 'TREFHT'.
@@ -1714,10 +1714,10 @@ class amwg_plot_set11(amwg_plot_spec):
             self.single_plotspecs[plot_id] = plotspec(vid = plot_id, 
                                                       zvars=[xVID], 
                                                       zfunc = (lambda x: x),
-                                                      zrangevars=[0., 120.],
+                                                      zrangevars={'xrange':[0., 120.]},
                                                       z2vars = [yVID],
                                                       z2func = (lambda x: x),
-                                                      z2rangevars=[-120., 0.],
+                                                      z2rangevars={'yrange':[-120., 0.]},
                                                       plottype = 'Scatter', 
                                                       title = title,
                                                       overplotline = True)
@@ -1748,6 +1748,7 @@ class amwg_plot_set11(amwg_plot_spec):
                     continue  # finalize has already been called for this, it comes from plotall_id but also has its own entry
                 v.finalize()
         return self.plotspec_values[self.plotall_id]
+
 class amwg_plot_set12(amwg_plot_spec):
     name = '12 - Vertical Profiles at 17 selected raobs stations:incomplete'
     number = '12'
@@ -1767,15 +1768,12 @@ class amwg_plot_set12(amwg_plot_spec):
         self.filetables = [filetable1, filetable2]
         self.filetable_ids = [ft1id, ft2id]
         self.months = ['JAN', 'APR', 'JUL', 'AUG']
-        self.vars = [varid, 'PS']
         
         self.plot_ids = []
-        vars_id = '_'.join(self.vars)
-        #for dt in self.datatype:
         for month in self.months:
             plot_id = '_'.join(['month',  month])
             self.plot_ids += [plot_id]
-        print self.plot_ids
+        #print self.plot_ids
         
         self.plotall_id = '_'.join(self.datatype + ['Warm', 'Pool'])
         if not self.computation_planned:
@@ -1786,8 +1784,8 @@ class amwg_plot_set12(amwg_plot_spec):
         ft1_valid = False
         ft2_valid = False
         if filetable1 is not None and filetable2 is not None:
-            ft1 = filetable1.find_files(self.vars[0])
-            ft2 = filetable2.find_files(self.vars[1])
+            ft1 = filetable1.find_files(varid)
+            ft2 = filetable2.find_files(varid)
             ft1_valid = ft1 is not None and ft1!=[]    # true iff filetable1 uses hybrid level coordinates
             ft2_valid = ft2 is not None and ft2!=[]    # true iff filetable2 uses hybrid level coordinates
         else:
@@ -1795,61 +1793,47 @@ class amwg_plot_set12(amwg_plot_spec):
             return None
         if not ft1_valid or not ft2_valid:
             return None
-        VIDs = []
         
-        for ft in self.filetables:
+        VIDs = {}     
+        for dt, ft in zip(self.datatype, self.filetables):
+            VIDs[dt] = []
             for month in self.months:
-                for var in self.vars:
-                    VID = rv.dict_id(var, month, ft)
-                    VID = id2str(VID)
-                    print VID
-                    RV = reduced_variable( variableid=var, 
-                                           filetable=ft, 
-                                           season=cdutil.times.Seasons(month), 
-                                           reduction_function=( lambda x, vid=VID:x) ) 
-                    self.reduced_variables[VID] = RV      
-                    VIDs += [VID]              
+                #for var in self.vars:
+                VID = rv.dict_id(varid, month, ft)
+                #print VID, VID[2]
+                RF = (lambda x, vid=VID, month=VID[2]: reduce2level(x, seasons=month, vid=vid) )
+                RV = reduced_variable( variableid=varid, 
+                                       filetable=ft, 
+                                       season=cdutil.times.Seasons(seasonid), 
+                                       reduction_function=RF ) 
+                VID = id2str(VID)
+                self.reduced_variables[VID] = RV      
+                VIDs[dt] += [VID]              
 
-        self.rv_model_pairs = []
-        i = 0
-        while i <= 6:
-            #print VIDs[i], VIDs[i+1]
-            self.rv_model_pairs += [(VIDs[i], VIDs[i+1])]   #( self.reduced_variables[VIDs[i]], self.reduced_variables[VIDs[i+1]] )]
-            i += 2
-        print self.rv_model_pairs
-
-        self.rv_obs_pairs = []
-        i = 8
-        while i <= 14:
-            #print VIDs[i], VIDs[i+1]
-            self.rv_obs_pairs += [(VIDs[i], VIDs[i+1])]   #( self.reduced_variables[VIDs[i]], self.reduced_variables[VIDs[i+1]] )]
-            i += 2
-        print self.rv_obs_pairs
 
         self.single_plotspecs = {}
-        title = self.vars[1] + ' vs ' + self.vars[0]
+        title = 'PS vs ' + varid
         for i, plot_id in enumerate(self.plot_ids):
-            #zvars, z2vars = self.reduced_variables[VIDs[i]], self.reduced_variables[VIDs[i+1]]
-            x1VID, y1VID = self.rv_obs_pairs[i]
-            x2VID, y2VID = self.rv_model_pairs[i]
+            VIDobs   = VIDs['obs'][i]
+            VIDmodel = VIDs['model'][i]
             #print xVID, yVID
             self.single_plotspecs[plot_id+'_obs'] = plotspec(vid = plot_id+'_obs', 
-                                                             zvars  = [y1VID, x1VID],
-                                                             zfunc = (lambda z,w: (z,w)),
+                                                             zvars  = [VIDobs],
+                                                             zfunc = (lambda z: z),
+                                                             zrangevars={'yrange':[0., 1000.]},
                                                              plottype='Scatter', 
                                                              title = title)
             self.single_plotspecs[plot_id+'_model'] = plotspec(vid = plot_id+'_model', 
-                                                               zvars = [y2VID, x2VID],
-                                                               zfunc = (lambda z,w: (z,w)),
+                                                               zvars = [VIDmodel],
+                                                               zfunc = (lambda z: z),
                                                                plottype = "Yxvsx", 
                                                                title = title)
-        #pdb.set_trace()
-        #self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
+
         self.composite_plotspecs = {}
         plotall_id = []
         for plot_id in self.plot_ids:
             self.composite_plotspecs[plot_id] = ( plot_id+'_obs', plot_id+'_model' )
-            plotall_id + [plot_id]
+            plotall_id += [plot_id]
         self.composite_plotspecs[self.plotall_id] = plotall_id
         self.computation_planned = True
 
@@ -1860,24 +1844,13 @@ class amwg_plot_set12(amwg_plot_spec):
             print "WARNING, AMWG plot set 12 found nothing to plot"
             return None
         psv = self.plotspec_values
-        #pdb.set_trace()
-        #if self.plot_ids[0] in psv and self.plot_ids[0] is not None:
-        #    for  plot_id in self.plot_ids[1:]:
-        #        if plot_id in psv and plot_id is not None:
-        #            psv[plot_id].synchronize_ranges(psv[self.plot_ids[0]])
-        #for key,val in psv.items():
-        #    if type(val) is not list: val=[val]
-        #    for v in val:
-        #        if v is None: continue
-        #        v.finalize()
-                #self.presentation.xticlabels1 = self.vars[0]
         for key,val in psv.items():
             if type(val) is not list and type(val) is not tuple: val=[val]
             for v in val:
                 if v is None: continue
                 if type(v) is tuple:
                     continue  # finalize has already been called for this, it comes from plotall_id but also has its own entry
-                v.finalize()
+                v.finalize(flip_y=True)
                 #self.presentation.yticlabels1 = self.vars[1]
         return self.plotspec_values[self.plotall_id]
 
@@ -2027,24 +2000,7 @@ class xxxamwg_plot_set14(amwg_plot_spec):
                 #self.presentation.xticlabels1 = self.vars[0]
                 #self.presentation.yticlabels1 = self.vars[1]
         return self.plotspec_values
-def reduce2level( mv, seasons=None, vid=None ):
-    """as reduce2lat, but averaging reduces coordinates to (lev,lat)"""
-    if vid==None:   # Note that the averager function returns a variable with meaningless id.
-        vid = 'reduced_'+mv.id
-    if levAxis(mv) is None: return None
-    axes = allAxes( mv )
-    axis_name = None
-    for AXIS in axes:
-        if AXIS.islevel():
-            axis_name = AXIS.id
-            break
-    if axis_name:
-        avmv = averager( mv, axis=axis_name )
-        avmv.id = vid
-        if hasattr(mv,'units'):
-            avmv.units = mv.units
-        return avmv
-    return None
+
 class xxxamwg_plot_set15(amwg_plot_spec): 
     """This class represents one plot from AMWG Diagnostics Plot Set 8.
     Each such plot is a set of three contour plots: two for the model output and

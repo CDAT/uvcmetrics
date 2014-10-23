@@ -316,6 +316,27 @@ def reduce2lat( mv, vid=None ):
 
     return avmv
 
+def reduce2level( mv, seasons=None, vid=None ):
+    """as reduce2lat, but averaging reduces coordinates to lev"""
+    #pdb.set_trace()
+    if vid==None:   # Note that the averager function returns a variable with meaningless id.
+        vid = 'reduced_'+mv.id
+    if levAxis(mv) is None: return None
+    axes = allAxes( mv )
+    timeax = timeAxis(mv)
+    if timeax is not None and timeax.getBounds()==None:
+        timeax._bounds_ = timeax.genGenericBounds()
+        
+    axis_names = [ a.id for a in axes if a.isLevel()==False ]
+    axes_string = '('+')('.join(axis_names)+')'
+
+    avmv = averager( mv, axis=axes_string )
+    avmv.id = vid
+    if hasattr(mv,'units'):
+        avmv.units = mv.units
+    return avmv
+
+
 def reduce2levlat( mv, vid=None ):
     """as reduce2lat, but averaging reduces coordinates to (lev,lat)"""
     if vid==None:   # Note that the averager function returns a variable with meaningless id.
