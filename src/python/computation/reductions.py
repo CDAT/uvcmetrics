@@ -197,6 +197,9 @@ def reduce2scalar_seasonal_zonal( mv, seasons=seasonsyr, latmin=-90, latmax=90, 
         vid = 'reduced_'+mv.id
     # reduce size of lat axis to (latmin,latmax)
     mv2 = mv(latitude=(latmin, latmax))
+    # reduce size of gw to (latmin,latmax)
+    if gw is not None:
+        gw2 = gw(latitude=(latmin, latmax))
 
     timeax = timeAxis(mv2)
     if timeax is None or len(timeax)<=1:
@@ -230,7 +233,7 @@ def reduce2scalar_seasonal_zonal( mv, seasons=seasonsyr, latmin=-90, latmax=90, 
         if gw is None:
             avmv = averager( mvseas, axis=axes_string )
         else:
-            weights = [ gw if a.isLatitude() else 'weighted' for a in axes ]
+            weights = [ gw2 if a.isLatitude() else 'weighted' for a in axes ]
             avmv = averager( mvseas, axis=axes_string, combinewts=0, weights=weights )
     else:
         avmv = mvseas
