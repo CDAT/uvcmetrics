@@ -23,11 +23,29 @@ def getSets(pname):
    print 'The following diagnostic sets appear to be available: %s' %sets
    return sets
 
+def makeTables(modelpath, obspath, outpath, pname, outlog, errlog):
+   if pname.upper() == 'AMWG':
+      # loop over 3 seasons. Each one generates 4 tables
+      regions = ['global', 'tropics', '\'northern extratropics\'', '\'southern extratropics\'']
+      seasons = '--seasons DJF JJA ANN'
+      for reg in regions:
+         cmdline = 'diags --path %s --path2 %s --set 1 --package AMWG %s --outputdir %s --region %s' % (modelpath, obspath, seasons, outpath, reg)
+         print 'Executing '+cmdline
+         try:
+            retcode = subprocess.check_call(cmdline, stdout=outlog, stderr=errlog, shell=True)
+         except subprocess.CalledProcessError as e:
+            print '\n\nEXECUTION FAILED FOR ', cmdline, ':', e
+            outlog.write('Command %s failed\n' % cmdline)
+            errlog.write('Failing command was: %s\n' % cmdline)
+            print 'See '+outpath+'/DIAGS_ERROR.log for details'
+         
+            
+   
 
 def generatePlots(modelpath, obspath, outpath, pname, sets=None):
    
    if sets == None:
-      sets = getSets(pname)
+      sets = getSets(pname) #find out which sets are available
    try:
       outlog = open(os.path.join(outpath,'DIAGS_OUTPUT.log'), 'w')
    except:
@@ -49,8 +67,13 @@ def generatePlots(modelpath, obspath, outpath, pname, sets=None):
 
    # get a list of all obssets
 
-   #for setnum in amwgsets.keys():
    for setnum in sets:
+      if setnum == '1' and pname.upper() == 'AMWG':
+         makeTables(modelpath, obspath, outpath, pname, outlog, errlog)
+         continue
+      if setnum == '5' and pname.upper() == 'LMWG': # future
+         makeTables(modelpath, obspath, outpath, pname, outlog, errlog)
+         continue
 
       obssets = []
       for v in varinfo.keys():
@@ -179,12 +202,6 @@ def postDB(modelpath, dsname, package, host=None):
    subprocess.call(command, shell=True)
 
 
-
-
-   
-      
-   
-
 if __name__ == '__main__':
    modelpath = ''
    obspath = ''
@@ -223,6 +240,7 @@ if __name__ == '__main__':
       elif opt in ("-o", "--output", "--outputdir", "--outpath"):
          outpath = arg
       elif opt in ("-s", "--sets"):
+         print arg
          sets = [ arg ]
          print sets
       elif opt in ("-d", "--dsname"):
@@ -239,15 +257,15 @@ if __name__ == '__main__':
 
    if dbonly == False and (modelpath == '' or obspath == '' or outpath == '' or package == '' or dsname == ''):
       print 'Please specify at least:'
-      print '   --model=/path for the model output path (e.g. climos.nc)'
-      print '   --obspath=/path for the observation sets'
-      print '   --outpath=/path for where to put the png files'
-      print '   --dsname=somename for a short name of the dataset for later referencing'
-      print '   --package=amwg for the type of diags to run, e.g. amwg or lmwg'
-      print '   --hostname=host:port for the hostname where the django app is running' 
+      print '   --model /path for the model output path (e.g. climos.nc)'
+      print '   --obspath /path for the observation sets'
+      print '   --outpath /path for where to put the png files'
+      print '   --dsname somename for a short name of the dataset for later referencing'
+      print '   --package amwg for the type of diags to run, e.g. amwg or lmwg'
       print 'Optional:'
+      print '   --hostname=host:port for the hostname where the django app is running' 
       print '     The default is acme-dev-0.ornl.gov'
-      print '   --sets=3 to just run a subset of the diagnostic sets'
+      print '   --sets 3 to just run a subset of the diagnostic sets'
       print '   --db only -- Just update the database of datasets on {hostname}'
       print '   --db no -- Do not update the database of datasets on {hostname}'
       quit()
