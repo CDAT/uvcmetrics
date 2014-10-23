@@ -10,10 +10,24 @@ from metrics.frontend.amwgmaster import *
 #diagspath = '/Users/bs1/uvcdat-devel/build/install/Library/Frameworks/Python.framework/Versions/2.7/bin/diags'
 
 ## This needs some real opts parsing.
+def getSets(pname):
+   allsets = amwgsets.keys()
+   sets = []
+   dm = diagnostics_menu()
+   pclass = dm[pname.upper()]()
+   slist = pclass.list_diagnostic_sets()
+   keys = slist.keys()
+   for k in keys:
+      fields = k.split()
+      sets.append(fields[0])
+   print 'The following diagnostic sets appear to be available: %s' %sets
+   return sets
+
+
 def generatePlots(modelpath, obspath, outpath, pname, sets=None):
    
    if sets == None:
-      sets = amwgsets.keys()
+      sets = getSets(pname)
    try:
       outlog = open(os.path.join(outpath,'DIAGS_OUTPUT.log'), 'w')
    except:
