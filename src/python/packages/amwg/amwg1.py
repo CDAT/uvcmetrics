@@ -333,7 +333,7 @@ class amwg_plot_set1(amwg_plot_spec):
                 region = amwg_plot_set1.regions_reversed.get( region, 'global' )
         if region is None:
             region = 'global'
-        self.title = ' '.join(['AMWG Diagnostics Set 1:',seasonid,'means',region])+'\n'
+        self.title = ' '.join(['AMWG Diagnostics Set 1',seasonid,'means',region])+'\n'
         self.subtitles = [
             ' '.join(['Test Case:',id2str(filetable1._id)])+'\n',
             'Control Case: various observational data\n',
