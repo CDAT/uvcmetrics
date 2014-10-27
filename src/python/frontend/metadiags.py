@@ -20,6 +20,7 @@ def getSets(pname):
    for k in keys:
       fields = k.split()
       sets.append(fields[0])
+   sets.append('topten')
    print 'The following diagnostic sets appear to be available: %s' %sets
    return sets
 
