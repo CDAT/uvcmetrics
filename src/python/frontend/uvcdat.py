@@ -254,6 +254,8 @@ class uvc_simple_plotspec():
         self.axmax = {}
         self.axmin = {}
         self.axax = {}
+        self.strideX = 1
+        self.strideY = 1
         for var in pvars:
             if type(var) is tuple:
                 self.varmax[seqgetattr(var,'id','')] = -1.0e20  # var is for vector plot, don't need max
@@ -386,104 +388,108 @@ class uvc_simple_plotspec():
 #                self.presentation.datawc_y1 = varmin
 #                self.presentation.datawc_y2 = varmax
 #            print self.presentation.datawc_x1, self.presentation.datawc_x2, self.presentation.datawc_y1, self.presentation.datawc_y2
-        elif vcs.isisofill(self.presentation) or self.presentation.__class__.__name__=="Gfi":
-            # VCS Isofill
-            # First we have to identify which axes will be plotted as X and Y.
-            # The following won't cover all cases, but does cover what we have:
-            axaxi = {ax:id for id,ax in self.axax[seqgetattr(var,'id','')].items()}
-            if 'X' in axaxi.keys() and 'Y' in axaxi.keys():
-                axx = axaxi['X']
-                axy = axaxi['Y']
-            elif 'Y' in axaxi.keys() and 'Z' in axaxi.keys():
-                axx = axaxi['Y']
-                axy = axaxi['Z']
-            #added case of time vs variable
-            elif 'T' in axaxi.keys() and 'Y' in axaxi.keys():
-                axx = axaxi['T']
-                axy = axaxi['Y']
-                if axx == 'time':
-                    t=var.getTime()
-                    if 'units' in dir(t) and t.units == "months since 1800":
-                        time_lables = {}
-                        months_names = get_month_strings(length=3)             
-                        tc=t.asComponentTime()
-                        for i, v in enumerate(t):
-                            time_lables[v] = months_names[tc[i].month-1]
-                        self.presentation.xticlabels1 = time_lables
-                        self.presentation.datawc_timeunits = t.units
-                        #self.presentation.list()
-            else:
-                return None
-            # Now send the plotted min,max for the X,Y axes to the graphics:
-            # and if it is not a polar projection
-            if vcs.getprojection(self.presentation.projection)._type!=-3:
-                if flip_x:
-                    self.presentation.datawc_x2 = axmin[axx]
-                    self.presentation.datawc_x1 = axmax[axx]
+            if vcs.isisofill(self.presentation) or self.presentation.__class__.__name__=="Gfi":
+                # VCS Isofill
+                # First we have to identify which axes will be plotted as X and Y.
+                # The following won't cover all cases, but does cover what we have:
+                axaxi = {ax:id for id,ax in self.axax[seqgetattr(var,'id','')].items()}
+                if 'X' in axaxi.keys() and 'Y' in axaxi.keys():
+                    axx = axaxi['X']
+                    axy = axaxi['Y']
+                elif 'Y' in axaxi.keys() and 'Z' in axaxi.keys():
+                    axx = axaxi['Y']
+                    axy = axaxi['Z']
+                #added case of time vs variable
+                elif 'T' in axaxi.keys() and 'Y' in axaxi.keys():
+                    axx = axaxi['T']
+                    axy = axaxi['Y']
+                    if axx == 'time':
+                        t=var.getTime()
+                        if 'units' in dir(t) and t.units == "months since 1800":
+                            time_lables = {}
+                            months_names = get_month_strings(length=3)             
+                            tc=t.asComponentTime()
+                            for i, v in enumerate(t):
+                                time_lables[v] = months_names[tc[i].month-1]
+                            self.presentation.xticlabels1 = time_lables
+                            self.presentation.datawc_timeunits = t.units
+                            #self.presentation.list()
                 else:
-                    self.presentation.datawc_x1 = axmin[axx]
-                    self.presentation.datawc_x2 = axmax[axx]
-                if flip_y:
-                    self.presentation.datawc_y2 = axmin[axy]
-                    self.presentation.datawc_y1 = axmax[axy]
-                else:
-                    self.presentation.datawc_y1 = axmin[axy]
-                    self.presentation.datawc_y2 = axmax[axy]
-            # The variable min and max, varmin and varmax, should be passed on to the graphics
-            # for setting the contours.  But apparently you can't tell VCS just the min and max;
-            # you have to give it all the contour levels.  So...
-            levels = [float(v) for v in vcs.mkscale( varmin, varmax, 16 )]
-            # ... mkscale returns numpy.float64, which behaves unexpectedly in _setlevels when
-            # passed a tuple value
-            self.presentation.levels = levels
-            #nlevels = max(1, len(levels) - 1)
-            #nlrange = range(nlevels+1)
-            #nlrange.reverse()
-            #self.presentation.legend = vcs.mklabels( self.presentation.levels )
-            ## Once you set the levels, the VCS default color choice looks bad.  So you really
-            ## have to set contour fill colors (integers from 0 through 255) too:
-            #cmin = 32./nlevels
-            #cmax = 255./nlevels
-            ## A more flexible way to do what's going on here, thanks to Charles Doutriaux:
-            ## r=10
-            ## g=16
-            ## b=20
-            ## X.setcolorcell(16,r,g,b)
-            ## colors = [16,17,18,...] etc.
-            ## vcs.getcolors is useful, more complicated - see its doc string
-            #colors =  [int(round(a*cmin+(nlevels-a)*cmax)) for a in nlrange]
-            #self.presentation.fillareacolors = colors
-            ##self.presentation.fillareacolors=[32,48,64,80,96,112,128,144,160,176,240]
-        elif vcs.isvector(self.presentation) or self.presentation.__class__.__name__=="Gv":
-            # axis min,max copied from isofill
-            axaxi = {ax:id for id,ax in self.axax[seqgetattr(var,'id','')].items()}
-            if 'X' in axaxi.keys() and 'Y' in axaxi.keys():
-                axx = axaxi['X']
-                axy = axaxi['Y']
-            elif 'Y' in axaxi.keys() and 'Z' in axaxi.keys():
-                axx = axaxi['Y']
-                axy = axaxi['Z']
-            self.presentation.datawc_x1 = axmin[axx]
-            self.presentation.datawc_x2 = axmax[axx]
-            self.presentation.datawc_y1 = axmin[axy]
-            self.presentation.datawc_y2 = axmax[axy]
+                    return None
+                # Now send the plotted min,max for the X,Y axes to the graphics:
+                # and if it is not a polar projection
+                if vcs.getprojection(self.presentation.projection)._type!=-3:
+                    if flip_x:
+                        self.presentation.datawc_x2 = axmin[axx]
+                        self.presentation.datawc_x1 = axmax[axx]
+                    else:
+                        self.presentation.datawc_x1 = axmin[axx]
+                        self.presentation.datawc_x2 = axmax[axx]
+                    if flip_y:
+                        self.presentation.datawc_y2 = axmin[axy]
+                        self.presentation.datawc_y1 = axmax[axy]
+                    else:
+                        self.presentation.datawc_y1 = axmin[axy]
+                        self.presentation.datawc_y2 = axmax[axy]
+                # The variable min and max, varmin and varmax, should be passed on to the graphics
+                # for setting the contours.  But apparently you can't tell VCS just the min and max;
+                # you have to give it all the contour levels.  So...
+                levels = [float(v) for v in vcs.mkscale( varmin, varmax, 16 )]
+                # ... mkscale returns numpy.float64, which behaves unexpectedly in _setlevels when
+                # passed a tuple value
+                self.presentation.levels = levels
+                #nlevels = max(1, len(levels) - 1)
+                #nlrange = range(nlevels+1)
+                #nlrange.reverse()
+                #self.presentation.legend = vcs.mklabels( self.presentation.levels )
+                ## Once you set the levels, the VCS default color choice looks bad.  So you really
+                ## have to set contour fill colors (integers from 0 through 255) too:
+                #cmin = 32./nlevels
+                #cmax = 255./nlevels
+                ## A more flexible way to do what's going on here, thanks to Charles Doutriaux:
+                ## r=10
+                ## g=16
+                ## b=20
+                ## X.setcolorcell(16,r,g,b)
+                ## colors = [16,17,18,...] etc.
+                ## vcs.getcolors is useful, more complicated - see its doc string
+                #colors =  [int(round(a*cmin+(nlevels-a)*cmax)) for a in nlrange]
+                #self.presentation.fillareacolors = colors
+                ##self.presentation.fillareacolors=[32,48,64,80,96,112,128,144,160,176,240]
+            elif vcs.isvector(self.presentation) or self.presentation.__class__.__name__=="Gv":
+                # axis min,max copied from isofill
+                axaxi = {ax:id for id,ax in self.axax[seqgetattr(var,'id','')].items()}
+                if 'X' in axaxi.keys() and 'Y' in axaxi.keys():
+                    axx = axaxi['X']
+                    axy = axaxi['Y']
+                elif 'Y' in axaxi.keys() and 'Z' in axaxi.keys():
+                    axx = axaxi['Y']
+                    axy = axaxi['Z']
+                self.presentation.datawc_x1 = axmin[axx]
+                self.presentation.datawc_x2 = axmax[axx]
+                self.presentation.datawc_y1 = axmin[axy]
+                self.presentation.datawc_y2 = axmax[axy]
 
-            vec = self.presentation
-            vec.scale = min(vcsx.bgX,vcsx.bgY)/ 10.
-            if hasattr(self.vars[0],'__getitem__') and not hasattr( self.vars[0], '__cdms_internals__'):
-                # generally a tuple of variables - we need 2 variables to describe a vector
-                v = self.vars[0][0]
-                w = self.vars[0][1]
-            else:   # We shouldn't get here, but may as well try to make it work if possible:
-                print "WARNING trying to make a vector plot without tuples!  Variables involved are:"
-                v = self.vars[0]
-                print "variable",v.id
-                v = self.vars[1]
-                print "variable",v.id
-            nlats = latAxis(v).shape[0]
-            nlons = lonAxis(w).shape[0]
-            self.strideX = int( 0.9* vcsx.bgX/nlons )
-            self.strideY = int( 0.6* vcsx.bgY/nlats )
+                vec = self.presentation
+                vec.scale = min(vcsx.bgX,vcsx.bgY)/ 10.
+                if hasattr(self.vars[0],'__getitem__') and not hasattr( self.vars[0], '__cdms_internals__'):
+                    # generally a tuple of variables - we need 2 variables to describe a vector
+                    v = self.vars[0][0]
+                    w = self.vars[0][1]
+                else:   # We shouldn't get here, but may as well try to make it work if possible:
+                    print "WARNING trying to make a vector plot without tuples!  Variables involved are:"
+                    v = self.vars[0]
+                    print "variable",v.id
+                    v = self.vars[1]
+                    print "variable",v.id
+                nlats = latAxis(v).shape[0]
+                nlons = lonAxis(w).shape[0]
+                nlatvs = vcsx.bgY/16   # how many vectors we want in lat direction
+                nlonvs = vcsx.bgX/16
+                #self.strideX = int( 0.9* vcsx.bgX/nlons )
+                #self.strideY = int( 0.6* vcsx.bgY/nlats )
+                self.strideX = int( nlons/nlonvs )
+                self.strideY = int( nlats/nlatvs )
         else:
             print "ERROR cannot identify graphics method",self.presentation.__class__.__name__
 
