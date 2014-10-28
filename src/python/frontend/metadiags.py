@@ -130,6 +130,10 @@ def generatePlots(modelpath, obspath, outpath, pname, sets=None):
                realsetnum = 6
             # convert a given topten to the "right" setnumber that it comes from
 
+         vlnew = []
+         for x in vl:
+            vlnew.append(x.replace('_TROP', ''))
+         vl = vlnew
          vlstr = ' '.join(vl)
          cmdline = 'diags --path %s --path2 %s %s --set %s %s %s --vars %s %s %s %s %s' % (modelpath, obspath, package, realsetnum, seasons, obsfname, vlstr, outdir, postname, xml, prename)
          print 'Executing '+cmdline
