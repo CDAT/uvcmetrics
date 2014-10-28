@@ -621,8 +621,8 @@ def is_file_bad( dfile ):
                 bad = True
             else:
                 print "INFO:  file",dfile.id,"has an axis",axn,"with no bounds."
-                print "An attempt will be made to compute bounds, but that is unreliable compared"
-                print "to bounds provided by the data file."
+                print "An attempt will be made to compute bounds, but that is unreliable compared"+\
+                    " to bounds provided by the data file."
         if hasattr(ax,'bounds') and ax.bounds not in dfile.variables:
             print "WARNING, file",dfile.id
             print "has an axis",axn,"whose bounds",ax.bounds,"do not exist!"
