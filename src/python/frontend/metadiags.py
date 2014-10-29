@@ -44,6 +44,7 @@ def makeTables(modelpath, obspath, outpath, pname, outlog, errlog):
    
 
 def generatePlots(modelpath, obspath, outpath, pname, sets=None):
+   cmdline2 = ''
    
    if sets == None:
       sets = getSets(pname) #find out which sets are available
@@ -121,14 +122,28 @@ def generatePlots(modelpath, obspath, outpath, pname, sets=None):
             realsetnum = setnum
             prename = ''
          else:
-            prename = '--outputpre settopten'
-            if v in ['PSL', 'SWCF', 'LWCF', 'PRECT', 'TREFHT', 'U', 'AODVIS']:
-               realsetnum = 5
-            if v in ['RELHUM', 'T']:
-               realsetnum = 4
-            if v is 'SURF_STRESS':
-               realsetnum = 6
             # convert a given topten to the "right" setnumber that it comes from
+            prename = '--outputpre settopten'
+            v4 = [x for x in vl if x in ['RELHUM', 'T']]
+            v5 = [x for x in vl if x in ['PSL', 'SWCF', 'LWCF', 'PRECT', 'TREFHT', 'U', 'AODVIS']]
+            v6 = [x for x in vl if x in ['SURF_STRESS', 'STRESS', 'SURF_STRESS_TROP']]
+            print 'vl in:' ,vl
+            if v4 != []:
+               realsetnum = 4
+               vl1 = list(set(v4) & set(vl))
+               # need 2nd command line for the set 5 vars we just droped for this obs set. 
+               # This is getting icky; need to rethink but not during firedrill. just make
+               # it work.
+               vl2 = list(set(vl) - set(vl1))
+               vl = vl1
+               vlstr2 = ' '.join(vl2)
+               cmdline2 = 'diags --path %s --path2 %s %s --set 5 %s %s --vars %s %s %s %s %s' % (modelpath, obspath, package, seasons, obsfname, vlstr2, outdir, postname, xml, prename)
+            elif v5 != []:
+               realsetnum = 5
+               vl = list(set(v5) & set(vl))
+            elif v6 != []:
+               realsetnum = 6
+               vl = list(set(v6) & set(vl))
 
          vlnew = []
          for x in vl:
@@ -146,6 +161,17 @@ def generatePlots(modelpath, obspath, outpath, pname, sets=None):
             outlog.write('Command %s failed\n' % cmdline)
             errlog.write('Failing command was: %s\n' % cmdline)
             print 'See '+outpath+'/DIAGS_ERROR.log for details'
+   if cmdline2 != '':
+      print 'Executing '+cmdline2
+      try:
+         retcode = subprocess.check_call(cmdline2, stdout=outlog, stderr=errlog, shell=True)
+         if retcode < 0:
+            print 'TERMINATE SIGNAL', -retcode
+      except subprocess.CalledProcessError as e:
+         print '\n\nEXECUTION FAILED FOR ', cmdline2, ':', e
+         outlog.write('Command %s failed\n' % cmdline2)
+         errlog.write('Failing command was: %s\n' % cmdline2)
+
 
    outlog.close()
    errlog.close()
