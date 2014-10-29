@@ -434,10 +434,39 @@ class uvc_simple_plotspec():
                 # The variable min and max, varmin and varmax, should be passed on to the graphics
                 # for setting the contours.  But apparently you can't tell VCS just the min and max;
                 # you have to give it all the contour levels.  So...
-                levels = [float(v) for v in vcs.mkscale( varmin, varmax, 16 )]
+                nlevels = 16
+                try:
+                    levels = [float(v) for v in vcs.mkscale( varmin, varmax, nlevels )]
+                    # Exceptions occur because mkscale doesn't always work.  E.g. vcs.mkscale(0,1.e35,16)
+                except RuntimeWarning:
+                    levels = []
+                if levels==[]:
+                    ## Here's how to do it with percentiles (clip out large values first).
+                    #pc05 = numpy.percentile(self.vars[0],0.05)
+                    #pc95 = numpy.percentile(self.vars[0],0.95)
+                    #levels = [float(v) for v in vcs.mkscale( pc05, pc95, nlevels-2 )]
+                    #levels = [varmin]+levels+[varmax]
+                    # Evenly distributed levels, after clipping out large values:
+                    # This cannot be expected to work always, but it's better than doing nothing.
+                    amed = numpy.median(self.vars[0]._data)
+                    vclip = amed * 1.0e6
+                    print "WARNING graphics problems, clipping some data at",vclip
+                    self.vars[0]._data[ self.vars[0]._data > vclip ] = vclip
+                    a = numpy.sort(self.vars[0]._data.flatten())
+                    asp = numpy.array_split(a,nlevels)
+                    afirsts = [c[0] for c in asp]+[asp[-1][-1]]
+                    alasts = [asp[0][0]]+[c[-1] for c in asp]
+                    levels = [0.5*(afirsts[i]+alasts[i]) for i in range(len(afirsts))]
+                    levf = levels[0]
+                    levl = levels[-1]
+                    levels = [ round(lv,2) for lv in levels ]
+                    levels[0] = round(1.1*levels[0]-0.1*levels[1],2)
+                    levels[-1] = round(1.1*levels[-1]-0.1*levels[-2],2)
+
                 # ... mkscale returns numpy.float64, which behaves unexpectedly in _setlevels when
                 # passed a tuple value
-                self.presentation.levels = levels
+                if levels is not None and len(levels)>0:
+                    self.presentation.levels = levels
                 #nlevels = max(1, len(levels) - 1)
                 #nlrange = range(nlevels+1)
                 #nlrange.reverse()
