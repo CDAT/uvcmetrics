@@ -277,8 +277,11 @@ class uvc_simple_plotspec():
                                         if ax is not None }
                 self.axmin[seqgetattr(var,'id','')]  = { ax[0].id:min(ax[0][:]) for ax in var.getDomain()[:]
                                         if ax is not None}
-                self.axax[seqgetattr(var,'id','')]  = { ax[0].id:ax[0].axis for ax in var.getDomain()[:]
-                                       if ax is not None}
+                self.axax[seqgetattr(var,'id','')]  = {
+                    ax[0].id:(ax[0].axis if hasattr(ax[0],'axis')
+                    else 'other')
+                    for ax in var.getDomain()[:] if ax is not None
+                    }
         self.finalized = False
     def make_ranges(self, var):
 
