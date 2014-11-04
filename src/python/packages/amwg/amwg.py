@@ -150,8 +150,6 @@ class amwg_plot_set10(amwg_plot_spec):
 #    pass
 class amwg_plot_set12(amwg_plot_spec):
     pass
-class amwg_plot_set13(amwg_plot_spec):
-    pass
 class amwg_plot_set14(amwg_plot_spec):
     pass
 class amwg_plot_set15(amwg_plot_spec):
@@ -1264,7 +1262,7 @@ class amwg_plot_set7(amwg_plot_spec):
                 reduction_function=(lambda x,vid: reduce2latlon_seasonal( x(latitude=aux, longitude=(0, 360)), self.season, vid ) ) ),
             reduced_variable(
                 variableid=varid, filetable=filetable2, season=self.season,
-                reduction_function=(lambda x,vid: reduce2latlon_seasonal( x(latitude=aux, longitude=(0, 360)), self.season, vid ) ) ),
+                reduction_function=(lambda x,vid: reduce2latlon_seasonal( x(latitude=aux, longitude=(0, 360)), self.season, vid ) ) )
             ]
         self.reduced_variables = { v.id():v for v in reduced_varlis }
         vid1 = rv.dict_id( varid, seasonid, filetable1 )
@@ -1854,6 +1852,147 @@ class amwg_plot_set12(amwg_plot_spec):
                 #self.presentation.yticlabels1 = self.vars[1]
         return self.plotspec_values[self.plotall_id]
 
+class amwg_plot_set13(amwg_plot_spec):
+    """represents one plot from AMWG Diagnostics Plot Set 13, Cloud Simulator Histograms.
+    Each such plot is a histogram with a numerical value laid over a box.
+    At present, the histogram is used to show values of CLISCCP, cloud occurence in percent,
+    for each position in the vertical axis, (pressure) level, and each position in the horizontal
+    axis, optical thickness.
+    The data presented is a climatological mean - i.e., time-averaged with times restricted to
+    the specified season, DJF, JJA, or ANN.  And it's space-averaged with lat-lon restricted to
+    the specified region."""
+    #Often data comes from COSP = CFMIP Observation Simulator Package
+    name = '13 - Cloud Simulator Histograms'
+    number = '13'
+    def __init__( self, filetable1, filetable2, varid, seasonid=None, rname=None, aux=None ):
+        """filetable1, filetable2 should be filetables for model and obs.
+        varid is a string.  The variable described may depend on time,lat,lon and will be averaged
+        in those dimensions.  But it also should have two other axes which will be used for the
+        histogram.
+        Seasonid is a string, e.g. 'DJF'.
+        Rname is a string for the region, e.g. "tropics", and must appear in frontend/defines.py.
+        """
+        plot_spec.__init__(self,seasonid)
+        self.plottype = 'Boxfill'
+        self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
+        ft1id,ft2id = filetable_ids(filetable1,filetable2)
+        print "jfp in amwg_plot_set13.init, region=",rname
+        self.plot1_id = '_'.join([ft1id,varid,seasonid,rname,'histo'])
+        self.plot2_id = '_'.join([ft2id,varid,seasonid,rname,'histo'])
+        self.plot3_id = '_'.join([ft1id+'-'+ft2id,varid,seasonid,rname,'histo'])
+        self.plotall_id = '_'.join([ft1id,ft2id,varid,seasonid])
+        if not self.computation_planned:
+            self.plan_computation( filetable1, filetable2, varid, seasonid, rname )
+    @staticmethod
+    def _list_variables( filetable1, filetable2=None ):
+        allvars = amwg_plot_set13._all_variables( filetable1, filetable2 )
+        listvars = allvars.keys()
+        listvars.sort()
+        print "amwg plot set 13 listvars=",listvars
+        return listvars
+    @staticmethod
+    def _all_variables( filetable1, filetable2=None ):
+        allvars = {}
+
+        # First, make a dictionary varid:varaxisnames.
+        # Each variable will appear many times, but getting every occurence is the simplest
+        # way to ensure that we get every variable.
+        vars1 = {}
+        vars2 = {}
+        for row in filetable1._table:
+            vars1[row.variableid] = row.varaxisnames
+        if filetable2 is not None:
+            for row in filetable2._table:
+                vars2[row.variableid] = row.varaxisnames
+
+        # Now start with variables common to both filetables.  Keep only the ones with 2 axes
+        # other than time,lat,lon.  That's because we're going to average over time,lat,lon
+        # and display a histogram dependent on (exactly) two remaining axes.
+        for varname in amwg_plot_spec.package._list_variables(
+            filetable1, filetable2, "amwg_plot_spec" ):
+            varaxisnames1 = vars1[varname]
+            otheraxes1 = list(set(varaxisnames1) - set(['time','lat','lon']))
+            if len(otheraxes1)!=2:
+                continue
+            if filetable2 is not None:
+                varaxisnames2 = vars2[varname]
+                otheraxes2 = list(set(varaxisnames2) - set(['time','lat','lon']))
+                if len(otheraxes2)!=2:
+                    continue
+            allvars[varname] = basic_plot_variable
+        return allvars
+
+    def plan_computation( self, filetable1, filetable2, varid, seasonid, region ):
+        if varid not in self._list_variables(filetable1,filetable2):
+            print "ERROR variable",varid,"is not available as data in the filetables",filetable1,filetable2
+            print "We have not yet implemented a method to compute it from other variables."
+            return None
+        print "jfp entering plan_computation with region=",region,"varid=",varid
+        reduced_variables_1 = [
+            reduced_variable(
+                variableid=varid, filetable=filetable1, season=self.season, region=region,
+                reduction_function =\
+                    (lambda x,vid,season=self.season,region=region:
+                         reduce_time_space_seasonal_regional( x,season=season,region=region,vid=vid ))
+                )]
+        reduced_variables_2 = [
+            reduced_variable(
+                variableid=varid, filetable=filetable2, season=self.season, region=region,
+                reduction_function =\
+                    (lambda x,vid,season=self.season,region=region:
+                         reduce_time_space_seasonal_regional( x,season=season,region=region,vid=vid ))
+                )]
+        self.reduced_variables = {rv.id():rv for rv in reduced_variables_1+reduced_variables_2}
+        self.derived_variables = {}
+
+        ft1src = filetable1.source()
+        try:
+            ft2src = filetable2.source()
+        except:
+            ft2src = ''
+        vid1 = rv.dict_id(  varid,seasonid, filetable1, region=region)
+        vid2 = rv.dict_id(  varid,seasonid, filetable2, region=region)
+        print "jfp in plan_computation, vid1=",vid1
+        self.single_plotspecs = {
+            self.plot1_id: plotspec(
+                vid = ps.dict_idid(vid1), zvars=[vid1], zfunc=(lambda z: z),
+                plottype = self.plottype,
+                title = ' '.join([varid,seasonid,str(region),'(1)']),
+                source = ft1src ),
+            self.plot2_id: plotspec(
+                vid = ps.dict_idid(vid2), zvars=[vid2], zfunc=(lambda z: z),
+                plottype = self.plottype,
+                title = ' '.join([varid,seasonid,str(region),'(2)']),
+                source = ft2src ),
+            self.plot3_id: plotspec(
+                vid = ps.dict_id(varid,'diff',seasonid,filetable1,filetable2,region=region), zvars=[vid1,vid2],
+                zfunc=aminusb_2ax, plottype = self.plottype,
+                title = ' '.join([varid,seasonid,str(region),'(1)-(2)']),
+                source = ', '.join([ft1src,ft2src]) )
+            }
+        self.composite_plotspecs = {
+            self.plotall_id: [self.plot1_id, self.plot2_id, self.plot3_id ]
+            }
+        self.computation_planned = True
+
+    def _results(self,newgrid=0):
+        results = plot_spec._results(self,newgrid)
+        if results is None:
+            print "WARNING, AMWG plot set 13 found nothing to plot"
+            return None
+        psv = self.plotspec_values
+        if self.plot1_id in psv and self.plot2_id in psv and\
+                psv[self.plot1_id] is not None and psv[self.plot2_id] is not None:
+            psv[self.plot1_id].synchronize_ranges(psv[self.plot2_id])
+        else:
+            print "WARNING not synchronizing ranges for",self.plot1_id,"and",self.plot2_id
+        for key,val in psv.items():
+            if type(val) is not list: val=[val]
+            for v in val:
+                if v is None: continue
+                v.finalize(flip_y=True)
+        return self.plotspec_values[self.plotall_id]
+
 def centered_RMS_difference(mv1, mv2):
     #pdb.set_trace()
     mv1_mean = mv1.mean()
@@ -1880,6 +2019,7 @@ def join_scalar_data(*args ):
     #print M
     #M.info()
     return M
+
 class xxxamwg_plot_set14(amwg_plot_spec):
     #name = '14 - Taylor diagrams: incomplete'
     #number = '14'
