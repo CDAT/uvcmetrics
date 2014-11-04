@@ -923,6 +923,40 @@ def reduceMonthlyTrendRegion(mv, region, vid=None):
    #print 'reduceMonthlyTrendRegion - Returning ', mvvals
    return mvvals
 
+def reduce_time_space_seasonal_regional( mv, season, region, vid=None ):
+    """Reduces the variable mv in all time and space dimensions.  Any other dimensions will remain.
+    The averages will be restricted to the the specified season and region.
+    The season should be a cdutil.times.Seasons object.
+    The region may be a string defining a region in defines.py, or it may be a list of four numbers
+    as in defines.py.  That is, it would take the form [latmin,latmax,lonmin,lonmax].
+    """
+    if vid == None:
+        vid = 'reduced_'+mv.id
+    if type(region) is str:
+        region = defines.all_regions[region]
+
+    mvreg = mv(latitude=(region[0], region[1]), longitude=(region[2], region[3]))
+
+    axes = allAxes( mvreg )
+    axis_names = [ a.id for a in axes if a.id=='lat' or a.id=='lon' or a.id=='lev']
+    axes_string = '('+')('.join(axis_names)+')'
+    mvsav = cdutil.averager( mvreg, axis=axes_string )
+    tax = timeAxis(mvsav)
+    if len(tax)<=1:
+        # This is already climatology data, don't try to average over time again
+        # The time axis will be deleted shortly anyway.
+        mvtsav = mvsav
+    else:
+        mvtsav = season.climatology( mvsav )
+
+    mvtsav.id = vid
+    mvtsav = delete_singleton_axis(mvtsav, vid='time')
+    mvtsav = delete_singleton_axis(mvtsav, vid='lev')
+    mvtsav = delete_singleton_axis(mvtsav, vid='lat')
+    mvtsav = delete_singleton_axis(mvtsav, vid='lon')
+
+    return mvtsav
+
 def reduce2latlon_seasonal_level( mv, season, level, vid=None):
 # I wonder if this can be done faster somehow? need to ask Charles
 
@@ -1848,7 +1882,7 @@ class reduced_variable(ftrow,basic_id):
             seasonid=self._season.seasons[0]
             if seasonid=='JFMAMJJASOND':
                 seasonid='ANN'
-            basic_id.__init__( self, variableid, seasonid, filetable )
+            basic_id.__init__( self, variableid, seasonid, filetable, None, region )
         ftrow.__init__( self, fileid, variableid, timerange, latrange, lonrange, levelrange )
         self._reduction_function = reduction_function
         self._axes = axes
@@ -1857,7 +1891,7 @@ class reduced_variable(ftrow,basic_id):
         #else:
         #    self._vid = reduced_var_id      # self._vid is deprecated
         if filetable==None:
-            print "ERROR.  No filetable specified for reduced_variable instance",variableid
+            print "WARNING.  No filetable specified for reduced_variable instance",variableid
         self._filetable = filetable
         self._filefilter = filefilter  # used to filter results of search in filetable
         self._file_attributes = {}
@@ -1867,16 +1901,21 @@ class reduced_variable(ftrow,basic_id):
         return self._strid
 
     @classmethod
-    def dict_id( cls, varid, seasonid, ft, ff=None ):
+    def dict_id( cls, varid, seasonid, ft, ff=None, region=None ):
         """varid, seasonid are strings identifying a variable name (usually of a model output
         variable) and season, ft is a filetable.  ff is an optional filefilter.
         This method constructs and returns an id for the corresponding reduced_variable object."""
         if ft is None:
             return None
-        elif ff is None:
-            return basic_id._dict_id( cls, varid, seasonid, ft._strid, '' )
+        if ff is None:
+            ffs = ''
         else:
-            return basic_id._dict_id( cls, varid, seasonid, ft._strid, ff.mystr() )
+            ffs = ff.mystr()
+        if region is None:
+            regs = ''
+        else:
+            regs = str(region)
+        return basic_id._dict_id( cls, varid, seasonid, regs, ft._strid, ffs )
 
     def extract_filefamilyname( self, filename ):
         """From a filename, extracts the first part of the filename as the possible
