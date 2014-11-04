@@ -69,7 +69,7 @@ class derived_var(basic_id):
             output.id = '_'.join(output._id)
         return output
     @classmethod
-    def dict_id( cls, varid, varmod, seasonid, ft1, ft2=None ):
+    def dict_id( cls, varid, varmod, seasonid, ft1, ft2=None, region=None ):
         """varid, varmod, seasonid are strings identifying a variable name, a name modifier
         (often '' is a good value) and season, ft is a filetable, or a string id for the filetable.
         This method constructs and returns an id for the corresponding derived_var object."""
@@ -81,7 +81,11 @@ class derived_var(basic_id):
             ft2id = ''
         else:
             ft2id = id2str( ft2._id )
-        return basic_id._dict_id( cls, varid, varmod, seasonid, ft1id, ft2id )
+        if region is None:
+            regs = ''
+        else:
+            regs = str(region)
+        return basic_id._dict_id( cls, varid, varmod, seasonid, regstr, ft1id, ft2id )
 
 class dv(derived_var):
     """same as derived_var, but short name saves on typing"""
@@ -153,7 +157,7 @@ class plotspec(basic_id):
         self.overplotline = overplotline
 
     @classmethod
-    def dict_id( cls, varid, varmod, seasonid, ft1, ft2=None ):
+    def dict_id( cls, varid, varmod, seasonid, ft1, ft2=None, region='' ):
         """This method computes and returns an id for a plotspec object.
         This method is similar to the corresponding method for a derived variable because a plot
         is normally a representation of a variable.
@@ -171,7 +175,7 @@ class plotspec(basic_id):
             ft2id = ft2
         else:
             ft2id = id2str( ft2._id )
-        return basic_id._dict_id( cls, varid, varmod, seasonid, ft1id, ft2id )
+        return basic_id._dict_id( cls, varid, varmod, seasonid, ft1id, ft2id, region )
     @classmethod
     def dict_idid( cls, otherid ):
         """The purpose of this method is the same as dict_id, except that the input is the id tuple
@@ -185,9 +189,17 @@ class plotspec(basic_id):
                 print "ERROR.  Bad input to plotspec.dict_idid(), not a tuple.  Value is"
                 print otherid, type(otherid)
                 return None
+        if otherid[0]=='rv' and len(otherid)==6 and otherid[5] is None or otherid[5]=='None' or otherid[5]=='':
+            otherid = otherid[:5]
         if otherid[0]=='rv' and len(otherid)==5 and otherid[4] is None or otherid[4]=='None' or otherid[4]=='':
             otherid = otherid[:4]
-        if otherid[0]=='rv' and len(otherid)==4:
+        if otherid[0]=='rv' and len(otherid)==5:
+            varid = otherid[1]
+            varmod = otherid[4]
+            seasonid = otherid[2]
+            ft1 = otherid[3]
+            ft2 = None
+        elif otherid[0]=='rv' and len(otherid)==4:
             varid = otherid[1]
             varmod = ''
             seasonid = otherid[2]
