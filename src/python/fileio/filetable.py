@@ -52,10 +52,12 @@ class ftrow:
     There will be no more than that - if you want more information you can open the file.
     If the file has several variables, there will be several rows for the file."""
     # One can think of lots of cases where this is too simple, but it's a start.
-    def __init__( self, fileid, variableid, timerange, latrange, lonrange, levelrange=None, filefmt=None ):
+    def __init__( self, fileid, variableid, timerange, latrange, lonrange, levelrange=None,
+                  filefmt=None, varaxisnames=[] ):
         self.fileid = fileid          # file name
         self.filetype = filefmt       # file format/type, e.g. "NCAR CAM" or "CF CMIP5"
         self.variableid = variableid  # variable name
+        self.varaxisnames = varaxisnames # list of names (ids) of axes of the variable
         if timerange is None:
            self.timerange = drange()
         else:
@@ -225,7 +227,9 @@ class basic_filetable(basic_id):
             for var in vars:
                 variableid = var
                 varaxisnames = [a[0].id for a in dfile[var].domain]
-                if 'time' in varaxisnames:
+                if hasattr(filesupp,'season'): # climatology file
+                   timern = timerange      # this should be the season like the above example
+                elif 'time' in varaxisnames:
                    timern = timerange
                 elif parse_climo_filename(fileid):    # filename like foo_SSS_climo.nc is a climatology file for season SSS.
                    (root,season)=parse_climo_filename(fileid)
@@ -246,7 +250,11 @@ class basic_filetable(basic_id):
                    levrn = levelrange
                 else:
                    levrn = None
-                newrow = ftrow( fileid, variableid, timern, latrn, lonrn, levrn, filefmt=filesupp.name )
+                newrow = ftrow( fileid, variableid, timern, latrn, lonrn, levrn, filefmt=filesupp.name,
+                                varaxisnames=varaxisnames )
+                if hasattr(filesupp,'season'):
+                    # so we can detect that it's climatology data:
+                    newrow.season = filesupp.season
                 self._table.append( newrow )
                 if fileid in self._fileindex.keys():
                     self._fileindex[fileid].append(newrow)
@@ -511,11 +519,13 @@ class NCAR_climo_filefmt(NCAR_filefmt):
    def get_timerange(self):
       """ A climo file has no real time range, that is no times t1,t2 for which a variable is
       defined at times t1<=time<t2.  Instead it has a season.  We'll return the season in
-      place of the time range, and will have to detect it at lookup time."""
+      place of the time range, and will have to detect it at lookup time.  The season
+      attribute is set to help with that."""
       if hasattr(self._dfile,'season'):
          season = self._dfile.season
       else:
          season=self._dfile.id[-12:-9]
+      self.season = season
       return self.standardize_season(season)
 
 class NCAR_CESM_climo_filefmt(NCAR_climo_filefmt):
