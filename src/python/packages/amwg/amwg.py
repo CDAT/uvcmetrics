@@ -1864,25 +1864,25 @@ class amwg_plot_set13(amwg_plot_spec):
     #Often data comes from COSP = CFMIP Observation Simulator Package
     name = '13 - Cloud Simulator Histograms'
     number = '13'
-    def __init__( self, filetable1, filetable2, varid, seasonid=None, rname=None, aux=None ):
+    def __init__( self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string.  The variable described may depend on time,lat,lon and will be averaged
         in those dimensions.  But it also should have two other axes which will be used for the
         histogram.
         Seasonid is a string, e.g. 'DJF'.
-        Rname is a string for the region, e.g. "tropics", and must appear in frontend/defines.py.
+        Region is an instance of the class rectregion (region.py).
         """
         plot_spec.__init__(self,seasonid)
         self.plottype = 'Boxfill'
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
         ft1id,ft2id = filetable_ids(filetable1,filetable2)
-        print "jfp in amwg_plot_set13.init, region=",rname
-        self.plot1_id = '_'.join([ft1id,varid,seasonid,rname,'histo'])
-        self.plot2_id = '_'.join([ft2id,varid,seasonid,rname,'histo'])
-        self.plot3_id = '_'.join([ft1id+'-'+ft2id,varid,seasonid,rname,'histo'])
+        print "jfp in amwg_plot_set13.init, region=",region
+        self.plot1_id = '_'.join([ft1id,varid,seasonid,str(region),'histo'])
+        self.plot2_id = '_'.join([ft2id,varid,seasonid,str(region),'histo'])
+        self.plot3_id = '_'.join([ft1id+'-'+ft2id,varid,seasonid,str(region),'histo'])
         self.plotall_id = '_'.join([ft1id,ft2id,varid,seasonid])
         if not self.computation_planned:
-            self.plan_computation( filetable1, filetable2, varid, seasonid, rname )
+            self.plan_computation( filetable1, filetable2, varid, seasonid, region )
     @staticmethod
     def _list_variables( filetable1, filetable2=None ):
         allvars = amwg_plot_set13._all_variables( filetable1, filetable2 )
