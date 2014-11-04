@@ -77,7 +77,7 @@ class basic_id():
     def id( self ):
         return self._id
     abbrevs = { 'basic_filetable':'ft', 'derived_var':'dv', 'dv':'dv', 'reduced_variable':'rv', 'rv':'rv',
-                'amwg_plot_set3':'set3', 'plotspec':'plot', 'ps':'plot'
+                'amwg_plot_set3':'set3', 'plotspec':'plot', 'ps':'plot', 'rectregion':'rg', 'rg':'rg'
                 }
     @staticmethod
     def abbrev( str ):
