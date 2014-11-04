@@ -12,6 +12,7 @@ from metrics.computation.reductions import *
 from metrics.computation.plotspec import *
 from metrics.fileio.findfiles import *
 from metrics.common.utilities import *
+from metrics.computation.region import *
 from unidata import udunits
 import cdutil.times, numpy
 
@@ -322,8 +323,9 @@ class amwg_plot_set1(amwg_plot_spec):
         # filetable2 is a file table for all obs data.
         # seasonid is a season string, e.g. 'DJF'.  Region is the name of a zonal region, e.g.
         # 'tropics'; the acceptable region names are amwg_plot_set1.regions.keys().
-        if type(region)==list:
-            # Brian's numerical region.  Ignore if it doesn't match one we have.
+        if type(region)==list or type(region)=rectregion:
+            # Brian's numerical region, or an instance of the similar rectregion class.
+            # Ignore if it doesn't match one we have.
             if region[2]!=-180 or region[3]!=180:
                 region = 'global'
             else:
