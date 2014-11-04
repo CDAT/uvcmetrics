@@ -57,6 +57,7 @@ from metrics.common.utilities import *
 import metrics.frontend.defines as defines
 import cProfile
 from metrics.frontend.it import *
+from metrics.computation.region import *
 
 def mysort( lis ):
     lis.sort()
@@ -169,11 +170,12 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
             plotsets = [ sndic[setnum(x)] for x in ps if setnum(x) in sndic ]
 
         if opts['regions'] == None:
-            region = defines.all_regions['Global']
+            regl = defines.all_regions['Global']
             rname = 'Global'
         else:
-            region = defines.all_regions[opts['regions'][0]]
+            regl = defines.all_regions[opts['regions'][0]]
             rname = opts['regions'][0]
+        region = rectregion( rname, regl )
         for sname in plotsets:
             print "plot set",sname
             snum = sname.strip().split(' ')[0]
@@ -228,6 +230,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                 vcanvas2 = vcs.init()
                                 vcanvas2.portrait()
                                 vcanvas2.setcolormap('bl_to_darkred') #Set the colormap to the NCAR colors
+#                                vcanvas3 = vcs.init()
                                 LINE = vcanvas.createline('LINE', 'default')
                                 LINE.width = 3.0
                                 LINE.type = 'solid'
@@ -414,6 +417,8 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                                #pdb.set_trace()
                                                vcanvas.plot(var, rsr.presentation, tm, bg=1,
                                                                 title=title, units=getattr(var,'units',''), source=rsr.source )
+#                                               vcanvas3.clear()
+#                                               vcanvas3.plot(var, rsr.presentation )
                                                savePNG = True
                                                try:
                                                    if tm2 is not None:
