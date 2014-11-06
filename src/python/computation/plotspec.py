@@ -85,7 +85,7 @@ class derived_var(basic_id):
             regs = ''
         else:
             regs = str(region)
-        return basic_id._dict_id( cls, varid, varmod, seasonid, regstr, ft1id, ft2id )
+        return basic_id._dict_id( cls, varid, varmod, seasonid, ft1id, ft2id, str(region) )
 
 class dv(derived_var):
     """same as derived_var, but short name saves on typing"""
