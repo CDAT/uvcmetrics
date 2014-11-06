@@ -29,6 +29,10 @@ seasonsyr=cdutil.times.Seasons('JFMAMJJASOND')
 # >>>> done simply by adding more names in levAxis().  Search on 'lev' for the rest.
 # >>>> in this file.  E.g. LMWG uses levlk and levgrnd.
 
+# Sometimes an axis has to be used like a variable.
+# This lets us quickly determine that it has no other axes:
+cdms2.axis.AbstractAxis.getAxisList = lambda x: [x]
+
 def allAxes( mv ):
     """returns a list of axes of a variable mv"""
     if mv is None: return None
@@ -930,6 +934,9 @@ def reduce_time_space_seasonal_regional( mv, season, region, vid=None ):
     The region may be a string defining a region in defines.py, or it may be a list of four numbers
     as in defines.py.  That is, it would take the form [latmin,latmax,lonmin,lonmax].
     """
+    if len( set(['time','lat','lon','lev']) & set([ax.id for ax in allAxes(mv)]) )==0:
+        return mv  # nothing to reduce
+
     if vid == None:
         vid = 'reduced_'+mv.id
     if type(region) is str:
@@ -1447,6 +1454,14 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
             mv1.units = 'mbar/day' # udunits uses mb for something else
         if mv2.units=='mb/day':
             mv2.units = 'mbar/day' # udunits uses mb for something else
+        if mv1.units == 'mixed':  # could mean anything...
+            mv1.units = '1'       #... maybe this will work
+        if mv2.units == 'mixed':  # could mean anything...
+            mv2.units = '1'       #... maybe this will work
+        if mv1.units == 'unitless':  # could mean anything...
+            mv1.units = '1'       #... maybe this will work
+        if mv2.units == 'unitless':  # could mean anything...
+            mv2.units = '1'       #... maybe this will work
         if preferred_units is None:
             target_units = mv1.units
         else:
@@ -1457,7 +1472,9 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
             mv1.units = target_units
         tmp = udunits(1.0,mv2.units)
         s,i = tmp.how(target_units)  # will raise an exception if conversion not possible
+        mv2id = mv2.id
         mv2 = s*mv2 + i
+        mv2.id = mv2id
         mv2.units = target_units
     return mv1, mv2
 
@@ -2059,7 +2076,14 @@ class reduced_variable(ftrow,basic_id):
         else:
             f = cdms2.open( filename )
             self._file_attributes.update(f.attributes)
-            reduced_data = self._reduction_function( f(self.variableid), vid=vid )
+            if self.variableid in f.variables.keys():
+                reduced_data = self._reduction_function( f(self.variableid), vid=vid )
+            elif self.variableid in f.axes.keys():
+                taxis = cdms2.createAxis(f[self.variableid])   # converts the FileAxis to a TransientAxis.
+                taxis.id = f[self.variableid].id
+                reduced_data = self._reduction_function( taxis, vid=vid )
+            else:
+                raise Exception
             if reduced_data is not None:
                 reduced_data._vid = vid
             f.close()
