@@ -93,8 +93,8 @@ class amwg_plot_spec(plot_spec):
     @staticmethod
     def _all_variables( filetable1, filetable2=None ):
         return amwg_plot_spec.package._all_variables( filetable1, filetable2, "amwg_plot_spec" )
-    @staticmethod
-    def stdvar2var( varnom, filetable, season, reduction_function ):
+    @classmethod
+    def stdvar2var( cls, varnom, filetable, season, reduction_function ):
         """From a variable name, a filetable, and a season, this finds the variable name in
         standard_variables. If it's there, this method generates a variable as an instance
         of reduced_variable or derived_var, which represents the variable and how to compute it
@@ -113,16 +113,18 @@ class amwg_plot_spec(plot_spec):
         """
         if filetable is None:
             return None,None,None
-        if varnom not in amwg_plot_spec.standard_variables:
+        #if varnom not in amwg_plot_spec.standard_variables:
+        if varnom not in cls.standard_variables:
             return None,None,None
         computable = False
-        for svd in amwg_plot_spec.standard_variables[varnom]:  # loop over ways to compute varnom
+        for svd in cls.standard_variables[varnom]:  # loop over ways to compute varnom
             invarnoms = svd._inputs
             if len( set(invarnoms) - set(filetable.list_variables()) )<=0:
                 func = svd._func
                 computable = True
                 break
         if not computable:
+            print "DEBUG: standard variable",varnom,"is not computable"
             return None,None,None
         rvs = []
         for ivn in invarnoms:
@@ -1864,25 +1866,31 @@ class amwg_plot_set13(amwg_plot_spec):
     #Often data comes from COSP = CFMIP Observation Simulator Package
     name = '13 - Cloud Simulator Histograms'
     number = '13'
-    def __init__( self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None ):
+    standard_variables = {  # Note: shadows amwg_plot_spec.standard_variables
+        'CLISCCP':[derived_var(
+                vid='CLISCCP', inputs=['FISCCP1','isccp_prs','isccp_tau'], outputs=['CLISCCP'],
+                func=uncompress_fisccp1 )]
+        }
+    def __init__( self, filetable1, filetable2, varnom, seasonid=None, region=None, aux=None ):
         """filetable1, filetable2 should be filetables for model and obs.
-        varid is a string.  The variable described may depend on time,lat,lon and will be averaged
+        varnom is a string.  The variable described may depend on time,lat,lon and will be averaged
         in those dimensions.  But it also should have two other axes which will be used for the
         histogram.
         Seasonid is a string, e.g. 'DJF'.
         Region is an instance of the class rectregion (region.py).
         """
         plot_spec.__init__(self,seasonid)
+        self.reduced_variables = {}
+        self.derived_variables = {}
         self.plottype = 'Boxfill'
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
         ft1id,ft2id = filetable_ids(filetable1,filetable2)
-        print "jfp in amwg_plot_set13.init, region=",region
-        self.plot1_id = '_'.join([ft1id,varid,seasonid,str(region),'histo'])
-        self.plot2_id = '_'.join([ft2id,varid,seasonid,str(region),'histo'])
-        self.plot3_id = '_'.join([ft1id+'-'+ft2id,varid,seasonid,str(region),'histo'])
-        self.plotall_id = '_'.join([ft1id,ft2id,varid,seasonid])
+        self.plot1_id = '_'.join([ft1id,varnom,seasonid,str(region),'histo'])
+        self.plot2_id = '_'.join([ft2id,varnom,seasonid,str(region),'histo'])
+        self.plot3_id = '_'.join([ft1id+'-'+ft2id,varnom,seasonid,str(region),'histo'])
+        self.plotall_id = '_'.join([ft1id,ft2id,varnom,seasonid])
         if not self.computation_planned:
-            self.plan_computation( filetable1, filetable2, varid, seasonid, region )
+            self.plan_computation( filetable1, filetable2, varnom, seasonid, region )
     @staticmethod
     def _list_variables( filetable1, filetable2=None ):
         allvars = amwg_plot_set13._all_variables( filetable1, filetable2 )
@@ -1890,8 +1898,8 @@ class amwg_plot_set13(amwg_plot_spec):
         listvars.sort()
         print "amwg plot set 13 listvars=",listvars
         return listvars
-    @staticmethod
-    def _all_variables( filetable1, filetable2=None ):
+    @classmethod
+    def _all_variables( cls, filetable1, filetable2=None ):
         allvars = {}
 
         # First, make a dictionary varid:varaxisnames.
@@ -1920,54 +1928,81 @@ class amwg_plot_set13(amwg_plot_spec):
                 if len(otheraxes2)!=2:
                     continue
             allvars[varname] = basic_plot_variable
+
+        # Finally, add in the standard variables.  Note that there is no check on whether
+        # we have the inputs needed to compute them.
+        for varname in set(cls.standard_variables.keys())-set(allvars.keys()):
+            allvars[varname] = basic_plot_variable
+
         return allvars
 
-    def plan_computation( self, filetable1, filetable2, varid, seasonid, region ):
-        if varid not in self._list_variables(filetable1,filetable2):
-            print "ERROR variable",varid,"is not available as data in the filetables",filetable1,filetable2
-            print "We have not yet implemented a method to compute it from other variables."
+    def var_from_data( self, filetable, varnom, seasonid, region ):
+        """defines the reduced variable for varnom when available in the specified filetable"""
+        rv = reduced_variable(
+            variableid=varnom, filetable=filetable, season=self.season, region=region,
+            reduction_function =\
+                (lambda x,vid,season=self.season,region=region:
+                     reduce_time_space_seasonal_regional( x,season=season,region=region,vid=vid ))
+            )
+        self.reduced_variables[ rv.id() ] = rv
+        return rv.id()
+    def var_from_std( self, filetable, varnom, seasonid, region ):
+        """defines the derived variable for varnom when computable as a standard variable using data
+        in the specified filetable"""
+        varid,rvs,dvs = self.stdvar2var(
+            varnom, filetable, self.season,\
+                (lambda x,vid,season=self.season,region=region:
+                     reduce_time_space_seasonal_regional(x, season=season, region=region, vid=vid) ))
+        for rv in rvs:
+            self.reduced_variables[ rv.id() ] = rv
+        for dv in dvs:
+            self.derived_variables[ dv.id() ] = dv
+        return varid
+    def plan_computation( self, filetable1, filetable2, varnom, seasonid, region ):
+        if varnom in filetable1.list_variables():
+            vid1 = self.var_from_data( filetable1, varnom, seasonid, region )
+        elif varnom in self.standard_variables.keys():
+            vid1 = self.var_from_std( filetable1, varnom, seasonid, region )
+        else:
+            print "ERROR variable",varnom,"cannot be read or computed from data in the filetable",filetable1
             return None
-        print "jfp entering plan_computation with region=",region,"varid=",varid
-        reduced_variables_1 = [
-            reduced_variable(
-                variableid=varid, filetable=filetable1, season=self.season, region=region,
-                reduction_function =\
-                    (lambda x,vid,season=self.season,region=region:
-                         reduce_time_space_seasonal_regional( x,season=season,region=region,vid=vid ))
-                )]
-        reduced_variables_2 = [
-            reduced_variable(
-                variableid=varid, filetable=filetable2, season=self.season, region=region,
-                reduction_function =\
-                    (lambda x,vid,season=self.season,region=region:
-                         reduce_time_space_seasonal_regional( x,season=season,region=region,vid=vid ))
-                )]
-        self.reduced_variables = {rv.id():rv for rv in reduced_variables_1+reduced_variables_2}
-        self.derived_variables = {}
+        if filetable2 is None:
+            vid2 = None
+        elif varnom in filetable2.list_variables():
+            vid2 = self.var_from_data( filetable2, varnom, seasonid, region )
+        elif varnom in self.standard_variables.keys():
+            vid2 = self.var_from_std( filetable2, varnom, seasonid, region )
+        else:
+            vid2 = None
+        # >>> WORK IN PROGRESS <<<< Some of the following code should become part of var_from_data()
+        # and var_from_data() should return something.  I need to write that and var_from_std(), etc.
+        print "jfp entering plan_computation with region=",region,"varnom=",varnom
 
         ft1src = filetable1.source()
         try:
             ft2src = filetable2.source()
         except:
             ft2src = ''
-        vid1 = rv.dict_id(  varid,seasonid, filetable1, region=region)
-        vid2 = rv.dict_id(  varid,seasonid, filetable2, region=region)
+        #vid1 = rv.dict_id(  varnom,seasonid, filetable1, region=region)
+        #vid2 = rv.dict_id(  varnom,seasonid, filetable2, region=region)
+        print "jfp in plan_computation, reduced variables:",self.reduced_variables.keys()
+        print "jfp in plan_computation, derived variables:",self.derived_variables.keys()
         print "jfp in plan_computation, vid1=",vid1
         self.single_plotspecs = {
             self.plot1_id: plotspec(
                 vid = ps.dict_idid(vid1), zvars=[vid1], zfunc=(lambda z: z),
                 plottype = self.plottype,
-                title = ' '.join([varid,seasonid,str(region),'(1)']),
+                title = ' '.join([varnom,seasonid,str(region),'(1)']),
                 source = ft1src ),
             self.plot2_id: plotspec(
                 vid = ps.dict_idid(vid2), zvars=[vid2], zfunc=(lambda z: z),
                 plottype = self.plottype,
-                title = ' '.join([varid,seasonid,str(region),'(2)']),
+                title = ' '.join([varnom,seasonid,str(region),'(2)']),
                 source = ft2src ),
             self.plot3_id: plotspec(
-                vid = ps.dict_id(varid,'diff',seasonid,filetable1,filetable2,region=region), zvars=[vid1,vid2],
+                vid = ps.dict_id(varnom,'diff',seasonid,filetable1,filetable2,region=region), zvars=[vid1,vid2],
                 zfunc=aminusb_2ax, plottype = self.plottype,
-                title = ' '.join([varid,seasonid,str(region),'(1)-(2)']),
+                title = ' '.join([varnom,seasonid,str(region),'(1)-(2)']),
                 source = ', '.join([ft1src,ft2src]) )
             }
         self.composite_plotspecs = {
