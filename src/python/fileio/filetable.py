@@ -226,7 +226,12 @@ class basic_filetable(basic_id):
             levelrange = filesupp.get_levelrange()
             for var in vars:
                 variableid = var
-                varaxisnames = [a[0].id for a in dfile[var].domain]
+                if dfile[var] is not None and hasattr(dfile[var],'domain'):
+                    varaxisnames = [a[0].id for a in dfile[var].domain]
+                elif var in dfile.axes.keys():
+                    varaxisnames = [var]
+                else:
+                    continue
                 if hasattr(filesupp,'season'): # climatology file
                    timern = timerange      # this should be the season like the above example
                 elif 'time' in varaxisnames:
@@ -377,7 +382,8 @@ class NCAR_filefmt(basic_filefmt):
       # But we can't limit _all_interesting names to varlist!
       # varlist is only variables the user finds interesting, and may not include
       # other variables which we may later need to compute them.
-      self._all_interesting_names = self._dfile.variables.keys()
+      # Even axes may be needed (e.g. AMWG plot set 13, axes get changed)
+      self._all_interesting_names = self._dfile.variables.keys() + self._dfile.axes.keys()
 
    def get_timerange(self):
       if 'time' not in self._dfile.axes:
@@ -457,16 +463,21 @@ class NCAR_filefmt(basic_filefmt):
       The name returned will be a standard name if known, otherwise (and usually)
       the actual variable name."""
       iv = []
-      for var in self._dfile.variables.keys():
+      vars=self._dfile.variables.keys() + self._dfile.axes.keys()
+      for var in vars:
          if self._dfile[var].typecode()=='c':
             continue    # character string
          if self._dfile[var].typecode()=='i':
             continue    # integer
-         if len(self._dfile.variables[var].getAxisList())<1:
-            continue
-         if len(self._dfile.variables[var].getAxisList())==1 and\
-                self._dfile.variables[var].getAxisList()[0].shape==(1,):
-            continue
+         if var in self._dfile.variables and len(self._dfile.variables[var].getAxisList())<1:
+             continue
+         if var in self._dfile.variables and\
+                 len(self._dfile.variables[var].getAxisList())==1 and\
+                 self._dfile.variables[var].getAxisList()[0].shape==(1,):
+             continue
+         if var in self._dfile.axes and\
+                 self._dfile.axes[var].shape==(1,):
+             continue
          if var in self._all_interesting_names:
             iv.append(var)
          elif var.upper() in self._all_interesting_names:
