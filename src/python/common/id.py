@@ -55,7 +55,7 @@ class basic_id():
             self._id = self.__class__.dict_id( *args )
         if type(self._id) is tuple: assert( len(self._id)<=self._idmx )
         self._strid = id2str(self._id)
-        #print "jfp basic_id,",self.__class__.__name__,", just made self._strid=",self._strid,"from args",args
+        #print "debug basic_id,",self.__class__.__name__,", just made self._strid=",self._strid,"from args",args
     def __str__(self):
         return self._strid
     @classmethod
