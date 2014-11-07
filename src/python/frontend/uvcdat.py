@@ -277,9 +277,11 @@ class uvc_simple_plotspec():
                                         if ax is not None }
                 self.axmin[seqgetattr(var,'id','')]  = { ax[0].id:min(ax[0][:]) for ax in var.getDomain()[:]
                                         if ax is not None}
+                # The 'axis' attribute of an axis is typically X or Y and tells you where the axis
+                # goes in a plot.  It it's not there, we'll decide later.
                 self.axax[seqgetattr(var,'id','')]  = {
-                    ax[0].id:(ax[0].axis if hasattr(ax[0],'axis')
-                    else 'other')
+                    ax[0].id:(ax[0].axis if hasattr(ax[0],'axis')\
+                                  else ax[0].id)
                     for ax in var.getDomain()[:] if ax is not None
                     }
         self.finalized = False
@@ -354,6 +356,7 @@ class uvc_simple_plotspec():
             #self.presentation.list()              
         elif vcs.isyxvsx(self.presentation) or\
                 vcs.isisofill(self.presentation) or\
+                vcs.isboxfill(self.presentation) or\
                 self.presentation.__class__.__name__=="GYx" or\
                 self.presentation.__class__.__name__=="G1d" or\
                 self.presentation.__class__.__name__=="Gv":
@@ -391,10 +394,13 @@ class uvc_simple_plotspec():
 #                self.presentation.datawc_y1 = varmin
 #                self.presentation.datawc_y2 = varmax
 #            print self.presentation.datawc_x1, self.presentation.datawc_x2, self.presentation.datawc_y1, self.presentation.datawc_y2
-            if vcs.isisofill(self.presentation) or self.presentation.__class__.__name__=="Gfi":
-                # VCS Isofill
+            if vcs.isisofill(self.presentation) or self.presentation.__class__.__name__=="Gfi"\
+                    or vcs.isboxfill(self.presentation):
+                # VCS Isofill or Boxfill
+
                 # First we have to identify which axes will be plotted as X and Y.
-                # The following won't cover all cases, but does cover what we have:
+                # If the axes each had an 'axis' attribute, axaxi will look something like
+                # {'X':'axis1id', 'Y':'axis2id'}.  If one misses the attribute, 'axis0id':'axis0id'.
                 axaxi = {ax:id for id,ax in self.axax[seqgetattr(var,'id','')].items()}
                 if 'X' in axaxi.keys() and 'Y' in axaxi.keys():
                     axx = axaxi['X']
@@ -417,8 +423,25 @@ class uvc_simple_plotspec():
                             self.presentation.xticlabels1 = time_lables
                             self.presentation.datawc_timeunits = t.units
                             #self.presentation.list()
+                elif len(axaxi.keys())==2:
+                    # It's not clear what should be the X variable and what the Y variable,
+                    # but it's worth trying to do something
+                    axx = None
+                    axy = None
+                    for axetc in var.getDomain()[:]:
+                        ax = axetc[0]
+                        if getattr(ax,'units',None)=='mbar':
+                            # probably pressure levels, a vertical axis
+                            axy = ax.id
+                        else:
+                            axx = ax.id
+                    if axx is None or axy is None:
+                        # last resort
+                        axy = axaxi[axaxi.keys()[0]]
+                        axx = axaxi[axaxi.keys()[1]]
                 else:
                     return None
+
                 # Now send the plotted min,max for the X,Y axes to the graphics:
                 # and if it is not a polar projection
                 if vcs.getprojection(self.presentation.projection)._type!=-3:
@@ -434,9 +457,12 @@ class uvc_simple_plotspec():
                     else:
                         self.presentation.datawc_y1 = axmin[axy]
                         self.presentation.datawc_y2 = axmax[axy]
+
                 # The variable min and max, varmin and varmax, should be passed on to the graphics
                 # for setting the contours.  But apparently you can't tell VCS just the min and max;
                 # you have to give it all the contour levels.  So...
+                if vcs.isboxfill(self.presentation):
+                    self.presentation.boxfill_type = 'custom'  # without this, can't set levels
                 nlevels = 16
                 try:
                     levels = [float(v) for v in vcs.mkscale( varmin, varmax, nlevels )]
@@ -545,9 +571,13 @@ class uvc_simple_plotspec():
         self.synchronize_values( pset )
         self.synchronize_axes(pset)
     def synchronize_values( self, pset, suffix_length=0 ):
-        "the part of synchronize_ranges for variable values only"
+        """the part of synchronize_ranges for variable values only"""
         if type(self.vars[0]) is tuple:
             print "ERROR synchronize_values hasn't been implemented for tuples",self.vars[0]
+
+        # First, go from the MV (TransientVariable) id attribute to the original variable name.
+        # This id attribute has the orginal name (e.g. PS) plus substrings to identify data type,
+        # source files, season, region, and sometimes more.
         sl = -suffix_length
         if sl==0:
             self_suffix = ""
@@ -564,11 +594,21 @@ class uvc_simple_plotspec():
             s_var_d = { v.id[sl:]:v.id for v in self.vars }
             p_var_d = { v.id[sl:]:v.id for v in pset.vars }
         var_ids = set(s_var_d.keys()) & set(p_var_d.keys())
+
         for vid in var_ids:
             #vids = vid+self_suffix
             #vidp = vid+pset_suffix
             vids = s_var_d[vid]
             vidp = p_var_d[vid]
+
+            # For big lists, this is a really slow way to find every matching pair of variables
+            # (MVs) in self & pvar.  But all the lists are always short, usually length 1.
+            for si,svar in enumerate(self.vars):
+                for pi,pvar in enumerate(pset.vars):
+                    if svar.units!=pvar.units and svar.id==s_var_d[vid] and pvar.id==p_var_d[vid]:
+                       self.vars[si],pset.vars[pi] = reconcile_units( svar, pvar ) 
+                       self.varmax[vids] = self.vars[si].max()
+                       pset.varmax[vidp] = pset.vars[pi].max()
             varmax = max( self.varmax[vids], pset.varmax[vidp] )
             varmin = min( self.varmin[vids], pset.varmin[vidp] )
             self.varmax[vids] = varmax
@@ -821,7 +861,7 @@ class plot_spec(object):
                 if ps._id != plotspec.dict_id( None, None, None, None, None ):
                     # not an empty plot
                     print "WARNING cannot compute data for",ps._strid
-                    print "due to exception",e
+                    print "due to exception",e.__class__.__name__,e
                 self.plotspec_values[p] = None
                 continue
             vars = []
