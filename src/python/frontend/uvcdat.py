@@ -374,26 +374,28 @@ class uvc_simple_plotspec():
                     axmin[ax] = min(axmin[ax],self.axmin[seqgetattr(v,'id','')][ax])
                 varmax = max(varmax,self.varmax[v.id])
                 varmin = min(varmin,self.varmin[v.id])                 
-#        elif vcs.isyxvsx(self.presentation) or\
-#                self.presentation.__class__.__name__=="GYx" or\
-#                self.presentation.__class__.__name__=="G1d":
-#            if len(axmax.keys())<=0:
-#                return None
-#            # VCS Yxvsx
-#            ax = axmax.keys()[0]
-#            if flip_x:
-#                self.presentation.datawc_x2 = axmin[ax]
-#                self.presentation.datawc_x1 = axmax[ax]
-#            else:
-#                self.presentation.datawc_x1 = axmin[ax]
-#                self.presentation.datawc_x2 = axmax[ax]
-#            if flip_y:
-#                self.presentation.datawc_y2 = varmin
-#                self.presentation.datawc_y1 = varmax
-#            else:
-#                self.presentation.datawc_y1 = varmin
-#                self.presentation.datawc_y2 = varmax
-#            print self.presentation.datawc_x1, self.presentation.datawc_x2, self.presentation.datawc_y1, self.presentation.datawc_y2
+            if vcs.isyxvsx(self.presentation) or\
+                    self.presentation.__class__.__name__=="GYx" or\
+                    self.presentation.__class__.__name__=="G1d":
+                if len(axmax.keys())<=0:
+                    return None
+                # VCS Yxvsx
+                ax = axmax.keys()[0]
+                if flip_x:
+                    self.presentation.datawc_x2 = axmin[ax]
+                    self.presentation.datawc_x1 = axmax[ax]
+                else:
+                    self.presentation.datawc_x1 = axmin[ax]
+                    self.presentation.datawc_x2 = axmax[ax]
+                if flip_y:
+                    self.presentation.datawc_y2 = varmin
+                    self.presentation.datawc_y1 = varmax
+                else:
+                    self.presentation.datawc_y1 = varmin
+                    self.presentation.datawc_y2 = varmax
+                #print "DEBUG, in finalize for line plot, datawc_{x1,x2,y1,y2}=",\
+                #    self.presentation.datawc_x1, self.presentation.datawc_x2,\
+                #    self.presentation.datawc_y1, self.presentation.datawc_y2
             if vcs.isisofill(self.presentation) or self.presentation.__class__.__name__=="Gfi"\
                     or vcs.isboxfill(self.presentation):
                 # VCS Isofill or Boxfill
