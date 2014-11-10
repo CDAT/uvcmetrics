@@ -112,20 +112,21 @@ class amwg_plot_spec(plot_spec):
         If unsuccessful, this will return None,None,None.
         """
         if filetable is None:
-            return None,None,None
+            return None,[],[]
         #if varnom not in amwg_plot_spec.standard_variables:
         if varnom not in cls.standard_variables:
-            return None,None,None
+            return None,[],[]
         computable = False
         for svd in cls.standard_variables[varnom]:  # loop over ways to compute varnom
             invarnoms = svd._inputs
+            print "jfp varnom=",varnom,"invarnoms=",invarnoms,"filetable.list_variables()=",filetable.list_variables()
             if len( set(invarnoms) - set(filetable.list_variables()) )<=0:
                 func = svd._func
                 computable = True
                 break
         if not computable:
             print "DEBUG: standard variable",varnom,"is not computable"
-            return None,None,None
+            return None,[],[]
         rvs = []
         for ivn in invarnoms:
             rv = reduced_variable( variableid=ivn, filetable=filetable, season=season,
@@ -1880,6 +1881,7 @@ class amwg_plot_set13(amwg_plot_spec):
         Region is an instance of the class rectregion (region.py).
         """
         plot_spec.__init__(self,seasonid)
+        region = self.interpret_region(region)
         self.reduced_variables = {}
         self.derived_variables = {}
         self.plottype = 'Boxfill'
@@ -1891,6 +1893,17 @@ class amwg_plot_set13(amwg_plot_spec):
         self.plotall_id = '_'.join([ft1id,ft2id,varnom,seasonid])
         if not self.computation_planned:
             self.plan_computation( filetable1, filetable2, varnom, seasonid, region )
+    @staticmethod
+    def interpret_region( region ):
+        """Tries to make sense of the input region, and returns the resulting instance of the class
+        rectregion in region.py."""
+        print "jfp interpet_region starting with",region,type(region)
+        if region is None:
+            region = "global"
+        if type(region) is str:
+            region = defines.all_regions[region]
+        print "jfp interpet_region returning with",region,type(region)
+        return region
     @staticmethod
     def _list_variables( filetable1, filetable2=None ):
         allvars = amwg_plot_set13._all_variables( filetable1, filetable2 )
@@ -1959,6 +1972,7 @@ class amwg_plot_set13(amwg_plot_spec):
             self.derived_variables[ dv.id() ] = dv
         return varid
     def plan_computation( self, filetable1, filetable2, varnom, seasonid, region ):
+        region = self.interpret_region( region )
         if varnom in filetable1.list_variables():
             vid1 = self.var_from_data( filetable1, varnom, seasonid, region )
         elif varnom in self.standard_variables.keys():
