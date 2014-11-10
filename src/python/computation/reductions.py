@@ -939,6 +939,8 @@ def reduce_time_space_seasonal_regional( mv, season, region, vid=None ):
 
     if vid == None:
         vid = 'reduced_'+mv.id
+    if region is None:
+        region = "global"
     if type(region) is str:
         region = defines.all_regions[region]
 
@@ -1442,6 +1444,7 @@ def aminusb_ax2( mv1, mv2 ):
 
 def reconcile_units( mv1, mv2, preferred_units=None ):
     """Changes the units of variables (instances of TransientVariable) mv1,mv2 to be the same,
+    mv1 is a TransientVariable.  mv2 may be a TransientVariable, or it may be a udunits object.
     If preferred units are specified, they will be used if possible."""
 # This probably needs expanded to be more general purpose for unit conversions.
     if hasattr(mv1,'units') and hasattr(mv2,'units') and\
@@ -1472,9 +1475,11 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
             mv1.units = target_units
         tmp = udunits(1.0,mv2.units)
         s,i = tmp.how(target_units)  # will raise an exception if conversion not possible
-        mv2id = mv2.id
+        if hasattr(mv2,'id'):  # yes for TransientVariable, no for udunits
+            mv2id = mv2.id
         mv2 = s*mv2 + i
-        mv2.id = mv2id
+        if hasattr(mv2,'id'):
+            mv2.id = mv2id
         mv2.units = target_units
     return mv1, mv2
 
