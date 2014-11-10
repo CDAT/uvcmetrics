@@ -1135,7 +1135,7 @@ class lmwg_plot_set5(lmwg_plot_spec):
          self.hasregions = 1
          self.setnmae = 'DIAG SET 5: REGIONAL HYDROLOGIC CYCLE OVER LAND'
          # Do the initial temporar reductions on Global
-         region = defines.all_regions['Global']['coords']
+         region = defines.all_regions['Global'].coords
          _red_vars = ['RAIN', 'SNOW', 'QVEGE', 'QVEGT', 'QSOIL', 'QOVER', 'QDRAI', 'QRGWL']
          _derived_varnames = ['PREC', 'CE', 'TOTRUNOFF']
          self.display_vars = ['PREC', 'QVEGE', 'QVEGEP', 'QVEGT', 'QSOIL', 'TOTRUNOFF']
@@ -1174,7 +1174,7 @@ class lmwg_plot_set5(lmwg_plot_spec):
 
       if 'Biogeophysics' in varid: 
          self.setname = 'DIAG SET 5: CLM ANNUAL MEANS OVER LAND'
-         region = defines.all_regions['Global']['coords']
+         region = defines.all_regions['Global'].coords
          _derived_varnames = ['PREC', 'RNET', 'LHEAT', 'CO2_PPMV', 'ET']
          _red_vars = ['TSA', 'RAIN', 'SNOW', 'SNOWDP', 'FSNO', 'H2OSNO', 'FSH', 'FSDS', 'FSA', 'FLDS', 
                       'FIRE', 'FCTR', 'FCEV', 'FGEV', 'FGR', 'FSM', 'TLAI', 'TSAI', 'LAISUN', 'LAISHA', 'QOVER', 
@@ -1225,7 +1225,7 @@ class lmwg_plot_set5(lmwg_plot_spec):
 
       if 'Carbon' in varid:
          self.setname = 'DIAG SET 5: CN ANNUAL MEANS OVER LAND'
-         region = defines.all_regions['Global']['coords']
+         region = defines.all_regions['Global'].coords
          _red_vars = ['NEE', 'NEP', 'GPP', 'PSNSUN_TO_CPOOL', 'PSNSHADE_TO_CPOOL', 'NPP', 'AGNPP', 'BGNPP', 
               'MR', 'GR', 'AR', 'LITHR', 'SOMHR', 'HR', 'RR', 'SR', 'ER', 'LEAFC', 'XSMRPOOL', 'SOIL3C', 'SOIL4C', 
               'FROOTC', 'LIVESTEMC', 'DEADSTEMC', 'LIVECROOTC', 'DEADCROOTC', 'CPOOL', 'TOTVEGC', 'CWDC', 'TOTLITC', 

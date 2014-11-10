@@ -6,7 +6,7 @@ import argparse
 
 import cdms2, os
 import metrics.packages as packages
-from defines import *
+from metrics.frontend.defines import *
 
 class Options():
    def __init__(self):
