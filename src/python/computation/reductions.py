@@ -939,8 +939,6 @@ def reduce_time_space_seasonal_regional( mv, season, region, vid=None ):
 
     if vid == None:
         vid = 'reduced_'+mv.id
-    if region is None:
-        region = "global"
     if type(region) is str:
         region = defines.all_regions[region]
 
