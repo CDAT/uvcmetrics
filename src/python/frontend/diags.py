@@ -155,6 +155,20 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
 
     number_diagnostic_plots = 0
     dm = diagnostics_menu()                 # dm = diagnostics menu (packages), a dict
+
+    if opts['plots'] == True:
+        vcanvas = vcs.init()
+        vcanvas.setcolormap('bl_to_darkred') #Set the colormap to the NCAR colors
+        vcanvas2 = vcs.init()
+        vcanvas2.portrait()
+        vcanvas2.setcolormap('bl_to_darkred') #Set the colormap to the NCAR colors
+#       vcanvas3 = vcs.init()
+        LINE = vcanvas.createline('LINE', 'default')
+        LINE.width = 3.0
+        LINE.type = 'solid'
+        LINE.color = 242
+
+
     for pname in packages:
         pclass = dm[pname.upper()]()
         # Find which plotsets the user requested which this package offers:
@@ -225,16 +239,6 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                         res = plot.compute(newgrid=-1) # newgrid=0 for original grid, -1 for coarse
                         if res is not None and len(res)>0:
                             if opts['plots'] == True:
-                                vcanvas = vcs.init()
-                                vcanvas.setcolormap('bl_to_darkred') #Set the colormap to the NCAR colors
-                                vcanvas2 = vcs.init()
-                                vcanvas2.portrait()
-                                vcanvas2.setcolormap('bl_to_darkred') #Set the colormap to the NCAR colors
-#                                vcanvas3 = vcs.init()
-                                LINE = vcanvas.createline('LINE', 'default')
-                                LINE.width = 3.0
-                                LINE.type = 'solid'
-                                LINE.color = 242
                                 rdone = 0
 
                                 # At this loop level we are making one compound plot.  In consists
@@ -281,6 +285,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                 # (below) because it contains some information such as axis and vector
                                 # scaling which is not yet done as part of
 
+                                vcanvas2.clear()
                                 ir = -1
                                 for r,resr in enumerate(res):
                                    if resr is None:
