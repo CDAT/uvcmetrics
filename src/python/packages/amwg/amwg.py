@@ -79,13 +79,71 @@ class amwg_plot_spec(plot_spec):
         'AODVIS':[derived_var(
                 vid='AODVIS', inputs=['AOD_550'], outputs=['AODVIS'],
                 func=(lambda x: setunits(x,'')) )],
+        # AOD normally has no units, but sometimes the units attribute is set anyway.
         'TREFHT':[derived_var(
                 vid='TREFHT', inputs=['TREFHT_LAND'], outputs=['TREFHT'],
                 func=(lambda x: x) )],
         'RESTOM':[derived_var(
                 vid='RESTOM', inputs=['FSNT','FLNT'], outputs=['RESTOM'],
-                func=aminusb )]   # RESTOM = net radiative flux
-        # AOD normally has no units, but sometimes the units attribute is set anyway.
+                func=aminusb )],   # RESTOM = net radiative flux
+
+        'CLISCCP':[derived_var(
+                vid='CLISCCP', inputs=['FISCCP1','isccp_prs','isccp_tau'], outputs=['CLISCCP'],
+                func=uncompress_fisccp1 )],
+        'CLDTOT_ISCCP':[
+            derived_var( vid='CLDTOT_ISCCP', inputs=['CLDTOT_ISCCPCOSP'], outputs=['CLDTOT_ISCCP'],
+                         func=(lambda x:x) ) ],
+        'CLDHGH_ISCCP':[
+            derived_var( vid='CLDHGH_ISCCP', inputs=['CLDHGH_ISCCPCOSP'], outputs=['CLDHGH_ISCCP'],
+                         func=(lambda x:x) ) ],
+        'CLDMED_ISCCP':[
+            derived_var( vid='CLDMED_ISCCP', inputs=['CLDMED_ISCCPCOSP'], outputs=['CLDMED_ISCCP'],
+                         func=(lambda x:x) ) ],
+        'CLDLOW_ISCCP':[
+            derived_var( vid='CLDLOW_ISCCP', inputs=['CLDLOW_ISCCPCOSP'], outputs=['CLDLOW_ISCCP'],
+                         func=(lambda x:x) ) ],
+        # Note: CLDTOT is different from CLDTOT_CAL, CLDTOT_ISCCPCOSP, etc.  But the translating
+        # from one to the other might be better than returning nothing.  Also, I'm not so sure that
+        # reduce_isccp_prs_tau is producing the right answers, but that's a problem for later.
+        'CLDTOT':[
+            derived_var(
+                vid='CLDTOT', inputs=['CLISCCP'], outputs=['CLDTOT'], func=reduce_isccp_prs_tau ),
+            derived_var( vid='CLDTOT', inputs=['CLDTOT_CAL'], outputs=['CLDTOT'],
+                         func=(lambda x: x) ),
+            derived_var( vid='CLDTOT', inputs=['CLDTOT_ISCCPCOSP'], outputs=['CLDTOT'],
+                         func=(lambda x: x) ) ],
+        'CLDHGH':[
+            derived_var(
+                vid='CLDHGH', inputs=['CLISCCP'], outputs=['CLDHGH'],
+                func=(lambda clisccp: reduce_isccp_prs_tau( clisccp( isccp_prs=(0,440)) )) ),
+            derived_var( vid='CLDHGH', inputs=['CLDHGH_CAL'], outputs=['CLDHGH'],
+                         func=(lambda x: x) ),
+            derived_var( vid='CLDHGH', inputs=['CLDHGH_ISCCPCOSP'], outputs=['CLDHGH'],
+                         func=(lambda x: x) ) ],
+        'CLDMED':[
+            derived_var(
+                vid='CLDMED', inputs=['CLISCCP'], outputs=['CLDMED'],
+                func=(lambda clisccp: reduce_isccp_prs_tau( clisccp( isccp_prs=(440,680)) )) ),
+            derived_var( vid='CLDMED', inputs=['CLDMED_CAL'], outputs=['CLDMED'],
+                         func=(lambda x: x) ),
+            derived_var( vid='CLDMED', inputs=['CLDMED_ISCCPCOSP'], outputs=['CLDMED'],
+                         func=(lambda x: x) ) ],
+        'CLDLOW':[
+            derived_var(
+                vid='CLDLOW', inputs=['CLISCCP'], outputs=['CLDLOW'],
+                func=(lambda clisccp: reduce_isccp_prs_tau( clisccp( isccp_prs=(680,numpy.inf)) )) ),
+            derived_var( vid='CLDLOW', inputs=['CLDLOW_CAL'], outputs=['CLDLOW'],
+                         func=(lambda x: x) ),
+            derived_var( vid='CLDLOW', inputs=['CLDLOW_ISCCPCOSP'], outputs=['CLDLOW'],
+                         func=(lambda x: x) ) ],
+        'CLDTHICK':[
+            derived_var(
+                vid='CLDTHICK', inputs=['CLISCCP'], outputs=['CLDTHICK'],
+                func=(lambda clisccp: reduce_isccp_prs_tau( clisccp( isccp_tau=(23.,numpy.inf)) )) ),
+            derived_var( vid='CLDTHICK', inputs=['CLDTHICK_CAL'], outputs=['CLDTHICK'],
+                         func=(lambda x: x) ),
+            derived_var( vid='CLDTHICK', inputs=['CLDTHICK_ISCCPCOSP'], outputs=['CLDTHICK'],
+                         func=(lambda x: x) ) ]
         }
     @staticmethod
     def _list_variables( filetable1, filetable2=None ):
@@ -704,8 +762,10 @@ class amwg_plot_set5and6(amwg_plot_spec):
         a standard_variable.  Its inputs will be reduced, then it will be set up as a derived_var.
         """
         varid,rvs,dvs = self.stdvar2var(
-            varnom, filetable, self.season, (lambda x,vid,season=self.season:
-                                                 reduce2latlon_seasonal(x, season, vid) ))
+            varnom, filetable, self.season,\
+                (lambda x,vid,season=self.season:
+                     reduce2latlon_seasonal(x, season, vid, exclude_axes=['isccp_prs','isccp_tau']) ))
+        #            ... isccp_prs, isccp_tau are used for cloud variables and need special treatment
         if varid is None:
             return None,None
         for rv in rvs:
