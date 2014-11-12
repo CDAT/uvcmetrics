@@ -1101,7 +1101,7 @@ class lmwg_plot_set5(lmwg_plot_spec):
 
    @staticmethod
    def _list_variables( filetable1, filetable2=None ):
-      varlist = ['Regional Hydrologic Cycle - Table', 'Global Biogeophysics - Table', 'Global Carbon/Nitrogen - Table']
+      varlist = ['Regional Hydrologic Cycle', 'Global Biogeophysics', 'Global Carbon/Nitrogen']
       if filetable2 != None:
          varlist.extend( [ 'Regional Hydrologic Cycle - Difference', 'Global Biogeophysics - Difference', 
                  'Global Carbon/Nitrogen - Difference'])
