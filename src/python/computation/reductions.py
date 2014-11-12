@@ -995,8 +995,9 @@ def reduce2latlon_seasonal_level( mv, season, level, vid=None):
    return mvseas
 
 
-def reduce2latlon_seasonal( mv, season, vid=None ):
+def reduce2latlon_seasonal( mv, season, vid=None, exclude_axes=[] ):
     """as reduce2lat_seasonal, but both lat and lon axes are retained.
+    Axis names (ids) may be listed in exclude_axes, to exclude them from the averaging process.
     """
     # This differs from reduce2lat_seasonal only in the line "axis_names ="....
     # I need to think about how to structure the code so there's less cut-and-paste!
@@ -1017,7 +1018,8 @@ def reduce2latlon_seasonal( mv, season, vid=None ):
         mvseas = season.climatology(mv)
     
     axes = allAxes( mv )
-    axis_names = [ a.id for a in axes if a.id!='lat' and a.id!='lon' and a.id!='time']
+    axis_names = [ a.id for a in axes if a.id!='lat' and a.id!='lon' and a.id!='time' and\
+                       a.id not in exclude_axes]
     axes_string = '('+')('.join(axis_names)+')'
 
     if len(axes_string)>2:
@@ -1070,6 +1072,29 @@ def reduce_time_seasonal( mv, seasons=seasonsyr, vid=None ):
     avmv.id = vid
     avmv = delete_singleton_axis( avmv, vid='time' )
     if hasattr( mv, 'units' ):
+        avmv.units = mv.units
+    return avmv
+
+def reduce_isccp_prs_tau( mv, vid=None ):
+    """Input is a transient variable.  Dimensions isccp_prs, isccp_tau are reduced - but not
+    by averaging as in most reduction functions.  The unweighted sum is applied instead."""
+    if vid is None:
+        vid = mv.id
+    axes = allAxes( mv )
+    print "jfp in reduce_isccp_prs_tau, mv.id=",mv.id
+    print "jfp in reduce_isccp_prs_tau, all axis names=",[a.id for a in axes]
+    axis_names = [ a.id for a in axes if a.id=='isccp_prs' or a.id=='isccp_tau']
+    print "jfp in reduce_isccp_prs_tau, axis_names=",axis_names
+    if len(axis_names)<=0:
+        return mv
+    else:
+        axes_string = '('+')('.join(axis_names)+')'
+        for axis in mv.getAxisList():
+            if axis.getBounds() is None:
+                axis._bounds_ = axis.genGenericBounds()
+        avmv = averager( mv, axis=axes_string, action='sum' )
+    avmv.id = vid
+    if hasattr(mv,'units'):
         avmv.units = mv.units
     return avmv
 
@@ -1455,6 +1480,10 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
             mv1.units = 'mbar/day' # udunits uses mb for something else
         if mv2.units=='mb/day':
             mv2.units = 'mbar/day' # udunits uses mb for something else
+        if mv1.units == 'fraction':
+            mv1.units = '1'
+        if mv2.units == 'fraction':
+            mv2.units = '1'
         if mv1.units == 'mixed':  # could mean anything...
             mv1.units = '1'       #... maybe this will work
         if mv2.units == 'mixed':  # could mean anything...
