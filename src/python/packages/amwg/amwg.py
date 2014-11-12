@@ -142,7 +142,7 @@ class amwg_plot_spec(plot_spec):
             derived_var( vid='CLDTHICK', inputs=['CLDTHICK_CAL'], outputs=['CLDTHICK'],
                          func=(lambda x: x) ),
             derived_var( vid='CLDTHICK', inputs=['CLDTHICK_ISCCPCOSP'], outputs=['CLDTHICK'],
-                         func=(lambda x: x) ) ]
+                         func=(lambda x: x) ) ],
         'TGCLDLWP':[derived_var(
                 vid='TGCLDLWP', inputs=['TGCLDLWP_OCEAN'], outputs=['TGCLDLWP'],
                 func=(lambda x: x) ) ]
