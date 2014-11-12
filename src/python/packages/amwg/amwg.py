@@ -86,7 +86,6 @@ class amwg_plot_spec(plot_spec):
         'RESTOM':[derived_var(
                 vid='RESTOM', inputs=['FSNT','FLNT'], outputs=['RESTOM'],
                 func=aminusb )],   # RESTOM = net radiative flux
-
         'CLISCCP':[derived_var(
                 vid='CLISCCP', inputs=['FISCCP1','isccp_prs','isccp_tau'], outputs=['CLISCCP'],
                 func=uncompress_fisccp1 )],
@@ -144,6 +143,9 @@ class amwg_plot_spec(plot_spec):
                          func=(lambda x: x) ),
             derived_var( vid='CLDTHICK', inputs=['CLDTHICK_ISCCPCOSP'], outputs=['CLDTHICK'],
                          func=(lambda x: x) ) ]
+        'TGCLDLWP':[derived_var(
+                vid='TGCLDLWP', inputs=['TGCLDLWP_OCEAN'], outputs=['TGCLDLWP'],
+                func=(lambda x: x) ) ]
         }
     @staticmethod
     def _list_variables( filetable1, filetable2=None ):
@@ -526,7 +528,7 @@ class amwg_plot_set4(amwg_plot_spec):
         allvars = amwg_plot_set4._all_variables( filetable1, filetable2 )
         listvars = allvars.keys()
         listvars.sort()
-        print "amwg plot set 4 listvars=",listvars
+#        print "amwg plot set 4 listvars=",listvars
         return listvars
     @staticmethod
     def _all_variables( filetable1, filetable2=None ):

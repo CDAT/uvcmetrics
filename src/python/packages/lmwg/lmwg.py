@@ -2,13 +2,15 @@
 
 
 # TODO List
-# DONE 1) Fix up set6b level plots (need one more level of lambda abstraction?) 
-# DONE 2) Finish 6b soil ice/water (need clean way to sum levels 1:10) 
-# DONE 3) Redo derived vars in 1,2,3, and 6 (given DUVs functionality, revisit things like evapfrac) 
-# 4) Fix obs vs model variable name issues (requires lots of framework changes, probably need Jeff to poke at it)
-# 5) Merge set3b and 6b code since it is very similar
-# 6) Further code clean up IN PROGRESS
-# 7) Work on set 5 IN PROGRESS
+# 1) Fix multiple plots->single png (set 3, set 6 primarily, set 1/2 level vars). Need to investigate template stuff
+# 2) Fix obs vs model variable name issues (requires lots of framework changes, probably need Jeff to poke at it) DONE for hardcoded variables
+# 3) Merge set3(b) and 6(b) code since it is very similar. Readd set3b/6b and make them work in case EA needs them? Does EA need them?
+# 4) Further code clean up IN PROGRESS
+# 5) Work on set 5 DONE
+# 6) Work on set 9 IN PROGRESS
+# 7) Work on splitting up opts and add >2 filetable support
+# 8) Clean up computation/reductions.py redundant/duplicated functions
+# 9) Fix labels on set 3 (numbers->JAN FEB ... DEC) (Email sent to Jim/Jeff)
 
 from metrics.packages.diagnostic_groups import *
 #from metrics.packages.common.diagnostic_groups import *
@@ -133,7 +135,7 @@ class prereduce ( reduced_variable ):
       duv = derived_var(var+'_'+region, inputs=[var], func=reduceAnnSingle)
       reduced_variable.__init__(
          self, variableid=var+'_'+region, filetable=filetable, 
-         reduction_function=(lambda x, vid=None: reduceRegion(x, defines.all_regions[region], vid=vid)),
+         reduction_function=(lambda x, vid=None: reduceRegion(x, defines.all_regions[region]['coords'], vid=vid)),
          duvs={var+'_'+region:duv})
 
 class co2ppmvTrendRegionSingle( reduced_variable ):
@@ -259,7 +261,7 @@ class lmwg_plot_set1(lmwg_plot_spec):
       self.reduced_variables = {}
       self.derived_variables = {}
       # No need for a separate function just use global. 
-      region = defines.all_regions['Global']
+      region = defines.all_regions['Global']['coords']
 
       # Take care of the oddballs first.
       if varid in lmwg_plot_set1._level_vars:
@@ -351,7 +353,7 @@ class lmwg_plot_set1(lmwg_plot_spec):
          # Now some derived variables that are sums over a level dimension
          if varid == 'TOTSOILICE' or varid=='TOTSOILLIQ':
             self.composite_plotspecs[self.plotall_id] = []
-            region = defines.all_regions['Global']
+            region = defines.all_regions['Global']['coords']
             if varid == 'TOTSOILICE':
                vname = 'SOILICE'
             else:
@@ -1069,8 +1071,14 @@ class lmwg_plot_set5(lmwg_plot_spec):
    varlist = []
    name = '5 - Tables of annual means'
    number = '5'
-   def __init__( self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None):
+
+   # This jsonflag is gross, but Options has always been a 2nd class part of the design. Maybe I'll get to
+   # change that for the next release.
+   def __init__( self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None, jsonflag=False):
+      print 'jsonflag passed in: ', jsonflag
       plot_spec.__init__(self,seasonid)
+      self.jsonflag = jsonflag
+      print 'jsonflag passed in: ', jsonflag
       self.plottype = 'Isofill'
       if self._seasonid == 'ANN':
          self.season = cdutil.times.Seasons('JFMAMJJASOND')
@@ -1127,7 +1135,7 @@ class lmwg_plot_set5(lmwg_plot_spec):
          self.hasregions = 1
          self.setnmae = 'DIAG SET 5: REGIONAL HYDROLOGIC CYCLE OVER LAND'
          # Do the initial temporar reductions on Global
-         region = defines.all_regions['Global']
+         region = defines.all_regions['Global']['coords']
          _red_vars = ['RAIN', 'SNOW', 'QVEGE', 'QVEGT', 'QSOIL', 'QOVER', 'QDRAI', 'QRGWL']
          _derived_varnames = ['PREC', 'CE', 'TOTRUNOFF']
          self.display_vars = ['PREC', 'QVEGE', 'QVEGEP', 'QVEGT', 'QSOIL', 'TOTRUNOFF']
@@ -1166,7 +1174,7 @@ class lmwg_plot_set5(lmwg_plot_spec):
 
       if 'Biogeophysics' in varid: 
          self.setname = 'DIAG SET 5: CLM ANNUAL MEANS OVER LAND'
-         region = defines.all_regions['Global']
+         region = defines.all_regions['Global']['coords']
          _derived_varnames = ['PREC', 'RNET', 'LHEAT', 'CO2_PPMV', 'ET']
          _red_vars = ['TSA', 'RAIN', 'SNOW', 'SNOWDP', 'FSNO', 'H2OSNO', 'FSH', 'FSDS', 'FSA', 'FLDS', 
                       'FIRE', 'FCTR', 'FCEV', 'FGEV', 'FGR', 'FSM', 'TLAI', 'TSAI', 'LAISUN', 'LAISHA', 'QOVER', 
@@ -1217,7 +1225,7 @@ class lmwg_plot_set5(lmwg_plot_spec):
 
       if 'Carbon' in varid:
          self.setname = 'DIAG SET 5: CN ANNUAL MEANS OVER LAND'
-         region = defines.all_regions['Global']
+         region = defines.all_regions['Global']['coords']
          _red_vars = ['NEE', 'NEP', 'GPP', 'PSNSUN_TO_CPOOL', 'PSNSHADE_TO_CPOOL', 'NPP', 'AGNPP', 'BGNPP', 
               'MR', 'GR', 'AR', 'LITHR', 'SOMHR', 'HR', 'RR', 'SR', 'ER', 'LEAFC', 'XSMRPOOL', 'SOIL3C', 'SOIL4C', 
               'FROOTC', 'LIVESTEMC', 'DEADSTEMC', 'LIVECROOTC', 'DEADCROOTC', 'CPOOL', 'TOTVEGC', 'CWDC', 'TOTLITC', 
@@ -1248,6 +1256,7 @@ class lmwg_plot_set5(lmwg_plot_spec):
       self.computation_planned = True
 
    def _results(self,newgrid=0):
+      print 'JSON FLAG', self.jsonflag
       # Do we have some first-pass variables to do?
       if self.reduced_variables1 != None:
          for v in self.reduced_variables1.keys():
@@ -1277,111 +1286,114 @@ class lmwg_plot_set5(lmwg_plot_spec):
 
       varvals = self.variable_values
 
-      if self.hasregions == 1:
-         # An attempt to make this look pretty....
-         rk = defines.all_regions.keys()
-         rk.sort()
-         maxl = max(map(len, rk))
+      # See if we have json set
+      if self.jsonflag == True:
+         print 'json set'
+      else:
+         if self.hasregions == 1:
+            # An attempt to make this look pretty....
+            rk = defines.all_regions.keys()
+            rk.sort()
+            maxl = max(map(len, rk))
 
-         # Headers
-         sys.stdout.write('%s' % self.setname)
-         if self.differences == 1:
-            print ' - DIFFERENCE (case1 - case2)'
-         else:
-            sys.stdout.write('\n')
-
-         print 'TEST CASE (case1): '
-         print 'REFERENCE CASE (case2): '
-         if self.differences == 1:
-            print 'DIFFERENCE: '
-         print 'Variables:'
-         print '\t\t\t PREC = ppt: rain+snow ((mm/y))'
-         print '\t\t\t QVEGE = canopy evaporation ((mm/y))'
-         print '\t\t\t QVEGEP = canopy evap:QVEGE/(RAIN+SNOW)*100 ((%))'
-         print '\t\t\t QVEGT = canopy transpiration ((mm/y))'
-         print '\t\t\t QSOIL = ground evaporation ((mm/y))'
-         print '\t\t\t TOTRUNOFF = Runoff:qover+qdrai+qrgwl ((mm/y))'
-         print '%-*s\tPREC(mm/y)\t\tQVEGE(mm/y)\t\tQVEGEP(%%)\t\t\tQVEGT\t\t\tQSOIL(mm/y)\t\tTOTRUNOFF(mm/y)' % ((maxl+3), 'Region')
-
-
-         if self.twosets == 1:
-            print 'case1\t\tcase2\t\tcase1\t\tcase2\t\tcase1\t\tcase2\t\tcase1\t\tcase2\t\tcase1\t\tcase2\t\tcase1\t\tcase2'
-         else:
+            # Headers
+            sys.stdout.write('%s' % self.setname)
             if self.differences == 1:
-               print 'diff\t\tdiff\t\tdiff\t\tdiff\t\tdiff\t\tdiff'
+               print ' - DIFFERENCE (case1 - case2)'
             else:
-               print '\t\t\t\t\t\tcase1\t\t\tcase1\t\t\tcase1\t\t\t\tcase1\t\t\tcase1\t\t\tcase1'
-
-#         sys.stdout.write(ostr % ' ')
-         if self.differences == 1:
-            sys.stdout.write('\t')
-         print '\t\t\t\t\t\tppt: rain+snow\tcanopy evaporation\tcanopy evap:QVEGE/(RAIN+SNOW)*100\tcanopy transpiration\tground evaporation\tRunoff:qover+qdrai+qrgwl'
-
-         # Dump out the data now
-         for r in rk:
-            ostr = '%-'+str(maxl+3)+'s\t'
-            sys.stdout.write(ostr % r)
-            sys.stdout.write('%8.3f\t' % varvals['PREC_'+r+'_1'])
-            if self.twosets == 1:
-               sys.stdout.write('%8.3f\t' % varvals['PREC_'+r+'_2'])
-            else:
-               sys.stdout.write('\t')
-            sys.stdout.write('%8.3f\t' % varvals['QVEGE_'+r+'_1'])
-            if self.twosets == 1:
-               sys.stdout.write('%8.3f\t' % varvals['QVEGE_'+r+'_2'])
-            else:
-               sys.stdout.write('\t')
-            sys.stdout.write('%8.3f\t' % varvals['QVEGEP_'+r+'_1'])
-            if self.twosets == 1:
-               sys.stdout.write('%8.3f\t' % varvals['QVEGEP_'+r+'_2'])
-            else:
-               sys.stdout.write('\t\t')
-            sys.stdout.write('%8.3f\t' % varvals['QVEGT_'+r+'_1'])
-            if self.twosets == 1:
-               sys.stdout.write('%8.3f\t' % varvals['QVEGT_'+r+'_2'])
-            else:
-               sys.stdout.write('\t')
-            sys.stdout.write('%8.3f\t' % varvals['QSOIL_'+r+'_1'])
-            if self.twosets == 1:
-               sys.stdout.write('%8.3f\t' % varvals['QSOIL_'+r+'_2'])
-            else:
-               sys.stdout.write('\t\t')
-            sys.stdout.write('%8.3f\t' % varvals['TOTRUNOFF_'+r+'_1'])
-            if self.twosets == 1:
-               sys.stdout.write('%8.3f\t' % varvals['TOTRUNOFF_'+r+'_2'])
-            sys.stdout.write('\n')
-
-      else: # var 2 or 3
-         from metrics.packages.lmwg.defines import varinfo
-         descmax = max(map(len, [varinfo[x]['desc'] for x in self.display_vars]))
-         unitmax = max(map(len, [varinfo[x]['RepUnits'] for x in self.display_vars]))
-         varmax  = max(map(len, self.display_vars))
-         print 'desc: ', descmax, 'unit: ', unitmax, 'var: ', varmax
-
-         if self.difference == 0:
-            print 'DATA SET 5: CLM ANNUAL MEANS OVER LAND - DIFFERENCE (case1 - case2)'
-            print 'TEST CASE (case1): '
-            print 'REFERENCE CASE (case2): '
-            print 'DIFFERENCE: '
-            print '%-*s %-12s' % (varmax+descmax+unitmax, 'Variable', 'case1-case2')
-            for v in self.display_vars:
-               if varvals[v+'_1'] == None:
-#                  print v,' was none. setting to -999.000'
-                  varvals[v+'_1'] = -999.000
-               sys.stdout.write('%-*s(%-*s) %-*s %8.3f' % (varmax, v, unitmax, varinfo[v]['RepUnits'], descmax, varinfo[v]['desc'], varvals[v+'_1']))
-               if self.twosets == 1:
-                  sys.stdout.write(' %8.3f' % varvals[v+'_2'])
                sys.stdout.write('\n')
-         else:
-            print 'DATA SET 5: CLM ANNUAL MEANS OVER LAND - DIFFERENCE (case1 - case2)'
+
             print 'TEST CASE (case1): '
             print 'REFERENCE CASE (case2): '
-            print 'DIFFERENCE: '
-            print '%-*s %-12s' % (varmax+descmax+unitmax, 'Variable', 'case1-case2')
-            for v in self.display_vars:
-               if varvals[v+'_diff'] == None:
-                  varvals[v+'_diff'] = -999.00
-               sys.stdout.write('%-*s(%-*s) %-*s %10.7f\n' % (varmax, v, unitmax, varinfo[v]['RepUnits'], descmax, varinfo[v]['desc'], varvals[v+'_diff']))
+            if self.differences == 1:
+               print 'DIFFERENCE: '
+            print 'Variables:'
+            print '\t\t\t PREC = ppt: rain+snow ((mm/y))'
+            print '\t\t\t QVEGE = canopy evaporation ((mm/y))'
+            print '\t\t\t QVEGEP = canopy evap:QVEGE/(RAIN+SNOW)*100 ((%))'
+            print '\t\t\t QVEGT = canopy transpiration ((mm/y))'
+            print '\t\t\t QSOIL = ground evaporation ((mm/y))'
+            print '\t\t\t TOTRUNOFF = Runoff:qover+qdrai+qrgwl ((mm/y))'
+            print '%-*s\tPREC(mm/y)\t\tQVEGE(mm/y)\t\tQVEGEP(%%)\t\t\tQVEGT\t\t\tQSOIL(mm/y)\t\tTOTRUNOFF(mm/y)' % ((maxl+3), 'Region')
+
+
+            if self.twosets == 1:
+               print 'case1\t\tcase2\t\tcase1\t\tcase2\t\tcase1\t\tcase2\t\tcase1\t\tcase2\t\tcase1\t\tcase2\t\tcase1\t\tcase2'
+            else:
+               if self.differences == 1:
+                  print 'diff\t\tdiff\t\tdiff\t\tdiff\t\tdiff\t\tdiff'
+               else:
+                  print '\t\t\t\t\t\tcase1\t\t\tcase1\t\t\tcase1\t\t\t\tcase1\t\t\tcase1\t\t\tcase1'
+
+   #         sys.stdout.write(ostr % ' ')
+            if self.differences == 1:
+               sys.stdout.write('\t')
+            print '\t\t\t\t\t\tppt: rain+snow\tcanopy evaporation\tcanopy evap:QVEGE/(RAIN+SNOW)*100\tcanopy transpiration\tground evaporation\tRunoff:qover+qdrai+qrgwl'
+
+            # Dump out the data now
+            for r in rk:
+               ostr = '%-'+str(maxl+3)+'s\t'
+               sys.stdout.write(ostr % r)
+               sys.stdout.write('%8.3f\t' % varvals['PREC_'+r+'_1'])
+               if self.twosets == 1:
+                  sys.stdout.write('%8.3f\t' % varvals['PREC_'+r+'_2'])
+               else:
+                  sys.stdout.write('\t')
+               sys.stdout.write('%8.3f\t' % varvals['QVEGE_'+r+'_1'])
+               if self.twosets == 1:
+                  sys.stdout.write('%8.3f\t' % varvals['QVEGE_'+r+'_2'])
+               else:
+                  sys.stdout.write('\t')
+               sys.stdout.write('%8.3f\t' % varvals['QVEGEP_'+r+'_1'])
+               if self.twosets == 1:
+                  sys.stdout.write('%8.3f\t' % varvals['QVEGEP_'+r+'_2'])
+               else:
+                  sys.stdout.write('\t\t')
+               sys.stdout.write('%8.3f\t' % varvals['QVEGT_'+r+'_1'])
+               if self.twosets == 1:
+                  sys.stdout.write('%8.3f\t' % varvals['QVEGT_'+r+'_2'])
+               else:
+                  sys.stdout.write('\t')
+               sys.stdout.write('%8.3f\t' % varvals['QSOIL_'+r+'_1'])
+               if self.twosets == 1:
+                  sys.stdout.write('%8.3f\t' % varvals['QSOIL_'+r+'_2'])
+               else:
+                  sys.stdout.write('\t\t')
+               sys.stdout.write('%8.3f\t' % varvals['TOTRUNOFF_'+r+'_1'])
+               if self.twosets == 1:
+                  sys.stdout.write('%8.3f\t' % varvals['TOTRUNOFF_'+r+'_2'])
+               sys.stdout.write('\n')
+         else: # var 2 or 3
+            from metrics.packages.lmwg.defines import varinfo
+            descmax = max(map(len, [varinfo[x]['desc'] for x in self.display_vars]))
+            unitmax = max(map(len, [varinfo[x]['RepUnits'] for x in self.display_vars]))
+            varmax  = max(map(len, self.display_vars))
+            print 'desc: ', descmax, 'unit: ', unitmax, 'var: ', varmax
+
+            if self.difference == 0:
+               print 'DATA SET 5: CLM ANNUAL MEANS OVER LAND - DIFFERENCE (case1 - case2)'
+               print 'TEST CASE (case1): '
+               print 'REFERENCE CASE (case2): '
+               print 'DIFFERENCE: '
+               print '%-*s %-12s' % (varmax+descmax+unitmax, 'Variable', 'case1-case2')
+               for v in self.display_vars:
+                  if varvals[v+'_1'] == None:
+   #                  print v,' was none. setting to -999.000'
+                     varvals[v+'_1'] = -999.000
+                  sys.stdout.write('%-*s(%-*s) %-*s %8.3f' % (varmax, v, unitmax, varinfo[v]['RepUnits'], descmax, varinfo[v]['desc'], varvals[v+'_1']))
+                  if self.twosets == 1:
+                     sys.stdout.write(' %8.3f' % varvals[v+'_2'])
+                  sys.stdout.write('\n')
+            else:
+               print 'DATA SET 5: CLM ANNUAL MEANS OVER LAND - DIFFERENCE (case1 - case2)'
+               print 'TEST CASE (case1): '
+               print 'REFERENCE CASE (case2): '
+               print 'DIFFERENCE: '
+               print '%-*s %-12s' % (varmax+descmax+unitmax, 'Variable', 'case1-case2')
+               for v in self.display_vars:
+                  if varvals[v+'_diff'] == None:
+                     varvals[v+'_diff'] = -999.00
+                  sys.stdout.write('%-*s(%-*s) %-*s %10.7f\n' % (varmax, v, unitmax, varinfo[v]['RepUnits'], descmax, varinfo[v]['desc'], varvals[v+'_diff']))
 
          
 

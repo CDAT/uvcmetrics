@@ -886,9 +886,9 @@ def reduceMonthlyRegion(mv, region, vid=None):
 def reduceRegion(mv, region, vid=None):
    if type(region) is dict:
       r = region[region.keys()[0]]
-      region = defines.all_regions[r]
+      region = defines.all_regions[r]['coords']
    if type(region) is str:
-      r = defines.all_regions[region]
+      r = defines.all_regions[region]['coords']
       region = r
 #   print 'in reduce region. region/mv: ', region, mv.id
    if vid == None:
@@ -1492,6 +1492,18 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
             mv1.units = '1'       #... maybe this will work
         if mv2.units == 'unitless':  # could mean anything...
             mv2.units = '1'       #... maybe this will work
+        if mv1.units == 'W/m~S~2~N~' or mv1.units == 'W/m~S~2~N':
+            mv1.units = 'W/m^2'
+        if mv2.units == 'W/m~S~2~N~' or mv2.units == 'W/m~S~2~N':
+            mv2.units = 'W/m^2'
+        if mv1.units =='fraction' and (mv2.units == 'percent' or mv2.units == '%'):
+            mv1 = 100*mv1
+            mv1.units=mv2.units
+            return mv1, mv2
+        if mv2.units =='fraction' and (mv1.units == 'percent' or mv1.units == '%'):
+            mv2 = 100*mv2
+            mv2.units=mv1.units
+            return mv1, mv2
         if preferred_units is None:
             target_units = mv1.units
         else:
