@@ -4,6 +4,12 @@
 
 ### TODO: Find NCEP link, copy ocean basin map
 
+### This dictionary is used to create the classic view front page. The format is:
+### preamble - any description before the plot links. Typically a summary/header of what the set is.
+### desc: The description of the set, used by the front end web generator
+### seasons: Which seasons are applicable to the page. Mostly used to determine how many "plot" columns need made
+### NOTE: If you add a set, there is some code in core.js that needs updated to clear the page when switching between diagnostic sets. Grep for topten to find it.
+
 amwgsets = {}
 amwgsets['topten']={'preamble':'', 'desc':'Tier 1A Diagnostics', 'seasons':'NA'}
 amwgsets['1'] ={'preamble': '', 'desc': 'Tables of ANN, DJF, JJA, global and regional means and RMSE.', 'seasons':'NA'}
@@ -23,7 +29,23 @@ amwgsets['13']={'preamble': '', 'desc': 'ISCCP cloud simulator plots ', 'seasons
 amwgsets['14']={'preamble': '<p>Taylor Diagrams were developed by Karl Taylor at PCMDI (<a href="http://www.agu.org/pubs/crossref/2001/2000JD900719.shtml">paper</a>|<a href="http://www-pcmdi.llnl.gov/publications/pdf/55.pdf">tech note</a>) and aim to condense information about variance and RMSE characteristics of a particular model run when compared with observations in a single diagram. The tables summarize the individual metrics for each variable considered including: <ul><br> <li>bias, as absolute percentage difference from observations <li>variance, as a ratio of the observed variance <li>correlation, correlation coefficient with observations </ul><p>', 'desc': 'Taylor Diagram plots ', 'seasons':'NA'}
 amwgsets['15']={'preamble': '', 'desc': 'Annual Cycle at Select Stations plots', 'seasons':['ANN']}
 
+### This dictionary is used to convert a full descriptive name of an obs set into the more minimal chunk of filename used for the obs set and for resultant PNGS
+### These were taken from NCAR code
+### Format is "long name":"short name" 
+
 obsprefix={'GPCP 1979-2003 - Tropics': 'GPCP_TROP', 'SMMR and SSM/I 1979-1999': 'SSMI', 'NCEP Reanalysis 1979-98 - Tropics': 'NCEP_TROP', 'NVAP 1988-1999': 'NVAP', 'NVAP 1988-1999 - Tropics': 'NVAP_TROP', 'North Slope of Alaska (NSA)': 'NSA', 'ISCCP D2 1983-2001': 'ISCCP', 'NA': 'N/A', 'Tropical Western Pacific--Region 2 (TWP2)': 'TWP2', 'CMAP (Xie-Arkin) 1979-98 - Tropics': 'XA_TROP', 'ERA40 Reanalysis 1980-2001': 'ERA40', 'PREC/L (CMAP) 1948-2001': 'PRECL', 'ECMWF Reanalysis 1979-93': 'ECMWF', 'SSM/I (Wentz) 1987-2000': 'SSMI', 'CMAP (Xie-Arkin) 1979-98': 'XA', 'Southern Great Plains (SGP)': 'SGP', 'Legates and Willmott 1920-80': 'LEGATES', 'HadISST/OI.v2 (Pre-Indust) 1870-1900': 'HADISST_PI', 'CERES2 March 2000-October 2005': 'CERES2', 'JRA25 Reanalysis 1979-04': 'JRA25', 'ISCCP FD Jul1983-Dec2000': 'ISCCP', 'ERBE Feb1985-Apr1989 - Tropics': 'ERBE_TROP', 'MODIS Mar2000-Aug2004 - Tropics': 'MODIS_TROP', 'SSM/I (Wentz) 1987-2000 - Tropics': 'SSMI_TROP', 'TRMM (3B43) 1998-Feb2004 - Tropics': 'TRMM_TROP', 'GPCP 1979-2003': 'GPCP', 'Legates and Willmott 1920-80 - Tropics': 'LEGATES_TROP', 'CLOUDSAT (Radar+Lidar) Sep2006-Nov2008': 'CLOUDSAT', 'ERA40 Reanalysis 1980-2001 - Tropics': 'ERA40_TROP', 'CERES 2000-2003': 'CERES', 'IPCC/CRU Climatology 1961-90': 'CRU', 'ERS Scatterometer 1992-2000': 'ERS', 'Tropical Western Pacific--Region 3 (TWP3)': 'TWP3', 'ISCCP D1 Daytime Jul1983-Sep2001': 'ISCCP', 'Large-Yeager 1984-2004 - Tropics': 'LARYEA_TROP', 'ERS Scatterometer 1992-2000 - Tropics': 'ERS_TROP', 'JRA25 Reanalysis 1979-04 - Tropics': 'JRA25_TROP', 'Large-Yeager 1984-2004': 'LARYEA', 'Surface Heat Budget of the Arctic Ocean (SHEBA)': 'SHEBA', 'NCEP Reanalysis 1979-98': 'NCEP', 'CERES2 March 2000-October 2005 - Tropics': 'CERES2_TROP', 'HadISST/OI.v2 (Present Day) 1999-2008': 'HADISST_PD', 'TRMM (3B43) 1998-Feb2004': 'TRMM', 'ERBE Feb1985-Apr1989': 'ERBE', 'ECMWF Reanalysis 1979-93 - Tropics': 'ECMWF_TROP', 'Willmott and Matsuura 1950-99': 'WILLMOTT', 'Woods Hole OAFLUX 1958-2006': 'WHOI', 'MODIS Mar2000-Aug2004': 'MODIS', 'Tropical Western Pacific--Region 1 (TWP1)': 'TWP1', 'HadISST/OI.v2 (Climatology) 1982-2001': 'HADISST', 'AIRS IR Sounder 2002-06': 'AIRS', 'Warren Cloud Surface OBS': 'WARREN', 'CERES 2000-2003 - Tropics': 'CERES_TROP', 'ERA Interim Reanalysis' : 'ERAI', 'CERES-EBAF':'CERES-EBAF', 'AOD Data': 'AOD_550'}
+
+### This dictionary controls which variables belong in which diagnostics sets and which observation sets make sense for each variable. 
+### The format is:
+### 'desc': A description of the variable name. Used for generating row text in the plot set web pages
+### 'obssets' A dictionary
+###       The format is a long name (identical to one in obsprefix) and then a filekey and list of sets that variable is used in. 
+###       Multiple entries are supported
+### 'sets': A list of stringified sets this variable is used in. 
+### Example:
+### varinfo['PSL_SOUTH']={'desc': 'Sea-level pressure (Southern)', 'obssets': {'NCEP Reanalysis 1979-98': {'filekey': 'NCEP', 'usedin': ['7']}, 'JRA25 Reanalysis 1979-04': {'filekey': 'JRA25', 'usedin': ['7']}}, 'sets': ['7']}
+### PSL_SOUTH is used in sets 7. In set 7, the NCEP Reanalysis 1979-98 set is used and has the shortname "NCEP" for the files. It is used in set 7. PSL_SOUTH is also used with the JRA25 Reanalysis 1979-84 obs set which is
+### named JRA25 on disk
 
 varinfo={}
 varinfo['PSL_SOUTH']={'desc': 'Sea-level pressure (Southern)', 'obssets': {'NCEP Reanalysis 1979-98': {'filekey': 'NCEP', 'usedin': ['7']}, 'JRA25 Reanalysis 1979-04': {'filekey': 'JRA25', 'usedin': ['7']}}, 'sets': ['7']}
