@@ -64,6 +64,7 @@ setup (name = "metrics",
                   "src/python/frontend/climatology.py",
                   "src/python/frontend/climatology",
                   "src/python/frontend/metadiags.py",
+                  "src/python/frontend/lmwgdiags.py",
                   "src/python/frontend/amwgdiags.py"],
        data_files = [("share/uvcmetrics",("share/uvcmetrics.json",)),
                     ]
