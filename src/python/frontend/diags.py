@@ -133,7 +133,11 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
     outdir = opts['outputdir']
     if outdir is None:
         outdir = os.path.join(os.environ['HOME'],"tmp","diagout")
+        print 'Writing output to %s. Override with --outputdir option' % outdir
 
+    basename = opts['outputpre']
+    postname = opts['outputpost']
+      
     # Note:verifyOptions() should prevent this from being none. There used to be a quit() in
     # there but I removed it. (BES)
     if opts['packages'] is None:
@@ -193,6 +197,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
         for sname in plotsets:
             print "plot set",sname
             snum = sname.strip().split(' ')[0]
+
             sclass = sm[sname]
             seasons = list( set(seasons) & set(pclass.list_seasons()) )
             for seasonid in seasons:
@@ -235,10 +240,28 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                 print "No plots will be made."
 
                     for aux in varopts:
-                        plot = sclass( filetable1, filetable2, varid, seasonid, region, vvaropts[aux] )
+                        # Since Options is a 2nd class (at best) citizen, we have to do something icky like this.
+                        # hoping to change that in a future release. Also, I can see this being useful for amwg set 1.
+                        # (Basically, if we output pre-defined json for the tables they can be trivially sorted)
+                        if '5' in snum and pname.upper() == 'LMWG' and opts['json'] == True:
+                           plot = sclass( filetable1, filetable2, varid, seasonid, region, vvaropts[aux], jsonflag=True )
+                        else:
+                           plot = sclass( filetable1, filetable2, varid, seasonid, region, vvaropts[aux] )
                         res = plot.compute(newgrid=-1) # newgrid=0 for original grid, -1 for coarse
                         if res is not None and len(res)>0:
                             if opts['plots'] == True:
+                                vcanvas = vcs.init()
+                                vcanvas.setcolormap('bl_to_darkred') #Set the colormap to the NCAR colors
+                                vcanvas2 = vcs.init()
+                                vcanvas2.portrait()
+                                vcanvas2.setcolormap('bl_to_darkred') #Set the colormap to the NCAR colors
+                                try:
+                                   LINE = vcanvas.createline('LINE', 'default')
+                                except:
+                                   LINE = vcanvas.getline('LINE')
+                                LINE.width = 3.0
+                                LINE.type = 'solid'
+                                LINE.color = 242
                                 rdone = 0
 
                                 # At this loop level we are making one compound plot.  In consists
@@ -332,10 +355,25 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                                    # and if id doesn't exist, the system will create one before plotting!
 
                                                vname = vname.replace('/', '_')
-                                               fname = outdir+'/figure-set'+snum+'_'+rname+'_'+seasonid+'_'+\
-                                                   vname+'_plot-'+str(r)+'.png'
-                                               print "writing png file",fname
-                                               #rsr.presentation.script("jeff.json")   #example of writing a json file
+                                               if basename == None and postname == None:
+                                                  fname = outdir+'/figure-set'+snum+'_'+rname+'_'+seasonid+'_'+\
+                                                      vname+'_plot-'+str(r)+'.png'
+                                                  print "writing png file",fname
+                                               else:
+                                                  pname = postname
+                                                  if pname == None:
+                                                      pname = ''
+                                                  if basename == '' or basename == None:
+                                                      basename = 'set'+snum
+                                                  if '_obs' in vname or '_diff' in vname:
+                                                      if '_diff' in vname:
+                                                          pname = postname+'_diff'
+                                                      # Note postname will have the obsfile key and things like _NP
+                                                      fname = outdir+'/'+basename+'_'+seasonid+'_'+varid+pname+'.png'
+                                                      print "writing png file1",fname, vname
+                                                  else:
+                                                      fname = 'junk.png'
+                                               #rsr_presentation.script("jeff.json")   #example of writing a json file
 
                                            if vcs.isscatter(rsr.presentation):
                                                #pdb.set_trace()
@@ -441,22 +479,36 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                                vcanvas.png( fname, ignore_alpha=True )
 
                                            rdone += 1
-                            # Also, write the nc output files and xml.
-                            # Probably make this a command line option.
-                            if res.__class__.__name__ is 'uvc_composite_plotspec':
-                                resc = res
-                                filenames = resc.write_plot_data("xml-NetCDF", outdir )
-                            else:
-                                resc = uvc_composite_plotspec( res )
-                                filenames = resc.write_plot_data("xml-NetCDF", outdir )
-                            number_diagnostic_plots += 1
-                            print "wrote plots",resc.title," to",filenames
+                            if opts['xml'] == True:
+                               # Also, write the nc output files and xml.
+                               # Probably make this a command line option.
+                               if res.__class__.__name__ is 'uvc_composite_plotspec':
+                                   resc = res
+                                   filenames = resc.write_plot_data("xml-NetCDF", outdir )
+                               else:
+                                   resc = uvc_composite_plotspec( res )
+                                   filenames = resc.write_plot_data("xml-NetCDF", outdir )
+                               number_diagnostic_plots += 1
+                               print "wrote plots",resc.title," to",filenames
                             if opts['plots']==True:
                                 if tmmobs[0] is not None:  # If anything was plotted to vcanvas2
                                     vname = varid.replace(' ', '_')
                                     vname = vname.replace('/', '_')
-                                    fname = outdir+'/figure-set'+snum+'_'+rname+'_'+seasonid+'_'+vname+'_plot-'+str(r)+'.png'
-                                    vcanvas2.png( fname, ignore_alpha=True )
+                                    if basename == None and postname == None:
+                                       fname = outdir+'/figure-set'+snum+'_'+rname+'_'+seasonid+'_'+vname+'_plot-'+str(r)+'.png'
+                                    else:
+                                       pname = postname
+                                       if pname == None:
+                                          pname = ''
+                                       if basename == '':
+                                          basename = 'set'+snum
+                                       if '_obs' in vname or '_diff' in vname:
+                                          if '_diff' in vname:
+                                             pname = postname+'_diff'
+                                             # Note postname will have the obsfile key and things like _NP
+                                       fname = outdir+'/'+basename+'_'+seasonid+'_'+varid+pname+'-combined.png'
+                                       print "writing png file2",fname
+                                    vcanvas2.png( fname , ignore_alpha = True)
                         elif res is not None:
                             # but len(res)==0, probably plot set 1
                             if res.__class__.__name__ is 'amwg_plot_set1':

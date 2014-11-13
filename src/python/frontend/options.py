@@ -6,7 +6,7 @@ import argparse
 
 import cdms2, os
 import metrics.packages as packages
-from defines import *
+from metrics.frontend.defines import *
 
 class Options():
    def __init__(self):
@@ -22,7 +22,8 @@ class Options():
       self._opts['yearly'] = False # These don't really get used, but are set anyway.
       self._opts['times'] = [] # This is where seasonal/monthly/yearly choices end up
       self._opts['json'] = False
-      self._opts['netcdf'] = False
+      self._opts['netcdf'] = True
+      self._opts['xml'] = True
       self._opts['climatologies'] = True
       self._opts['plots'] = True
       self._opts['precomputed'] = False
@@ -41,7 +42,8 @@ class Options():
       self._opts['path'] = []
       self._opts['path2'] = []
       self._opts['obspath'] = []
-      self._opts['output'] = None
+      self._opts['outputpre'] = None
+      self._opts['outputpost'] = None
       self._opts['outputdir'] = None
       self._opts['start'] = -1
       self._opts['end'] = -1
@@ -118,6 +120,7 @@ class Options():
       slist = pinstance.list_diagnostic_sets()
       keys = slist.keys()
       keys.sort()
+      vl = []
       for k in keys:
          fields = k.split()
          if setname[0] == fields[0]:
@@ -126,6 +129,9 @@ class Options():
             print vl
             print 'NOTE: Not all variables make sense for plotting or running diagnostics. Multi-word variable names need enclosed in single quotes:\'word1 word2\''
             print 'ALL is a valid variable name as well'
+      if vl == []:
+         print 'No variable list returned. Is set',setname[0],'a valid set?'
+         quit()
       return 
 
    def listVarOptions(self, package, setname, varname):
@@ -185,107 +191,6 @@ class Options():
 #            quit()
 
 
-   def plotMultiple(self):
-      import metrics.fileio.filetable as ft
-      import metrics.fileio.findfiles as fi
-         
-      # temporarily replace variables
-      myvars = self._opts['vars']
-#      self._opts['vars'] = 'ALL'
-      dtree1 = fi.dirtree_datafiles(self, pathid=0)
-      filetable1 = ft.basic_filetable(dtree1, self)
-      if(len(self._opts['path']) == 2):
-         dtree2 = fi.dirtree_datafiles(self, pathid=1)
-         filetable2 = ft.basic_filetable(dtree2, self)
-      elif(self._opts['obspath']) != []:
-         dtree2 = fi.dirtree_datafiles(self, obsid=0)
-         filetable2 = ft.basic_filetable(dtree2, self)
-      else:
-         filetable2 = None
-         print 'No second dataset for comparison'
-         
-      package=self._opts['packages']
-
-#      self._opts['vars'] = [myvars, 'Ocean_Heat']
-      # this needs a filetable probably, or we just define the maximum list of variables somewhere
-      im = ".".join(['metrics', 'packages', package[0], package[0]])
-      if package[0].lower() == 'lmwg':
-         pclass = getattr(__import__(im, fromlist=['LMWG']), 'LMWG')()
-      elif package[0].lower()=='amwg':
-         pclass = getattr(__import__(im, fromlist=['AMWG']), 'AMWG')()
-
-      sets = self._opts['sets']
-      varids = self._opts['vars']
-      seasons = self._opts['times']
-      slist = pclass.list_diagnostic_sets()
-      skeys = slist.keys()
-      skeys.sort()
-      import vcs
-      v = vcs.init()
-      for k in skeys:
-         fields = k.split()
-         for snames in sets:
-            if snames == fields[0]:
-               for va in varids:
-                  for s in seasons:
-                     plot = slist[k](filetable1, filetable2, va, s)
-                     res = plot.compute(newgrid=0)
-
-                     for r in range(len(res)):
-#                        v = res[r].vcsobj
-                        v.clear()
-                        v.plot(res[r].vars, res[r].presentation, bg=1)
-                        if(len(self._opts['dsnames']) != 0):
-                        ### TODO If dsnames gets implemented, need to set a short name for ds3, ie, "ds 1 - ds 2" or something
-                           fname = self._opts['dsnames'][r]+'-set'+fields[0]+s+va+'.png'
-                        else:
-                           fname = 'output-set'+fields[0]+s+va+'plot-'+str(r)+'.png'
-                        v.png(fname)
-
-
-   def plotSingle(self):
-      # no need for this function really...
-      quit()
-      import metrics.fileio.filetable as ft
-      import metrics.fileio.findfiles as fi
-      dtree1 = fi.dirtree_datafiles(self, pathid=0)
-      filetable1 = ft.basic_filetable(dtree1, self)
-      if(len(self._opts['path']) == 2):
-         dtree2 = fi.dirtree_datafiles(self, pathid=1)
-         filetable2 = ft.basic_filetable(dtree2, self)
-      elif(self._opts['obspath']) != []:
-         dtree2 = fi.dirtree_datafiles(self, obs=1)
-         filetable2 = ft.basic_filetable(dtree2, self)
-      else:
-         filetable2 = None
-         print 'No second dataset for comparison'
-         
-      package=self._opts['packages']
-
-      # this needs a filetable probably, or we just define the maximum list of variables somewhere
-      im = ".".join(['metrics', 'packages', package[0], package[0]])
-      if package[0].lower() == 'lmwg':
-         pclass = getattr(__import__(im, fromlist=['LMWG']), 'LMWG')()
-      elif package[0].lower()=='amwg':
-         pclass = getattr(__import__(im, fromlist=['AMWG']), 'AMWG')()
-
-      setname = self._opts['sets'][0]
-      varid = self._opts['vars'][0]
-      seasonid = self._opts['times'][0]
-      slist = pclass.list_diagnostic_sets()
-      keys = slist.keys()
-      keys.sort()
-      import vcs
-#      v = vcs.init()
-      for k in keys:
-         fields = k.split()
-         if setname[0] == fields[0]:
-            plot = slist[k](filetable1, filetable2, varid, seasonid)
-            res = plot.compute()
-            v.plot(res[0].vars, res[0].presentation, bg=1)
-            v.png('output.png')
-            
-      
    def processCmdLine(self):
       parser = argparse.ArgumentParser(
          description='UV-CDAT Climate Modeling Diagnostics', 
@@ -318,10 +223,14 @@ class Options():
          # maybe eventually add compression level too....
       parser.add_argument('--compress', nargs=1, choices=['no', 'yes'],
          help="Turn off netCDF compression. This can be required for other utilities to be able to process the output files (e.g. parallel netCDF based tools") #no compression, add self state
-      parser.add_argument('--output', '-o', nargs=1, 
-         help="Specify an output base name. Typically, seasonal or other information will get appended to this. For example -o myout might generate myout-JAN.nc, myout-FEB.nc, etc")
+
+      parser.add_argument('--outputpre', nargs=1,
+         help="Specify an output filename prefix to be prepended to all file names created internally. For example --outputpre myout might generate myout-JAN.nc, etc")
+      parser.add_argument('--outputpost', nargs=1,
+         help="Specify an output filename postfix to be appended to all file names created internally. For example --outputpost _OBS might generate set1-JAN_OBS.nc, etc")
       parser.add_argument('--outputdir', '-O', nargs=1,
          help="Directory in which output files will be written." )
+
       parser.add_argument('--seasons', nargs='+', choices=all_seasons,
          help="Specify which seasons to generate climatoogies for")
       parser.add_argument('--years', nargs='+',
@@ -336,9 +245,11 @@ class Options():
       parser.add_argument('--precomputed', nargs=1, choices=['no','yes'], 
          help="Specifies whether standard climatologies are stored with the dataset (*-JAN.nc, *-FEB.nc, ... *-DJF.nc, *-year0.nc, etc")
       parser.add_argument('--json', '-j', nargs=1, choices=['no', 'yes'],
-         help="Produce JSON output files as part of climatology generation") # same
+         help="Produce JSON output files as part of climatology/diags generation") # same
       parser.add_argument('--netcdf', '-n', nargs=1, choices=['no', 'yes'],
-         help="Produce NetCDF output files as part of climatology generation") # same
+         help="Produce NetCDF output files as part of climatology/diags generation") # same
+      parser.add_argument('--xml', '-x', nargs=1, choices=['no', 'yes'],
+         help="Produce XML output files as part of climatology/diags generation")
       parser.add_argument('--seasonally', action='store_true',
          help="Produce climatologies for all of the defined seasons. To get a list of seasons, run --list seasons")
       parser.add_argument('--monthly', action='store_true',
@@ -483,6 +394,11 @@ class Options():
             self._opts['json'] = False
          else:
             self._opts['json'] = True
+      if(args.xml != None):
+         if(args.xml[0] == 'no'):
+            self._opts['xml'] = False
+         else:
+            self._opts['xml'] = True
 
       if(args.netcdf != None):
          if(args.netcdf[0] == 'no'):
@@ -508,9 +424,13 @@ class Options():
          for i in args.name:
             self._opts['dsnames'].append(i[0])
 
-      # Specify an output path (base filename and directory name)
-      if(args.output != None):
-         self._opts['output'] = args.output[0]
+      # Help create output file names
+      if(args.outputpre != None):
+         self._opts['outputpre'] = args.outputpre[0]
+      if(args.outputpost != None):
+         self._opts['outputpost'] = args.outputpost[0]
+
+      # Output directory
       if(args.outputdir != None):
          if not os.path.isdir(args.outputdir[0]):
             print "ERROR, output directory",args.outputdir[0],"does not exist!"
@@ -566,42 +486,37 @@ class Options():
          self._opts['sets'] = args.sets
 
       if(args.sets != None and self._opts['packages'] != None):
-         self._opts['sets'] = args.sets
          # unfortuantely, we have to go through all of this....
          # there should be a non-init of the class method to list sets/packages/etc,
          # ie a dictionary perhaps?
-         ### Just accept the user passed in value for now. This makes a mess in diags.py
-##         sets = []
-##         import metrics.fileio.filetable as ft
-##         import metrics.fileio.findfiles as fi
-##         dtree = fi.dirtree_datafiles(self, pathid=0)
-##         filetable = ft.basic_filetable(dtree, self)
-##         package = self._opts['packages']
-##
-##         # this needs a filetable probably, or we just define the maximum list of variables somewhere
-##         print package[0]
-##         package[0] = package[0].lower()
-##         print package[0]
-##
-##
-##         # There are all sorts of circular dependencies here if we import diagnostic_groups
-##         im = ".".join(['metrics', 'packages', package[0], package[0]])
-##         if package[0] == 'lmwg' or package[0] == 'LMWG':
-##            pclass = getattr(__import__(im, fromlist=['LMWG']), 'LMWG')()
-##         elif package[0]=='amwg' or package[0] == 'AMWG':
-##            pclass = getattr(__import__(im, fromlist=['AMWG']), 'AMWG')()
-##
-##         # there doesn't appear to be a way to change filetables after a class has been init'ed.
-##         # is init expensive? not too bad currently, but that could be added perhaps.
-##         slist = pclass.list_diagnostic_sets()
-##         keys = slist.keys()
-##         keys.sort()
-##         for k in keys:
-##            fields = k.split()
-##            for user in args.sets:
-##               if user == fields[0]:
-##                  sets.append(user)
-##         self._opts['sets'] = sets
+         sets = []
+         import metrics.fileio.filetable as ft
+         import metrics.fileio.findfiles as fi
+         import metrics.packages.diagnostic_groups 
+         package = self._opts['packages']
+         if package[0].lower() == 'lmwg':
+            import metrics.packages.lmwg.lmwg
+         elif package[0].lower()=='amwg':
+            import metrics.packages.amwg.amwg
+         dtree = fi.dirtree_datafiles(self, pathid=0)
+         filetable = ft.basic_filetable(dtree, self)
+         dm = metrics.packages.diagnostic_groups.diagnostics_menu()
+
+         pclass = dm[package[0].upper()]()
+
+         slist = pclass.list_diagnostic_sets()
+         keys = slist.keys()
+         keys.sort()
+         for k in keys:
+            fields = k.split()
+            for user in args.sets:
+               if user == fields[0]:
+                  sets.append(user)
+         self._opts['sets'] = sets
+         if sets != args.sets:
+            print 'sets requested ', args.sets
+            print 'sets available: ', slist
+            exit(1)
 
       # TODO: Check against an actual list of variables from the set
       if args.vars != None:
