@@ -102,7 +102,7 @@ class amwg_plot_spec(plot_spec):
         'CLDLOW_ISCCP':[
             derived_var( vid='CLDLOW_ISCCP', inputs=['CLDLOW_ISCCPCOSP'], outputs=['CLDLOW_ISCCP'],
                          func=(lambda x:x) ) ],
-        # Note: CLDTOT is different from CLDTOT_CAL, CLDTOT_ISCCPCOSP, etc.  But the translating
+        # Note: CLDTOT is different from CLDTOT_CAL, CLDTOT_ISCCPCOSP, etc.  But translating
         # from one to the other might be better than returning nothing.  Also, I'm not so sure that
         # reduce_isccp_prs_tau is producing the right answers, but that's a problem for later.
         'CLDTOT':[
@@ -177,7 +177,6 @@ class amwg_plot_spec(plot_spec):
         computable = False
         for svd in cls.standard_variables[varnom]:  # loop over ways to compute varnom
             invarnoms = svd._inputs
-            print "jfp varnom=",varnom,"invarnoms=",invarnoms,"filetable.list_variables()=",filetable.list_variables()
             if len( set(invarnoms) - set(filetable.list_variables()) )<=0:
                 func = svd._func
                 computable = True
