@@ -103,18 +103,38 @@ class f_contains(basic_filter):
         return filen.find(self._contstring)>=0
     def __repr__( self ):
         return basic_filter.__repr__(self)+'("'+self._contstring+'")'
+    def mystr( self ):
+        return self._contstring
 
 class f_and(basic_binary_filter):
     def __call__( self, filen ):
         return self._f1(filen) and self._f2(filen)
     def __repr__( self ):
         return self._f1.__repr__()+' and '+self._f2.__repr__()
+    def mystr( self ):
+        str1 = self._f1.mystr()
+        str2 = self._f2.mystr()
+        if len(str1)==0:
+            return str2
+        elif len(str2)==0:
+            return str2
+        else:
+            return str1+'_and_'+str2
 
 class f_or(basic_binary_filter):
     def __call__( self, filen ):
         return self._f1(filen) or self._f2(filen)
     def __repr__( self ):
         return self._f1.__repr__()+' or '+self._f2.__repr__()
+    def mystr( self ):
+        str1 = self._f1.mystr()
+        str2 = self._f2.mystr()
+        if len(str1)==0:
+            return str2
+        elif len(str2)==0:
+            return str2
+        else:
+            return str1+'_or_'+str2
 
 # Thus a filter for "is a real file, with a .nc extension" is:
 #       f = f_and( f_nc(), f_isfile() )
