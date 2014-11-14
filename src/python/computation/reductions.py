@@ -1480,6 +1480,14 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
             mv1.units = 'mbar/day' # udunits uses mb for something else
         if mv2.units=='mb/day':
             mv2.units = 'mbar/day' # udunits uses mb for something else
+        if mv1.units == '(0 - 1)': # as in ERAI obs
+            mv1.units = '1'
+        if mv1.units == '(0-1)':   # as in ERAI obs
+            mv1.units = '1'
+        if mv2.units == '(0 - 1)': # as in ERAI obs
+            mv2.units = '1'
+        if mv2.units == '(0-1)':   # as in ERAI obs
+            mv2.units = '1'
         if mv1.units == 'fraction':
             mv1.units = '1'
         if mv2.units == 'fraction':
