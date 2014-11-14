@@ -178,6 +178,12 @@ def climo_driver(opts):
         else:
             outdir = ''
         outdir = os.path.join(outdir, 'climos')
+        if not os.path.isdir(outdir):
+            try:
+               os.mkdir(outdir) # processOptions() verifies up to the /climos part, so make /climos now
+            except:
+               print 'Could not create outputdir - %s' %outdir
+               quit()
         rvs,case = compute_and_write_climatologies( varkeys, reduced_variables1, season, casename,
                                                     path=outdir )
 
