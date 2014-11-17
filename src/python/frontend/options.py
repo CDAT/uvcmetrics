@@ -16,7 +16,7 @@ class Options():
       # some default valeus for some of the options
       self._opts['translate'] = True
       self._opts['translations'] = {}
-      self._opts['compress'] = False
+      self._opts['compress'] = True
       self._opts['seasonally'] = False # These don't really get used, but are set anyway.
       self._opts['monthly'] = False # These don't really get used, but are set anyway.
       self._opts['yearly'] = False # These don't really get used, but are set anyway.
@@ -380,14 +380,21 @@ class Options():
       if(args.compress != None):
          if(args.compress[0] == 'no'):
             self._opts['compress'] = False
-            cdms2.setNetcdfShuffleFlag(0)
-            cdms2.setNetcdfDeflateFlag(0)
-            cdms2.setNetcdfDeflateLevelFlag(0)
          else:
             self._opts['compress'] = True
-            cdms2.setNetcdfShuffleFlag(1)
-            cdms2.setNetcdfDeflateFlag(1)
-            cdms2.setNetcdfDeflateLevelFlag(9)
+
+
+      if self._opts['compress'] == True:
+         print 'Enabling compression for output netCDF files'
+         cdms2.setNetcdfShuffleFlag(1)
+         cdms2.setNetcdfDeflateFlag(1)
+         cdms2.setNetcdfDeflateLevelFlag(9)
+      else:
+         print 'Disabling compression for output netCDF files'
+         cdms2.setNetcdfShuffleFlag(0)
+         cdms2.setNetcdfDeflateFlag(0)
+         cdms2.setNetcdfDeflateLevelFlag(0)
+         
 
       if(args.json != None):
          if(args.json[0] == 'no'):
