@@ -91,17 +91,18 @@ def run_diagnostics_from_options( opts ):
     for i in range(len(opts['obs'])):
          obsfts.append(path2filetable(opts, obsid = i))
 
-    if len(obsfts) == 0:
-         filetable2 = None
-    else:
-    diletable1 = modelfts[0]
 
-    run_diagnostics_from_filetables( opts, filetable1, filetable2 )
+    run_diagnostics_from_filetables( opts, modelfts, obsfts )
 
-def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
+def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
     """Runs the diagnostics.  The data is specified by the filetables.
     Most other choices, such as the plot sets, variables, and seasons, are specified in opts,
     an instance of Options."""
+    filetable1 = modelfts[0]
+    if len(obsfts) == 0:
+         filetable2 = None
+    else:
+         filetable2 = obsfts[0]
 
     outdir = opts['output']['outputdir']
     if outdir is None:
@@ -179,7 +180,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
             sclass = sm[sname]
             seasons = list( set(seasons) & set(pclass.list_seasons()) )
             for seasonid in seasons:
-                variables = pclass.list_variables( filetable1, filetable2, sname  )
+                variables = pclass.list_variables( modelfts, obsfts, sname  )
                 if sclass.number=='1' and pname.upper() == 'AMWG':
                     # Plot set 1 (the table) ignores variable specifications - it does all variables in
                     # its internal list.  To make the code work unchanged, choose one:
@@ -191,7 +192,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                         print "among",pclass.list_variables( filetable1, filetable2, sname  )
                 for varid in variables:
                     print "variable",varid,"season",seasonid
-                    vard = pclass.all_variables( filetable1, filetable2, sname )
+                    vard = pclass.all_variables( modelfts, obsfts, sname )
                     plotvar = vard[varid]
 
                     # Find variable options.  If none were requested, that means "all".
@@ -222,9 +223,9 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                         # hoping to change that in a future release. Also, I can see this being useful for amwg set 1.
                         # (Basically, if we output pre-defined json for the tables they can be trivially sorted)
                         if '5' in snum and pname.upper() == 'LMWG' and opts['json'] == True:
-                           plot = sclass( filetable1, filetable2, varid, seasonid, region, vvaropts[aux], jsonflag=True )
+                           plot = sclass( modelfts, obsfts, varid, seasonid, region, vvaropts[aux], jsonflag=True )
                         else:
-                           plot = sclass( filetable1, filetable2, varid, seasonid, region, vvaropts[aux] )
+                           plot = sclass( modelfts, obsfts, varid, seasonid, region, vvaropts[aux] )
                         res = plot.compute(newgrid=-1) # newgrid=0 for original grid, -1 for coarse
                         if res is not None and len(res)>0:
                             if opts['output']['plots'] == True:
