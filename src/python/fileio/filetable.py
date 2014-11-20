@@ -349,7 +349,7 @@ class basic_filetable(basic_id):
        vars.sort()
        return vars
     def has_variables( self, varlist ):
-       """Returns True if this filetable has entries for every variable (possibly and axis) in
+       """Returns True if this filetable has entries for every variable (possibly an axis) in
        the supplied sequence of variable names (strings); otherwise False."""
        fvars = set([ r.variableid for r in self._table ])
        svars = set(varlist)
