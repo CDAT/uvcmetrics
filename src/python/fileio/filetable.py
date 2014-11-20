@@ -140,6 +140,8 @@ class basic_filetable(basic_id):
         self.initialize_idnumber()
         basic_id.__init__( self, self._idnumber, ftid )
         
+        self.maxfilewarn = 2  # maximum number of warnings about bad files
+
         self._table = []     # will be built from the filelist, see below
         # We have two indices, one by file and one by variable.
         # the value is always a list of rows of the table.
@@ -212,7 +214,7 @@ class basic_filetable(basic_id):
            #print "Couldn't add file",filep
            #print "This might just be an unsupported file type"
            return
-        is_file_bad( dfile )
+        bad,self.maxfilewarn = is_file_bad( dfile, self.maxfilewarn )
         filesupp = get_datafile_filefmt( dfile, options )
         if self.filefmt is None:
            self.filefmt = filesupp.name
@@ -331,17 +333,24 @@ class basic_filetable(basic_id):
                       if filefilter(ftrow.fileid):
                          found.append( ftrow )
        return found
-    def list_variables(self):
+    def list_variables_incl_axes(self):
+       """lists the variables in the filetable, possibly including axes"""
        vars = list(set([ r.variableid for r in self._table ]))
        vars.sort()
        return vars
+    def list_variables(self):
+       """lists the variables in the filetable, excluding axes"""
+       vars = list(set([ r.variableid for r in self._table if r.variableid not in r.varaxisnames]))
+       vars.sort()
+       return vars
     def list_variables_with_levelaxis(self):
-       vars = list(set([ r.variableid for r in self._table if r.haslevel]))
+       vars = list(set([ r.variableid for r in self._table if r.haslevel and
+                         r.variableid not in r.varaxisnames]))
        vars.sort()
        return vars
     def has_variables( self, varlist ):
-       """Returns True if this filetable has entries for every variable in the supplied sequence of
-       variable names (strings); otherwise False."""
+       """Returns True if this filetable has entries for every variable (possibly and axis) in
+       the supplied sequence of variable names (strings); otherwise False."""
        fvars = set([ r.variableid for r in self._table ])
        svars = set(varlist)
        if len(svars-fvars)>0:
@@ -625,13 +634,15 @@ class CF_filefmt(basic_filefmt):
         units = levelaxis.units
         return drange( lo, hi, units )
 
-def is_file_bad( dfile ):
+def is_file_bad( dfile, maxwarn ):
     """The input dfile is an open file.
     We expect all files to be CF compliant, and a bit more.
     This function will check for some kinds of non-compliance or other badness,
     and print a warning if such a problem is found.
     """
     bad = False
+    if maxwarn<=0:
+        return bad,maxwarn
     for axn,ax in dfile.axes.iteritems():
         # Maybe these warnings should be supressed if for the time axis of a climo file...
         if not hasattr(ax,'bounds'):
@@ -640,20 +651,27 @@ def is_file_bad( dfile ):
                 print "As the length is 1, no bounds can be computed."
                 print "Any computation involving this axis is likely to fail."
                 bad = True
+                maxwarn -= 1
             else:
                 print "INFO:  file",dfile.id,"has an axis",axn,"with no bounds."
                 print "An attempt will be made to compute bounds, but that is unreliable compared"+\
                     " to bounds provided by the data file."
+                maxwarn -= 1
         if hasattr(ax,'bounds') and ax.bounds not in dfile.variables:
             print "WARNING, file",dfile.id
             print "has an axis",axn,"whose bounds",ax.bounds,"do not exist!"
             print "This file is not CF-compliant, so calculations involving this axis may well fail."
             bad = True
+            maxwarn -= 1
         if hasattr(ax,'_FillValue') and ax._FillValue in ax:
             print "WARNING, file",dfile.id,"has an axis",axn,"with a missing value"
             print "This file is not CF-compliant, so calculations involving this axis may well fail."
             bad = True
-    return bad
+            maxwarn -= 1
+        if maxwarn<=0:
+            print "There will be no more bad data warnings from constructing this filetable."
+            break
+    return bad, maxwarn
 
 if __name__ == '__main__':
    o = Options()
