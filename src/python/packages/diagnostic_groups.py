@@ -47,10 +47,10 @@ class BasicDiagnosticGroup():
         """a generic implementation of the list_variables method, should be a good
         starting point for developing something for a particular diagnostic group"""
         if filetable1 is None: return []
-        vars1 = filetable1.list_variables()
+        vars1 = filetable1.list_variables_incl_axes()
         if not isinstance( filetable2, basic_filetable ): return vars1
         if filetable2.nrows()==0: return vars1
-        vars2 = filetable2.list_variables()
+        vars2 = filetable2.list_variables_incl_axes()
         varset = set(vars1).intersection(set(vars2))
         vars = list(varset)
         vars.sort()
