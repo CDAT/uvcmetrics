@@ -436,7 +436,8 @@ def reduce_time( mv, vid=None ):
     if len(axes_string)>2:
         for ax in axes:
             # The averager insists on bounds.  Sometimes they don't exist, especially for obs.
-            if ax.id!='lat' and ax.id!='lon' and not hasattr( ax, 'bounds' ):
+            #was if ax.id!='lat' and ax.id!='lon' and not hasattr( ax, 'bounds' ):
+            if ax.id!='lat' and ax.id!='lon' and (ax.getBounds() is None):
                 ax.setBounds( ax.genGenericBounds() )
         avmv = averager( mv, axis=axes_string )
     else:
