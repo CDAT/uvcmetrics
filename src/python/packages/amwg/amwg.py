@@ -179,7 +179,7 @@ class amwg_plot_spec(plot_spec):
         computable = False
         for svd in cls.standard_variables[varnom]:  # loop over ways to compute varnom
             invarnoms = svd._inputs
-            if len( set(invarnoms) - set(filetable.list_variables()) )<=0:
+            if len( set(invarnoms) - set(filetable.list_variables_incl_axes()) )<=0:
                 func = svd._func
                 computable = True
                 break
@@ -2034,7 +2034,7 @@ class amwg_plot_set13(amwg_plot_spec):
         return varid
     def plan_computation( self, filetable1, filetable2, varnom, seasonid, region ):
         region = self.interpret_region( region )
-        if varnom in filetable1.list_variables():
+        if varnom in filetable1.list_variables_incl_axes():
             vid1 = self.var_from_data( filetable1, varnom, seasonid, region )
         elif varnom in self.standard_variables.keys():
             vid1 = self.var_from_std( filetable1, varnom, seasonid, region )
@@ -2043,7 +2043,7 @@ class amwg_plot_set13(amwg_plot_spec):
             return None
         if filetable2 is None:
             vid2 = None
-        elif varnom in filetable2.list_variables():
+        elif varnom in filetable2.list_variables_incl_axes():
             vid2 = self.var_from_data( filetable2, varnom, seasonid, region )
         elif varnom in self.standard_variables.keys():
             vid2 = self.var_from_std( filetable2, varnom, seasonid, region )
