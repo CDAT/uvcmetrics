@@ -21,4 +21,5 @@ echo "set 10"
 diags --path ~/metrics_data/cam35_data/ --path2 /Users/painter1/metrics_data/obs_data_5.6/  --filter2 "f_startswith('NCEP')" --package AMWG --set 10 --seasons ANN --vars TS
 echo "set 11"
 diags --path ~/metrics_data/cam35_data/ --path2 /Users/painter1/metrics_data/obs_data_5.6/  --filter2 "f_startswith('NCEP')" --package AMWG --set 11 --seasons ANN --vars TS
-
+echo "set 13"
+diags --packages AMWG --outputdir ~/tmp/diagout/13 --path ~/metrics_data/cam35_data/  --path2 ~/metrics_data/obs_data_5.6/ --filter2 'f_startswith("ISCCPCOSP")' --seasons ANN --set 13 --vars CLISCCP
