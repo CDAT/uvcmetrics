@@ -134,8 +134,13 @@ def climo_driver(opts):
     filetable1 = basic_filetable(datafiles1, opts)
 
     myvars = opts['vars']
+    allvars = filetable1.list_variables()
     if myvars == ['ALL']:
-        myvars = filetable1.list_variables() 
+        myvars = allvars
+    else:
+        myvars = list(set(myvars)&set(allvars))
+        if len(myvars)<len(opts['vars']):
+            print "WARNING: Some variables are not available.  Computing climatologies for\n",myvars
 
     cseasons = opts['times']
     if cseasons == []:
