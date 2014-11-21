@@ -826,6 +826,30 @@ class plot_spec(object):
         return self.results(newgrid)
     def results(self,newgrid=0):
         return self._results(newgrid)
+
+    def getfts(self, model, obs):
+        if len(model) == 2:
+#           print 'Two models'
+           filetable1 = model[0]
+           filetable2 = model[1]
+        if len(model) == 1 and len(obs) == 1:
+#           print 'Model and Obs'
+           filetable1 = model[0]
+           filetable2 = obs[0]
+        if len(obs) == 2: # seems unlikely but whatever
+#           print 'Two obs'
+           filetable1 = obs[0]
+           filetable2 = obs[1]
+        if len(model) == 1 and (obs != None and len(obs) == 0):
+#           print 'Model only'
+           filetable1 = model[0]
+           filetable2 = None
+        if len(obs) == 1 and (model != None and len(model) == 0): #also unlikely
+#           print 'Obs only'
+           filetable1 = obs[0]
+           filetable2 = None
+        return filetable1, filetable2
+
 # To profile, replace (by name changes) the above results() with the following one:
     def profiled_results(self,newgrid=0):
         if newgrid!=0:

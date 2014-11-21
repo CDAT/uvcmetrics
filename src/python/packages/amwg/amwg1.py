@@ -74,6 +74,9 @@ class amwg_plot_set1(amwg_plot_spec):
     #   lev level (in millibars) to which variable is restricted
     #   obsprint obs name to be printed (default is obs)
     #   units units of the output quantity (default is same as the input files)
+
+    # This is essentially duplicated in amwgmaster.
+
     table_row_specs = [
         { 'var':'RESTOM'},
         { 'var':'RESSURF'},
@@ -159,11 +162,12 @@ class amwg_plot_set1(amwg_plot_spec):
     class myrow:
         # represents a row of the output table.  Here's an example of what a table row would look like:
         # TREFHT_LEGATES   298.423             298.950            -0.526         1.148
-        def __init__( self, filetable1, filetable2, seasonid='ANN', region='global', var='TREFHT',
+        def __init__( self, model, obssets, seasonid='ANN', region='global', var='TREFHT',
                       obs=None, obsprint=None, lev=None, units=None ):
             # inputs are test (model) and control (obs) filetables, a season name (e.g. 'DJF'),
             # a region name (e.g. 'tropics'), a variable name (e.g. 'TREFHT'),
             # an obs name (e.g. 'CERES'), and, if necessary, a level in millibars.
+            filetable1, filetable2 = self.getfts(model, obssets)
             if lev is None:
                 print "Building table row for var=",var,"obs=",obs
             else:
@@ -320,7 +324,8 @@ class amwg_plot_set1(amwg_plot_spec):
             output = [str(self.values[0])]+[self.fpfmt(v) for v in self.values[1:]]
             return '\t'.join(output)
 
-    def __init__( self, filetable1, filetable2, varid='ignored', seasonid='ANN', region='global', aux='ignored' ):
+    def __init__( self, model, obssets, varid='ignored', seasonid='ANN', region='global', aux='ignored' ):
+        filetable1, filetable2 = self.getfts(model, obssets)
         # Inputs: filetable1 is the filetable for the test case (model) data.
         # filetable2 is a file table for all obs data.
         # seasonid is a season string, e.g. 'DJF'.  Region is the name of a zonal region, e.g.

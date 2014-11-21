@@ -30,7 +30,7 @@ def makeTables(modelpath, obspath, outpath, pname, outlog, errlog):
       regions = ['global', 'tropics', '\'northern extratropics\'', '\'southern extratropics\'']
       seasons = '--seasons DJF JJA ANN'
       for reg in regions:
-         cmdline = 'diags --path %s --path2 %s --set 1 --package AMWG %s --outputdir %s --region %s' % (modelpath, obspath, seasons, outpath, reg)
+         cmdline = 'diags --model path=%s,type=model,climos=yes --obs path=%s,type=obs,climos=yes --set 1 --package AMWG %s --outputdir %s --region %s' % (modelpath, obspath, seasons, outpath, reg)
          print 'Executing '+cmdline
          try:
             retcode = subprocess.check_call(cmdline, stdout=outlog, stderr=errlog, shell=True)
@@ -40,10 +40,7 @@ def makeTables(modelpath, obspath, outpath, pname, outlog, errlog):
             errlog.write('Failing command was: %s\n' % cmdline)
             print 'See '+outpath+'/DIAGS_ERROR.log for details'
          
-            
-   
-
-def generatePlots(modelpath, obspath, outpath, pname, sets=None):
+def generatePlots(modelpath, obspath, outpath, pname, xmlflag, sets=None):
    cmdline2 = ''
    
    if sets == None:
@@ -98,7 +95,10 @@ def generatePlots(modelpath, obspath, outpath, pname, sets=None):
       
       package = '--package '+pname
       outdir = '--outputdir '+outpath
-      xml = '--xml no'
+      if xmlflag == False:
+         xml = '--xml no'
+      else:
+         xml = ''
 
       for obs in obssets:
          vl = []
@@ -113,7 +113,7 @@ def generatePlots(modelpath, obspath, outpath, pname, sets=None):
                      obsfname = ''
                      postname = '--outputpost \'\''
                   else:
-                     obsf = ' --filter2 "f_startswith(\''+obsfname+'\')"'
+                     obsf = 'filter="f_startswith(\''+obsfname+'\')"'
                      postname = '--outputpost _'+obsfname
                      obsfname = obsf
    #                  print obsf
@@ -139,7 +139,7 @@ def generatePlots(modelpath, obspath, outpath, pname, sets=None):
                vl2 = list(set(vl) - set(vl1))
                vl = vl1
                vlstr2 = ' '.join(vl2)
-               cmdline2 = 'diags --path %s --path2 %s %s --set 5 %s %s --vars %s %s %s %s %s' % (modelpath, obspath, package, seasons, obsfname, vlstr2, outdir, postname, xml, prename)
+               cmdline2 = 'diags --model path=%s,type=model,climos=yes --obs path=%s,type=obs,climos=yes,%s %s %s --set 5 --vars %s %s %s %s %s' % (modelpath, obspath, obsfname, package, seasons, vlstr2, outdir, postname, xml, prename)
             elif v5 != []:
                realsetnum = 5
                vl = list(set(v5) & set(vl))
@@ -331,8 +331,10 @@ if __name__ == '__main__':
    package = ''
    dbflag = True
    dbonly = False
+   xmlflag = True #default to generating xml/netcdf files
+   helpflag = False
    try:
-      opts, args = getopt.getopt(sys.argv[1:], 'p:m:v:o:s:d:H:b:',["package=", "model=", "path=", "obs=", "obspath=", "output=", "outpath=", "outputdir=", "sets=", "dsname=", "hostname=", "db="])
+      opts, args = getopt.getopt(sys.argv[1:], 'p:m:v:o:s:d:H:b:h',["package=", "model=", "path=", "obs=", "obspath=", "output=", "outpath=", "outputdir=", "sets=", "dsname=", "hostname=", "db=", "figures=", "help"])
    except getopt.GetoptError as err:
       print 'Error processing command line arguments'
       print str(err)
@@ -349,6 +351,8 @@ if __name__ == '__main__':
          if arg == 'yes':
             dbflag = True
             dbonly = False
+      elif opt in ("-h", "--help"):
+         helpflag = True
       elif opt in ("-m", "--model", "--path"):
          modelpath = arg
       elif opt in ("-v", "--obs", "--obspath"):
@@ -366,6 +370,9 @@ if __name__ == '__main__':
          dsname = arg
       elif opt in ("-H", "--hostname"):
          hostname = arg
+      elif opt in ("--figures"):
+         if arg == 'only':
+            xmlflag = False
       else:
         print "Unknown option ", opt
 
@@ -374,7 +381,7 @@ if __name__ == '__main__':
       print 'Please specify --model, --dsname, and --package with the db update'
       quit()
 
-   if dbonly == False and (modelpath == '' or obspath == '' or outpath == '' or package == '' or dsname == ''):
+   if helpflag == True or (dbonly == False and (modelpath == '' or obspath == '' or outpath == '' or package == '' or dsname == '')):
       print 'Please specify at least:'
       print '   --model /path for the model output path (e.g. climos.nc)'
       print '   --obspath /path for the observation sets'
@@ -387,6 +394,7 @@ if __name__ == '__main__':
       print '   --sets 3 to just run a subset of the diagnostic sets'
       print '   --db only -- Just update the database of datasets on {hostname}'
       print '   --db no -- Do not update the database of datasets on {hostname}'
+      print '   --figures only -- Just generate figures, not xml/netcdf files of the calculated data'
       quit()
 
    if dbonly == True:
@@ -394,7 +402,7 @@ if __name__ == '__main__':
       postDB(modelpath, dsname, package, host=hostname) 
       quit()
 
-   generatePlots(modelpath, obspath, outpath, package, sets=sets)
+   generatePlots(modelpath, obspath, outpath, package, xmlflag, sets=sets)
 
    if dbflag == True:
       print 'Updating the remote database...'
