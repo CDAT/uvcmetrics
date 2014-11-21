@@ -49,19 +49,19 @@ class BasicDiagnosticGroup():
         starting point for developing something for a particular diagnostic group"""
         if len(model) == 0 and len(obs) == 0: return []
         if len(model) != 0:
-           vlist = model[0].list_variables()
+           vlist = model[0].list_variables_incl_axes()
         elif len(obs) != 0:
-           vlist = obs[0].list_variables()
+           vlist = obs[0].list_variables_incl_axes()
         
         for i in range(len(model)):
             if not isinstance (model[i], basic_filetable): pass
             if model[i].nrows() == 0: pass
-            nvlist = model[i].list_variables()
+            nvlist = model[i].list_variables_incl_axes()
             vlist = list(set(nvlist) & set(vlist))
         for i in range(len(obs)):
             if not isinstance (obs[i], basic_filetable): pass
             if obs[i].nrows() == 0: pass
-            nvlist = obs[i].list_variables()
+            nvlist = obs[i].list_variables_incl_axes()
             vlist = list(set(nvlist) & set(vlist))
         vlist.sort()
         return vlist
