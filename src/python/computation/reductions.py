@@ -7,7 +7,7 @@ import cdms2, math, itertools, operator, numpy, subprocess, re, MV2
 import hashlib, os
 from pprint import pprint
 import cdutil.times
-from math import radians
+from math import radians, log10
 from numpy import sin, ma
 #import dateutil.parser
 import dateparser
@@ -164,6 +164,16 @@ def fix_time_units( timeunits ):
         pre_yr = new_date.find(yr_bc)
         new_date = new_date[0:pre_yr]+yr_ad+new_date[pre_yr+len(yr_bc)]
     return since+new_date
+
+def compose( rf1, rf2 ):
+    """Combines two reduction functions - normally ones which reduce over different axes -
+    into one.  Each reduction function should take a single MV as an argument and return a MV.
+    Each should accept an optional keyword argument vid, defaulting to None."""
+    def rf12( mv, vid=None ):
+        mv1 = rf1( mv, vid )
+        mv2 = rf2( mv1, vid )
+        return mv2
+    return rf12    
 
 def reduce2scalar_zonal( mv, latmin=-90, latmax=90, vid=None, gw=None ):
     """returns the mean of the variable over the supplied latitude range.
@@ -1471,8 +1481,15 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
     mv1 is a TransientVariable.  mv2 may be a TransientVariable, or it may be a udunits object.
     If preferred units are specified, they will be used if possible."""
 # This probably needs expanded to be more general purpose for unit conversions.
+    print "jfp entering reconcile_units with",mv1.id,"units=",mv1.units,"and",mv2.id,"units=",mv2.units,"prefer",preferred_units
+    print "jfp max values:",mv1.max(),mv2.max()
+    print "jfp min values:",mv1.min(),mv2.min()
     if hasattr(mv1,'units') and hasattr(mv2,'units') and\
             (preferred_units is not None or mv1.units!=mv2.units):
+        # Very ad-hoc, but more general would be less safe:
+        if mv1.id[0:8]=="rv_QFLX_" and mv1.units=="kg/m2/s":
+            preferred_units="mm/day"
+            mv1.units="mm/s"   # if 1 kg = 10^6 mm^3 as for water
         if mv1.units=='mb':
             mv1.units = 'mbar' # udunits uses mb for something else
         if mv2.units=='mb':
@@ -1514,21 +1531,52 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
             mv2.units=mv1.units
             return mv1, mv2
         if preferred_units is None:
-            target_units = mv1.units
+            # Look for whichever of mv1.units, mv2.units gives numbers more O(1).
+            mag1 = log10(abs(0.5*(mv1.min()+mv1.max())))
+            mag2 = log10(abs(0.5*(mv2.min()+mv2.max())))
+            if abs(mag1)<=abs(mag2):
+                target_units = mv1.units
+                changemv1 = False
+                changemv2 = True
+            else:
+                target_units = mv2.units
+                changemv1 = True
+                changemv2 = False
         else:
             target_units = preferred_units
+            changemv1 = True
+            changemv2 = True
+        if changemv1:
             tmp = udunits(1.0,mv1.units)
-            s,i = tmp.how(target_units)  # will raise an exception if conversion not possible
+            try:
+                s,i = tmp.how(target_units)
+            except Exception as e:
+                # conversion not possible.
+                print "ERROR could not convert from",mv1.units,"to",target_units
+                raise e
+            if hasattr(mv1,'id'):  # yes for TransientVariable, no for udunits
+                mv1id = mv1.id
             mv1 = s*mv1 + i
+            if hasattr(mv1,'id'):
+                mv1.id = mv1id
             mv1.units = target_units
-        tmp = udunits(1.0,mv2.units)
-        s,i = tmp.how(target_units)  # will raise an exception if conversion not possible
-        if hasattr(mv2,'id'):  # yes for TransientVariable, no for udunits
-            mv2id = mv2.id
-        mv2 = s*mv2 + i
-        if hasattr(mv2,'id'):
-            mv2.id = mv2id
-        mv2.units = target_units
+        if changemv2:
+            tmp = udunits(1.0,mv2.units)
+            try:
+                s,i = tmp.how(target_units)
+            except Exception as e:
+                #  conversion not possible
+                print "ERROR could not convert from",mv2.units,"to",target_units
+                raise e
+            if hasattr(mv2,'id'):  # yes for TransientVariable, no for udunits
+                mv2id = mv2.id
+            mv2 = s*mv2 + i
+            if hasattr(mv2,'id'):
+                mv2.id = mv2id
+            mv2.units = target_units
+    print "jfp leaving reconcile_units with",mv1.id,"units=",mv1.units,"and",mv2.id,"units=",mv2.units,"prefer",preferred_units
+    print "jfp max values:",mv1.max(),mv2.max()
+    print "jfp min values:",mv1.min(),mv2.min()
     return mv1, mv2
 
 def setunits( mv, units ):
