@@ -2049,8 +2049,7 @@ class amwg_plot_set13(amwg_plot_spec):
             vid2 = self.var_from_std( filetable2, varnom, seasonid, region )
         else:
             vid2 = None
-        # >>> WORK IN PROGRESS <<<< Some of the following code should become part of var_from_data()
-        # and var_from_data() should return something.  I need to write that and var_from_std(), etc.
+
         print "jfp entering plan_computation with region=",region,"varnom=",varnom
 
         ft1src = filetable1.source()
