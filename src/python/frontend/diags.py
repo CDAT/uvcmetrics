@@ -488,7 +488,6 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                else:
                                    resc = uvc_composite_plotspec( res )
                                    filenames = resc.write_plot_data("xml-NetCDF", outdir )
-                               number_diagnostic_plots += 1
                                print "wrote plots",resc.title," to",filenames
                             if opts['plots']==True:
                                 if tmmobs[0] is not None:  # If anything was plotted to vcanvas2
@@ -509,6 +508,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                        fname = outdir+'/'+basename+'_'+seasonid+'_'+varid+pname+'-combined.png'
                                        print "writing png file2",fname
                                     vcanvas2.png( fname , ignore_alpha = True)
+                                    number_diagnostic_plots += 1
                         elif res is not None:
                             # but len(res)==0, probably plot set 1
                             if res.__class__.__name__ is 'amwg_plot_set1':
