@@ -48,6 +48,13 @@ def generatePlots(modelpath, obspath, outpath, pname, sets=None):
    
    if sets == None:
       sets = getSets(pname) #find out which sets are available
+
+   outpath = os.path.join(outpath,pname.lower())
+   if not os.path.isdir(outpath):
+      try:
+         os.makedirs(outpath)
+      except:
+         print 'Failed to create directory ', outpath
    try:
       outlog = open(os.path.join(outpath,'DIAGS_OUTPUT.log'), 'w')
    except:
@@ -60,11 +67,6 @@ def generatePlots(modelpath, obspath, outpath, pname, sets=None):
 
    errlog = open(os.path.join(outpath,'DIAGS_ERROR.log'), 'w')
    
-   outpath = os.path.join(outpath,pname.lower())
-   try:
-      os.makedirs(outpath)
-   except:
-      print 'Failed to create directory ', outpath
 
 
    # get a list of all obssets
