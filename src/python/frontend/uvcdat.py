@@ -364,6 +364,7 @@ class uvc_simple_plotspec():
             if flip_y:
                 self.presentation.flip = True
             var = self.vars[0]
+            print "jfp self.varmin=",self.varmin
             axmax = self.axmax[seqgetattr(var,'id','')]
             axmin = self.axmin[seqgetattr(var,'id','')]
             varmax = self.varmax[seqgetattr(var,'id','')]
@@ -497,6 +498,8 @@ class uvc_simple_plotspec():
                 # ... mkscale returns numpy.float64, which behaves unexpectedly in _setlevels when
                 # passed a tuple value
                 if levels is not None and len(levels)>0:
+                    print "jfp nlevels,varmin,varmax=",nlevels,varmin,varmax
+                    print "jfp levels=",levels
                     self.presentation.levels = levels
                 #nlevels = max(1, len(levels) - 1)
                 #nlrange = range(nlevels+1)
@@ -608,7 +611,10 @@ class uvc_simple_plotspec():
             for si,svar in enumerate(self.vars):
                 for pi,pvar in enumerate(pset.vars):
                     if svar.units!=pvar.units and svar.id==s_var_d[vid] and pvar.id==p_var_d[vid]:
+                       print "jfp about to call reconcile_units from synchronize_values"
                        self.vars[si],pset.vars[pi] = reconcile_units( svar, pvar ) 
+                       self.varmin[vids] = self.vars[si].min()
+                       pset.varmin[vidp] = pset.vars[pi].min()
                        self.varmax[vids] = self.vars[si].max()
                        pset.varmax[vidp] = pset.vars[pi].max()
             varmax = max( self.varmax[vids], pset.varmax[vidp] )
