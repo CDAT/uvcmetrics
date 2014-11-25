@@ -23,3 +23,7 @@ echo "set 11"
 diags --path ~/metrics_data/cam35_data/ --path2 /Users/painter1/metrics_data/obs_data_5.6/  --filter2 "f_startswith('NCEP')" --package AMWG --set 11 --seasons ANN --vars TS
 echo "set 13"
 diags --packages AMWG --outputdir ~/tmp/diagout/13 --path ~/metrics_data/cam35_data/  --path2 ~/metrics_data/obs_data_5.6/ --filter2 'f_startswith("ISCCPCOSP")' --seasons ANN --set 13 --vars CLISCCP
+# Note that the next test uses a special dataset.  At PCMDI you can get it by
+#  sudo mount saigon2:/A-Train_data /A-Train_data
+echo "cloud variables in set 5"
+diags --packages AMWG --outputdir ~/tmp/diagout/cosp --path /A-Train_data/integration_cosp_cam/amip10yr --filter "f_startswith('cam5_2deg_release_amip.cam2.h0.2005')" --path2 ~/metrics_data/obs_data_5.6 --filter2 "f_startswith('CALIPSOCOSP')" --seasons ANN --sets 5 --vars CLDTOT_CAL CLDHGH_CAL
