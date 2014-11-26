@@ -225,7 +225,15 @@ def reduce2scalar_seasonal_zonal( mv, seasons=seasonsyr, latmin=-90, latmax=90, 
             # Special check necessary for LEGATES obs data, because
             # climatology() won't accept this incomplete specification
             timeax.units = 'months since 0001-01-01'
-        mvseas = seasons.climatology(mv2)
+        if timeax.units=='month: 1=Jan, ..., 12=Dec':
+            # Special check necessary for CERES obs data.
+            timeax.units = 'months since 0001-01-01'
+        if len(timeax)==1 and  ((hasattr(ax,'_FillValue') and ax._FillValue in ax) or
+                                (hasattr(ax,'fill_value') and ax.fill_value in ax)):
+            # Time axis of length 1, which is missing!  It's a.s. a (malformed) climo file already.
+            mvseas = mv2
+        else:
+            mvseas = seasons.climatology(mv2)
         if mvseas is None:
             # Among other cases, this can happen if mv has all missing values.
             return None
@@ -1978,6 +1986,15 @@ def join_1d_data(*args ):
     #M.info()
     return M
 
+def special_case_fixed_variable( case, var ):
+    """Fix up a variable for known cases which require special treatment; returns the fixed-up variable."""
+    if case=='CERES':
+        # CERES data, instead of a mask for missing data, uses a _FillValue attribute.
+        # cdms2 does not recognize this attribute.
+        if not var.mask:
+            return numpy.ma.masked_equal( var, var._FillValue )
+    return var
+
 class reduced_variable(ftrow,basic_id):
     """Specifies a 'reduced variable', which is a single-valued part of an output specification.
     This would be a variable(s) and its domain, a reduction function, and perhaps
@@ -2179,7 +2196,10 @@ class reduced_variable(ftrow,basic_id):
             f = cdms2.open( filename )
             self._file_attributes.update(f.attributes)
             if self.variableid in f.variables.keys():
-                reduced_data = self._reduction_function( f(self.variableid), vid=vid )
+                var = f(self.variableid)
+                if os.path.basename(filename)[0:5]=='CERES':
+                    var = special_case_fixed_variable( 'CERES', var )
+                reduced_data = self._reduction_function( var, vid=vid )
             elif self.variableid in f.axes.keys():
                 taxis = cdms2.createAxis(f[self.variableid])   # converts the FileAxis to a TransientAxis.
                 taxis.id = f[self.variableid].id
