@@ -364,7 +364,6 @@ class uvc_simple_plotspec():
             if flip_y:
                 self.presentation.flip = True
             var = self.vars[0]
-            print "jfp self.varmin=",self.varmin
             axmax = self.axmax[seqgetattr(var,'id','')]
             axmin = self.axmin[seqgetattr(var,'id','')]
             varmax = self.varmax[seqgetattr(var,'id','')]
@@ -611,7 +610,6 @@ class uvc_simple_plotspec():
             for si,svar in enumerate(self.vars):
                 for pi,pvar in enumerate(pset.vars):
                     if svar.units!=pvar.units and svar.id==s_var_d[vid] and pvar.id==p_var_d[vid]:
-                       print "jfp about to call reconcile_units from synchronize_values"
                        self.vars[si],pset.vars[pi] = reconcile_units( svar, pvar ) 
                        self.varmin[vids] = self.vars[si].min()
                        pset.varmin[vidp] = pset.vars[pi].min()
