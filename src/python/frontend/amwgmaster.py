@@ -1,6 +1,19 @@
 # This should probably move to packages/amwg but it is not actually used there; it is used by metadiags.py and the "classic" viewer
 # This was generated from the NCAR-generated HTML pages for a full diags run
 # It basically maps obssets to diags sets to vars. 
+"""
+new structure:
+setsinfo['topten'] = {'RELHUM':{'obs':'ERA40_1', 'seasons':['ANN'], 'plottype':'4'}}  # plottype is an (existing) amwg diagnostics 'set' that produces the plot types and does the reductions that you want.
+setsinfo['topten'] = {'PRECT':{'obs':'GPCP_1', 'seasons':['ANN'], 'plottype':'5'}}
+etc
+
+varinfo['RELHUM'] = {'desc':'Relative humidity'} # other fields can be empty; other fields could be added in the future too
+varinfo['PRECT'] = {'desc':'Precipitation'}
+etc
+
+obsinfo['ERA40_1'] = {'desc':'ERA40 Reanalysis 1980-2001', 'filekey':'ERA40'}
+obsinfo['GPCP_1'] = {'desc':'GPCP 1979-2003', 'filekey':'GPCP'}
+"""
 
 ### TODO: Find NCEP link, copy ocean basin map
 
