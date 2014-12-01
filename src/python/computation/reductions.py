@@ -744,7 +744,7 @@ def std_3time(mv1, mv2, mv3, constant = 1.):
          print 'axis ', axes3[i].id, ' has no axis attribute, assuming it is a time axis'
          axes3[i].axis='T'
          flag = True
-   if flag=True
+   if flag==True:
       mv3new.setAxisList(axes3)
 
    mv1_sd = statistics.std(mv1new)
