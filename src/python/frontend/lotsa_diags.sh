@@ -27,3 +27,4 @@ diags --packages AMWG --outputdir ~/tmp/diagout/13 --path ~/metrics_data/cam35_d
 #  sudo mount saigon2:/A-Train_data /A-Train_data
 echo "cloud variables in set 5"
 diags --packages AMWG --outputdir ~/tmp/diagout/cosp --path /A-Train_data/integration_cosp_cam/amip10yr --filter "f_startswith('cam5_2deg_release_amip.cam2.h0.2005')" --path2 ~/metrics_data/obs_data_5.6 --filter2 "f_startswith('CALIPSOCOSP')" --seasons ANN --sets 5 --vars CLDTOT_CAL CLDHGH_CAL
+diags --packages AMWG --outputdir ~/tmp/diagout/cosp --path /A-Train_data/integration_cosp_cam/amip10yr --filter "f_startswith('cam5_2deg')" --path2 ~/metrics_data/obs_data_5.6 --filter2 "f_startswith('MODISCOSP')" --seasons ANN --sets  5 --vars CLDHGH_TAU1.3_MODIS
