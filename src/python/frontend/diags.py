@@ -250,18 +250,18 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                         res = plot.compute(newgrid=-1) # newgrid=0 for original grid, -1 for coarse
                         if res is not None and len(res)>0:
                             if opts['plots'] == True:
-                                vcanvas = vcs.init()
-                                vcanvas.setcolormap('bl_to_darkred') #Set the colormap to the NCAR colors
-                                vcanvas2 = vcs.init()
-                                vcanvas2.portrait()
-                                vcanvas2.setcolormap('bl_to_darkred') #Set the colormap to the NCAR colors
-                                try:
-                                   LINE = vcanvas.createline('LINE', 'default')
-                                except:
-                                   LINE = vcanvas.getline('LINE')
-                                LINE.width = 3.0
-                                LINE.type = 'solid'
-                                LINE.color = 242
+#                                vcanvas = vcs.init()
+#                                vcanvas.setcolormap('bl_to_darkred') #Set the colormap to the NCAR colors
+#                                vcanvas2 = vcs.init()
+#                                vcanvas2.portrait()
+#                                vcanvas2.setcolormap('bl_to_darkred') #Set the colormap to the NCAR colors
+#                                try:
+#                                   LINE = vcanvas.createline('LINE', 'default')
+#                                except:
+#                                   LINE = vcanvas.getline('LINE')
+#                                LINE.width = 3.0
+#                                LINE.type = 'solid'
+#                                LINE.color = 242
                                 rdone = 0
 
                                 # At this loop level we are making one compound plot.  In consists
