@@ -50,7 +50,7 @@ class derived_var(basic_id):
            # Then we need to add it to inputs
            self._inputs.append(self._special)
         dictvals = [ inpdict.get(inp,None) for inp in self._inputs ]
-        nonevals = [nn for nn in dictvals if nn is None]
+        nonevals = [ inp for inp in self._inputs if inpdict.get(inp,None) is None ]
         if len(nonevals)>0:
             print "cannot yet derive",self._id,"because missing inputs",nonevals
             return None
