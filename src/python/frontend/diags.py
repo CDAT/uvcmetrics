@@ -210,7 +210,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                     variables = list( set(variables) & set(opts.get('vars',[])) )
                     if len(variables)==0 and len(opts.get('vars',[]))>0:
                         print "WARNING: Couldn't find any of the requested variables:",opts['vars']
-                        print "among",variables
+                        print "among",pclass.list_variables( filetable1, filetable2, sname  )
                 for varid in variables:
                     print "variable",varid,"season",seasonid
                     vard = pclass.all_variables( filetable1, filetable2, sname )
@@ -311,7 +311,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                 vcanvas2.clear()
                                 ir = -1
                                 for r,resr in enumerate(res):
-                                   if resr is None:
+                                   if resr is None or resr==[]:
                                        continue
                                    
                                    if type(resr) is not tuple:
@@ -328,6 +328,9 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                        title = rsr.title
                                        rsr_presentation = rsr.presentation
                                        for varIndex, var in enumerate(rsr.vars):
+                                           if len(var)<=1:
+                                               print "INFO: won't plot short variable",var.id
+                                               continue
                                            savePNG = True
                                            seqsetattr(var,'title',title)
 
@@ -458,8 +461,8 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                                    print "ERROR making summary plot:",e
                                            else:
                                                #pdb.set_trace()
-                                               vcanvas.plot(var, rsr.presentation, tm, bg=1,
-                                                                title=title, units=getattr(var,'units',''), source=rsr.source )
+                                               vcanvas.plot(var, rsr.presentation, tm, bg=1, title=title,
+                                                            units=getattr(var,'units',''), source=rsr.source )
 #                                               vcanvas3.clear()
 #                                               vcanvas3.plot(var, rsr.presentation )
                                                savePNG = True
