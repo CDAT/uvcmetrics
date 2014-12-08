@@ -13,7 +13,11 @@ class rectregion(basic_id):
         basic_id.__init__( self, self.__class__.__name__, name )
     def __getitem__( self, slice ):
         """Returns lat/lon min/max from the list of region lat-lon bounds."""
-        return self.latlonminmax.__getitem__(slice)
+        if slice=='coords':
+            # someone did rr['coords'] when it should have been rr.coords()
+            return self.coords()
+        else:
+            return self.latlonminmax.__getitem__(slice)
     def __str__( self ):
         return self._name
     def __repr__( self ):
