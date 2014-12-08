@@ -106,6 +106,9 @@ class amwg_plot_spec(plot_spec):
         'CLDLOW_ISCCP':[
             derived_var( vid='CLDLOW_ISCCP', inputs=['CLDLOW_ISCCPCOSP'], outputs=['CLDLOW_ISCCP'],
                          func=(lambda x:x) ) ],
+        'CLMISR':[
+            derived_var( vid='CLMISR', inputs=['CLD_MISR'], outputs=['CLMISR'],
+                         func=(lambda x:x) ) ],
         # Note: CLDTOT is different from CLDTOT_CAL, CLDTOT_ISCCPCOSP, etc.  But translating
         # from one to the other might be better than returning nothing.  Also, I'm not so sure that
         # reduce_prs_tau is producing the right answers, but that's a problem for later.
@@ -117,13 +120,31 @@ class amwg_plot_spec(plot_spec):
             ],
         'CLDTHIN_TAU1.3-9.4_ISCCP':[
             derived_var(
-                vid='CLDTOT_TAU1.3-9.4_ISCCP', inputs=['CLISCCP'], outputs=['CLDTOT_TAU1.3-9.4_ISCCP'],
+                vid='CLDTHIN_TAU1.3-9.4_ISCCP', inputs=['CLISCCP'], outputs=['CLDTHIN_TAU1.3-9.4_ISCCP'],
                 #func=(lambda clisccp: reduce_prs_tau( clisccp( isccp_tau=(1.3,9.4) ))) )
                 func=(lambda clisccp: reduce_height_thickness( clisccp, None,None, 1.3,9.4) ) )
             ],
         'CLDTHICK_TAU9.4_ISCCP':[
             derived_var(
                 vid='CLDTHICK_TAU9.4_ISCCP', inputs=['CLISCCP'], outputs=['CLDTHICK_TAU9.4_ISCCP'],
+                #func=(lambda clisccp: reduce_prs_tau( clisccp( isccp_tau=(9.4,379) ))) )
+                func=(lambda clisccp: reduce_height_thickness( clisccp, None,None, 9.4,379) ) )
+            ],
+        'CLDTOT_TAU1.3_MODIS':[
+            derived_var(
+                vid='CLDTOT_TAU1.3_MODIS', inputs=['CLMODIS'], outputs=['CLDTOT_TAU1.3_MODIS'],
+                #func=(lambda clisccp: reduce_prs_tau( clisccp( isccp_tau=(1.3,379) ))) )
+                func=(lambda clisccp: reduce_height_thickness( clisccp, None,None, 1.3,379) ) )
+            ],
+        'CLDTHIN_TAU1.3-9.4_MODIS':[
+            derived_var(
+                vid='CLDTHIN_TAU1.3-9.4_MODIS', inputs=['CLMODIS'], outputs=['CLDTHIN_TAU1.3-9.4_MODIS'],
+                #func=(lambda clisccp: reduce_prs_tau( clisccp( isccp_tau=(1.3,9.4) ))) )
+                func=(lambda clisccp: reduce_height_thickness( clisccp, None,None, 1.3,9.4) ) )
+            ],
+        'CLDTHICK_TAU9.4_MODIS':[
+            derived_var(
+                vid='CLDTHICK_TAU9.4_MODIS', inputs=['CLMODIS'], outputs=['CLDTHICK_TAU9.4_MODIS'],
                 #func=(lambda clisccp: reduce_prs_tau( clisccp( isccp_tau=(9.4,379) ))) )
                 func=(lambda clisccp: reduce_height_thickness( clisccp, None,None, 9.4,379) ) )
             ],
@@ -147,6 +168,24 @@ class amwg_plot_spec(plot_spec):
                 #func=(lambda clmodis: reduce_prs_tau( clmodis( modis_prs=(0,440), modis_tau=(9.4,379) ))) )
                 func=(lambda clmodis: reduce_height_thickness( clmodis, 0,440, 9.4,379) ) )
             ],
+        'CLDTOT_TAU1.3_MISR':[
+            derived_var(
+                vid='CLDTOT_TAU1.3_MISR', inputs=['CLMISR'], outputs=['CLDTOT_TAU1.3_MISR'],
+                #func=(lambda clisccp: reduce_prs_tau( clisccp( isccp_tau=(1.3,379) ))) )
+                func=(lambda clisccp: reduce_height_thickness( clisccp, None,None, 1.3,379) ) )
+            ],
+        'CLDTHIN_TAU1.3-9.4_MISR':[
+            derived_var(
+                vid='CLDTHIN_TAU1.3-9.4_MISR', inputs=['CLMISR'], outputs=['CLDTHIN_TAU1.3-9.4_MISR'],
+                #func=(lambda clisccp: reduce_prs_tau( clisccp( isccp_tau=(1.3,9.4) ))) )
+                func=(lambda clisccp: reduce_height_thickness( clisccp, None,None, 1.3,9.4) ) )
+            ],
+        'CLDTHICK_TAU9.4_MISR':[
+            derived_var(
+                vid='CLDTHICK_TAU9.4_MISR', inputs=['CLMISR'], outputs=['CLDTHICK_TAU9.4_MISR'],
+                #func=(lambda clisccp: reduce_prs_tau( clisccp( isccp_tau=(9.4,379) ))) )
+                func=(lambda clisccp: reduce_height_thickness( clisccp, None,None, 9.4,379) ) )
+            ],
         'CLDLOW_TAU1.3_MISR':[
             derived_var(
                 vid='CLDLOW_TAU1.3_MISR', inputs=['CLMISR'], outputs=['CLDLOW_TAU1.3_MISR'],
@@ -157,6 +196,12 @@ class amwg_plot_spec(plot_spec):
             derived_var(
                 vid='CLDLOW_TAU1.3-9.4_MISR', inputs=['CLMISR'], outputs=['CLDLOW_TAU1.3-9.4_MISR'],
                 func=(lambda clmisr: reduce_height_thickness( clmisr, 0,3, 1.3,9.4) ) )
+            ],
+        'CLDLOW_TAU9.4_MISR':[
+            derived_var(
+                vid='CLDLOW_TAU9.4_MISR', inputs=['CLMISR'], outputs=['CLDLOW_TAU9.4_MISR'],
+                func=(lambda clmisr: reduce_height_thickness(
+                        clmisr, 0,3, 9.4,379) ) )
             ],
         'CLDTOT':[
             derived_var(
@@ -230,11 +275,14 @@ class amwg_plot_spec(plot_spec):
         #if varnom not in amwg_plot_spec.standard_variables:
         if varnom not in cls.standard_variables:
             return None,[],[]
+        #print "jfp varnom=",varnom
         computable = False
         rvs = []
         dvs = []
         for svd in cls.standard_variables[varnom]:  # loop over ways to compute varnom
-            invarnoms = svd._inputs
+            invarnoms = svd.inputs()
+            #print "jfp first round, invarnoms=",invarnoms
+            #print "jfp filetable variables=",filetable.list_variables()
             if len( set(invarnoms) - set(filetable.list_variables_incl_axes()) )<=0:
                 func = svd._func
                 computable = True
@@ -244,7 +292,9 @@ class amwg_plot_spec(plot_spec):
                 rv = reduced_variable( variableid=ivn, filetable=filetable, season=season,
                                        reduction_function=reduction_function )
                 rvs.append(rv)
+        #print "jfp1 rvs ids=",[rv.id() for rv in rvs]
         if not computable and recurse==True:
+            #print "jfp second round"
             # Maybe the input variables are themselves computed.  We'll only do this one
             # level of recursion before giving up.  This is enough to do a real computation
             # plus some variable renamings via standard_variables.
@@ -252,7 +302,7 @@ class amwg_plot_spec(plot_spec):
             # be dispensed with.  If we well never have such a system, then the above loop
             # can be dispensed with.
             for svd in cls.standard_variables[varnom]:  # loop over ways to compute varnom
-                invarnoms = svd._inputs
+                invarnoms = svd.inputs()
                 for invar in invarnoms:
                     if invar in filetable.list_variables_incl_axes():
                         rv = reduced_variable( variableid=invar, filetable=filetable, season=season,
@@ -268,11 +318,17 @@ class amwg_plot_spec(plot_spec):
                 func = svd._func
                 computable = True
                 break
+        #print "jfp4 rvs ids=",[rv.id() for rv in rvs]
+        if len(rvs)<=0:
+            print "WARNING, no inputs found for",varnom,"in filetable",filetable.id()
         if not computable:
             print "DEBUG: standard variable",varnom,"is not computable"
+            print "need inputs",svd.inputs()
+            print "found inputs",[rv.id() for rv in rvs]+[dv.id() for dv in dvs]
             return None,[],[]
         seasonid = season.seasons[0]
         vid = dv.dict_id( varnom, '', seasonid, filetable )
+        #print "jfp stdvar is making a new derived_var, vid=",vid,"inputs=",[rv.id() for rv in rvs]
         newdv = derived_var( vid=vid, inputs=[rv.id() for rv in rvs], func=func )
         dvs.append(newdv)
         return newdv.id(), rvs, dvs
