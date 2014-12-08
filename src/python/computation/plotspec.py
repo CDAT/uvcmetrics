@@ -34,6 +34,8 @@ class derived_var(basic_id):
         # but this is what worked for me in land.
         #   -BES
         self._special = special_value
+    def inputs( self ):
+        return self._inputs
     def derive( self, inpdict ):
         """Compute the derived variable.  inpdict is a dictionary of input names (ids) and
         values, and will be used to get the input values from the input names in self._inputs.
