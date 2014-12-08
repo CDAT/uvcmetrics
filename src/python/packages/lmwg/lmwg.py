@@ -233,7 +233,7 @@ class lmwg_plot_set1(lmwg_plot_spec):
          self.plot2_id = ft1id+' - '+ft2id+'_'+varid
          self.plotall_id = ft1id+'_'+ft2id+'_'+varid
       else:
-         self.plotall_id = filetable1._strid+'_'+varid
+         self.plotall_id = filetable1._strid+'__'+varid # must differ from plot1_id
 
       self.seasons = ['ANN']
       if not self.computation_planned:
@@ -435,7 +435,7 @@ class lmwg_plot_set2(lmwg_plot_spec):
          self.plot3_id = ft1id+' - '+ft2id+'_'+varid+'_'+seasonid
          self.plotall_id = ft1id+'_'+ft2id+'_'+varid+'_'+seasonid
       else:
-         self.plotall_id = filetable1._strid+'_'+varid+'_'+seasonid
+         self.plotall_id = filetable1._strid+'__'+varid+'_'+seasonid # must differ from plot1_id
 
       if not self.computation_planned:
          self.plan_computation( filetable1, filetable2, varid, seasonid, region, aux )
