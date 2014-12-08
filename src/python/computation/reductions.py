@@ -1962,7 +1962,7 @@ def special_case_fixed_variable( case, var ):
     if case=='CERES':
         # CERES data, instead of a mask for missing data, uses a _FillValue attribute.
         # cdms2 does not recognize this attribute.
-        if not var.mask:
+        if var.mask is False:
             return numpy.ma.masked_equal( var, var._FillValue )
     return var
 
