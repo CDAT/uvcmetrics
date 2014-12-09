@@ -4,7 +4,7 @@
 # (lambda clmodis: reduce_prs_tau( clmodis( modis_prs=(0,440), modis_tau=(1.3,379) )))
 # Perhaps this should be merged with reduce_prs_tau, currently in reductions.py.
 
-from cdutil import averager
+from genutil import averager
 
 def reduce_prs_tau( mv, vid=None ):
     """Input is a transient variable.  Dimensions isccp_prs, isccp_tau are reduced - but not
@@ -12,13 +12,10 @@ def reduce_prs_tau( mv, vid=None ):
     if vid is None:
         vid = mv.id
     axes = mv.getAxisList()
-    print "jfp in reduce_prs_tau, mv.id=",mv.id
-    print "jfp in reduce_prs_tau, all axis names=",[a.id for a in axes]
     axis_names = [ a.id for a in axes if a.id=='isccp_prs' or a.id=='isccp_tau' or
                    a.id=='cosp_prs' or a.id=='cosp_tau' or a.id=='modis_prs' or a.id=='modis_tau'
                    or a.id=='cosp_tau_modis' or a.id=='cosp_htmisr'
                    or a.id=='misr_cth' or a.id=='misr_tau']
-    print "jfp in reduce_prs_tau, summing on axis_names=",axis_names
     if len(axis_names)<=0:
         return mv
     else:
@@ -26,7 +23,7 @@ def reduce_prs_tau( mv, vid=None ):
         for axis in mv.getAxisList():
             if axis.getBounds() is None:
                 axis._bounds_ = axis.genGenericBounds()
-        avmv = averager( mv, axis=axes_string, action='sum' )
+        avmv = averager( mv, axis=axes_string, action='sum', weights=['unweighted','unweighted'] )
     avmv.id = vid
     if hasattr(mv,'units'):
         avmv.units = mv.units
