@@ -324,7 +324,7 @@ class amwg_plot_spec(plot_spec):
         if not computable:
             print "DEBUG: standard variable",varnom,"is not computable"
             print "need inputs",svd.inputs()
-            print "found inputs",[rv.id() for rv in rvs]+[dv.id() for dv in dvs]
+            print "found inputs",[rv.id() for rv in rvs]+[drv.id() for drv in dvs]
             return None,[],[]
         seasonid = season.seasons[0]
         vid = dv.dict_id( varnom, '', seasonid, filetable )
