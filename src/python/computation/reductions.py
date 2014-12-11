@@ -18,6 +18,8 @@ from metrics.packages.amwg.derivations import press2alt
 from metrics.fileio.filetable import *
 from metrics.computation.units import *
 #from climo_test import cdutil_climatology
+import metrics.frontend.defines as defines
+from metrics.computation.region import *
 from genutil import *
 from metrics.computation.region_functions import *
 
@@ -390,7 +392,7 @@ def reduce2levlat_seasonal( mv, seasons=seasonsyr, region=None, vid=None ):
     axes = allAxes( mv )
 
     mvr = select_region(mv, region)
-    mvseas = reduce_time_seasonal(mvr, seasons)
+    mvseas = reduce_time_seasonal(mvr, seasons, region)
 
     axis_names = [ a.id for a in axes if a.isLevel()==False and a.isLatitude()==False and a.isTime()==False ]
     axes_string = '('+')('.join(axis_names)+')'
@@ -1188,6 +1190,39 @@ def calculate_seasonal_climatology(mv, season):
         mvt.units = mv.units
     return mvt
 
+# Moved this here from amwg.py set13 class, because it can be used by all the AMWG classes.
+def interpret_region( region ):
+    """Tries to make sense of the input region, and returns the resulting instance of the class
+    rectregion in region.py."""
+    if region is None:
+        region = "Global"
+    if type(region) is str:
+        if region in defines.all_regions:
+            region = defines.all_regions[region]
+        else:
+            raise ValueError, "cannot recognize region name %s"%region
+            region = None
+    if region == None:
+        print 'this code should never be hit. please sent smithbe@ornl.gov an email detailing how you got here.'
+        quit()
+    return region
+
+def select_region(mv, region=None):
+    # Select lat-lon region
+    if isinstance(region, rectregion):
+       if region=="global" or region=="Global" or getattr(region,'filekey',None)=="Global"\
+            or str(region)=="Global":
+           mvreg = mv
+       else:
+            region = interpret_region(region)
+            mvreg = mv(latitude=(region[0], region[1]), longitude=(region[2], region[3]))
+    else:
+       # The special cased amwg1
+       print 'region - %s - was not a rectregion. this should probably not get hit' % region
+       quit()
+
+    return mvreg
+
 def select_lev( mv, slev ):
     """Input is a level-dependent variable mv and a level slev to select.
     slev is an instance of udunits - thus it has a value and a units attribute.
@@ -1573,7 +1608,9 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
     if hasattr(mv1,'units') and hasattr(mv2,'units') and\
             (preferred_units is not None or mv1.units!=mv2.units):
         # Very ad-hoc, but more general would be less safe:
-        if mv1.id[0:8]=="rv_QFLX_" and mv1.units=="kg/m2/s":
+        # BES - set 3 does not seem to call it rv_QFLX. It is set3_QFLX_ft0_climos, so make this just a substring search
+#        if mv1.id[0:8]=="rv_QFLX_" and mv1.units=="kg/m2/s":
+        if mv1.id.find('_QFLX_') and mv1.units=="kg/m2/s":
             preferred_units="mm/day"
             mv1.units="mm/s"   # if 1 kg = 10^6 mm^3 as for water
         if mv1.units=='kg/m2/s' and mv2.units=='mm/day':

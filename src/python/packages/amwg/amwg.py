@@ -367,10 +367,10 @@ class amwg_plot_set2(amwg_plot_spec):
         if not self.computation_planned:
             self.plan_computation( model, obs, varid, seasonid )
     @staticmethod
-    def _list_variables( self, model, obs ):
+    def _list_variables( model, obs ):
         return ['Ocean_Heat']
     @staticmethod
-    def _all_variables( self, model, obs ):
+    def _all_variables( model, obs ):
         return { vn:basic_plot_variable for vn in amwg_plot_set2._list_variables( model, obs ) }
     def plan_computation( self, model, obs, varid, seasonid ):
         filetable1, filetable2 = self.getfts(model, obs)
@@ -1679,7 +1679,7 @@ class amwg_plot_set9(amwg_plot_spec):
     # Here, the plotspec contains the variables themselves.
     name = '9 - Horizontal Contour Plots of DJF-JJA Differences'
     number = '9'
-    def __init__( self, model, obs, varid, seasonid='DJF-JJA', region=None, aux=None ):
+    def __init__( self, model, obs, varid, seasonid='DJF-JJA', regionid=None, aux=None ):
         filetable1, filetable2 = self.getfts(model, obs)
         """filetable1, filetable2 should be filetables for each model.
         varid is a string, e.g. 'TREFHT'.  The seasonal difference is Seasonid
@@ -2152,15 +2152,6 @@ class amwg_plot_set13(amwg_plot_spec):
         self.plotall_id = '_'.join([ft1id,ft2id,varnom,seasonid])
         if not self.computation_planned:
             self.plan_computation( model, obs, varnom, seasonid, region )
-    @staticmethod
-    def interpret_region( region ):
-        """Tries to make sense of the input region, and returns the resulting instance of the class
-        rectregion in region.py."""
-        if region is None:
-            region = "global"
-        if type(region) is str:
-            region = defines.all_regions[region]
-        return region
     @staticmethod
     def _list_variables( model, obs ):
         allvars = amwg_plot_set13._all_variables( model, obs)

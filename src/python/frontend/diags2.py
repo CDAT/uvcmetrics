@@ -2,6 +2,12 @@
 # Script for running diagnostics.
 # Command-line usage example:
 # diags --model path=path,climos=yes --obs path=path,climos=yes,filter='f_startswith("NCEP")' --vars FLUT T --seasons DJF --region Global --package AMWG --output path
+
+### TODO
+### Clean up filename generation to make it easier to detect already-generated files
+###     (Idealy, just specify the exact, complete filename)
+### Look for speed improvements
+
 import hashlib, os, pickle, sys, os, time, re
 from metrics import *
 from metrics.fileio.filetable import *
@@ -58,8 +64,8 @@ def run_diags( opts ):
       print 'Writing output to %s. Override with --outputdir option' % outdir
 
    # Parts of the eventual output filenames
-   basename = opts['output']['outputpre']
-   postname = opts['output']['outputpost']
+   basename = opts['output']['prefix']
+   postname = opts['output']['postfix']
       
    # This should probably be done in verify options()
    if opts['package'] is None:
@@ -86,15 +92,17 @@ def run_diags( opts ):
    # See if regions were passed in
    regl = []
    regions = []
-   if opts['regions'] == None:
+   if opts['regions'] == []:
       rname = 'Global'
       regl = [defines.all_regions['Global']]
       regions = [ rectregion(rname, regl) ]
    else:
-      rname = opt['regions']
+      rnames = opts['regions']
       for r in rnames:
          regl.append(defines.all_regions[r])
          regions.append(rectregion(r, defines.all_regions[r]))
+   print regions
+
 
    number_diagnostic_plots = 0
    dm = diagnostics_menu()                 # dm = diagnostics menu (package), a dict
