@@ -58,7 +58,7 @@ class Options():
       self._opts['vars'] = ['ALL']
       self._opts['varopts' ] = None
       self._opts['sets'] = None
-      self._opts['regions'] = None
+      self._opts['regions'] = []
       
       self._opts['reltime'] = None
       self._opts['cachepath'] = '/tmp'
@@ -89,7 +89,7 @@ class Options():
       oid = 0
 
       for i in range(len(args.path)):
-         if len(args.type) >= i:
+         if args.type != None and len(args.type) >= i:
             if args.type[i] == 'model':
                index = mid
                key = 'model'
@@ -197,7 +197,7 @@ class Options():
    def listVariables(self, package, setname):
       import metrics.fileio.filetable as ft
       import metrics.fileio.findfiles as fi
-      dtree = fi.dirtree_datafiles(self, pathid=0)
+      dtree = fi.dirtree_datafiles(self, modelid=0)
       filetable = ft.basic_filetable(dtree, self)
 
       # this needs a filetable probably, or we just define the maximum list of variables somewhere
@@ -228,7 +228,7 @@ class Options():
    def listVarOptions(self, package, setname, varname):
       import metrics.fileio.filetable as ft
       import metrics.fileio.findfiles as fi
-      dtree = fi.dirtree_datafiles(self, pathid=0)
+      dtree = fi.dirtree_datafiles(self, modelid=0)
       filetable = ft.basic_filetable(dtree, self)
 
       if package.lower() == 'lmwg':
@@ -274,6 +274,9 @@ class Options():
             if self._opts['obs'][i]['path'] == None or self._opts['obs'][i]['path'] == '':
                print 'Each dataset must have a path provided'
                quit()
+#      if(self._opts['package'] == None):
+#         print 'Please specify a package e.g. AMWG, LMWG, etc'
+#         quit()
 
       if(self._opts['package'] != None):
          if self._opts['package'].upper() in self.all_packages.keys() or self._opts['package'] in self.all_packages.keys():
@@ -299,7 +302,7 @@ class Options():
             import metrics.packages.lmwg.lmwg
          elif package.lower()=='amwg':
             import metrics.packages.amwg.amwg
-         dtree = fi.dirtree_datafiles(self, pathid=0)
+         dtree = fi.dirtree_datafiles(self, modelid=0)
          filetable = ft.basic_filetable(dtree, self)
          dm = metrics.packages.diagnostic_groups.diagnostics_menu()
 

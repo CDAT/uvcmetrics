@@ -290,7 +290,7 @@ def list_vars(path, package):
     opts['path'] = [path]
     opts['packages'] = [package.upper()]
 
-    dtree1 = dirtree_datafiles(opts, pathid=0)
+    dtree1 = dirtree_datafiles(opts, modelid=0)
     filetable1 = basic_filetable(dtree1, opts)
 
     dm = diagnostics_menu()

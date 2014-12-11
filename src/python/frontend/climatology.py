@@ -131,7 +131,7 @@ def climo_driver(opts):
     """ Test driver for setting up data for plots"""
     # This script should just generate climos 
     opts['plots'] = False
-    datafiles1 = dirtree_datafiles(opts, pathid = 0)
+    datafiles1 = dirtree_datafiles(opts, modelid = 0)
     filetable1 = basic_filetable(datafiles1, opts)
 
     myvars = opts['vars']
