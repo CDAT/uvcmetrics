@@ -737,7 +737,7 @@ if __name__ == '__main__':
    o = Options()
    o.ProcessCmdLine()
    from findfiles import *
-   datafiles = dirtree_datafiles(o, pathid=0)
+   datafiles = dirtree_datafiles(o, modelid=0)
    filetable = basic_filetable( datafiles, o)
    print "filetable=", filetable.sort()
 

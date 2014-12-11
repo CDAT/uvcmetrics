@@ -89,7 +89,7 @@ if __name__ == '__main__':
    modelfts = []
    obsfts = []
    for i in range(len(o['models'])):
-      modelfts.append(path2filetable(o, pathid = i))
+      modelfts.append(path2filetable(o, modelid = i))
    for i in range(len(o['obs'])):
       obsfts.append(path2filetable(o, obsid = i))
 

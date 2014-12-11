@@ -53,8 +53,9 @@ all_regions['S._Hemisphere_Land'] = rectregion('S._Hemisphere_Land',  [-90, 0, -
 all_regions['Global'] = rectregion('Global',  [-90, 90, -180, 180],filekey='Global')
 all_regions['global'] = rectregion('global',  [-90,90, -180, 180],filekey='Global')
 all_regions['tropics'] = rectregion('tropics',  [-20,20, -180, 180],filekey='tropics')
-all_regions['southern extratropics'] = rectregion('southern extratropics',  [-90,-20, -180, 180],filekey='S_Extratropics')
-all_regions['northern extratropics'] = rectregion('northern extratropics',  [20,90, -180, 180], filekey='N_Extratropics')
+all_regions['southern_extratropics'] = rectregion('southern_extratropics',  [-90,-20, -180, 180],filekey='S_Extratropics')
+all_regions['northern_extratropics'] = rectregion('northern_extratropics',  [20,90, -180, 180], filekey='N_Extratropics')
+all_regions['Southern_Ocean'] = rectregion('Southern_Ocean', [-90, -40, -180, 180], filekey='S_Ocean')
 
 #"User defined'] = {'coords': [0, 0, 0, 0],
 
