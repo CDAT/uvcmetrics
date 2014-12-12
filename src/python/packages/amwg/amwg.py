@@ -905,7 +905,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
                      reduce2latlon_seasonal(x, season, vid, exclude_axes=[
                         'isccp_prs','isccp_tau','cosp_prs','cosp_tau',
                         'modis_prs','modis_tau','cosp_tau_modis',
-                        'misr_cth','misr_tau']) ))
+                        'misr_cth','misr_tau','cosp_htmisr']) ))
         #            ... isccp_prs, isccp_tau etc. are used for cloud variables and need special treatment
         if varid is None:
             return None,None
