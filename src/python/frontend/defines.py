@@ -76,13 +76,6 @@ region_categories = {
 
 all_months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
 all_seasons = all_months+['ANN', 'DJF', 'MAM', 'JJA', 'SON', 'ASO', 'FMA'] # The last 2 were in some obs sets
-
-# I'd like these to move to a packages/defines.py, but the current design
-# doesn't favor that
-#all_packages = ['lmwg', 'amwg']
-#lmwg_sets = []
-#amwg_sets = []
-#lmwg_set1_properties = []
-# ...
+all_packages = ['lmwg', 'amwg']
 
 

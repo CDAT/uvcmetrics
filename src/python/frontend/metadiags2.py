@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 
-###
-### HANDLE MULTIPLE PACKAGES NEXT
-###
 
 ### This file converts the dictionary file (in this case amwgmaster2.py) to a series of diags.py commands.
 import sys, getopt, os, subprocess
@@ -13,6 +10,7 @@ from metrics.packages.diagnostic_groups import *
 from metrics.frontend.amwgmaster2 import *
 
 
+# The user specified a package; see what collections are available.
 def getCollections(pname):
    allcolls = diags_collection.keys()
    colls = []
@@ -23,10 +21,24 @@ def getCollections(pname):
    for k in keys:
       fields = k.split()
       colls.append(fields[0])
+
+   # Find all mixed_plots sets that have the user-specified pname
+   # Deal with mixed_plots next
    for c in allcolls:
-      mixed = diags_collection[c].get('mixed_plots',False)
-      if mixed == True:
-         colls.append(c)
+      if diags_collection[c].get('mixed_plots', False) == True:
+         # mixed_packages requires mixed_plots 
+         if diags_collection[c].get('mixed_packages', False) == False:
+            # If no package was specified, just assume it is universal
+            # Otherwise, see if pname is in the list for this collection
+            if diags_collection[c].get('package', False) == False or diags_collection[c]['package'].upper() == pname.upper():
+               colls.append(c)
+         else: # mixed packages. need to loop over variables then. if any variable is using this pname then add the package 
+            vlist = list( set(diags_collection[c].keys()) - set(collection_special_vars))
+            for v in vlist:
+               # This variable has a package
+               if diags_collection[c][v].get('package', False) != False and diags_collection[c][v]['package'].upper() == pname.upper():
+                  colls.append(c)
+            
    print 'The following diagnostic collections appear to be available: %s' %colls
    return colls
 
@@ -75,8 +87,23 @@ def generatePlots(modelpath, obspath, outpath, pname, xmlflag, colls=None):
          makeTables(modelpath, obspath, outpath, pname, outlog, errlog)
          continue
 
-
-      # NOTE: TODO add package stuff
+      # Deal with packages
+      # Do we have a global package?
+      if diags_collection[collnum].get('package', False) != False and diags_collection[collnum]['package'].upper() == pname.upper():
+         if diags_collection[collnum].get('mixed_packages', False) == False:
+            packagestr = '--package '+pname
+      
+      if diags_collection[collnum].get('mixed_packages', False) == False:  #no mixed
+         # Check global package
+         if diags_collection[collnum].get('package', False) != False and diags_collection[collnum]['package'].upper() != pname.upper():
+            # skip over this guy
+            print 'Skipping over collection ', collnum
+            continue
+      else:
+         if diags_collection[collnum].get('package', False) != False and diags_collection[collnum]['package'].upper() == pname.upper():
+            print 'Processing collection ', collnum
+            packagestr = '--package '+pname
+            
 
       # Given this collection, see what variables we have for it.
       vlist = list( set(diags_collection[collnum].keys()) - set(collection_special_vars))
