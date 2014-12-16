@@ -943,7 +943,7 @@ def reduceMonthlyTrendRegion(mv, region, vid=None):
       timeax._bounds_ = timeax.genGenericBounds()
    if timeax is not None:
       # first, spatially subset
-      mvsub = mv(latitude=(region[0], region[1]), longitude=(region[2], region[3]))
+      mvsub = select_region(mv, region)
       mvtrend = cdutil.times.ANNUALCYCLE.climatology(mvsub)
    else:
       mvtrend = mv
@@ -971,10 +971,8 @@ def reduce_time_space_seasonal_regional( mv, season, region, vid=None ):
                              or a.isTime() ]
     if vid == None:
         vid = 'reduced_'+mv.id
-    if type(region) is str:
-        region = defines.all_regions[region]
 
-    mvreg = mv(latitude=(region[0], region[1]), longitude=(region[2], region[3]))
+    mvreg = select_region(mv, region)
 
     axes = allAxes( mvreg )
     #axis_names = [ a.id for a in axes if a.id=='lat' or a.id=='lon' or a.id=='lev']
@@ -2085,7 +2083,7 @@ class reduced_variable(ftrow,basic_id):
                       filetable=None, filefilter=None, axes=None, duvs={}, rvs={}
                   ):
         self._season = season
-        self._region = region # this could probably change lat/lon range, or lat/lon ranges could be passed in
+        self._region = interpret_region(region) # this could probably change lat/lon range, or lat/lon ranges could be passed in
         if reduced_var_id is not None:
             basic_id.__init__( self, reduced_var_id )
         else:
