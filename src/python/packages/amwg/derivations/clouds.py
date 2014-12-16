@@ -61,15 +61,15 @@ def reduce_height_thickness( mv, heightlow, heighthigh, thicklow, thickhigh, vid
         mvht = mvh
     else:
         if 'isccp_tau' in thickness_axes:
-            mvht = mvh( isccp_prs=(thicklow,thickhigh) )
+            mvht = mvh( isccp_tau=(thicklow,thickhigh) )
         elif 'cosp_tau' in thickness_axes:
-            mvht = mvh( cosp_prs=(thicklow,thickhigh) )
+            mvht = mvh( cosp_tau=(thicklow,thickhigh) )
         elif 'modis_tau' in thickness_axes:
-            mvht = mvh( modis_prs=(thicklow,thickhigh) )
+            mvht = mvh( modis_tau=(thicklow,thickhigh) )
         elif 'cosp_tau_modis' in thickness_axes:
-            mvht = mvh( cosp_htmisr_prs=(thicklow,thickhigh) )
+            mvht = mvh( cosp_tau_modis=(thicklow,thickhigh) )
         elif 'misr_tau' in thickness_axes:
-            mvht = mvh( misr_cth=(thicklow,thickhigh) )
+            mvht = mvh( misr_tau=(thicklow,thickhigh) )
         else:
             mvht = mvh
     return reduce_prs_tau( mvht, vid )
