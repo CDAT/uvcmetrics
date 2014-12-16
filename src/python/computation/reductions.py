@@ -1094,6 +1094,58 @@ def reduce_time_seasonal( mv, seasons=seasonsyr, vid=None ):
         avmv.units = mv.units
     return avmv
 
+def calculate_seasonal_climatology(mv, season):
+    tax = timeAxis(mv)
+    if tax is None:
+        print "WARNING- no time axis in",mv.id
+        return mv
+    # TODO: how to handle files with missing time axis?
+
+    # The slicers in time.py require getBounds() to work.
+    # If it doesn't, we'll have to give it one.
+    # Setting the _bounds_ attribute will do it.
+    if tax.getBounds()==None:
+        tax._bounds_ = tax.genGenericBounds()
+
+    if len(tax)<=1:
+    # This is already climatology data, don't try to average over time again
+    # The time axis will be deleted shortly anyway.
+        mvt = mv
+    else:
+        mvt = season.climatology( mv )
+    if mvt is None:
+        print "WARNING- cannot compute climatology for",mv.id,seasons.seasons
+        print "...probably there is no data for times in the requested season."
+        return None
+
+    # If the time axis has only one point (as it should by now, if it exists at all),
+    # the next, averager(), step can't use it because it may not have bounds (or they
+    # would be as meaningless as the time value itself).  So get rid of it now:
+    mvt = delete_singleton_axis(mvt, vid='time')
+    return mvt
+
+# Moved this here from amwg.py set13 class, because it can be used by all the AMWG classes.
+def interpret_region( region ):
+    """Tries to make sense of the input region, and returns the resulting instance of the class
+    rectregion in region.py."""
+#    print "jfp interpret_region starting with",region,type(region)
+    if region is None:
+        region = "global"
+    if type(region) is str:
+        region = defines.all_regions[region]
+#    print "jfp interpet_region returning with",region,type(region)
+    return region
+
+def select_region(mv, region=None):
+    # Select lat-lon region
+    region = interpret_region(region)
+    if region=="global" or region=="Global"
+        mvreg = mv
+    else:
+        mvreg = mv(latitude=(region[0], region[1]), longitude=(region[2], region[3]))
+
+    return mvreg
+
 def select_lev( mv, slev ):
     """Input is a level-dependent variable mv and a level slev to select.
     slev is an instance of udunits - thus it has a value and a units attribute.

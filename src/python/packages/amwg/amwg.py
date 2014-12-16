@@ -2171,7 +2171,7 @@ class amwg_plot_set13(amwg_plot_spec):
             self.derived_variables[ dv.id() ] = dv
         return varid
     def plan_computation( self, filetable1, filetable2, varnom, seasonid, region ):
-        region = self.interpret_region( region )
+        region = interpret_region( region )
         if varnom in filetable1.list_variables_incl_axes():
             vid1 = self.var_from_data( filetable1, varnom, seasonid, region )
         elif varnom in self.standard_variables.keys():
