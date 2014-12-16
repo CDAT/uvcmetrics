@@ -913,7 +913,15 @@ def reduce_time_space_seasonal_regional( mv, season=seasonsyr, region=None, vid=
              ax.isLongitude() or ax.isLevel() ] )==0:
         return mv  # nothing to reduce
 
+<<<<<<< variant A
     if vid is None:
+>>>>>>> variant B
+    if vid == None:
+####### Ancestor
+    timespace_axis_names = [ a.id for a in axes if a.isLatitude() or a.isLongitude() or a.isLevel()
+                             or a.isTime() ]
+    if vid == None:
+======= end
         vid = 'reduced_'+mv.id
 
     mvreg = select_region(mv, region)
