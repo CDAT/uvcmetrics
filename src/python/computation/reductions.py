@@ -1013,8 +1013,7 @@ def reduce2latlon_seasonal_level( mv, season, level, vid=None):
    mvseas = delete_singleton_axis(mvseas, vid=levax)
    return mvseas
 
-
-def reduce2latlon_seasonal( mv, season, vid=None, exclude_axes=[] ):
+def reduce2latlon_seasonal( mv, season, region=None, vid=None, exclude_axes=[] ):
     """as reduce2lat_seasonal, but both lat and lon axes are retained.
     Axis names (ids) may be listed in exclude_axes, to exclude them from the averaging process.
     """
@@ -1035,7 +1034,9 @@ def reduce2latlon_seasonal( mv, season, vid=None, exclude_axes=[] ):
         if timeax.getBounds() is None:
             timeax._bounds_ = timeax.genGenericBounds()
         mvseas = season.climatology(mv)
-    
+
+    mvseas = select_region(mvseas, region)
+
     axes = allAxes( mv )
     axis_names = [ a.id for a in axes if a.id!='lat' and a.id!='lon' and a.id!='time' and\
                        a.id not in exclude_axes]
@@ -1058,7 +1059,7 @@ def reduce2latlon_seasonal( mv, season, vid=None, exclude_axes=[] ):
             avmv = convert_variable( avmv, "millibar" )
     return avmv
 
-def reduce_time_seasonal( mv, seasons=seasonsyr, vid=None ):
+def reduce_time_seasonal( mv, seasons=seasonsyr, region=None, vid=None ):
     """as reduce2lat_seasonal, but all non-time axes are retained.
     """
     if vid==None:
@@ -1066,6 +1067,8 @@ def reduce_time_seasonal( mv, seasons=seasonsyr, vid=None ):
         vid = mv.id
     # Note that the averager function returns a variable with meaningless id.
     # The climatology function returns the same id as mv, which we also don't want.
+
+    mvsr = select_region(mv, region, vid)
 
     # The slicers in time.py require getBounds() to work.
     # If it doesn't, we'll have to give it one.
