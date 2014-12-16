@@ -955,7 +955,7 @@ def reduceMonthlyTrendRegion(mv, region, vid=None):
    #print 'reduceMonthlyTrendRegion - Returning ', mvvals
    return mvvals
 
-def reduce_time_space_seasonal_regional( mv, season, region, vid=None ):
+def reduce_time_space_seasonal_regional( mv, season=seasonsyr, region=None, vid=None ):
     """Reduces the variable mv in all time and space dimensions.  Any other dimensions will remain.
     The averages will be restricted to the the specified season and region.
     The season should be a cdutil.times.Seasons object.
