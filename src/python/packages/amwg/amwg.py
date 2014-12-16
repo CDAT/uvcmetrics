@@ -770,13 +770,18 @@ class amwg_plot_set5and6(amwg_plot_spec):
     the difference between the two.  A plot's x-axis is longitude and its y-axis is the latitude;
     normally a world map will be overlaid.
     """
-    def __init__( self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None ):
+    def __init__( self, filetable1, filetable2, varid, seasonid=None, regionid=None, aux=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the variable to be plotted, e.g. 'TREFHT'.
         seasonid is a string such as 'DJF'."""
-        plot_spec.__init__(self,seasonid)
+        plot_spec.__init__(self, seasonid, regionid)
         self.plottype = 'Isofill'
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
+        if regionid=="Global" or regionid=="global" or regionid is None:
+            self._regionid="Global"
+        else:
+            self._regionid=regionid
+        self.region = interpret_region(regionid)
 
         self.varid = varid
         ft1id,ft2id = filetable_ids(filetable1,filetable2)
@@ -789,7 +794,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
         self.plotall_id = ft1id+'_'+ft2id+'_'+varid+'_'+seasonid
 
         if not self.computation_planned:
-            self.plan_computation( filetable1, filetable2, varid, seasonid, region, aux )
+            self.plan_computation( filetable1, filetable2, varid, seasonid, aux )
     @staticmethod
     def _list_variables( filetable1, filetable2=None ):
         allvars = amwg_plot_set5and6._all_variables( filetable1, filetable2 )
@@ -806,29 +811,29 @@ class amwg_plot_set5and6(amwg_plot_spec):
             for varname in amwg_plot_spec.standard_variables.keys():
                 allvars[varname] = basic_plot_variable
         return allvars
-    def plan_computation( self, filetable1, filetable2, varid, seasonid, region=None, aux=None ):
+    def plan_computation( self, filetable1, filetable2, varid, seasonid, aux=None ):
         if isinstance(aux,Number):
-            return self.plan_computation_level_surface( filetable1, filetable2, varid, seasonid, region, aux )
+            return self.plan_computation_level_surface( filetable1, filetable2, varid, seasonid, aux )
         else:
-            return self.plan_computation_normal_contours( filetable1, filetable2, varid, seasonid, region, aux )
-    def plan_computation_normal_contours( self, filetable1, filetable2, varnom, seasonid, region=None, aux=None ):
+            return self.plan_computation_normal_contours( filetable1, filetable2, varid, seasonid, aux )
+    def plan_computation_normal_contours( self, filetable1, filetable2, varnom, seasonid, aux=None ):
         """Set up for a lat-lon contour plot, as in plot set 5.  Data is averaged over all other
         axes."""
         if varnom in filetable1.list_variables():
             vid1,vid1var = self.vars_normal_contours(
-                filetable1, varnom, seasonid, region=None, aux=None )
+                filetable1, varnom, seasonid, aux=None )
         elif varnom in self.standard_variables.keys():
             vid1,vid1var = self.vars_stdvar_normal_contours(
-                filetable1, varnom, seasonid, region=None, aux=None )
+                filetable1, varnom, seasonid, aux=None )
         else:
             print "ERROR, variable",varnom,"not found in and cannot be computed from",filetable1
             return None
         if filetable2 is not None and varnom in filetable2.list_variables():
             vid2,vid2var = self.vars_normal_contours(
-                filetable2, varnom, seasonid, region=None, aux=None )
+                filetable2, varnom, seasonid, aux=None )
         elif varnom in self.standard_variables.keys():
             vid2,vid2var = self.vars_stdvar_normal_contours(
-                filetable2, varnom, seasonid, region=None, aux=None )
+                filetable2, varnom, seasonid, aux=None )
         else:
             vid2,vid2var = None,None
         self.single_plotspecs = {}
@@ -879,30 +884,30 @@ class amwg_plot_set5and6(amwg_plot_spec):
             self.plotall_id: all_plotnames
             }
         self.computation_planned = True
-    def vars_normal_contours( self, filetable, varnom, seasonid, region=None, aux=None ):
+    def vars_normal_contours( self, filetable, varnom, seasonid, aux=None ):
         reduced_varlis = [
             reduced_variable(
                 variableid=varnom, filetable=filetable, season=self.season,
-                reduction_function=(lambda x,vid: reduce2latlon_seasonal( x, self.season, vid ) ) ),
+                reduction_function=(lambda x,vid: reduce_seasonal_region( x, self.season, self.region, vid) ) ),
             reduced_variable(
                 # variance, for when there are variance climatology files
                 variableid=varnom+'_var', filetable=filetable, season=self.season,
-                reduction_function=(lambda x,vid: reduce2latlon_seasonal( x, self.season, vid ) ) )
+                reduction_function=(lambda x,vid: reduce_seasonal_region( x, self.season, self.region, vid ) ) )
             ]
         for v in reduced_varlis:
             self.reduced_variables[v.id()] = v
         vid = rv.dict_id( varnom, seasonid, filetable )
         vidvar = rv.dict_id( varnom+'_var', seasonid, filetable ) # variance
         return vid, vidvar
-    def vars_stdvar_normal_contours( self, filetable, varnom, seasonid, region=None, aux=None ):
+    def vars_stdvar_normal_contours( self, filetable, varnom, seasonid, aux=None ):
         """Set up for a lat-lon contour plot, as in plot set 5.  Data is averaged over all other
         axes.  The variable given by varnom is *not* a data variable suitable for reduction.  It is
         a standard_variable.  Its inputs will be reduced, then it will be set up as a derived_var.
         """
         varid,rvs,dvs = self.stdvar2var(
             varnom, filetable, self.season,\
-                (lambda x,vid,season=self.season:
-                     reduce2latlon_seasonal(x, season, vid, exclude_axes=[
+                (lambda x,vid,season=self.season,region=self.region:
+                     reduce2latlon_seasonal(x, season, region, vid, exclude_axes=[
                         'isccp_prs','isccp_tau','cosp_prs','cosp_tau',
                         'modis_prs','modis_tau','cosp_tau_modis',
                         'misr_cth','misr_tau','cosp_htmisr']) ))
@@ -938,7 +943,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
 
         return varid, None
 
-    def plan_computation_level_surface( self, filetable1, filetable2, varid, seasonid, region, aux ):
+    def plan_computation_level_surface( self, filetable1, filetable2, varid, seasonid, aux ):
         """Set up for a lat-lon contour plot, averaged in other directions - except that if the
         variable to be plotted depend on level, it is not averaged over level.  Instead, the value
         at a single specified pressure level, aux, is used. The units of aux are millbars."""
@@ -964,16 +969,16 @@ class amwg_plot_set5and6(amwg_plot_spec):
         reduced_varlis = [
             reduced_variable(  # var=var(time,lev,lat,lon)
                 variableid=varid, filetable=filetable1, season=self.season,
-                reduction_function=(lambda x,vid: reduce_time_seasonal( x, self.season, vid ) ) ),
+                reduction_function=(lambda x,vid: reduce_time_seasonal( x, self.season, self.region, vid ) ) ),
             reduced_variable(   # hyam=hyam(lev)
                 variableid='hyam', filetable=filetable1, season=self.season,
-                reduction_function=(lambda x,vid=None: x) ),
+                reduction_function=(lambda x,vid=None: select_region( x, self.region)) ),
             reduced_variable(   # hybm=hybm(lev)
                 variableid='hybm', filetable=filetable1, season=self.season,
-                reduction_function=(lambda x,vid=None: x) ),
+                reduction_function=(lambda x,vid=None: select_region( x, self.region)) ),
             reduced_variable(     # ps=ps(time,lat,lon)
                 variableid='PS', filetable=filetable1, season=self.season,
-                reduction_function=(lambda x,vid=None: reduce_time_seasonal( x, self.season, vid ) ) ) ]
+                reduction_function=(lambda x,vid=None: reduce_time_seasonal( x, self.season, self.region, vid ) ) ) ]
         # vid1 = varid+'_p_1'
         # vidl1 = varid+'_lp_1'
         vid1 = dv.dict_id(  varid, 'p', seasonid, filetable1)
@@ -1011,16 +1016,16 @@ class amwg_plot_set5and6(amwg_plot_spec):
             reduced_varlis += [
                 reduced_variable(  # var=var(time,lev,lat,lon)
                     variableid=varid, filetable=filetable2, season=self.season,
-                    reduction_function=(lambda x,vid: reduce_time_seasonal( x, self.season, vid ) ) ),
+                    reduction_function=(lambda x,vid: reduce_time_seasonal( x, self.season, self.region, vid ) ) ),
                 reduced_variable(   # hyam=hyam(lev)
                     variableid='hyam', filetable=filetable2, season=self.season,
-                    reduction_function=(lambda x,vid=None: x) ),
+                    reduction_function=(lambda x,vid=None: select_region( x, self.region)) ),
                 reduced_variable(   # hybm=hybm(lev)
                     variableid='hybm', filetable=filetable2, season=self.season,
-                    reduction_function=(lambda x,vid=None: x) ),
+                    reduction_function=(lambda x,vid=None: select_region( x, self.region)) ),
                 reduced_variable(     # ps=ps(time,lat,lon)
                     variableid='PS', filetable=filetable2, season=self.season,
-                    reduction_function=(lambda x,vid=None: reduce_time_seasonal( x, self.season, vid ) ) )
+                    reduction_function=(lambda x,vid=None: reduce_time_seasonal( x, self.season, self.region, vid ) ) )
                 ]
             #vid2 = varid+'_p_2'
             #vidl2 = varid+'_lp_2'
@@ -1041,7 +1046,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
             reduced_varlis += [
                 reduced_variable(  # var=var(time,lev,lat,lon)
                     variableid=varid, filetable=filetable2, season=self.season,
-                    reduction_function=(lambda x,vid: reduce_time_seasonal( x, self.season, vid ) ) )
+                    reduction_function=(lambda x,vid: reduce_time_seasonal( x, self.season, self.region, vid ) ) )
                 ]
             self.derived_variables[vidl2] = derived_var( vid=vidl2, inputs=[vid2],
                                                          func=(lambda z: select_lev(z,pselect) ) )
@@ -2095,15 +2100,6 @@ class amwg_plot_set13(amwg_plot_spec):
         if not self.computation_planned:
             self.plan_computation( filetable1, filetable2, varnom, seasonid, region )
     @staticmethod
-    def interpret_region( region ):
-        """Tries to make sense of the input region, and returns the resulting instance of the class
-        rectregion in region.py."""
-        if region is None:
-            region = "global"
-        if type(region) is str:
-            region = defines.all_regions[region]
-        return region
-    @staticmethod
     def _list_variables( filetable1, filetable2=None ):
         allvars = amwg_plot_set13._all_variables( filetable1, filetable2 )
         listvars = allvars.keys()
@@ -2171,7 +2167,7 @@ class amwg_plot_set13(amwg_plot_spec):
             self.derived_variables[ dv.id() ] = dv
         return varid
     def plan_computation( self, filetable1, filetable2, varnom, seasonid, region ):
-        region = self.interpret_region( region )
+        region = interpret_region( region )
         if varnom in filetable1.list_variables_incl_axes():
             vid1 = self.var_from_data( filetable1, varnom, seasonid, region )
         elif varnom in self.standard_variables.keys():
