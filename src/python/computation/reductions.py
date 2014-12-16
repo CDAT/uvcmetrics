@@ -932,13 +932,15 @@ def reduce_time_space_seasonal_regional( mv, season=seasonsyr, region=None, vid=
     mvreg = select_region(mv, region)
 
     axes = allAxes( mvreg )
-    axis_names = [ a.id for a in axes if a.id=='lat' or a.id=='lon' or a.id=='lev']
+    #axis_names = [ a.id for a in axes if a.id=='lat' or a.id=='lon' or a.id=='lev']
+    axis_names = [ a.id for a in axes if a.isLatitude() or a.isLongitude() or a.isLevel() ]
     axes_string = '('+')('.join(axis_names)+')'
     mvsav = cdutil.averager( mvreg, axis=axes_string )
 
     mvtsav = calculate_seasonal_climatology(mvsav, season)
 
     mvtsav.id = vid
+    #mvtsav = delete_singleton_axis(mvtsav, vid='time')
     #mvtsav = delete_singleton_axis(mvtsav, vid='lev')
     #mvtsav = delete_singleton_axis(mvtsav, vid='lat')
     #mvtsav = delete_singleton_axis(mvtsav, vid='lon')
