@@ -1466,6 +1466,14 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
     mv1 is a TransientVariable.  mv2 may be a TransientVariable, or it may be a udunits object.
     If preferred units are specified, they will be used if possible."""
 # This probably needs expanded to be more general purpose for unit conversions.
+    # First, if there are no units, take a guess.  I'm reluctant to do this because it will surely
+    # be wrong sometimes.  But usually it is correct.
+    if not hasattr(mv1,'units'):
+        mv1.units = '1'
+    if not hasattr(mv2,'units'):
+        mv2.units = '1'
+    # I'm still checking for the units attribute here because maybe some time I'll be able to
+    # delete the above lines which set it to a default value.
     if hasattr(mv1,'units') and hasattr(mv2,'units') and\
             (preferred_units is not None or mv1.units!=mv2.units):
         # Very ad-hoc, but more general would be less safe:
@@ -1602,10 +1610,10 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
     # all variables with physical meaning depend on lat-lon.  But this can happen, e.g. gw=gw(lat).
     # We can't deal with it here, and almost surely the variable isn't suited for the plot.
     if len(axes1)<2:
-        print "WARNING, In aminusb_2ax, mv1 doesn't have enough axes",axes1
+        print "WARNING, In aminusb_2ax, mv1=",mv1.id,"doesn't have enough axes.  It has",axes1
         raise Exception("In aminusb_2ax, mv1 doesn't have enough axes")
     if len(axes2)<2:
-        print "WARNING, In aminusb_2ax, mv2 doesn't have enough axes",axes2
+        print "WARNING, In aminusb_2ax, mv2=",mv2.id,"doesn't have enough axes.  It has",axes2
         raise Exception("In aminusb_2ax, mv1 doesn't have enough axes")
 
     if len(axes1)!=2: print "ERROR @1, wrong number of axes for aminusb_2ax",axes1
@@ -2127,7 +2135,7 @@ class reduced_variable(ftrow,basic_id):
                 # would save time (compute each DUV only once) but cost memory space (you have to
                 # keep the computed DUV until you don't need it any more).  DUVs are big, so the
                 # memory issue is paramont.  Also DUVs will be rare.  Also doing it this way avoids
-                # complexities with differeing reduced variables needing the same DUV on differing
+                # complexities with differing reduced variables needing the same DUV on differing
                 # domains (lat-lon ranges).  Thus this block of code here...
 
                 # First identify the DUV we want to compute
