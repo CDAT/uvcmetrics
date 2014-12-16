@@ -220,32 +220,11 @@ def reduce2scalar_seasonal_zonal( mv, seasons=seasonsyr, latmin=-90, latmax=90, 
     if gw is not None:
         gw2 = gw(latitude=(latmin, latmax))
 
-    timeax = timeAxis(mv2)
-    if timeax is None or len(timeax)<=1:
-        mvseas = mv2
-    else:
-        if timeax.getBounds()==None:
-            timeax._bounds_ = timeax.genGenericBounds()
-        if timeax.units=='months':
-            # Special check necessary for LEGATES obs data, because
-            # climatology() won't accept this incomplete specification
-            timeax.units = 'months since 0001-01-01'
-        if timeax.units=='month: 1=Jan, ..., 12=Dec':
-            # Special check necessary for CERES obs data.
-            timeax.units = 'months since 0001-01-01'
-        if len(timeax)==1 and  ((hasattr(ax,'_FillValue') and ax._FillValue in ax) or
-                                (hasattr(ax,'fill_value') and ax.fill_value in ax)):
-            # Time axis of length 1, which is missing!  It's a.s. a (malformed) climo file already.
-            mvseas = mv2
-        else:
-            mvseas = seasons.climatology(mv2)
-        if mvseas is None:
-            # Among other cases, this can happen if mv has all missing values.
-            return None
-    # If the time axis has only one point (as it should by now, if it exists at all),
-    # the next, averager(), step can't use it because it may not have bounds (or they
-    # would be as meaningless as the time value itself).  So get rid of it now:
-    mvseas = delete_singleton_axis( mvseas, vid='time' )
+    mvseas = calculate_seasonal_climatology(mv2, seasons)
+    if mvseas is None:
+        # Among other cases, this can happen if mv has all missing values.
+        return None
+
     axes = allAxes( mvseas )
 
     for ax in axes:
@@ -393,23 +372,8 @@ def reduce2levlat_seasonal( mv, seasons=seasonsyr, vid=None ):
     if levAxis(mv) is None: return None
     if latAxis(mv) is None: return None
     axes = allAxes( mv )
-    timeax = timeAxis(mv)
-    if timeax is None or len(timeax)<=1:
-        mvseas = mv
-    else:
-        if timeax.getBounds()==None:
-            timeax._bounds_ = timeax.genGenericBounds()
 
-        if timeax is not None and timeax.units=='months':
-            # Special check necessary for LEGATES obs data, because
-            # climatology() won't accept this incomplete specification
-            timeax.units = 'months since 0001-01-01'
-        mvseas = seasons.climatology(mv)
-    for ax in axes:
-        if ax.isTime():
-            continue
-        if ax.getBounds() is None:
-            ax._bounds_ = ax.genGenericBounds()  # needed for averager()
+    mvseas = reduce_time_seasonal(mv, seasons)
 
     axis_names = [ a.id for a in axes if a.isLevel()==False and a.isLatitude()==False and a.isTime()==False ]
     axes_string = '('+')('.join(axis_names)+')'
@@ -419,7 +383,6 @@ def reduce2levlat_seasonal( mv, seasons=seasonsyr, vid=None ):
     else:
         avmv = mvseas
     avmv.id = vid
-    avmv = delete_singleton_axis( avmv, vid='time' )
     if hasattr(mv,'units'):
         avmv.units = mv.units
 
@@ -967,30 +930,19 @@ def reduce_time_space_seasonal_regional( mv, season=seasonsyr, region=None, vid=
              ax.isLongitude() or ax.isLevel() ] )==0:
         return mv  # nothing to reduce
 
-    timespace_axis_names = [ a.id for a in axes if a.isLatitude() or a.isLongitude() or a.isLevel()
-                             or a.isTime() ]
     if vid == None:
         vid = 'reduced_'+mv.id
 
     mvreg = select_region(mv, region)
 
     axes = allAxes( mvreg )
-    #axis_names = [ a.id for a in axes if a.id=='lat' or a.id=='lon' or a.id=='lev']
-    axis_names = [ a.id for a in axes if a.isLatitude() or a.isLongitude() or a.isLevel() ]
+    axis_names = [ a.id for a in axes if a.id=='lat' or a.id=='lon' or a.id=='lev']
     axes_string = '('+')('.join(axis_names)+')'
     mvsav = cdutil.averager( mvreg, axis=axes_string )
-    tax = timeAxis(mvsav)
-    if len(tax)<=1:
-        # This is already climatology data, don't try to average over time again
-        # The time axis will be deleted shortly anyway.
-        mvtsav = mvsav
-    else:
-        mvtsav = season.climatology( mvsav )
+
+    mvtsav = calculate_seasonal_climatology(mvsav, season)
 
     mvtsav.id = vid
-    for tsid in timespace_axis_names:
-        mvtsav = delete_singleton_axis(mvtsav, vid=tsid )
-    #mvtsav = delete_singleton_axis(mvtsav, vid='time')
     #mvtsav = delete_singleton_axis(mvtsav, vid='lev')
     #mvtsav = delete_singleton_axis(mvtsav, vid='lat')
     #mvtsav = delete_singleton_axis(mvtsav, vid='lon')
@@ -1003,27 +955,18 @@ def reduce2latlon_seasonal_level( mv, season, level, vid=None):
    if vid == None:
       vid = 'reduced_'+mv.id
 
-   timeax = timeAxis(mv)
    levax = levAxis(mv)
-   if timeax is None or len(timeax)<=1:
-      return mv
    if levax is None or len(levax)<=1:
       return mv
 
    levstr = levax.id
    mvsub = mv(levstr=slice(level, level+1))
 
-   mvseas = season.climatology(mvsub)
+   mvseas = calculate_seasonal_climatology( mvl, season)
 
-   if mvseas is None:
-      print "WARNING- cannot compute climatology for",mv.id,seasons.seasons
-      print "...probably there is no data for times in the requested season."
-      return None
-      
    mvseas.id = vid
    if hasattr(mv,'units'):
       mvseas.units = mv.units
-   mvseas = delete_singleton_axis(mvseas, vid='time')
    mvseas = delete_singleton_axis(mvseas, vid=levax)
    return mvseas
 
@@ -1077,37 +1020,18 @@ def reduce2latlon_seasonal( mv, season, region=None, vid=None, exclude_axes=[] )
 def reduce_time_seasonal( mv, seasons=seasonsyr, region=None, vid=None ):
     """as reduce2lat_seasonal, but all non-time axes are retained.
     """
+
+    calculate_seasonal_climatology(mv, season)
+
     if vid==None:
         #vid = 'reduced_'+mv.id
         vid = mv.id
+    avmv.id = vid
     # Note that the averager function returns a variable with meaningless id.
     # The climatology function returns the same id as mv, which we also don't want.
 
     mvsr = select_region(mv, region)
 
-    # The slicers in time.py require getBounds() to work.
-    # If it doesn't, we'll have to give it one.
-    # Setting the _bounds_ attribute will do it.
-    timeax = timeAxis(mv)
-    if timeax is None:
-        print "WARNING- no time axis in",mv.id
-        return mv
-    if len(timeax)<=1:
-        avmv = delete_singleton_axis( mvsr, vid='time' )
-        avmv.id = vid
-        if hasattr( mv, 'units' ):
-            avmv.units = mv.units
-        return avmv
-    if timeax.getBounds()==None:
-        timeax._bounds_ = timeax.genGenericBounds()
-    mvseas = seasons.climatology(mvsr)
-    if mvseas is None:
-        print "WARNING- cannot compute climatology for",mv.id,seasons.seasons
-        print "...probably there is no data for times in the requested season."
-        return None
-    avmv = mvseas
-    avmv.id = vid
-    avmv = delete_singleton_axis( avmv, vid='time' )
     if hasattr( mv, 'units' ):
         avmv.units = mv.units
     return avmv
@@ -1119,22 +1043,35 @@ def calculate_seasonal_climatology(mv, season):
         return mv
     # TODO: how to handle files with missing time axis?
 
-    # The slicers in time.py require getBounds() to work.
-    # If it doesn't, we'll have to give it one.
-    # Setting the _bounds_ attribute will do it.
-    if tax.getBounds()==None:
-        tax._bounds_ = tax.genGenericBounds()
-
     if len(tax)<=1:
     # This is already climatology data, don't try to average over time again
     # The time axis will be deleted shortly anyway.
         mvt = mv
     else:
-        mvt = season.climatology( mv )
-    if mvt is None:
-        print "WARNING- cannot compute climatology for",mv.id,seasons.seasons
-        print "...probably there is no data for times in the requested season."
-        return None
+        # The slicers in time.py require getBounds() to work.
+        # If it doesn't, we'll have to give it one.
+        # Setting the _bounds_ attribute will do it.
+        if tax.getBounds()==None:
+            tax._bounds_ = tax.genGenericBounds()
+            # Special check necessary for LEGATES obs data, because
+            # climatology() won't accept this incomplete specification
+        if timeax.units=='months':
+            # Special check necessary for LEGATES obs data, because
+            # climatology() won't accept this incomplete specification
+            timeax.units = 'months since 0001-01-01'
+        if timeax.units=='month: 1=Jan, ..., 12=Dec':
+            # Special check necessary for CERES obs data.
+            timeax.units = 'months since 0001-01-01'
+        if len(timeax)==1 and  ((hasattr(ax,'_FillValue') and ax._FillValue in ax) or
+                                (hasattr(ax,'fill_value') and ax.fill_value in ax)):
+            # Time axis of length 1, which is missing!  It's a.s. a (malformed) climo file already.
+            mvseas = mv2
+        else:
+            mvt = season.climatology( mv )
+        if mvt is None:
+            print "WARNING- cannot compute climatology for",mv.id,seasons.seasons
+            print "...probably there is no data for times in the requested season."
+            return None
 
     # If the time axis has only one point (as it should by now, if it exists at all),
     # the next, averager(), step can't use it because it may not have bounds (or they
