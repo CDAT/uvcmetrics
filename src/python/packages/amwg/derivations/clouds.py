@@ -36,7 +36,7 @@ def reduce_height_thickness( mv, heightlow, heighthigh, thicklow, thickhigh, vid
     After mv has been restricted to a smaller domain, it is passed on to reduce_prs_tau
     which reduces out the height and thickness by summing the variables within the smaller
     domain."""
-    axes = set(mv.getAxisList())
+    axes = set([ax.id for ax in mv.getAxisList()])
     known_height_axes = set([ 'isccp_prs', 'cosp_prs', 'modis_prs', 'cosp_htmisr', 'misr_cth'])
     known_thickness_axes = set([
                 'isccp_tau', 'cosp_tau', 'modis_tau', 'cosp_tau_modis', 'misr_tau'])
