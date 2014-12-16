@@ -888,11 +888,11 @@ class amwg_plot_set5and6(amwg_plot_spec):
         reduced_varlis = [
             reduced_variable(
                 variableid=varnom, filetable=filetable, season=self.season,
-                reduction_function=(lambda x,vid: reduce_seasonal_region( x, self.season, self.region, vid) ) ),
+                reduction_function=(lambda x,vid: reduce2latlon_seasonal( x, self.season, self.region, vid) ) ),
             reduced_variable(
                 # variance, for when there are variance climatology files
                 variableid=varnom+'_var', filetable=filetable, season=self.season,
-                reduction_function=(lambda x,vid: reduce_seasonal_region( x, self.season, self.region, vid ) ) )
+                reduction_function=(lambda x,vid: reduce2latlon_seasonal( x, self.season, self.region, vid ) ) )
             ]
         for v in reduced_varlis:
             self.reduced_variables[v.id()] = v
@@ -1468,10 +1468,10 @@ class amwg_plot_set7(amwg_plot_spec):
         reduced_varlis = [
             reduced_variable(
                 variableid=varid, filetable=filetable1, season=self.season,
-                reduction_function=(lambda x,vid: reduce2latlon_seasonal( x(latitude=aux, longitude=(0, 360)), self.season, vid ) ) ),
+                reduction_function=(lambda x,vid: reduce2latlon_seasonal( x(latitude=aux, longitude=(0, 360)), self.season, vid=vid ) ) ),
             reduced_variable(
                 variableid=varid, filetable=filetable2, season=self.season,
-                reduction_function=(lambda x,vid: reduce2latlon_seasonal( x(latitude=aux, longitude=(0, 360)), self.season, vid ) ) )
+                reduction_function=(lambda x,vid: reduce2latlon_seasonal( x(latitude=aux, longitude=(0, 360)), self.season, vid=vid ) ) )
             ]
         self.reduced_variables = { v.id():v for v in reduced_varlis }
         vid1 = rv.dict_id( varid, seasonid, filetable1 )
@@ -2087,7 +2087,7 @@ class amwg_plot_set13(amwg_plot_spec):
         Region is an instance of the class rectregion (region.py).
         """
         plot_spec.__init__(self,seasonid)
-        region = self.interpret_region(region)
+        region = interpret_region(region)
         self.reduced_variables = {}
         self.derived_variables = {}
         self.plottype = 'Boxfill'
