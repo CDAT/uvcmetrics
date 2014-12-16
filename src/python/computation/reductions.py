@@ -1598,11 +1598,9 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
                 mv1max = mv1.max()
             except AttributeError:
                 # axes don't have min(),max() but they have getData() which variables don't have
-                print "jfp no min, will try for getData in mv1=",mv1,type(mv1)
                 mv1min = mv1.getData().min()
                 mv1max = mv1.getData().max()
             try:
-                print "jfp no min, will try for getData in mv2=",mv2,type(mv2)
                 mv2min = mv2.min()
                 mv2max = mv2.max()
             except AttributeError:
