@@ -2100,15 +2100,6 @@ class amwg_plot_set13(amwg_plot_spec):
         if not self.computation_planned:
             self.plan_computation( filetable1, filetable2, varnom, seasonid, region )
     @staticmethod
-    def interpret_region( region ):
-        """Tries to make sense of the input region, and returns the resulting instance of the class
-        rectregion in region.py."""
-        if region is None:
-            region = "global"
-        if type(region) is str:
-            region = defines.all_regions[region]
-        return region
-    @staticmethod
     def _list_variables( filetable1, filetable2=None ):
         allvars = amwg_plot_set13._all_variables( filetable1, filetable2 )
         listvars = allvars.keys()
