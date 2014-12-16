@@ -913,7 +913,7 @@ def reduce_time_space_seasonal_regional( mv, season=seasonsyr, region=None, vid=
              ax.isLongitude() or ax.isLevel() ] )==0:
         return mv  # nothing to reduce
 
-    if vid == None:
+    if vid is None:
         vid = 'reduced_'+mv.id
 
     mvreg = select_region(mv, region)
