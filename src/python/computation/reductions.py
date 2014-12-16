@@ -43,7 +43,8 @@ def latAxis( mv ):
     if mv is None: return None
     lat_axis = None
     for ax in allAxes(mv):
-        if ax.id=='lat': lat_axis = ax
+        #if ax.id=='lat': lat_axis = ax
+        if ax.isLatitude(): lat_axis = ax
     return lat_axis
 
 def latAxis2( mv ):
@@ -52,7 +53,8 @@ def latAxis2( mv ):
     lat_axis = None
     idx = None
     for i,ax in enumerate(allAxes(mv)):
-        if ax.id=='lat':
+        #if ax.id=='lat':
+        if ax.isLatitude():
             lat_axis = ax
             idx = i
     return lat_axis,idx
@@ -114,7 +116,8 @@ def tllAxes( mv ):
     "returns the time,latitude, and longitude axes, if any, of a variable mv"
     if mv is None: return None
     for ax in allAxes(mv):
-        if ax.id=='lat': lat_axis = ax
+        #if ax.id=='lat': lat_axis = ax
+        if ax.isLatitude(): lat_axis = ax
         if ax.id=='lon': lon_axis = ax
         if ax.id=='time': time_axis = ax
     return (time_axis,lat_axis,lon_axis)
@@ -328,7 +331,8 @@ def reduce2lat( mv, vid=None ):
     if vid==None:   # Note that the averager function returns a variable with meaningless id.
         vid = 'reduced_'+mv.id
     axes = allAxes( mv )
-    axis_names = [ a.id for a in axes if a.id!='lat' ]
+    #axis_names = [ a.id for a in axes if a.id!='lat' ]
+    axis_names = [ a.id for a in axes if not a.isLatitude() ]
     axes_string = '('+')('.join(axis_names)+')'
 
     avmv = averager( mv, axis=axes_string )
@@ -424,7 +428,8 @@ def reduce2latlon( mv, vid=None ):
     if vid==None:   # Note that the averager function returns a variable with meaningless id.
         vid = 'reduced_'+mv.id
     axes = allAxes( mv )
-    axis_names = [ a.id for a in axes if a.id!='lat' and a.id!='lon' ]
+    #axis_names = [ a.id for a in axes if a.id!='lat' and a.id!='lon' ]
+    axis_names = [ a.id for a in axes if not a.isLatitude() and not a.isLongitude() ]
     if len(axis_names)<=0:
         return mv
     axes_string = '('+')('.join(axis_names)+')'
@@ -455,7 +460,8 @@ def reduce_time( mv, vid=None ):
         for ax in axes:
             # The averager insists on bounds.  Sometimes they don't exist, especially for obs.
             #was if ax.id!='lat' and ax.id!='lon' and not hasattr( ax, 'bounds' ):
-            if ax.id!='lat' and ax.id!='lon' and (ax.getBounds() is None):
+            #if ax.id!='lat' and ax.id!='lon' and (ax.getBounds() is None):
+            if not ax.isLatitude() and not ax.isLongitude() and (ax.getBounds() is None):
                 ax.setBounds( ax.genGenericBounds() )
         avmv = averager( mv, axis=axes_string )
     else:
@@ -497,7 +503,8 @@ def reduce2lat_seasonal( mv, seasons=seasonsyr, vid=None ):
             return None
     
     axes = allAxes( mv )
-    axis_names = [ a.id for a in axes if a.id!='lat' and a.id!='time']
+    #axis_names = [ a.id for a in axes if a.id!='lat' and a.id!='time']
+    axis_names = [ a.id for a in axes if not a.isLatitude() and not a.isTime() ]
     axes_string = '('+')('.join(axis_names)+')'
 
     if len(axes_string)>2:
@@ -953,9 +960,13 @@ def reduce_time_space_seasonal_regional( mv, season, region, vid=None ):
     The region may be a string defining a region in defines.py, or it may be a list of four numbers
     as in defines.py.  That is, it would take the form [latmin,latmax,lonmin,lonmax].
     """
-    if len( set(['time','lat','lon','lev']) & set([ax.id for ax in allAxes(mv)]) )==0:
+    #if len( set(['time','lat','lon','lev']) & set([ax.id for ax in allAxes(mv)]) )==0:
+    if len( [ax for ax in allAxes(mv) if ax.isTime() or ax.isLatitude() or
+                  or ax.isLongitude() or ax.isLevel() ] )==0:
         return mv  # nothing to reduce
 
+    timespace_axis_names = [ a.id for a in axes if a.isLatitude() or a.isLongitude() or a.isLevel()
+                             or a.isTime() ]
     if vid == None:
         vid = 'reduced_'+mv.id
     if type(region) is str:
@@ -964,7 +975,8 @@ def reduce_time_space_seasonal_regional( mv, season, region, vid=None ):
     mvreg = mv(latitude=(region[0], region[1]), longitude=(region[2], region[3]))
 
     axes = allAxes( mvreg )
-    axis_names = [ a.id for a in axes if a.id=='lat' or a.id=='lon' or a.id=='lev']
+    #axis_names = [ a.id for a in axes if a.id=='lat' or a.id=='lon' or a.id=='lev']
+    axis_names = [ a.id for a in axes if a.isLatitude() or a.isLongitude() or a.isLevel() ]
     axes_string = '('+')('.join(axis_names)+')'
     mvsav = cdutil.averager( mvreg, axis=axes_string )
     tax = timeAxis(mvsav)
@@ -976,10 +988,12 @@ def reduce_time_space_seasonal_regional( mv, season, region, vid=None ):
         mvtsav = season.climatology( mvsav )
 
     mvtsav.id = vid
-    mvtsav = delete_singleton_axis(mvtsav, vid='time')
-    mvtsav = delete_singleton_axis(mvtsav, vid='lev')
-    mvtsav = delete_singleton_axis(mvtsav, vid='lat')
-    mvtsav = delete_singleton_axis(mvtsav, vid='lon')
+    for tsid in timespace_axis_names:
+        mvtsav = delete_singleton_axis(mvtsav, vid=tsid )
+    #mvtsav = delete_singleton_axis(mvtsav, vid='time')
+    #mvtsav = delete_singleton_axis(mvtsav, vid='lev')
+    #mvtsav = delete_singleton_axis(mvtsav, vid='lat')
+    #mvtsav = delete_singleton_axis(mvtsav, vid='lon')
 
     return mvtsav
 
@@ -1037,8 +1051,9 @@ def reduce2latlon_seasonal( mv, season, vid=None, exclude_axes=[] ):
         mvseas = season.climatology(mv)
     
     axes = allAxes( mv )
-    axis_names = [ a.id for a in axes if a.id!='lat' and a.id!='lon' and a.id!='time' and\
-                       a.id not in exclude_axes]
+    #axis_names = [ a.id for a in axes if a.id!='lat' and a.id!='lon' and a.id!='time' and\
+    axis_names = [ a.id for a in axes if not a.isLatitude() and not a.isLongitude() and
+                   not a.isTime() and a.id not in exclude_axes]
     axes_string = '('+')('.join(axis_names)+')'
 
     if len(axes_string)>2:
