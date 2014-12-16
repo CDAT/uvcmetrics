@@ -962,7 +962,7 @@ def reduce_time_space_seasonal_regional( mv, season, region, vid=None ):
     """
     #if len( set(['time','lat','lon','lev']) & set([ax.id for ax in allAxes(mv)]) )==0:
     if len( [ax for ax in allAxes(mv) if ax.isTime() or ax.isLatitude() or
-                  or ax.isLongitude() or ax.isLevel() ] )==0:
+             ax.isLongitude() or ax.isLevel() ] )==0:
         return mv  # nothing to reduce
 
     timespace_axis_names = [ a.id for a in axes if a.isLatitude() or a.isLongitude() or a.isLevel()
@@ -1083,7 +1083,7 @@ def reduce_time_seasonal( mv, seasons=seasonsyr, region=None, vid=None ):
     # Note that the averager function returns a variable with meaningless id.
     # The climatology function returns the same id as mv, which we also don't want.
 
-    mvsr = select_region(mv, region, vid)
+    mvsr = select_region(mv, region)
 
     # The slicers in time.py require getBounds() to work.
     # If it doesn't, we'll have to give it one.
@@ -1093,14 +1093,14 @@ def reduce_time_seasonal( mv, seasons=seasonsyr, region=None, vid=None ):
         print "WARNING- no time axis in",mv.id
         return mv
     if len(timeax)<=1:
-        avmv = delete_singleton_axis( mv, vid='time' )
+        avmv = delete_singleton_axis( mvsr, vid='time' )
         avmv.id = vid
         if hasattr( mv, 'units' ):
             avmv.units = mv.units
         return avmv
     if timeax.getBounds()==None:
         timeax._bounds_ = timeax.genGenericBounds()
-    mvseas = seasons.climatology(mv)
+    mvseas = seasons.climatology(mvsr)
     if mvseas is None:
         print "WARNING- cannot compute climatology for",mv.id,seasons.seasons
         print "...probably there is no data for times in the requested season."
@@ -1156,10 +1156,10 @@ def interpret_region( region ):
 
 def select_region(mv, region=None):
     # Select lat-lon region
-    region = interpret_region(region)
-    if region=="global" or region=="Global"
+    if region=="global" or region=="Global":
         mvreg = mv
     else:
+        region = interpret_region(region)
         mvreg = mv(latitude=(region[0], region[1]), longitude=(region[2], region[3]))
 
     return mvreg
@@ -1533,7 +1533,8 @@ def aminusb_ax2( mv1, mv2 ):
 
 def reconcile_units( mv1, mv2, preferred_units=None ):
     """Changes the units of variables (instances of TransientVariable) mv1,mv2 to be the same,
-    mv1 is a TransientVariable.  mv2 may be a TransientVariable, or it may be a udunits object.
+    mv1 is a TransientVariable or an axis.  mv2 may be a TransientVariable or axis, or it may
+    be a udunits object.
     If preferred units are specified, they will be used if possible."""
 # This probably needs expanded to be more general purpose for unit conversions.
     # First, if there are no units, take a guess.  I'm reluctant to do this because it will surely
@@ -1592,8 +1593,29 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
             return mv1, mv2
         if preferred_units is None:
             # Look for whichever of mv1.units, mv2.units gives numbers more O(1).
-            mag1 = log10(abs(0.5*(mv1.min()+mv1.max())))
-            mag2 = log10(abs(0.5*(mv2.min()+mv2.max())))
+            try:
+                mv1min = mv1.min()
+                mv1max = mv1.max()
+            except AttributeError:
+                # axes don't have min(),max() but they have getData() which variables don't have
+                print "jfp no min, will try for getData in mv1=",mv1,type(mv1)
+                mv1min = mv1.getData().min()
+                mv1max = mv1.getData().max()
+            try:
+                print "jfp no min, will try for getData in mv2=",mv2,type(mv2)
+                mv2min = mv2.min()
+                mv2max = mv2.max()
+            except AttributeError:
+                # axes don't have min(),max() but they have getData() which variables don't have
+                try:
+                    mv2min = mv2.getData().min()
+                    mv2max = mv2.getData().max()
+                except AttributeError:
+                    # udunits doesn't have min,getData, but has a scalar value
+                    mv2min = mv2.value
+                    mv2max = mv2.value
+            mag1 = log10(abs(0.5*(mv1min+mv1max)))
+            mag2 = log10(abs(0.5*(mv2min+mv2max)))
             if abs(mag1)<=abs(mag2):
                 target_units = mv1.units
                 changemv1 = False
