@@ -88,11 +88,10 @@ class amwg_plot_spec(plot_spec):
                 func=aminusb )],   # RESTOM = net radiative flux
         'CLISCCP':[
             derived_var(
-                vid='CLISCCP', inputs=['FISCCP1','isccp_prs','isccp_tau'], outputs=['CLISCCP'],
-                func=uncompress_fisccp1 )
-            #,derived_var(
-            #    vid='CLISCCP', inputs=['FISCCP1_COSP'], outputs=['CLISCCP'],
-            #    func=(lambda x: x) )
+                # old style vid='CLISCCP', inputs=['FISCCP1_COSP','cosp_prs','cosp_tau'], outputs=['CLISCCP'],
+                # old style          func=uncompress_fisccp1 )
+                vid='CLISCCP', inputs=['FISCCP1_COSP'], outputs=['CLISCCP'],
+                func=(lambda x: x) )
             ],
         'CLDTOT_ISCCP':[
             derived_var( vid='CLDTOT_ISCCP', inputs=['CLDTOT_ISCCPCOSP'], outputs=['CLDTOT_ISCCP'],
@@ -118,33 +117,16 @@ class amwg_plot_spec(plot_spec):
                 #func=(lambda clisccp: reduce_prs_tau( clisccp( isccp_tau=(1.3,379) ))) )
                 func=(lambda clisccp: reduce_height_thickness( clisccp, None,None, 1.3,379) ) )
             ],
-        'CLDTHIN_TAU1.3-9.4_ISCCP':[
+        'CLDTOT_TAU1.3-9.4_ISCCP':[
             derived_var(
-                vid='CLDTHIN_TAU1.3-9.4_ISCCP', inputs=['CLISCCP'], outputs=['CLDTHIN_TAU1.3-9.4_ISCCP'],
+                vid='CLDTOT_TAU1.3-9.4_ISCCP', inputs=['CLISCCP'], outputs=['CLDTOT_TAU1.3-9.4_ISCCP'],
                 #func=(lambda clisccp: reduce_prs_tau( clisccp( isccp_tau=(1.3,9.4) ))) )
                 func=(lambda clisccp: reduce_height_thickness( clisccp, None,None, 1.3,9.4) ) )
             ],
-        'CLDTHICK_TAU9.4_ISCCP':[
+
+        'CLDTOT_TAU9.4_ISCCP':[
             derived_var(
-                vid='CLDTHICK_TAU9.4_ISCCP', inputs=['CLISCCP'], outputs=['CLDTHICK_TAU9.4_ISCCP'],
-                #func=(lambda clisccp: reduce_prs_tau( clisccp( isccp_tau=(9.4,379) ))) )
-                func=(lambda clisccp: reduce_height_thickness( clisccp, None,None, 9.4,379) ) )
-            ],
-        'CLDTOT_TAU1.3_MODIS':[
-            derived_var(
-                vid='CLDTOT_TAU1.3_MODIS', inputs=['CLMODIS'], outputs=['CLDTOT_TAU1.3_MODIS'],
-                #func=(lambda clisccp: reduce_prs_tau( clisccp( isccp_tau=(1.3,379) ))) )
-                func=(lambda clisccp: reduce_height_thickness( clisccp, None,None, 1.3,379) ) )
-            ],
-        'CLDTHIN_TAU1.3-9.4_MODIS':[
-            derived_var(
-                vid='CLDTHIN_TAU1.3-9.4_MODIS', inputs=['CLMODIS'], outputs=['CLDTHIN_TAU1.3-9.4_MODIS'],
-                #func=(lambda clisccp: reduce_prs_tau( clisccp( isccp_tau=(1.3,9.4) ))) )
-                func=(lambda clisccp: reduce_height_thickness( clisccp, None,None, 1.3,9.4) ) )
-            ],
-        'CLDTHICK_TAU9.4_MODIS':[
-            derived_var(
-                vid='CLDTHICK_TAU9.4_MODIS', inputs=['CLMODIS'], outputs=['CLDTHICK_TAU9.4_MODIS'],
+                vid='CLDTOT_TAU9.4_ISCCP', inputs=['CLISCCP'], outputs=['CLDTOT_TAU9.4_ISCCP'],
                 #func=(lambda clisccp: reduce_prs_tau( clisccp( isccp_tau=(9.4,379) ))) )
                 func=(lambda clisccp: reduce_height_thickness( clisccp, None,None, 9.4,379) ) )
             ],
@@ -168,40 +150,23 @@ class amwg_plot_spec(plot_spec):
                 #func=(lambda clmodis: reduce_prs_tau( clmodis( modis_prs=(0,440), modis_tau=(9.4,379) ))) )
                 func=(lambda clmodis: reduce_height_thickness( clmodis, 0,440, 9.4,379) ) )
             ],
-        'CLDTOT_TAU1.3_MISR':[
-            derived_var(
-                vid='CLDTOT_TAU1.3_MISR', inputs=['CLMISR'], outputs=['CLDTOT_TAU1.3_MISR'],
-                #func=(lambda clisccp: reduce_prs_tau( clisccp( isccp_tau=(1.3,379) ))) )
-                func=(lambda clisccp: reduce_height_thickness( clisccp, None,None, 1.3,379) ) )
-            ],
-        'CLDTHIN_TAU1.3-9.4_MISR':[
-            derived_var(
-                vid='CLDTHIN_TAU1.3-9.4_MISR', inputs=['CLMISR'], outputs=['CLDTHIN_TAU1.3-9.4_MISR'],
-                #func=(lambda clisccp: reduce_prs_tau( clisccp( isccp_tau=(1.3,9.4) ))) )
-                func=(lambda clisccp: reduce_height_thickness( clisccp, None,None, 1.3,9.4) ) )
-            ],
-        'CLDTHICK_TAU9.4_MISR':[
-            derived_var(
-                vid='CLDTHICK_TAU9.4_MISR', inputs=['CLMISR'], outputs=['CLDTHICK_TAU9.4_MISR'],
-                #func=(lambda clisccp: reduce_prs_tau( clisccp( isccp_tau=(9.4,379) ))) )
-                func=(lambda clisccp: reduce_height_thickness( clisccp, None,None, 9.4,379) ) )
-            ],
         'CLDLOW_TAU1.3_MISR':[
             derived_var(
                 vid='CLDLOW_TAU1.3_MISR', inputs=['CLMISR'], outputs=['CLDLOW_TAU1.3_MISR'],
-                func=(lambda clmisr: reduce_height_thickness(
-                        clmisr, 0,3, 1.3,379) ) )
+                func=(lambda clmisr, h0=0,h1=3,t0=1.3,t1=379: reduce_height_thickness(
+                        clmisr, h0,h1, t0,t1) ) )
             ],
         'CLDLOW_TAU1.3-9.4_MISR':[
             derived_var(
                 vid='CLDLOW_TAU1.3-9.4_MISR', inputs=['CLMISR'], outputs=['CLDLOW_TAU1.3-9.4_MISR'],
-                func=(lambda clmisr: reduce_height_thickness( clmisr, 0,3, 1.3,9.4) ) )
+                func=(lambda clmisr, h0=0,h1=3, t0=1.3,t1=9.4: reduce_height_thickness( clmisr, h0,h1, t0,t1) ) )
+                #func=(lambda clmisr, h0=0,h1=6, t0=2,t1=4: reduce_height_thickness( clmisr, h0,h1, t0,t1) ) )
             ],
         'CLDLOW_TAU9.4_MISR':[
             derived_var(
                 vid='CLDLOW_TAU9.4_MISR', inputs=['CLMISR'], outputs=['CLDLOW_TAU9.4_MISR'],
-                func=(lambda clmisr: reduce_height_thickness(
-                        clmisr, 0,3, 9.4,379) ) )
+                func=(lambda clmisr, h0=0,h1=3, t0=9.4,t1=379: reduce_height_thickness(
+                        clmisr, h0,h1, t0,t1) ) )
             ],
         'CLDTOT':[
             derived_var(
@@ -831,9 +796,11 @@ class amwg_plot_set5and6(amwg_plot_spec):
         if filetable2 is not None and varnom in filetable2.list_variables():
             vid2,vid2var = self.vars_normal_contours(
                 filetable2, varnom, seasonid, aux=None )
+            print "jfp after vars_normal_contours, vid2=",vid2
         elif varnom in self.standard_variables.keys():
             vid2,vid2var = self.vars_stdvar_normal_contours(
                 filetable2, varnom, seasonid, aux=None )
+            print "jfp after vars_stdvar_normal_contours, vid2=",vid2
         else:
             vid2,vid2var = None,None
         self.single_plotspecs = {}
@@ -880,9 +847,15 @@ class amwg_plot_set5and6(amwg_plot_spec):
                 title = ' '.join([varnom,seasonid,'(1)-(2)']),
                 source = ', '.join([ft1src,ft2src]) )
             all_plotnames.append(self.plot3_id)
-        self.composite_plotspecs = {
-            self.plotall_id: all_plotnames
-            }
+        print "jfp vid2=",vid2
+        print "jfp all_plotnames=",all_plotnames
+        if len(all_plotnames)>0:
+            self.composite_plotspecs = {
+                self.plotall_id: all_plotnames
+                }
+        else:
+            self.composite_plotspecs = {}
+        print "jfp self.composite_plotspecs=",self.composite_plotspecs
         self.computation_planned = True
     def vars_normal_contours( self, filetable, varnom, seasonid, aux=None ):
         reduced_varlis = [
