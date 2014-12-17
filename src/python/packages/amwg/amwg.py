@@ -93,6 +93,7 @@ class amwg_plot_spec(plot_spec):
                 vid='CLISCCP', inputs=['FISCCP1_COSP'], outputs=['CLISCCP'],
                 func=(lambda x: x) )
             ],
+
         'CLDTOT_ISCCP':[
             derived_var( vid='CLDTOT_ISCCP', inputs=['CLDTOT_ISCCPCOSP'], outputs=['CLDTOT_ISCCP'],
                          func=(lambda x:x) ) ],
@@ -111,32 +112,49 @@ class amwg_plot_spec(plot_spec):
         # Note: CLDTOT is different from CLDTOT_CAL, CLDTOT_ISCCPCOSP, etc.  But translating
         # from one to the other might be better than returning nothing.  Also, I'm not so sure that
         # reduce_prs_tau is producing the right answers, but that's a problem for later.
+	#1-ISCCP
         'CLDTOT_TAU1.3_ISCCP':[
             derived_var(
                 vid='CLDTOT_TAU1.3_ISCCP', inputs=['CLISCCP'], outputs=['CLDTOT_TAU1.3_ISCCP'],
-                #func=(lambda clisccp: reduce_prs_tau( clisccp( isccp_tau=(1.3,379) ))) )
                 func=(lambda clisccp: reduce_height_thickness( clisccp, None,None, 1.3,379) ) )
             ],
+	#2-ISCCP
         'CLDTOT_TAU1.3-9.4_ISCCP':[
             derived_var(
                 vid='CLDTOT_TAU1.3-9.4_ISCCP', inputs=['CLISCCP'], outputs=['CLDTOT_TAU1.3-9.4_ISCCP'],
-                #func=(lambda clisccp: reduce_prs_tau( clisccp( isccp_tau=(1.3,9.4) ))) )
                 func=(lambda clisccp: reduce_height_thickness( clisccp, None,None, 1.3,9.4) ) )
             ],
-
+	#3-ISCCP
         'CLDTOT_TAU9.4_ISCCP':[
             derived_var(
                 vid='CLDTOT_TAU9.4_ISCCP', inputs=['CLISCCP'], outputs=['CLDTOT_TAU9.4_ISCCP'],
-                #func=(lambda clisccp: reduce_prs_tau( clisccp( isccp_tau=(9.4,379) ))) )
                 func=(lambda clisccp: reduce_height_thickness( clisccp, None,None, 9.4,379) ) )
             ],
+	#1-MODIS
+        'CLDTOT_TAU1.3_MODIS':[
+            derived_var(
+                vid='CLDTOT_TAU1.3_MODIS', inputs=['CLMODIS'], outputs=['CLDTOT_TAU1.3_MODIS'],
+                func=(lambda clmodis: reduce_height_thickness( clmodis, None,None, 1.3,379 ) ) )
+            ],
+	#2-MODIS
+        'CLDTOT_TAU1.3-9.4_MODIS':[
+            derived_var(
+                vid='CLDTOT_TAU1.3-9.4_MODIS', inputs=['CLMODIS'], outputs=['CLDTOT_TAU1.3-9.4_MODIS'],
+                func=(lambda clmodis: reduce_height_thickness( clmodis, None,None, 1.3,9.4 ) ) )
+            ],
+	#3-MODIS
+        'CLDTOT_TAU9.4_MODIS':[
+            derived_var(
+                vid='CLDTOT_TAU9.4_MODIS', inputs=['CLMODIS'], outputs=['CLDTOT_TAU9.4_MODIS'],
+                func=(lambda clmodis: reduce_height_thickness( clmodis, None,None, 9.4,379 ) ) )
+            ],
+	#4-MODIS
         'CLDHGH_TAU1.3_MODIS':[
             derived_var(
                 vid='CLDHGH_TAU1.3_MODIS', inputs=['CLMODIS'], outputs=['CLDHGH_TAU1.3_MODIS'],
-                #func=(lambda clmodis: reduce_prs_tau(
-                #        clmodis( modis_prs=(0,440), modis_tau=(1.3,379) ))) )
                 func=(lambda clmodis: reduce_height_thickness( clmodis, 0,440, 1.3,379 ) ) )
             ],
+	#5-MODIS
         'CLDHGH_TAU1.3-9.4_MODIS':[
             derived_var(
                 vid='CLDHGH_TAU1.3-9.4_MODIS', inputs=['CLMODIS'], outputs=['CLDHGH_TAU1.3-9.4_MODIS'],
@@ -144,24 +162,45 @@ class amwg_plot_spec(plot_spec):
                 func=(lambda clmodis: reduce_height_thickness(
                         clmodis, 0,440, 1.3,9.4) ) )
             ],
+	#6-MODIS
         'CLDHGH_TAU9.4_MODIS':[
             derived_var(
                 vid='CLDHGH_TAU9.4_MODIS', inputs=['CLMODIS'], outputs=['CLDHGH_TAU9.4_MODIS'],
-                #func=(lambda clmodis: reduce_prs_tau( clmodis( modis_prs=(0,440), modis_tau=(9.4,379) ))) )
                 func=(lambda clmodis: reduce_height_thickness( clmodis, 0,440, 9.4,379) ) )
             ],
+	#1-MISR
+        'CLDTOT_TAU1.3_MISR':[
+            derived_var(
+                vid='CLDTOT_TAU1.3_MISR', inputs=['CLMISR'], outputs=['CLDTOT_TAU1.3_MISR'],
+                func=(lambda clmisr: reduce_height_thickness( clmisr, None,None, 1.3,379) ) )
+            ],
+	#2-MISR
+        'CLDTOT_TAU1.3-9.4_MISR':[
+            derived_var(
+                vid='CLDTOT_TAU1.3-9.4_MISR', inputs=['CLMISR'], outputs=['CLDTOT_TAU1.3-9.4_MISR'],
+                func=(lambda clmisr: reduce_height_thickness( clmisr, None,None, 1.3,9.4) ) )
+            ],
+	#3-MISR
+        'CLDTOT_TAU9.4_MISR':[
+            derived_var(
+                vid='CLDTOT_TAU9.4_MISR', inputs=['CLMISR'], outputs=['CLDTOT_TAU9.4_MISR'],
+                func=(lambda clmisr: reduce_height_thickness( clmisr, None,None, 9.4,379) ) )
+            ],
+	#4-MISR
         'CLDLOW_TAU1.3_MISR':[
             derived_var(
                 vid='CLDLOW_TAU1.3_MISR', inputs=['CLMISR'], outputs=['CLDLOW_TAU1.3_MISR'],
                 func=(lambda clmisr, h0=0,h1=3,t0=1.3,t1=379: reduce_height_thickness(
                         clmisr, h0,h1, t0,t1) ) )
             ],
+	#5-MISR
         'CLDLOW_TAU1.3-9.4_MISR':[
             derived_var(
                 vid='CLDLOW_TAU1.3-9.4_MISR', inputs=['CLMISR'], outputs=['CLDLOW_TAU1.3-9.4_MISR'],
                 func=(lambda clmisr, h0=0,h1=3, t0=1.3,t1=9.4: reduce_height_thickness( clmisr, h0,h1, t0,t1) ) )
                 #func=(lambda clmisr, h0=0,h1=6, t0=2,t1=4: reduce_height_thickness( clmisr, h0,h1, t0,t1) ) )
             ],
+	#6-MISR
         'CLDLOW_TAU9.4_MISR':[
             derived_var(
                 vid='CLDLOW_TAU9.4_MISR', inputs=['CLMISR'], outputs=['CLDLOW_TAU9.4_MISR'],
