@@ -286,6 +286,8 @@ class amwg_plot_spec(plot_spec):
         #print "jfp4 rvs ids=",[rv.id() for rv in rvs]
         if len(rvs)<=0:
             print "WARNING, no inputs found for",varnom,"in filetable",filetable.id()
+            print "need inputs",svd.inputs()
+            return None,[],[]
         if not computable:
             print "DEBUG: standard variable",varnom,"is not computable"
             print "need inputs",svd.inputs()
@@ -796,11 +798,9 @@ class amwg_plot_set5and6(amwg_plot_spec):
         if filetable2 is not None and varnom in filetable2.list_variables():
             vid2,vid2var = self.vars_normal_contours(
                 filetable2, varnom, seasonid, aux=None )
-            print "jfp after vars_normal_contours, vid2=",vid2
         elif varnom in self.standard_variables.keys():
             vid2,vid2var = self.vars_stdvar_normal_contours(
                 filetable2, varnom, seasonid, aux=None )
-            print "jfp after vars_stdvar_normal_contours, vid2=",vid2
         else:
             vid2,vid2var = None,None
         self.single_plotspecs = {}
@@ -847,15 +847,12 @@ class amwg_plot_set5and6(amwg_plot_spec):
                 title = ' '.join([varnom,seasonid,'(1)-(2)']),
                 source = ', '.join([ft1src,ft2src]) )
             all_plotnames.append(self.plot3_id)
-        print "jfp vid2=",vid2
-        print "jfp all_plotnames=",all_plotnames
         if len(all_plotnames)>0:
             self.composite_plotspecs = {
                 self.plotall_id: all_plotnames
                 }
         else:
             self.composite_plotspecs = {}
-        print "jfp self.composite_plotspecs=",self.composite_plotspecs
         self.computation_planned = True
     def vars_normal_contours( self, filetable, varnom, seasonid, aux=None ):
         reduced_varlis = [
