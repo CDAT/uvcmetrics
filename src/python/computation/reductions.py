@@ -437,7 +437,7 @@ def reduce_time( mv, vid=None ):
 
     return avmv
 
-def reduce2lat_seasonal( mv, seasons=seasonsyr, vid=None ):
+def reduce2lat_seasonal( mv, seasons=seasonsyr, region=None, vid=None ):
     """as reduce2lat, but data is used only for time restricted to the specified season.  The season
     is specified as an object of type cdutil.ties.Seasons, and defaults to the whole year.
     The returned variable will still have a time axis, with one value per season specified.
@@ -448,24 +448,12 @@ def reduce2lat_seasonal( mv, seasons=seasonsyr, vid=None ):
     # Note that the averager function returns a variable with meaningless id.
     # The climatology function returns the same id as mv, which we also don't want.
 
-    # The slicers in time.py require getBounds() to work.
-    # If it doesn't, we'll have to give it one.
-    # Setting the _bounds_ attribute will do it.
-    for ax in mv.getAxisList():
-        if ax.getBounds() is None:
-            ax._bounds_ = ax.genGenericBounds()
-    timeax = timeAxis(mv)
-    if timeax is None or len(timeax)<=1:
-        mvseas = mv
-    else:
-        if timeax.units=='months':
-            # Special check necessary for LEGATES obs data, because
-            # climatology() won't accept this incomplete specification
-            timeax.units = 'months since 0001-01-01'
-        mvseas = seasons.climatology(mv)
-        if mvseas is None:
-            # Among other cases, this can happen if mv has all missing values.
-            return None
+    mvr = select_region(mv, region)
+    mvseas = calculate_seasonal_climatology(mvr, seasons)
+
+    if mvseas is None:
+        # Among other cases, this can happen if mv has all missing values.
+        return None
     
     axes = allAxes( mv )
     #axis_names = [ a.id for a in axes if a.id!='lat' and a.id!='time']
@@ -478,7 +466,6 @@ def reduce2lat_seasonal( mv, seasons=seasonsyr, vid=None ):
         avmv = mvseas
     avmv.id = vid
 
-    avmv = delete_singleton_axis( avmv, vid='time' )
     if hasattr(mv,'units'):
         avmv.units = mv.units
     return avmv
@@ -974,13 +961,12 @@ def reduce2latlon_seasonal( mv, season=seasonsyr, region=None, vid=None, exclude
     # The climatology function returns the same id as mv, which we also don't want.
 
     mvseas = calculate_seasonal_climatology(mv, season)
-
     mvseas = select_region(mvseas, region)
 
     axes = allAxes( mv )
     #axis_names = [ a.id for a in axes if a.id!='lat' and a.id!='lon' and a.id!='time' and\
     axis_names = [ a.id for a in axes if not a.isLatitude() and not a.isLongitude() and
-                   not a.isTime() and a.id not in exclude_axes]
+                   a.id not in exclude_axes]
     axes_string = '('+')('.join(axis_names)+')'
 
     if len(axes_string)>2:

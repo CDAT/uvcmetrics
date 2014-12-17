@@ -570,26 +570,32 @@ class amwg_plot_set3(amwg_plot_spec,basic_id):
     # Here, the plotspec contains the variables themselves.
     name = '3 - Line Plots of  Zonal Means'
     number = '3'
-    def __init__( self, filetable1, filetable2, varnom, seasonid=None, region=None, aux=None ):
+    def __init__( self, filetable1, filetable2, varnom, seasonid=None, regionid=None, aux=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varnom is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'."""
         basic_id.__init__(self,varnom,seasonid)
         plot_spec.__init__(self,seasonid)
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
+        if regionid=="Global" or regionid=="global" or regionid is None:
+            self._regionid="Global"
+        else:
+            self._regionid=regionid
+        self.region = interpret_region(regionid)
+
         if not self.computation_planned:
             self.plan_computation( filetable1, filetable2, varnom, seasonid )
     def plan_computation( self, filetable1, filetable2, varnom, seasonid ):
         zvar = reduced_variable(
             variableid=varnom,
-            filetable=filetable1, season=self.season,
-            reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,self.season,vid=vid)) )
+            filetable=filetable1, season=self.season, region=self.region,
+            reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,self.season,self.region,vid=vid)) )
         self.reduced_variables[zvar._strid] = zvar
         #self.reduced_variables[varnom+'_1'] = zvar
         #zvar._vid = varnom+'_1'      # _vid is deprecated
         z2var = reduced_variable(
             variableid=varnom,
-            filetable=filetable2, season=self.season,
-            reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,self.season,vid=vid)) )
+            filetable=filetable2, season=self.season, region=self.region,
+            reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,self.season,self.region,vid=vid)) )
         self.reduced_variables[z2var._strid] = z2var
         #self.reduced_variables[varnom+'_2'] = z2var
         #z2var._vid = varnom+'_2'      # _vid is deprecated
