@@ -364,7 +364,7 @@ def reduce2levlat( mv, vid=None ):
 
     return avmv
 
-def reduce2levlat_seasonal( mv, seasons=seasonsyr, vid=None ):
+def reduce2levlat_seasonal( mv, seasons=seasonsyr, region=None, vid=None ):
     """as reduce2levlat, but data is averaged only for time restricted to the specified season;
     as in reduce2lat_seasona."""
     if vid is None:   # Note that the averager function returns a variable with meaningless id.
@@ -373,7 +373,8 @@ def reduce2levlat_seasonal( mv, seasons=seasonsyr, vid=None ):
     if latAxis(mv) is None: return None
     axes = allAxes( mv )
 
-    mvseas = reduce_time_seasonal(mv, seasons)
+    mvr = select_region(mv, region)
+    mvseas = reduce_time_seasonal(mvr, seasons)
 
     axis_names = [ a.id for a in axes if a.isLevel()==False and a.isLatitude()==False and a.isTime()==False ]
     axes_string = '('+')('.join(axis_names)+')'

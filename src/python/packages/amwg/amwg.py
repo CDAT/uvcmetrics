@@ -660,7 +660,7 @@ class amwg_plot_set4(amwg_plot_spec):
     # Here, the plotspec contains the variables themselves.
     name = '4 - Vertical Contour Plots Zonal Means'
     number = '4'
-    def __init__( self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None ):
+    def __init__( self, filetable1, filetable2, varid, seasonid=None, regionid=None, aux=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'.
         At the moment we assume that data from filetable1 has CAM hybrid levels,
@@ -668,6 +668,12 @@ class amwg_plot_set4(amwg_plot_spec):
         plot_spec.__init__(self,seasonid)
         self.plottype = 'Isofill'
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
+        if regionid=="Global" or regionid=="global" or regionid is None:
+            self._regionid="Global"
+        else:
+            self._regionid=regionid
+        self.region = interpret_region(regionid)
+
         ft1id,ft2id = filetable_ids(filetable1,filetable2)
         self.plot1_id = '_'.join([ft1id,varid,seasonid,'contour'])
         self.plot2_id = '_'.join([ft2id,varid,seasonid,'contour'])
@@ -690,9 +696,9 @@ class amwg_plot_set4(amwg_plot_spec):
             allvars[varname] = basic_level_variable
         return allvars
     def reduced_variables_press_lev( self, filetable, varid, seasonid, ftno=None ):
-        return reduced_variables_press_lev( filetable, varid, seasonid )
+        return reduced_variables_press_lev( filetable, varid, seasonid, region=self.region )
     def reduced_variables_hybrid_lev( self, filetable, varid, seasonid, ftno=None ):
-        return reduced_variables_hybrid_lev( filetable, varid, seasonid )
+        return reduced_variables_hybrid_lev( filetable, varid, seasonid, region=self.region )
     def plan_computation( self, filetable1, filetable2, varid, seasonid ):
         ft1_hyam = filetable1.find_files('hyam')
         if filetable2 is None:
