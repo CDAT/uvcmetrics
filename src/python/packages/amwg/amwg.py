@@ -15,6 +15,8 @@ import cdutil.times, numpy
 from numbers import Number
 from pprint import pprint
 
+seasonsyr=cdutil.times.Seasons('JFMAMJJASOND')
+
 class AMWG(BasicDiagnosticGroup):
     """This class defines features unique to the AMWG Diagnostics."""
     def __init__(self):
@@ -1683,7 +1685,7 @@ class amwg_plot_set9(amwg_plot_spec):
     # Here, the plotspec contains the variables themselves.
     name = '9 - Horizontal Contour Plots of DJF-JJA Differences'
     number = '9'
-    def __init__( self, filetable1, filetable2, varid, seasonid='DJF-JJA', region=None, aux=None ):
+    def __init__( self, filetable1, filetable2, varid, seasonid='DJF-JJA', regionid=None, aux=None ):
         """filetable1, filetable2 should be filetables for each model.
         varid is a string, e.g. 'TREFHT'.  The seasonal difference is Seasonid
         It is is a string, e.g. 'DJF-JJA'. """
@@ -1698,6 +1700,12 @@ class amwg_plot_set9(amwg_plot_spec):
             self._s1 = 'DJF'
             self._s2 = 'JJA'
             seasonid = 'DJF-JJA'
+
+        if regionid=="Global" or regionid=="global" or regionid is None:
+            self._regionid="Global"
+        else:
+            self._regionid=regionid
+        self.region = interpret_region(regionid)
 
         plot_spec.__init__(self, seasonid)
         self.plottype = 'Isofill'
@@ -1730,16 +1738,21 @@ class amwg_plot_set9(amwg_plot_spec):
         #generate identifiers
         vid1 = rv.dict_id(varid, self._s1, filetable1)
         vid2 = rv.dict_id(varid, self._s2, filetable2)
-        vid3 = dv.dict_id(varid, 'SeansonalDifference', self._seasonid, filetable1)#, ft2=filetable2)
+        vid3 = dv.dict_id(varid, 'SeasonalDifference', self._seasonid, filetable1)#, ft2=filetable2)
 
         #setup the reduced variables
         vid1_season = cdutil.times.Seasons(self._s1)
+        if vid1_season is None:
+            vid1_season = seasonsyr
         vid2_season = cdutil.times.Seasons(self._s2)
+        if vid2_season is None:
+            vid2_season = seasonsyr
+
         rv_1 = reduced_variable(variableid=varid, filetable=filetable1, season=vid1_season,
-                                reduction_function=( lambda x, vid=vid1, region=None: reduce2latlon_seasonal(x, vid1_season, region, vid=vid)) )
+                                reduction_function=( lambda x, vid=vid1: reduce2latlon_seasonal(x, vid1_season, self.region, vid=vid)) )
         
         rv_2 = reduced_variable(variableid=varid, filetable=filetable2, season=vid2_season,
-                                reduction_function=( lambda x, vid=vid2, region=None: reduce2latlon_seasonal(x, vid2_season, region, vid=vid)) )
+                                reduction_function=( lambda x, vid=vid2: reduce2latlon_seasonal(x, vid2_season, self.region, vid=vid)) )
                                                
         self.reduced_variables = {rv_1.id(): rv_1, rv_2.id(): rv_2}  
 
