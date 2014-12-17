@@ -981,16 +981,7 @@ def reduce2latlon_seasonal( mv, season, region=None, vid=None, exclude_axes=[] )
     # Note that the averager function returns a variable with meaningless id.
     # The climatology function returns the same id as mv, which we also don't want.
 
-    # The slicers in time.py require getBounds() to work.
-    # If it doesn't, we'll have to give it one.
-    # Setting the _bounds_ attribute will do it.
-    timeax = timeAxis(mv)
-    if timeax is None or len(timeax)<=1:
-        mvseas = mv
-    else:
-        if timeax.getBounds() is None:
-            timeax._bounds_ = timeax.genGenericBounds()
-        mvseas = season.climatology(mv)
+    mvseas = calculate_seasonal_climatology(mv, season)
 
     mvseas = select_region(mvseas, region)
 
@@ -1009,7 +1000,7 @@ def reduce2latlon_seasonal( mv, season, region=None, vid=None, exclude_axes=[] )
         avmv = mvseas
     if avmv is None: return avmv
     avmv.id = vid
-    avmv = delete_singleton_axis( avmv, vid='time' )
+
     if hasattr(mv,'units'):
         avmv.units = mv.units
     # >>> special ad-hoc code.  The target units should be provided in an argument, not by this if statement>>>>
@@ -1021,7 +1012,7 @@ def reduce_time_seasonal( mv, seasons=seasonsyr, region=None, vid=None ):
     """as reduce2lat_seasonal, but all non-time axes are retained.
     """
 
-    calculate_seasonal_climatology(mv, seasons)
+    avmv = calculate_seasonal_climatology(mv, seasons)
 
     if vid is None:
         #vid = 'reduced_'+mv.id
