@@ -1021,7 +1021,7 @@ def reduce_time_seasonal( mv, seasons=seasonsyr, region=None, vid=None ):
     """as reduce2lat_seasonal, but all non-time axes are retained.
     """
 
-    calculate_seasonal_climatology(mv, season)
+    calculate_seasonal_climatology(mv, seasons)
 
     if vid is None:
         #vid = 'reduced_'+mv.id
@@ -1055,14 +1055,14 @@ def calculate_seasonal_climatology(mv, season):
             tax._bounds_ = tax.genGenericBounds()
             # Special check necessary for LEGATES obs data, because
             # climatology() won't accept this incomplete specification
-        if timeax.units=='months':
+        if tax.units=='months':
             # Special check necessary for LEGATES obs data, because
             # climatology() won't accept this incomplete specification
-            timeax.units = 'months since 0001-01-01'
-        if timeax.units=='month: 1=Jan, ..., 12=Dec':
+            tax.units = 'months since 0001-01-01'
+        if tax.units=='month: 1=Jan, ..., 12=Dec':
             # Special check necessary for CERES obs data.
-            timeax.units = 'months since 0001-01-01'
-        if len(timeax)==1 and  ((hasattr(ax,'_FillValue') and ax._FillValue in ax) or
+            tax.units = 'months since 0001-01-01'
+        if len(tax)==1 and  ((hasattr(ax,'_FillValue') and ax._FillValue in ax) or
                                 (hasattr(ax,'fill_value') and ax.fill_value in ax)):
             # Time axis of length 1, which is missing!  It's a.s. a (malformed) climo file already.
             mvseas = mv2
