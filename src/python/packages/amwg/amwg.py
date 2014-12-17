@@ -684,9 +684,9 @@ class amwg_plot_set4(amwg_plot_spec):
             allvars[varname] = basic_level_variable
         return allvars
     def reduced_variables_press_lev( self, filetable, varid, seasonid, ftno=None ):
-        return reduced_variables_press_lev( filetable, varid, self.season )
+        return reduced_variables_press_lev( filetable, varid, seasonid )
     def reduced_variables_hybrid_lev( self, filetable, varid, seasonid, ftno=None ):
-        return reduced_variables_hybrid_lev( filetable, varid, self.season )
+        return reduced_variables_hybrid_lev( filetable, varid, seasonid )
     def plan_computation( self, filetable1, filetable2, varid, seasonid ):
         ft1_hyam = filetable1.find_files('hyam')
         if filetable2 is None:
@@ -919,8 +919,8 @@ class amwg_plot_set5and6(amwg_plot_spec):
         """
         varid,rvs,dvs = self.stdvar2var(
             varnom, filetable, self.season,\
-                (lambda x,vid,season=self.season,region=self.region:
-                     reduce2latlon_seasonal(x, season, region, vid, exclude_axes=[
+                (lambda x,vid:
+                     reduce2latlon_seasonal(x, self.season, self.region, vid, exclude_axes=[
                         'isccp_prs','isccp_tau','cosp_prs','cosp_tau',
                         'modis_prs','modis_tau','cosp_tau_modis',
                         'misr_cth','misr_tau','cosp_htmisr']) ))
@@ -991,7 +991,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
                 reduction_function=(lambda x,vid=None: select_region( x, self.region)) ),
             reduced_variable(     # ps=ps(time,lat,lon)
                 variableid='PS', filetable=filetable1, season=self.season,
-                reduction_function=(lambda x,vid=None: reduce_time_seasonal( x, self.season, self.region, vid ) ) ) ]
+                reduction_function=(lambda x,vid: reduce_time_seasonal( x, self.season, self.region, vid ) ) ) ]
         # vid1 = varid+'_p_1'
         # vidl1 = varid+'_lp_1'
         vid1 = dv.dict_id(  varid, 'p', seasonid, filetable1)
@@ -1038,7 +1038,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
                     reduction_function=(lambda x,vid=None: select_region( x, self.region)) ),
                 reduced_variable(     # ps=ps(time,lat,lon)
                     variableid='PS', filetable=filetable2, season=self.season,
-                    reduction_function=(lambda x,vid=None: reduce_time_seasonal( x, self.season, self.region, vid ) ) )
+                    reduction_function=(lambda x,vid: reduce_time_seasonal( x, self.season, self.region, vid ) ) )
                 ]
             #vid2 = varid+'_p_2'
             #vidl2 = varid+'_lp_2'
@@ -1219,37 +1219,37 @@ class amwg_plot_set6(amwg_plot_spec):
                     reduced_vars.append( reduced_variable(
                             variableid=var, filetable=filetable, season=self.season,
                             #reduction_function=(lambda x,vid=var+'_nomask':
-                            reduction_function=(lambda x,vid=None:
-                                                minusb(reduce2latlon_seasonal( x, self.season, vid )) ) ))
+                            reduction_function=(lambda x, vid=None, region=None:
+                                                minusb(reduce2latlon_seasonal( x, self.season, region, vid )) ) ))
                     needed_derivedvars.append(var)
                     reduced_vars.append( reduced_variable(
                             variableid='OCNFRAC', filetable=filetable, season=self.season,
-                            reduction_function=(lambda x,vid=None:
-                                                    reduce2latlon_seasonal( x, self.season, vid ) ) ))
+                            reduction_function=(lambda x, vid=None, region=None:
+                                                    reduce2latlon_seasonal( x, self.season, region, vid ) ) ))
                 elif filetable.has_variables(['ORO']):
                     # Applying the ocean mask will get a derived variable with variableid=var.
                     reduced_vars.append( reduced_variable(
                             variableid=var, filetable=filetable, season=self.season,
-                            reduction_function=(lambda x,vid=var+'_nomask':
-                                                minusb(reduce2latlon_seasonal( x, self.season, vid )) ) ))
+                            reduction_function=(lambda x, vid=var+'_nomask', region=None:
+                                                minusb(reduce2latlon_seasonal( x, self.season, region, vid )) ) ))
                     needed_derivedvars.append(var)
                     reduced_vars.append( reduced_variable(
                             variableid='ORO', filetable=filetable, season=self.season,
-                            reduction_function=(lambda x,vid=None:
-                                                    reduce2latlon_seasonal( x, self.season, vid ) ) ))
+                            reduction_function=(lambda x, vid=None, region=None:
+                                                    reduce2latlon_seasonal( x, self.season, region, vid ) ) ))
                 else:
                     # No ocean mask available.  Go on without applying one.  But still apply minusb
                     # because this is a CAM file.
                     reduced_vars.append( reduced_variable(
                             variableid=var, filetable=filetable, season=self.season,
-                            reduction_function=(lambda x,vid=None:
-                                                    minusb(reduce2latlon_seasonal( x, self.season, vid )) ) ))
+                            reduction_function=(lambda x, vid=None, region=None:
+                                                    minusb(reduce2latlon_seasonal( x, self.season, region, vid )) ) ))
             else:
                 # No ocean mask available and it's not a CAM file; just do an ordinary reduction.
                 reduced_vars.append( reduced_variable(
                         variableid=var, filetable=filetable, season=self.season,
-                        reduction_function=(lambda x,vid=None:
-                                                reduce2latlon_seasonal( x, self.season, vid ) ) ))
+                        reduction_function=(lambda x, vid=None, region=None:
+                                                reduce2latlon_seasonal( x, self.season, region, vid ) ) ))
                 vardict[var] = rv.dict_id( var, seasonid, filetable )
         return reduced_vars, needed_derivedvars
     def STRESS_dvs( self, filetable, dvars, seasonid, vardict, vid_cont, vars_vec ):
@@ -1481,10 +1481,10 @@ class amwg_plot_set7(amwg_plot_spec):
         reduced_varlis = [
             reduced_variable(
                 variableid=varid, filetable=filetable1, season=self.season,
-                reduction_function=(lambda x,vid: reduce2latlon_seasonal( x(latitude=aux, longitude=(0, 360)), self.season, vid=vid ) ) ),
+                reduction_function=(lambda x, vid, region=None: reduce2latlon_seasonal( x(latitude=aux, longitude=(0, 360)), self.season, region, vid=vid ) ) ),
             reduced_variable(
                 variableid=varid, filetable=filetable2, season=self.season,
-                reduction_function=(lambda x,vid: reduce2latlon_seasonal( x(latitude=aux, longitude=(0, 360)), self.season, vid=vid ) ) )
+                reduction_function=(lambda x,vid, region=None: reduce2latlon_seasonal( x(latitude=aux, longitude=(0, 360)), self.season, region, vid=vid ) ) )
             ]
         self.reduced_variables = { v.id():v for v in reduced_varlis }
         vid1 = rv.dict_id( varid, seasonid, filetable1 )
@@ -1719,10 +1719,10 @@ class amwg_plot_set9(amwg_plot_spec):
         vid1_season = cdutil.times.Seasons(self._s1)
         vid2_season = cdutil.times.Seasons(self._s2)
         rv_1 = reduced_variable(variableid=varid, filetable=filetable1, season=vid1_season,
-                                reduction_function=( lambda x, vid=vid1:reduce2latlon_seasonal(x, vid1_season, vid=vid)) ) 
+                                reduction_function=( lambda x, vid=vid1, region=None: reduce2latlon_seasonal(x, vid1_season, region, vid=vid)) )
         
         rv_2 = reduced_variable(variableid=varid, filetable=filetable2, season=vid2_season,
-                                reduction_function=( lambda x, vid=vid2:reduce2latlon_seasonal(x, vid2_season, vid=vid)) )                                             
+                                reduction_function=( lambda x, vid=vid2, region=None: reduce2latlon_seasonal(x, vid2_season, region, vid=vid)) )
                                                
         self.reduced_variables = {rv_1.id(): rv_1, rv_2.id(): rv_2}  
 
