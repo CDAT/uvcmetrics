@@ -52,7 +52,7 @@ def reduce_height_thickness( mv, heightlow, heighthigh, thicklow, thickhigh, vid
         elif 'modis_prs' in height_axes:
             mvh = mv( modis_prs=(heightlow,heighthigh) )
         elif 'cosp_htmisr' in height_axes:
-            mvh = mv( cosp_htmisr_prs=(heightlow,heighthigh) )
+            mvh = mv( cosp_htmisr=(heightlow,heighthigh) )
         elif 'misr_cth' in height_axes:
             mvh = mv( misr_cth=(heightlow,heighthigh) )
         else:
