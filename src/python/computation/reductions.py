@@ -64,7 +64,8 @@ def lonAxis( mv ):
     if mv is None: return None
     lon_axis = None
     for ax in allAxes(mv):
-        if ax.id=='lon': lon_axis = ax
+        #if ax.id=='lon': lon_axis = ax
+        if ax.isLongitude(): lon_axis = ax
     return lon_axis
 
 def levAxis( mv ):
@@ -118,7 +119,8 @@ def tllAxes( mv ):
     for ax in allAxes(mv):
         #if ax.id=='lat': lat_axis = ax
         if ax.isLatitude(): lat_axis = ax
-        if ax.id=='lon': lon_axis = ax
+        #if ax.id=='lon': lon_axis = ax
+        if ax.isLongitude(): lon_axis = ax
         if ax.id=='time': time_axis = ax
     return (time_axis,lat_axis,lon_axis)
 
