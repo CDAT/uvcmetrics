@@ -18,8 +18,8 @@ from metrics.packages.amwg.derivations import press2alt
 from metrics.fileio.filetable import *
 from metrics.computation.units import *
 #from climo_test import cdutil_climatology
-import metrics.frontend.defines as defines
 from genutil import *
+from metrics.computation.region_functions import *
 
 regridded_vars = {}  # experimental
 
@@ -1059,31 +1059,6 @@ def calculate_seasonal_climatology(mv, season):
     # would be as meaningless as the time value itself).  So get rid of it now:
     mvt = delete_singleton_axis(mvt, vid='time')
     return mvt
-
-# Moved this here from amwg.py set13 class, because it can be used by all the AMWG classes.
-def interpret_region( region ):
-    """Tries to make sense of the input region, and returns the resulting instance of the class
-    rectregion in region.py."""
-    if region is None:
-        region = "global"
-    if type(region) is str:
-        if region in defines.all_regions:
-            region = defines.all_regions[region]
-        else:
-            raise ValueError, "cannot recognize region name %s"%region
-            region = None
-    return region
-
-def select_region(mv, region=None):
-    # Select lat-lon region
-    if region=="global" or region=="Global" or getattr(region,'filekey',None)=="Global"\
-            or str(region)=="Global":
-        mvreg = mv
-    else:
-        region = interpret_region(region)
-        mvreg = mv(latitude=(region[0], region[1]), longitude=(region[2], region[3]))
-
-    return mvreg
 
 def select_lev( mv, slev ):
     """Input is a level-dependent variable mv and a level slev to select.
