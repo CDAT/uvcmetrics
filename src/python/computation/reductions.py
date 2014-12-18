@@ -961,13 +961,13 @@ def reduce2latlon_seasonal( mv, season=seasonsyr, region=None, vid=None, exclude
     # Note that the averager function returns a variable with meaningless id.
     # The climatology function returns the same id as mv, which we also don't want.
 
-    mvseas = calculate_seasonal_climatology(mv, season)
-    mvseas = select_region(mvseas, region)
+    mvr = select_region(mv, region)
+    mvseas = calculate_seasonal_climatology(mvr, season)
 
     axes = allAxes( mv )
     #axis_names = [ a.id for a in axes if a.id!='lat' and a.id!='lon' and a.id!='time' and\
     axis_names = [ a.id for a in axes if not a.isLatitude() and not a.isLongitude() and
-                   a.id not in exclude_axes]
+                   not a.isTime() and a.id not in exclude_axes]
     axes_string = '('+')('.join(axis_names)+')'
 
     if len(axes_string)>2:
