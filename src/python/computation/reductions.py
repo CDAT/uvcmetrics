@@ -960,7 +960,7 @@ def reduce2latlon_seasonal_level( mv, season, level, vid=None):
 
    return mvseas
 
-def reduce2latlon_seasonal( mv, season, region=None, vid=None, exclude_axes=[] ):
+def reduce2latlon_seasonal( mv, season=seasonsyr, region=None, vid=None, exclude_axes=[] ):
     """as reduce2lat_seasonal, but both lat and lon axes are retained.
     Axis names (ids) may be listed in exclude_axes, to exclude them from the averaging process.
     """
@@ -1018,6 +1018,13 @@ def reduce_time_seasonal( mv, seasons=seasonsyr, region=None, vid=None ):
     return avmv
 
 def calculate_seasonal_climatology(mv, season):
+
+    # Convert season to a season object if it isn't already
+    if season is None:
+        season=seasonsyr
+    if type(season) == str :
+        season=cdutil.times.Seasons(season)
+
     tax = timeAxis(mv)
     if tax is None:
         print "WARNING- no time axis in",mv.id
@@ -1046,11 +1053,12 @@ def calculate_seasonal_climatology(mv, season):
         if len(tax)==1 and  ((hasattr(ax,'_FillValue') and ax._FillValue in ax) or
                                 (hasattr(ax,'fill_value') and ax.fill_value in ax)):
             # Time axis of length 1, which is missing!  It's a.s. a (malformed) climo file already.
-            mvseas = mv2
+            # TODO: print a warning here?
+            mvt = mv
         else:
             mvt = season.climatology( mv )
         if mvt is None:
-            print "WARNING- cannot compute climatology for",mv.id,seasons.seasons
+            print "WARNING- cannot compute climatology for",mv.id,season.seasons
             print "...probably there is no data for times in the requested season."
             return None
 
@@ -1058,6 +1066,8 @@ def calculate_seasonal_climatology(mv, season):
     # the next, averager(), step can't use it because it may not have bounds (or they
     # would be as meaningless as the time value itself).  So get rid of it now:
     mvt = delete_singleton_axis(mvt, vid='time')
+    if hasattr( mv, 'units' ):
+        mvt.units = mv.units
     return mvt
 
 def select_lev( mv, slev ):
