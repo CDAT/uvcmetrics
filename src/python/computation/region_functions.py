@@ -22,4 +22,6 @@ def select_region(mv, region=None):
         region = interpret_region(region)
         mvreg = mv(latitude=(region[0], region[1]), longitude=(region[2], region[3]))
 
+    if hasattr(mv,'units'):
+        mvreg.units = mv.units
     return mvreg
