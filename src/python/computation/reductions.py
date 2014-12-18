@@ -955,19 +955,13 @@ def reduce2latlon_seasonal_level( mv, season, level, vid=None):
    if vid is None:
       vid = 'reduced_'+mv.id
 
-   levax = levAxis(mv)
-   if levax is None or len(levax)<=1:
-      return mv
-
-   levstr = levax.id
-   mvsub = mv(levstr=slice(level, level+1))
-
+   mvl = select_lev(mv, level)
    mvseas = calculate_seasonal_climatology( mvl, season)
 
    mvseas.id = vid
    if hasattr(mv,'units'):
       mvseas.units = mv.units
-   mvseas = delete_singleton_axis(mvseas, vid=levax)
+
    return mvseas
 
 def reduce2latlon_seasonal( mv, season, region=None, vid=None, exclude_axes=[] ):
