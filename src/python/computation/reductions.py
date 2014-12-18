@@ -1098,6 +1098,7 @@ def select_lev( mv, slev ):
     else:
         print "ERROR, select_lev() does not support level axis except as first or second dimensions"
         return None
+    mvs = delete_singleton_axis(mvs, vid=levax.id)
     return mvs
 
 def latvar( mv ):
