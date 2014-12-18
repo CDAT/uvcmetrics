@@ -1151,7 +1151,7 @@ class amwg_plot_set6(amwg_plot_spec):
     # The first in the list (e.g. [a,b,c]) is to be preferred.
     #... If this works, I'll make it universal, defaulting to {}.  For plot set 6, the first
     # data variable will be used for the contour plot, and the other two for the vector plot.
-    def __init__( self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None ):
+    def __init__( self, filetable1, filetable2, varid, seasonid=None, regionid=None, aux=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the variable to be plotted, e.g. 'STRESS'.
         seasonid is a string such as 'DJF'."""
@@ -1159,6 +1159,11 @@ class amwg_plot_set6(amwg_plot_spec):
         # self.plottype = ['Isofill','Vector']  <<<< later we'll add contour plots
         self.plottype = 'Vector'
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
+        if regionid=="Global" or regionid=="global" or regionid is None:
+            self._regionid="Global"
+        else:
+            self._regionid=regionid
+        self.region = interpret_region(regionid)
 
         self.varid = varid
         ft1id,ft2id = filetable_ids(filetable1,filetable2)
@@ -1168,16 +1173,16 @@ class amwg_plot_set6(amwg_plot_spec):
         self.plotall_id = ft1id+'_'+ft2id+'_'+varid+'_'+seasonid
 
         if not self.computation_planned:
-            self.plan_computation( filetable1, filetable2, varid, seasonid, region, aux )
+            self.plan_computation( filetable1, filetable2, varid, seasonid, aux )
     @staticmethod
     def _list_variables( filetable1, filetable2=None ):
         return amwg_plot_set6.standard_variables.keys()
     @staticmethod
     def _all_variables( filetable1, filetable2=None ):
         return { vn:basic_plot_variable for vn in amwg_plot_set6._list_variables( filetable1, filetable2 ) }
-    def plan_computation( self, filetable1, filetable2, varid, seasonid, region=None, aux=None ):
+    def plan_computation( self, filetable1, filetable2, varid, seasonid, aux=None ):
         if aux is None:
-            return self.plan_computation_normal_contours( filetable1, filetable2, varid, seasonid, region, aux )
+            return self.plan_computation_normal_contours( filetable1, filetable2, varid, seasonid, aux )
         else:
             print "ERROR plot set 6 does not support auxiliary variable aux=",aux
             return None
@@ -1231,37 +1236,37 @@ class amwg_plot_set6(amwg_plot_spec):
                     reduced_vars.append( reduced_variable(
                             variableid=var, filetable=filetable, season=self.season,
                             #reduction_function=(lambda x,vid=var+'_nomask':
-                            reduction_function=(lambda x, vid=None, region=None:
-                                                minusb(reduce2latlon_seasonal( x, self.season, region, vid )) ) ))
+                            reduction_function=(lambda x,vid=None:
+                                                minusb(reduce2latlon_seasonal( x, self.season, self.region, vid)) ) ))
                     needed_derivedvars.append(var)
                     reduced_vars.append( reduced_variable(
                             variableid='OCNFRAC', filetable=filetable, season=self.season,
-                            reduction_function=(lambda x, vid=None, region=None:
-                                                    reduce2latlon_seasonal( x, self.season, region, vid ) ) ))
+                            reduction_function=(lambda x,vid=None:
+                                                    reduce2latlon_seasonal( x, self.season, self.region, vid) ) ))
                 elif filetable.has_variables(['ORO']):
                     # Applying the ocean mask will get a derived variable with variableid=var.
                     reduced_vars.append( reduced_variable(
                             variableid=var, filetable=filetable, season=self.season,
-                            reduction_function=(lambda x, vid=var+'_nomask', region=None:
-                                                minusb(reduce2latlon_seasonal( x, self.season, region, vid )) ) ))
+                            reduction_function=(lambda x,vid=var+'_nomask':
+                                                minusb(reduce2latlon_seasonal( x, self.season, self.region, vid)) ) ))
                     needed_derivedvars.append(var)
                     reduced_vars.append( reduced_variable(
                             variableid='ORO', filetable=filetable, season=self.season,
-                            reduction_function=(lambda x, vid=None, region=None:
-                                                    reduce2latlon_seasonal( x, self.season, region, vid ) ) ))
+                            reduction_function=(lambda x,vid=None:
+                                                    reduce2latlon_seasonal( x, self.season, self.region, vid) ) ))
                 else:
                     # No ocean mask available.  Go on without applying one.  But still apply minusb
                     # because this is a CAM file.
                     reduced_vars.append( reduced_variable(
                             variableid=var, filetable=filetable, season=self.season,
-                            reduction_function=(lambda x, vid=None, region=None:
-                                                    minusb(reduce2latlon_seasonal( x, self.season, region, vid )) ) ))
+                            reduction_function=(lambda x,vid=None:
+                                                    minusb(reduce2latlon_seasonal( x, self.season, self.region, vid)) ) ))
             else:
                 # No ocean mask available and it's not a CAM file; just do an ordinary reduction.
                 reduced_vars.append( reduced_variable(
                         variableid=var, filetable=filetable, season=self.season,
-                        reduction_function=(lambda x, vid=None, region=None:
-                                                reduce2latlon_seasonal( x, self.season, region, vid ) ) ))
+                        reduction_function=(lambda x,vid=None:
+                                                reduce2latlon_seasonal( x, self.season, self.region, vid ) ) ))
                 vardict[var] = rv.dict_id( var, seasonid, filetable )
         return reduced_vars, needed_derivedvars
     def STRESS_dvs( self, filetable, dvars, seasonid, vardict, vid_cont, vars_vec ):
@@ -1321,7 +1326,7 @@ class amwg_plot_set6(amwg_plot_spec):
 
         return derived_vars
 
-    def plan_computation_normal_contours( self, filetable1, filetable2, varid, seasonid, region=None, aux=None ):
+    def plan_computation_normal_contours( self, filetable1, filetable2, varid, seasonid, aux=None ):
         """Set up for a lat-lon contour plot, as in plot set 5.  Data is averaged over all other
         axes."""
         self.derived_variables = {}
