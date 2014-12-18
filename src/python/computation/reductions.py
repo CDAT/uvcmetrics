@@ -875,16 +875,12 @@ def reduceMonthlyRegion(mv, region, vid=None):
 
 # Used to get just a spatial region average of a var, i.e. when climos are passed in
 def reduceRegion(mv, region, vid=None):
-   if type(region) is dict:
-      r = region[region.keys()[0]]
-      region = defines.all_regions[r].coords
-   if type(region) is str:
-      r = defines.all_regions[region].coords
-      region = r
 #   print 'in reduce region. region/mv: ', region, mv.id
    if vid is None:
       vid = 'reduced_'+mv.id
-   mvsub = mv(latitude=(region[0], region[1]), longitude=(region[2], region[3]))
+
+   mvsub = select_region(mv, region)
+
 #   print 'about to call averager on mvsub: ', mvsub.shape
 #   print 'mv going in:', mvsub
    mvvals = cdutil.averager(mvsub, axis='xy')
