@@ -167,6 +167,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
         vcanvas2.portrait()
         vcanvas2.setcolormap('bl_to_darkred') #Set the colormap to the NCAR colors
 #       vcanvas3 = vcs.init()
+        savePNG = False
         LINE = vcanvas.createline('LINE', 'default')
         LINE.width = 3.0
         LINE.type = 'solid'
@@ -328,8 +329,11 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                        title = rsr.title
                                        rsr_presentation = rsr.presentation
                                        for varIndex, var in enumerate(rsr.vars):
-                                           if len(var)<=1:
-                                               print "INFO: won't plot short variable",var.id
+                                           lenvar = reduce(lambda x, y: x*y, var.shape)
+                                           # Note that len(var) won't work, it only picks up the first
+                                           # dimension, i.e. var.shape[0].
+                                           if lenvar<=1:
+                                               print "INFO: won't plot short variable",var.id,var.shape
                                                continue
                                            savePNG = True
                                            seqsetattr(var,'title',title)
@@ -493,7 +497,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                    filenames = resc.write_plot_data("xml-NetCDF", outdir )
                                print "wrote plots",resc.title," to",filenames
                             if opts['plots']==True:
-                                if tmmobs[0] is not None:  # If anything was plotted to vcanvas2
+                                if savePNG and tmmobs[0] is not None:  # If anything was plotted to vcanvas2
                                     vname = varid.replace(' ', '_')
                                     vname = vname.replace('/', '_')
                                     if basename == None and postname == None:
