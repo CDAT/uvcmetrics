@@ -1009,10 +1009,11 @@ def reduce_time_seasonal( mv, seasons=seasonsyr, region=None, vid=None ):
 def calculate_seasonal_climatology(mv, season):
 
     # Convert season to a season object if it isn't already
-    if season is None:
+    if season is None or season == 'ANN' or season.seasons[0] == 'ANN':
         season=seasonsyr
-    if type(season) == str :
+    elif type(season) == str:
         season=cdutil.times.Seasons(season)
+    print "calculating climatology for season : ", season.seasons
 
     tax = timeAxis(mv)
     if tax is None:
@@ -1045,6 +1046,7 @@ def calculate_seasonal_climatology(mv, season):
             # TODO: print a warning here?
             mvt = mv
         else:
+            mv.setAxis(mv.getAxisIndex(tax.id), tax)
             mvt = season.climatology( mv )
         if mvt is None:
             print "WARNING- cannot compute climatology for",mv.id,season.seasons
