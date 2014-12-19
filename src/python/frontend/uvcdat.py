@@ -200,6 +200,8 @@ class uvc_simple_plotspec():
     # Isofill is a contour plot.  To make it polar, set projection=polar.  I'll
     # probably communicate that by passing a name "Isofill_polar".
     def __init__( self, pvars, presentation, labels=[], title='', source='', ranges=None, overplotline=False):
+        pvars = [v for v in pvars if v is not None]
+        # ... Maybe something else is broken to let None get into pvars.
         if len(pvars)<=0:
             zerovar = cdms2.createVariable([[0,0,0],[0,0,0]])
             zerovar.id = 'zero'
@@ -497,8 +499,6 @@ class uvc_simple_plotspec():
                 # ... mkscale returns numpy.float64, which behaves unexpectedly in _setlevels when
                 # passed a tuple value
                 if levels is not None and len(levels)>0:
-                    print "jfp nlevels,varmin,varmax=",nlevels,varmin,varmax
-                    print "jfp levels=",levels
                     self.presentation.levels = levels
                 #nlevels = max(1, len(levels) - 1)
                 #nlrange = range(nlevels+1)
