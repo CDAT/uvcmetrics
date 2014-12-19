@@ -2140,12 +2140,16 @@ class amwg_plot_set13(amwg_plot_spec):
         for varname in amwg_plot_spec.package._list_variables(
             filetable1, filetable2, "amwg_plot_spec" ):
             varaxisnames1 = vars1[varname]
-            otheraxes1 = list(set(varaxisnames1) - set(['time','lat','lon']))
+            #otheraxes1 = list(set(varaxisnames1) - set(['time','lat','lon']))
+            otheraxes1 = list(set(varaxisnames1) -
+                              set(filetable1.lataxes+filetable1.lonaxes+['time']))
             if len(otheraxes1)!=2:
                 continue
             if filetable2 is not None:
                 varaxisnames2 = vars2[varname]
-                otheraxes2 = list(set(varaxisnames2) - set(['time','lat','lon']))
+                #otheraxes2 = list(set(varaxisnames2) - set(['time','lat','lon']))
+                otheraxes1 = list(set(varaxisnames1) -
+                                  set(filetable2.lataxes+filetable2.lonaxes+['time']))
                 if len(otheraxes2)!=2:
                     continue
             allvars[varname] = basic_plot_variable
