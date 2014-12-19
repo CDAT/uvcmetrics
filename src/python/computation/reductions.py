@@ -74,7 +74,7 @@ def levAxis( mv ):
     if mv is None: return None
     lev_axis = None
     for ax in allAxes(mv):
-        if ax.isLevel():   # <<< need a similar change for other axes
+        if ax.isLevel():
             lev_axis = ax
             break
     if lev_axis is None:
@@ -1148,17 +1148,20 @@ def calculate_seasonal_climatology(mv, season):
 def interpret_region( region ):
     """Tries to make sense of the input region, and returns the resulting instance of the class
     rectregion in region.py."""
-#    print "jfp interpret_region starting with",region,type(region)
     if region is None:
         region = "global"
     if type(region) is str:
-        region = defines.all_regions[region]
-#    print "jfp interpet_region returning with",region,type(region)
+        if region in defines.all_regions:
+            region = defines.all_regions[region]
+        else:
+            raise ValueError, "cannot recognize region name %s"%region
+            region = None
     return region
 
 def select_region(mv, region=None):
     # Select lat-lon region
-    if region=="global" or region=="Global":
+    if region=="global" or region=="Global" or getattr(region,'filekey',None)=="Global"\
+            or str(region)=="Global":
         mvreg = mv
     else:
         region = interpret_region(region)
