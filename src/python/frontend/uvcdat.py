@@ -550,8 +550,8 @@ class uvc_simple_plotspec():
                 nlonvs = vcsx.bgX/16
                 #self.strideX = int( 0.9* vcsx.bgX/nlons )
                 #self.strideY = int( 0.6* vcsx.bgY/nlats )
-                self.strideX = int( nlons/nlonvs )
-                self.strideY = int( nlats/nlatvs )
+                self.strideX = max(1, int( nlons/nlonvs )) # stride values must be at least 1
+                self.strideY = max(1, int( nlats/nlatvs ))
         else:
             print "ERROR cannot identify graphics method",self.presentation.__class__.__name__
 

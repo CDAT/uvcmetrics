@@ -120,10 +120,10 @@ def generatePlots(modelpath, obspath, outpath, pname, sets=None):
    #                  print postname
    #                  print obsfname
 
-         if setnum != 'topten':
+         if setnum != 'topten' and setnum != 'so' and setnum != 'testing':
             realsetnum = setnum
             prename = ''
-         else:
+         elif setnum == 'topten':
             # convert a given topten to the "right" setnumber that it comes from
             prename = '--outputpre settopten'
             v4 = [x for x in vl if x in ['RELHUM', 'T']]
@@ -133,7 +133,7 @@ def generatePlots(modelpath, obspath, outpath, pname, sets=None):
             if v4 != []:
                realsetnum = 4
                vl1 = list(set(v4) & set(vl))
-               # need 2nd command line for the set 5 vars we just droped for this obs set. 
+               # need 2nd command line for the set 5 vars we just droped for this obs set.
                # This is getting icky; need to rethink but not during firedrill. just make
                # it work.
                vl2 = list(set(vl) - set(vl1))
@@ -146,13 +146,99 @@ def generatePlots(modelpath, obspath, outpath, pname, sets=None):
             elif v6 != []:
                realsetnum = 6
                vl = list(set(v6) & set(vl))
+         elif setnum == 'so':
+            # convert a given topten to the "right" setnumber that it comes from
+            prename = '--outputpre setso'
+            v4 = [x for x in vl if x in ['T']]
+            v5 = [x for x in vl if x in ['SWCF', 'LWCF', 'PRECT', 'AODVIS', 'FSNS', 'FLDS', 'LHFLX', 'SHFLX','QFLX', 'CLDTOT']]
+            v6 = [x for x in vl if x in ['STRESS']]
+            print 'vl in:' ,vl
+            if v4 != []:
+               realsetnum = 4
+               vl1 = list(set(v4) & set(vl))
+               # need 2nd command line for the set 5 vars we just droped for this obs set.
+               # This is getting icky; need to rethink but not during firedrill. just make
+               # it work.
+               vl2 = list(set(vl) - set(vl1))
+               vl = vl1
+               vlstr2 = ' '.join(vl2)
+               cmdline2 = 'diags --path %s --path2 %s %s --set 5 %s %s --vars %s %s %s %s %s --regions %s' % (modelpath, obspath, package, seasons, obsfname, vlstr2, outdir, postname, xml, prename, '\'southern extratropics\'')
+            elif v5 != []:
+               realsetnum = 5
+               vl = list(set(v5) & set(vl))
+            elif v6 != []:
+               realsetnum = 6
+               vl = list(set(v6) & set(vl))
+
+         elif setnum == 'testing':
+            # convert a given topten to the "right" setnumber that it comes from
+            prename = '--outputpre settesting'
+            v3 = [x for x in vl if x in ['CLDTOT']]
+            v4 = [x for x in vl if x in ['T']]
+            v5 = [x for x in vl if x in ['SWCF','TREFHT','PRECT','CLDTOT','FSNS']]
+            v6 = [x for x in vl if x in ['STRESS']]
+            v8 = [x for x in vl if x in ['QFLX']]
+            v9 = [x for x in vl if x in ['JRA25']]
+            v10 = [x for x in vl if x in ['SHFLX']]
+            v11 = [x for x in vl if x in ['PREH2O']]
+            v12 = [x for x in vl if x in ['RELHUM']]
+            v13 = [x for x in vl if x in ['CLDHGH']]
+            print 'vl in:' ,vl
+            if v4 != []:
+               realsetnum = 4
+               vl1 = list(set(v4) & set(vl))
+               # need 2nd command line for the set 5 vars we just droped for this obs set.
+               # This is getting icky; need to rethink but not during firedrill. just make
+               # it work.
+               vl2 = list(set(vl) - set(vl1))
+               vl = vl1
+               vlstr2 = ' '.join(vl2)
+               cmdline2 = 'diags --path %s --path2 %s %s --set 5 %s %s --vars %s %s %s %s %s --regions %s' % (modelpath, obspath, package, seasons, obsfname, vlstr2, outdir, postname, xml, prename, '\'southern extratropics\'')
+            elif v3 != []:
+               realsetnum = 3
+               vl = list(set(v3) & set(vl))
+            elif v5 != []:
+               realsetnum = 5
+               vl = list(set(v5) & set(vl))
+            elif v6 != []:
+               realsetnum = 6
+               vl = list(set(v6) & set(vl))
+            elif v8 != []:
+               realsetnum = 8
+               vl = list(set(v8) & set(vl))
+            elif v9 != []:
+               realsetnum = 9
+               vl = list(set(v9) & set(vl))
+            elif v10 != []:
+               realsetnum = 10
+               vl = list(set(v10) & set(vl))
+            elif v11 != []:
+               realsetnum = 11
+               vl = list(set(v11) & set(vl))
+            elif v12 != []:
+               realsetnum = 12
+               vl = list(set(v12) & set(vl))
+            elif v13 != []:
+               realsetnum = 13
+               vl = list(set(v13) & set(vl))
+         else:
+             print '\n\nError: set name,', setnum, ', cannot be parsed.'
+             outlog.write('Command %s failed\n' % cmdline2)
+             errlog.write('Failing command was: %s\n' % cmdline2)
+             errlog.write('Set name could not be parsed: %s\n' % setnum)
 
          vlnew = []
          for x in vl:
             vlnew.append(x.replace('_TROP', ''))
          vl = vlnew
          vlstr = ' '.join(vl)
-         cmdline = 'diags --path %s --path2 %s %s --set %s %s %s --vars %s %s %s %s %s' % (modelpath, obspath, package, realsetnum, seasons, obsfname, vlstr, outdir, postname, xml, prename)
+         if setnum == 'so':
+            cmdline = 'diags --path %s --path2 %s %s --set %s %s %s --vars %s %s %s %s %s --regions %s' % (modelpath, obspath, package, realsetnum, seasons, obsfname, vlstr, outdir, postname, xml, prename, '\'southern extratropics\'')
+         elif setnum == 'testing':
+            cmdline = 'diags --path %s --path2 %s %s --set %s %s %s --vars %s %s %s %s %s --regions %s' % (modelpath, obspath, package, realsetnum, seasons, obsfname, vlstr, outdir, postname, xml, prename, '\'southern extratropics\'')
+         else:
+            cmdline = 'diags --path %s --path2 %s %s --set %s %s %s --vars %s %s %s %s %s' % (modelpath, obspath, package, realsetnum, seasons, obsfname, vlstr, outdir, postname, xml, prename)
+
          print 'Executing '+cmdline
          try:
             retcode = subprocess.check_call(cmdline, stdout=outlog, stderr=errlog, shell=True)
