@@ -53,7 +53,7 @@ class ftrow:
     If the file has several variables, there will be several rows for the file."""
     # One can think of lots of cases where this is too simple, but it's a start.
     def __init__( self, fileid, variableid, timerange, latrange, lonrange, levelrange=None,
-                  filefmt=None, varaxisnames=[] ):
+                  filefmt=None, varaxisnames=[], latn=None, lonn = None, levn=None ):
         self.fileid = fileid          # file name
         self.filetype = filefmt       # file format/type, e.g. "NCAR CAM" or "CF CMIP5"
         self.variableid = variableid  # variable name
@@ -76,6 +76,9 @@ class ftrow:
         else:
            self.haslevel = True
            self.levelrange = levelrange
+        self.latname = latn   # name of latitude axis
+        self.lonname = lonn   # name of longitude axis
+        self.levname = levn   # name of level axis
     def __repr__(self):
        if self.fileid is None:
           filerepr = "<no file>"
@@ -151,6 +154,10 @@ class basic_filetable(basic_id):
         # cover just about anything we'll want to plot.  If something is missing, we'll need our
         # own standard name list.
         self._varindex = {} # will be built as the table is built
+        self.lataxes = []  # list of latitude axis names (usually just one)
+        self.lonaxes = []  # list of longitude axis names (usually just one)
+        self.levaxes = []  # list of level axis names (sometimes a few of them)
+
         #print "filelist=",filelist,type(filelist)
         self._filelist = filelist # just used for __repr__ and root_dir
         self._cache_path=options._opts['cachepath']
@@ -162,6 +169,14 @@ class basic_filetable(basic_id):
         for filep in filelist.files:
             self.addfile( filep, options )
             self._files.append(filep)
+
+        self.lataxes = list(set(self.lataxes))
+        self.lonaxes = list(set(self.lonaxes))
+        self.levaxes = list(set(self.levaxes))
+        self.lataxes.sort()
+        self.lonaxes.sort()
+        self.levaxes.sort()
+
     def __repr__(self):
        return 'filetable from '+str(self._filelist)[:100]+'...'
     def full_repr(self):
@@ -223,6 +238,9 @@ class basic_filetable(basic_id):
         vars = filesupp.interesting_variables()
         if len(vars)>0:
             timerange = filesupp.get_timerange()
+            # After testing (see asserts below), these 3 lines will be obsolete:
+            # Note that ranges may be variable-dependent.  This is especially true for levels,
+            # where there may several level axes of different lengths and physical ranges.
             latrange = filesupp.get_latrange()
             lonrange = filesupp.get_lonrange()
             levelrange = filesupp.get_levelrange()
@@ -230,8 +248,20 @@ class basic_filetable(basic_id):
                 variableid = var
                 if dfile[var] is not None and hasattr(dfile[var],'domain'):
                     varaxisnames = [a[0].id for a in dfile[var].domain]
+                    vlat = dfile[var].getLatitude()
+                    vlon = dfile[var].getLongitude()
+                    vlev = dfile[var].getLevel()
                 elif var in dfile.axes.keys():
                     varaxisnames = [var]
+                    vlat = None
+                    vlon = None
+                    vlev = None
+                    if dfile[var].isLatitude():
+                        vlat = dfile[var]
+                    elif dfile[var].isLongitude():
+                        vlon = dfile[var]
+                    elif dfile[var].isLevel():
+                        vlev = dfile[var]
                 else:
                     continue
                 if hasattr(filesupp,'season'): # climatology file
@@ -245,20 +275,29 @@ class basic_filetable(basic_id):
                    timern = timerange   # this should be the season like the above example
                 else:
                    timern = None
-                if 'lat' in varaxisnames:
-                   latrn = latrange
+                if vlat is not None:
+                    latrn = filesupp.get_latrange( vlat )
+                    latn = vlat.id
+                    self.lataxes.append(latn)
                 else:
                    latrn = None
-                if 'lon' in varaxisnames:
-                   lonrn = lonrange
+                   latn = None
+                if vlon is not None:
+                    lonrn = filesupp.get_lonrange( vlon )
+                    lonn = vlon.id
+                    self.lonaxes.append(lonn)
                 else:
                    lonrn = None
-                if 'lev' in varaxisnames:
-                   levrn = levelrange
+                   lonn = None
+                if vlev is not None:
+                    levrn = filesupp.get_levelrange( vlev )
+                    levn = vlev.id
+                    self.levaxes.append(levn)
                 else:
                    levrn = None
+                   levn = None
                 newrow = ftrow( fileid, variableid, timern, latrn, lonrn, levrn, filefmt=filesupp.name,
-                                varaxisnames=varaxisnames )
+                                varaxisnames=varaxisnames, latn=latn, lonn=lonn, levn=levn )
                 if hasattr(filesupp,'season'):
                     # so we can detect that it's climatology data:
                     newrow.season = filesupp.season
@@ -421,50 +460,61 @@ class NCAR_filefmt(basic_filefmt):
             units = None
       return drange( lo, hi, units )
 
-   def get_latrange(self):
+   def get_latrange( self, lataxis=None ):
       # uses center points because the axis doesn't have a bounds attribute
-      if 'lat'  in self._dfile.axes:
-         lo = self._dfile.axes['lat'][0]
-         hi = self._dfile.axes['lat'][-1]
-         units = self._dfile.axes['lat'].units
-      else:
-         lo = None
-         hi = None
-         units = None
-      return drange( lo, hi, units )
+       if lataxis is None and 'lat' in self._dfile.axes:
+           lataxis = self._dfile.axes['lat']
+       if lataxis is not None:
+           lo = lataxis[0]
+           hi = lataxis[-1]
+           units = lataxis.units
+       else:
+           lo = None
+           hi = None
+           units = None
+       return drange( lo, hi, units )
 
-   def get_lonrange(self):
-      # uses center points because the axis doesn't have a bounds attribute
-      if 'lon' in self._dfile.axes:
-         lo = self._dfile.axes['lon'][0]
-         hi = self._dfile.axes['lon'][-1]
-         units = self._dfile.axes['lon'].units
-      else:
-         lo = None
-         hi = None
-         units = None
-      return drange( lo, hi, units )
+   def get_lonrange( self, lonaxis=None ):
+       # uses center points because the axis doesn't have a bounds attribute
+       if lonaxis is None and 'lon' in self._dfile.axes:
+           lonaxis = self._dfile.axes['lon']
+       if lonaxis is not None:
+         lo = lonaxis[0]
+         hi = lonaxis[-1]
+         units = lonaxis.units
+       else:
+           lo = None
+           hi = None
+           units = None
+       return drange( lo, hi, units )
 
-   def get_levelrange(self):
+   def get_levelrange( self, levaxis=None ):
       # uses interface points, which are bounds on the level centers
-      if 'ilev' in self._dfile.axes.keys():
-         lo = self._dfile.axes['ilev'][0]
-         hi = self._dfile.axes['ilev'][-1]
-         units = self._dfile.axes['ilev'].units
-      elif 'lev' in self._dfile.axes.keys():
-         lo = self._dfile.axes['lev'][0]
-         hi = self._dfile.axes['lev'][-1]
-         units = self._dfile.axes['lev'].units
-      elif 'levlak' in self._dfile.axes.keys():
-         lo = self._dfile.axes['levlak'][0]
-         hi = self._dfile.axes['levlak'][-1]
-         units = self._dfile.axes['levlak'].units
-      elif 'levgrnd' in self._dfile.axes.keys():
-         lo = self._dfile.axes['levgrnd'][0]
-         hi = self._dfile.axes['levgrnd'][-1]
-         units = self._dfile.axes['levgrnd'].units
+      if levaxis is None:
+          # Try a few possible names for level or level bounds axes:
+          if 'ilev' in self._dfile.axes.keys():
+             lo = self._dfile.axes['ilev'][0]
+             hi = self._dfile.axes['ilev'][-1]
+             units = self._dfile.axes['ilev'].units
+          elif 'lev' in self._dfile.axes.keys():
+             lo = self._dfile.axes['lev'][0]
+             hi = self._dfile.axes['lev'][-1]
+             units = self._dfile.axes['lev'].units
+          elif 'levlak' in self._dfile.axes.keys():
+             lo = self._dfile.axes['levlak'][0]
+             hi = self._dfile.axes['levlak'][-1]
+             units = self._dfile.axes['levlak'].units
+          elif 'levgrnd' in self._dfile.axes.keys():
+             lo = self._dfile.axes['levgrnd'][0]
+             hi = self._dfile.axes['levgrnd'][-1]
+             units = self._dfile.axes['levgrnd'].units
+          else:
+             return None
       else:
-         return None
+          # level axis provided by caller
+          lo = levaxis[0]
+          hi = levaxis[-1]
+          units = levaxis.units
       return drange( lo, hi, units )
 
    def interesting_variables(self):
@@ -599,36 +649,46 @@ class CF_filefmt(basic_filefmt):
           hi = self._dfile.axes['time'][-1]
        units = self._dfile.axes['time'].units
        return drange( lo, hi, units )
-    def get_latrange(self):
-       if 'bounds' in self._dfile.axes['lat'].__dict__:
-          lat_bnds_name = self._dfile.axes['lat'].bounds
+    def get_latrange( self, lataxis=None ):
+       if lataxis is None and 'lat' in self._dfile.axes:
+           lataxis = self._dfile.axes['lat']
+       if lataxis is None:
+           return drange( None, None, None )
+       if 'bounds' in lataxis.__dict__:
+          lat_bnds_name = lataxis.bounds
           lo = self._dfile[lat_bnds_name][0][0]
           hi = self._dfile[lat_bnds_name][-1][1]
        else:
-          lo = self._dfile.axes['lat'][0]
-          hi = self._dfile.axes['lat'][-1]
-       units = self._dfile.axes['lat'].units
+          lo = lataxis[0]
+          hi = lataxis[-1]
+       units = lataxis.units
        return drange( lo, hi, units )
-    def get_lonrange(self):
-       if 'bounds' in self._dfile.axes['lon'].__dict__:
-          lon_bnds_name = self._dfile.axes['lon'].bounds
+    def get_lonrange( self, lonaxis=None ):
+       if lonaxis is None and 'lon' in self._dfile.axes:
+           lonaxis = self._dfile.axes['lon']
+       if lonaxis is None:
+           return drange( None, None, None )
+       if 'bounds' in lonaxis.__dict__:
+          lon_bnds_name = lonaxis.bounds
           lo = self._dfile[lon_bnds_name][0][0]
           hi = self._dfile[lon_bnds_name][-1][1]
        else:
-          lo = self._dfile.axes['lon'][0]
-          hi = self._dfile.axes['lon'][-1]
-       units = self._dfile.axes['lon'].units
+          lo = lonaxis[0]
+          hi = lonaxis[-1]
+       units = lonaxis.units
        return drange( lo, hi, units )
-    def get_levelrange(self):
-        levelaxis = None
-        for axis_name in self._dfile.axes.keys():
-            axis = self._dfile[axis_name]
-            if hasattr( axis, 'positive' ):
-                # The CF Conventions specifies this as a way to detect a vertical axis.
-                levelaxis = axis
-                break
-        if levelaxis==None:
-            return None
+    def get_levelrange( self, levelaxis=None ):
+        if levelaxis is None:
+            for axis_name in self._dfile.axes.keys():
+                axis = self._dfile[axis_name]
+                if axis.isLevel():
+                # isLevel() includes the following test:
+                #if hasattr( axis, 'positive' ):
+                #    # The CF Conventions specifies this as a way to detect a vertical axis.
+                    levelaxis = axis
+                    break
+            if levelaxis==None:
+                return None
         lo = min( levelaxis[0], levelaxis[-1] )
         hi = max( levelaxis[0], levelaxis[-1] )
         units = levelaxis.units
