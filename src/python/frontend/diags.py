@@ -329,9 +329,14 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                        title = rsr.title
                                        rsr_presentation = rsr.presentation
                                        for varIndex, var in enumerate(rsr.vars):
-                                           lenvar = reduce(lambda x, y: x*y, var.shape)
-                                           # Note that len(var) won't work, it only picks up the first
-                                           # dimension, i.e. var.shape[0].
+                                           if hasattr(var,'size'):
+                                               lenvar = var.size
+                                               # Note that len(var) won't work, it only picks up the first
+                                               # dimension, i.e. var.shape[0].
+                                           elif type(var) is tuple or type(var) is list:
+                                               lenvar = sum([v.size for v in var])
+                                           else:
+                                               lenvar =len(var)
                                            if lenvar<=1:
                                                print "INFO: won't plot short variable",var.id,var.shape
                                                continue
