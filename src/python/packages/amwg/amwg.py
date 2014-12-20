@@ -211,47 +211,6 @@ class amwg_plot_spec(plot_spec):
                         clmisr, h0,h1, t0,t1) ) )
             ],
 
-# Are these variables needed or pointless?  I (JfP) am commenting them out until I hear from Yuying.
-#        'CLDTOT':[
-#            derived_var(
-#                vid='CLDTOT', inputs=['CLISCCP'], outputs=['CLDTOT'], func=reduce_prs_tau ),
-#            derived_var( vid='CLDTOT', inputs=['CLDTOT_CAL'], outputs=['CLDTOT'],
-#                         func=(lambda x: x) ),
-#            derived_var( vid='CLDTOT', inputs=['CLDTOT_ISCCPCOSP'], outputs=['CLDTOT'],
-#                         func=(lambda x: x) ) ],
-#        'CLDHGH':[
-#            derived_var(
-#                vid='CLDHGH', inputs=['CLISCCP'], outputs=['CLDHGH'],
-#                func=(lambda clisccp: reduce_prs_tau( clisccp( isccp_prs=(0,440)) )) ),
-#            derived_var( vid='CLDHGH', inputs=['CLDHGH_CAL'], outputs=['CLDHGH'],
-#                         func=(lambda x: x) ),
-#            derived_var( vid='CLDHGH', inputs=['CLDHGH_ISCCPCOSP'], outputs=['CLDHGH'],
-#                         func=(lambda x: x) ) ],
-#        'CLDMED':[
-#            derived_var(
-#                vid='CLDMED', inputs=['CLISCCP'], outputs=['CLDMED'],
-#                func=(lambda clisccp: reduce_prs_tau( clisccp( isccp_prs=(440,680)) )) ),
-#            derived_var( vid='CLDMED', inputs=['CLDMED_CAL'], outputs=['CLDMED'],
-#                         func=(lambda x: x) ),
-#            derived_var( vid='CLDMED', inputs=['CLDMED_ISCCPCOSP'], outputs=['CLDMED'],
-#                         func=(lambda x: x) ) ],
-#        'CLDLOW':[
-#            derived_var(
-#                vid='CLDLOW', inputs=['CLISCCP'], outputs=['CLDLOW'],
-#                func=(lambda clisccp: reduce_prs_tau( clisccp( isccp_prs=(680,numpy.inf)) )) ),
-#            derived_var( vid='CLDLOW', inputs=['CLDLOW_CAL'], outputs=['CLDLOW'],
-#                         func=(lambda x: x) ),
-#            derived_var( vid='CLDLOW', inputs=['CLDLOW_ISCCPCOSP'], outputs=['CLDLOW'],
-#                         func=(lambda x: x) ) ],
-#        'CLDTHICK':[
-#            derived_var(
-#                vid='CLDTHICK', inputs=['CLISCCP'], outputs=['CLDTHICK'],
-#                func=(lambda clisccp: reduce_prs_tau( clisccp( isccp_tau=(23.,numpy.inf)) )) ),
-#            derived_var( vid='CLDTHICK', inputs=['CLDTHICK_CAL'], outputs=['CLDTHICK'],
-#                         func=(lambda x: x) ),
-#            derived_var( vid='CLDTHICK', inputs=['CLDTHICK_ISCCPCOSP'], outputs=['CLDTHICK'],
-#                         func=(lambda x: x) ) ],
-
         'TGCLDLWP':[derived_var(
                 vid='TGCLDLWP', inputs=['TGCLDLWP_OCEAN'], outputs=['TGCLDLWP'],
                 func=(lambda x: x) ) ]
@@ -299,8 +258,10 @@ class amwg_plot_spec(plot_spec):
                 break
         if computable:
             for ivn in invarnoms:
+                #print "jfp computing reduced variable from input variableid=ivn=",ivn
                 rv = reduced_variable( variableid=ivn, filetable=filetable, season=season,
                                        reduction_function=reduction_function )
+                #print "jfp adding reduced variable rv=",rv
                 rvs.append(rv)
         #print "jfp1 rvs ids=",[rv.id() for rv in rvs]
         if not computable and recurse==True:
