@@ -1521,7 +1521,7 @@ class amwg_plot_set8(amwg_plot_spec):
     name = '8 - Annual Cycle Contour Plots of Zonal Means '
     number = '8'
 
-    def __init__( self, filetable1, filetable2, varid, seasonid='ANN', region=None, aux=None ):
+    def __init__( self, filetable1, filetable2, varid, seasonid='ANN', regionid=None, aux=None ):
         """filetable1, should be a directory filetable for each model.
         varid is a string, e.g. 'TREFHT'.  The zonal mean is computed for each month. """
         
@@ -1537,6 +1537,12 @@ class amwg_plot_set8(amwg_plot_spec):
         if self.FT2:
             self.filetables +=[filetable2]
     
+        if regionid=="Global" or regionid=="global" or regionid is None:
+            self._regionid="Global"
+        else:
+            self._regionid=regionid
+        self.region = interpret_region(regionid)
+
         plot_spec.__init__(self, seasonid)
         self.plottype = 'Isofill'
         self._seasonid = seasonid
@@ -1566,11 +1572,11 @@ class amwg_plot_set8(amwg_plot_spec):
                 #pdb.set_trace()
                 #create identifiers
                 VID = rv.dict_id(varid, month, FT)
-                RF = (lambda x, vid=id2str(VID), month=VID[2]:reduce2lat_seasonal(x, seasons=cdutil.times.Seasons(month), vid=vid))
                 RV = reduced_variable(variableid = varid, 
                                       filetable = FT, 
                                       season = cdutil.times.Seasons(VID[2]), 
-                                      reduction_function =  RF)
+                                      reduction_function =  (lambda x, vid=id2str(VID), month=VID[2]:
+                                                                 reduce2lat_seasonal(x, cdutil.times.Seasons(month), self.region, vid=vid)))
 
 
                 self.reduced_variables[RV.id()] = RV
