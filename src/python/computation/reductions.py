@@ -456,7 +456,10 @@ def reduce2lat_seasonal( mv, seasons=seasonsyr, region=None, vid=None ):
         # Among other cases, this can happen if mv has all missing values.
         return None
     
-    axes = allAxes( mv )
+    axes = allAxes( mvseas )
+    for ax in axes:
+        if ax.getBounds() is None:
+            ax._bounds_ = ax.genGenericBounds()
     #axis_names = [ a.id for a in axes if a.id!='lat' and a.id!='time']
     axis_names = [ a.id for a in axes if not a.isLatitude() and not a.isTime() ]
     axes_string = '('+')('.join(axis_names)+')'
@@ -923,6 +926,10 @@ def reduce_time_space_seasonal_regional( mv, season=seasonsyr, region=None, vid=
     #axis_names = [ a.id for a in axes if a.id=='lat' or a.id=='lon' or a.id=='lev']
     axis_names = [ a.id for a in axes if a.isLatitude() or a.isLongitude() or a.isLevel() ]
     axes_string = '('+')('.join(axis_names)+')'
+    if len(axes_string)>2:
+        for axis in axes:
+            if axis.getBounds() is None:
+                axis._bounds_ = axis.genGenericBounds()
     mvsav = cdutil.averager( mvreg, axis=axes_string )
 
     mvtsav = calculate_seasonal_climatology(mvsav, season)
@@ -1902,7 +1909,7 @@ def run_cdscan( fam, famfiles, cache_path=None ):
                 print "WARNING, cannot find time units; will try to continue",famfiles[0]
                 cdscan_line = 'cdscan -q '+'-x '+xml_name+' -e time.units="'+time_units+'" '+\
                     ' '.join(famfiles)
-    #print "cdscan_line=",cdscan_line
+    print "cdscan_line=",cdscan_line
     proc = subprocess.Popen([cdscan_line],shell=True)
     proc_status = proc.wait()
     if proc_status!=0: 
