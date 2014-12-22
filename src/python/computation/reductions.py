@@ -1541,9 +1541,11 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
                 raise e
             if hasattr(mv1,'id'):  # yes for TransientVariable, no for udunits
                 mv1id = mv1.id
-            mv1 = s*mv1 + i
-            if hasattr(mv1,'id'):
-                mv1.id = mv1id
+            if not ( numpy.allclose(s,1.0) and numpy.allclose(i,0.0) ):
+                # The following line won't work if mv1 be an axis.
+                mv1 = s*mv1 + i
+                if hasattr(mv1,'id'):
+                    mv1.id = mv1id
             mv1.units = target_units
         if changemv2:
             tmp = udunits(1.0,mv2.units)
@@ -1555,9 +1557,11 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
                 raise e
             if hasattr(mv2,'id'):  # yes for TransientVariable, no for udunits
                 mv2id = mv2.id
-            mv2 = s*mv2 + i
-            if hasattr(mv2,'id'):
-                mv2.id = mv2id
+            if not ( numpy.allclose(s,1.0) and numpy.allclose(i,0.0) ):
+                # The following line won't work if mv1 be an axis.
+                mv2 = s*mv2 + i
+                if hasattr(mv2,'id'):
+                    mv2.id = mv2id
             mv2.units = target_units
     return mv1, mv2
 
