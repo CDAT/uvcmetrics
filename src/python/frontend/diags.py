@@ -367,12 +367,14 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                                    # and if id doesn't exist, the system will create one before plotting!
 
                                                vname = vname.replace('/', '_')
-                                               fname = outdir+'/figure-set'+snum+'_'+rname+'_'+seasonid+'_'+\
-                                                   vname+'_plot-'+str(r)
+                                               rname_rectregion = defines.all_regions[rname]
+                                               region_filekey = rname_rectregion.filekey
                                                if basename is not None:
-                                                   bn = os.path.basename(fname)
-                                                   dn = os.path.dirname(fname)
-                                                   fname = os.path.join(dn,basename+bn)
+                                                   fname = outdir+'/'+basename+'figure-set'+snum+'_'+region_filekey+'_'+\
+                                                       seasonid+'_'+vname+'_plot-'+str(r)
+                                               else:
+                                                   fname = outdir+'/figure-set'+snum+'_'+region_filekey+'_'\
+                                                       +seasonid+'_'+vname+'_plot-'+str(r)
                                                if postname is not None:
                                                    fname = fname+postname
                                                fname+='.png'
@@ -503,7 +505,8 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                     vname = varid.replace(' ', '_')
                                     vname = vname.replace('/', '_')
                                     if basename is None and postname is None:
-                                       fname = outdir+'/figure-set'+snum+'_'+rname+'_'+seasonid+'_'+vname+'_plot-'+str(r)+'.png'
+                                       fname = outdir+'/figure-set'+snum+'_'+region_filekey+'_'+\
+                                           seasonid+'_'+vname+'_plot-'+str(r)+'.png'
                                     else:
                                        pname = postname
                                        if pname is None:
@@ -514,7 +517,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                           if '_diff' in vname:
                                              pname = postname+'_diff'
                                              # Note postname will have the obsfile key and things like _NP
-                                       fname = outdir+'/'+basename+'_'+seasonid+'_'+varid+pname+'-combined.png'
+                                       fname = outdir+'/'+basename+'_'+region_filekey+'_'+seasonid+'_'+varid+pname+'-combined.png'
                                        print "writing png file2",fname
                                     vcanvas2.png( fname , ignore_alpha = True)
                                     number_diagnostic_plots += 1
