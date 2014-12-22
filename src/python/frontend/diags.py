@@ -370,7 +370,9 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                                fname = outdir+'/figure-set'+snum+'_'+rname+'_'+seasonid+'_'+\
                                                    vname+'_plot-'+str(r)
                                                if basename is not None:
-                                                   fname = basename+fname
+                                                   bn = os.path.basename(fname)
+                                                   dn = os.path.dirname(fname)
+                                                   fname = os.path.join(dn,basename+bn)
                                                if postname is not None:
                                                    fname = fname+postname
                                                fname+='.png'
