@@ -1468,6 +1468,9 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
         if mv1.id[0:8]=="rv_QFLX_" and mv1.units=="kg/m2/s":
             preferred_units="mm/day"
             mv1.units="mm/s"   # if 1 kg = 10^6 mm^3 as for water
+        if mv1.units=='kg/m2/s' and mv2.units=='mm/day':
+            preferred_units="mm/day"
+            mv1.units="mm/s"   # if 1 kg = 10^6 mm^3 as for water
         if mv1.units=='mb':
             mv1.units = 'mbar' # udunits uses mb for something else
         if mv2.units=='mb':
