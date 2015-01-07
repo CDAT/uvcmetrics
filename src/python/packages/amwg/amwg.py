@@ -2158,7 +2158,11 @@ class amwg_plot_set13(amwg_plot_spec):
             variableid=varnom, filetable=filetable, season=self.season, region=region,
             reduction_function =\
                 (lambda x,vid,season=self.season,region=region:
-                     reduce_time_space_seasonal_regional( x,season=season,region=region,vid=vid ))
+                     reduce_time_space_seasonal_regional\
+                     ( x,season=season,region=region,vid=vid, exclude_axes=[
+                                     'isccp_prs','isccp_tau','cosp_prs','cosp_tau',
+                                     'modis_prs','modis_tau','cosp_tau_modis',
+                                     'misr_cth','misr_tau','cosp_htmisr'] ))
             )
         self.reduced_variables[ rv.id() ] = rv
         return rv.id()
