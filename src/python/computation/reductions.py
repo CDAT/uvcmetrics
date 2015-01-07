@@ -905,7 +905,8 @@ def reduceMonthlyTrendRegion(mv, region, vid=None):
    #print 'reduceMonthlyTrendRegion - Returning ', mvvals
    return mvvals
 
-def reduce_time_space_seasonal_regional( mv, season=seasonsyr, region=None, vid=None ):
+def reduce_time_space_seasonal_regional( mv, season=seasonsyr, region=None, vid=None,
+                                         exclude_axes=[] ):
     """Reduces the variable mv in all time and space dimensions.  Any other dimensions will remain.
     The averages will be restricted to the the specified season and region.
     The season should be a cdutil.times.Seasons object.
@@ -924,8 +925,11 @@ def reduce_time_space_seasonal_regional( mv, season=seasonsyr, region=None, vid=
 
     axes = allAxes( mvreg )
     #axis_names = [ a.id for a in axes if a.id=='lat' or a.id=='lon' or a.id=='lev']
-    axis_names = [ a.id for a in axes if a.isLatitude() or a.isLongitude() or a.isLevel() ]
+    axis_names = [ a.id for a in axes if a.isLatitude() or a.isLongitude() or a.isLevel() and
+                   a.id not in exclude_axes]
     axes_string = '('+')('.join(axis_names)+')'
+    #print "jfp in reduce_time_space_seasonal_regional, variable",mv.id,"has axes",[ax.id for ax in axes]
+    #print "jfp and will be reduced in",axis_names,"Exclusions were",exclude_axes
     if len(axes_string)>2:
         for axis in axes:
             if axis.getBounds() is None:
@@ -1020,7 +1024,15 @@ def calculate_seasonal_climatology(mv, season):
         season=seasonsyr
     elif type(season) == str:
         season=cdutil.times.Seasons(season)
-    print "calculating climatology for season : ", season.seasons
+
+    # print the season the way I want to see it...
+    if type(season.seasons) is list and len(season.seasons)==1:
+        ss = str(season.seasons[0])
+    else:
+        ss = str(season.seasons)
+    if ss=='JFMAMJJASOND':
+        ss = 'ANN'
+    print "calculating climatology for season : ", ss
 
     tax = timeAxis(mv)
     if tax is None:
@@ -2181,6 +2193,9 @@ class reduced_variable(ftrow,basic_id):
                 taxis.id = f[self.variableid].id
                 reduced_data = self._reduction_function( taxis, vid=vid )
             else:
+                print "Reduce failed to find variable",self.variablid,"in file",filename
+                print "It did find variables",f.variables.keys()
+                print "and axes",f.axes.keys()
                 raise Exception
             if reduced_data is not None:
                 reduced_data._vid = vid
