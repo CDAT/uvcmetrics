@@ -38,6 +38,7 @@ class Options():
       self._opts['user_filter'] = False
       self._opts['filter'] = None
       self._opts['filter2'] = None
+      self._opts['plotlogo'] = True
       self._opts['new_filter'] = []
       self._opts['path'] = []
       self._opts['path2'] = []
@@ -230,6 +231,9 @@ class Options():
          help="Specify an output filename postfix to be appended to all file names created internally. For example --outputpost _OBS might generate set1-JAN_OBS.nc, etc")
       parser.add_argument('--outputdir', '-O', nargs=1,
          help="Directory in which output files will be written." )
+      parser.add_argument('--plotlogo', nargs=1, choices=['no', 'yes'],
+         help="Write the UV-CDAT logo in each plot.  Set to 'no' to omit the logo.")
+
 
       parser.add_argument('--seasons', nargs='+', choices=all_seasons,
          help="Specify which seasons to generate climatoogies for")
@@ -443,6 +447,13 @@ class Options():
             print "ERROR, output directory",args.outputdir[0],"does not exist!"
             quit()
          self._opts['outputdir'] = args.outputdir[0]
+
+      # Plot UV-CDAT logo
+      if(args.plotlogo != None):
+         if(args.plotlogo[0] == 'no'):
+            self._opts['plotlogo'] = False
+         else:
+            self._opts['plotlogo'] = True
 
       if(args.translate != 'y'):
          print args.translate

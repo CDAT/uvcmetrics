@@ -163,11 +163,13 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
     if opts['plots'] == True:
         vcanvas = vcs.init()
         vcanvas.setcolormap('bl_to_darkred') #Set the colormap to the NCAR colors
-        vcanvas.drawlogooff()
+        if opts['plotlogo']==False:
+            vcanvas.drawlogooff()
         vcanvas2 = vcs.init()
         vcanvas2.portrait()
         vcanvas2.setcolormap('bl_to_darkred') #Set the colormap to the NCAR colors
-        vcanvas2.drawlogooff()
+        if opts['plotlogo']==False:
+            vcanvas2.drawlogooff()
 #       vcanvas3 = vcs.init()
         savePNG = False
         LINE = vcanvas.createline('LINE', 'default')
