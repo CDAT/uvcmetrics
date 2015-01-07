@@ -839,6 +839,8 @@ class plot_spec(object):
         that means a coarser grid, typically from regridding model data to the obs grid.
         In the future regrid>0 will mean regrid everything to the finest grid and regrid<0
         will mean regrid everything to the coarsest grid."""
+        #print "jfp in plot_spec._results, reduced variables=",self.reduced_variables.keys()
+        #print "jfp in plot_spec._results, derived variables=",self.derived_variables.keys()
         for v in self.reduced_variables.keys():
             value = self.reduced_variables[v].reduce(None)
             self.variable_values[v] = value  # could be None
