@@ -42,14 +42,14 @@ def getCollections(pname):
    print 'The following diagnostic collections appear to be available: %s' %colls
    return colls
 
-def makeTables(modelpath, obspath, outpath, pname, outlog, errlog):
+def makeTables(modelpath, obspath, outpath, pname, outlog):
    if pname.upper() == 'AMWG':
       # loop over 3 seasons. Each one generates 4 tables
-      regions = ['global', 'tropics', '\'northern extratropics\'', '\'southern extratropics\'']
+      regions = ['Global', 'Tropics', '\'Northern_Extratropics\'', '\'Southern_Extratropics\'']
       seasons = '--seasons DJF JJA ANN'
       for reg in regions:
-         cmdline = 'diags2.py --path %s --path2 %s --set 1 --package AMWG %s --outputdir %s --region %s' % (modelpath, obspath, seasons, outpath, reg)
-         runcmdline(cmdline, outlog, errlog)
+         cmdline = 'diags2.py --model path=%s,climos=yes,type=model --obs path=%s,climos=yes,type=obs --set 1 --package AMWG %s --outputdir %s --region %s' % (modelpath, obspath, seasons, outpath, reg)
+         runcmdline(cmdline, outlog)
          
 def generatePlots(modelpath, obspath, outpath, pname, xmlflag, colls=None):
    # Did the user specify a single collection? If not find out what collections we have
@@ -74,18 +74,24 @@ def generatePlots(modelpath, obspath, outpath, pname, xmlflag, colls=None):
          print 'Couldnt create output log - %s/DIAGS_OUTPUT.log' % outpath
          quit()
 
-   errlog = open(os.path.join(outpath,'DIAGS_ERROR.log'), 'w')
-   
    # Now, loop over collections.
    for collnum in colls:
       print 'Working on collection ', collnum
       # Special case the tables since they are a bit special. (at least amwg)
       if collnum == '1' and pname.upper() == 'AMWG':
-         makeTables(modelpath, obspath, outpath, pname, outlog, errlog)
+         makeTables(modelpath, obspath, outpath, pname, outlog)
          continue
       if collnum == '5' and pname.upper() == 'LMWG': 
-         makeTables(modelpath, obspath, outpath, pname, outlog, errlog)
+         makeTables(modelpath, obspath, outpath, pname, outlog)
          continue
+
+      # deal with collection-specific optional arguments
+      optionsstr = ''
+      if diags_collection[collnum].get('options', False) != False:
+         # we have a few options
+         print diags_collection[collnum]['options']
+         for k in diags_collection[collnum]['options'].keys():
+            optionsstr = optionsstr + '--%s %s ' % (k, diags_collection[collnum]['options'][k])
 
       # Deal with packages
       # Do we have a global package?
@@ -151,13 +157,13 @@ def generatePlots(modelpath, obspath, outpath, pname, xmlflag, colls=None):
             if o != 'NA':
                obsfname = diags_obslist[o]['filekey']
                obsstr = ',filter="f_startswith(\''+obsfname+'\')"'  #note leading comma
-               poststr = '--outputpost _'+obsfname
+               poststr = '--postfix _'+obsfname
             else:
                obsstr = ''
-               poststr = ' --outputpost \'\''
+               poststr = ' --postfix \'\''
 
             setstr = ' --set '+p
-            prestr = ' --outputpre set'+collnum
+            prestr = ' --prefix set'+collnum
 
             # set up season str (and later overwrite it if needed)
             if diags_collection[collnum].get('mixed_seasons', False) == False:
@@ -183,9 +189,9 @@ def generatePlots(modelpath, obspath, outpath, pname, xmlflag, colls=None):
                   regionstr = '--regions '+' '.join(regs)
 
                varstr = ' --vars '+' '.join(obsvars[o])
-               cmdline = 'diags2.py --model path=%s,climos=yes,type=model --obs path=%s,climos=yes,type=obs%s %s %s %s %s %s %s %s %s %s' % (modelpath, obspath, obsstr, packagestr, setstr, seasonstr, varstr, outstr, xmlstr, prestr, poststr, regionstr)
+               cmdline = 'diags2.py --model path=%s,climos=yes,type=model --obs path=%s,climos=yes,type=obs%s %s %s %s %s %s %s %s %s %s %s' % (modelpath, obspath, obsstr, optionsstr, packagestr, setstr, seasonstr, varstr, outstr, xmlstr, prestr, poststr, regionstr)
                if collnum != 'dontrun':
-                  runcmdline(cmdline, outlog, errlog)
+                  runcmdline(cmdline, outlog)
                else:
                   print 'Testing - ', cmdline
 
@@ -215,26 +221,25 @@ def generatePlots(modelpath, obspath, outpath, pname, xmlflag, colls=None):
                      vregionstr = '--regions '+' '.join(diags_collection[collnum][v]['regions'])
                   varstr = '--vars '+v
                # run this command now
-                  cmdline = 'diags2.py --model path=%s,climos=yes,type=model --obs path=%s,climos=yes,type=obs%s %s %s %s %s %s %s %s %s %s' % (modelpath, obspath, obsstr, packagestr, setstr, vseasonstr, varstr, outstr, xmlstr, prestr, poststr, vregionstr)
+                  cmdline = 'diags2.py --model path=%s,climos=yes,type=model --obs path=%s,climos=yes,type=obs%s %s %s %s %s %s %s %s %s %s %s' % (modelpath, obspath, obsstr, optionsstr, packagestr, setstr, vseasonstr, varstr, outstr, xmlstr, prestr, poststr, vregionstr)
                   if collnum != 'dontrun':
-                     runcmdline(cmdline, outlog, errlog)
+                     runcmdline(cmdline, outlog)
                   else:
                      print 'Testing - ', cmdline
 
    outlog.close()
-   errlog.close()
 
-def runcmdline(cmdline, outlog, errlog):
+def runcmdline(cmdline, outlog):
    print 'Executing '+cmdline
    try:
-      retcode = subprocess.check_call(cmdline, stdout=outlog, stderr=errlog, shell=True)
+      retcode = subprocess.check_call(cmdline, stdout=outlog, stderr=outlog, shell=True)
       if retcode < 0:
          print 'TERMINATE SIGNAL', -retcode
    except subprocess.CalledProcessError as e:
       print '\n\nEXECUTION FAILED FOR ', cmdline, ':', e
       outlog.write('Command %s failed\n' % cmdline)
-      errlog.write('Failing command was: %s\n' % cmdline)
-      print 'See '+outpath+'/DIAGS_ERROR.log for details'
+      outlog.write('----------------------------------------------')
+      print 'See '+outpath+'/DIAGS_OUTPUT.log for details'
 
 
 ### These 3 functions are used to add the variables to the database for speeding up
