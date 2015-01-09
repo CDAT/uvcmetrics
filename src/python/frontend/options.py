@@ -1,4 +1,3 @@
-import argparse
 
 ### TODO: Fix compress options (in init or whatever)
 ### TODO: Seperate subclasses for datasets vs obs 
@@ -6,6 +5,7 @@ import argparse
 
 import cdms2, os
 import metrics.packages as packages
+import argparse
 from metrics.frontend.defines import *
 
 ### 2 types of "options" - global options that affect program execution, etc
@@ -72,8 +72,9 @@ class Options():
       self._opts['output']['plots'] = True
       self._opts['output']['climos'] = True
       self._opts['output']['outputdir'] = '/tmp'
-      self._opts['output']['outputpre'] = ''
-      self._opts['output']['outputpost'] = ''
+      self._opts['output']['prefix'] = ''
+      self._opts['output']['postfix'] = ''
+      self._opts['output']['logo'] = True
 
    def __getitem__(self, opt):
       return self._opts[opt]
@@ -285,6 +286,7 @@ class Options():
             print 'Package ',self._opts['package'], 'not found in the list of package names -', self.all_packages.keys()
             quit()
 
+      # Should we check for random case too? I suppose.
       if(self._opts['regions'] != []):
          rlist = []
          for x in self._opts['regions']:
@@ -397,10 +399,10 @@ class Options():
          # maybe eventually add compression level too....
       parser.add_argument('--compress', choices=['no', 'yes'],
          help="Turn off netCDF compression. This can be required for other utilities to be able to process the output files (e.g. parallel netCDF based tools") #no compression, add self state
-      parser.add_argument('--outputpre', 
-         help="Specify an output filename prefix to be prepended to all file names created internally. For example --outputpre myout might generate myout-JAN.nc, etc")
-      parser.add_argument('--outputpost', 
-         help="Specify an output filename postfix to be appended to all file names created internally. For example --outputpost _OBS might generate set1-JAN_OBS.nc, etc")
+      parser.add_argument('--prefix', 
+         help="Specify an output filename prefix to be prepended to all file names created internally. For example --prefix myout might generate myout-JAN.nc, etc")
+      parser.add_argument('--postfix', 
+         help="Specify an output filename postfix to be appended to all file names created internally. For example --postfix _OBS might generate set1-JAN_OBS.nc, etc")
       parser.add_argument('--outputdir', '-o',
          help="Directory in which output files will be written." )
       parser.add_argument('--plots', choices=['no','yes'],
@@ -411,6 +413,7 @@ class Options():
          help="Produce NetCDF output files as part of climatology/diags generation") # same
       parser.add_argument('--xml', '-x', choices=['no', 'yes'],
          help="Produce XML output files as part of climatology/diags generation")
+      parser.add_argument('--logo', choices=['no', 'yes'])
 
       parser.add_argument('--generate', '-g', choices=['no','yes'],
          help="Specifies whether or not climatologies should be generated")
@@ -523,6 +526,11 @@ class Options():
          cdms2.setNetcdfDeflateFlag(1)
          cdms2.setNetcdfDeflateLevelFlag(9)
 
+      # Disable the UVCDAT logo in plots for users that know about this option
+      if args.logo != None:
+         if args.logo.lower() == 'no' or args.logo == 0:
+            self._opts['output']['logo'] = False
+
       if(args.json != None):
          if(args.json.lower() == 'no' or args.json == 0):
             self._opts['output']['json'] = False
@@ -555,10 +563,10 @@ class Options():
       self._opts['verbose'] = args.verbose
 
       # Help create output file names
-      if(args.outputpre != None):
-         self._opts['output']['outputpre'] = args.outputpre
-      if(args.outputpost != None):
-         self._opts['output']['outputpost'] = args.outputpost
+      if(args.prefix != None):
+         self._opts['output']['prefix'] = args.prefix
+      if(args.postfix != None):
+         self._opts['output']['postfix'] = args.postfix
       if(args.outputdir != None):
          if not os.path.isdir(args.outputdir):
             print "ERROR, output directory",args.outputdir,"does not exist!"
