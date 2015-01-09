@@ -3,7 +3,8 @@ diags_collection = {}
 diags_obslist = {}
 # These are special "variables" that we need to skip over when iterating over real variables. 
 # They are usually flags or parameters for the entire collection.
-collection_special_vars = ['desc', 'preamble', 'mixed_plots', 'mixed_regions', 'regions', 'mixed_seasons', 'seasons', 'mixed_packages', 'package']
+# Make sure no actual variables have these names, but that shouldn't be a problem.
+collection_special_vars = ['desc', 'preamble', 'mixed_plots', 'mixed_regions', 'regions', 'mixed_seasons', 'seasons', 'mixed_packages', 'package', 'options']
 
 ### Note:
 # A collection variable can have a 'seasons' argument. If it is not present the
@@ -23,17 +24,18 @@ diags_collection['dontrun']['preamble'] = ''
 diags_collection['dontrun']['seasons'] = ['ANN']
 diags_collection['dontrun']['regions'] = ['Global']
 diags_collection['dontrun']['package'] = 'AMWG'
-diags_collection['dontrun']['SHFLX'] = {'plottype': '3', 'obs': ['LARYEA_1'], 'regions':['S._Hemisphere_Land'], 'seasons':['ANN','DJF']}
-diags_collection['dontrun']['QFLX'] = {'plottype': '5', 'obs':['LARYEA_1'], 'regions':['S._Hemisphere_Land', 'Tropics']}
+diags_collection['dontrun']['options'] = {'logo':'no'}
+diags_collection['dontrun']['SHFLX'] = {'plottype': '3', 'obs': ['LARYEA_1'], 'regions':['S_Hemisphere_Land'], 'seasons':['ANN','DJF']}
+diags_collection['dontrun']['QFLX'] = {'plottype': '5', 'obs':['LARYEA_1'], 'regions':['S_Hemisphere_Land', 'Tropics']}
 diags_collection['dontrun']['FSNS'] = {'plottype': '7', 'obs':['LARYEA_1'] }
-diags_collection['dontrun']['FLDS'] = {'plottype': '3', 'obs':['ISCCP_1'], 'regions':['S._Hemisphere_Land']}
+diags_collection['dontrun']['FLDS'] = {'plottype': '3', 'obs':['ISCCP_1'], 'regions':['S_Hemisphere_Land']}
 diags_collection['dontrun']['T'] = {'plottype': '4', 'obs':['ERAI_1'] }
 diags_collection['dontrun']['LHFLX'] = {'plottype': '4', 'obs':['ECMWF_1'] }
 diags_collection['dontrun']['SWCF'] = {'plottype': '5', 'obs':['CERES-EBAF_1'] }
 diags_collection['dontrun']['PRECT'] = {'plottype': '5', 'obs':['GPCP_1'] }
 diags_collection['dontrun']['LWCF'] = {'plottype': '5', 'obs':['CERES-EBAF_1'] }
 diags_collection['dontrun']['AODVIS'] = {'plottype': '5', 'obs':['AOD_550_1'] }
-diags_collection['dontrun']['SURF_WIND'] = {'plottype': '6', 'obs':['NCEP_1'], 'regions':['S._Hemisphere_Land', 'Global', 'Tropics'] }
+diags_collection['dontrun']['SURF_WIND'] = {'plottype': '6', 'obs':['NCEP_1'], 'regions':['S_Hemisphere_Land', 'Global', 'Tropics'] }
 diags_collection['dontrun']['PBOT'] = {'plottype':'2', 'obs':['NA_1'], 'package':'LMWG'}
 diags_collection['dontrun']['TSA'] = {'plottype':'2', 'obs':['NA_1'], 'package':'LMWG'}
 # *** Collection 11 ***
@@ -83,7 +85,7 @@ diags_collection['10']['PSL'] = {'plottype': '10', 'obs': ['JRA25_1', 'NCEP_1']}
 diags_collection['10']['T_850'] = {'plottype': '10', 'obs': ['ECMWF_1', 'JRA25_1', 'AIRS_1', 'ERA40_1', 'NCEP_1']}
 diags_collection['10']['SST'] = {'plottype': '10', 'obs': ['HADISST_1']}
 diags_collection['10']['FLNS'] = {'plottype': '10', 'obs': ['ISCCP_1', 'LARYEA_1']}
-diags_collection['10']['ICEFRAC'] = {'plottype': '10', 'obs': ['SSMI_1', 'HADISST_1'], 'regions':['N.Hemisphere_Land', 'S.Hemisphere_Land']}
+diags_collection['10']['ICEFRAC'] = {'plottype': '10', 'obs': ['SSMI_1', 'HADISST_1'], 'regions':['N_Hemisphere_Land', 'S_Hemisphere_Land']}
 diags_collection['10']['CLDLOW_VISIR'] = {'plottype': '10', 'obs': ['ISCCP_1']}
 diags_collection['10']['PRECT'] = {'plottype': '10', 'obs': ['XA_1', 'GPCP_1', 'LEGATES_1', 'TRMM_1', 'SSMI_1']}
 diags_collection['10']['CLDHGH'] = {'plottype': '10', 'obs': ['ISCCP_1']}
@@ -176,19 +178,19 @@ diags_collection['so']['preamble'] = ''
 diags_collection['so']['seasons'] = ['ANN']
 diags_collection['so']['regions'] = ['Global']
 diags_collection['so']['package'] = 'AMWG'
-diags_collection['so']['SHFLX'] = {'plottype': '3', 'obs': ['LARYEA_1'], 'regions':['S._Hemisphere_Land']}
-diags_collection['so']['QFLX'] = {'plottype': '5', 'obs':['LARYEA_1'], 'regions':['S._Hemisphere_Land']}
+diags_collection['so']['SHFLX'] = {'plottype': '3', 'obs': ['LARYEA_1'], 'regions':['S_Hemisphere_Land']}
+diags_collection['so']['QFLX'] = {'plottype': '5', 'obs':['LARYEA_1'], 'regions':['S_Hemisphere_Land']}
 diags_collection['so']['FSNS'] = {'plottype': '7', 'obs':['LARYEA_1'] }
-diags_collection['so']['FLDS'] = {'plottype': '3', 'obs':['ISCCP_1'], 'regions':['S._Hemisphere_Land']}
+diags_collection['so']['FLDS'] = {'plottype': '3', 'obs':['ISCCP_1'], 'regions':['S_Hemisphere_Land']}
 diags_collection['so']['T'] = {'plottype': '4', 'obs':['ERAI_1'] }
 diags_collection['so']['LHFLX'] = {'plottype': '4', 'obs':['ECMWF_1'] }
 diags_collection['so']['SWCF'] = {'plottype': '5', 'obs':['CERES-EBAF_1'] }
 diags_collection['so']['PRECT'] = {'plottype': '5', 'obs':['GPCP_1'] }
 diags_collection['so']['LWCF'] = {'plottype': '5', 'obs':['CERES-EBAF_1'] }
 diags_collection['so']['AODVIS'] = {'plottype': '5', 'obs':['AOD_550_1'] }
-diags_collection['so']['SURF_WIND'] = {'plottype': '6', 'obs':['NCEP_1'], 'regions':['S._Hemisphere_Land'] }
+diags_collection['so']['SURF_WIND'] = {'plottype': '6', 'obs':['NCEP_1'], 'regions':['S_Hemisphere_Land'] }
 diags_collection['so']['SURF_STRESS'] = {'plottype': '6', 'obs':['ERS_1'] }
-diags_collection['so']['CLDTOT'] = {'plottype': '9', 'obs':['CLOUDSAT_1'], 'regions':['S._Hemisphere_Land'] }
+diags_collection['so']['CLDTOT'] = {'plottype': '9', 'obs':['CLOUDSAT_1'], 'regions':['S_Hemisphere_Land'] }
 # *** Collection topten ***
 diags_collection['topten'] = {}
 diags_collection['topten']['mixed_plots'] = True
@@ -238,7 +240,7 @@ diags_collection['5']['ALBEDO'] = {'plottype': '5', 'obs': ['CERES2_1', 'CERES_1
 diags_collection['5']['SWCF'] = {'plottype': '5', 'obs': ['ERBE_1', 'CERES2_1', 'CERES_1'], 'regions':['Global', 'Tropics']}
 diags_collection['5']['MEANTTOP'] = {'plottype': '5', 'obs': ['ISCCP_1', 'MODIS_1']}
 # TRMM only has data in the tropics, but there is no trivial way to split just that out without lots of special casing.
-diags_collection['5']['PRECT'] = {'plottype': '5', 'obs': ['XA_1', 'GPCP_1', 'LEGATES_1', 'SSMI_1', 'TRMM'], 'regions':['Global','Tropics']}
+diags_collection['5']['PRECT'] = {'plottype': '5', 'obs': ['XA_1', 'GPCP_1', 'LEGATES_1', 'SSMI_1', 'TRMM_1'], 'regions':['Global','Tropics']}
 diags_collection['5']['U_200'] = {'plottype': '5', 'obs': ['ECMWF_1', 'NCEP_1', 'JRA25_1', 'ERA40_1']}
 diags_collection['5']['TTRP'] = {'plottype': '5', 'obs': ['ECMWF_1', 'NCEP_1']}
 diags_collection['5']['FLUTC'] = {'plottype': '5', 'obs': ['ERBE_1', 'CERES2_1', 'CERES_1']}
@@ -291,7 +293,7 @@ diags_collection['7']['desc'] = 'Polar contour and vector plots of DJF, JJA and 
 diags_collection['7']['preamble'] = ''
 diags_collection['7']['seasons'] = ['DJF', 'JJA', 'ANN']
 diags_collection['7']['mixed_regions'] = True
-diags_collection['7']['regions'] = ['N.Hemisphere_Land', 'S.Hemisphere_Land']
+diags_collection['7']['regions'] = ['N_Hemisphere_Land', 'S_Hemisphere_Land']
 diags_collection['7']['package'] = 'AMWG'
 diags_collection['7']['PSL'] = {'plottype': '7', 'obs': ['JRA25_1', 'NCEP_1']}
 diags_collection['7']['CLDLOW'] = {'plottype': '7', 'obs': ['ISCCP_1', 'WARREN_1', 'CLOUDSAT_1']}
@@ -322,10 +324,10 @@ diags_collection['7']['FSNTOA'] = {'plottype': '7', 'obs': ['ERBE_1', 'CERES2_1'
 diags_collection['7']['CLDTOT'] = {'plottype': '7', 'obs': ['ISCCP_1', 'WARREN_1', 'CLOUDSAT_1']}
 diags_collection['7']['FSNTOAC'] = {'plottype': '7', 'obs': ['ERBE_1', 'CERES2_1', 'CERES_1']}
 # These 4 are northern only.
-diags_collection['7']['CLDHGH_VISIR'] = {'plottype': '7', 'obs': ['ISCCP_1'], 'regions':['N.Hemisphere_Land']}
-diags_collection['7']['CLDLOW_VISIR'] = {'plottype': '7', 'obs': ['ISCCP_1'], 'regions':['N.Hemisphere_Land']}
-diags_collection['7']['CLDMED_VISIR'] = {'plottype': '7', 'obs': ['ISCCP_1'], 'regions':['N.Hemisphere_Land']}
-diags_collection['7']['CLDTOT_VISIR'] = {'plottype': '7', 'obs': ['ISCCP_1'], 'regions':['N.Hemisphere_Land']}
+diags_collection['7']['CLDHGH_VISIR'] = {'plottype': '7', 'obs': ['ISCCP_1'], 'regions':['N_Hemisphere_Land']}
+diags_collection['7']['CLDLOW_VISIR'] = {'plottype': '7', 'obs': ['ISCCP_1'], 'regions':['N_Hemisphere_Land']}
+diags_collection['7']['CLDMED_VISIR'] = {'plottype': '7', 'obs': ['ISCCP_1'], 'regions':['N_Hemisphere_Land']}
+diags_collection['7']['CLDTOT_VISIR'] = {'plottype': '7', 'obs': ['ISCCP_1'], 'regions':['N_Hemisphere_Land']}
 # *** Collection 6 ***
 diags_collection['6'] = {}
 diags_collection['6']['desc'] = 'Horizontal vector plots of DJF, JJA and ANN means'
