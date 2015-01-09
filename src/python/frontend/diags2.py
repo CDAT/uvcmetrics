@@ -64,8 +64,8 @@ def run_diags( opts ):
       print 'Writing output to %s. Override with --outputdir option' % outdir
 
    # Parts of the eventual output filenames
-   basename = opts['output']['outputpre']
-   postname = opts['output']['outputpost']
+   basename = opts['output']['prefix']
+   postname = opts['output']['postfix']
       
    # This should probably be done in verify options()
    if opts['package'] is None:
