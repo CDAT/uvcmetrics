@@ -4,6 +4,7 @@ import metrics.frontend.defines as defines
 # The two functions below were moved here from reductions.py to avoid circular imports from masks.py.
 # Moved this here from amwg.py set13 class, because it can be used by all the AMWG classes.
 def interpret_region( region ):
+    print 'HOW DID WE CALL THIS PARTICULAR INTERPRET_REGION????????'
     """Tries to make sense of the input region, and returns the resulting instance of the class
     rectregion in region.py."""
     if region is None:
@@ -17,6 +18,7 @@ def interpret_region( region ):
     return region
 
 def select_region(mv, region=None):
+    print 'HOW DID WE CALL THIS PARTICULAR SELECT_REGION????????'
     # Select lat-lon region
     if region=="global" or region=="Global" or getattr(region,'filekey',None)=="Global"\
             or str(region)=="Global":
