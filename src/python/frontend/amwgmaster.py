@@ -629,6 +629,8 @@ varinfo['Z3_500']={'desc':'500 mb geopotential height', 'sets': ['5', '10'], 'ob
 		'filekey': 'ERA40', 'usedin': ['5', '10']}
 }}
 varinfo['OMEGA']={'desc':'Pressure vertical velocity', 'sets': ['4a', '4', 'so','testing'], 'obssets': {
+        'ERA Interim Reanalysis' : {
+            'filekey': 'ERA-I', 'usedin': ['so']}
 	'ECMWF Reanalysis 1979-93': {
 		'filekey': 'ECMWF', 'usedin': ['4a', '4']},
 	'NCEP Reanalysis 1979-98': {
@@ -636,7 +638,7 @@ varinfo['OMEGA']={'desc':'Pressure vertical velocity', 'sets': ['4a', '4', 'so',
 	'JRA25 Reanalysis 1979-04': {
 		'filekey': 'JRA25', 'usedin': ['4a', '4']},
 	'ERA40 Reanalysis 1980-2001': {
-		'filekey': 'ERA40', 'usedin': ['4a', '4', 'so', 'testing']}
+		'filekey': 'ERA40', 'usedin': ['4a', '4', 'testing']}
 }}
 varinfo['FLUT']={'desc':'TOA upward LW flux', 'sets': ['5', '3', '8', '10'], 'obssets': {
 	'ERBE Feb1985-Apr1989': {

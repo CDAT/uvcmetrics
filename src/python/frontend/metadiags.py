@@ -149,7 +149,7 @@ def generatePlots(modelpath, obspath, outpath, pname, sets=None):
          elif setnum == 'so':
             # convert a given topten to the "right" setnumber that it comes from
             prename = '--outputpre setso'
-            v4 = [x for x in vl if x in ['T']]
+            v4 = [x for x in vl if x in ['T','OMEGA']]
             v5 = [x for x in vl if x in ['SWCF', 'LWCF', 'PRECT', 'AODVIS', 'FSNS', 'FLDS', 'LHFLX', 'SHFLX','QFLX', 'CLDTOT','OMEGA']]
             v6 = [x for x in vl if x in ['STRESS']]
             print 'vl in:' ,vl
