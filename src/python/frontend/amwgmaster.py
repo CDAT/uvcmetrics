@@ -630,7 +630,7 @@ varinfo['Z3_500']={'desc':'500 mb geopotential height', 'sets': ['5', '10'], 'ob
 }}
 varinfo['OMEGA']={'desc':'Pressure vertical velocity', 'sets': ['4a', '4', 'so','testing'], 'obssets': {
         'ERA Interim Reanalysis' : {
-            'filekey': 'ERA-I', 'usedin': ['so']}
+            'filekey': 'ERA-I', 'usedin': ['so']},
 	'ECMWF Reanalysis 1979-93': {
 		'filekey': 'ECMWF', 'usedin': ['4a', '4']},
 	'NCEP Reanalysis 1979-98': {
