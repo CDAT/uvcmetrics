@@ -170,7 +170,7 @@ varinfo['Z3_500_NORTH']={'desc':'500 mb geopotential height (Northern)', 'sets':
 }}
 varinfo['FSNS']={'desc':'Surf Net SW flux', 'sets': ['5', '3', '10','so','testing'], 'obssets': {
 	'ISCCP FD Jul1983-Dec2000': {
-		'filekey': 'ISCCP', 'usedin': ['5', '3', '10']},
+		'filekey': 'ISCCP', 'usedin': ['5', '3', '10', 'so']},
 	'Large-Yeager 1984-2004': {
 		'filekey': 'LARYEA', 'usedin': ['5', '3', '10', 'so', 'testing']}
 }}
@@ -316,9 +316,9 @@ varinfo['Z3_500_SOUTH']={'desc':'500 mb geopotential height (Southern)', 'sets':
 }}
 varinfo['LHFLX']={'desc':'Surface latent heat flux', 'sets': ['5', '3', '10', '15','so'], 'obssets': {
 	'Woods Hole OAFLUX 1958-2006': {
-		'filekey': 'WHOI', 'usedin': ['5', '3', '10']},
+		'filekey': 'WHOI', 'usedin': ['5', '3', '10', 'so']},
 	'ECMWF Reanalysis 1979-93': {
-		'filekey': 'ECMWF', 'usedin': ['5', '3', '10','so']},
+		'filekey': 'ECMWF', 'usedin': ['5', '3', '10']},
 	'JRA25 Reanalysis 1979-04': {
 		'filekey': 'JRA25', 'usedin': ['5', '3']},
 	'ERA40 Reanalysis 1980-2001': {
@@ -658,9 +658,9 @@ varinfo['TREFHT_SOUTH']={'desc':'2-meter temperature (land) (Southern)', 'sets':
 	'Willmott and Matsuura 1950-99': {
 		'filekey': 'WILLMOTT', 'usedin': ['7']}
 }}
-varinfo['TREFHT']={'desc':'2-meter air temperature (land)', 'sets': ['5', '3', '9', '10', 'topten', 'testing'], 'obssets': {
+varinfo['TREFHT']={'desc':'2-meter air temperature (land)', 'sets': ['5', '3', '9', '10', 'topten', 'testing', 'so'], 'obssets': {
 	'Willmott and Matsuura 1950-99': {
-		'filekey': 'WILLMOTT', 'usedin': ['5', '3', '10', 'topten', 'testing']},
+		'filekey': 'WILLMOTT', 'usedin': ['5', '3', '10', 'topten', 'testing', 'so']},
 	'Legates and Willmott 1920-80': {
 		'filekey': 'LEGATES', 'usedin': ['5', '3', '9', '10']},
 	'NCEP Reanalysis 1979-98': {
