@@ -658,9 +658,9 @@ varinfo['TREFHT_SOUTH']={'desc':'2-meter temperature (land) (Southern)', 'sets':
 	'Willmott and Matsuura 1950-99': {
 		'filekey': 'WILLMOTT', 'usedin': ['7']}
 }}
-varinfo['TREFHT']={'desc':'2-meter air temperature (land)', 'sets': ['5', '3', '9', '10', 'topten', 'testing'], 'obssets': {
+varinfo['TREFHT']={'desc':'2-meter air temperature (land)', 'sets': ['5', '3', '9', '10', 'topten', 'testing', 'so'], 'obssets': {
 	'Willmott and Matsuura 1950-99': {
-		'filekey': 'WILLMOTT', 'usedin': ['5', '3', '10', 'topten', 'testing']},
+		'filekey': 'WILLMOTT', 'usedin': ['5', '3', '10', 'topten', 'testing', 'so']},
 	'Legates and Willmott 1920-80': {
 		'filekey': 'LEGATES', 'usedin': ['5', '3', '9', '10']},
 	'NCEP Reanalysis 1979-98': {
