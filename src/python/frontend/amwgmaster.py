@@ -170,7 +170,7 @@ varinfo['Z3_500_NORTH']={'desc':'500 mb geopotential height (Northern)', 'sets':
 }}
 varinfo['FSNS']={'desc':'Surf Net SW flux', 'sets': ['5', '3', '10','so','testing'], 'obssets': {
 	'ISCCP FD Jul1983-Dec2000': {
-		'filekey': 'ISCCP', 'usedin': ['5', '3', '10']},
+		'filekey': 'ISCCP', 'usedin': ['5', '3', '10', 'so']},
 	'Large-Yeager 1984-2004': {
 		'filekey': 'LARYEA', 'usedin': ['5', '3', '10', 'so', 'testing']}
 }}
