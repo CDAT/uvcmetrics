@@ -35,7 +35,7 @@ class climatology_variable( reduced_variable ):
             reduced_variable.__init__( self,
                variableid=varname, filetable=filetable,
                reduction_function=(lambda x,vid=None,thisseason=season:
-                                       reduce_time_seasonal(x,season=thisseason)) )
+                                       reduce_time_seasonal(x,seasons=thisseason)) )
 
 class climatology_squared_variable( reduced_variable ):
     """represents the climatology of the square of a variable.
