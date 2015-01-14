@@ -1451,44 +1451,44 @@ class amwg_plot_set7(amwg_plot_spec):
     @staticmethod
     def _all_variables( filetable1, filetable2=None ):
         allvars = amwg_plot_spec.package._all_variables( filetable1, filetable2, "amwg_plot_spec" )
-        for varname in amwg_plot_spec.package._list_variables_with_levelaxis(
+        for varname in amwg_plot_spec.package._list_variables(
             filetable1, filetable2, "amwg_plot_spec" ):
             allvars[varname] = basic_pole_variable
         return allvars
     def plan_computation( self, filetable1, filetable2, varid, seasonid, region=None, aux=slice(0,None) ):
-        """Set up for a lat-lon polar contour plot.  Data is averaged over all other axes."""
-
-        reduced_varlis = [
-            reduced_variable(
+       """Set up for a lat-lon polar contour plot.  Data is averaged over all other axes.
+       """
+       reduced_varlis = [
+           reduced_variable(
                 variableid=varid, filetable=filetable1, season=self.season,
                 reduction_function=(lambda x, vid, region=None: reduce2latlon_seasonal( x(latitude=aux, longitude=(0, 360)), self.season, region, vid=vid ) ) ),
-            reduced_variable(
+           reduced_variable(
                 variableid=varid, filetable=filetable2, season=self.season,
                 reduction_function=(lambda x,vid, region=None: reduce2latlon_seasonal( x(latitude=aux, longitude=(0, 360)), self.season, region, vid=vid ) ) )
             ]
-        self.reduced_variables = { v.id():v for v in reduced_varlis }
-        vid1 = rv.dict_id( varid, seasonid, filetable1 )
-        vid2 = rv.dict_id( varid, seasonid, filetable2 )
+       self.reduced_variables = { v.id():v for v in reduced_varlis }
+       vid1 = rv.dict_id( varid, seasonid, filetable1 )
+       vid2 = rv.dict_id( varid, seasonid, filetable2 )
 
-        self.derived_variables = {}
-        self.single_plotspecs = {
-            self.plot1_id: plotspec(
-                vid = ps.dict_idid(vid1),
-                zvars = [vid1],  zfunc = (lambda z: z),
-                plottype = self.plottype ),
-            self.plot2_id: plotspec(
-                vid = ps.dict_idid(vid2),
-                zvars = [vid2],  zfunc = (lambda z: z),
-                plottype = self.plottype ),
-            self.plot3_id: plotspec(
-                vid = ps.dict_id(varid,'diff',seasonid,filetable1,filetable2),
-                zvars = [vid1,vid2],  zfunc = aminusb_2ax,
-                plottype = self.plottype )         
-            }
-        self.composite_plotspecs = {
-            self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id]
-            }
-        self.computation_planned = True
+       self.derived_variables = {}
+       self.single_plotspecs = {
+           self.plot1_id: plotspec(
+               vid = ps.dict_idid(vid1),
+               zvars = [vid1],  zfunc = (lambda z: z),
+               plottype = self.plottype ),
+           self.plot2_id: plotspec(
+               vid = ps.dict_idid(vid2),
+               zvars = [vid2],  zfunc = (lambda z: z),
+               plottype = self.plottype ),
+           self.plot3_id: plotspec(
+               vid = ps.dict_id(varid,'diff',seasonid,filetable1,filetable2),
+               zvars = [vid1,vid2],  zfunc = aminusb_2ax,
+               plottype = self.plottype )         
+           }
+       self.composite_plotspecs = {
+           self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id]
+           }
+       self.computation_planned = True
         #pdb.set_trace()
     def _results(self, newgrid=0):
         #pdb.set_trace()
