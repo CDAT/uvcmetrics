@@ -108,6 +108,18 @@ class amwg_plot_spec(plot_spec):
                 vid='CLISCCP', inputs=['FISCCP1_COSP'], outputs=['CLISCCP'],
                 func=(lambda x: x) )
             ],
+         'CLDMED_VISIR':[derived_var(
+               vid='CLDMED_VISIR', inputs=['CLDMED'], outputs=['CLDMED_VISIR'],
+               func=(lambda x:x))],
+         'CLDTOT_VISIR':[derived_var(
+               vid='CLDTOT_VISIR', inputs=['CLDTOT'], outputs=['CLDTOT_VISIR'],
+               func=(lambda x:x))],
+         'CLDHGH_VISIR':[derived_var(
+               vid='CLDHGH_VISIR', inputs=['CLDHGH'], outputs=['CLDHGH_VISIR'],
+               func=(lambda x:x))],
+         'CLDLOW_VISIR':[derived_var(
+               vid='CLDLOW_VISIR', inputs=['CLDLOW'], outputs=['CLDLOW_VISIR'],
+               func=(lambda x:x))],
 
         'CLDTOT_ISCCP':[
             derived_var( vid='CLDTOT_ISCCP', inputs=['CLDTOT_ISCCPCOSP'], outputs=['CLDTOT_ISCCP'],
