@@ -51,7 +51,7 @@ all_regions['Tibetan_Plaeau'] = rectregion('Tibetan_Plaeau',  [30, 40, 80, 100],
 all_regions['N_Hemisphere_Land'] = rectregion('N_Hemisphere_Land',  [0, 90, -180, 180],  filekey='N_H_Land')
 all_regions['S_Hemisphere_Land'] = rectregion('S_Hemisphere_Land',  [-90, 0, -180, 180],  filekey='S_H_Land')
 all_regions['Global'] = rectregion('Global',  [-90, 90, -180, 180],filekey='Global')
-all_regions['Tropics'] = rectregion('tropics',  [-20,20, -180, 180],filekey='tropics')
+all_regions['Tropics'] = rectregion('Tropics',  [-20,20, -180, 180],filekey='Tropics')
 all_regions['Southern_Extratropics'] = rectregion('southern_extratropics',  [-90,-20, -180, 180],filekey='S_Extratropics')
 all_regions['Northern_Extratropics'] = rectregion('northern_extratropics',  [20,90, -180, 180], filekey='N_Extratropics')
 all_regions['Southern_Ocean'] = rectregion('Southern_Ocean', [-90, -40, -180, 180], filekey='S_Ocean')

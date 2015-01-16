@@ -191,10 +191,10 @@ class amwg_plot_set1(amwg_plot_spec):
             # inputs are test (model) and control (obs) filetables, a season name (e.g. 'DJF'),
             # a region name (e.g. 'tropics'), a variable name (e.g. 'TREFHT'),
             # an obs name (e.g. 'CERES'), and, if necessary, a level in millibars.
-            if lev is None:
-                print "Building table row for var=",var,"obs=",obs
-            else:
-                print "Building table row for var=",var,"obs=",obs,"lev=",lev
+#            if lev is None:
+#                print "Building table row for var=",var,"obs=",obs
+#            else:
+#                print "Building table row for var=",var,"obs=",obs,"lev=",lev
             self.filetable1 = filetable1
             if obs is None:
                 self.filetable2 = None
@@ -399,11 +399,16 @@ class amwg_plot_set1(amwg_plot_spec):
             fname = (self.title.strip()+'.text').replace(' ','_')
         filename = os.path.join(where,fname)
         return filename
-    def write_plot_data( self, format="text", where="" ):
+    def write_plot_data( self, format="text", where="", fname="" ):
         """writes to the specified location, which may be a directory path or sys.stdout.
         The only allowed format is text"""
+        print 'IN AMWG1 WRITE PLOT'
         self.ptype = "text"
-        filename = self.outfile( format, where )
+        if fname != "":
+           print 'filename was: ', fname
+           filename = fname
+        else:
+           filename = self.outfile( format, where )
         writer = open( filename, 'w' )
         writer.write( self.__repr__() )
         writer.close()

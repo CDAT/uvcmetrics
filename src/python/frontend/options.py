@@ -365,17 +365,6 @@ class Options():
          help="The sets within a diagnostic package to run. Multiple sets can be specified.") 
       parser.add_argument('--vars', '--var', '-v', nargs='+', 
          help="Specify variables of interest to process. The default is all variables which can also be specified with the keyword ALL") 
-      parser.add_argument('--compress', nargs=1, choices=['no', 'yes'],
-         help="Turn off netCDF compression. This can be required for other utilities to be able to process the output files (e.g. parallel netCDF based tools") #no compression, add self state
-
-      parser.add_argument('--outputpre', nargs=1,
-         help="Specify an output filename prefix to be prepended to all file names created internally. For example --outputpre myout might generate myout-JAN.nc, etc")
-      parser.add_argument('--outputpost', nargs=1,
-         help="Specify an output filename postfix to be appended to all file names created internally. For example --outputpost _OBS might generate set1-JAN_OBS.nc, etc")
-      parser.add_argument('--outputdir', '-O', nargs=1,
-         help="Directory in which output files will be written." )
-      parser.add_argument('--plotlogo', nargs=1, choices=['no', 'yes'],
-         help="Write the UV-CDAT logo in each plot.  Set to 'no' to omit the logo.")
       parser.add_argument('--varopts', nargs='+',
          help="Variable auxillary options")
       parser.add_argument('--regions', '--region', nargs='+', choices=all_regions.keys(),
@@ -394,7 +383,8 @@ class Options():
          help="Produce annual climatogolies for all years in the dataset")
       parser.add_argument('--timestart', 
          help="Specify the starting time for the dataset, such as 'months since Jan 2000'")
-
+      parser.add_argument('--list', '-l', nargs=1, choices=['sets', 'vars', 'variables', 'packages', 'seasons', 'plottypes', 'regions', 'translations','options','varopts'],
+         help="Determine which packages, sets, regions, and variables are available")
       # Output options
          # maybe eventually add compression level too....
       parser.add_argument('--compress', choices=['no', 'yes'],
@@ -572,13 +562,6 @@ class Options():
             print "ERROR, output directory",args.outputdir,"does not exist!"
             quit()
          self._opts['output']['outputdir'] = args.outputdir
-
-      # Plot UV-CDAT logo
-      if(args.plotlogo != None):
-         if(args.plotlogo[0] == 'no'):
-            self._opts['plotlogo'] = False
-         else:
-            self._opts['plotlogo'] = True
 
       if(args.translate != 'y'):
          print args.translate

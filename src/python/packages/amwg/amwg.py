@@ -1487,7 +1487,7 @@ class amwg_plot_set7(amwg_plot_spec):
     @staticmethod
     def _all_variables( model, obs ):
         allvars = amwg_plot_spec.package._all_variables( model, obs, "amwg_plot_spec" )
-        for varname in amwg_plot_spec.package._list_variables(
+        for varname in amwg_plot_spec.package._list_variables_with_levelaxis(
             model, obs, "amwg_plot_spec" ):
             allvars[varname] = basic_pole_variable
         return allvars
@@ -1499,33 +1499,33 @@ class amwg_plot_set7(amwg_plot_spec):
            reduced_variable(
                 variableid=varid, filetable=filetable1, season=self.season,
                 reduction_function=(lambda x, vid, region=None: reduce2latlon_seasonal( x(latitude=aux, longitude=(0, 360)), self.season, region, vid=vid ) ) ),
-           reduced_variable(
+            reduced_variable(
                 variableid=varid, filetable=filetable2, season=self.season,
                 reduction_function=(lambda x,vid, region=None: reduce2latlon_seasonal( x(latitude=aux, longitude=(0, 360)), self.season, region, vid=vid ) ) )
             ]
-       self.reduced_variables = { v.id():v for v in reduced_varlis }
-       vid1 = rv.dict_id( varid, seasonid, filetable1 )
-       vid2 = rv.dict_id( varid, seasonid, filetable2 )
+        self.reduced_variables = { v.id():v for v in reduced_varlis }
+        vid1 = rv.dict_id( varid, seasonid, filetable1 )
+        vid2 = rv.dict_id( varid, seasonid, filetable2 )
 
-       self.derived_variables = {}
-       self.single_plotspecs = {
-           self.plot1_id: plotspec(
-               vid = ps.dict_idid(vid1),
-               zvars = [vid1],  zfunc = (lambda z: z),
-               plottype = self.plottype ),
-           self.plot2_id: plotspec(
-               vid = ps.dict_idid(vid2),
-               zvars = [vid2],  zfunc = (lambda z: z),
-               plottype = self.plottype ),
-           self.plot3_id: plotspec(
-               vid = ps.dict_id(varid,'diff',seasonid,filetable1,filetable2),
-               zvars = [vid1,vid2],  zfunc = aminusb_2ax,
-               plottype = self.plottype )         
-           }
-       self.composite_plotspecs = {
-           self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id]
-           }
-       self.computation_planned = True
+        self.derived_variables = {}
+        self.single_plotspecs = {
+            self.plot1_id: plotspec(
+                vid = ps.dict_idid(vid1),
+                zvars = [vid1],  zfunc = (lambda z: z),
+                plottype = self.plottype ),
+            self.plot2_id: plotspec(
+                vid = ps.dict_idid(vid2),
+                zvars = [vid2],  zfunc = (lambda z: z),
+                plottype = self.plottype ),
+            self.plot3_id: plotspec(
+                vid = ps.dict_id(varid,'diff',seasonid,filetable1,filetable2),
+                zvars = [vid1,vid2],  zfunc = aminusb_2ax,
+                plottype = self.plottype )         
+            }
+        self.composite_plotspecs = {
+            self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id]
+            }
+        self.computation_planned = True
         #pdb.set_trace()
     def _results(self, newgrid=0):
         #pdb.set_trace()
@@ -1558,7 +1558,7 @@ class amwg_plot_set8(amwg_plot_spec):
     name = '8 - Annual Cycle Contour Plots of Zonal Means '
     number = '8'
 
-    def __init__( self, model, obs, varid, seasonid='ANN', regionid=None, aux=None ):
+    def __init__( self, model, obs, varid, seasonid='ANN', region=None, aux=None ):
         """filetable1, should be a directory filetable for each model.
         varid is a string, e.g. 'TREFHT'.  The zonal mean is computed for each month. """
         filetable1, filetable2 = self.getfts(model, obs)
@@ -1575,12 +1575,6 @@ class amwg_plot_set8(amwg_plot_spec):
         if self.FT2:
             self.filetables +=[filetable2]
     
-        if regionid=="Global" or regionid=="global" or regionid is None:
-            self._regionid="Global"
-        else:
-            self._regionid=regionid
-        self.region = interpret_region(regionid)
-
         plot_spec.__init__(self, seasonid)
         self.plottype = 'Isofill'
         self._seasonid = seasonid
@@ -1611,11 +1605,11 @@ class amwg_plot_set8(amwg_plot_spec):
                 #pdb.set_trace()
                 #create identifiers
                 VID = rv.dict_id(varid, month, FT)
+                RF = (lambda x, vid=id2str(VID), month=VID[2]:reduce2lat_seasonal(x, seasons=cdutil.times.Seasons(month), vid=vid))
                 RV = reduced_variable(variableid = varid, 
                                       filetable = FT, 
                                       season = cdutil.times.Seasons(VID[2]), 
-                                      reduction_function =  (lambda x, vid=id2str(VID), month=VID[2]:
-                                                                 reduce2lat_seasonal(x, cdutil.times.Seasons(month), self.region, vid=vid)))
+                                      reduction_function =  RF)
 
 
                 self.reduced_variables[RV.id()] = RV
@@ -1815,7 +1809,7 @@ class amwg_plot_set10(amwg_plot_spec, basic_id):
     name = '10 - Annual Line Plots of  Global Means'
     number = '10'
  
-    def __init__( self, model, obs, varid, seasonid='ANN', regionid=None, aux=None ):
+    def __init__( self, model, obs, varid, seasonid='ANN', region=None, aux=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'."""
         filetable1, filetable2 = self.getfts(model, obs)
@@ -1823,13 +1817,6 @@ class amwg_plot_set10(amwg_plot_spec, basic_id):
         plot_spec.__init__(self, seasonid)
         self.plottype = 'Yxvsx'
         self.season = cdutil.times.Seasons(self._seasonid)
-
-        if regionid=="Global" or regionid=="global" or regionid is None:
-            self._regionid="Global"
-        else:
-            self._regionid=regionid
-        self.region = interpret_region(regionid)
-
         ft1id, ft2id = filetable_ids(filetable1, filetable2)
         self.plot_id = '_'.join([ft1id, ft2id, varid, self.plottype])
         self.computation_planned = False
@@ -1848,11 +1835,11 @@ class amwg_plot_set10(amwg_plot_spec, basic_id):
                 #pdb.set_trace()
                 #create identifiers
                 VID = rv.dict_id(varid, month, FT) #cdutil.times.getMonthIndex(VID[2])[0]-1
+                RF = (lambda x, vid=id2str(VID), month = VID[2]:reduce2scalar_seasonal_zonal(x, seasons=cdutil.times.Seasons(month), vid=vid))
                 RV = reduced_variable(variableid = varid, 
                                       filetable = FT, 
                                       season = cdutil.times.Seasons(month), 
-                                      reduction_function =  (lambda x, vid=id2str(VID), month = VID[2]:
-                                           reduce2scalar_seasonal_zonal(x, cdutil.times.Seasons(month), self.region, vid=vid)))
+                                      reduction_function =  RF)
     
                 VID = id2str(VID)
                 self.reduced_variables[VID] = RV   

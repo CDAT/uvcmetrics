@@ -34,8 +34,7 @@ class climatology_variable( reduced_variable ):
             season = cdutil.times.Seasons([seasonname])
             reduced_variable.__init__( self,
                variableid=varname, filetable=filetable,
-               reduction_function=(lambda x,vid=None,thisseason=season:
-                                       reduce_time_seasonal(x,seasons=thisseason)) )
+               reduction_function=(lambda x,vid=None: reduce_time_seasonal(x,season)) )
 
 class climatology_squared_variable( reduced_variable ):
     """represents the climatology of the square of a variable.
@@ -206,11 +205,4 @@ if __name__ == '__main__':
    o = Options()
    o.processCmdLine()
    o.verifyOptions()
-
-   profileme = False
-   if profileme is True:
-       prof = cProfile.Profile()
-       returnme = prof.runcall( (lambda opts=o: climo_driver(opts) ) )
-       prof.dump_stats('results_stats')
-   else:
-       climo_driver(o)
+   climo_driver(o)

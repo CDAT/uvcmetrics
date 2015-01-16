@@ -206,7 +206,7 @@ def reduce2scalar_zonal( mv, latmin=-90, latmax=90, vid=None, gw=None ):
 
     return avmv
 
-def reduce2scalar_seasonal_zonal( mv, seasons=seasonsyr, region=None, latmin=None, latmax=None, vid=None, gw=None ):
+def reduce2scalar_seasonal_zonal( mv, seasons=seasonsyr, latmin=-90, latmax=90, vid=None, gw=None ):
     """returns the mean of the variable over the supplied latitude range (in degrees).
     The computed quantity is a scalar but is returned as a cdms2 variable, i.e. a MV.
     The input mv is a cdms2 variable too.
@@ -216,22 +216,6 @@ def reduce2scalar_seasonal_zonal( mv, seasons=seasonsyr, region=None, latmin=Non
     """
     if vid is None:
         vid = 'reduced_'+mv.id
-
-    if region is not None:
-        region = interpret_region(region)
-        if latmin is not None and latmin!=region[0]:
-            print "Warning: conflict between specified latmin = ", latmin, "and region (latmin = ", region[0], ") definitions."
-            print "Using region[0] = ", region[0], " as latmin."
-        latmin = region[0]
-        if latmax is not None and latmax!=region[1]:
-            print "Warning: conflict between sepcified latmax = ", latmax, "and region (latmax = ", region[1], ") definitions."
-            print "Using region[1] = ", region[1], " as latmax."
-        latmax = region[1]
-    if latmin is None:
-        latmin = -90
-    if latmax is None:
-        latmax = 90
-
     # reduce size of lat axis to (latmin,latmax)
     mv2 = mv(latitude=(latmin, latmax))
     # reduce size of gw to (latmin,latmax)
@@ -1142,7 +1126,7 @@ def calculate_seasonal_climatology(mv, season):
         ss = str(season.seasons)
     if ss=='JFMAMJJASOND':
         ss = 'ANN'
-    print "calculating climatology for season : ", ss
+#    print "calculating climatology for season : ", ss
 
     tax = timeAxis(mv)
     if tax is None:
