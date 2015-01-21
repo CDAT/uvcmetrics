@@ -109,8 +109,8 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
         outdir = os.path.join(os.environ['HOME'],"tmp","diagout")
         print 'Writing output to %s. Override with --outputdir option' % outdir
 
-    basename = opts['output']['outputpre']
-    postname = opts['output']['outputpost']
+    basename = opts['output']['prefix']
+    postname = opts['output']['postfix']
       
     # Note:verifyOptions() should prevent this from being none. There used to be a quit() in
     # there but I removed it. (BES)
