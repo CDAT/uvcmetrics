@@ -1494,7 +1494,7 @@ class amwg_plot_set7(amwg_plot_spec):
     def plan_computation( self, model, obs, varid, seasonid, region=None, aux=slice(0,None) ):
        """Set up for a lat-lon polar contour plot.  Data is averaged over all other axes.
        """
-        filetable1, filetable2 = self.getfts(model, obs)
+       filetable1, filetable2 = self.getfts(model, obs)
        reduced_varlis = [
            reduced_variable(
                 variableid=varid, filetable=filetable1, season=self.season,
@@ -1503,12 +1503,12 @@ class amwg_plot_set7(amwg_plot_spec):
                 variableid=varid, filetable=filetable2, season=self.season,
                 reduction_function=(lambda x,vid, region=None: reduce2latlon_seasonal( x(latitude=aux, longitude=(0, 360)), self.season, region, vid=vid ) ) )
             ]
-        self.reduced_variables = { v.id():v for v in reduced_varlis }
-        vid1 = rv.dict_id( varid, seasonid, filetable1 )
-        vid2 = rv.dict_id( varid, seasonid, filetable2 )
+       self.reduced_variables = { v.id():v for v in reduced_varlis }
+       vid1 = rv.dict_id( varid, seasonid, filetable1 )
+       vid2 = rv.dict_id( varid, seasonid, filetable2 )
 
-        self.derived_variables = {}
-        self.single_plotspecs = {
+       self.derived_variables = {}
+       self.single_plotspecs = {
             self.plot1_id: plotspec(
                 vid = ps.dict_idid(vid1),
                 zvars = [vid1],  zfunc = (lambda z: z),
@@ -1522,11 +1522,11 @@ class amwg_plot_set7(amwg_plot_spec):
                 zvars = [vid1,vid2],  zfunc = aminusb_2ax,
                 plottype = self.plottype )         
             }
-        self.composite_plotspecs = {
+       self.composite_plotspecs = {
             self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id]
             }
-        self.computation_planned = True
-        #pdb.set_trace()
+       self.computation_planned = True
+       #pdb.set_trace()
     def _results(self, newgrid=0):
         #pdb.set_trace()
         results = plot_spec._results(self,newgrid)
