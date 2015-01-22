@@ -367,19 +367,24 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                                    # and if id doesn't exist, the system will create one before plotting!
 
                                                vname = vname.replace('/', '_')
-                                               fname = outdir+'/figure-set'+snum+'_'+rname+'_'+seasonid+'_'+\
-                                                   vname+'_plot-'+str(r)
-                                               if basename is not None:
-                                                   fname = basename+fname
-                                               if postname is not None:
-                                                   fname = fname+postname
-                                               fname+='.png'
-                                               if basename is None and postname is None:
-                                                   print "writing png file0",fname
+                                               if basename == None and postname == None:
+                                                  fname = outdir+'/figure-set'+snum+'_'+rname+'_'+seasonid+'_'+\
+                                                      vname+'_plot-'+str(r)+'.png'
+                                                  print "writing png file",fname
                                                else:
-                                                   print "writing png file1",fname,"for",vname
-                                               if len(fname)>255:
-                                                   print "file name too long",fname
+                                                  pname = postname
+                                                  if pname == None:
+                                                      pname = ''
+                                                  if basename == '' or basename == None:
+                                                      basename = 'set'+snum
+                                                  if '_obs' in vname or '_diff' in vname:
+                                                      if '_diff' in vname:
+                                                          pname = postname+'_diff'
+                                                      # Note postname will have the obsfile key and things like _NP
+                                                      fname = outdir+'/'+basename+'_'+seasonid+'_'+varid+pname+'.png'
+                                                      print "writing png file1",fname, vname
+                                                  else:
+                                                      fname = 'junk.png'
                                                #rsr_presentation.script("jeff.json")   #example of writing a json file
 
                                            if vcs.isscatter(rsr.presentation):
@@ -500,13 +505,13 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                 if savePNG and tmmobs[0] is not None:  # If anything was plotted to vcanvas2
                                     vname = varid.replace(' ', '_')
                                     vname = vname.replace('/', '_')
-                                    if basename is None and postname is None:
+                                    if basename == None and postname == None:
                                        fname = outdir+'/figure-set'+snum+'_'+rname+'_'+seasonid+'_'+vname+'_plot-'+str(r)+'.png'
                                     else:
                                        pname = postname
-                                       if pname is None:
+                                       if pname == None:
                                           pname = ''
-                                       if basename == '' or basename is None:
+                                       if basename == '':
                                           basename = 'set'+snum
                                        if '_obs' in vname or '_diff' in vname:
                                           if '_diff' in vname:
