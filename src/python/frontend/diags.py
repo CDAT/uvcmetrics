@@ -327,6 +327,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                        tm2 = tmmobs[ir]
                                        title = rsr.title
                                        rsr_presentation = rsr.presentation
+                                       #rsr_presentation.list()
                                        for varIndex, var in enumerate(rsr.vars):
                                            if len(var)<=1:
                                                print "INFO: won't plot short variable",var.id
@@ -378,20 +379,26 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                                       fname = 'junk.png'
                                                #rsr_presentation.script("jeff.json")   #example of writing a json file
 
-                                           if vcs.isscatter(rsr.presentation):
-                                               #pdb.set_trace()
+                                           if vcs.isscatter(rsr.presentation) or plot.number in ['11', '12']: 
+                                               if hasattr(plot, 'customizeTemplates'):
+                                                   if hasattr(plot, "replaceIds"):    
+                                                       var = plot.replaceIds(var)                                            
+                                                   tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)] )
                                                if len(rsr.vars) == 1:
                                                    #scatter plot for plot set 12
+                                                   subtitle = title
                                                    vcanvas.plot(var, 
                                                                 rsr_presentation, tm, bg=1, title=title,
-                                                                units=getattr(var,'units',''), source=rsr.source )
+                                                                units='', source=rsr.source )
                                                    savePNG = False    
                                                    #plot the multibox plot
                                                    try:
                                                        if tm2 is not None and varIndex+1 == len(rsr.vars):
+                                                            if hasattr(plot, 'compositeTitle'):
+                                                                title = plot.compositeTitle                                                               
                                                             vcanvas2.plot(var,
                                                                           rsr_presentation, tm2, bg=1, title=title, 
-                                                                          units=getattr(var,'units',''), source=rsr.source ) 
+                                                                          units='', source=subtitle ) 
                                                             savePNG = True
                                                    except vcs.error.vcsError as e:
                                                        print "ERROR making summary plot:",e
@@ -406,7 +413,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                                        yvar = var.flatten()
                                                        #pdb.set_trace()
                                                        #this is only for plot set 11
-                                                       if rsr_presentation.overplotline:
+                                                       if seqhasattr(rsr_presentation, 'overplotline') and rsr_presentation.overplotline:
                                                            tm.line1.x1 = tm.box1.x1
                                                            tm.line1.x2 = tm.box1.x2
                                                            tm.line1.y1 = tm.box1.y2
@@ -421,16 +428,27 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                                            tm2.line1.line = 'LINE'
                                                            tm2.line1.priority = 1                                                   
                                                            #tm.line1.list()
+                                                       if hasattr(plot, 'customizeTemplates'):
+                                                           
+                                                           #pdb.set_trace()     
+                                                           tm2.xname.list()                                                  
+                                                           tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)] )
+                                                           tm2.xname.list()
                                                        vcanvas.plot(xvar, yvar, 
                                                                     rsr_presentation, tm, bg=1, title=title,
-                                                                    units=getattr(xvar,'units',''), source=rsr.source ) 
+                                                                    units='', source=rsr.source ) 
                                             
-                                                   #plot the multibox plot
+                                                   #plot the multibox plot 
                                                    try:
                                                        if tm2 is not None and varIndex+1 == len(rsr.vars):
+                                                           #title refers to the title for the individual plots getattr(xvar,'units','')  
+                                                           subtitle = title
+                                                           if hasattr(plot, 'compositeTitle'):
+                                                               title = plot.compositeTitle                                                            
                                                            vcanvas2.plot(xvar, yvar,
-                                                                             rsr_presentation, tm2, bg=1, title=title, 
-                                                                             units=getattr(var,'units',''), source=rsr.source ) 
+                                                                             rsr_presentation, tm2, bg=1, title=title,
+                                                                             units='',  source=subtitle ) 
+                                                           #tm2.units.list()
                                                            if varIndex+1 == len(rsr.vars):
                                                                savePNG = True
                                                    except vcs.error.vcsError as e:
