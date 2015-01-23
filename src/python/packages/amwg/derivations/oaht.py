@@ -27,7 +27,13 @@ def get_variables_for_atmospheric_heat_transport( infilename1, outfilename1, com
     infile1 = cdms2.open(infilename1)
     outfile1 = cdms2.open(outfilename1,"w")
     case1 = infile1.case     # e.g. "b30.009"
-    lat1 = infile1['lat']
+    if 'lat' in infile1.variables.keys() and infile1['lat'].isLatitude():
+        lat1 = infile1['lat']
+    else:
+        for an,ax in infile1.axes.iteritems():
+            if ax.isLatitude():
+                lat1 = ax
+                break
     nlat1 = lat1.shape
 
     # Gauss weights:

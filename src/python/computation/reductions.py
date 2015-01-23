@@ -19,7 +19,9 @@ from metrics.fileio.filetable import *
 from metrics.computation.units import *
 #from climo_test import cdutil_climatology
 import metrics.frontend.defines as defines
+from metrics.computation.region import *
 from genutil import *
+from metrics.computation.region_functions import *
 
 regridded_vars = {}  # experimental
 
@@ -74,7 +76,7 @@ def levAxis( mv ):
     if mv is None: return None
     lev_axis = None
     for ax in allAxes(mv):
-        if ax.isLevel():   # <<< need a similar change for other axes
+        if ax.isLevel():
             lev_axis = ax
             break
     if lev_axis is None:
@@ -122,7 +124,7 @@ def tllAxes( mv ):
         #if ax.id=='lon': lon_axis = ax
         if ax.isLongitude(): lon_axis = ax
         if ax.id=='time': time_axis = ax
-    return (time_axis,lat_axis,lon_axis)
+    return time_axis,lat_axis,lon_axis
 
 def fix_time_units( timeunits ):
     """Sometimes we get time units which aren't compatible with cdtime.
@@ -187,7 +189,7 @@ def reduce2scalar_zonal( mv, latmin=-90, latmax=90, vid=None, gw=None ):
     This function uses the cdms2 avarager() function to handle weights and do averages
     Latitude weights may be provided as 'gw'.  The averager's default is reasonable, however.
     """
-    if vid==None:
+    if vid is None:
         vid = 'reduced_'+mv.id
     mv2 = mv(latitude=(latmin, latmax))
 
@@ -212,7 +214,7 @@ def reduce2scalar_seasonal_zonal( mv, seasons=seasonsyr, latmin=-90, latmax=90, 
     Time is restriced to the specified season.
     Latitude weights may be provided as 'gw'.  The averager's default is reasonable, however.
     """
-    if vid==None:
+    if vid is None:
         vid = 'reduced_'+mv.id
     # reduce size of lat axis to (latmin,latmax)
     mv2 = mv(latitude=(latmin, latmax))
@@ -220,32 +222,11 @@ def reduce2scalar_seasonal_zonal( mv, seasons=seasonsyr, latmin=-90, latmax=90, 
     if gw is not None:
         gw2 = gw(latitude=(latmin, latmax))
 
-    timeax = timeAxis(mv2)
-    if timeax is None or len(timeax)<=1:
-        mvseas = mv2
-    else:
-        if timeax.getBounds()==None:
-            timeax._bounds_ = timeax.genGenericBounds()
-        if timeax.units=='months':
-            # Special check necessary for LEGATES obs data, because
-            # climatology() won't accept this incomplete specification
-            timeax.units = 'months since 0001-01-01'
-        if timeax.units=='month: 1=Jan, ..., 12=Dec':
-            # Special check necessary for CERES obs data.
-            timeax.units = 'months since 0001-01-01'
-        if len(timeax)==1 and  ((hasattr(ax,'_FillValue') and ax._FillValue in ax) or
-                                (hasattr(ax,'fill_value') and ax.fill_value in ax)):
-            # Time axis of length 1, which is missing!  It's a.s. a (malformed) climo file already.
-            mvseas = mv2
-        else:
-            mvseas = seasons.climatology(mv2)
-        if mvseas is None:
-            # Among other cases, this can happen if mv has all missing values.
-            return None
-    # If the time axis has only one point (as it should by now, if it exists at all),
-    # the next, averager(), step can't use it because it may not have bounds (or they
-    # would be as meaningless as the time value itself).  So get rid of it now:
-    mvseas = delete_singleton_axis( mvseas, vid='time' )
+    mvseas = calculate_seasonal_climatology(mv2, seasons)
+    if mvseas is None:
+        # Among other cases, this can happen if mv has all missing values.
+        return None
+
     axes = allAxes( mvseas )
 
     for ax in axes:
@@ -308,7 +289,7 @@ def reduce2scalar( mv, vid=None, gw=None ):
     Uses the averager module for greater capabilities
     Latitude weights may be provided as 'gw'.  The averager's default is reasonable, however.
     """
-    if vid==None:   # Note that the averager function returns a variable with meaningless id.
+    if vid is None:   # Note that the averager function returns a variable with meaningless id.
         vid = 'reduced_'+mv.id
     axes = allAxes( mv )
     axis_names = [ a.id for a in axes ]
@@ -330,7 +311,7 @@ def reduce2lat( mv, vid=None ):
     variables, i.e. mv(time,lat,lon).  At present, no other axes (e.g. level) are supported.
     At present mv must depend on all three axes.
     """
-    if vid==None:   # Note that the averager function returns a variable with meaningless id.
+    if vid is None:   # Note that the averager function returns a variable with meaningless id.
         vid = 'reduced_'+mv.id
     axes = allAxes( mv )
     #axis_names = [ a.id for a in axes if a.id!='lat' ]
@@ -347,12 +328,12 @@ def reduce2lat( mv, vid=None ):
 def reduce2level( mv, seasons=None, vid=None ):
     """as reduce2lat, but averaging reduces coordinates to lev"""
     #pdb.set_trace()
-    if vid==None:   # Note that the averager function returns a variable with meaningless id.
+    if vid is None:   # Note that the averager function returns a variable with meaningless id.
         vid = 'reduced_'+mv.id
     if levAxis(mv) is None: return None
     axes = allAxes( mv )
     timeax = timeAxis(mv)
-    if timeax is not None and timeax.getBounds()==None:
+    if timeax is not None and timeax.getBounds() is None:
         timeax._bounds_ = timeax.genGenericBounds()
         
     axis_names = [ a.id for a in axes if a.isLevel()==False ]
@@ -367,13 +348,13 @@ def reduce2level( mv, seasons=None, vid=None ):
 
 def reduce2levlat( mv, vid=None ):
     """as reduce2lat, but averaging reduces coordinates to (lev,lat)"""
-    if vid==None:   # Note that the averager function returns a variable with meaningless id.
+    if vid is None:   # Note that the averager function returns a variable with meaningless id.
         vid = 'reduced_'+mv.id
     if levAxis(mv) is None: return None
     if latAxis(mv) is None: return None
     axes = allAxes( mv )
     timeax = timeAxis(mv)
-    if timeax is not None and timeax.getBounds()==None:
+    if timeax is not None and timeax.getBounds() is None:
         timeax._bounds_ = timeax.genGenericBounds()
     axis_names = [ a.id for a in axes if a.isLevel()==False and a.isLatitude()==False ]
     axes_string = '('+')('.join(axis_names)+')'
@@ -385,31 +366,17 @@ def reduce2levlat( mv, vid=None ):
 
     return avmv
 
-def reduce2levlat_seasonal( mv, seasons=seasonsyr, vid=None ):
+def reduce2levlat_seasonal( mv, seasons=seasonsyr, region=None, vid=None ):
     """as reduce2levlat, but data is averaged only for time restricted to the specified season;
     as in reduce2lat_seasona."""
-    if vid==None:   # Note that the averager function returns a variable with meaningless id.
+    if vid is None:   # Note that the averager function returns a variable with meaningless id.
         vid = 'reduced_'+mv.id
     if levAxis(mv) is None: return None
     if latAxis(mv) is None: return None
     axes = allAxes( mv )
-    timeax = timeAxis(mv)
-    if timeax is None or len(timeax)<=1:
-        mvseas = mv
-    else:
-        if timeax.getBounds()==None:
-            timeax._bounds_ = timeax.genGenericBounds()
 
-        if timeax is not None and timeax.units=='months':
-            # Special check necessary for LEGATES obs data, because
-            # climatology() won't accept this incomplete specification
-            timeax.units = 'months since 0001-01-01'
-        mvseas = seasons.climatology(mv)
-    for ax in axes:
-        if ax.isTime():
-            continue
-        if ax.getBounds() is None:
-            ax._bounds_ = ax.genGenericBounds()  # needed for averager()
+    mvr = select_region(mv, region)
+    mvseas = reduce_time_seasonal(mvr, seasons, region)
 
     axis_names = [ a.id for a in axes if a.isLevel()==False and a.isLatitude()==False and a.isTime()==False ]
     axes_string = '('+')('.join(axis_names)+')'
@@ -419,7 +386,6 @@ def reduce2levlat_seasonal( mv, seasons=seasonsyr, vid=None ):
     else:
         avmv = mvseas
     avmv.id = vid
-    avmv = delete_singleton_axis( avmv, vid='time' )
     if hasattr(mv,'units'):
         avmv.units = mv.units
 
@@ -427,7 +393,7 @@ def reduce2levlat_seasonal( mv, seasons=seasonsyr, vid=None ):
 
 def reduce2latlon( mv, vid=None ):
     """as reduce2lat, but averaging reduces coordinates to (lat,lon)"""
-    if vid==None:   # Note that the averager function returns a variable with meaningless id.
+    if vid is None:   # Note that the averager function returns a variable with meaningless id.
         vid = 'reduced_'+mv.id
     axes = allAxes( mv )
     #axis_names = [ a.id for a in axes if a.id!='lat' and a.id!='lon' ]
@@ -452,7 +418,7 @@ def reduce2latlon( mv, vid=None ):
 
 def reduce_time( mv, vid=None ):
     """as reduce2lat, but averaging reduces only the time coordinate"""
-    if vid==None:   # Note that the averager function returns a variable with meaningless id.
+    if vid is None:   # Note that the averager function returns a variable with meaningless id.
         #vid = 'reduced_'+mv.id
         vid = mv.id
     axes = allAxes( mv )
@@ -474,37 +440,28 @@ def reduce_time( mv, vid=None ):
 
     return avmv
 
-def reduce2lat_seasonal( mv, seasons=seasonsyr, vid=None ):
+def reduce2lat_seasonal( mv, seasons=seasonsyr, region=None, vid=None ):
     """as reduce2lat, but data is used only for time restricted to the specified season.  The season
     is specified as an object of type cdutil.ties.Seasons, and defaults to the whole year.
     The returned variable will still have a time axis, with one value per season specified.
     """
 
-    if vid==None:
+    if vid is None:
         vid = 'reduced_'+mv.id
     # Note that the averager function returns a variable with meaningless id.
     # The climatology function returns the same id as mv, which we also don't want.
 
-    # The slicers in time.py require getBounds() to work.
-    # If it doesn't, we'll have to give it one.
-    # Setting the _bounds_ attribute will do it.
-    for ax in mv.getAxisList():
+    mvr = select_region(mv, region)
+    mvseas = calculate_seasonal_climatology(mvr, seasons)
+
+    if mvseas is None:
+        # Among other cases, this can happen if mv has all missing values.
+        return None
+    
+    axes = allAxes( mvseas )
+    for ax in axes:
         if ax.getBounds() is None:
             ax._bounds_ = ax.genGenericBounds()
-    timeax = timeAxis(mv)
-    if timeax is None or len(timeax)<=1:
-        mvseas = mv
-    else:
-        if timeax.units=='months':
-            # Special check necessary for LEGATES obs data, because
-            # climatology() won't accept this incomplete specification
-            timeax.units = 'months since 0001-01-01'
-        mvseas = seasons.climatology(mv)
-        if mvseas is None:
-            # Among other cases, this can happen if mv has all missing values.
-            return None
-    
-    axes = allAxes( mv )
     #axis_names = [ a.id for a in axes if a.id!='lat' and a.id!='time']
     axis_names = [ a.id for a in axes if not a.isLatitude() and not a.isTime() ]
     axes_string = '('+')('.join(axis_names)+')'
@@ -515,13 +472,11 @@ def reduce2lat_seasonal( mv, seasons=seasonsyr, vid=None ):
         avmv = mvseas
     avmv.id = vid
 
-    avmv = delete_singleton_axis( avmv, vid='time' )
     if hasattr(mv,'units'):
         avmv.units = mv.units
     return avmv
 
 
-"""
 def ttest_time(mv1, mv2, mv3):
 # mv1 = case1
 # mv2 = case2
@@ -541,8 +496,9 @@ def ttest_time(mv1, mv2, mv3):
    lat2, idx2 = latAxis2(mv2)
    lat3, idx3 = latAxis2(mv3)
 
-   # Regrid if necessary. This makes the two modesl the lesser
+   # Regrid if necessary. This makes the two models the lesser
    # of the two grid sizes.
+   # NCL code interpolates up, ie, obs is scaled to model grid with linint2 function
    if len(ax1[idx1]) < len(ax2[idx2]):
       newgrid = mv1.getGrid()
       mv2new = mv2.regrid(newgrid)
@@ -555,45 +511,43 @@ def ttest_time(mv1, mv2, mv3):
       newgrid = mv1new.getGrid()
       mv3new = mv3.regrid(newgrid)
 
+   # Now, do the model-model ttest
+   tax1, tid1 = timeAxis2(mv1new)
+   tax2, tid2 = timeAxis2(mv2new)
+   tax3, tid3 = timeAxis2(mv3new)
+   if tid1 != tid2:
+      print 'The time axis for mv1 and mv2 are different. This is a significant problem'
+      quit()
 
-   # NCL code interpolates up, ie, obs is scaled to model grid with linint2 function
-   t_ax, t_idx = timeAxis2(mv1new)
    # get basic numpy arrays
    v1 = mv1new.asma()
    v2 = mv2new.asma()
    import scipy.stats
+   prob = mv1new # this might retain some metadata
 
-   t, prob = scipy.stats.ttest_ind(v1, v2, axis=t_idx, equal_var=False)
+   t, prob = scipy.stats.ttest_ind(v1, v2, axis=tid1, equal_var=False)
+   probnew = MV2.where(MV2.less(prob, .000005), 0, prob)
+   
    # The NCAR code interpolates obs res UP to model res.
    # It also does pretty much everything with the interpolated vars, so so shall we.
-   v1_avg = cdutil.averager(mv1new, axis=t_ax)
-   v2_avg = cdutil.averager(mv2new, axis=t_ax)
-   v3_avg = cdutil.averager(mv3new, axis=t_ax)
+   v1_avg = cdutil.averager(mv1new, axis=tid1)
+   v2_avg = cdutil.averager(mv2new, axis=tid2)
+   if tid3 != None:
+      v3_avg = cdutil.averager(mv3new, axis=tid3)
+   else:
+      v3_avg = mv3new
 
    diff13 = MV2.absolute(v1_avg - v3_avg)
-   diff23 = MV2.where(MV2.absolute(v2_avg - v3_avg)
+   diff23 = MV2.absolute(v2_avg - v3_avg)
 
    p1 = MV2.where( MV2.greater(diff13, diff23), MV2.where(MV2.less(prob, .1), 5, 0), 0)
    p2 = MV2.where( MV2.greater(diff23, diff13), MV2.where(MV2.less(prob, .1), 10, 0), 0)
-   #### Implement my own ttest_ind I think
-   ## Welch's t-test:
-   # 
 
+   # This is obs vs ds1 vs ds2
    pmap = p1+p2
-   
+   pmap2 = MV2.where(MV2.greater(1-probnew, .1), 1, 0)
 
-   # Can this be done with MV2.{} stuff?
-   # If diff13 and diff23 are not missing values
-   #    If prob is not missing
-   #        if diff13 > diff23
-   #            if prob < constant
-   #                prob = 10
-   #        else
-   #            if prob < constant
-   #                prob = 5
-
-"""
-
+   return pmap, pmap2
 
 
 
@@ -667,7 +621,7 @@ def rmse_time(mv1, mv2):
 def corr_time(mv1, mv2):
    mv1, mv2 = reconcile_units(mv1, mv2)
    if hasattr(mv1, 'units') and hasattr(mv2, 'units') and mv1.units != mv2.units:
-      print 'WARNING - RMSE - variables have different units:', mv1.units, mv2.units
+      print 'WARNING - CORR - variables have different units:', mv1.units, mv2.units
    axes1 = mv1.getAxisList()
    axes2 = mv2.getAxisList()
    if axes1 is None or axes2 is None: 
@@ -723,6 +677,100 @@ def corr_time(mv1, mv2):
       corr = statistics.correlation(mv1new, mv2new, axis='t')
       return corr
 
+# Calculate the std dev between mv1 and mv2. Regrid as appropriate
+# Step 1 - Reconcile units
+# Step 2 - ANNUALCYCLE(mv1, mv2)
+# Step 3 - Regrid
+# Step 4 - Calculate std dev
+def std_3time(mv1, mv2, mv3, constant = 1.):
+   # First make sure the models units are consistent
+   mv1, mv2 = reconcile_units(mv1, mv2)
+   mv2, mv3 = reconcile_units(mv2, mv3)
+   if hasattr(mv1, 'units') and hasattr(mv2, 'units') and mv1.units != mv2.units:
+      print 'WARNING - STDDEV - Obsset has different units:', mv1.units, mv2.units
+   axes1 = mv1.getAxisList()
+   axes2 = mv2.getAxisList()
+   axes3 = mv3.getAxisList()
+   if axes1 == None or axes2 == None or axes3 == None:
+      return None
+
+   mv1new = mv1
+   mv2new = mv2
+   mv3new = mv3
+   lat1, idx1 = latAxis2(mv1)
+   lat2, idx2 = latAxis2(mv2)
+   lat3, idx3 = latAxis2(mv3)
+
+   if len(axes1[idx1]) < len(axes2[idx2]):
+      newgrid = mv1.getGrid()
+      mv2new = mv2.regrid(newgrid)
+   if len(axes1[idx1]) > len(axes2[idx2]):
+      newgrid = mv2.getGrid()
+      mv1new = mv1.regrid(newgrid)
+
+   # 1 and 2 are regridded. now we up-sample obs to them (which is what ncar does)
+   latA, idxA = latAxis2(mv1new)
+   if len(axes3[idx3]) != len(latA[idxA]):
+      newgrid = mv1.getGrid()
+      mv3new = mv3.regrid(newgrid)
+
+   flag = False
+   for i in range(len(axes1)):
+      if 'axis' in axes1[i].attributes:
+         pass
+      else:
+         print 'axis ', axes1[i].id, ' has no axis attribute'
+         ### Assuming that is a time axis...
+         axes1[i].axis='T'
+         flag = True
+   if flag == True:
+      mv1new.setAxisList(axes1)
+
+   flag = False
+   for i in range(len(axes2)):
+      if 'axis' in axes2[i].attributes:
+         pass
+      else:
+         print 'axis ', axes2[i].id, ' has no axis attribute'
+         ### Assuming that is a time axis...
+         axes2[i].axis='T'
+         flag = True
+   if flag == True:
+      mv2new.setAxisList(axes2)
+
+   flag = False
+   for i in range(len(axes3)):
+      if 'axis' in axes3[i].attributes:
+         pass
+      else:
+         print 'axis ', axes3[i].id, ' has no axis attribute, assuming it is a time axis'
+         axes3[i].axis='T'
+         flag = True
+   if flag==True:
+      mv3new.setAxisList(axes3)
+
+   mv1_sd = statistics.std(mv1new)
+   mv2_sd = statistics.std(mv2new)
+   mv3_sd = statistics.std(mv3new)
+   # TODO make sure mv3 is still 2D, ie, it had a timeaxis going in. This would require ensuring proper obs is passed in
+
+   absdiff12 = MV2.absolute(mv2_sd - mv1_sd)
+   absdiff23 = MV2.absolute(mv3_sd - mv2_sd)
+   absdiff13 = MV2.absolute(mv3_sd - mv1_sd)
+
+   # b = absdiff21 >= constant AND absdiff23 < absdiff13
+   # g = absdiff21 >= constant AND absdiff23 > absdiff13
+   b = MV2.where( MV2.greater_equal(absdiff12, constant), MV2.where(MV2.less(absdiff23, absdiff13), 1, 0), 0)
+   g = MV2.where( MV2.greater_equal(absdiff12, constant), MV2.where(MV2.greater(absdiff23, absdiff13), 2, 0), 0)
+   
+   sd = b+g
+   sd_map = MV2.where(MV2.equal(sd, mv1_sd.missing_value), mv1_sd.missing_value, sd)
+   # plots are mv1_sd - mv3_sd
+   #           mv2_sd - mv3_sd
+   #           sdmap 
+   # The NCAR does some odd area calculations. Need to figure that out too.
+   return mv1_sd, mv2_sd, sd_map
+
 
 # Takes 2 rmse variables in. Could be required to take 2 normal variables and we might have to calculate rmse?
 # Also, we might want to specify constant somehow.
@@ -766,7 +814,7 @@ def bias_map(mv1, mv2, obs, constant=.1):
 # This could probably just call reduceAnnTrendRegionLevel() in a loop and calculate the sum
 def reduceAnnTrendRegionSumLevels(mv, region, slevel, elevel, vid=None):
    timeax = timeAxis(mv)
-   if timeax is not None and timeax.getBounds() == None:
+   if timeax is not None and timeax.getBounds() is None:
       timeax._bounds_ = timeax.genGenericBounds()
    if timeax is not None:
       mvsub = mv(latitude=(region[0], region[1]), longitude=(region[2], region[3]))
@@ -801,11 +849,11 @@ def reduceAnnTrendRegionSumLevels(mv, region, slevel, elevel, vid=None):
 
 def reduceAnnTrendRegionLevel(mv, region, level, vid=None):
 # Need to compute year1, year2, ... yearN individual climatologies then get a line plot.
-   if vid == None:
+   if vid is None:
       vid = 'reduced_'+mv.id
 
    timeax = timeAxis(mv)
-   if timeax is not None and timeax.getBounds() == None:
+   if timeax is not None and timeax.getBounds() is None:
       timeax._bounds_ = timeax.genGenericBounds()
    if timeax is not None:
       mvsub = mv(latitude=(region[0], region[1]), longitude=(region[2], region[3]))
@@ -842,11 +890,11 @@ def reduceAnnTrendRegionLevel(mv, region, level, vid=None):
 # spatially. used by land set 5, part 1
 def reduceAnnSingle(mv, vid=None):
 #   print 'reduceAnnSingle - mv: ', mv
-   if vid == None:
+   if vid is None:
       vid = 'reduced_'+mv.id
 
    timeax = timeAxis(mv)
-   if timeax is not None and timeax.getBounds() == None:
+   if timeax is not None and timeax.getBounds() is None:
       timeax._bounds_ = timeax.genGenericBounds()
    if timeax is not None:
       mvann = cdutil.times.YEAR(mv) 
@@ -864,11 +912,11 @@ def reduceAnnSingle(mv, vid=None):
 def reduceAnnTrendRegion(mv, region, single=False, vid=None):
 # Need to compute year1, year2, ... yearN individual climatologies then get a line plot.
 #   print 'mv passed in:', mv
-   if vid == None:
+   if vid is None:
       vid = 'reduced_'+mv.id
 
    timeax = timeAxis(mv)
-   if timeax is not None and timeax.getBounds() == None:
+   if timeax is not None and timeax.getBounds() is None:
       timeax._bounds_ = timeax.genGenericBounds()
    if timeax is not None:
       mvsub = mv(latitude=(region[0], region[1]), longitude=(region[2], region[3]))
@@ -895,10 +943,10 @@ def reduceAnnTrendRegion(mv, region, single=False, vid=None):
 # Used for lmwg set 3
 def reduceMonthlyRegion(mv, region, vid=None):
    vals = []
-   if vid == None:
+   if vid is None:
       vid = 'reduced_'+mv.id
    timeax = timeAxis(mv)
-   if timeax is not None and timeax.getBounds() == None:
+   if timeax is not None and timeax.getBounds() is None:
       timeax._bounds_ = timeax.genGenericBounds()
    if timeax is not None:
       mvsub = mv(latitude=(region[0], region[1]), longitude=(region[2], region[3]))
@@ -912,16 +960,12 @@ def reduceMonthlyRegion(mv, region, vid=None):
 
 # Used to get just a spatial region average of a var, i.e. when climos are passed in
 def reduceRegion(mv, region, vid=None):
-   if type(region) is dict:
-      r = region[region.keys()[0]]
-      region = defines.all_regions[r].coords
-   if type(region) is str:
-      r = defines.all_regions[region].coords
-      region = r
 #   print 'in reduce region. region/mv: ', region, mv.id
-   if vid == None:
+   if vid is None:
       vid = 'reduced_'+mv.id
-   mvsub = mv(latitude=(region[0], region[1]), longitude=(region[2], region[3]))
+
+   mvsub = select_region(mv, region)
+
 #   print 'about to call averager on mvsub: ', mvsub.shape
 #   print 'mv going in:', mvsub
    mvvals = cdutil.averager(mvsub, axis='xy')
@@ -936,14 +980,14 @@ def reduceMonthlyTrendRegion(mv, region, vid=None):
 # it would be nice if it was easy to tell if these climos were already done
 # but annualcycle is pretty fast.
    #print 'IN REDUCEMONTHLYTRENDREGION, vid=', vid, 'mv.id=', mv.id
-   if vid == None:
+   if vid is None:
       vid = 'reduced_'+mv.id
    timeax = timeAxis(mv)
-   if timeax is not None and timeax.getBounds() == None:
+   if timeax is not None and timeax.getBounds() is None:
       timeax._bounds_ = timeax.genGenericBounds()
    if timeax is not None:
       # first, spatially subset
-      mvsub = mv(latitude=(region[0], region[1]), longitude=(region[2], region[3]))
+      mvsub = select_region(mv, region)
       mvtrend = cdutil.times.ANNUALCYCLE.climatology(mvsub)
    else:
       mvtrend = mv
@@ -955,7 +999,8 @@ def reduceMonthlyTrendRegion(mv, region, vid=None):
    #print 'reduceMonthlyTrendRegion - Returning ', mvvals
    return mvvals
 
-def reduce_time_space_seasonal_regional( mv, season, region, vid=None ):
+def reduce_time_space_seasonal_regional( mv, season=seasonsyr, region=None, vid=None,
+                                         exclude_axes=[] ):
     """Reduces the variable mv in all time and space dimensions.  Any other dimensions will remain.
     The averages will be restricted to the the specified season and region.
     The season should be a cdutil.times.Seasons object.
@@ -967,31 +1012,27 @@ def reduce_time_space_seasonal_regional( mv, season, region, vid=None ):
              ax.isLongitude() or ax.isLevel() ] )==0:
         return mv  # nothing to reduce
 
-    timespace_axis_names = [ a.id for a in axes if a.isLatitude() or a.isLongitude() or a.isLevel()
-                             or a.isTime() ]
-    if vid == None:
+    if vid is None:
         vid = 'reduced_'+mv.id
-    if type(region) is str:
-        region = defines.all_regions[region]
 
-    mvreg = mv(latitude=(region[0], region[1]), longitude=(region[2], region[3]))
+    mvreg = select_region(mv, region)
 
     axes = allAxes( mvreg )
     #axis_names = [ a.id for a in axes if a.id=='lat' or a.id=='lon' or a.id=='lev']
-    axis_names = [ a.id for a in axes if a.isLatitude() or a.isLongitude() or a.isLevel() ]
+    axis_names = [ a.id for a in axes if a.isLatitude() or a.isLongitude() or a.isLevel() and
+                   a.id not in exclude_axes]
     axes_string = '('+')('.join(axis_names)+')'
+    #print "jfp in reduce_time_space_seasonal_regional, variable",mv.id,"has axes",[ax.id for ax in axes]
+    #print "jfp and will be reduced in",axis_names,"Exclusions were",exclude_axes
+    if len(axes_string)>2:
+        for axis in axes:
+            if axis.getBounds() is None:
+                axis._bounds_ = axis.genGenericBounds()
     mvsav = cdutil.averager( mvreg, axis=axes_string )
-    tax = timeAxis(mvsav)
-    if len(tax)<=1:
-        # This is already climatology data, don't try to average over time again
-        # The time axis will be deleted shortly anyway.
-        mvtsav = mvsav
-    else:
-        mvtsav = season.climatology( mvsav )
+
+    mvtsav = calculate_seasonal_climatology(mvsav, season)
 
     mvtsav.id = vid
-    for tsid in timespace_axis_names:
-        mvtsav = delete_singleton_axis(mvtsav, vid=tsid )
     #mvtsav = delete_singleton_axis(mvtsav, vid='time')
     #mvtsav = delete_singleton_axis(mvtsav, vid='lev')
     #mvtsav = delete_singleton_axis(mvtsav, vid='lat')
@@ -1002,56 +1043,31 @@ def reduce_time_space_seasonal_regional( mv, season, region, vid=None ):
 def reduce2latlon_seasonal_level( mv, season, level, vid=None):
 # I wonder if this can be done faster somehow? need to ask Charles
 
-   if vid == None:
+   if vid is None:
       vid = 'reduced_'+mv.id
 
-   timeax = timeAxis(mv)
-   levax = levAxis(mv)
-   if timeax is None or len(timeax)<=1:
-      return mv
-   if levax is None or len(levax)<=1:
-      return mv
+   mvl = select_lev(mv, level)
+   mvseas = calculate_seasonal_climatology( mvl, season)
 
-   levstr = levax.id
-   mvsub = mv(levstr=slice(level, level+1))
-
-   mvseas = season.climatology(mvsub)
-
-   if mvseas is None:
-      print "WARNING- cannot compute climatology for",mv.id,seasons.seasons
-      print "...probably there is no data for times in the requested season."
-      return None
-      
    mvseas.id = vid
    if hasattr(mv,'units'):
       mvseas.units = mv.units
-   mvseas = delete_singleton_axis(mvseas, vid='time')
-   mvseas = delete_singleton_axis(mvseas, vid=levax)
+
    return mvseas
 
-def reduce2latlon_seasonal( mv, season, region=None, vid=None, exclude_axes=[] ):
+def reduce2latlon_seasonal( mv, season=seasonsyr, region=None, vid=None, exclude_axes=[] ):
     """as reduce2lat_seasonal, but both lat and lon axes are retained.
     Axis names (ids) may be listed in exclude_axes, to exclude them from the averaging process.
     """
     # This differs from reduce2lat_seasonal only in the line "axis_names ="....
     # I need to think about how to structure the code so there's less cut-and-paste!
-    if vid==None:
+    if vid is None:
         vid = 'reduced_'+mv.id
     # Note that the averager function returns a variable with meaningless id.
     # The climatology function returns the same id as mv, which we also don't want.
 
-    # The slicers in time.py require getBounds() to work.
-    # If it doesn't, we'll have to give it one.
-    # Setting the _bounds_ attribute will do it.
-    timeax = timeAxis(mv)
-    if timeax is None or len(timeax)<=1:
-        mvseas = mv
-    else:
-        if timeax.getBounds() is None:
-            timeax._bounds_ = timeax.genGenericBounds()
-        mvseas = season.climatology(mv)
-
-    mvseas = select_region(mvseas, region)
+    mvr = select_region(mv, region)
+    mvseas = calculate_seasonal_climatology(mvr, season)
 
     axes = allAxes( mv )
     #axis_names = [ a.id for a in axes if a.id!='lat' and a.id!='lon' and a.id!='time' and\
@@ -1068,7 +1084,7 @@ def reduce2latlon_seasonal( mv, season, region=None, vid=None, exclude_axes=[] )
         avmv = mvseas
     if avmv is None: return avmv
     avmv.id = vid
-    avmv = delete_singleton_axis( avmv, vid='time' )
+
     if hasattr(mv,'units'):
         avmv.units = mv.units
     # >>> special ad-hoc code.  The target units should be provided in an argument, not by this if statement>>>>
@@ -1079,90 +1095,115 @@ def reduce2latlon_seasonal( mv, season, region=None, vid=None, exclude_axes=[] )
 def reduce_time_seasonal( mv, seasons=seasonsyr, region=None, vid=None ):
     """as reduce2lat_seasonal, but all non-time axes are retained.
     """
-    if vid==None:
+
+    avmv = calculate_seasonal_climatology(mv, seasons)
+
+    if vid is None:
         #vid = 'reduced_'+mv.id
         vid = mv.id
+    avmv.id = vid
     # Note that the averager function returns a variable with meaningless id.
     # The climatology function returns the same id as mv, which we also don't want.
 
     mvsr = select_region(mv, region)
 
-    # The slicers in time.py require getBounds() to work.
-    # If it doesn't, we'll have to give it one.
-    # Setting the _bounds_ attribute will do it.
-    timeax = timeAxis(mv)
-    if timeax is None:
-        print "WARNING- no time axis in",mv.id
-        return mv
-    if len(timeax)<=1:
-        avmv = delete_singleton_axis( mvsr, vid='time' )
-        avmv.id = vid
-        if hasattr( mv, 'units' ):
-            avmv.units = mv.units
-        return avmv
-    if timeax.getBounds()==None:
-        timeax._bounds_ = timeax.genGenericBounds()
-    mvseas = seasons.climatology(mvsr)
-    if mvseas is None:
-        print "WARNING- cannot compute climatology for",mv.id,seasons.seasons
-        print "...probably there is no data for times in the requested season."
-        return None
-    avmv = mvseas
-    avmv.id = vid
-    avmv = delete_singleton_axis( avmv, vid='time' )
     if hasattr( mv, 'units' ):
         avmv.units = mv.units
     return avmv
 
 def calculate_seasonal_climatology(mv, season):
+
+    # Convert season to a season object if it isn't already
+    if season is None or season == 'ANN' or season.seasons[0] == 'ANN':
+        season=seasonsyr
+    elif type(season) == str:
+        season=cdutil.times.Seasons(season)
+
+    # print the season the way I want to see it...
+    if type(season.seasons) is list and len(season.seasons)==1:
+        ss = str(season.seasons[0])
+    else:
+        ss = str(season.seasons)
+    if ss=='JFMAMJJASOND':
+        ss = 'ANN'
+#    print "calculating climatology for season : ", ss
+
     tax = timeAxis(mv)
     if tax is None:
         print "WARNING- no time axis in",mv.id
         return mv
     # TODO: how to handle files with missing time axis?
 
-    # The slicers in time.py require getBounds() to work.
-    # If it doesn't, we'll have to give it one.
-    # Setting the _bounds_ attribute will do it.
-    if tax.getBounds()==None:
-        tax._bounds_ = tax.genGenericBounds()
-
     if len(tax)<=1:
     # This is already climatology data, don't try to average over time again
     # The time axis will be deleted shortly anyway.
         mvt = mv
     else:
-        mvt = season.climatology( mv )
-    if mvt is None:
-        print "WARNING- cannot compute climatology for",mv.id,seasons.seasons
-        print "...probably there is no data for times in the requested season."
-        return None
+        # The slicers in time.py require getBounds() to work.
+        # If it doesn't, we'll have to give it one.
+        # Setting the _bounds_ attribute will do it.
+        if tax.getBounds() is None:
+            tax._bounds_ = tax.genGenericBounds()
+            # Special check necessary for LEGATES obs data, because
+            # climatology() won't accept this incomplete specification
+        if tax.units=='months':
+            # Special check necessary for LEGATES obs data, because
+            # climatology() won't accept this incomplete specification
+            tax.units = 'months since 0001-01-01'
+        if tax.units=='month: 1=Jan, ..., 12=Dec':
+            # Special check necessary for CERES obs data.
+            tax.units = 'months since 0001-01-01'
+        if len(tax)==1 and  ((hasattr(ax,'_FillValue') and ax._FillValue in ax) or
+                                (hasattr(ax,'fill_value') and ax.fill_value in ax)):
+            # Time axis of length 1, which is missing!  It's a.s. a (malformed) climo file already.
+            # TODO: print a warning here?
+            mvt = mv
+        else:
+            mv.setAxis(mv.getAxisIndex(tax.id), tax)
+            mvt = season.climatology( mv )
+        if mvt is None:
+            print "WARNING- cannot compute climatology for",mv.id,season.seasons
+            print "...probably there is no data for times in the requested season."
+            return None
 
     # If the time axis has only one point (as it should by now, if it exists at all),
     # the next, averager(), step can't use it because it may not have bounds (or they
     # would be as meaningless as the time value itself).  So get rid of it now:
     mvt = delete_singleton_axis(mvt, vid='time')
+    if hasattr( mv, 'units' ):
+        mvt.units = mv.units
     return mvt
 
 # Moved this here from amwg.py set13 class, because it can be used by all the AMWG classes.
 def interpret_region( region ):
     """Tries to make sense of the input region, and returns the resulting instance of the class
     rectregion in region.py."""
-#    print "jfp interpret_region starting with",region,type(region)
     if region is None:
-        region = "global"
+        region = "Global"
     if type(region) is str:
-        region = defines.all_regions[region]
-#    print "jfp interpet_region returning with",region,type(region)
+        if region in defines.all_regions:
+            region = defines.all_regions[region]
+        else:
+            raise ValueError, "cannot recognize region name %s"%region
+            region = None
+    if region == None:
+        print 'this code should never be hit. please sent smithbe@ornl.gov an email detailing how you got here.'
+        quit()
     return region
 
 def select_region(mv, region=None):
     # Select lat-lon region
-    if region=="global" or region=="Global":
-        mvreg = mv
+    if isinstance(region, rectregion):
+       if region=="global" or region=="Global" or getattr(region,'filekey',None)=="Global"\
+            or str(region)=="Global":
+           mvreg = mv
+       else:
+            region = interpret_region(region)
+            mvreg = mv(latitude=(region[0], region[1]), longitude=(region[2], region[3]))
     else:
-        region = interpret_region(region)
-        mvreg = mv(latitude=(region[0], region[1]), longitude=(region[2], region[3]))
+       # The special cased amwg1
+       print 'region - %s - was not a rectregion. this should probably not get hit' % region
+       quit()
 
     return mvreg
 
@@ -1194,6 +1235,7 @@ def select_lev( mv, slev ):
     else:
         print "ERROR, select_lev() does not support level axis except as first or second dimensions"
         return None
+    mvs = delete_singleton_axis(mvs, vid=levax.id)
     return mvs
 
 def latvar( mv ):
@@ -1550,7 +1592,12 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
     if hasattr(mv1,'units') and hasattr(mv2,'units') and\
             (preferred_units is not None or mv1.units!=mv2.units):
         # Very ad-hoc, but more general would be less safe:
-        if mv1.id[0:8]=="rv_QFLX_" and mv1.units=="kg/m2/s":
+        # BES - set 3 does not seem to call it rv_QFLX. It is set3_QFLX_ft0_climos, so make this just a substring search
+#        if mv1.id[0:8]=="rv_QFLX_" and mv1.units=="kg/m2/s":
+        if mv1.id.find('_QFLX_') and mv1.units=="kg/m2/s":
+            preferred_units="mm/day"
+            mv1.units="mm/s"   # if 1 kg = 10^6 mm^3 as for water
+        if mv1.units=='kg/m2/s' and mv2.units=='mm/day':
             preferred_units="mm/day"
             mv1.units="mm/s"   # if 1 kg = 10^6 mm^3 as for water
         if mv1.units=='mb':
@@ -1638,9 +1685,11 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
                 raise e
             if hasattr(mv1,'id'):  # yes for TransientVariable, no for udunits
                 mv1id = mv1.id
-            mv1 = s*mv1 + i
-            if hasattr(mv1,'id'):
-                mv1.id = mv1id
+            if not ( numpy.allclose(s,1.0) and numpy.allclose(i,0.0) ):
+                # The following line won't work if mv1 be an axis.
+                mv1 = s*mv1 + i
+                if hasattr(mv1,'id'):
+                    mv1.id = mv1id
             mv1.units = target_units
         if changemv2:
             tmp = udunits(1.0,mv2.units)
@@ -1652,9 +1701,11 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
                 raise e
             if hasattr(mv2,'id'):  # yes for TransientVariable, no for udunits
                 mv2id = mv2.id
-            mv2 = s*mv2 + i
-            if hasattr(mv2,'id'):
-                mv2.id = mv2id
+            if not ( numpy.allclose(s,1.0) and numpy.allclose(i,0.0) ):
+                # The following line won't work if mv1 be an axis.
+                mv2 = s*mv2 + i
+                if hasattr(mv2,'id'):
+                    mv2.id = mv2id
             mv2.units = target_units
     return mv1, mv2
 
@@ -1695,8 +1746,6 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
         new_axes1 = axes1[1:]
     if len(axes2)>=3 and len(axes2[0])==1:
         new_axes2 = axes2[1:]
-    if len(new_axes1)<len(axes1) or len(new_axes2)<len(axes2):
-        return aminusb_2ax( mv1, mv2, new_axes1, new_axes2 )
 
     # What if an axis is missing?  This is rare, as the two axes are usually lat-lon and practically
     # all variables with physical meaning depend on lat-lon.  But this can happen, e.g. gw=gw(lat).
@@ -1814,12 +1863,12 @@ def delete_singleton_axis( mv, vid=None ):
     saxis = None
     si = None
     for i in range(len(axes)):
-        if len(axes[i])==1 and (vid==None or axes[i].id==vid):
+        if len(axes[i])==1 and (vid is None or axes[i].id==vid):
             saxis = axes[i]
             si = i
             del axes[si]
             break
-    if saxis==None: return mv
+    if saxis is None: return mv
     mv = mv(squeeze=1)  # C.D. recommended instead of following; preserves missing values
     return mv
     #data = ma.copy( mv.data )
@@ -1864,7 +1913,7 @@ def common_axis( axis1, axis2 ):
         units2 = axis2.units.lower().replace(' ','_')
     else:
         units2 = None
-    if units1!=None and units2!=None and units1 != units2:
+    if units1 is not None and units2 is not None and units1 != units2:
         if axis1.isTime() and axis2.isTime():
             axis2.toRelativeTime( units1, axis1.getCalendar() )  #probably will change input argument
         else:
@@ -1879,7 +1928,7 @@ def common_axis( axis1, axis2 ):
         if len(axis1)==1 and len(axis2)==1:
             # There's just one time value, probably from averaging over time.  The time value is meaningless
             # but it would be messy to have two.
-            return (axis1,[0],[0])
+            return axis1,[0],[0]
 
     # to do: similar checks using isLatitude and isLongitude and isLevel <<<<<<
     # Also, transfer long_name, standard_name, axis attributes if in agreement;
@@ -1899,7 +1948,7 @@ def common_axis( axis1, axis2 ):
         vid = None
     axis3 = cdms2.createAxis( a3, bounds=None, id=vid )
     axis3.units = units1
-    return (axis3,a1indexina3,a2indexina3)
+    return axis3,a1indexina3,a2indexina3
 
 def convert_axis( mv, axisold, axisindnew ):
     """Not much tested - I decided against doing overlapping line plots this way.
@@ -1914,7 +1963,7 @@ def convert_axis( mv, axisold, axisindnew ):
     kold = None
     for k in range(len(axes)):
         if axes[k]==axisold: kold=k
-    if kold==None:
+    if kold is None:
         print "ERROR. convert_axis cannot find axis",axisold," in variable",mv
     if len(axisold)==len(axisnew):
         mv.setAxis( kold, axisnew )
@@ -2008,7 +2057,7 @@ def run_cdscan( fam, famfiles, cache_path=None ):
                 print "WARNING, cannot find time units; will try to continue",famfiles[0]
                 cdscan_line = 'cdscan -q '+'-x '+xml_name+' -e time.units="'+time_units+'" '+\
                     ' '.join(famfiles)
-    #print "cdscan_line=",cdscan_line
+    print "cdscan_line=",cdscan_line
     proc = subprocess.Popen([cdscan_line],shell=True)
     proc_status = proc.wait()
     if proc_status!=0: 
@@ -2086,14 +2135,14 @@ class reduced_variable(ftrow,basic_id):
     # In reality we will have a more generic function, and some additional parameters.
     # So this reduction function will typically be specified as a lambda expression, e.g.
     # (lambda mv: return zonal_mean( mv, sourcefile, -20, 20 )
-    def __init__( self, fileid=None, variableid='', timerange=None,\
-                      latrange=None, lonrange=None, levelrange=None,\
-                      season=seasonsyr, region=None, reduced_var_id=None,\
-                      reduction_function=(lambda x,vid=None: x),\
-                      filetable=None, filefilter=None, axes=None, duvs={}, rvs={}
+    def __init__( self, fileid=None, variableid='', timerange=None,
+                  latrange=None, lonrange=None, levelrange=None,
+                  season=seasonsyr, region=None, reduced_var_id=None,
+                  reduction_function=(lambda x,vid=None: x),
+                  filetable=None, filefilter=None, axes=None, duvs={}, rvs={}
                   ):
         self._season = season
-        self._region = region # this could probably change lat/lon range, or lat/lon ranges could be passed in
+        self._region = interpret_region(region) # this could probably change lat/lon range, or lat/lon ranges could be passed in
         if reduced_var_id is not None:
             basic_id.__init__( self, reduced_var_id )
         else:
@@ -2108,7 +2157,7 @@ class reduced_variable(ftrow,basic_id):
         #    self._vid = ""      # self._vid is deprecated
         #else:
         #    self._vid = reduced_var_id      # self._vid is deprecated
-        if filetable==None:
+        if filetable is None:
             print "WARNING.  No filetable specified for reduced_variable instance",variableid
         self._filetable = filetable
         self._filefilter = filefilter  # used to filter results of search in filetable
@@ -2164,7 +2213,7 @@ class reduced_variable(ftrow,basic_id):
                                            level_range=self.levelrange,
                                            seasonid=self._season.seasons[0],
                                            filefilter=self._filefilter )
-        if rows==None or len(rows)<=0:
+        if rows is None or len(rows)<=0:
             return None
 
         # To make it even easier on the first cut, I won't worry about missing data and
@@ -2287,6 +2336,9 @@ class reduced_variable(ftrow,basic_id):
                 taxis.id = f[self.variableid].id
                 reduced_data = self._reduction_function( taxis, vid=vid )
             else:
+                print "Reduce failed to find variable",self.variablid,"in file",filename
+                print "It did find variables",f.variables.keys()
+                print "and axes",f.axes.keys()
                 raise Exception
             if reduced_data is not None:
                 reduced_data._vid = vid

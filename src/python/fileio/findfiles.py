@@ -219,76 +219,61 @@ class basic_datafiles:
         if os.path.isfile(cachefile):
             os.remove(cachefile)
 
-def path2filetable( opts, pathid=None, obsid=None, path=None, filter=None ):
-    """Convenient way to make a filetable.  Inputs: opts is an Options object, containing a 'cachepath' and
-    maybe a 'dsname' option.  path is the path to the root of the directory tree containing the files to be
-    indexed (or path can be a list of such paths).  filter is a filter inheriting from basic_filter, or None,
-    or a string which can be evaluated to such a filter."""
-    datafiles = dirtree_datafiles( opts, pathid=pathid, obsid=obsid, path=path, filter=filter )
+def path2filetable( opts, modelid=None, obsid=None):
+    """Convenient way to make a filetable. Inputs: opts is an Options object, containing at least:
+       'cachepath', and one or more 'model' or 'obs' objects. modelid and obsid are indeces into the
+       model/obs object arrays.
+    """
+    datafiles = dirtree_datafiles( opts, modelid=modelid, obsid=obsid)
     filetable = datafiles.setup_filetable()
-    if path is not None and pathid is not None:
-        opts['path'][pathid] = path
-    elif path is not None and obsid is not None:
-        opts['path'][obsid] = path
     return filetable
 
 class dirtree_datafiles( basic_datafiles ):
-    def __init__( self, options, pathid=None, obsid=None, path=None, filter=None ):
+    def __init__( self, options, modelid=None, obsid=None ):
         """Finds all the data files in the directory tree specified one of two ways:
-        (1) (deprecated) inside the options structure, as specified by a path or obs ID. 
+        (1) (undeprecated) inside the options structure, as specified by a path or obs ID. 
         An optional filter, of type basic_filter can be passed to options as well.
-        pathid and obsid are numbers, usually 0 or 1, for looking up paths in the Options object.
-        (2) explicitly set the path through the keyword argument (It can be a string; or a list of strings
+        modelid and obsid are numbers, usually 0 or 1, for looking up paths in the Options object.
+        (2) (deprecated) explicitly set the path through the keyword argument (It can be a string; or a list of strings
         to specify multiple paths).  In this case the filter, if any,
         also must be specified through the keyword argument.  The Options object will still
         be used for the cache path."""
 
         self.opts = options
         self._root = None
+        self._type = None
         filt = None
 
-        if path is None:
-            if self.opts['filter']=='None' or self.opts['filter']=='':
-                filt = None
-            elif self.opts['filter'] != None:
-               filt = self.opts['filter']
-            if((self.opts['path'] == None and pathid != None) or (self.opts['obspath'] == None and obsid != None)):
-               self._root = None
-               self._filt = None
-               self.files = []
-               return None
-
-            if pathid != None:
-               root = [ self.opts['path'][pathid] ]
-            elif obsid != None:
-               root = [ self.opts['obspath'][obsid] ]
-            else:
-               print "don't understand root directory ",self._root 
-               quit()
-            if root is None or (type(root) is list and None in root):
-               self._root = None
-               self._filt = None
-               self.files = []
-               return None
-        else:
-            if type(path) is str:
-                root = [path]
-            else:
-                root = path
-            filt = filter
+        if modelid == None and obsid == None:
+            self._root = None
+            self._filt = None
+            self.files = []
+            return None
+        if modelid == None: # We were passed an obs set
+            obj = self.opts['obs'][obsid]
+            self._index = obsid
+        else: # we were passed a model set
+            obj = self.opts['model'][modelid]
+            self._index = modelid
+        if obj['path'] == None: # However, the object desired has no path information.
+            self._root = None
+            self._filt = None
+            self.files = []
+            return None
+        root = obj['path']
+        if type(root) is str:
+            root = [root]
 
         root = [ os.path.expanduser(r) for r in root ]
         root = [ r if r[0:5]=='http:' else os.path.abspath(r) for r in root ]
+        filt = obj['filter']
 
         if filt is None or filt=="": 
            filt=basic_filter()
-        elif path is None:
-           filt = eval(str(self.opts['filter']))
         elif type(filt) is str:
-            filt = eval(str(filter))
-        else:
-            filt = filter
+           filt = eval(str(filt))
 
+        self._type = obj['type']
         self._root = root
         self._filt = filt
         self.files = []
@@ -315,8 +300,8 @@ class dirtree_datafiles( basic_datafiles ):
         return self.files
 
     def short_name(self):
-        if self.opts.get('dsname',None) != None and pathid != None:
-            return self.opts['dsname'][pathid]
+        if self.opts[self._type][self._index]['name'] != None:
+            return self.opts[self._type][self._index]['name'] 
         elif len(self._filt.mystr())>0:
             return ','.join(['_'.join([os.path.basename(str(r)),self._filt.mystr()])
                              for r in self._root])   # <base directory> <filter name>
@@ -396,7 +381,7 @@ def extract_filefamilyname( filename ):
 if __name__ == '__main__':
    o = Options()
    o.processCmdLine()
-   # pathid 0 is the minimum required to get this far in processCmdLine()
-   datafiles = dirtree_datafiles(o, pathid=0)
+   # modelid 0 is the minimum required to get this far in processCmdLine()
+   datafiles = dirtree_datafiles(o, modelid=0)
 
 

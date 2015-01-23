@@ -79,73 +79,47 @@ def setnum( setname ):
         setnumber = setname[index1:index1+index2]
     return setnumber
 
-def run_diagnostics_from_options( opts1 ):
+def run_diagnostics_from_options( opts ):
     # Input is one or two instances of Options, normally two.
     # Each describes one data set.  The first will also be used to determine what to do with it,
     # i.e. what to plot.
 
-    path1 = None
-    path2 = None
-    filt1 = None
-    filt2 = None
+    modelfts = []
+    obsfts = []
+    for i in range(len(opts['model'])):
+         modelfts.append(path2filetable(opts, modelid = i))
+    for i in range(len(opts['obs'])):
+         obsfts.append(path2filetable(opts, obsid = i))
 
-    if type(opts1['path']) is str:
-        path1 = opts1['path']
-    if type(opts1['path']) is list and type(opts1['path'][0]) is str:
-        pathdict = {}
-        for i in range(len(opts1['path'])):
-            pathdict[i+1] = opts1['path'][i]
-        path1 = pathdict[1]
-        if 2 in pathdict:
-            path2 = pathdict[2]
-        opts1['path'] = pathdict
-    if type(opts1['filter']) is str:
-        filt1 = opts1['filter']
-    #if len(opts1['new_filter'])>0:
-    #    filt1 = opts1['new_filter'][0]
- 
-    filetable1 = path2filetable( opts1, path=path1, filter=filt1 )
 
-    if path2 is None:
-        if type(opts1['path2']) is str:
-            path2 = opts1['path2']
-        if type(opts1['path2']) is list and len(opts1['path2']) != 0:
-            if type(opts1['path2'][0]) is str:
-               path2 = opts1['path2'][0]
-    if path2 is not None:
-        if type(opts1['filter2']) is str:
-            filt2 = opts1['filter2']
-        #if len(opts1['new_filter'])>1:
-        #    filt2 = opts1['new_filter'][1]
+    run_diagnostics_from_filetables( opts, modelfts, obsfts )
 
-    if path2 is None:
-      filetable2 = None
-    else:
-       filetable2 = path2filetable( opts1, path=path2, filter=filt2 )
-
-    run_diagnostics_from_filetables( opts1, filetable1, filetable2 )
-
-def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
+def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
     """Runs the diagnostics.  The data is specified by the filetables.
     Most other choices, such as the plot sets, variables, and seasons, are specified in opts,
     an instance of Options."""
+    filetable1 = modelfts[0]
+    if len(obsfts) == 0:
+         filetable2 = None
+    else:
+         filetable2 = obsfts[0]
 
-    outdir = opts['outputdir']
+    outdir = opts['output']['outputdir']
     if outdir is None:
         outdir = os.path.join(os.environ['HOME'],"tmp","diagout")
         print 'Writing output to %s. Override with --outputdir option' % outdir
 
-    basename = opts['outputpre']
-    postname = opts['outputpost']
+    basename = opts['output']['prefix']
+    postname = opts['output']['postfix']
       
     # Note:verifyOptions() should prevent this from being none. There used to be a quit() in
     # there but I removed it. (BES)
-    if opts['packages'] is None:
+    if opts['package'] is None:
         print 'Please specify a package name'
         quit()
 #        packages = ['AMWG']
     else:
-        packages = opts['packages']
+        package = opts['package']
     seasons = opts.get( 'seasons', None )
     if seasons is None or seasons==[]:
         seasons = opts.get( 'times', None )
@@ -158,22 +132,27 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
         opts['varopts'] = [None]
 
     number_diagnostic_plots = 0
-    dm = diagnostics_menu()                 # dm = diagnostics menu (packages), a dict
+    dm = diagnostics_menu()                 # dm = diagnostics menu (package), a dict
 
-    if opts['plots'] == True:
+    if opts['output']['plots'] == True:
         vcanvas = vcs.init()
         vcanvas.setcolormap('bl_to_darkred') #Set the colormap to the NCAR colors
+        if opts['plotlogo']==False:
+            vcanvas.drawlogooff()
         vcanvas2 = vcs.init()
         vcanvas2.portrait()
         vcanvas2.setcolormap('bl_to_darkred') #Set the colormap to the NCAR colors
+        if opts['plotlogo']==False:
+            vcanvas2.drawlogooff()
 #       vcanvas3 = vcs.init()
+        savePNG = False
         LINE = vcanvas.createline('LINE', 'default')
         LINE.width = 3.0
         LINE.type = 'solid'
         LINE.color = 242
 
 
-    for pname in packages:
+    for pname in [ package ]: # converted to jsut a string; too much work to fix indents right now REVISIT THOUGH
         pclass = dm[pname.upper()]()
         # Find which plotsets the user requested which this package offers:
         sm = pclass.list_diagnostic_sets()  # sm = plot set menu, a dict
@@ -201,7 +180,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
             sclass = sm[sname]
             seasons = list( set(seasons) & set(pclass.list_seasons()) )
             for seasonid in seasons:
-                variables = pclass.list_variables( filetable1, filetable2, sname  )
+                variables = pclass.list_variables( modelfts, obsfts, sname  )
                 if sclass.number=='1' and pname.upper() == 'AMWG':
                     # Plot set 1 (the table) ignores variable specifications - it does all variables in
                     # its internal list.  To make the code work unchanged, choose one:
@@ -213,7 +192,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                         print "among",pclass.list_variables( filetable1, filetable2, sname  )
                 for varid in variables:
                     print "variable",varid,"season",seasonid
-                    vard = pclass.all_variables( filetable1, filetable2, sname )
+                    vard = pclass.all_variables( modelfts, obsfts, sname )
                     plotvar = vard[varid]
 
                     # Find variable options.  If none were requested, that means "all".
@@ -244,24 +223,24 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                         # hoping to change that in a future release. Also, I can see this being useful for amwg set 1.
                         # (Basically, if we output pre-defined json for the tables they can be trivially sorted)
                         if '5' in snum and pname.upper() == 'LMWG' and opts['json'] == True:
-                           plot = sclass( filetable1, filetable2, varid, seasonid, region, vvaropts[aux], jsonflag=True )
+                           plot = sclass( modelfts, obsfts, varid, seasonid, region, vvaropts[aux], jsonflag=True )
                         else:
-                           plot = sclass( filetable1, filetable2, varid, seasonid, region, vvaropts[aux] )
+                           plot = sclass( modelfts, obsfts, varid, seasonid, region, vvaropts[aux] )
                         res = plot.compute(newgrid=-1) # newgrid=0 for original grid, -1 for coarse
                         if res is not None and len(res)>0:
-                            if opts['plots'] == True:
-#                                vcanvas = vcs.init()
-#                                vcanvas.setcolormap('bl_to_darkred') #Set the colormap to the NCAR colors
-#                                vcanvas2 = vcs.init()
-#                                vcanvas2.portrait()
-#                                vcanvas2.setcolormap('bl_to_darkred') #Set the colormap to the NCAR colors
-#                                try:
-#                                   LINE = vcanvas.createline('LINE', 'default')
-#                                except:
-#                                   LINE = vcanvas.getline('LINE')
-#                                LINE.width = 3.0
-#                                LINE.type = 'solid'
-#                                LINE.color = 242
+                            if opts['output']['plots'] == True:
+                            #    vcanvas = vcs.init()
+                            #    vcanvas.setcolormap('bl_to_darkred') #Set the colormap to the NCAR colors
+                            #    vcanvas2 = vcs.init()
+                            #    vcanvas2.portrait()
+                            #    vcanvas2.setcolormap('bl_to_darkred') #Set the colormap to the NCAR colors
+                            #    try:
+                            #       LINE = vcanvas.createline('LINE', 'default')
+                            #    except:
+                            #       LINE = vcanvas.getline('LINE')
+                            #    LINE.width = 3.0
+                            #    LINE.type = 'solid'
+                            #    LINE.color = 242
                                 rdone = 0
 
                                 # At this loop level we are making one compound plot.  In consists
@@ -329,8 +308,16 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                        rsr_presentation = rsr.presentation
                                        #rsr_presentation.list()
                                        for varIndex, var in enumerate(rsr.vars):
-                                           if len(var)<=1:
-                                               print "INFO: won't plot short variable",var.id
+                                           if hasattr(var,'size'):
+                                               lenvar = var.size
+                                               # Note that len(var) won't work, it only picks up the first
+                                               # dimension, i.e. var.shape[0].
+                                           elif type(var) is tuple or type(var) is list:
+                                               lenvar = sum([v.size for v in var])
+                                           else:
+                                               lenvar =len(var)
+                                           if lenvar<=1:
+                                               print "INFO: won't plot short variable",var.id,var.shape
                                                continue
                                            savePNG = True
                                            seqsetattr(var,'title',title)
@@ -359,24 +346,23 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                                    # and if id doesn't exist, the system will create one before plotting!
 
                                                vname = vname.replace('/', '_')
-                                               if basename == None and postname == None:
-                                                  fname = outdir+'/figure-set'+snum+'_'+rname+'_'+seasonid+'_'+\
-                                                      vname+'_plot-'+str(r)+'.png'
-                                                  print "writing png file",fname
+                                               rname_rectregion = defines.all_regions[rname]
+                                               region_filekey = rname_rectregion.filekey
+                                               if basename is not None:
+                                                   fname = outdir+'/'+basename+'figure-set'+snum+'_'+region_filekey+'_'+\
+                                                       seasonid+'_'+vname+'_plot-'+str(r)
                                                else:
-                                                  pname = postname
-                                                  if pname == None:
-                                                      pname = ''
-                                                  if basename == '' or basename == None:
-                                                      basename = 'set'+snum
-                                                  if '_obs' in vname or '_diff' in vname:
-                                                      if '_diff' in vname:
-                                                          pname = postname+'_diff'
-                                                      # Note postname will have the obsfile key and things like _NP
-                                                      fname = outdir+'/'+basename+'_'+seasonid+'_'+varid+pname+'.png'
-                                                      print "writing png file1",fname, vname
-                                                  else:
-                                                      fname = 'junk.png'
+                                                   fname = outdir+'/figure-set'+snum+'_'+region_filekey+'_'\
+                                                       +seasonid+'_'+vname+'_plot-'+str(r)
+                                               if postname is not None:
+                                                   fname = fname+postname
+                                               fname+='.png'
+                                               if basename is None and postname is None:
+                                                   print "writing png file0",fname
+                                               else:
+                                                   print "writing png file1",fname,"for",vname
+                                               if len(fname)>255:
+                                                   print "file name too long",fname
                                                #rsr_presentation.script("jeff.json")   #example of writing a json file
 
                                            if vcs.isscatter(rsr.presentation) or plot.number in ['11', '12']: 
@@ -500,7 +486,7 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                                vcanvas.png( fname, ignore_alpha=True )
 
                                            rdone += 1
-                            if opts['xml'] == True:
+                            if opts['output']['xml'] == True:
                                # Also, write the nc output files and xml.
                                # Probably make this a command line option.
                                if res.__class__.__name__ is 'uvc_composite_plotspec':
@@ -510,23 +496,24 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                    resc = uvc_composite_plotspec( res )
                                    filenames = resc.write_plot_data("xml-NetCDF", outdir )
                                print "wrote plots",resc.title," to",filenames
-                            if opts['plots']==True:
-                                if tmmobs[0] is not None:  # If anything was plotted to vcanvas2
+                            if opts['output']['plots']==True:
+                                if savePNG and tmmobs[0] is not None:  # If anything was plotted to vcanvas2
                                     vname = varid.replace(' ', '_')
                                     vname = vname.replace('/', '_')
-                                    if basename == None and postname == None:
-                                       fname = outdir+'/figure-set'+snum+'_'+rname+'_'+seasonid+'_'+vname+'_plot-'+str(r)+'.png'
+                                    if basename is None and postname is None:
+                                       fname = outdir+'/figure-set'+snum+'_'+region_filekey+'_'+\
+                                           seasonid+'_'+vname+'_plot-'+str(r)+'.png'
                                     else:
                                        pname = postname
-                                       if pname == None:
+                                       if pname is None:
                                           pname = ''
-                                       if basename == '':
+                                       if basename == '' or basename is None:
                                           basename = 'set'+snum
                                        if '_obs' in vname or '_diff' in vname:
                                           if '_diff' in vname:
                                              pname = postname+'_diff'
                                              # Note postname will have the obsfile key and things like _NP
-                                       fname = outdir+'/'+basename+'_'+seasonid+'_'+varid+pname+'-combined.png'
+                                       fname = outdir+'/'+basename+'_'+region_filekey+'_'+seasonid+'_'+varid+pname+'-combined.png'
                                        print "writing png file2",fname
                                     vcanvas2.png( fname , ignore_alpha = True)
                                     number_diagnostic_plots += 1

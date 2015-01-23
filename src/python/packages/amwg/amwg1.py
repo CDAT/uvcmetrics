@@ -18,45 +18,48 @@ import cdutil.times, numpy
 
 # The following two functions were originally in plot set 4, but I moved them out because they
 # are needed also for plot set 1.
-def reduced_variables_press_lev( filetable, varid, season, filefilter=None, rf=None):
+def reduced_variables_press_lev( filetable, varid, season, region='Global', filefilter=None, rf=None):
     """Returns a dictionary of a reduced variable for the specified variable id (string) and season
     using the supplied filetable.  The variable must have a level axis using pressure coordinates.
     The reduction function may be supplied as rf but will default to that used in AMWG plot set 4.
     """
     season = season2Season(season)
+    region = interpret_region(region)
+    print 'region in: ', region
     if filetable is None:
         return {}
     if rf is None:  # default can't be specified in the args because it depends on season
-        rf = (lambda x,vid=None,season=season: reduce2levlat_seasonal(x,season,vid=vid)) 
+        rf = (lambda x,vid=varid,season=season,region=region: reduce2levlat_seasonal(x,season,region,vid)) 
     reduced_varlis = [
         reduced_variable(
             variableid=varid, filetable=filetable, season=season, filefilter=filefilter,
             reduction_function=rf ) ]
     reduced_variables = { v.id():v for v in reduced_varlis }
     return reduced_variables
-def reduced_variables_hybrid_lev( filetable, varid, season, filefilter=None, rf=None, rf_PS=None ):
+def reduced_variables_hybrid_lev( filetable, varid, season, region='Global', filefilter=None, rf=None, rf_PS=None ):
     """Returns a dictionary of reduced variables needed for the specified variable id (string) and
     season using the supplied filetable.  The variable must have a level axis using hybrid coordinates.
     Some of the reduction functions may be supplied but will default to that used in AMWG plot set 4:
     rf for the variable varid and rf_PS for PS
     """
     season = season2Season(season)
+    region=interpret_region(region)
     if filetable is None:
         return {}
     if rf is None:  # default can't be specified in the args because it depends on season
-        rf=(lambda x,vid=None,season=season: reduce2levlat_seasonal(x,season,vid=vid))
+        rf=(lambda x,vid=varid,season=season,region=region: reduce2levlat_seasonal(x,season,region,vid))
     if rf_PS is None:  # default can't be specified in the args because it depends on season
-        rf_PS=(lambda x,vid=None,season=season: reduce2lat_seasonal(x,season,vid=vid))
+        rf_PS=(lambda x,vid=varid,season=season,region=region: reduce2lat_seasonal(x,season,region,vid))
     reduced_varlis = [
         reduced_variable(
             variableid=varid, filetable=filetable, season=season, filefilter=filefilter,
             reduction_function=rf ),
         reduced_variable(      # hyam=hyam(lev)
             variableid='hyam', filetable=filetable, season=season, filefilter=filefilter,
-            reduction_function=(lambda x,vid=None: x) ),
+            reduction_function=(lambda x, vid=None, region=region: select_region(x, region)) ),
         reduced_variable(      # hybm=hybm(lev)
             variableid='hybm', filetable=filetable, season=season, filefilter=filefilter,
-            reduction_function=(lambda x,vid=None: x) ),
+            reduction_function=(lambda x, vid=None, region=region: select_region(x, region)) ),
         reduced_variable(
             variableid='PS', filetable=filetable, season=season, filefilter=filefilter,
             reduction_function=rf_PS ) ]
@@ -64,7 +67,7 @@ def reduced_variables_hybrid_lev( filetable, varid, season, filefilter=None, rf=
     return reduced_variables
 
 class amwg_plot_set1(amwg_plot_spec):
-    name = '1 - Tables of global, tropical, and extratropical DJF, JJA, ANN means and RMSE'
+    name = '1 - Tables of Global, tropical, and extratropical DJF, JJA, ANN means and RMSE'
     number = '1'
     # table row specs:
     #   var variable name, mandatory (other entries are optional)
@@ -72,6 +75,9 @@ class amwg_plot_set1(amwg_plot_spec):
     #   lev level (in millibars) to which variable is restricted
     #   obsprint obs name to be printed (default is obs)
     #   units units of the output quantity (default is same as the input files)
+
+    # This is essentially duplicated in amwgmaster.
+
     table_row_specs = [
         { 'var':'RESTOM'},
         { 'var':'RESSURF'},
@@ -139,33 +145,56 @@ class amwg_plot_set1(amwg_plot_spec):
         ]
 
     # These also appear, in another form, in frontend/defines.py.
-    regions = { 'global':(-90,90),
-                'tropics (20S-20N)':(-20,20),
-                'tropics':(-20,20),
-                'southern extratropics (90S-20S)':(-90,-20),
-                'southern extratropics':(-90,-20),
-                'northern extratropics (20N-90N)':(20,90),
-                'northern extratropics':(20,90)
+    regions = { 'Global':(-90,90),
+    #            'Tropics (20S-20N)':(-20,20),
+                'Tropics':(-20,20),
+    #            'Southern_Extratropics (90S-20S)':(-90,-20),
+                'Southern_Extratropics':(-90,-20),
+    #            'Northern_Extratropics (20N-90N)':(20,90),
+                'Northern_Extratropics':(20,90)
                 }
     regions_reversed = {
-        (-90,90):'global',
-        (-20,20):'tropics',
-        (-90,-20):'southern extratropics',
-        (20,90):'northern extratropics'
+        (-90,90):'Global',
+        (-20,20):'Tropics',
+        (-90,-20):'Southern_Extratropics',
+        (20,90):'Northern_Extratropics'
         }
+
+    def getfts(self, model, obs):
+        if len(model) == 2:
+#           print 'Two models'
+           filetable1 = model[0]
+           filetable2 = model[1]
+        if len(model) == 1 and len(obs) == 1:
+#           print 'Model and Obs'
+           filetable1 = model[0]
+           filetable2 = obs[0]
+        if len(obs) == 2: # seems unlikely but whatever
+#           print 'Two obs'
+           filetable1 = obs[0]
+           filetable2 = obs[1]
+        if len(model) == 1 and (obs != None and len(obs) == 0):
+#           print 'Model only'
+           filetable1 = model[0]
+           filetable2 = None
+        if len(obs) == 1 and (model != None and len(model) == 0): #also unlikely
+#           print 'Obs only'
+           filetable1 = obs[0]
+           filetable2 = None
+        return filetable1, filetable2
 
     class myrow:
         # represents a row of the output table.  Here's an example of what a table row would look like:
         # TREFHT_LEGATES   298.423             298.950            -0.526         1.148
-        def __init__( self, filetable1, filetable2, seasonid='ANN', region='global', var='TREFHT',
+        def __init__( self, filetable1, filetable2, seasonid='ANN', region='Global', var='TREFHT',
                       obs=None, obsprint=None, lev=None, units=None ):
             # inputs are test (model) and control (obs) filetables, a season name (e.g. 'DJF'),
             # a region name (e.g. 'tropics'), a variable name (e.g. 'TREFHT'),
             # an obs name (e.g. 'CERES'), and, if necessary, a level in millibars.
-            if lev is None:
-                print "Building table row for var=",var,"obs=",obs
-            else:
-                print "Building table row for var=",var,"obs=",obs,"lev=",lev
+#            if lev is None:
+#                print "Building table row for var=",var,"obs=",obs
+#            else:
+#                print "Building table row for var=",var,"obs=",obs,"lev=",lev
             self.filetable1 = filetable1
             if obs is None:
                 self.filetable2 = None
@@ -181,7 +210,7 @@ class amwg_plot_set1(amwg_plot_spec):
             if region in amwg_plot_set1.regions.keys():
                 self.region = region
             else:
-                self.region='global'
+                self.region='Global'
             if obsprint is None: obsprint=obs
             self.rowname = '_'.join([ s for s in [var,obsprint,lev] if s is not None])
             self.var = var
@@ -262,7 +291,9 @@ class amwg_plot_set1(amwg_plot_spec):
                 ffilt = f_climoname(filefam)
             else:
                 ffilt = None
-            domrange = amwg_plot_set1.regions[self.region]
+            region = interpret_region(self.region)
+            domrange = (region[0], region[1])
+#            domrange = amwg_plot_set1.regions[self.region]
             if filetable.find_files( 'gw',filefilter=ffilt ):
                 # data has Gaussian weights, prefer them over the averager's default
                 gw = reduced_variable(
@@ -318,7 +349,8 @@ class amwg_plot_set1(amwg_plot_spec):
             output = [str(self.values[0])]+[self.fpfmt(v) for v in self.values[1:]]
             return '\t'.join(output)
 
-    def __init__( self, filetable1, filetable2, varid='ignored', seasonid='ANN', region='global', aux='ignored' ):
+    def __init__( self, model, obssets, varid='ignored', seasonid='ANN', region='Global', aux='ignored' ):
+        filetable1, filetable2 = self.getfts(model, obssets)
         # Inputs: filetable1 is the filetable for the test case (model) data.
         # filetable2 is a file table for all obs data.
         # seasonid is a season string, e.g. 'DJF'.  Region is the name of a zonal region, e.g.
@@ -327,12 +359,12 @@ class amwg_plot_set1(amwg_plot_spec):
             # Brian's numerical region, or an instance of the similar rectregion class.
             # Ignore if it doesn't match one we have.
             if region[2]!=-180 or region[3]!=180:
-                region = 'global'
+                region = 'Global'
             else:
                 region = ( region[0], region[1] )
-                region = amwg_plot_set1.regions_reversed.get( region, 'global' )
+                region = amwg_plot_set1.regions_reversed.get( region, 'Global' )
         if region is None:
-            region = 'global'
+            region = 'Global'
         self.title = ' '.join(['AMWG Diagnostics Set 1',seasonid,'means',str(region)])+'\n'
         self.subtitles = [
             ' '.join(['Test Case:',id2str(filetable1._id)])+'\n',
@@ -367,11 +399,16 @@ class amwg_plot_set1(amwg_plot_spec):
             fname = (self.title.strip()+'.text').replace(' ','_')
         filename = os.path.join(where,fname)
         return filename
-    def write_plot_data( self, format="text", where="" ):
+    def write_plot_data( self, format="text", where="", fname="" ):
         """writes to the specified location, which may be a directory path or sys.stdout.
         The only allowed format is text"""
+        print 'IN AMWG1 WRITE PLOT'
         self.ptype = "text"
-        filename = self.outfile( format, where )
+        if fname != "":
+           print 'filename was: ', fname
+           filename = fname
+        else:
+           filename = self.outfile( format, where )
         writer = open( filename, 'w' )
         writer.write( self.__repr__() )
         writer.close()

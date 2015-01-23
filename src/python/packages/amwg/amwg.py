@@ -10,49 +10,64 @@ from metrics.computation.plotspec import *
 from metrics.frontend.uvcdat import *
 from metrics.common.id import *
 from metrics.fileio import stationData
+from metrics.packages.amwg.derivations import *
 from unidata import udunits
 import cdutil.times, numpy
 from numbers import Number
 from pprint import pprint
 
+seasonsyr=cdutil.times.Seasons('JFMAMJJASOND')
+
 class AMWG(BasicDiagnosticGroup):
     """This class defines features unique to the AMWG Diagnostics."""
     def __init__(self):
         pass
-    def list_variables( self, filetable1, filetable2=None, diagnostic_set_name="" ):
+    def list_variables( self, model, obs, diagnostic_set_name="" ):
         if diagnostic_set_name!="":
             # I added str() where diagnostic_set_name is set, but jsut to be sure.
             # spent 2 days debuging a QT Str failing to compare to a "regular" python str
             dset = self.list_diagnostic_sets().get( str(diagnostic_set_name), None )
 
             if dset is None:
-                return self._list_variables( filetable1, filetable2 )
+                return self._list_variables( model, obs )
             else:   # Note that dset is a class not an object.
-                return dset._list_variables( filetable1, filetable2 )
+                return dset._list_variables( model, obs )
         else:
-            return self._list_variables( filetable1, filetable2 )
+            return self._list_variables( model, obs )
     @staticmethod
-    def _list_variables( filetable1, filetable2=None, diagnostic_set_name="" ):
-        return BasicDiagnosticGroup._list_variables( filetable1, filetable2, diagnostic_set_name )
+    def _list_variables( model, obs, diagnostic_set_name="" ):
+        return BasicDiagnosticGroup._list_variables( model, obs, diagnostic_set_name )
     @staticmethod
-    def _all_variables( filetable1, filetable2, diagnostic_set_name ):
-        return BasicDiagnosticGroup._all_variables( filetable1, filetable2, diagnostic_set_name )
-    def list_variables_with_levelaxis( self, filetable1, filetable2=None, diagnostic_set="" ):
+    def _all_variables( model, obs, diagnostic_set_name ):
+        return BasicDiagnosticGroup._all_variables( model, obs, diagnostic_set_name )
+    def list_variables_with_levelaxis( self, model, obs, diagnostic_set="" ):
         """like list_variables, but only returns variables which have a level axis
         """
-        return self._list_variables_with_levelaxis( filetable1, filetable2, diagnostic_set )
+        return self._list_variables_with_levelaxis( model, obs, diagnostic_set )
     @staticmethod
-    def _list_variables_with_levelaxis( filetable1, filetable2=None, diagnostic_set_name="" ):
+    def _list_variables_with_levelaxis( model, obs, diagnostic_set_name="" ):
         """like _list_variables, but only returns variables which have a level axis
         """
-        if filetable1 is None: return []
-        vars1 = filetable1.list_variables_with_levelaxis()
-        if not isinstance( filetable2, basic_filetable ): return vars1
-        vars2 = filetable2.list_variables_with_levelaxis()
-        varset = set(vars1).intersection(set(vars2))
-        vars = list(varset)
-        vars.sort()
-        return vars
+        if len(model) == 0 and len(obs) == 0: return []
+        if len(model) != 0:
+            vlist = model[0].list_variables_with_levelaxis()
+        elif len(obs) != 0:
+            vlist = obs[0].list_variables_with_levelaxis()
+
+        for i in range(len(model)):
+            if not isinstance (model[i], basic_filetable ): pass
+            if model[i].nrows() == 0: pass
+            nvlist = model[i].list_variables_with_levelaxis()
+            vlist = list(set(nvlist) & set(vlist))
+        for i in range(len(obs)):
+            if not isinstance (obs[i], basic_filetable ): pass
+            if obs[i].nrows() == 0: pass
+            nvlist = obs[i].list_variables_with_levelaxis()
+            vlist = list(set(nvlist) & set(vlist))
+
+        vlist.sort()
+        return vlist
+
     def list_diagnostic_sets( self ):
         psets = amwg_plot_spec.__subclasses__()
         plot_sets = psets
@@ -94,6 +109,18 @@ class amwg_plot_spec(plot_spec):
                 vid='CLISCCP', inputs=['FISCCP1_COSP'], outputs=['CLISCCP'],
                 func=(lambda x: x) )
             ],
+         'CLDMED_VISIR':[derived_var(
+               vid='CLDMED_VISIR', inputs=['CLDMED'], outputs=['CLDMED_VISIR'],
+               func=(lambda x:x))],
+         'CLDTOT_VISIR':[derived_var(
+               vid='CLDTOT_VISIR', inputs=['CLDTOT'], outputs=['CLDTOT_VISIR'],
+               func=(lambda x:x))],
+         'CLDHGH_VISIR':[derived_var(
+               vid='CLDHGH_VISIR', inputs=['CLDHGH'], outputs=['CLDHGH_VISIR'],
+               func=(lambda x:x))],
+         'CLDLOW_VISIR':[derived_var(
+               vid='CLDLOW_VISIR', inputs=['CLDLOW'], outputs=['CLDLOW_VISIR'],
+               func=(lambda x:x))],
 
         'CLDTOT_ISCCP':[
             derived_var( vid='CLDTOT_ISCCP', inputs=['CLDTOT_ISCCPCOSP'], outputs=['CLDTOT_ISCCP'],
@@ -208,55 +235,17 @@ class amwg_plot_spec(plot_spec):
                 func=(lambda clmisr, h0=0,h1=3, t0=9.4,t1=379: reduce_height_thickness(
                         clmisr, h0,h1, t0,t1) ) )
             ],
-        'CLDTOT':[
-            derived_var(
-                vid='CLDTOT', inputs=['CLISCCP'], outputs=['CLDTOT'], func=reduce_prs_tau ),
-            derived_var( vid='CLDTOT', inputs=['CLDTOT_CAL'], outputs=['CLDTOT'],
-                         func=(lambda x: x) ),
-            derived_var( vid='CLDTOT', inputs=['CLDTOT_ISCCPCOSP'], outputs=['CLDTOT'],
-                         func=(lambda x: x) ) ],
-        'CLDHGH':[
-            derived_var(
-                vid='CLDHGH', inputs=['CLISCCP'], outputs=['CLDHGH'],
-                func=(lambda clisccp: reduce_prs_tau( clisccp( isccp_prs=(0,440)) )) ),
-            derived_var( vid='CLDHGH', inputs=['CLDHGH_CAL'], outputs=['CLDHGH'],
-                         func=(lambda x: x) ),
-            derived_var( vid='CLDHGH', inputs=['CLDHGH_ISCCPCOSP'], outputs=['CLDHGH'],
-                         func=(lambda x: x) ) ],
-        'CLDMED':[
-            derived_var(
-                vid='CLDMED', inputs=['CLISCCP'], outputs=['CLDMED'],
-                func=(lambda clisccp: reduce_prs_tau( clisccp( isccp_prs=(440,680)) )) ),
-            derived_var( vid='CLDMED', inputs=['CLDMED_CAL'], outputs=['CLDMED'],
-                         func=(lambda x: x) ),
-            derived_var( vid='CLDMED', inputs=['CLDMED_ISCCPCOSP'], outputs=['CLDMED'],
-                         func=(lambda x: x) ) ],
-        'CLDLOW':[
-            derived_var(
-                vid='CLDLOW', inputs=['CLISCCP'], outputs=['CLDLOW'],
-                func=(lambda clisccp: reduce_prs_tau( clisccp( isccp_prs=(680,numpy.inf)) )) ),
-            derived_var( vid='CLDLOW', inputs=['CLDLOW_CAL'], outputs=['CLDLOW'],
-                         func=(lambda x: x) ),
-            derived_var( vid='CLDLOW', inputs=['CLDLOW_ISCCPCOSP'], outputs=['CLDLOW'],
-                         func=(lambda x: x) ) ],
-        'CLDTHICK':[
-            derived_var(
-                vid='CLDTHICK', inputs=['CLISCCP'], outputs=['CLDTHICK'],
-                func=(lambda clisccp: reduce_prs_tau( clisccp( isccp_tau=(23.,numpy.inf)) )) ),
-            derived_var( vid='CLDTHICK', inputs=['CLDTHICK_CAL'], outputs=['CLDTHICK'],
-                         func=(lambda x: x) ),
-            derived_var( vid='CLDTHICK', inputs=['CLDTHICK_ISCCPCOSP'], outputs=['CLDTHICK'],
-                         func=(lambda x: x) ) ],
+
         'TGCLDLWP':[derived_var(
                 vid='TGCLDLWP', inputs=['TGCLDLWP_OCEAN'], outputs=['TGCLDLWP'],
                 func=(lambda x: x) ) ]
         }
     @staticmethod
-    def _list_variables( filetable1, filetable2=None ):
-        return amwg_plot_spec.package._list_variables( filetable1, filetable2, "amwg_plot_spec" )
+    def _list_variables( model, obs ):
+        return amwg_plot_spec.package._list_variables( model, obs, "amwg_plot_spec" )
     @staticmethod
-    def _all_variables( filetable1, filetable2=None ):
-        return amwg_plot_spec.package._all_variables( filetable1, filetable2, "amwg_plot_spec" )
+    def _all_variables( model, obs ):
+        return amwg_plot_spec.package._all_variables( model, obs, "amwg_plot_spec" )
     @classmethod
     def stdvar2var( cls, varnom, filetable, season, reduction_function, recurse=True ):
         """From a variable name, a filetable, and a season, this finds the variable name in
@@ -294,8 +283,10 @@ class amwg_plot_spec(plot_spec):
                 break
         if computable:
             for ivn in invarnoms:
+                #print "jfp computing reduced variable from input variableid=ivn=",ivn
                 rv = reduced_variable( variableid=ivn, filetable=filetable, season=season,
                                        reduction_function=reduction_function )
+                #print "jfp adding reduced variable rv=",rv
                 rvs.append(rv)
         #print "jfp1 rvs ids=",[rv.id() for rv in rvs]
         if not computable and recurse==True:
@@ -371,14 +362,15 @@ class amwg_plot_set2(amwg_plot_spec):
     """
     name = '2 - Line Plots of Annual Implied Northward Transport'
     number = '2'
-    def __init__( self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None ):
+    def __init__( self, model, obs, varid, seasonid=None, region=None, aux=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the derived variable to be plotted, e.g. 'Ocean_Heat'.
         The seasonid argument will be ignored."""
+        filetable1, filetable2 = self.getfts(model, obs)
         plot_spec.__init__(self,seasonid)
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
         self.plottype='Yxvsx'
-        vars = self._list_variables(filetable1,filetable2)
+        vars = self._list_variables(model, obs)
         if varid not in vars:
             print "In amwg_plot_set2 __init__, ignoring varid input, will compute Ocean_Heat"
             varid = vars[0]
@@ -386,14 +378,15 @@ class amwg_plot_set2(amwg_plot_spec):
         # TO DO: Although model vs NCEP obs is all that NCAR does, there's no reason why we
         # TO DO: shouldn't support something more general, at least model vs model.
         if not self.computation_planned:
-            self.plan_computation( filetable1, filetable2, varid, seasonid )
+            self.plan_computation( model, obs, varid, seasonid )
     @staticmethod
-    def _list_variables( self, filetable1=None, filetable2=None ):
+    def _list_variables( model, obs ):
         return ['Ocean_Heat']
     @staticmethod
-    def _all_variables( self, filetable1, filetable2=None ):
-        return { vn:basic_plot_variable for vn in amwg_plot_set2._list_variables( filetable1, filetable2 ) }
-    def plan_computation( self, filetable1, filetable2, varid, seasonid ):
+    def _all_variables( model, obs ):
+        return { vn:basic_plot_variable for vn in amwg_plot_set2._list_variables( model, obs ) }
+    def plan_computation( self, model, obs, varid, seasonid ):
+        filetable1, filetable2 = self.getfts(model, obs)
         # CAM variables needed for heat transport: (SOME ARE SUPERFLUOUS <<<<<<)
         # FSNS, FLNS, FLUT, FSNTOA, FLNT, FSNT, SHFLX, LHFLX,
         self.reduced_variables = {
@@ -567,26 +560,33 @@ class amwg_plot_set3(amwg_plot_spec,basic_id):
     # Here, the plotspec contains the variables themselves.
     name = '3 - Line Plots of  Zonal Means'
     number = '3'
-    def __init__( self, filetable1, filetable2, varnom, seasonid=None, region=None, aux=None ):
+    def __init__( self, model, obs, varnom, seasonid=None, regionid=None, aux=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varnom is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'."""
         basic_id.__init__(self,varnom,seasonid)
         plot_spec.__init__(self,seasonid)
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
+        if regionid=="Global" or regionid=="global" or regionid is None:
+            self._regionid="Global"
+        else:
+            self._regionid=regionid
+        self.region = interpret_region(regionid)
+
         if not self.computation_planned:
-            self.plan_computation( filetable1, filetable2, varnom, seasonid )
-    def plan_computation( self, filetable1, filetable2, varnom, seasonid ):
+            self.plan_computation( model, obs, varnom, seasonid )
+    def plan_computation( self, model, obs, varnom, seasonid ):
+        filetable1, filetable2 = self.getfts(model, obs)
         zvar = reduced_variable(
             variableid=varnom,
-            filetable=filetable1, season=self.season,
-            reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,self.season,vid=vid)) )
+            filetable=filetable1, season=self.season, region=self.region,
+            reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,self.season,self.region,vid=vid)) )
         self.reduced_variables[zvar._strid] = zvar
         #self.reduced_variables[varnom+'_1'] = zvar
         #zvar._vid = varnom+'_1'      # _vid is deprecated
         z2var = reduced_variable(
             variableid=varnom,
-            filetable=filetable2, season=self.season,
-            reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,self.season,vid=vid)) )
+            filetable=filetable2, season=self.season, region=self.region,
+            reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,self.season,self.region,vid=vid)) )
         self.reduced_variables[z2var._strid] = z2var
         #self.reduced_variables[varnom+'_2'] = z2var
         #z2var._vid = varnom+'_2'      # _vid is deprecated
@@ -651,40 +651,48 @@ class amwg_plot_set4(amwg_plot_spec):
     # Here, the plotspec contains the variables themselves.
     name = '4 - Vertical Contour Plots Zonal Means'
     number = '4'
-    def __init__( self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None ):
+    def __init__( self, model, obs, varid, seasonid=None, regionid=None, aux=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'.
         At the moment we assume that data from filetable1 has CAM hybrid levels,
         and data from filetable2 has pressure levels."""
+        filetable1, filetable2 = self.getfts(model, obs)
         plot_spec.__init__(self,seasonid)
         self.plottype = 'Isofill'
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
+        if regionid=="Global" or regionid=="global" or regionid is None:
+            self._regionid="Global"
+        else:
+            self._regionid=regionid
+        self.region = interpret_region(regionid)
+
         ft1id,ft2id = filetable_ids(filetable1,filetable2)
         self.plot1_id = '_'.join([ft1id,varid,seasonid,'contour'])
         self.plot2_id = '_'.join([ft2id,varid,seasonid,'contour'])
         self.plot3_id = '_'.join([ft1id+'-'+ft2id,varid,seasonid,'contour'])
         self.plotall_id = '_'.join([ft1id,ft2id,varid,seasonid])
         if not self.computation_planned:
-            self.plan_computation( filetable1, filetable2, varid, seasonid )
+            self.plan_computation( model, obs, varid, seasonid )
     @staticmethod
-    def _list_variables( filetable1, filetable2=None ):
-        allvars = amwg_plot_set4._all_variables( filetable1, filetable2 )
+    def _list_variables( model, obs ):
+        allvars = amwg_plot_set4._all_variables( model, obs )
         listvars = allvars.keys()
         listvars.sort()
 #        print "amwg plot set 4 listvars=",listvars
         return listvars
     @staticmethod
-    def _all_variables( filetable1, filetable2=None ):
+    def _all_variables( model, obs ):
         allvars = {}
         for varname in amwg_plot_spec.package._list_variables_with_levelaxis(
-            filetable1, filetable2, "amwg_plot_spec" ):
+            model, obs, "amwg_plot_spec" ):
             allvars[varname] = basic_level_variable
         return allvars
     def reduced_variables_press_lev( self, filetable, varid, seasonid, ftno=None ):
-        return reduced_variables_press_lev( filetable, varid, self.season )
+        return reduced_variables_press_lev( filetable, varid, seasonid, region=self.region )
     def reduced_variables_hybrid_lev( self, filetable, varid, seasonid, ftno=None ):
-        return reduced_variables_hybrid_lev( filetable, varid, self.season )
-    def plan_computation( self, filetable1, filetable2, varid, seasonid ):
+        return reduced_variables_hybrid_lev( filetable, varid, seasonid, region=self.region )
+    def plan_computation( self, model, obs, varid, seasonid ):
+        filetable1, filetable2 = self.getfts(model, obs)
         ft1_hyam = filetable1.find_files('hyam')
         if filetable2 is None:
             ft2_hyam = None
@@ -777,11 +785,13 @@ class amwg_plot_set5and6(amwg_plot_spec):
     the difference between the two.  A plot's x-axis is longitude and its y-axis is the latitude;
     normally a world map will be overlaid.
     """
-    def __init__( self, filetable1, filetable2, varid, seasonid=None, regionid=None, aux=None ):
+    def __init__( self, model, obs,  varid, seasonid=None, regionid=None, aux=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the variable to be plotted, e.g. 'TREFHT'.
         seasonid is a string such as 'DJF'."""
-        plot_spec.__init__(self, seasonid, regionid)
+        filetable1, filetable2 = self.getfts(model, obs)
+         
+        plot_spec.__init__(self,seasonid, regionid)
         self.plottype = 'Isofill'
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
         if regionid=="Global" or regionid=="global" or regionid is None:
@@ -801,29 +811,30 @@ class amwg_plot_set5and6(amwg_plot_spec):
         self.plotall_id = ft1id+'_'+ft2id+'_'+varid+'_'+seasonid
 
         if not self.computation_planned:
-            self.plan_computation( filetable1, filetable2, varid, seasonid, aux )
+            self.plan_computation( model, obs, varid, seasonid, aux )
     @staticmethod
-    def _list_variables( filetable1, filetable2=None ):
-        allvars = amwg_plot_set5and6._all_variables( filetable1, filetable2 )
+    def _list_variables( model, obs ):
+        allvars = amwg_plot_set5and6._all_variables( model, obs )
         listvars = allvars.keys()
         listvars.sort()
         return listvars
     @staticmethod
-    def _all_variables( filetable1, filetable2=None, use_standard_vars=True ):
-        allvars = amwg_plot_spec.package._all_variables( filetable1, filetable2, "amwg_plot_spec" )
+    def _all_variables( model, obs, use_standard_vars=True ):
+        allvars = amwg_plot_spec.package._all_variables( model, obs, "amwg_plot_spec" )
         for varname in amwg_plot_spec.package._list_variables_with_levelaxis(
-            filetable1, filetable2, "amwg_plot_spec" ):
+            model, obs, "amwg_plot_spec" ):
             allvars[varname] = level_variable_for_amwg_set5
         if use_standard_vars:
             for varname in amwg_plot_spec.standard_variables.keys():
                 allvars[varname] = basic_plot_variable
         return allvars
-    def plan_computation( self, filetable1, filetable2, varid, seasonid, aux=None ):
+    def plan_computation( self, model, obs, varid, seasonid, aux=None ):
         if isinstance(aux,Number):
-            return self.plan_computation_level_surface( filetable1, filetable2, varid, seasonid, aux )
+            return self.plan_computation_level_surface( model, obs, varid, seasonid, aux )
         else:
-            return self.plan_computation_normal_contours( filetable1, filetable2, varid, seasonid, aux )
-    def plan_computation_normal_contours( self, filetable1, filetable2, varnom, seasonid, aux=None ):
+            return self.plan_computation_normal_contours( model, obs, varid, seasonid, aux )
+    def plan_computation_normal_contours( self, model, obs, varnom, seasonid, aux=None ):
+        filetable1, filetable2 = self.getfts(model, obs)
         """Set up for a lat-lon contour plot, as in plot set 5.  Data is averaged over all other
         axes."""
         if varnom in filetable1.list_variables():
@@ -916,8 +927,8 @@ class amwg_plot_set5and6(amwg_plot_spec):
         """
         varid,rvs,dvs = self.stdvar2var(
             varnom, filetable, self.season,\
-                (lambda x,vid,season=self.season,region=self.region:
-                     reduce2latlon_seasonal(x, season, region, vid, exclude_axes=[
+                (lambda x,vid:
+                     reduce2latlon_seasonal(x, self.season, self.region, vid, exclude_axes=[
                         'isccp_prs','isccp_tau','cosp_prs','cosp_tau',
                         'modis_prs','modis_tau','cosp_tau_modis',
                         'misr_cth','misr_tau','cosp_htmisr']) ))
@@ -953,7 +964,8 @@ class amwg_plot_set5and6(amwg_plot_spec):
 
         return varid, None
 
-    def plan_computation_level_surface( self, filetable1, filetable2, varid, seasonid, aux ):
+    def plan_computation_level_surface( self, model, obs, varid, seasonid, aux ):
+        filetable1, filetable2 = self.getfts(model, obs)
         """Set up for a lat-lon contour plot, averaged in other directions - except that if the
         variable to be plotted depend on level, it is not averaged over level.  Instead, the value
         at a single specified pressure level, aux, is used. The units of aux are millbars."""
@@ -988,7 +1000,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
                 reduction_function=(lambda x,vid=None: select_region( x, self.region)) ),
             reduced_variable(     # ps=ps(time,lat,lon)
                 variableid='PS', filetable=filetable1, season=self.season,
-                reduction_function=(lambda x,vid=None: reduce_time_seasonal( x, self.season, self.region, vid ) ) ) ]
+                reduction_function=(lambda x,vid: reduce_time_seasonal( x, self.season, self.region, vid ) ) ) ]
         # vid1 = varid+'_p_1'
         # vidl1 = varid+'_lp_1'
         vid1 = dv.dict_id(  varid, 'p', seasonid, filetable1)
@@ -1035,7 +1047,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
                     reduction_function=(lambda x,vid=None: select_region( x, self.region)) ),
                 reduced_variable(     # ps=ps(time,lat,lon)
                     variableid='PS', filetable=filetable2, season=self.season,
-                    reduction_function=(lambda x,vid=None: reduce_time_seasonal( x, self.season, self.region, vid ) ) )
+                    reduction_function=(lambda x,vid: reduce_time_seasonal( x, self.season, self.region, vid ) ) )
                 ]
             #vid2 = varid+'_p_2'
             #vidl2 = varid+'_lp_2'
@@ -1136,14 +1148,20 @@ class amwg_plot_set6(amwg_plot_spec):
     # The first in the list (e.g. [a,b,c]) is to be preferred.
     #... If this works, I'll make it universal, defaulting to {}.  For plot set 6, the first
     # data variable will be used for the contour plot, and the other two for the vector plot.
-    def __init__( self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None ):
+    def __init__( self, model, obs, varid, seasonid=None, regionid=None, aux=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the variable to be plotted, e.g. 'STRESS'.
         seasonid is a string such as 'DJF'."""
+        filetable1, filetable2 = self.getfts(model, obs)
         plot_spec.__init__(self,seasonid)
         # self.plottype = ['Isofill','Vector']  <<<< later we'll add contour plots
         self.plottype = 'Vector'
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
+        if regionid=="Global" or regionid=="global" or regionid is None:
+            self._regionid="Global"
+        else:
+            self._regionid=regionid
+        self.region = interpret_region(regionid)
 
         self.varid = varid
         ft1id,ft2id = filetable_ids(filetable1,filetable2)
@@ -1153,16 +1171,16 @@ class amwg_plot_set6(amwg_plot_spec):
         self.plotall_id = ft1id+'_'+ft2id+'_'+varid+'_'+seasonid
 
         if not self.computation_planned:
-            self.plan_computation( filetable1, filetable2, varid, seasonid, region, aux )
+            self.plan_computation( model, obs, varid, seasonid, aux )
     @staticmethod
-    def _list_variables( filetable1, filetable2=None ):
+    def _list_variables( model, obs ):
         return amwg_plot_set6.standard_variables.keys()
     @staticmethod
-    def _all_variables( filetable1, filetable2=None ):
-        return { vn:basic_plot_variable for vn in amwg_plot_set6._list_variables( filetable1, filetable2 ) }
-    def plan_computation( self, filetable1, filetable2, varid, seasonid, region=None, aux=None ):
+    def _all_variables( model, obs ):
+        return { vn:basic_plot_variable for vn in amwg_plot_set6._list_variables( model, obs ) }
+    def plan_computation( self, model, obs, varid, seasonid, aux=None ):
         if aux is None:
-            return self.plan_computation_normal_contours( filetable1, filetable2, varid, seasonid, region, aux )
+            return self.plan_computation_normal_contours( model, obs, varid, seasonid, aux )
         else:
             print "ERROR plot set 6 does not support auxiliary variable aux=",aux
             return None
@@ -1217,36 +1235,36 @@ class amwg_plot_set6(amwg_plot_spec):
                             variableid=var, filetable=filetable, season=self.season,
                             #reduction_function=(lambda x,vid=var+'_nomask':
                             reduction_function=(lambda x,vid=None:
-                                                minusb(reduce2latlon_seasonal( x, self.season, vid )) ) ))
+                                                minusb(reduce2latlon_seasonal( x, self.season, self.region, vid)) ) ))
                     needed_derivedvars.append(var)
                     reduced_vars.append( reduced_variable(
                             variableid='OCNFRAC', filetable=filetable, season=self.season,
                             reduction_function=(lambda x,vid=None:
-                                                    reduce2latlon_seasonal( x, self.season, vid ) ) ))
+                                                    reduce2latlon_seasonal( x, self.season, self.region, vid) ) ))
                 elif filetable.has_variables(['ORO']):
                     # Applying the ocean mask will get a derived variable with variableid=var.
                     reduced_vars.append( reduced_variable(
                             variableid=var, filetable=filetable, season=self.season,
                             reduction_function=(lambda x,vid=var+'_nomask':
-                                                minusb(reduce2latlon_seasonal( x, self.season, vid )) ) ))
+                                                minusb(reduce2latlon_seasonal( x, self.season, self.region, vid)) ) ))
                     needed_derivedvars.append(var)
                     reduced_vars.append( reduced_variable(
                             variableid='ORO', filetable=filetable, season=self.season,
                             reduction_function=(lambda x,vid=None:
-                                                    reduce2latlon_seasonal( x, self.season, vid ) ) ))
+                                                    reduce2latlon_seasonal( x, self.season, self.region, vid) ) ))
                 else:
                     # No ocean mask available.  Go on without applying one.  But still apply minusb
                     # because this is a CAM file.
                     reduced_vars.append( reduced_variable(
                             variableid=var, filetable=filetable, season=self.season,
                             reduction_function=(lambda x,vid=None:
-                                                    minusb(reduce2latlon_seasonal( x, self.season, vid )) ) ))
+                                                    minusb(reduce2latlon_seasonal( x, self.season, self.region, vid)) ) ))
             else:
                 # No ocean mask available and it's not a CAM file; just do an ordinary reduction.
                 reduced_vars.append( reduced_variable(
                         variableid=var, filetable=filetable, season=self.season,
                         reduction_function=(lambda x,vid=None:
-                                                reduce2latlon_seasonal( x, self.season, vid ) ) ))
+                                                reduce2latlon_seasonal( x, self.season, self.region, vid ) ) ))
                 vardict[var] = rv.dict_id( var, seasonid, filetable )
         return reduced_vars, needed_derivedvars
     def STRESS_dvs( self, filetable, dvars, seasonid, vardict, vid_cont, vars_vec ):
@@ -1306,9 +1324,10 @@ class amwg_plot_set6(amwg_plot_spec):
 
         return derived_vars
 
-    def plan_computation_normal_contours( self, filetable1, filetable2, varid, seasonid, region=None, aux=None ):
+    def plan_computation_normal_contours( self, model, obs, varid, seasonid, aux=None ):
         """Set up for a lat-lon contour plot, as in plot set 5.  Data is averaged over all other
         axes."""
+        filetable1, filetable2 = self.getfts(model, obs)
         self.derived_variables = {}
         vars_vec1 = {}
         vars_vec2 = {}
@@ -1441,11 +1460,12 @@ class amwg_plot_set7(amwg_plot_spec):
     """
     name = '7 - Polar Contour and Vector Plots of Seasonal Means'
     number = '7'
-    def __init__( self, filetable1, filetable2, varid, seasonid=None, region=None, aux=slice(0,None) ):
+    def __init__( self, model, obs, varid, seasonid=None, region=None, aux=slice(0,None) ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the variable to be plotted, e.g. 'TREFHT'.
         seasonid is a string such as 'DJF'."""
 
+        filetable1, filetable2 = self.getfts(model, obs)
         plot_spec.__init__(self,seasonid)
         self.plottype = 'Isofill_polar'
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
@@ -1458,37 +1478,38 @@ class amwg_plot_set7(amwg_plot_spec):
         self.plotall_id = ft1id+'_'+ft2id+'_'+varid+'_'+seasonid
 
         if not self.computation_planned:
-            self.plan_computation( filetable1, filetable2, varid, seasonid, region, aux )
+            self.plan_computation( model, obs, varid, seasonid, region, aux )
     @staticmethod
-    def _list_variables( filetable1, filetable2=None ):
-        allvars = amwg_plot_set5and6._all_variables( filetable1, filetable2 )
+    def _list_variables( model, obs ):
+        allvars = amwg_plot_set5and6._all_variables( model, obs )
         listvars = allvars.keys()
         listvars.sort()
         return listvars
     @staticmethod
-    def _all_variables( filetable1, filetable2=None ):
-        allvars = amwg_plot_spec.package._all_variables( filetable1, filetable2, "amwg_plot_spec" )
+    def _all_variables( model, obs ):
+        allvars = amwg_plot_spec.package._all_variables( model, obs, "amwg_plot_spec" )
         for varname in amwg_plot_spec.package._list_variables_with_levelaxis(
-            filetable1, filetable2, "amwg_plot_spec" ):
+            model, obs, "amwg_plot_spec" ):
             allvars[varname] = basic_pole_variable
         return allvars
-    def plan_computation( self, filetable1, filetable2, varid, seasonid, region=None, aux=slice(0,None) ):
-        """Set up for a lat-lon polar contour plot.  Data is averaged over all other axes."""
-
-        reduced_varlis = [
-            reduced_variable(
+    def plan_computation( self, model, obs, varid, seasonid, region=None, aux=slice(0,None) ):
+       """Set up for a lat-lon polar contour plot.  Data is averaged over all other axes.
+       """
+       filetable1, filetable2 = self.getfts(model, obs)
+       reduced_varlis = [
+           reduced_variable(
                 variableid=varid, filetable=filetable1, season=self.season,
-                reduction_function=(lambda x,vid: reduce2latlon_seasonal( x(latitude=aux, longitude=(0, 360)), self.season, vid=vid ) ) ),
+                reduction_function=(lambda x, vid, region=None: reduce2latlon_seasonal( x(latitude=aux, longitude=(0, 360)), self.season, region, vid=vid ) ) ),
             reduced_variable(
                 variableid=varid, filetable=filetable2, season=self.season,
-                reduction_function=(lambda x,vid: reduce2latlon_seasonal( x(latitude=aux, longitude=(0, 360)), self.season, vid=vid ) ) )
+                reduction_function=(lambda x,vid, region=None: reduce2latlon_seasonal( x(latitude=aux, longitude=(0, 360)), self.season, region, vid=vid ) ) )
             ]
-        self.reduced_variables = { v.id():v for v in reduced_varlis }
-        vid1 = rv.dict_id( varid, seasonid, filetable1 )
-        vid2 = rv.dict_id( varid, seasonid, filetable2 )
+       self.reduced_variables = { v.id():v for v in reduced_varlis }
+       vid1 = rv.dict_id( varid, seasonid, filetable1 )
+       vid2 = rv.dict_id( varid, seasonid, filetable2 )
 
-        self.derived_variables = {}
-        self.single_plotspecs = {
+       self.derived_variables = {}
+       self.single_plotspecs = {
             self.plot1_id: plotspec(
                 vid = ps.dict_idid(vid1),
                 zvars = [vid1],  zfunc = (lambda z: z),
@@ -1502,11 +1523,11 @@ class amwg_plot_set7(amwg_plot_spec):
                 zvars = [vid1,vid2],  zfunc = aminusb_2ax,
                 plottype = self.plottype )         
             }
-        self.composite_plotspecs = {
+       self.composite_plotspecs = {
             self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id]
             }
-        self.computation_planned = True
-        #pdb.set_trace()
+       self.computation_planned = True
+       #pdb.set_trace()
     def _results(self, newgrid=0):
         #pdb.set_trace()
         results = plot_spec._results(self,newgrid)
@@ -1538,9 +1559,10 @@ class amwg_plot_set8(amwg_plot_spec):
     name = '8 - Annual Cycle Contour Plots of Zonal Means '
     number = '8'
 
-    def __init__( self, filetable1, filetable2, varid, seasonid='ANN', region=None, aux=None ):
+    def __init__( self, model, obs, varid, seasonid='ANN', region=None, aux=None ):
         """filetable1, should be a directory filetable for each model.
         varid is a string, e.g. 'TREFHT'.  The zonal mean is computed for each month. """
+        filetable1, filetable2 = self.getfts(model, obs)
         
         self.season = seasonid          
         self.FT1 = (filetable1 != None)
@@ -1566,9 +1588,10 @@ class amwg_plot_set8(amwg_plot_spec):
             self.plot3_id = '_'.join([ft1id+'-'+ft2id, varid, seasonid, 'contour'])
         self.plotall_id = '_'.join([ft1id,ft2id, varid, seasonid])
         if not self.computation_planned:
-            self.plan_computation( filetable1, filetable2, varid, seasonid )
+            self.plan_computation( model, obs, varid, seasonid )
 
-    def plan_computation( self, filetable1, filetable2, varid, seasonid ):
+    def plan_computation( self, model, obs, varid, seasonid ):
+        filetable1, filetable2 = self.getfts(model, obs)
 
         self.computation_planned = False
         
@@ -1663,7 +1686,8 @@ class amwg_plot_set9(amwg_plot_spec):
     # Here, the plotspec contains the variables themselves.
     name = '9 - Horizontal Contour Plots of DJF-JJA Differences'
     number = '9'
-    def __init__( self, filetable1, filetable2, varid, seasonid='DJF-JJA', region=None, aux=None ):
+    def __init__( self, model, obs, varid, seasonid='DJF-JJA', regionid=None, aux=None ):
+        filetable1, filetable2 = self.getfts(model, obs)
         """filetable1, filetable2 should be filetables for each model.
         varid is a string, e.g. 'TREFHT'.  The seasonal difference is Seasonid
         It is is a string, e.g. 'DJF-JJA'. """
@@ -1679,6 +1703,12 @@ class amwg_plot_set9(amwg_plot_spec):
             self._s2 = 'JJA'
             seasonid = 'DJF-JJA'
 
+        if regionid=="Global" or regionid=="global" or regionid is None:
+            self._regionid="Global"
+        else:
+            self._regionid=regionid
+        self.region = interpret_region(regionid)
+
         plot_spec.__init__(self, seasonid)
         self.plottype = 'Isofill'
         self._seasonid = seasonid
@@ -1690,8 +1720,9 @@ class amwg_plot_set9(amwg_plot_spec):
         self.plot3_id = '_'.join([ft1id+'-'+ft2id, varid, seasonid, 'contour'])
         self.plotall_id = '_'.join([ft1id,ft2id, varid, seasonid])
         if not self.computation_planned:
-            self.plan_computation( filetable1, filetable2, varid, seasonid )
-    def plan_computation( self, filetable1, filetable2, varid, seasonid ):
+            self.plan_computation( model, obs, varid, seasonid )
+    def plan_computation( self, model, obs, varid, seasonid ):
+        filetable1, filetable2 = self.getfts(model, obs)
         self.computation_planned = False
         #check if there is data to process
         ft1_valid = False
@@ -1710,16 +1741,21 @@ class amwg_plot_set9(amwg_plot_spec):
         #generate identifiers
         vid1 = rv.dict_id(varid, self._s1, filetable1)
         vid2 = rv.dict_id(varid, self._s2, filetable2)
-        vid3 = dv.dict_id(varid, 'SeansonalDifference', self._seasonid, filetable1)#, ft2=filetable2)
+        vid3 = dv.dict_id(varid, 'SeasonalDifference', self._seasonid, filetable1)#, ft2=filetable2)
 
         #setup the reduced variables
         vid1_season = cdutil.times.Seasons(self._s1)
+        if vid1_season is None:
+            vid1_season = seasonsyr
         vid2_season = cdutil.times.Seasons(self._s2)
+        if vid2_season is None:
+            vid2_season = seasonsyr
+
         rv_1 = reduced_variable(variableid=varid, filetable=filetable1, season=vid1_season,
-                                reduction_function=( lambda x, vid=vid1:reduce2latlon_seasonal(x, vid1_season, vid=vid)) ) 
+                                reduction_function=( lambda x, vid=vid1: reduce2latlon_seasonal(x, vid1_season, self.region, vid=vid)) )
         
         rv_2 = reduced_variable(variableid=varid, filetable=filetable2, season=vid2_season,
-                                reduction_function=( lambda x, vid=vid2:reduce2latlon_seasonal(x, vid2_season, vid=vid)) )                                             
+                                reduction_function=( lambda x, vid=vid2: reduce2latlon_seasonal(x, vid2_season, self.region, vid=vid)) )
                                                
         self.reduced_variables = {rv_1.id(): rv_1, rv_2.id(): rv_2}  
 
@@ -1774,9 +1810,10 @@ class amwg_plot_set10(amwg_plot_spec, basic_id):
     name = '10 - Annual Line Plots of  Global Means'
     number = '10'
  
-    def __init__( self, filetable1, filetable2, varid, seasonid='ANN', region=None, aux=None ):
+    def __init__( self, model, obs, varid, seasonid='ANN', region=None, aux=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'."""
+        filetable1, filetable2 = self.getfts(model, obs)
         basic_id.__init__(self, varid, seasonid)
         plot_spec.__init__(self, seasonid)
         self.plottype = 'Yxvsx'
@@ -1785,9 +1822,10 @@ class amwg_plot_set10(amwg_plot_spec, basic_id):
         self.plot_id = '_'.join([ft1id, ft2id, varid, self.plottype])
         self.computation_planned = False
         if not self.computation_planned:
-            self.plan_computation( filetable1, filetable2, varid, seasonid )
+            self.plan_computation( model, obs, varid, seasonid )
 
-    def plan_computation( self, filetable1, filetable2, varid, seasonid ):
+    def plan_computation( self, model, obs, varid, seasonid ):
+        filetable1, filetable2 = self.getfts(model, obs)
         
         self.reduced_variables = {}
         vidAll = {}        
@@ -1856,7 +1894,8 @@ class amwg_plot_set10(amwg_plot_spec, basic_id):
 class amwg_plot_set11(amwg_plot_spec):
     name = '11 - Pacific annual cycle, Scatter plots:incomplete'
     number = '11'
-    def __init__( self, filetable1, filetable2, varid, seasonid='ANN', region=None, aux=None ):
+    def __init__( self, model, obs, varid, seasonid='ANN', region=None, aux=None ):
+        filetable1, filetable2 = self.getfts(model, obs)
         """filetable1, filetable2 should be filetables for each model.
         varid is a string, e.g. 'TREFHT'.  The seasonal difference is Seasonid
         It is is a string, e.g. 'DJF-JJA'. """
@@ -1883,8 +1922,9 @@ class amwg_plot_set11(amwg_plot_spec):
         
         self.plotall_id = '_'.join(self.datatype + ['Warm', 'Pool'])
         if not self.computation_planned:
-            self.plan_computation( filetable1, filetable2, varid, seasonid )
-    def plan_computation( self, filetable1, filetable2, varid, seasonid ):
+            self.plan_computation( model, obs, varid, seasonid )
+    def plan_computation( self, model, obs, varid, seasonid ):
+        filetable1, filetable2 = self.getfts(model, obs)
         self.computation_planned = False
         #check if there is data to process
         ft1_valid = False
@@ -1975,16 +2015,18 @@ class amwg_plot_set12(amwg_plot_spec):
     name = '12 - Vertical Profiles at 17 selected raobs stations:incomplete'
     number = '12'
 
-    def __init__( self, filetable1, filetable2, varid, seasonid='ANN', region=None, aux=None ):
+    def __init__( self, model, obs, varid, seasonid='ANN', region=None, aux=None ):
+
         """filetable1, filetable2 should be filetables for each model.
         varid is a string, e.g. 'TREFHT'.  The seasonal difference is Seasonid
         It is is a string, e.g. 'DJF-JJA'. """
+        filetable1, filetable2 = self.getfts(model, obs)
         import string
 
         #pdb.set_trace()
-        model = filetable1._filelist.files[0]
-        obs   = filetable2._filelist.files[0]
-        self.legendTitles = [model.split('/')[-1:][0], obs.split('/')[-1:][0]]
+        modelfn = filetable1._filelist.files[0]
+        obsfn   = filetable2._filelist.files[0]
+        self.legendTitles = [modelfn.split('/')[-1:][0], obsfn.split('/')[-1:][0]]
         self.legendComplete = {}
         #print self.legendTitles
         
@@ -2005,7 +2047,7 @@ class amwg_plot_set12(amwg_plot_spec):
         self.plot_ids = self.months       
         self.plotall_id = 'all_seasons'
         if not self.computation_planned:
-            self.plan_computation( filetable1, filetable2, varid, station )
+            self.plan_computation( model, obs, varid, seasonid )
 
     @staticmethod
     def _list_variables( filetable1, filetable2=None ):
@@ -2021,7 +2063,9 @@ class amwg_plot_set12(amwg_plot_spec):
             filetable1, filetable2, "amwg_plot_spec" ):
             allvars[varname] = station_id_variable
         return allvars
-    def plan_computation( self, filetable1, filetable2, varid, station ):
+    def plan_computation( self, model, obs, varid, seasonid ):
+        filetable1, filetable2 = self.getfts(model, obs)
+
         self.computation_planned = False
         #check if there is data to process
         #ft1_valid = False
@@ -2284,7 +2328,8 @@ class amwg_plot_set13(amwg_plot_spec):
                 vid='CLISCCP', inputs=['FISCCP1','isccp_prs','isccp_tau'], outputs=['CLISCCP'],
                 func=uncompress_fisccp1 )]
         }
-    def __init__( self, filetable1, filetable2, varnom, seasonid=None, region=None, aux=None ):
+    def __init__( self, model, obs, varnom, seasonid=None, region=None, aux=None ):
+        filetable1, filetable2 = self.getfts(model, obs)
         """filetable1, filetable2 should be filetables for model and obs.
         varnom is a string.  The variable described may depend on time,lat,lon and will be averaged
         in those dimensions.  But it also should have two other axes which will be used for the
@@ -2304,21 +2349,22 @@ class amwg_plot_set13(amwg_plot_spec):
         self.plot3_id = '_'.join([ft1id+'-'+ft2id,varnom,seasonid,str(region),'histo'])
         self.plotall_id = '_'.join([ft1id,ft2id,varnom,seasonid])
         if not self.computation_planned:
-            self.plan_computation( filetable1, filetable2, varnom, seasonid, region )
+            self.plan_computation( model, obs, varnom, seasonid, region )
     @staticmethod
-    def _list_variables( filetable1, filetable2=None ):
-        allvars = amwg_plot_set13._all_variables( filetable1, filetable2 )
+    def _list_variables( model, obs ):
+        allvars = amwg_plot_set13._all_variables( model, obs)
         listvars = allvars.keys()
         listvars.sort()
         print "amwg plot set 13 listvars=",listvars
         return listvars
     @classmethod
-    def _all_variables( cls, filetable1, filetable2=None ):
+    def _all_variables( cls, model, obs ):
         allvars = {}
 
         # First, make a dictionary varid:varaxisnames.
         # Each variable will appear many times, but getting every occurence is the simplest
         # way to ensure that we get every variable.
+        filetable1, filetable2 = self.getfts(model, obs)
         vars1 = {}
         vars2 = {}
         for row in filetable1._table:
@@ -2333,12 +2379,16 @@ class amwg_plot_set13(amwg_plot_spec):
         for varname in amwg_plot_spec.package._list_variables(
             filetable1, filetable2, "amwg_plot_spec" ):
             varaxisnames1 = vars1[varname]
-            otheraxes1 = list(set(varaxisnames1) - set(['time','lat','lon']))
+            #otheraxes1 = list(set(varaxisnames1) - set(['time','lat','lon']))
+            otheraxes1 = list(set(varaxisnames1) -
+                              set(filetable1.lataxes+filetable1.lonaxes+['time']))
             if len(otheraxes1)!=2:
                 continue
             if filetable2 is not None:
                 varaxisnames2 = vars2[varname]
-                otheraxes2 = list(set(varaxisnames2) - set(['time','lat','lon']))
+                #otheraxes2 = list(set(varaxisnames2) - set(['time','lat','lon']))
+                otheraxes1 = list(set(varaxisnames1) -
+                                  set(filetable2.lataxes+filetable2.lonaxes+['time']))
                 if len(otheraxes2)!=2:
                     continue
             allvars[varname] = basic_plot_variable
@@ -2356,7 +2406,11 @@ class amwg_plot_set13(amwg_plot_spec):
             variableid=varnom, filetable=filetable, season=self.season, region=region,
             reduction_function =\
                 (lambda x,vid,season=self.season,region=region:
-                     reduce_time_space_seasonal_regional( x,season=season,region=region,vid=vid ))
+                     reduce_time_space_seasonal_regional\
+                     ( x,season=season,region=region,vid=vid, exclude_axes=[
+                                     'isccp_prs','isccp_tau','cosp_prs','cosp_tau',
+                                     'modis_prs','modis_tau','cosp_tau_modis',
+                                     'misr_cth','misr_tau','cosp_htmisr'] ))
             )
         self.reduced_variables[ rv.id() ] = rv
         return rv.id()
@@ -2372,7 +2426,8 @@ class amwg_plot_set13(amwg_plot_spec):
         for dv in dvs:
             self.derived_variables[ dv.id() ] = dv
         return varid
-    def plan_computation( self, filetable1, filetable2, varnom, seasonid, region ):
+    def plan_computation( self, model, obs, varnom, seasonid, region ):
+        filetable1, filetable2 = self.getfts(model, obs)
         region = interpret_region( region )
         if varnom in filetable1.list_variables_incl_axes():
             vid1 = self.var_from_data( filetable1, varnom, seasonid, region )
@@ -2467,7 +2522,8 @@ def join_scalar_data(*args ):
 class xxxamwg_plot_set14(amwg_plot_spec):
     #name = '14 - Taylor diagrams: incomplete'
     #number = '14'
-    def __init__( self, filetable1, filetable2, varid, seasonid='ANN', region=None, aux=None ):
+    def __init__( self, model, obs, varid, seasonid='ANN', region=None, aux=None ):
+        filetable1, filetable2 = self.getfts(model, obs)
         """filetable1, filetable2 should be filetables for each model.
         varid is a string, e.g. 'TREFHT'.  The seasonal difference is Seasonid
         It is is a string, e.g. 'DJF-JJA'. """
@@ -2492,8 +2548,9 @@ class xxxamwg_plot_set14(amwg_plot_spec):
         
         #self.plotall_id = '_'.join(self.datatype + ['Warm', 'Pool'])
         if not self.computation_planned:
-            self.plan_computation( filetable1, filetable2, varid, seasonid )
-    def plan_computation( self, filetable1, filetable2, varid, seasonid ):
+            self.plan_computation( model, obs, varid, seasonid )
+    def plan_computation( self, model, obs, varid, seasonid ):
+        filetable1, filetable2 = self.getfts(model, obs)
         self.computation_planned = False
         #check if there is data to process
         ft1_valid = False
@@ -2599,9 +2656,10 @@ class xxxamwg_plot_set15(amwg_plot_spec):
     #name = '15 - ARM Sites Annual Cycle Contour Plots:incomplete'
     #number = '15'
 
-    def __init__( self, filetable1, filetable2, varid, seasonid='ANN', region=None, aux=None ):
+    def __init__( self, model, obs, varid, seasonid='ANN', region=None, aux=None ):
         """filetable1, should be a directory filetable for each model.
         varid is a string, e.g. 'TREFHT'.  The zonal mean is computed for each month. """
+        filetable1, filetable2 = self.getfts(model, obs)
         
         self.season = seasonid          
         self.FT1 = (filetable1 != None)
@@ -2629,9 +2687,10 @@ class xxxamwg_plot_set15(amwg_plot_spec):
             self.plot3_id = '_'.join([ft1id+'-'+ft2id, varid, seasonid, 'contour'])
         self.plotall_id = '_'.join([ft1id,ft2id, varid, seasonid])
         if not self.computation_planned:
-            self.plan_computation( filetable1, filetable2, varid, seasonid )
+            self.plan_computation( model, obs, varid, seasonid )
 
-    def plan_computation( self, filetable1, filetable2, varid, seasonid ):
+    def plan_computation( self, model, obs, varid, seasonid ):
+        filetable1, filetable2 = self.getfts(model, obs)
 
         self.computation_planned = False
         

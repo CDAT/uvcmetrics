@@ -21,7 +21,7 @@ class TreeView():
       self.tree['children'] = []
 
       if packages == None:
-         packs = options._opts['packages']
+         packs = options._opts['package']
       else:
          packs = packages
 
@@ -86,11 +86,14 @@ class TreeView():
 if __name__ == '__main__':
    o = Options()
    o.processCmdLine()
-   print o['path']
-   if type(o['path']) is list and type(o['path'][0]) is str:
-      print 'Creating filetable...'
-      filetable1 = path2filetable(o, path=o['path'][0], filter=None)
-      print 'Done creating filetable...'
+   modelfts = []
+   obsfts = []
+   for i in range(len(o['models'])):
+      modelfts.append(path2filetable(o, modelid = i))
+   for i in range(len(o['obs'])):
+      obsfts.append(path2filetable(o, obsid = i))
+
+   filetable1 = modelfts[0]
    tree=TreeView()
    tree.makeTree(o, [filetable1], packages=['LMWG'])
    # need to make a filetable

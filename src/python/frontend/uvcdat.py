@@ -200,6 +200,8 @@ class uvc_simple_plotspec():
     # Isofill is a contour plot.  To make it polar, set projection=polar.  I'll
     # probably communicate that by passing a name "Isofill_polar".
     def __init__( self, pvars, presentation, labels=[], title='', source='', ranges=None, overplotline=False):
+        pvars = [v for v in pvars if v is not None]
+        # ... Maybe something else is broken to let None get into pvars.
         if len(pvars)<=0:
             zerovar = cdms2.createVariable([[0,0,0],[0,0,0]])
             zerovar.id = 'zero'
@@ -499,8 +501,6 @@ class uvc_simple_plotspec():
                 # ... mkscale returns numpy.float64, which behaves unexpectedly in _setlevels when
                 # passed a tuple value
                 if levels is not None and len(levels)>0:
-                    print "jfp nlevels,varmin,varmax=",nlevels,varmin,varmax
-                    print "jfp levels=",levels
                     self.presentation.levels = levels
                 #nlevels = max(1, len(levels) - 1)
                 #nlrange = range(nlevels+1)
@@ -552,8 +552,8 @@ class uvc_simple_plotspec():
                 nlonvs = vcsx.bgX/16
                 #self.strideX = int( 0.9* vcsx.bgX/nlons )
                 #self.strideY = int( 0.6* vcsx.bgY/nlats )
-                self.strideX = int( nlons/nlonvs )
-                self.strideY = int( nlats/nlatvs )
+                self.strideX = max(1, int( nlons/nlonvs )) # stride values must be at least 1
+                self.strideY = max(1, int( nlats/nlatvs ))
         else:
             print "ERROR cannot identify graphics method",self.presentation.__class__.__name__
 
@@ -828,6 +828,30 @@ class plot_spec(object):
         return self.results(newgrid)
     def results(self,newgrid=0):
         return self._results(newgrid)
+
+    def getfts(self, model, obs):
+        if len(model) == 2:
+#           print 'Two models'
+           filetable1 = model[0]
+           filetable2 = model[1]
+        if len(model) == 1 and len(obs) == 1:
+#           print 'Model and Obs'
+           filetable1 = model[0]
+           filetable2 = obs[0]
+        if len(obs) == 2: # seems unlikely but whatever
+#           print 'Two obs'
+           filetable1 = obs[0]
+           filetable2 = obs[1]
+        if len(model) == 1 and (obs != None and len(obs) == 0):
+#           print 'Model only'
+           filetable1 = model[0]
+           filetable2 = None
+        if len(obs) == 1 and (model != None and len(model) == 0): #also unlikely
+#           print 'Obs only'
+           filetable1 = obs[0]
+           filetable2 = None
+        return filetable1, filetable2
+
 # To profile, replace (by name changes) the above results() with the following one:
     def profiled_results(self,newgrid=0):
         if newgrid!=0:
@@ -841,6 +865,8 @@ class plot_spec(object):
         that means a coarser grid, typically from regridding model data to the obs grid.
         In the future regrid>0 will mean regrid everything to the finest grid and regrid<0
         will mean regrid everything to the coarsest grid."""
+        #print "jfp in plot_spec._results, reduced variables=",self.reduced_variables.keys()
+        #print "jfp in plot_spec._results, derived variables=",self.derived_variables.keys()
         for v in self.reduced_variables.keys():
             value = self.reduced_variables[v].reduce(None)
             self.variable_values[v] = value  # could be None

@@ -14,8 +14,8 @@ class BasicDiagnosticGroup():
     # AMWG, LMWG, etc. should inherit from this.
     def __repr__( self ):
         return self.__class__.__name__+' object'
-    def list_variables( self, filetable1, filetable2=None, diagnostic_set="" ):
-        """returns a sorted list of variable ids (strings) found in both filetables provided.
+    def list_variables( self, model, obs, diagnostic_set="" ):
+        """returns a sorted list of variable ids (strings) found in all filetables provided.
         This method _may_ also return names of variables which can be derived from the variables
         in the filtables.
         You can provide either one or two filetables.
@@ -23,38 +23,49 @@ class BasicDiagnosticGroup():
         This is meant an aid in writing menus for UV-CDAT, but may have other uses.
         """
         return []
-    def all_variables( self, filetable1, filetable2=None, diagnostic_set_name="" ):
+
+    def all_variables( self, model, obs, diagnostic_set_name="" ):
         """like list_variables but returns a dict, varname:varclass items suitable for a meniu.
         Instantiation is like newvar = varclass( varname, diagnpstoc_set_name, package )
         """
         if diagnostic_set_name!="":
             dset = self.list_diagnostic_sets().get( diagnostic_set_name, None )
             if dset is None:
-                varlist = self._list_variables( filetable1, filetable2 )
+                varlist = self._list_variables( model, obs )
             else:   # Note that dset is a class not an object.
-                return dset._all_variables( filetable1, filetable2 )
+                return dset._all_variables( model, obs )
         else:
-            varlist = self._list_variables( filetable1, filetable2 )
+            varlist = self._list_variables( model, obs )
         from metrics.computation.plotspec import basic_plot_variable
         return { vn: basic_plot_variable for vn in varlist }
     @staticmethod
-    def _all_variables( filetable1, filetable2=None, diagnostic_set_name="" ):
-        varlist = BasicDiagnosticGroup._list_variables( filetable1, filetable2, diagnostic_set_name )
+    def _all_variables( model, obs, diagnostic_set_name="" ):
+        varlist = BasicDiagnosticGroup._list_variables( model, obs, diagnostic_set_name )
         from metrics.computation.plotspec import basic_plot_variable
         return { vn: basic_plot_variable for vn in varlist }
     @staticmethod
-    def _list_variables( filetable1, filetable2=None, diagnostic_set_name="" ):
+    def _list_variables( model, obs, diagnostic_set_name="" ):
         """a generic implementation of the list_variables method, should be a good
         starting point for developing something for a particular diagnostic group"""
-        if filetable1 is None: return []
-        vars1 = filetable1.list_variables_incl_axes()
-        if not isinstance( filetable2, basic_filetable ): return vars1
-        if filetable2.nrows()==0: return vars1
-        vars2 = filetable2.list_variables_incl_axes()
-        varset = set(vars1).intersection(set(vars2))
-        vars = list(varset)
-        vars.sort()
-        return vars
+        if len(model) == 0 and len(obs) == 0: return []
+        if len(model) != 0:
+           vlist = model[0].list_variables_incl_axes()
+        elif len(obs) != 0:
+           vlist = obs[0].list_variables_incl_axes()
+        
+        for i in range(len(model)):
+            if not isinstance (model[i], basic_filetable): pass
+            if model[i].nrows() == 0: pass
+            nvlist = model[i].list_variables_incl_axes()
+            vlist = list(set(nvlist) & set(vlist))
+        for i in range(len(obs)):
+            if not isinstance (obs[i], basic_filetable): pass
+            if obs[i].nrows() == 0: pass
+            nvlist = obs[i].list_variables_incl_axes()
+            vlist = list(set(nvlist) & set(vlist))
+        vlist.sort()
+        return vlist
+
     def list_diagnostic_sets( self ):
         """returns a dict.  The keys are menu items for choosing a diagnostic set (aka plot set).
         Each value is the corresponding class to be instantiated, which can describe the diagnostic

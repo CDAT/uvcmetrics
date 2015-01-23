@@ -4,11 +4,14 @@
 
 import numpy, cdms2
 from numpy import pi, sin
+
 def latAxis( mv ):
     "returns the latitude axis, if any, of a variable mv"
+    if mv is None: return None
     lat_axis = None
     for ax in mv.getAxisList():
-        if ax.id=='lat': lat_axis = ax
+        #if ax.id=='lat': lat_axis = ax
+        if ax.isLatitude(): lat_axis = ax
     return lat_axis
 
 # ~/amwg/ncl/lib/ncarg/nclscripts/csm/contributed.ncl
