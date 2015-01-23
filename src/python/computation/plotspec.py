@@ -366,3 +366,29 @@ class basic_pole_variable(basic_plot_variable):
         """returns the hemisphere specific to this variable. """
         opts ={" Northern Hemisphere":(90, 0.), " Southern Hemisphere":(-90.,0) }
         return opts
+class station_id_variable():
+    """provides an index into a data array for a specific station."""
+    station_names = ["Ascension_Island","Diego_Garcia","Truk_Island", 
+                     "Western_Europe","Ethiopia","Resolute_Canada","Western_Desert_Australia", 
+                     "Great_Plains_USA","Central_India","Marshall_Islands","Easter_Island", 
+                     "McMurdo_Antarctica","SouthPole_Antarctica","Panama","Western_North_Atlantic",
+                     "Singapore","Manila","Gilbert_Islands","Hawaii","San_Paulo","Heard_Island", 
+                     "Kagoshima_Japan","Port_Moresby","San_Juan_PR","Western_Alaska", 
+                     "Thule_Greenland","SanFrancisco_CA","Denver_CO","London_UK","Crete", 
+                     "Tokyo","Sydney_Australia","Christchurch_NZ","Lima_Peru","Miami_FL","Samoa", 
+                     "ShipP_GulfofAlaska","ShipC_North_Atlantic","Azores","NewYork_USA",
+                     "Darwin_Australia","Christmas_Island","Cocos_Islands","Midway_Island", 
+                     "Raoui_Island","Whitehorse_Canada","OklahomaCity_OK","Gibraltor", 
+                     "Mexico_City","Recife_Brazil","Nairobi_Kenya","New_Delhi_India", 
+                     "Madras_India","DaNang_Vietnam","Yap_Island","Falkland_Islands" ]
+    @staticmethod
+    def varoptions():
+        """returns the station index specific to this variable. """
+        #copied from profiles.ncl in amwg diagnostics
+
+        opts ={}
+        data_index = 0
+        for station in station_id_variable.station_names:
+            opts[station] = data_index
+            data_index += 1
+        return opts
