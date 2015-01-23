@@ -2056,6 +2056,17 @@ def join_1d_data(*args ):
     M.setAxis(0, T)
     #M.info()
     return M
+def getSection(x, month=None, lat=None, lon=None, vid=None):
+    """return the data associated with a specific time, lat & lon."""
+    if type(month) == type(1):
+        monthIndex = month
+    if type(month) == type(''):
+        monthIndex = cdutil.times.getMonthIndex(month)[0]
+    value = x( time=slice(monthIndex, monthIndex+1),
+               latitude=(lat, lat, 'cob'),
+               longitude=(lon, lon, 'cob'),
+               squeeze=1)
+    return value
 
 def special_case_fixed_variable( case, var ):
     """Fix up a variable for known cases which require special treatment; returns the fixed-up variable."""
