@@ -323,9 +323,9 @@ class uvc_simple_plotspec():
         #        self.presentation.__class__.__name__=="Gfi":
         # interim test here and below.  Once all the is* functions work, I should
         # drop the tests on self.presentation.__class__.__name__ :
+        #pdb.set_trace()
         if vcs.isscatter(self.presentation):
-            ylabel, xlabel = string.split(self.title, ' vs ')
-            #pdb.set_trace()
+            #ylabel, xlabel = string.split(self.title, ' vs ')
             #in the case of scatter plots there are 2 variables packed together
             var = self.vars[0]
             [xMIN, xMAX], [yMIN, yMAX] = self.make_ranges(var)
@@ -336,7 +336,7 @@ class uvc_simple_plotspec():
             self.presentation.xticlabels1 = vcs.mklabels(vcs.mkscale(xMIN, xMAX))
             self.presentation.datawc_x1 = xMIN
             self.presentation.datawc_x2 = xMAX
-            self.presentation.xticlabels2 = {(xMIN+xMAX)/2.: xlabel}
+            #self.presentation.xticlabels2 = {(xMIN+xMAX)/2.: xlabel}
             if flip_y:
                 self.presentation.datawc_y2 = yMIN
                 self.presentation.datawc_y1 = yMAX
@@ -345,15 +345,17 @@ class uvc_simple_plotspec():
                 self.presentation.datawc_y1 = yMIN
                 self.presentation.datawc_y2 = yMAX   
             self.presentation.yticlabels1 = vcs.mklabels(vcs.mkscale(yMIN, yMAX))
-            self.presentation.yticlabels2 = {(yMIN+yMAX)/2.: ylabel}
+            #self.presentation.yticlabels2 = {(yMIN+yMAX)/2.: ylabel}
             self.presentation.linewidth = 0
             self.presentation.markercolor = 1
-            self.presentation.markersize = 5
+            self.presentation.markersize = 10
             #add overplotline is a total kludge
             self.presentation.overplotline = self.overplotline
             if flip_y:
                 self.presentation.flip = True
-            #self.presentation.list()              
+            #self.presentation.list()   
+            #pdb.set_trace()
+    
         elif vcs.isyxvsx(self.presentation) or\
                 vcs.isisofill(self.presentation) or\
                 vcs.isboxfill(self.presentation) or\
