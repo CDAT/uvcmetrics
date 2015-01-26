@@ -367,11 +367,18 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                                    # and if id doesn't exist, the system will create one before plotting!
 
                                                vname = vname.replace('/', '_')
+                                               # basename and postanme are passed in by metadiags.py
+                                               # they are meant to help construct the filename.
+                                               # the filenames are meant to be regular across all sets such that
+                                               # everything is not special cased in classic viewer
+                                               # They should basically be setX_VAR_SEASON_OBS_REGION-{type of plot}.png.
+                                               # If you don't pass basename or postname, you get the very verbose filenames instead.
                                                if basename == None and postname == None:
                                                   fname = outdir+'/figure-set'+snum+'_'+rname+'_'+seasonid+'_'+\
                                                       vname+'_plot-'+str(r)+'.png'
                                                   print "writing png file",fname
                                                else:
+                                               # basename and/or postname passed, so we expect some consistent filenames
                                                   pname = postname
                                                   if pname == None:
                                                       pname = ''
@@ -381,10 +388,14 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                                       if '_diff' in vname:
                                                           pname = postname+'_diff'
                                                       # Note postname will have the obsfile key and things like _NP
-                                                      fname = outdir+'/'+basename+'_'+seasonid+'_'+varid+pname+'.png'
+                                                      if aux == None or aux == 'default' or aux == ' default': #(no idea but it exists)
+                                                         fname = outdir+'/'+basename+'_'+seasonid+'_'+varid+pname+'.png'
+                                                      else:
+                                                         fname = outdir+'/'+basename+'_'+seasonid+'_'+varid+'_'+aux+pname+'.png'
                                                       print "writing png file1",fname, vname
-                                                  else:
-                                                      fname = 'junk.png'
+                                                  else: # this file is usually not of use to classic view so give it the verbose name.
+                                                     fname = outdir+'/figure-set'+snum+'_'+rname+'_'+seasonid+'_'+\
+                                                         vname+'_plot-'+str(r)+'.png'
                                                #rsr_presentation.script("jeff.json")   #example of writing a json file
 
                                            if vcs.isscatter(rsr.presentation):
@@ -517,7 +528,10 @@ def run_diagnostics_from_filetables( opts, filetable1, filetable2=None ):
                                           if '_diff' in vname:
                                              pname = postname+'_diff'
                                              # Note postname will have the obsfile key and things like _NP
-                                       fname = outdir+'/'+basename+'_'+seasonid+'_'+varid+pname+'-combined.png'
+                                       if aux == None or aux == 'default' or aux == ' default': #(no idea but it exists)
+                                          fname = outdir+'/'+basename+'_'+seasonid+'_'+varid+pname+'-combined.png'
+                                       else:
+                                          fname = outdir+'/'+basename+'_'+seasonid+'_'+varid+'_'+aux+pname+'-combined.png'
                                        print "writing png file2",fname
                                     vcanvas2.png( fname , ignore_alpha = True)
                                     number_diagnostic_plots += 1
