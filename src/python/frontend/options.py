@@ -327,23 +327,32 @@ class Options():
    def processCmdLine(self):
       parser = argparse.ArgumentParser(
          description='UV-CDAT Climate Modeling Diagnostics', 
-         usage='%(prog)s --path1 [options]')
+         usage='%(prog)s --path [options]',
+         formatter_class=argparse.RawDescriptionHelpFormatter,
+         epilog=('''\
+            Examples:
+            %(prog)s --model path=/path/to/a/dataset,climos=yes --obs path=/path/to/a/obs/set,climos=yes,filter='f_startswith("NCEP")' --package AMWG --sets 4 --vars Z3 --varopts 300 500 
+            is the same as:
+            %(prog)s --path /path/to/a/dataset --climos yes --path /path/to/an/obsset --type obs --climos yes --filter 'f_startswith("NCEP")' --package AMWG --sets 4 --vars Z3 --varopts 300 500
+
+            --model/--obs or --path can be specified multiple times.
+            '''))
 
       # Dataset related stuff
       parser.add_argument('--path', '-p', action='append', 
          help="Path(s) to dataset(s). This is required if the --models/--obs options are not used.")
-      parser.add_argument('--climo', action='append', choices=['no','yes', 'raw','True', 'False'], 
-         help="Specifies whether this path is raw data or climatologies")
+      parser.add_argument('--climo', '--climos', action='append', choices=['no','yes', 'raw','True', 'False'], 
+         help="Specifies whether this path is raw data or climatologies. This is used if --model/--obs options are not.")
       parser.add_argument('--filters', '-f', action='append', nargs='+', 
-         help="A filespec filter. This will be applied to the dataset path(s) (--path option) to narrow down file choices.")
+         help="A filespec filter. This will be applied to the dataset path(s) (--path option) to narrow down file choices.. This is used if --model/--obs options are not.")
       parser.add_argument('--type', '-t', action='append', choices=['m','model','o','obs','observation'],
-         help="Specifies the type of this dataset. Options are 'model' or 'observation'")
+         help="Specifies the type of this dataset. Options are 'model' or 'observation'. This is used if --model/--obs options are not.")
       parser.add_argument('--name', '-n', action='append', 
-         help="A short name for this dataset. used to make titles and filenames manageable")
+         help="A short name for this dataset. used to make titles and filenames manageable. This is used if --model/--obs options are not.")
       parser.add_argument('--start', action='append', 
-         help="Specify a start time in the dataset")
+         help="Specify a start time in the dataset. This is used if --model/--obs options are not.")
       parser.add_argument('--end', action='append', 
-         help="Specify an end time in the dataset")
+         help="Specify an end time in the dataset. This is used if --model/--obs options are not.")
 
       parser.add_argument('--model', '-m', action='append',# nargs=1,
          help="key=value comma delimited list of model options. Options are as follows: path={a path to the data} filter={one or more file filters} name={short name for the dataset} start={starting time for the analysis} end={ending time for the analysis} climo=[yes|no] - is this a set of climatologies or raw data")
@@ -352,8 +361,6 @@ class Options():
 
       parser.add_argument('--cachepath', nargs=1,
          help="Path for temporary and cachced files. Defaults to /tmp")
-#      parser.add_argument('--realm', '-r', nargs=1, choices=self.realm_types,
-#         help="The realm type. Current valid options are 'land' and 'atmosphere'")
 
       parser.add_argument('--verbose', '-V', action='count',
          help="Increase the verbosity level. Each -v option increases the verbosity more.") # count
@@ -390,7 +397,7 @@ class Options():
       parser.add_argument('--compress', choices=['no', 'yes'],
          help="Turn off netCDF compression. This can be required for other utilities to be able to process the output files (e.g. parallel netCDF based tools") #no compression, add self state
       parser.add_argument('--prefix', 
-         help="Specify an output filename prefix to be prepended to all file names created internally. For example --prefix myout might generate myout-JAN.nc, etc")
+         help="Specify an output filename prefix to be prepended to all file names created internally. For example --prefix myout might generate myout-PBOT_JAN_GPCP.nc, etc")
       parser.add_argument('--postfix', 
          help="Specify an output filename postfix to be appended to all file names created internally. For example --postfix _OBS might generate set1-JAN_OBS.nc, etc")
       parser.add_argument('--outputdir', '-o',
