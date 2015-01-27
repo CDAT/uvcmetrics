@@ -2047,7 +2047,7 @@ class amwg_plot_set12(amwg_plot_spec):
         self.plot_ids = self.months       
         self.plotall_id = 'all_seasons'
         if not self.computation_planned:
-            self.plan_computation( model, obs, varid, seasonid )
+            self.plan_computation( model, obs, varid, station )
 
     @staticmethod
     def _list_variables( filetable1, filetable2=None ):
@@ -2063,7 +2063,7 @@ class amwg_plot_set12(amwg_plot_spec):
             filetable1, filetable2, "amwg_plot_spec" ):
             allvars[varname] = station_id_variable
         return allvars
-    def plan_computation( self, model, obs, varid, seasonid ):
+    def plan_computation( self, model, obs, varid, station ):
         filetable1, filetable2 = self.getfts(model, obs)
 
         self.computation_planned = False
