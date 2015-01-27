@@ -2012,6 +2012,12 @@ class amwg_plot_set11(amwg_plot_spec):
         return self.plotspec_values[self.plotall_id]
 
 class amwg_plot_set12(amwg_plot_spec):
+    """ Example script: 
+        diags.py --model path=$HOME/uvcmetrics_test_data/esg_data/f.e11.F2000C5.f09_f09.control.001/,climos=yes 
+        --obs path=$HOME/uvcmetrics_test_data/obs_data/,filter='f_startswith("RAOBS")',climos=yes 
+        --outputdir $HOME/Documents/Climatology/ClimateData/diagout/ --package AMWG --sets 12 --seasons JAN 
+        --plots yes --vars T --varopts='SanFrancisco_CA'
+    """
     name = '12 - Vertical Profiles at 17 selected raobs stations:incomplete'
     number = '12'
 
