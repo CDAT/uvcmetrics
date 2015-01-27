@@ -123,10 +123,10 @@ class Options():
             self._opts[key][index]['name'] = None
 
          if args.filters != None and len(args.filters) >= i:
-            if args.filters[index] in ['None', 'none', 'no']:
+            if args.filters[i] in ['None', 'none', 'no']:
                self._opts[key][index]['filter'] = None
             else:
-               self._opts[key][index]['filter'] = args.filters[index]
+               self._opts[key][index]['filter'] = args.filters[i]
          else:
             self._opts[key][index]['filter'] = None
 
@@ -139,6 +139,7 @@ class Options():
             self._opts[key][index]['end'] = args.end[i]
          else:
             self._opts[key][index]['end'] = None
+         print self._opts[key][index]
 
    def processModel(self, models):
       self.processDataset('model', models) # the dtype and the dictionary key for it, the data
