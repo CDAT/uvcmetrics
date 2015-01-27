@@ -148,13 +148,12 @@ class Options():
 
    def processDataset(self, dictkey, data):
       defkeys = ['start', 'end','filter', 'name', 'climos', 'path', 'type']
-      print 'dictkey: ', dictkey
 
       for i in range(len(data)):
          self._opts[dictkey].append({})
-         self._opts[dictkey][i]['type'] = dictkey
          for d in defkeys:
             self._opts[dictkey][i][d] = None
+         self._opts[dictkey][i]['type'] = dictkey # ensure this one is at least set.
          kvs = data[i].split(',')
          for k in kvs:
             key, value = k.split('=')
