@@ -341,7 +341,7 @@ class Options():
       # Dataset related stuff
       parser.add_argument('--path', '-p', action='append', 
          help="Path(s) to dataset(s). This is required if the --models/--obs options are not used.")
-      parser.add_argument('--climo', action='append', choices=['no','yes', 'raw','True', 'False'], 
+      parser.add_argument('--climo', '--climos', action='append', choices=['no','yes', 'raw','True', 'False'], 
          help="Specifies whether this path is raw data or climatologies. This is used if --model/--obs options are not.")
       parser.add_argument('--filters', '-f', action='append', nargs='+', 
          help="A filespec filter. This will be applied to the dataset path(s) (--path option) to narrow down file choices.. This is used if --model/--obs options are not.")
