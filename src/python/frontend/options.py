@@ -123,7 +123,10 @@ class Options():
             self._opts[key][index]['name'] = None
 
          if args.filters != None and len(args.filters) >= i:
-            self._opts[key][index]['filter'] = args.filters[i]
+            if args.filters[index] in ['None', 'none', 'no']:
+               self._opts[key][index]['filter'] = None
+            else:
+               self._opts[key][index]['filter'] = args.filters[index]
          else:
             self._opts[key][index]['filter'] = None
 
@@ -343,7 +346,7 @@ class Options():
          help="Path(s) to dataset(s). This is required if the --models/--obs options are not used.")
       parser.add_argument('--climo', '--climos', action='append', choices=['no','yes', 'raw','True', 'False'], 
          help="Specifies whether this path is raw data or climatologies. This is used if --model/--obs options are not.")
-      parser.add_argument('--filters', '-f', action='append', nargs='+', 
+      parser.add_argument('--filters', '-f', action='append',
          help="A filespec filter. This will be applied to the dataset path(s) (--path option) to narrow down file choices.. This is used if --model/--obs options are not.")
       parser.add_argument('--type', '-t', action='append', choices=['m','model','o','obs','observation'],
          help="Specifies the type of this dataset. Options are 'model' or 'observation'. This is used if --model/--obs options are not.")
