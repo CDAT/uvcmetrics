@@ -137,12 +137,12 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
     if opts['output']['plots'] == True:
         vcanvas = vcs.init()
         vcanvas.setcolormap('bl_to_darkred') #Set the colormap to the NCAR colors
-        if opts['plotlogo']==False:
+        if opts['output']['logo'] == False:
             vcanvas.drawlogooff()
         vcanvas2 = vcs.init()
         vcanvas2.portrait()
         vcanvas2.setcolormap('bl_to_darkred') #Set the colormap to the NCAR colors
-        if opts['plotlogo']==False:
+        if opts['output']['logo'] == False:
             vcanvas2.drawlogooff()
 #       vcanvas3 = vcs.init()
         savePNG = False
@@ -166,7 +166,7 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
             sndic = { setnum(s):s for s in sm.keys() }   # plot set number:name
             plotsets = [ sndic[setnum(x)] for x in ps if setnum(x) in sndic ]
 
-        if opts['regions'] == None:
+        if opts['regions'] == []:
             regl = defines.all_regions['Global']
             rname = 'Global'
         else:
