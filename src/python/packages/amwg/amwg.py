@@ -2018,7 +2018,7 @@ class amwg_plot_set12(amwg_plot_spec):
         --outputdir $HOME/Documents/Climatology/ClimateData/diagout/ --package AMWG --sets 12 --seasons JAN 
         --plots yes --vars T --varopts='SanFrancisco_CA'
     """
-    name = '12 - Vertical Profiles at 17 selected raobs stations:incomplete'
+    name = '12 - Vertical Profiles at 17 selected raobs stations'
     number = '12'
 
     def __init__( self, model, obs, varid, seasonid='ANN', region=None, aux=None ):
@@ -2046,7 +2046,7 @@ class amwg_plot_set12(amwg_plot_spec):
         station = aux
         self.lat, self.lon = self.StationData.getLatLon(station)
         #print station, self.lat, self.lon
-        self.compositeTitle = station_id_variable.station_names[station]+'\n'+ \
+        self.compositeTitle = metrics.frontend.defines.station_names[station]+'\n'+ \
                               'latitude = ' + str(self.lat) + ' longitude = ' + str(self.lon)
         self.plotCompositeTitle = True
         self.IDsandUnits = None
@@ -2525,15 +2525,16 @@ def join_scalar_data(*args ):
     #M.info()
     return M
 
-class xxxamwg_plot_set14(amwg_plot_spec):
-    #name = '14 - Taylor diagrams: incomplete'
-    #number = '14'
+class amwg_plot_set14(amwg_plot_spec):
+    name = '14 - Taylor diagrams: incomplete'
+    number = '14'
     def __init__( self, model, obs, varid, seasonid='ANN', region=None, aux=None ):
         filetable1, filetable2 = self.getfts(model, obs)
         """filetable1, filetable2 should be filetables for each model.
         varid is a string, e.g. 'TREFHT'.  The seasonal difference is Seasonid
         It is is a string, e.g. 'DJF-JJA'. """
         import string
+        pdb.set_trace()
         
         plot_spec.__init__(self, seasonid)
         self.plottype = 'Taylor'
@@ -2556,6 +2557,7 @@ class xxxamwg_plot_set14(amwg_plot_spec):
         if not self.computation_planned:
             self.plan_computation( model, obs, varid, seasonid )
     def plan_computation( self, model, obs, varid, seasonid ):
+        from genutil.statistics import std, correlation, numpy
         filetable1, filetable2 = self.getfts(model, obs)
         self.computation_planned = False
         #check if there is data to process
@@ -2575,46 +2577,46 @@ class xxxamwg_plot_set14(amwg_plot_spec):
         RVs = {}  
         for dt, ft in zip(self.datatype, self.filetables):
             for var in self.vars:
-                #rv for the data
-                VID_data = rv.dict_id(var, 'data', ft)
-                VID_data = id2str(VID_data)
-                #print VID_data
+                #rv for the mean
+                VID_mean = rv.dict_id(var, 'mean', ft)
+                VID_mean = id2str(VID_mean)
+                print VID_mean
                 RV = reduced_variable( variableid=var, 
                                        filetable=ft, 
                                        season=cdutil.times.Seasons(seasonid), 
-                                       reduction_function=( lambda x, vid=VID_data:x ) ) 
-                self.reduced_variables[VID_data] = RV     
+                                       reduction_function=( lambda x, vid=VID_mean:x ) ) 
+                self.reduced_variables[VID_mean] = RV     
                 
-                #rv for its variance
-                VID_var = rv.dict_id(var, 'variance', ft)
-                VID_var = id2str(VID_var)
-                #print VID_var
+                #rv for its std
+                VID_std = rv.dict_id(var, 'std', ft)
+                VID_std = id2str(VID_std)
+                print VID_std
                 RV = reduced_variable( variableid=var, 
                                        filetable=ft, 
                                        season=cdutil.times.Seasons(seasonid), 
-                                       reduction_function=( lambda x, vid=VID_var:MV2.array([x.var()]) ) ) 
-                self.reduced_variables[VID_var] = RV     
+                                       reduction_function=( lambda x, vid=VID_std:std(x) ) ) 
+                self.reduced_variables[VID_std] = RV     
 
-                RVs[(var, dt)] = (VID_data, VID_var)     
+                RVs[(var, dt)] = (VID_mean, VID_std)     
                    
-        #generate derived variables for centered RMS difference
+        #generate derived variables for correlation
         nvars = len(self.vars)
         DVs = {}
         for var in self.vars:
-            Vobs   = RVs[var, 'obs'][0]
-            Vmodel = RVs[var, 'model'][0]
-            DV = var+'_RMS_CD'
+            Vobs   = RVs[var, 'obs'][1]
+            Vmodel = RVs[var, 'model'][1]
+            DV = var+'_correlation'
             #print Vobs
             #print Vmodel
             #print DV
-            DVs['RMS_CD', var] = DV
-            self.derived_variables[DV] = derived_var(vid=DV, inputs=[Vobs, Vmodel], func=centered_RMS_difference) 
+            DVs[var, 'correlation'] = DV
+            self.derived_variables[DV] = derived_var(vid=DV, inputs=[Vobs, Vmodel], func=correlation) 
         
         pairs = []
         for var in self.vars:
             for dt in self.datatype:
-                pairs += [RVs[var, dt][1], DVs['RMS_CD', var]]
-        #print pairs
+                pairs += [ (RVs[var, dt][1], DVs[var, 'correlation']) ]
+        print pairs
         #correlation coefficient 
         self.derived_variables['TaylorData']   = derived_var(vid='TaylorData',   inputs=pairs,   func=join_scalar_data) 
         #self.derived_variables['modelData'] = derived_var(vid='modelData', inputs=RVs['model']+DVs['RMS_CD'], func=join_scalar_data)         
@@ -2630,7 +2632,7 @@ class xxxamwg_plot_set14(amwg_plot_spec):
     
         #self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
         self.computation_planned = True
-
+        pdb.set_trace()
     def _results(self, newgrid=0):
         #pdb.set_trace()
         results = plot_spec._results(self, newgrid)
