@@ -72,6 +72,20 @@ region_categories = {
 'Hemispheric and Global': ['Global Land', 'Northern Hemisphere Land', 'Southern Hemisphere Land']
 }
 
+#station ids used in plot set 12
+station_names = ["Ascension_Island","Diego_Garcia","Truk_Island", 
+                "Western_Europe","Ethiopia","Resolute_Canada","Western_Desert_Australia", 
+                "Great_Plains_USA","Central_India","Marshall_Islands","Easter_Island", 
+                "McMurdo_Antarctica","SouthPole_Antarctica","Panama","Western_North_Atlantic",
+                "Singapore","Manila","Gilbert_Islands","Hawaii","San_Paulo","Heard_Island", 
+                "Kagoshima_Japan","Port_Moresby","San_Juan_PR","Western_Alaska", 
+                "Thule_Greenland","SanFrancisco_CA","Denver_CO","London_UK","Crete", 
+                "Tokyo","Sydney_Australia","Christchurch_NZ","Lima_Peru","Miami_FL","Samoa", 
+                "ShipP_GulfofAlaska","ShipC_North_Atlantic","Azores","NewYork_USA",
+                "Darwin_Australia","Christmas_Island","Cocos_Islands","Midway_Island", 
+                "Raoui_Island","Whitehorse_Canada","OklahomaCity_OK","Gibraltor", 
+                "Mexico_City","Recife_Brazil","Nairobi_Kenya","New_Delhi_India", 
+                "Madras_India","DaNang_Vietnam","Yap_Island","Falkland_Islands" ]
 
 all_months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
 all_seasons = all_months+['ANN', 'DJF', 'MAM', 'JJA', 'SON', 'ASO', 'FMA'] # The last 2 were in some obs sets
