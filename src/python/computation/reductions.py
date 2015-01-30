@@ -295,7 +295,7 @@ def reduce2scalar_seasonal_zonal_level( mv, seasons=seasonsyr, latmin=-90, latma
     mvl = select_lev( mv, level )   # mv restricted (approximately) to the specified level
     if mvl is None:
         return None
-    return reduce2scalar_seasonal_zonal( mvl, seasons, latmin, latmax, vid, gw )
+    return reduce2scalar_seasonal_zonal( mvl, seasons, latmin=latmin, latmax=latmax, vid=vid, gw=gw )
 
 
 def reduce2scalar( mv, vid=None, gw=None ):

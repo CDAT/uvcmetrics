@@ -235,7 +235,8 @@ class amwg_plot_set1(amwg_plot_spec):
                                       vidm1: derived_var(
                         vid=vidm1, inputs=[vidl1], func=\
                             (lambda x,vid=None,season=self.season,dom0=domrange[0],dom1=domrange[1],gw=gw:
-                                 reduce2scalar_seasonal_zonal(x,season,dom0,dom1,vid=vid,gw=gw) ) )
+                                 reduce2scalar_seasonal_zonal(
+                                x,season,latmin=dom0,latmax=dom1,vid=vid,gw=gw) ) )
                                       }
                 variable_values = {}  # the following is similar to code in plot_spec._results()
                 for v,rv1 in reduced_variables.iteritems():
@@ -251,7 +252,8 @@ class amwg_plot_set1(amwg_plot_spec):
                 reduced_variables = reduced_variables_press_lev(
                     filetable, self.var, self.seasonid, filefilter=ffilt, rf=\
                         (lambda x,vid=None,season=self.season,dom0=domrange[0],dom1=domrange[1],gw=gw:
-                                 reduce2scalar_seasonal_zonal_level(x,season,dom0,dom1,level=ulev,vid=vid,gw=gw) )
+                                 reduce2scalar_seasonal_zonal_level(
+                            x,season,latmin=dom0,latmax=dom1,level=ulev,vid=vid,gw=gw) )
                     )
                 derived_variables = {}
                 rv1 = reduced_variables[reduced_variables.keys()[0]]
@@ -280,7 +282,8 @@ class amwg_plot_set1(amwg_plot_spec):
                         variableid=self.var, filetable=filetable, season=self.season, filefilter=ffilt,
                         reduction_function=\
                             (lambda x,vid=None,season=self.season,dom0=domrange[0],dom1=domrange[1],gw=gw:
-                                 reduce2scalar_seasonal_zonal(x,season,dom0,dom1,vid=vid,gw=gw) )
+                                 reduce2scalar_seasonal_zonal(
+                                x,season,latmin=dom0,latmax=dom1,vid=vid,gw=gw) )
                         )
                     mean1 = rv1.reduce()
                 if mean1 is None:
@@ -296,7 +299,8 @@ class amwg_plot_set1(amwg_plot_spec):
                 vid,rvs,dvs = amwg_plot_spec.stdvar2var(
                     self.var, filetable, self.season, reduction_function=\
                         (lambda x,vid=None,season=self.season,dom0=domrange[0],dom1=domrange[1],gw=gw:
-                             reduce2scalar_seasonal_zonal(x,season,dom0,dom1,vid=vid,gw=gw) ))
+                             reduce2scalar_seasonal_zonal(
+                            x,season,latmin=dom0,latmax=dom1,vid=vid,gw=gw) ))
                 if vid is None:
                     print "cannot compute mean for",self.var,filetable
                     return -999.000     # In the NCAR table, this number means 'None'.
