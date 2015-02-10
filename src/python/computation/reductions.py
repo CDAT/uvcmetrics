@@ -1597,6 +1597,19 @@ def convert_qflx_to_Wms(qflx):
         exit
     return lhflx
 
+def convert_lhflx_to_mmperday(lhflx):
+    # To compare LHFLX and QFLX, need to unify these to a common variables
+    # e.g. LHFLX (latent heat flux in W/m^2) vs. QFLX (evaporation in mm/day)
+    # The latent heat of vaporization for water is 2260 kJ/kg [SMB: 9 Feb 2015].
+
+    lhvap = 2260.
+    lhvap.units = 'kJ/kg'
+    lhflx_kg_per_m2_per_day = reconcile_units(lhflx, udunits(1,'kJ/m2/day'),
+                                              preferred_units='kJ/m2/day')
+    qflx = lhflx_kg_per_m2_per_day / lhvap
+    qflx.units = 'mm/day'
+    return qflx
+
 def reconcile_units( mv1, mv2, preferred_units=None ):
     """Changes the units of variables (instances of TransientVariable) mv1,mv2 to be the same,
     mv1 is a TransientVariable or an axis.  mv2 may be a TransientVariable or axis, or it may
