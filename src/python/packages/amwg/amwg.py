@@ -246,6 +246,9 @@ class amwg_plot_spec(plot_spec):
         'LHFLX':[derived_var(
                 vid='LHFLX', inputs=['QFLX'], outputs=['LHFLX'],
                 func=(lambda x: convert_qflx_to_Wms(x)) ) ]
+        'QFLX':[derived_var(
+                vid='QFLX', inputs=['LHFLX'], outputs=['QFLX'],
+                func=(lambda x: convert_lhflx_to_mmperday(x)) ) ]
         }
     @staticmethod
     def _list_variables( model, obs ):
