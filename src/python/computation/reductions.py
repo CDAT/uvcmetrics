@@ -1590,9 +1590,12 @@ def convert_qflx_to_Wms(qflx):
         qflx.units='kg/m2/day'
         qflxtmp = lhvap*qflx
         qflxtmp.units = 'kJ/m2/day'
-        qflxWms = reconcile_units(qflxtmp, udunits(1,'W/m2'),
+        lhflx = reconcile_units(qflxtmp, udunits(1,'W/m2'),
                                   preferred_units='W/m2')
-    return qflxWms
+    else:
+        print "ERROR: In function convert_qflx_to_Wms, input variable qflx must have units of mm/day."
+        exit
+    return lhflx
 
 def reconcile_units( mv1, mv2, preferred_units=None ):
     """Changes the units of variables (instances of TransientVariable) mv1,mv2 to be the same,
