@@ -1613,9 +1613,9 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
         # Very ad-hoc, but more general would be less safe:
         # BES - set 3 does not seem to call it rv_QFLX. It is set3_QFLX_ft0_climos, so make this just a substring search
 #        if mv1.id[0:8]=="rv_QFLX_" and mv1.units=="kg/m2/s":
-        if mv1.id.find('_QFLX_') and mv1.units=="kg/m2/s":
-            preferred_units="mm/day"
-            mv1.units="mm/s"   # if 1 kg = 10^6 mm^3 as for water
+#        if mv1.id.find('_QFLX_') and mv1.units=="kg/m2/s":
+#            preferred_units="mm/day"
+#            mv1.units="mm/s"   # if 1 kg = 10^6 mm^3 as for water
         if mv1.units=='kg/m2/s' and mv2.units=='mm/day':
             preferred_units="mm/day"
             mv1.units="mm/s"   # if 1 kg = 10^6 mm^3 as for water
