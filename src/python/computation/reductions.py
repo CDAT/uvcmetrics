@@ -1584,8 +1584,7 @@ def convert_qflx_to_Wms(qflx):
 
     # TODO: Probably the unit conversions can be handled more
     # elegantly upon revision of this function.
-    lhvap = 2260.
-    lhvap.units = 'kJ/kg'
+    lhvap = 2260. # 'kJ/kg'
     if qflx.units == 'mm/day':
         qflx.units='kg/m2/day'
         qflxtmp = lhvap*qflx
@@ -1602,8 +1601,7 @@ def convert_lhflx_to_mmperday(lhflx):
     # e.g. LHFLX (latent heat flux in W/m^2) vs. QFLX (evaporation in mm/day)
     # The latent heat of vaporization for water is 2260 kJ/kg [SMB: 9 Feb 2015].
 
-    lhvap = 2260.
-    lhvap.units = 'kJ/kg'
+    lhvap = 2260. # 'kJ/kg'
     lhflx_kg_per_m2_per_day = reconcile_units(lhflx, udunits(1,'kJ/m2/day'),
                                               preferred_units='kJ/m2/day')
     qflx = lhflx_kg_per_m2_per_day / lhvap
