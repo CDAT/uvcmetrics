@@ -1592,7 +1592,7 @@ def convert_qflx_to_Wms(qflx):
 #        lhflx = reconcile_units(qflxtmp, udunits(1,'W/m^2'),
 #                                  preferred_units='W/m^2')
     # 1 W = 86.4 kJ / day
-        lhflx = qflxtmp * 86.4
+        lhflx = qflxtmp / 86.4
         lhflx.units = 'W/m^2'
     else:
         print "ERROR: In function convert_qflx_to_Wms, input variable qflx must have units of mm/day."
@@ -1612,7 +1612,7 @@ def convert_lhflx_to_mmperday(lhflx):
 #                                              preferred_units='kJ/m2/day')
 
     # 1 W = 86.4 kJ / day
-    lhflx_kg_per_m2_per_day = lhflx / 86.4
+    lhflx_kg_per_m2_per_day = lhflx * 86.4
 
     qflx = lhflx_kg_per_m2_per_day / lhvap
     qflx.units = 'mm/day'
