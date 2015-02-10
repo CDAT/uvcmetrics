@@ -1586,11 +1586,14 @@ def convert_qflx_to_Wms(qflx):
     # elegantly upon revision of this function.
     lhvap = 2260. # 'kJ/kg'
     if qflx.units == 'mm/day':
-        qflx.units='kg/m2/day'
+#        qflx.units='kg/m2/day'
         qflxtmp = lhvap*qflx
-        qflxtmp.units = 'kJ/m2/day'
-        lhflx = reconcile_units(qflxtmp, udunits(1,'W/m2'),
-                                  preferred_units='W/m2')
+#        qflxtmp.units = 'kJ/m2/day'
+#        lhflx = reconcile_units(qflxtmp, udunits(1,'W/m^2'),
+#                                  preferred_units='W/m^2')
+    # 1 W = 86.4 kJ / day
+        lhflx = qflxtmp * 86.4
+        lhflx.units = 'W/m^s'
     else:
         print "ERROR: In function convert_qflx_to_Wms, input variable qflx must have units of mm/day."
         exit
@@ -1602,8 +1605,15 @@ def convert_lhflx_to_mmperday(lhflx):
     # The latent heat of vaporization for water is 2260 kJ/kg [SMB: 9 Feb 2015].
 
     lhvap = 2260. # 'kJ/kg'
-    lhflx_kg_per_m2_per_day = reconcile_units(lhflx, udunits(1,'kJ/m2/day'),
-                                              preferred_units='kJ/m2/day')
+
+    # TODO: Probably the unit conversions can be handled more
+    # elegantly upon revision of this function.
+#    lhflx_kg_per_m2_per_day = reconcile_units(lhflx, udunits(1,'kJ/m2/day'),
+#                                              preferred_units='kJ/m2/day')
+
+    # 1 W = 86.4 kJ / day
+    lhflx_kg_per_m2_per_day = lhflx / 86.4
+
     qflx = lhflx_kg_per_m2_per_day / lhvap
     qflx.units = 'mm/day'
     return qflx
