@@ -240,7 +240,7 @@ class amwg_plot_spec(plot_spec):
         'TGCLDLWP':[derived_var(
                 vid='TGCLDLWP', inputs=['TGCLDLWP_OCEAN'], outputs=['TGCLDLWP'],
                 func=(lambda x: x) ) ],
-        # To compare LHFLX and QFLX, need to unify these to a common variables
+        # To compare LHFLX and QFLX, need to unify these to a common variable
         # e.g. LHFLX (latent heat flux in W/m^2) vs. QFLX (evaporation in mm/day).
         # [SMB: 9 Feb 2015]
         'LHFLX':[derived_var(
