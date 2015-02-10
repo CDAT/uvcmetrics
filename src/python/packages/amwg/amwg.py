@@ -239,7 +239,13 @@ class amwg_plot_spec(plot_spec):
 
         'TGCLDLWP':[derived_var(
                 vid='TGCLDLWP', inputs=['TGCLDLWP_OCEAN'], outputs=['TGCLDLWP'],
-                func=(lambda x: x) ) ]
+                func=(lambda x: x) ) ],
+        # To compare LHFLX and QFLX, need to unify these to a common variables
+        # e.g. LHFLX (latent heat flux in W/m^2) vs. QFLX (evaporation in mm/day)
+        # The latent heat of vaporization for water is 2260 kJ/kg [SMB: 9 Feb 2015].
+        'LHFLX':[derived_var(
+                vid='LHFLX', inputs=['QFLX'], outputs=['LHFLX'],
+                func=(lambda x: convert_qflx_to_Wms(x)) ) ]
         }
     @staticmethod
     def _list_variables( model, obs ):
