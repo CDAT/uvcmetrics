@@ -1577,6 +1577,23 @@ def aminusb_ax2( mv1, mv2 ):
     aminusb.initDomain( ab_axes )
     return aminusb
 
+def convert_qflx_to_Wms(qflx):
+    # To compare LHFLX and QFLX, need to unify these to a common variables
+    # e.g. LHFLX (latent heat flux in W/m^2) vs. QFLX (evaporation in mm/day)
+    # The latent heat of vaporization for water is 2260 kJ/kg [SMB: 9 Feb 2015].
+
+    # TODO: Probably the unit conversions can be handled more
+    # elegantly upon revision of this function.
+    lhvap = 2260.
+    lhvap.units = 'kJ/kg'
+    if qflx.units == 'mm/day':
+        qflx.units='kg/m2/day'
+        qflxtmp = lhvap*qflx
+        qflxtmp.units = 'kJ/m2/day'
+        qflxWms = reconcile_units(qflxtmp, udunits(1,'W/m2'),
+                                  preferred_units='W/m2')
+    return qflxWms
+
 def reconcile_units( mv1, mv2, preferred_units=None ):
     """Changes the units of variables (instances of TransientVariable) mv1,mv2 to be the same,
     mv1 is a TransientVariable or an axis.  mv2 may be a TransientVariable or axis, or it may
