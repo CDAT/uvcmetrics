@@ -18,6 +18,8 @@ from metrics.packages.amwg.derivations import press2alt
 from metrics.fileio.filetable import *
 from metrics.computation.units import *
 #from climo_test import cdutil_climatology
+import metrics.frontend.defines as defines
+from metrics.computation.region import *
 from genutil import *
 from metrics.computation.region_functions import *
 
@@ -204,7 +206,7 @@ def reduce2scalar_zonal( mv, latmin=-90, latmax=90, vid=None, gw=None ):
 
     return avmv
 
-def reduce2scalar_seasonal_zonal( mv, seasons=seasonsyr, region=None, latmin=None, latmax=None, vid=None, gw=None ):
+def reduce2scalar_seasonal_zonal( mv, seasons=seasonsyr, latmin=-90, latmax=90, vid=None, gw=None ):
     """returns the mean of the variable over the supplied latitude range (in degrees).
     The computed quantity is a scalar but is returned as a cdms2 variable, i.e. a MV.
     The input mv is a cdms2 variable too.
@@ -214,22 +216,6 @@ def reduce2scalar_seasonal_zonal( mv, seasons=seasonsyr, region=None, latmin=Non
     """
     if vid is None:
         vid = 'reduced_'+mv.id
-
-    if region is not None:
-        region = interpret_region(region)
-        if latmin is not None and latmin!=region[0]:
-            print "Warning: conflict between specified latmin = ", latmin, "and region (latmin = ", region[0], ") definitions."
-            print "Using region[0] = ", region[0], " as latmin."
-        latmin = region[0]
-        if latmax is not None and latmax!=region[1]:
-            print "Warning: conflict between sepcified latmax = ", latmax, "and region (latmax = ", region[1], ") definitions."
-            print "Using region[1] = ", region[1], " as latmax."
-        latmax = region[1]
-    if latmin is None:
-        latmin = -90
-    if latmax is None:
-        latmax = 90
-
     # reduce size of lat axis to (latmin,latmax)
     mv2 = mv(latitude=(latmin, latmax))
     # reduce size of gw to (latmin,latmax)
@@ -390,7 +376,7 @@ def reduce2levlat_seasonal( mv, seasons=seasonsyr, region=None, vid=None ):
     axes = allAxes( mv )
 
     mvr = select_region(mv, region)
-    mvseas = reduce_time_seasonal(mvr, seasons)
+    mvseas = reduce_time_seasonal(mvr, seasons, region)
 
     axis_names = [ a.id for a in axes if a.isLevel()==False and a.isLatitude()==False and a.isTime()==False ]
     axes_string = '('+')('.join(axis_names)+')'
@@ -492,7 +478,6 @@ def reduce2lat_seasonal( mv, seasons=seasonsyr, region=None, vid=None ):
     return avmv
 
 
-"""
 def ttest_time(mv1, mv2, mv3):
 # mv1 = case1
 # mv2 = case2
@@ -512,8 +497,9 @@ def ttest_time(mv1, mv2, mv3):
    lat2, idx2 = latAxis2(mv2)
    lat3, idx3 = latAxis2(mv3)
 
-   # Regrid if necessary. This makes the two modesl the lesser
+   # Regrid if necessary. This makes the two models the lesser
    # of the two grid sizes.
+   # NCL code interpolates up, ie, obs is scaled to model grid with linint2 function
    if len(ax1[idx1]) < len(ax2[idx2]):
       newgrid = mv1.getGrid()
       mv2new = mv2.regrid(newgrid)
@@ -526,45 +512,43 @@ def ttest_time(mv1, mv2, mv3):
       newgrid = mv1new.getGrid()
       mv3new = mv3.regrid(newgrid)
 
+   # Now, do the model-model ttest
+   tax1, tid1 = timeAxis2(mv1new)
+   tax2, tid2 = timeAxis2(mv2new)
+   tax3, tid3 = timeAxis2(mv3new)
+   if tid1 != tid2:
+      print 'The time axis for mv1 and mv2 are different. This is a significant problem'
+      quit()
 
-   # NCL code interpolates up, ie, obs is scaled to model grid with linint2 function
-   t_ax, t_idx = timeAxis2(mv1new)
    # get basic numpy arrays
    v1 = mv1new.asma()
    v2 = mv2new.asma()
    import scipy.stats
+   prob = mv1new # this might retain some metadata
 
-   t, prob = scipy.stats.ttest_ind(v1, v2, axis=t_idx, equal_var=False)
+   t, prob = scipy.stats.ttest_ind(v1, v2, axis=tid1, equal_var=False)
+   probnew = MV2.where(MV2.less(prob, .000005), 0, prob)
+   
    # The NCAR code interpolates obs res UP to model res.
    # It also does pretty much everything with the interpolated vars, so so shall we.
-   v1_avg = cdutil.averager(mv1new, axis=t_ax)
-   v2_avg = cdutil.averager(mv2new, axis=t_ax)
-   v3_avg = cdutil.averager(mv3new, axis=t_ax)
+   v1_avg = cdutil.averager(mv1new, axis=tid1)
+   v2_avg = cdutil.averager(mv2new, axis=tid2)
+   if tid3 != None:
+      v3_avg = cdutil.averager(mv3new, axis=tid3)
+   else:
+      v3_avg = mv3new
 
    diff13 = MV2.absolute(v1_avg - v3_avg)
-   diff23 = MV2.where(MV2.absolute(v2_avg - v3_avg)
+   diff23 = MV2.absolute(v2_avg - v3_avg)
 
    p1 = MV2.where( MV2.greater(diff13, diff23), MV2.where(MV2.less(prob, .1), 5, 0), 0)
    p2 = MV2.where( MV2.greater(diff23, diff13), MV2.where(MV2.less(prob, .1), 10, 0), 0)
-   #### Implement my own ttest_ind I think
-   ## Welch's t-test:
-   # 
 
+   # This is obs vs ds1 vs ds2
    pmap = p1+p2
-   
+   pmap2 = MV2.where(MV2.greater(1-probnew, .1), 1, 0)
 
-   # Can this be done with MV2.{} stuff?
-   # If diff13 and diff23 are not missing values
-   #    If prob is not missing
-   #        if diff13 > diff23
-   #            if prob < constant
-   #                prob = 10
-   #        else
-   #            if prob < constant
-   #                prob = 5
-
-"""
-
+   return pmap, pmap2
 
 
 
@@ -638,7 +622,7 @@ def rmse_time(mv1, mv2):
 def corr_time(mv1, mv2):
    mv1, mv2 = reconcile_units(mv1, mv2)
    if hasattr(mv1, 'units') and hasattr(mv2, 'units') and mv1.units != mv2.units:
-      print 'WARNING - RMSE - variables have different units:', mv1.units, mv2.units
+      print 'WARNING - CORR - variables have different units:', mv1.units, mv2.units
    axes1 = mv1.getAxisList()
    axes2 = mv2.getAxisList()
    if axes1 is None or axes2 is None: 
@@ -693,6 +677,100 @@ def corr_time(mv1, mv2):
    else:
       corr = statistics.correlation(mv1new, mv2new, axis='t')
       return corr
+
+# Calculate the std dev between mv1 and mv2. Regrid as appropriate
+# Step 1 - Reconcile units
+# Step 2 - ANNUALCYCLE(mv1, mv2)
+# Step 3 - Regrid
+# Step 4 - Calculate std dev
+def std_3time(mv1, mv2, mv3, constant = 1.):
+   # First make sure the models units are consistent
+   mv1, mv2 = reconcile_units(mv1, mv2)
+   mv2, mv3 = reconcile_units(mv2, mv3)
+   if hasattr(mv1, 'units') and hasattr(mv2, 'units') and mv1.units != mv2.units:
+      print 'WARNING - STDDEV - Obsset has different units:', mv1.units, mv2.units
+   axes1 = mv1.getAxisList()
+   axes2 = mv2.getAxisList()
+   axes3 = mv3.getAxisList()
+   if axes1 == None or axes2 == None or axes3 == None:
+      return None
+
+   mv1new = mv1
+   mv2new = mv2
+   mv3new = mv3
+   lat1, idx1 = latAxis2(mv1)
+   lat2, idx2 = latAxis2(mv2)
+   lat3, idx3 = latAxis2(mv3)
+
+   if len(axes1[idx1]) < len(axes2[idx2]):
+      newgrid = mv1.getGrid()
+      mv2new = mv2.regrid(newgrid)
+   if len(axes1[idx1]) > len(axes2[idx2]):
+      newgrid = mv2.getGrid()
+      mv1new = mv1.regrid(newgrid)
+
+   # 1 and 2 are regridded. now we up-sample obs to them (which is what ncar does)
+   latA, idxA = latAxis2(mv1new)
+   if len(axes3[idx3]) != len(latA[idxA]):
+      newgrid = mv1.getGrid()
+      mv3new = mv3.regrid(newgrid)
+
+   flag = False
+   for i in range(len(axes1)):
+      if 'axis' in axes1[i].attributes:
+         pass
+      else:
+         print 'axis ', axes1[i].id, ' has no axis attribute'
+         ### Assuming that is a time axis...
+         axes1[i].axis='T'
+         flag = True
+   if flag == True:
+      mv1new.setAxisList(axes1)
+
+   flag = False
+   for i in range(len(axes2)):
+      if 'axis' in axes2[i].attributes:
+         pass
+      else:
+         print 'axis ', axes2[i].id, ' has no axis attribute'
+         ### Assuming that is a time axis...
+         axes2[i].axis='T'
+         flag = True
+   if flag == True:
+      mv2new.setAxisList(axes2)
+
+   flag = False
+   for i in range(len(axes3)):
+      if 'axis' in axes3[i].attributes:
+         pass
+      else:
+         print 'axis ', axes3[i].id, ' has no axis attribute, assuming it is a time axis'
+         axes3[i].axis='T'
+         flag = True
+   if flag==True:
+      mv3new.setAxisList(axes3)
+
+   mv1_sd = statistics.std(mv1new)
+   mv2_sd = statistics.std(mv2new)
+   mv3_sd = statistics.std(mv3new)
+   # TODO make sure mv3 is still 2D, ie, it had a timeaxis going in. This would require ensuring proper obs is passed in
+
+   absdiff12 = MV2.absolute(mv2_sd - mv1_sd)
+   absdiff23 = MV2.absolute(mv3_sd - mv2_sd)
+   absdiff13 = MV2.absolute(mv3_sd - mv1_sd)
+
+   # b = absdiff21 >= constant AND absdiff23 < absdiff13
+   # g = absdiff21 >= constant AND absdiff23 > absdiff13
+   b = MV2.where( MV2.greater_equal(absdiff12, constant), MV2.where(MV2.less(absdiff23, absdiff13), 1, 0), 0)
+   g = MV2.where( MV2.greater_equal(absdiff12, constant), MV2.where(MV2.greater(absdiff23, absdiff13), 2, 0), 0)
+   
+   sd = b+g
+   sd_map = MV2.where(MV2.equal(sd, mv1_sd.missing_value), mv1_sd.missing_value, sd)
+   # plots are mv1_sd - mv3_sd
+   #           mv2_sd - mv3_sd
+   #           sdmap 
+   # The NCAR does some odd area calculations. Need to figure that out too.
+   return mv1_sd, mv2_sd, sd_map
 
 
 # Takes 2 rmse variables in. Could be required to take 2 normal variables and we might have to calculate rmse?
@@ -1049,7 +1127,7 @@ def calculate_seasonal_climatology(mv, season):
         ss = str(season.seasons)
     if ss=='JFMAMJJASOND':
         ss = 'ANN'
-    print "calculating climatology for season : ", ss
+#    print "calculating climatology for season : ", ss
 
     tax = timeAxis(mv)
     if tax is None:
@@ -1096,6 +1174,39 @@ def calculate_seasonal_climatology(mv, season):
     if hasattr( mv, 'units' ):
         mvt.units = mv.units
     return mvt
+
+# Moved this here from amwg.py set13 class, because it can be used by all the AMWG classes.
+def interpret_region( region ):
+    """Tries to make sense of the input region, and returns the resulting instance of the class
+    rectregion in region.py."""
+    if region is None:
+        region = "Global"
+    if type(region) is str:
+        if region in defines.all_regions:
+            region = defines.all_regions[region]
+        else:
+            raise ValueError, "cannot recognize region name %s"%region
+            region = None
+    if region == None:
+        print 'this code should never be hit. please sent smithbe@ornl.gov an email detailing how you got here.'
+        quit()
+    return region
+
+def select_region(mv, region=None):
+    # Select lat-lon region
+    if isinstance(region, rectregion):
+       if region=="global" or region=="Global" or getattr(region,'filekey',None)=="Global"\
+            or str(region)=="Global":
+           mvreg = mv
+       else:
+            region = interpret_region(region)
+            mvreg = mv(latitude=(region[0], region[1]), longitude=(region[2], region[3]))
+    else:
+       # The special cased amwg1
+       print 'region - %s - was not a rectregion. this should probably not get hit' % region
+       quit()
+
+    return mvreg
 
 def select_lev( mv, slev ):
     """Input is a level-dependent variable mv and a level slev to select.
@@ -1482,7 +1593,9 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
     if hasattr(mv1,'units') and hasattr(mv2,'units') and\
             (preferred_units is not None or mv1.units!=mv2.units):
         # Very ad-hoc, but more general would be less safe:
-        if mv1.id[0:8]=="rv_QFLX_" and mv1.units=="kg/m2/s":
+        # BES - set 3 does not seem to call it rv_QFLX. It is set3_QFLX_ft0_climos, so make this just a substring search
+#        if mv1.id[0:8]=="rv_QFLX_" and mv1.units=="kg/m2/s":
+        if mv1.id.find('_QFLX_') and mv1.units=="kg/m2/s":
             preferred_units="mm/day"
             mv1.units="mm/s"   # if 1 kg = 10^6 mm^3 as for water
         if mv1.units=='kg/m2/s' and mv2.units=='mm/day':
@@ -1994,6 +2107,17 @@ def join_1d_data(*args ):
     M.setAxis(0, T)
     #M.info()
     return M
+def getSection(x, month=None, lat=None, lon=None, vid=None):
+    """return the data associated with a specific time, lat & lon."""
+    if type(month) == type(1):
+        monthIndex = month
+    if type(month) == type(''):
+        monthIndex = cdutil.times.getMonthIndex(month)[0]
+    value = x( time=slice(monthIndex, monthIndex+1),
+               latitude=(lat, lat, 'cob'),
+               longitude=(lon, lon, 'cob'),
+               squeeze=1)
+    return value
 
 def special_case_fixed_variable( case, var ):
     """Fix up a variable for known cases which require special treatment; returns the fixed-up variable."""

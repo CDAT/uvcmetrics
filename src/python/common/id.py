@@ -1,5 +1,4 @@
-# TO DO: replace the tuple with a namedtuple.  This is exactly what I was looking for when I
-# introduced the "idtags" idea below.  That should be deleted.
+
 
 
 def id2str( id ):

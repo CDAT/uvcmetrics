@@ -175,17 +175,17 @@ def generatePlots(modelpath, obspath, outpath, pname, xmlflag, colls=None):
             else:
                regionstr = '--regions '+' '.join(g_region)
 
-            # Now, check each variable for a season/region/varopts argument. Any that do NOT have them can be dealt with first.
+            # Now, check each variable for a season/region argument. Any that do NOT have them can be dealt with first.
             obs_vlist = obsvars[o]
             simple_vars = []
             for v in obs_vlist:
-               if diags_collection[collnum][v].get('seasons', False) == False and diags_collection[collnum][v].get('regions', False) == False and diags_collection[collnum][v].get('varopts', False) == False:
+               if diags_collection[collnum][v].get('seasons', False) == False and diags_collection[collnum][v].get('regions', False) == False:
                   simple_vars.append(v)
 
             complex_vars = list(set(obs_vlist) - set(simple_vars))
             # simple vars first
             if len(simple_vars) != 0:
-               varstr = '--vars '+' '.join(simple_vars)
+               varstr = ' --vars '+' '.join(simple_vars)
                cmdline = 'diags-new.py --model path=%s,climos=yes,type=model --obs path=%s,climos=yes,type=obs%s %s %s %s %s %s %s %s %s %s %s' % (modelpath, obspath, obsstr, optionsstr, packagestr, setstr, seasonstr, varstr, outstr, xmlstr, prestr, poststr, regionstr)
                if collnum != 'dontrun':
                   runcmdline(cmdline, outlog)
@@ -198,12 +198,8 @@ def generatePlots(modelpath, obspath, outpath, pname, xmlflag, colls=None):
                g_season = diags_collection[collnum][v].get('seasons', ['ANN'])
                regionstr = '--regions '+' '.join(g_region)
                seasonstr = '--seasons '+' '.join(g_season)
-               varopts = ''
-               if diags_collection[collnum][v].get('varopts', False) != False:
-                  varopts = '--varopts '+' '.join(diags_collection[collnum][v]['varopts'])
                varstr = '--vars '+v
-               # check for varopts.
-               cmdline = 'diags-new.py --model path=%s,climos=yes,type=model --obs path=%s,climos=yes,type=obs%s %s %s %s %s %s %s %s %s %s %s %s' % (modelpath, obspath, obsstr, optionsstr, packagestr, setstr, seasonstr, varstr, outstr, xmlstr, prestr, poststr, regionstr, varopts)
+               cmdline = 'diags-new.py --model path=%s,climos=yes,type=model --obs path=%s,climos=yes,type=obs%s %s %s %s %s %s %s %s %s %s %s' % (modelpath, obspath, obsstr, optionsstr, packagestr, setstr, seasonstr, varstr, outstr, xmlstr, prestr, poststr, regionstr)
                if collnum != 'dontrun':
                   runcmdline(cmdline, outlog)
                else:

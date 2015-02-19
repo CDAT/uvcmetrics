@@ -366,3 +366,16 @@ class basic_pole_variable(basic_plot_variable):
         """returns the hemisphere specific to this variable. """
         opts ={" Northern Hemisphere":(90, 0.), " Southern Hemisphere":(-90.,0) }
         return opts
+class station_id_variable():
+    """provides an index into a data array for a specific station."""
+    @staticmethod
+    def varoptions():
+        """returns the station index specific to this variable. """
+        #copied from profiles.ncl in amwg diagnostics
+
+        opts ={}
+        data_index = 0
+        for station in metrics.frontend.defines.station_names:
+            opts[station] = data_index
+            data_index += 1
+        return opts

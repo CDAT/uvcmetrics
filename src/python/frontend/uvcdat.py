@@ -325,9 +325,9 @@ class uvc_simple_plotspec():
         #        self.presentation.__class__.__name__=="Gfi":
         # interim test here and below.  Once all the is* functions work, I should
         # drop the tests on self.presentation.__class__.__name__ :
+        #pdb.set_trace()
         if vcs.isscatter(self.presentation):
-            ylabel, xlabel = string.split(self.title, ' vs ')
-            #pdb.set_trace()
+            #ylabel, xlabel = string.split(self.title, ' vs ')
             #in the case of scatter plots there are 2 variables packed together
             var = self.vars[0]
             [xMIN, xMAX], [yMIN, yMAX] = self.make_ranges(var)
@@ -338,7 +338,7 @@ class uvc_simple_plotspec():
             self.presentation.xticlabels1 = vcs.mklabels(vcs.mkscale(xMIN, xMAX))
             self.presentation.datawc_x1 = xMIN
             self.presentation.datawc_x2 = xMAX
-            self.presentation.xticlabels2 = {(xMIN+xMAX)/2.: xlabel}
+            #self.presentation.xticlabels2 = {(xMIN+xMAX)/2.: xlabel}
             if flip_y:
                 self.presentation.datawc_y2 = yMIN
                 self.presentation.datawc_y1 = yMAX
@@ -347,15 +347,17 @@ class uvc_simple_plotspec():
                 self.presentation.datawc_y1 = yMIN
                 self.presentation.datawc_y2 = yMAX   
             self.presentation.yticlabels1 = vcs.mklabels(vcs.mkscale(yMIN, yMAX))
-            self.presentation.yticlabels2 = {(yMIN+yMAX)/2.: ylabel}
+            #self.presentation.yticlabels2 = {(yMIN+yMAX)/2.: ylabel}
             self.presentation.linewidth = 0
             self.presentation.markercolor = 1
-            self.presentation.markersize = 5
+            self.presentation.markersize = 10
             #add overplotline is a total kludge
             self.presentation.overplotline = self.overplotline
             if flip_y:
                 self.presentation.flip = True
-            #self.presentation.list()              
+            #self.presentation.list()   
+            #pdb.set_trace()
+    
         elif vcs.isyxvsx(self.presentation) or\
                 vcs.isisofill(self.presentation) or\
                 vcs.isboxfill(self.presentation) or\
@@ -826,6 +828,30 @@ class plot_spec(object):
         return self.results(newgrid)
     def results(self,newgrid=0):
         return self._results(newgrid)
+
+    def getfts(self, model, obs):
+        if len(model) == 2:
+#           print 'Two models'
+           filetable1 = model[0]
+           filetable2 = model[1]
+        if len(model) == 1 and len(obs) == 1:
+#           print 'Model and Obs'
+           filetable1 = model[0]
+           filetable2 = obs[0]
+        if len(obs) == 2: # seems unlikely but whatever
+#           print 'Two obs'
+           filetable1 = obs[0]
+           filetable2 = obs[1]
+        if len(model) == 1 and (obs != None and len(obs) == 0):
+#           print 'Model only'
+           filetable1 = model[0]
+           filetable2 = None
+        if len(obs) == 1 and (model != None and len(model) == 0): #also unlikely
+#           print 'Obs only'
+           filetable1 = obs[0]
+           filetable2 = None
+        return filetable1, filetable2
+
 # To profile, replace (by name changes) the above results() with the following one:
     def profiled_results(self,newgrid=0):
         if newgrid!=0:
