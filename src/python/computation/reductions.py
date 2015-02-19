@@ -443,7 +443,8 @@ def reduce_time( mv, vid=None ):
             # The averager insists on bounds.  Sometimes they don't exist, especially for obs.
             #was if ax.id!='lat' and ax.id!='lon' and not hasattr( ax, 'bounds' ):
             #if ax.id!='lat' and ax.id!='lon' and (ax.getBounds() is None):
-            if not ax.isLatitude() and not ax.isLongitude() and (ax.getBounds() is None):
+            if not ax.isLatitude() and not ax.isLongitude() and not ax.isLevel() and\
+                    (ax.getBounds() is None):
                 ax.setBounds( ax.genGenericBounds() )
         avmv = averager( mv, axis=axes_string )
     else:
@@ -1885,8 +1886,9 @@ def run_cdscan( fam, famfiles, cache_path=None ):
     """If necessary, runs cdscan on the provided files, all in one "family", fam.
     Leave the output in an xml file in the cache_path.
     Thereafter, re-use this xml file rather than run cdscan again."""
-    # Not finished.  Presently, the cache_path argument is ignored, and the xml file is always
-    # written where the data is.
+    # Which cdscan will be run?  Popen inherits its environment from its caller, so the cdscan
+    # will be whatever is in the user's path.  Normally that's right, but it would be better
+    # to ensure that it belongs to the same UV-CDAT instance as the one we're running.
     famfiles.sort()   # improves consistency between runs
     file_list = '-'.join(
         [ f+'size'+str(os.path.getsize(f))+'mtime'+str(os.path.getmtime(f))\
