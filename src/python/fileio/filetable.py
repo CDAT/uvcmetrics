@@ -440,8 +440,13 @@ class NCAR_filefmt(basic_filefmt):
       if hasattr( timeax, 'bounds' ):
          time_bnds_name = timeax.bounds
          if self._dfile[time_bnds_name] is not None:
-            lo = self._dfile[time_bnds_name][0][0]
-            hi = self._dfile[time_bnds_name][-1][1]
+            try:
+                lo = self._dfile[time_bnds_name][0][0]
+                hi = self._dfile[time_bnds_name][-1][1]
+            except Exception as e:
+                print "jfp exception getting time bounds from self._dfile[",time_bnds_name,"]=",\
+                    self._dfile[time_bnds_name]
+                raise e
          else:
             lo = timeax[0]
             hi = timeax[-1]
