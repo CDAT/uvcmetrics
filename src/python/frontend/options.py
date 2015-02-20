@@ -122,7 +122,7 @@ class Options():
          else:
             self._opts[key][index]['name'] = None
 
-         if args.filters != None and len(args.filters) >= i:
+         if args.filters != None and len(args.filters) > i:
             if args.filters[i] in ['None', 'none', 'no']:
                self._opts[key][index]['filter'] = None
             else:
