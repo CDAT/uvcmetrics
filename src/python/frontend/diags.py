@@ -165,7 +165,7 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
             ps = opts['sets']
             sndic = { setnum(s):s for s in sm.keys() }   # plot set number:name
             plotsets = [ sndic[setnum(x)] for x in ps if setnum(x) in sndic ]
-
+ 
         if opts['regions'] == []:
             regl = defines.all_regions['Global']
             rname = 'Global'
@@ -190,7 +190,10 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                     if len(variables)==0 and len(opts.get('vars',[]))>0:
                         print "WARNING: Couldn't find any of the requested variables:",opts['vars']
                         print "among",pclass.list_variables( filetable1, filetable2, sname  )
-                for varid in variables:
+                
+                for ivarid, varid in enumerate(variables):
+                    if snum == '14' and ivarid >= 1: #Taylor diagrams
+                       continue
                     print "variable",varid,"season",seasonid
                     vard = pclass.all_variables( modelfts, obsfts, sname )
                     plotvar = vard[varid]
@@ -221,11 +224,15 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                     for aux in varopts:
                         # Since Options is a 2nd class (at best) citizen, we have to do something icky like this.
                         # hoping to change that in a future release. Also, I can see this being useful for amwg set 1.
-                        # (Basically, if we output pre-defined json for the tables they can be trivially sorted)
+                        # (Basically, if we output pre-defined json for the tables they can be trivially sorted)                            
                         if '5' in snum and pname.upper() == 'LMWG' and opts['json'] == True:
                            plot = sclass( modelfts, obsfts, varid, seasonid, region, vvaropts[aux], jsonflag=True )
                         else:
-                           plot = sclass( modelfts, obsfts, varid, seasonid, region, vvaropts[aux] )
+                           if snum == '14': #Taylor diagrams
+                              #this is a total kludge so that the list of variables is passed in for processing
+                              plot = sclass( modelfts, obsfts, variables, seasonid, region, vvaropts[aux] )
+                           else:
+                              plot = sclass( modelfts, obsfts, varid, seasonid, region, vvaropts[aux] )
                         res = plot.compute(newgrid=-1) # newgrid=0 for original grid, -1 for coarse
                         if res is not None and len(res)>0:
                             if opts['output']['plots'] == True:
@@ -255,6 +262,7 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                                 ovly = nsimpleplots * [0]
                                 onPage = nsingleplots
                                 ir = 0
+                                
                                 for r,resr in enumerate(res):
                                     if type(resr) is tuple:
                                         for jr,rsr in enumerate(resr):
@@ -281,7 +289,7 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                                     print "tmpl gmobs=",gmobs
                                     print "tmpl tmobs=",tmobs
                                     print "tmpl tmmobs=",tmmobs
-
+                                
                                 # gmmobs provides the correct graphics methods to go with the templates.
                                 # Unfortunately, for the moment we have to use rmr.presentation instead
                                 # (below) because it contains some information such as axis and vector
@@ -289,6 +297,7 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
 
                                 vcanvas2.clear()
                                 ir = -1
+                                
                                 for r,resr in enumerate(res):
                                    if resr is None or resr==[]:
                                        continue
@@ -302,12 +311,16 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                                        if rsr is None:
                                            continue
                                        ir += 1
+                                       
                                        tm = tmobs[ir]
-                                       tm2 = tmmobs[ir]
+                                       if tmmobs != []:
+                                           tm2 = tmmobs[ir]
                                        title = rsr.title
                                        rsr_presentation = rsr.presentation
-                                       #rsr_presentation.list()
+
                                        for varIndex, var in enumerate(rsr.vars):
+                                           if snum == '14' and varIndex >= 1: #Taylor diagrams
+                                               continue
                                            if hasattr(var,'size'):
                                                lenvar = var.size
                                                # Note that len(var) won't work, it only picks up the first
@@ -463,8 +476,24 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                                                        # have them.
                                                except vcs.error.vcsError as e:
                                                    print "ERROR making summary plot:",e
+                                           elif vcs.istaylordiagram(rsr.presentation):
+                                               #pdb.set_trace()
+                                               #this is a total hack that is related to the hack in uvcdat.py
+                                               vcanvas.legendTitles = rsr.legendTitles
+                                               if hasattr(plot, 'customizeTemplates'):
+                                                   vcanvas.setcolormap("bl_to_darkred")
+                                                   print vcanvas.listelements("colormap")
+                                                   tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (None, None)] )
+                                               vcanvas.plot(var, rsr.presentation, tm, bg=1, title=title,
+                                                            units=getattr(var,'units',''), source=rsr.source )
+                                               savePNG = True
+                                               #rsr.presentation.script("jim_td")
+                                               #tm.script("jim_tm")
+                                               
                                            else:
                                                #pdb.set_trace()
+                                               if hasattr(plot, 'customizeTemplates'):
+                                                   tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)] )                                               
                                                vcanvas.plot(var, rsr.presentation, tm, bg=1, title=title,
                                                             units=getattr(var,'units',''), source=rsr.source )
 #                                               vcanvas3.clear()
@@ -476,6 +505,7 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                                                                          title=title, units=getattr(var,'units',''), source=rsr.source )
                                                except vcs.error.vcsError as e:
                                                    print "ERROR making summary plot:",e
+                                               #pdb.set_trace()
                                            if var_id_save is not None:
                                                if type(var_id_save) is str:
                                                    var.id = var_id_save
@@ -529,9 +559,9 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
 
 if __name__ == '__main__':
    print "UV-CDAT Diagnostics, command-line version"
+   import pdb
+   pdb.set_trace()
    o = Options()
    o.processCmdLine()
    o.verifyOptions()
-   import pdb
-   #pdb.set_trace()
    run_diagnostics_from_options(o)

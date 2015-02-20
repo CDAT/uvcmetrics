@@ -326,8 +326,8 @@ def reduce2lat( mv, vid=None ):
     return avmv
 
 def reduce2level( mv, seasons=None, vid=None ):
-    """as reduce2lat, but averaging reduces coordinates to lev"""
-    #pdb.set_trace()
+    """as reduce2lat, but averaging reduces coordinates to lev
+    NOTE: this function may be obsolete, seasons is NOT used."""
     if vid is None:   # Note that the averager function returns a variable with meaningless id.
         vid = 'reduced_'+mv.id
     if levAxis(mv) is None: return None
@@ -1430,6 +1430,7 @@ def adivb(mv1, mv2):
    """ returns mv1/mv2; they should be dimensioned alike.
    Primarily used for ASA - all sky albedo in LMWG but generally useful function"""
    # This should probably be more of an abs(value - epsilon) check
+   #pdb.set_trace()
    denom = MV2.where(MV2.equal(mv2, 0.), mv2.missing_value, mv2)
    mv = mv1/denom
    if hasattr(mv, 'long_name'):
@@ -2084,7 +2085,9 @@ def join_data(*args ):
     M.setAxis(0,T)
     M.units = args[0].units
     cdutil.times.setTimeBoundsMonthly(T)
+    #print M.getAxis(1)
     #M.info()
+    #pdb.set_trace()
     return M
 
 def join_1d_data(*args ):
@@ -2125,6 +2128,89 @@ def special_case_fixed_variable( case, var ):
         if var.mask is False:
             return numpy.ma.masked_equal( var, var._FillValue )
     return var
+
+def correlateData(mv1, mv2, aux):
+    """ This function computes correlation coefficient for arrays that have 
+    a mismatch in shape. A typical example is model and obs. It regrids mv2 to mv1's grid."""
+    
+    from numbers import Number
+    from genutil.statistics import correlation
+    #print mv1.shape, mv2.shape
+    
+    #pdb.set_trace()
+    sliced_mvs = []
+    if isinstance(aux,Number): 
+        for mv in [mv1, mv2]:
+            level = mv.getLevel()
+            index = mv.getAxisIndex('lev')
+            UNITS = level.units #mbar or level
+            #pdb.set_trace()
+            if UNITS != 'mbar':
+                level.units = 'mbar'
+                mv.setAxis(index, level)
+            pselect = udunits(aux, 'mbar')
+            sliced_mvs += [ select_lev(mv, pselect) ]
+    else:
+        sliced_mvs = [mv1, mv2]
+    mv1_new, mv2_new = sliced_mvs
+    mv2_new = mv2_new.regrid(mv1_new.getGrid(), regridTool='esmf', regridMethod='linear')
+    corr = correlation(mv1_new.flatten(), mv2_new.flatten())
+    #print corr
+
+    return corr
+def reduce2level_seasonal( mv, seasons=seasonsyr, region='Global', vid=None ):
+    """as reduce2levlat, but data is averaged only for time restricted to the specified season;
+    as in reduce2lat_seasonal."""
+    #pdb.set_trace()
+    if vid is None:   # Note that the averager function returns a variable with meaningless id.
+        vid = 'reduced_'+mv.id
+    if levAxis(mv) is None: return None
+    axes = allAxes( mv )
+
+    #if region:
+    #    mvr = select_region(mv, region)
+    #else:
+    #    mvr = mv
+
+    
+    #mvseas = reduce_time_seasonal(mvr, seasons, region)
+    
+    #copied from reduce_time_seasonal
+    mvseas = calculate_seasonal_climatology(mv, seasons)
+
+    if vid is None:
+        #vid = 'reduced_'+mv.id
+        vid = mv.id
+    mvseas.id = vid
+    
+    # Note that the averager function returns a variable with meaningless id.
+    # The climatology function returns the same id as mv, which we also don't want.
+
+    #mvsr = select_region(mv, region)
+
+    if hasattr( mv, 'units' ):
+        mvseas.units = mv.units
+    #end of copy from reduce_time_seasonal
+
+    axis_names = [ a.id for a in axes if a.isLevel()==False and a.isTime()==False ]
+    axes_string = '('+')('.join(axis_names)+')'
+
+    if len(axes_string)>2:
+        avmv = averager( mvseas, axis=axes_string )
+    else:
+        avmv = mvseas
+    avmv.id = vid
+          
+    axis = avmv.getAxis(0)
+    if axis.units in ['lev', 'level', 'mbar', 'millibars']:
+        axis.units = 'mbar'
+        axis.id = 'pressure'
+    axis.designateLevel()
+    #avmv.info()
+    
+    #pdb.set_trace()    
+
+    return avmv
 
 class reduced_variable(ftrow,basic_id):
     """Specifies a 'reduced variable', which is a single-valued part of an output specification.

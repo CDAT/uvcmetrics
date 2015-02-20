@@ -5,6 +5,7 @@ from metrics.common import *
 from metrics.common.id import *
 from metrics.packages.diagnostic_groups import *
 from metrics.computation.reductions import *
+from metrics.frontend import *
 import sys, traceback
 
 class derived_var(basic_id):
@@ -375,7 +376,7 @@ class station_id_variable():
 
         opts ={}
         data_index = 0
-        for station in metrics.frontend.defines.station_names:
+        for station in defines.station_names:
             opts[station] = data_index
             data_index += 1
         return opts

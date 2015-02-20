@@ -36,7 +36,11 @@ def return_templates_graphic_methods(canvas1=None, gms=None, ovly=None, onPage=N
                gmobs[i].linewidth = 2.0
                gmobs[i].linecolor = 242
                gmobs[i].markersize = 1
-
+         if (gms[i] == 'taylor'):
+            td = canvas1.createtaylordiagram('taylor_' + (str(random.random())[2:]), 'default')
+            gmobs.append( td )
+            #gmobs[i].addMarker()
+            #gmobs[i].Marker.size = 8
       # Create a unique template for each diagnostic on a single canvas
       tmobs = []
       for i in range(len(gms)):
@@ -50,6 +54,9 @@ def return_templates_graphic_methods(canvas1=None, gms=None, ovly=None, onPage=N
                tmobs.append( canvas1.createtemplate('uvwg_' + (str(random.random())[2:]), 'UVWG1D') )
              else:                # overlay plot use DUD - only plot the data
                tmobs.append( canvas1.createtemplate('uvwg_DUD_' + (str(random.random())[2:]), 'UVWG1D_DUD') )
+          elif (gms[i] in ['taylor']):
+             tmpl = canvas1.createtemplate('taylor_' + (str(random.random())[2:]), 'deftaylor')
+             tmobs.append( tmpl )
 
       # Create a unique template for each diagnostic for multiple displays on a canvas
       tmmobs = []

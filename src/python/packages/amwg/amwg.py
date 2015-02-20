@@ -8,6 +8,7 @@ from metrics.packages.diagnostic_groups import *
 from metrics.computation.reductions import *
 from metrics.computation.plotspec import *
 from metrics.frontend.uvcdat import *
+from metrics.frontend import *
 from metrics.common.id import *
 from metrics.fileio import stationData
 from metrics.packages.amwg.derivations import *
@@ -1553,13 +1554,17 @@ class amwg_plot_set8(amwg_plot_spec):
     To generate plots use Dataset 1 in the AMWG diagnostics menu, set path to the directory.
     Repeat this for observation 1 and then apply.  If only Dataset 1 is specified a plot
     of the model zonal mean is diaplayed.
+    Example script
+    diags.py --model path=$HOME/uvcmetrics_test_data/cam35_data/,climos=yes 
+    --obs path=$HOME/uvcmetrics_test_data/obs_data/,filter='f_startswith("LEGATES")',climos=yes 
+    --outputdir $HOME/Documents/Climatology/ClimateData/diagout/ --package AMWG --sets 8 --seasons ANN --plots yes  --vars TREFHT
     """
     # N.B. In plot_data.py, the plotspec contained keys identifying reduced variables.
     # Here, the plotspec contains the variables themselves.
     name = '8 - Annual Cycle Contour Plots of Zonal Means '
     number = '8'
 
-    def __init__( self, model, obs, varid, seasonid='ANN', region=None, aux=None ):
+    def __init__( self, model, obs, varid, seasonid='ANN', region='global', aux=None ):
         """filetable1, should be a directory filetable for each model.
         varid is a string, e.g. 'TREFHT'.  The zonal mean is computed for each month. """
         filetable1, filetable2 = self.getfts(model, obs)
@@ -1575,7 +1580,13 @@ class amwg_plot_set8(amwg_plot_spec):
         self.filetables = [filetable1]
         if self.FT2:
             self.filetables +=[filetable2]
-    
+
+        if region in ["Global", "global", None]:
+            self._regionid="Global"
+        else:
+            self._regionid=region
+        self.region = interpret_region(self._regionid)
+        
         plot_spec.__init__(self, seasonid)
         self.plottype = 'Isofill'
         self._seasonid = seasonid
@@ -1606,7 +1617,7 @@ class amwg_plot_set8(amwg_plot_spec):
                 #pdb.set_trace()
                 #create identifiers
                 VID = rv.dict_id(varid, month, FT)
-                RF = (lambda x, vid=id2str(VID), month=VID[2]:reduce2lat_seasonal(x, seasons=cdutil.times.Seasons(month), vid=vid))
+                RF = (lambda x, vid=id2str(VID), month=VID[2]:reduce2lat_seasonal(x, seasons=cdutil.times.Seasons(month), region=self.region, vid=vid))
                 RV = reduced_variable(variableid = varid, 
                                       filetable = FT, 
                                       season = cdutil.times.Seasons(VID[2]), 
@@ -1681,6 +1692,11 @@ class amwg_plot_set9(amwg_plot_spec):
     presented is a climatological mean - i.e., seasonal-average of the specified season, DJF, JJA, etc.
     To generate plots use Dataset 1 in the AMWG ddiagnostics menu, set path to the directory,
     and enter the file name.  Repeat this for dataset 2 and then apply.
+    Example script
+    diags.py --model path=$HOME/uvcmetrics_test_data/cam35_data/,climos=yes 
+    --model path=$HOME/uvcmetrics_test_data/cam35_data/,climos=yes 
+    --outputdir $HOME/Documents/Climatology/ClimateData/diagout/ 
+    --package AMWG --sets 9 --seasons JAN --plots yes  --vars T
     """
     # N.B. In plot_data.py, the plotspec contained keys identifying reduced variables.
     # Here, the plotspec contains the variables themselves.
@@ -1804,7 +1820,12 @@ class amwg_plot_set10(amwg_plot_spec, basic_id):
     """represents one plot from AMWG Diagnostics Plot Set 10.
     The  plot is a plot of 2 curves comparing model with obs.  The x-axis is month of the year and
     its y-axis is the specified variable.  The data presented is a climatological mean - i.e.,
-    time-averaged with times restricted to the specified month."""
+    time-averaged with times restricted to the specified month.
+    Example script:
+    diags.py --model path=$HOME/uvcmetrics_test_data/cam35_data/,climos=yes 
+    --obs path=$HOME/uvcmetrics_test_data/obs_data/,filter='f_startswith("NCEP")',climos=yes 
+    --outputdir $HOME/Documents/Climatology/ClimateData/diagout/ --package AMWG --sets 10 --seasons JAN --plots yes --vars T
+    """
     # N.B. In plot_data.py, the plotspec contained keys identifying reduced variables.
     # Here, the plotspec contains the variables themselves.
     name = '10 - Annual Line Plots of  Global Means'
@@ -1892,6 +1913,10 @@ class amwg_plot_set10(amwg_plot_spec, basic_id):
         return [ plot_val]
     
 class amwg_plot_set11(amwg_plot_spec):
+    """Example script
+    diags.py --model path=$HOME/uvcmetrics_test_data/cam35_data/,climos=yes 
+    --obs path=$HOME/uvcmetrics_test_data/obs_data/,filter='f_startswith("CERES-EBAF")',climos=yes 
+    --outputdir $HOME/Documents/Climatology/ClimateData/diagout/ --package AMWG --sets 11 --seasons JAN --plots yes  --vars LWCF """
     name = '11 - Pacific annual cycle, Scatter plots:incomplete'
     number = '11'
     def __init__( self, model, obs, varid, seasonid='ANN', region=None, aux=None ):
@@ -1900,7 +1925,6 @@ class amwg_plot_set11(amwg_plot_spec):
         varid is a string, e.g. 'TREFHT'.  The seasonal difference is Seasonid
         It is is a string, e.g. 'DJF-JJA'. """
         import string
-        print 'plot set 11'
         
         plot_spec.__init__(self, seasonid)
         self.plottype = 'Scatter'
@@ -2046,7 +2070,7 @@ class amwg_plot_set12(amwg_plot_spec):
         station = aux
         self.lat, self.lon = self.StationData.getLatLon(station)
         #print station, self.lat, self.lon
-        self.compositeTitle = metrics.frontend.defines.station_names[station]+'\n'+ \
+        self.compositeTitle = defines.station_names[station]+'\n'+ \
                               'latitude = ' + str(self.lat) + ' longitude = ' + str(self.lon)
         self.plotCompositeTitle = True
         self.IDsandUnits = None
@@ -2087,6 +2111,7 @@ class amwg_plot_set12(amwg_plot_spec):
         #if not ft1_valid or not ft2_valid:
         #    return None
         
+        self.reduced_variables = {}
         VIDs = {}     
         #setup the model reduced variables
         for month in self.months:
@@ -2498,56 +2523,48 @@ class amwg_plot_set13(amwg_plot_spec):
                 v.finalize(flip_y=True)
         return self.plotspec_values[self.plotall_id]
 
-def centered_RMS_difference(mv1, mv2):
-    #pdb.set_trace()
-    mv1_mean = mv1.mean()
-    #kludge for mismatch in dimensions
-    mv2_mean = mv2[0,:,:].mean()
-    x = aminusb_2ax(mv1-mv1_mean, mv2[0,:,:]-mv2_mean)
-    rms_diff = MV2.sqrt((x**2).mean())
-    return MV2.array([rms_diff])
-
-def join_scalar_data(*args ):
-    """ This function joins the results of several reduced variables into a
-    single derived variable.  It is used to produce a line plot of months
-    versus zonal mean.
-    """
-    import cdms2, cdutil, numpy
-    #pdb.set_trace()
-    nargs = len(args)
-    M = []
-    for arg in args:
-        M += [arg[0]]
-    M = numpy.array(M)
-    M.shape = (2, nargs/2)
-    M = MV2.array(M)
-    #print M
-    #M.info()
-    return M
-
 class amwg_plot_set14(amwg_plot_spec):
-    name = '14 - Taylor diagrams: incomplete'
+    """ Example script
+      diags.py --model path=$HOME/amwg_diagnostics/cam35_data/,filter='f_startswith("ccsm")',climos=yes 
+    --model path=$HOME/uvcmetrics_test_data/cam35_data/,climos=yes 
+    --obs path=$HOME/uvcmetrics_test_data/obs_data/,filter='f_startswith("NCEP")',climos=yes 
+    --outputdir $HOME/Documents/Climatology/ClimateData/diagout/ --package AMWG --sets 14 
+    --seasons JAN --plots yes --vars T Z3 --varopts '200 mbar' """
+    name = '14 - Taylor diagrams'
     number = '14'
     def __init__( self, model, obs, varid, seasonid='ANN', region=None, aux=None ):
-        filetable1, filetable2 = self.getfts(model, obs)
+        
         """filetable1, filetable2 should be filetables for each model.
         varid is a string, e.g. 'TREFHT'.  The seasonal difference is Seasonid
         It is is a string, e.g. 'DJF-JJA'. """
         import string
-        pdb.set_trace()
-        
+        #pdb.set_trace()
+
+        self.modelfns = []
+        self.obsfns = []
+        for ft in model:
+            modelfn = ft._filelist.files[0]
+            self.modelfns += [modelfn]
+        for ft in obs:
+            obsfn   = ft._filelist.files[0]
+            self.obsfns = [obsfn]
+        self.legendTitles = []
         plot_spec.__init__(self, seasonid)
         self.plottype = 'Taylor'
         self._seasonid = seasonid
         self.season = cdutil.times.Seasons(self._seasonid) 
-        ft1id, ft2id = filetable_ids(filetable1, filetable2)
+        #ft1id, ft2id = filetable_ids(filetable1, filetable2)
         self.datatype = ['model', 'obs']
-        self.filetables = [filetable1, filetable2]
-        self.filetable_ids = [ft1id, ft2id]
-        self.vars = [varid]
+        self.filetables = model
+        self.filetable2 = obs[0]
+        #self.filetable_ids = [ft1id, ft2id]
+        
+        #vardi is a list of variables
+        self.vars = varid
+        #print self.vars
         
         self.plot_ids = []
-        vars_id = '_'.join(self.vars)
+        #vars_id = '_'.join(self.vars)
         #for dt in self.datatype:
         plot_id = 'Taylor'
         self.plot_ids += [plot_id]
@@ -2555,10 +2572,58 @@ class amwg_plot_set14(amwg_plot_spec):
         
         #self.plotall_id = '_'.join(self.datatype + ['Warm', 'Pool'])
         if not self.computation_planned:
-            self.plan_computation( model, obs, varid, seasonid )
-    def plan_computation( self, model, obs, varid, seasonid ):
-        from genutil.statistics import std, correlation, numpy
-        filetable1, filetable2 = self.getfts(model, obs)
+            self.plan_computation( model, obs, varid, seasonid, aux )
+    @staticmethod
+    #stolen from plot set 5and6
+    def _list_variables( model, obs ):
+        allvars = amwg_plot_set14._all_variables( model, obs )
+        listvars = allvars.keys()
+        listvars.sort()
+        return listvars
+    @staticmethod
+    def _all_variables( model, obs, use_standard_vars=True ):
+        allvars = amwg_plot_spec.package._all_variables( model, obs, "amwg_plot_spec" )
+        for varname in amwg_plot_spec.package._list_variables_with_levelaxis(
+            model, obs, "amwg_plot_spec" ):
+            allvars[varname] = level_variable_for_amwg_set5
+        if use_standard_vars:
+            for varname in amwg_plot_spec.standard_variables.keys():
+                allvars[varname] = basic_plot_variable
+        return allvars
+    def plan_computation( self, model, obs, varid, seasonid, aux ):
+        def join_data(*args ):
+            """ This function joins the results of several reduced variables into a
+            single derived variable.  It is used in plot set 14.
+            """
+            import cdms2, cdutil, numpy
+            
+            alldata = []
+            allbias = []
+            IDs = []
+            i=0
+            #pdb.set_trace()
+            for arg in args:
+                if i == 0:
+                    data = [arg.tolist()]
+                    IDs += [arg.id]
+                    i += 1
+                elif i == 1:
+                    data += [arg.tolist()]
+                    alldata += [data]
+                    i += 1
+                elif i == 2:
+                    allbias += [arg.tolist()]
+                    i = 0
+            
+            data = MV2.array(alldata)
+            #create attributes on the fly
+            data.bias = allbias
+            data.IDs  = IDs
+            #pdb.set_trace()    
+            return data
+        from genutil.statistics import correlation
+
+        #filetable1, filetable2 = self.getfts(model, obs)
         self.computation_planned = False
         #check if there is data to process
         ft1_valid = False
@@ -2574,65 +2639,160 @@ class amwg_plot_set14(amwg_plot_spec):
         #if not ft1_valid or not ft2_valid:
         #    return None
         
+        FTs = {'model': model, 'obs': obs}
+        self.reduced_variables = {}
         RVs = {}  
-        for dt, ft in zip(self.datatype, self.filetables):
-            for var in self.vars:
-                #rv for the mean
-                VID_mean = rv.dict_id(var, 'mean', ft)
-                VID_mean = id2str(VID_mean)
-                print VID_mean
-                RV = reduced_variable( variableid=var, 
-                                       filetable=ft, 
-                                       season=cdutil.times.Seasons(seasonid), 
-                                       reduction_function=( lambda x, vid=VID_mean:x ) ) 
-                self.reduced_variables[VID_mean] = RV     
-                
-                #rv for its std
-                VID_std = rv.dict_id(var, 'std', ft)
-                VID_std = id2str(VID_std)
-                print VID_std
-                RV = reduced_variable( variableid=var, 
-                                       filetable=ft, 
-                                       season=cdutil.times.Seasons(seasonid), 
-                                       reduction_function=( lambda x, vid=VID_std:std(x) ) ) 
-                self.reduced_variables[VID_std] = RV     
+        for dt in self.datatype:
+            for ft in FTs[dt]:
+                for var in self.vars:
+                    
+                    #rv for the data
+                    VID_data = rv.dict_id(var, 'data', ft)
+                    VID_data = id2str(VID_data)
+                    #print VID_data
+                    RV = reduced_variable( variableid=var, 
+                                           filetable=ft, 
+                                           season=cdutil.times.Seasons(seasonid), 
+                                           reduction_function=( lambda x, vid=VID_data:x ) ) 
+                    self.reduced_variables[VID_data] = RV     
 
-                RVs[(var, dt)] = (VID_mean, VID_std)     
-                   
-        #generate derived variables for correlation
-        nvars = len(self.vars)
-        DVs = {}
-        for var in self.vars:
-            Vobs   = RVs[var, 'obs'][1]
-            Vmodel = RVs[var, 'model'][1]
-            DV = var+'_correlation'
-            #print Vobs
-            #print Vmodel
-            #print DV
-            DVs[var, 'correlation'] = DV
-            self.derived_variables[DV] = derived_var(vid=DV, inputs=[Vobs, Vmodel], func=correlation) 
+                    #create identifier, unused fro now
+                    FN = RV.get_variable_file(var)
+                    L = FN.split('/')
+                    DATAID = var + '_' + L[-1:][0]
+                    #print DATAID
+                                        
+                    #rv for the mean
+                    VID_mean = rv.dict_id(var, 'mean', ft)
+                    VID_mean = id2str(VID_mean)
+                    #print VID_mean
+                    RV = reduced_variable( variableid=var, 
+                                           filetable=ft, 
+                                           season=cdutil.times.Seasons(seasonid), 
+                                           reduction_function=( lambda x, vid=VID_mean, ID=DATAID: MV2.array(x.mean()) ) ) 
+                    self.reduced_variables[VID_mean] = RV     
+                    
+                    #rv for its std
+                    VID_std = rv.dict_id(var, 'std', ft)
+                    VID_std = id2str(VID_std)
+                    #print VID_std
+                    RV = reduced_variable( variableid=var, 
+                                           filetable=ft, 
+                                           season=cdutil.times.Seasons(seasonid), 
+                                           reduction_function=( lambda x, vid=VID_std, ID=DATAID: MV2.array(x.std()) ) ) 
+                    self.reduced_variables[VID_std] = RV     
+                    
+
+                    #pdb.set_trace()
+                    RVs[(dt, ft, var)] = (VID_data, VID_mean, VID_std)    
+
+        self.derived_variables = {}
         
-        pairs = []
+        #compute bias of the means
+        bias = []
+        BVs = {}
         for var in self.vars:
-            for dt in self.datatype:
-                pairs += [ (RVs[var, dt][1], DVs[var, 'correlation']) ]
-        print pairs
+            for ft in model:
+                Vobs   = RVs['obs',  obs[0], var][1]
+                Vmodel = RVs['model', ft, var][1]
+                BV =  rv.dict_id(var, 'bias', ft)
+                BV = id2str(BV)
+                #print Vobs
+                #print Vmodel
+                #print BV
+                bias += [BV]
+                BVs[var, ft, 'bias'] = BV
+                #FUNC = ( lambda x,y, vid=BV: x-y )
+                self.derived_variables[BV] = derived_var(vid=BV, inputs=[Vmodel, Vobs], func=adivb)
+        #print 'bias ='
+        #print bias        
+           
+        #generate derived variables for correlation between each model data and obs data
+        nvars = len(self.vars)
+        CVs = {}
+        for var in self.vars:
+            for ft in model:
+                Vobs   = RVs['obs', obs[0], var][0]  #this assumes only one obs data
+                Vmodel = RVs['model', ft, var][0]
+                CV = rv.dict_id(var, 'model_correlation', ft)
+                CV = id2str(CV)
+                #print Vobs
+                #print Vmodel
+                #print DV
+                CVs[var, ft, 'correlation'] = CV
+                FUNC = ( lambda x,y,  vid=CV, aux=aux: correlateData(x, y, aux) )
+                self.derived_variables[CV] = derived_var(vid=CV, inputs=[Vobs, Vmodel], func=FUNC) 
+
+        #generate the normalized stds
+        NVs = {}
+        for ft in model:
+            for var in self.vars:
+                Vobs   = RVs['obs',  obs[0], var][2]
+                Vmodel = RVs['model', ft, var][2]
+                NV = rv.dict_id(var,'_normalized_std', ft)
+                NV = id2str(NV)
+                #print Vobs
+                #print Vmodel
+                #print NV
+                NVs[var, ft, 'normalized_std'] = NV
+                self.derived_variables[NV] = derived_var(vid=NV, inputs=[Vmodel, Vobs], func=adivb) 
+                    
+        #get the pairs of std,correlation and bias for each variable and datatype        
+        triples = []
+        for ft in model:
+            for var in self.vars:
+                triple = (NVs[var, ft, 'normalized_std'], CVs[var, ft, 'correlation'], BVs[var, ft, 'bias'])
+                triples += triple 
+
+        #print triples
+        
         #correlation coefficient 
-        self.derived_variables['TaylorData']   = derived_var(vid='TaylorData',   inputs=pairs,   func=join_scalar_data) 
-        #self.derived_variables['modelData'] = derived_var(vid='modelData', inputs=RVs['model']+DVs['RMS_CD'], func=join_scalar_data)         
+        self.derived_variables['TaylorData'] = derived_var(vid='TaylorData', inputs=triples, func=join_data) 
+        #self.derived_variables['TaylorBias'] = derived_var(vid='TaylorBias', inputs=bias, func=join_scalar_data)
         
         self.single_plotspecs = {}
-        title = "Taylor diagram"
+        title = "" #"Taylor diagram"
 
         self.single_plotspecs['Taylor'] = plotspec(vid = 'Taylor',
                                                 zvars  = ['TaylorData'],
                                                 zfunc = (lambda x: x),
                                                 plottype = self.plottype,
-                                                title = title)
-    
-        #self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
+                                                title = '')
+                                        
         self.computation_planned = True
-        pdb.set_trace()
+        #pdb.set_trace()
+    def customizeTemplates(self, templates):
+        """Theis method does what the title says.  It is a hack that will no doubt change as diags changes."""
+        (cnvs, tm), (cnvs2, tm2) = templates
+        tm.data.x1 = .1
+        tm.data.y1 = .1
+        tm.data.x2 = .9
+        tm.data.y2 = .9
+        #pdb.set_trace()
+        tm.yname.x = tm.yname.x + tm.data.x1/2
+        tm.xname.y = tm.data.y1 - .05
+        tm.line1.x1=tm.data.x1
+        tm.line1.x2=tm.data.x1
+        tm.line1.y1=.05
+        tm.line1.y2=.05
+        
+        tm.xlabel1.y = tm.data.y1-.02
+        tm.xtic1.y1 = tm.data.y1 - .02
+        tm.xtic1.y2 = tm.data.y1 - .02
+        tm.dataname.priority=0
+
+        lx = .75
+        ly = .95        
+        for i, ltitle in enumerate(cnvs.legendTitles):
+            text = cnvs.createtext()
+            text.string = str(i) + '  ' + ltitle
+            text.x = lx
+            text.y = ly
+            text.height = 12
+            cnvs.plot(text, bg=1)  
+            ly -= .025        
+        #tm.line1.list()
+        return tm, None
     def _results(self, newgrid=0):
         #pdb.set_trace()
         results = plot_spec._results(self, newgrid)
@@ -2640,29 +2800,25 @@ class amwg_plot_set14(amwg_plot_spec):
             print "WARNING, AMWG plot set 12 found nothing to plot"
             return None
         psv = self.plotspec_values
+        v=psv['Taylor']
+        #this is a total hack! I have no other way of getting this info out
+        #to the plot.
+        v.legendTitles = []
+        v.finalize()
         #pdb.set_trace()
-        for key,val in psv.items():
-            if type(val) is not list: val=[val]
-            for v in val:
-                if v is None: continue
-                v.finalize()
-                #self.presentation.xticlabels1 = self.vars[0]
-                #self.presentation.yticlabels1 = self.vars[1]
-        return self.plotspec_values
+        return [self.plotspec_values['Taylor']]
 
-class xxxamwg_plot_set15(amwg_plot_spec): 
-    """This class represents one plot from AMWG Diagnostics Plot Set 8.
-    Each such plot is a set of three contour plots: two for the model output and
-    the difference between the two.  A plot's x-axis is time  and its y-axis is latitude.
-    The data presented is a climatological zonal mean throughout the year.
-    To generate plots use Dataset 1 in the AMWG diagnostics menu, set path to the directory.
-    Repeat this for observation 1 and then apply.  If only Dataset 1 is specified a plot
-    of the model zonal mean is diaplayed.
+class amwg_plot_set15(amwg_plot_spec): 
+    """ Example script
+    diags.py --model path=$HOME/uvcmetrics_test_data/cam35_data/,climos=yes 
+    --obs path=$HOME/uvcmetrics_test_data/obs_data/,filter='f_startswith("NCEP")',climos=yes  
+    --outputdir $HOME/Documents/Climatology/ClimateData/diagout/ 
+    --package AMWG --sets 15 --seasons ANN --plots yes --vars T
     """
     # N.B. In plot_data.py, the plotspec contained keys identifying reduced variables.
     # Here, the plotspec contains the variables themselves.
-    #name = '15 - ARM Sites Annual Cycle Contour Plots:incomplete'
-    #number = '15'
+    name = '15 - ARM Sites Annual Cycle Contour Plots'
+    number = '15'
 
     def __init__( self, model, obs, varid, seasonid='ANN', region=None, aux=None ):
         """filetable1, should be a directory filetable for each model.
@@ -2713,62 +2869,139 @@ class xxxamwg_plot_set15(amwg_plot_spec):
                 #pdb.set_trace()
                 #create identifiers
                 VID = rv.dict_id(varid, month, FT)
-                RF = (lambda x, varid, vid=id2str(VID), month=VID[2]:reduced_variables_press_lev(x, varid, month, vid=vid))
+                RF = (lambda x, vid=id2str(VID),  month=VID[2]:reduce2level_seasonal(x, seasons=cdutil.times.Seasons(month), vid=vid) )#, vid=vid))
                 RV = reduced_variable(variableid = varid, 
                                       filetable = FT, 
                                       season = cdutil.times.Seasons(VID[2]), 
                                       reduction_function =  RF)
 
-
-                self.reduced_variables[id2str(VID)] = RV
+                VID = id2str(VID)
+                #print VID
+                self.reduced_variables[VID] = RV
                 VIDs += [VID]
             vidAll[FT] = VIDs               
-        print self.reduced_variables.keys()
-        vidModel = dv.dict_id(varid, 'ZonalMean model', self._seasonid, filetable1)
+        #print self.reduced_variables.keys()
+        vidModel = dv.dict_id(varid, 'Level model', self._seasonid, filetable1)
         if self.FT2:
-            vidObs  = dv.dict_id(varid, 'ZonalMean obs', self._seasonid, filetable2)
-            vidDiff = dv.dict_id(varid, 'ZonalMean difference', self._seasonid, filetable1)
+            vidObs  = dv.dict_id(varid, 'Level obs', self._seasonid, filetable2)
+            vidDiff = dv.dict_id(varid, 'Level difference', self._seasonid, filetable1)
         else:
             vidObs  = None
             vidDiff = None
         
-        #vidModel = id2str(vidModel)
-        #vidObs = id2str(vidObs)
-        #vidDiff = id2str(vidDiff)
+        vidModel = id2str(vidModel)
+        vidObs = id2str(vidObs)
+        vidDiff = id2str(vidDiff)
         
         self.derived_variables = {}
         #create the derived variables which is the composite of the months
         #print vidAll[filetable1]
-        self.derived_variables[vidModel] = derived_var(vid=id2str(vidModel), inputs=vidAll[filetable1], func=join_data) 
+        self.derived_variables[vidModel] = derived_var(vid=vidModel, inputs=vidAll[filetable1], func=join_data) 
         if self.FT2:
             #print vidAll[filetable2]
-            self.derived_variables[vidObs] = derived_var(vid=id2str(vidObs), inputs=vidAll[filetable2], func=join_data) 
+            self.derived_variables[vidObs] = derived_var(vid=vidObs, inputs=vidAll[filetable2], func=join_data) 
             #create the derived variable which is the difference of the composites
-            self.derived_variables[vidDiff] = derived_var(vid=id2str(vidDiff), inputs=[vidModel, vidObs], func=aminusb_ax2) 
-        print self.derived_variables.keys()
+            self.derived_variables[vidDiff] = derived_var(vid=vidDiff, inputs=[vidModel, vidObs], func=aminusb_ax2) 
+        #print self.derived_variables.keys()
         
-        #create composite plots np.transpose zfunc = (lambda x: x), zfunc = (lambda z:z),
+        #create composite plots np.transpose zfunc = (lambda x: x), zfunc = (lambda z:z), 
         self.single_plotspecs = {
-            self.plot1_id: plotspec(vid = ps.dict_idid(vidModel), 
+            self.plot1_id: plotspec(vid = self.plot1_id, 
                                     zvars = [vidModel],
-                                    zfunc = (lambda x: MV2.transpose(x)),
-                                    plottype = self.plottype )}
+                                    zfunc = (lambda x: MV2.transpose(x) ),
+                                    zrangevars={'yrange':[1000., 0.]},
+                                    plottype = self.plottype,
+                                    title = 'model' )}
         if self.FT2:
             self.single_plotspecs[self.plot2_id] = \
-                               plotspec(vid = ps.dict_idid(vidObs), 
+                               plotspec(vid = self.plot2_id, 
                                         zvars=[vidObs],   
-                                        zfunc = (lambda x: MV2.transpose(x)),                                
-                                        plottype = self.plottype )
+                                        zfunc = (lambda x: MV2.transpose(x) ),       
+                                        zrangevars={'yrange':[1000., 0.]},                         
+                                        plottype = self.plottype,
+                                        title='obs' )
             self.single_plotspecs[self.plot3_id] = \
-                               plotspec(vid = ps.dict_idid(vidDiff), 
+                               plotspec(vid = self.plot3_id, 
                                         zvars = [vidDiff],
-                                        zfunc = (lambda x: MV2.transpose(x)),
-                                        plottype = self.plottype )
-        print self.single_plotspecs.keys()
+                                        zfunc = (lambda x: MV2.transpose(x) ),
+                                        zrangevars={'yrange':[1000., 0.]},
+                                        plottype = self.plottype,
+                                        title='difference: model-obs' )
         
         self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
         self.computation_planned = True
-        pdb.set_trace()
+        #pdb.set_trace()
+    def customizeTemplates(self, templates):
+        """Theis method does what the title says.  It is a hack that will no doubt change as diags changes."""
+        (cnvs1, tm1), (cnvs2, tm2) = templates
+ 
+        tm1.data.x1 += .05
+        tm1.box1.x1 = tm1.data.x1
+        tm1.legend.x1 = tm1.data.x1
+     
+        tm1.yname.x = .05
+        tm1.yname.y = (tm1.data.y1 + tm1.data.y2)/2
+        to = cnvs1.createtextorientation(None, tm1.yname.textorientation)
+        to.angle=-90
+        tm1.yname.textorientation=to 
+                
+        tm1.xname.y = tm1.data.y1 - .05
+        delta = tm1.ytic1.x1 - tm1.ytic1.x2
+        tm1.ytic1.x1 = tm1.data.x1
+        tm1.ytic1.x2 = tm1.data.x1 - delta
+        tm1.ylabel1.x = tm1.ytic1.x2
+
+        tm1.crdate.priority = 0
+        tm1.crtime.priority = 0        
+
+        tm2.data.x1 += .05
+        tm2.box1.x1 = tm2.data.x1
+        tm2.data.y1 += .025
+        tm2.data.y2 += .025
+        tm2.box1.y1 = tm2.data.y1
+        tm2.box1.y2 = tm2.data.y2
+        tm2.legend.y1 = tm2.data.y1
+        tm2.legend.y2 = tm2.data.y2
+
+        tm2.yname.x = .05
+        tm2.yname.y = (tm2.data.y1 + tm2.data.y2)/2
+        to = cnvs2.createtextorientation(None, tm2.yname.textorientation)
+        to.angle=-90
+        tm2.yname.textorientation=to 
+
+        tm2.xname.x = (tm2.data.x1 + tm2.data.x2)/2
+        tm2.xname.y = tm2.data.y1 - .025
+        #pdb.set_trace()
+        #delta = abs(tm2.ytic1.x1 - tm2.ytic1.x2)
+        tm2.ytic1.x1 = tm2.data.x1
+        tm2.ytic1.x2 = tm2.data.x1 - delta
+        tm2.ytic1.line = 'default'
+        tm2.ylabel1.x = tm2.ytic1.x2
+        
+        delta = abs(tm2.xtic1.y1 - tm2.xtic1.y2)
+        tm2.xtic1.y1 = tm2.data.y1
+        tm2.xtic1.y2 = tm2.xtic1.y1 - delta
+        tm2.xlabel1.y = tm2.xtic1.y2
+        tm2.xtic1.line = 'default'
+        
+        for tm in [tm1, tm2]:       
+            #tm.title.priority = 0
+            tm.max.priority = 0
+            tm.min.priority = 0
+            tm.mean.priority = 0
+            tm.dataname.priority = 0
+            
+            tm.xlabel1.priority = 1 
+            tm.xtic1.priority = 1 
+            tm.yname.priority = 1
+            tm.yname.priority = 1
+            tm.xname.priority = 1
+            tm.ylabel1.priority = 1 
+            tm.ytic1.priority = 1  
+                        
+        
+        #pdb.set_trace()
+        return tm1, tm2        
     def _results(self, newgrid=0):
         #pdb.set_trace()
         results = plot_spec._results(self, newgrid)
@@ -2784,5 +3017,5 @@ class xxxamwg_plot_set15(amwg_plot_spec):
             if type(val) is not list: val=[val]
             for v in val:
                 if v is None: continue
-                v.finalize()
+                v.finalize(flip_y=True)
         return self.plotspec_values[self.plotall_id]
