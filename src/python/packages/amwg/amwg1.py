@@ -14,7 +14,7 @@ from metrics.fileio.findfiles import *
 from metrics.common.utilities import *
 from metrics.computation.region import *
 from unidata import udunits
-import cdutil.times, numpy
+import cdutil.times, numpy, pdb
 
 # The following two functions were originally in plot set 4, but I moved them out because they
 # are needed also for plot set 1.
