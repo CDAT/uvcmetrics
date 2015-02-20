@@ -1012,7 +1012,8 @@ class amwg_plot_set5and6(amwg_plot_spec):
                                 rv.dict_id('hybm',seasonid,filetable1), rv.dict_id('PS',seasonid,filetable1) ],
             #was  vid1: derived_var( vid=vid1, inputs=[ varid+'_1', 'hyam_1', 'hybm_1', 'PS_1' ],
                                func=verticalize ),
-            vidl1: derived_var( vid=vidl1, inputs=[vid1], func=(lambda z: select_lev(z,pselect))) }
+            vidl1: derived_var( vid=vidl1, inputs=[vid1],
+                                func=(lambda z,psl=pselect: select_lev(z,psl))) }
 
         ft1src = filetable1.source()
         self.single_plotspecs = {
@@ -1058,8 +1059,8 @@ class amwg_plot_set5and6(amwg_plot_spec):
                     rv.dict_id(varid,seasonid,filetable2), rv.dict_id('hyam',seasonid,filetable2),
                     rv.dict_id('hybm',seasonid,filetable2), rv.dict_id('PS',seasonid,filetable2) ],
                                                         func=verticalize )
-            self.derived_variables[vidl2] = derived_var( vid=vidl2, inputs=[vid2],
-                                                         func=(lambda z: select_lev(z,pselect) ) )
+            self.derived_variables[vidl2] = derived_var(
+                vid=vidl2, inputs=[vid2], func=(lambda z,psl=pselect: select_lev(z,psl) ) )
         else:
             # no hybrid levels, assume pressure levels.
             #vid2 = varid+'_2'
@@ -1071,8 +1072,8 @@ class amwg_plot_set5and6(amwg_plot_spec):
                     variableid=varid, filetable=filetable2, season=self.season,
                     reduction_function=(lambda x,vid: reduce_time_seasonal( x, self.season, self.region, vid ) ) )
                 ]
-            self.derived_variables[vidl2] = derived_var( vid=vidl2, inputs=[vid2],
-                                                         func=(lambda z: select_lev(z,pselect) ) )
+            self.derived_variables[vidl2] = derived_var(
+                vid=vidl2, inputs=[vid2], func=(lambda z,psl=pselect: select_lev(z,psl) ) )
         self.reduced_variables = { v.id():v for v in reduced_varlis }
 
         try:
@@ -1094,7 +1095,9 @@ class amwg_plot_set5and6(amwg_plot_spec):
                 plottype = self.plottype,
                 #title = ' '.join([varid,seasonid,filetable1._strid,'-',filetable2._strid,'at',str(pselect)]) )
                 title = ' '.join([varid,seasonid,'at',str(pselect),'(1)-(2)']),
-                source = ', '.join([ft1src,ft2src]) )
+                source = ', '.join([ft1src,ft2src])
+                )
+#                zerocontour=-1 )
         self.composite_plotspecs = {
             self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id ]
             }
@@ -2389,13 +2392,22 @@ class amwg_plot_set13(amwg_plot_spec):
         print "amwg plot set 13 listvars=",listvars
         return listvars
     @classmethod
-    def _all_variables( cls, model, obs ):
+    def _all_variables( cls, ft1, ft2 ):
+    #def _all_variables( cls, model, obs ):
         allvars = {}
 
         # First, make a dictionary varid:varaxisnames.
         # Each variable will appear many times, but getting every occurence is the simplest
         # way to ensure that we get every variable.
-        filetable1, filetable2 = self.getfts(model, obs)
+        # there is no self: filetable1, filetable2 = self.getfts(model, obs)
+        if type(ft1) is list and len(ft1)>0:
+            filetable1 = ft1[0]
+        else:
+            filetable1 = ft1
+        if type(ft2) is list and len(ft2)>0:
+            filetable2 = ft2[0]
+        else:
+            filetable2 = ft2
         vars1 = {}
         vars2 = {}
         for row in filetable1._table:
@@ -2408,7 +2420,7 @@ class amwg_plot_set13(amwg_plot_spec):
         # other than time,lat,lon.  That's because we're going to average over time,lat,lon
         # and display a histogram dependent on (exactly) two remaining axes.
         for varname in amwg_plot_spec.package._list_variables(
-            filetable1, filetable2, "amwg_plot_spec" ):
+            [filetable1], [filetable2], "amwg_plot_spec" ):
             varaxisnames1 = vars1[varname]
             #otheraxes1 = list(set(varaxisnames1) - set(['time','lat','lon']))
             otheraxes1 = list(set(varaxisnames1) -

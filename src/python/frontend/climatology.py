@@ -21,7 +21,8 @@ from metrics.packages.amwg.plot_data import derived_var, plotspec
 from cdutil.times import Seasons
 from pprint import pprint
 from metrics.frontend.options import *
-import cProfile
+# For psutil, see https://github.com/giampaolo/psutil ...
+import cProfile, time, resource, psutil
 
 class climatology_variable( reduced_variable ):
     def __init__(self,varname,filetable,seasonname='ANN'):
@@ -80,7 +81,7 @@ class climatology_variance( reduced_variable ):
                 reduction_function=(lambda x,vid=None: reduce_time_seasonal(x,season)),
                 duvs={ varname+'_var':duv }, rvs=rvs )
 
-def compute_and_write_climatologies( varkeys, reduced_variables, season, case='', variant='', path='' ):
+def compute_and_write_climatologies_keepvars( varkeys, reduced_variables, season, case='', variant='', path='' ):
     """Computes climatologies and writes them to a file.
     Inputs: varkeys, names of variables whose climatologies are to be computed
             reduced_variables, dict (key:rv) where key is a variable name and rv an instance
@@ -125,6 +126,65 @@ def compute_and_write_climatologies( varkeys, reduced_variables, season, case=''
     g.season = season
     g.close()
     return varvals,case
+
+def compute_and_write_climatologies( varkeys, reduced_variables, season, case='', variant='', path='' ):
+    """Computes climatologies and writes them to a file.
+    Inputs: varkeys, names of variables whose climatologies are to be computed
+            reduced_variables, dict (key:rv) where key is a variable name and rv an instance
+               of the class reduced_variable
+            season: the season on which the climatologies will be computed
+            variant: a string to be inserted in the filename"""
+    # Compute the value of every variable we need.
+    # This function does not return the variable values, or even keep them.
+
+    # First compute all the reduced variables
+    # Probably this loop consumes most of the running time.  It's what has to read in all the data.
+    firsttime = True
+    for key in varkeys:
+        if key in reduced_variables:
+            time0 = time.time()
+            #print "jfp",time.ctime()
+            varval = reduced_variables[key].reduce()
+            #print "jfp",time.ctime(),"reduced",key,"in time",time.time()-time0
+            pmemusg = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss # "maximum resident set size"
+            pmemusg = pmemusg / 1024./1024.  # On Linux, should be 1024 for MB
+            #print "jfp   peak memory",pmemusg,"MB (GB on Linux)"
+            process = psutil.Process(os.getpid())
+            mem = process.get_memory_info()[0] / float(2**20)
+            #print "jfp   process memory",mem,"MB"
+        else:
+            continue
+        if varval is None:
+            continue
+
+        var = reduced_variables[key]
+        if firsttime:
+            firsttime = False
+            if case=='':
+                case = getattr( var, 'case', '' )
+                if case!='':
+                    case = var._file_attributes['case']+'_'
+            if case=='':
+                case = 'nocase_'
+            if variant!='':
+                variant = variant+'_'
+            filename = case + variant + season + "_climo.nc"
+            g = cdms2.open( os.path.join(path,filename), 'w' )    # later, choose a better name and a path!
+            # ...actually we want to write this to a full directory structure like
+            #    root/institute/model/realm/run_name/season/
+
+        print "writing",key,"in climatology file",filename
+        varval.id = var.variableid
+        varval.reduced_variable=varval.id
+        if hasattr(var,'units'):
+            varval.units = var.units+'*'+var.units
+        g.write(varval)
+        for attr,val in var._file_attributes.items():
+            if not hasattr( g, attr ):
+                setattr( g, attr, val )
+    g.season = season
+    g.close()
+    return case
 
 def climo_driver(opts):
     """ Test driver for setting up data for plots"""
@@ -189,7 +249,9 @@ def climo_driver(opts):
             except:
                print 'Could not create outputdir - %s' %outdir
                quit()
-        rvs,case = compute_and_write_climatologies( varkeys, reduced_variables1, season, casename,
+        #rvs,case = compute_and_write_climatologies_keepvars( varkeys, reduced_variables1, season, casename,
+        #                                            path=outdir )
+        case = compute_and_write_climatologies( varkeys, reduced_variables1, season, casename,
                                                     path=outdir )
 
         # Repeat for variance, climatology of (var-climo(var))**2/(N-1)
