@@ -1920,7 +1920,7 @@ class amwg_plot_set11(amwg_plot_spec):
     diags.py --model path=$HOME/uvcmetrics_test_data/cam35_data/,climos=yes 
     --obs path=$HOME/uvcmetrics_test_data/obs_data/,filter='f_startswith("CERES-EBAF")',climos=yes 
     --outputdir $HOME/Documents/Climatology/ClimateData/diagout/ --package AMWG --sets 11 --seasons JAN --plots yes  --vars LWCF """
-    name = '11 - Pacific annual cycle, Scatter plots:incomplete'
+    name = '11 - Pacific annual cycle, Scatter plots'
     number = '11'
     def __init__( self, model, obs, varid, seasonid='ANN', region=None, aux=None ):
         filetable1, filetable2 = self.getfts(model, obs)
@@ -1983,7 +1983,7 @@ class amwg_plot_set11(amwg_plot_spec):
                                            reduction_function=RF)
                     self.reduced_variables[VID] = RV      
                     VIDs += [VID]              
-
+        #pdb.set_trace()
         #setup the rdeuced variable pairs
         self.rv_pairs = []
         i = 0
@@ -1996,7 +1996,7 @@ class amwg_plot_set11(amwg_plot_spec):
         self.composite_plotspecs[self.plotall_id] = []
         self.compositeTitle = self.vars[0] + ' vs ' + self.vars[1]
         for i, plot_id in enumerate(self.plot_ids):
-            title = plot_id.split('_')[1]
+            title = plot_id#.split('_')[1]
             #zvars, z2vars = self.reduced_variables[VIDs[i]], self.reduced_variables[VIDs[i+1]]
             xVID, yVID = self.rv_pairs[i]
             #print xVID, yVID z2rangevars=[-120., 0.], zrangevars=[0., 120.], z2vars = [yVID],
@@ -2011,9 +2011,6 @@ class amwg_plot_set11(amwg_plot_spec):
                                                       title = title,
                                                       overplotline = True)
 
-            #self.composite_plotspecs[plot_id] = ( plot_id+'scatter', plot_id+'line' )
-            #self.composite_plotspecs[self.plotall_id] += [plot_id]
-
         self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
         self.computation_planned = True
     def _results(self, newgrid=0):
@@ -2023,19 +2020,28 @@ class amwg_plot_set11(amwg_plot_spec):
             print "WARNING, AMWG plot set 11 found nothing to plot"
             return None
         psv = self.plotspec_values
+    
+        #finalize the individual plots
+        for key in self.plot_ids:
+            val = psv[key]
+            val.finalize()
+        
+        #force an order in the multi plot to compare columns
+        vals = psv[self.plotall_id]
+        newvals = []
+        order = [3,0,4,1,5,2]
+        for i in order:
+            plot_id = self.plot_ids[i]
+            print plot_id
+            for val in vals:
+                if plot_id != val.title:
+                    continue
+                val.finalize()
+                newvals += [val]
+                break
+        self.plotspec_values[self.plotall_id] = newvals
         #pdb.set_trace()
-        #if self.plot_ids[0] in psv and self.plot_ids[0] is not None:
-        #    for  plot_id in self.plot_ids[1:]:
-        #        if plot_id in psv and plot_id is not None:
-        #            psv[plot_id].synchronize_ranges(psv[self.plot_ids[0]])
-        for key,val in psv.items():
-            #if type(val) is not list: val=[val]
-            if type(val) is not list and type(val) is not tuple: val=[val]
-            for v in val:
-                if v is None: continue
-                if type(v) is tuple:
-                    continue  # finalize has already been called for this, it comes from plotall_id but also has its own entry
-                v.finalize()
+            
         return self.plotspec_values[self.plotall_id]
 
 class amwg_plot_set12(amwg_plot_spec):
