@@ -12,6 +12,7 @@ from metrics.frontend import *
 from metrics.common.id import *
 from metrics.fileio import stationData
 from metrics.packages.amwg.derivations import *
+from metrics.packages.amwg.derivations import qflx_lhflx_conversions as flxconv
 from unidata import udunits
 import cdutil.times, numpy
 from numbers import Number
@@ -242,13 +243,14 @@ class amwg_plot_spec(plot_spec):
                 func=(lambda x: x) ) ],
         # To compare LHFLX and QFLX, need to unify these to a common variable
         # e.g. LHFLX (latent heat flux in W/m^2) vs. QFLX (evaporation in mm/day).
-        # [SMB: 9 Feb 2015]
+        # The conversion functions are defined in qflx_lhflx_conversions.py.
+        # [SMB: 25 Feb 2015]
         'LHFLX':[derived_var(
                 vid='LHFLX', inputs=['QFLX'], outputs=['LHFLX'],
-                func=(lambda x: convert_qflx_to_Wms(x)) ) ],
+                func=(lambda x: flxconv.convert_energyflux_precip(x, preferred_units="W/m^2")) ) ],
         'QFLX':[derived_var(
                 vid='QFLX', inputs=['LHFLX'], outputs=['QFLX'],
-                func=(lambda x: convert_lhflx_to_mmperday(x)) ) ]
+                func=(lambda x: flxconv.convert_energyflux_precip(x, preferred_units="mm/day")) ) ]
         }
     @staticmethod
     def _list_variables( model, obs ):

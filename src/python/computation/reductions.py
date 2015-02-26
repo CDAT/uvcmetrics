@@ -15,6 +15,7 @@ from datetime import datetime as datetime
 from unidata import udunits
 from cdutil import averager
 from metrics.packages.amwg.derivations import press2alt
+from metrics.packages.amwg.derivations import qflx_lhflx_conversions as flxconv
 from metrics.fileio.filetable import *
 from metrics.computation.units import *
 #from climo_test import cdutil_climatology
@@ -1577,52 +1578,17 @@ def aminusb_ax2( mv1, mv2 ):
     aminusb.initDomain( ab_axes )
     return aminusb
 
-def convert_qflx_to_Wms(qflx):
-    # To compare LHFLX and QFLX, need to unify these to a common variables
-    # e.g. LHFLX (latent heat flux in W/m^2) vs. QFLX (evaporation in mm/day)
-    # The latent heat of vaporization for water is 2260 kJ/kg [SMB: 9 Feb 2015].
-
-    # TODO: Probably the unit conversions can be handled more
-    # elegantly upon revision of this function.
-    lhvap = 2260. # 'kJ/kg'
-    if qflx.units == 'mm/day':
-#        qflx.units='kg/m2/day'
-        qflxtmp = lhvap*qflx
-#        qflxtmp.units = 'kJ/m2/day'
-#        lhflx = reconcile_units(qflxtmp, udunits(1,'W/m^2'),
-#                                  preferred_units='W/m^2')
-    # 1 W = 86.4 kJ / day
-        lhflx = qflxtmp / 86.4
-        lhflx.units = 'W/m^2'
-    else:
-        print "ERROR: In function convert_qflx_to_Wms, input variable qflx must have units of mm/day."
-        exit
-    return lhflx
-
-def convert_lhflx_to_mmperday(lhflx):
-    # To compare LHFLX and QFLX, need to unify these to a common variables
-    # e.g. LHFLX (latent heat flux in W/m^2) vs. QFLX (evaporation in mm/day)
-    # The latent heat of vaporization for water is 2260 kJ/kg [SMB: 9 Feb 2015].
-
-    lhvap = 2260. # 'kJ/kg'
-
-    # TODO: Probably the unit conversions can be handled more
-    # elegantly upon revision of this function.
-#    lhflx_kg_per_m2_per_day = reconcile_units(lhflx, udunits(1,'kJ/m2/day'),
-#                                              preferred_units='kJ/m2/day')
-
-    # 1 W = 86.4 kJ / day
-    lhflx_kg_per_m2_per_day = lhflx * 86.4
-
-    qflx = lhflx_kg_per_m2_per_day / lhvap
-    qflx.units = 'mm/day'
-    return qflx
-
 def reconcile_units( mv1, mv2, preferred_units=None ):
     """Changes the units of variables (instances of TransientVariable) mv1,mv2 to be the same,
     mv1 is a TransientVariable or an axis.  mv2 may be a TransientVariable or axis, or it may
     be a udunits object.
     If preferred units are specified, they will be used if possible."""
+
+    # For QFLX and LHFLX variables, call dedicated functions instead.
+    if mv1.id.find('_QFLX_') or mv1.id.find('_LHFLX_'):
+        flxconv.reconcile_energyflux_precip(mv1, mv2, preferred_units)
+        return mv1, mv2
+
 # This probably needs expanded to be more general purpose for unit conversions.
     # First, if there are no units, take a guess.  I'm reluctant to do this because it will surely
     # be wrong sometimes.  But usually it is correct.
@@ -1636,13 +1602,6 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
             (preferred_units is not None or mv1.units!=mv2.units):
         # Very ad-hoc, but more general would be less safe:
         # BES - set 3 does not seem to call it rv_QFLX. It is set3_QFLX_ft0_climos, so make this just a substring search
-#        if mv1.id[0:8]=="rv_QFLX_" and mv1.units=="kg/m2/s":
-#        if mv1.id.find('_QFLX_') and mv1.units=="kg/m2/s":
-#            preferred_units="mm/day"
-#            mv1.units="mm/s"   # if 1 kg = 10^6 mm^3 as for water
-        if mv1.units=='kg/m2/s' and mv2.units=='mm/day':
-            preferred_units="mm/day"
-            mv1.units="mm/s"   # if 1 kg = 10^6 mm^3 as for water
         if mv1.units=='mb':
             mv1.units = 'mbar' # udunits uses mb for something else
         if mv2.units=='mb':
