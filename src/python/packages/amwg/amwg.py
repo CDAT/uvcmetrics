@@ -2505,15 +2505,19 @@ class amwg_plot_set13(amwg_plot_spec):
                 vid = ps.dict_idid(vid2), zvars=[vid2], zfunc=(lambda z: z),
                 plottype = self.plottype,
                 title = ' '.join([varnom,seasonid,str(region),'(2)']),
-                source = ft2src ),
-            self.plot3_id: plotspec(
-                vid = ps.dict_id(varnom,'diff',seasonid,filetable1,filetable2,region=region), zvars=[vid1,vid2],
-                zfunc=aminusb_2ax, plottype = self.plottype,
-                title = ' '.join([varnom,seasonid,str(region),'(1)-(2)']),
-                source = ', '.join([ft1src,ft2src]) )
+                source = ft2src )
+# suppress the difference plot until I get interpolations right...
+#            ,
+#            self.plot3_id: plotspec(
+#                vid = ps.dict_id(varnom,'diff',seasonid,filetable1,filetable2,region=region), zvars=[vid1,vid2],
+#                zfunc=aminusb_2ax, plottype = self.plottype,
+#                title = ' '.join([varnom,seasonid,str(region),'(1)-(2)']),
+#                source = ', '.join([ft1src,ft2src]) )
             }
         self.composite_plotspecs = {
-            self.plotall_id: [self.plot1_id, self.plot2_id, self.plot3_id ]
+# suppress the difference plot until I get interpolations right...
+#            self.plotall_id: [self.plot1_id, self.plot2_id, self.plot3_id ]
+            self.plotall_id: [self.plot1_id, self.plot2_id ]
             }
         self.computation_planned = True
 
