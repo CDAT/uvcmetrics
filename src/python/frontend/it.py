@@ -62,14 +62,15 @@ def return_templates_graphic_methods(canvas1=None, gms=None, ovly=None, onPage=N
       tmmobs = []
       ct = 0
       for i in range(len(gms)):
-          if onPage == 2:
+          if onPage == 2 and gms[i] in ['yxvsx', 'scatter']:
              if ovly[i] == 0:     # use full template
                 ct += 1
                 tmmobs.append( canvas1.createtemplate('UVWG1D_%dof2_'%ct + (str(random.random())[2:]), 'UVWG1D_%dof2'%ct) )
              else:                # overlay plot use DUD - only plot the data
                 tmmobs.append( canvas1.createtemplate('UVWG1D_DUD_%dof2_'%ct + (str(random.random())[2:]), 'UVWG1D_DUD_%dof2'%ct) )
 
-          elif onPage == 3:
+          elif onPage <= 3:
+             # We need a UVWG_1of2, UVWG_2of2
              if ovly[i] == 0:     # use full template
                 ct += 1
                 tmmobs.append( canvas1.createtemplate('UVWG_%dof3_'%ct + (str(random.random())[2:]), 'UVWG_%dof3'%ct) )
