@@ -157,6 +157,9 @@ class basic_filetable(basic_id):
         self.lataxes = []  # list of latitude axis names (usually just one)
         self.lonaxes = []  # list of longitude axis names (usually just one)
         self.levaxes = []  # list of level axis names (sometimes a few of them)
+        self._type = None
+        self._climos = None
+        self._name = None
 
         #print "filelist=",filelist,type(filelist)
         self._filelist = filelist # just used for __repr__ and root_dir
