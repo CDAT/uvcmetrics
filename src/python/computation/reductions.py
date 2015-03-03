@@ -1188,24 +1188,17 @@ def interpret_region( region ):
             raise ValueError, "cannot recognize region name %s"%region
             region = None
     if region == None:
-        print 'this code should never be hit. please sent smithbe@ornl.gov an email detailing how you got here.'
-        quit()
+        raise Exception( 'this code should never be hit. please sent smithbe@ornl.gov an email detailing how you got here.' )
     return region
 
 def select_region(mv, region=None):
     # Select lat-lon region
-    if isinstance(region, rectregion):
-       if region=="global" or region=="Global" or getattr(region,'filekey',None)=="Global"\
-            or str(region)=="Global":
-           mvreg = mv
-       else:
-            region = interpret_region(region)
-            mvreg = mv(latitude=(region[0], region[1]), longitude=(region[2], region[3]))
+    if region is None or region=="global" or region=="Global" or\
+            getattr(region,'filekey',None)=="Global" or str(region)=="Global":
+        mvreg = mv
     else:
-       # The special cased amwg1
-       print 'region - %s - was not a rectregion. this should probably not get hit' % region
-       quit()
-
+        region = interpret_region(region)
+        mvreg = mv(latitude=(region[0], region[1]), longitude=(region[2], region[3]))
     return mvreg
 
 def select_lev( mv, slev ):
