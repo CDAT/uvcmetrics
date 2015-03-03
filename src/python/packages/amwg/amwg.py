@@ -335,24 +335,9 @@ class amwg_plot_spec(plot_spec):
 # plot set classes in other files:
 from metrics.packages.amwg.amwg1 import *
 
-# plot set classes we need which I haven't done yet:
+# plot set classes we need which we haven't done yet:
 class amwg_plot_set4a(amwg_plot_spec):
     pass
-class amwg_plot_set7(amwg_plot_spec):
-    pass
-class amwg_plot_set8(amwg_plot_spec):  
-    pass  
-class amwg_plot_set10(amwg_plot_spec):
-    pass
-#class amwg_plot_set11(amwg_plot_spec):
-#    pass
-class amwg_plot_set12(amwg_plot_spec):
-    pass
-class amwg_plot_set14(amwg_plot_spec):
-    pass
-class amwg_plot_set15(amwg_plot_spec):
-    pass
-
 
 class amwg_plot_set2(amwg_plot_spec):
     """represents one plot from AMWG Diagnostics Plot Set 2
