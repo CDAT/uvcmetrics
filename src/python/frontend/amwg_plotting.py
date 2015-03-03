@@ -13,10 +13,19 @@ from metrics.packages.amwg.amwg import *
 from metrics.packages.lmwg.lmwg import *
 
 # Required arguments for a plot are the canvas, variable, graphics method, template.
-amwg_plot_spec.vcs_plot = (lambda self, canvas, var, gm, tm, *args, **kwargs:
-        canvas.plot( var, gm, tm, *args, **kwargs ) )
-lmwg_plot_spec.vcs_plot = (lambda self, canvas, var, gm, tm, *args, **kwargs:
-        canvas.plot( var, gm, tm, *args, **kwargs ) )
+def amwg_plot_spec_vcs_plot( self, canvas, var, gm, tm, *args, **kwargs ):
+    if 'compoundplot' in kwargs:
+        del kwargs['compoundplot']  # confuses VCS
+    canvas.plot( var, gm, tm, *args, **kwargs )
+
+amwg_plot_spec.vcs_plot = amwg_plot_spec_vcs_plot
+
+def lmwg_plot_spec_vcs_plot( self, canvas, var, gm, tm, *args, **kwargs ):
+    if 'compoundplot' in kwargs:
+        del kwargs['compoundplot']  # confuses VCS
+    canvas.plot( var, gm, tm, *args, **kwargs )
+
+lmwg_plot_spec.vcs_plot = lmwg_plot_spec_vcs_plot
 
 def amwg_plot_set13_vcs_plot( self, canvas, var, gm, tm, compoundplot=0, *args, **kwargs ):
     # Plot set 13 is a histogram. All boxes should be the same size.  To do that, for plotting
@@ -24,6 +33,8 @@ def amwg_plot_set13_vcs_plot( self, canvas, var, gm, tm, compoundplot=0, *args, 
     # other little adjustments become necessary.
     # Note that the values of datawc_{x,y}{1,2} refer to the indices of var's values, not the axis
     # values.
+    if 'compoundplot' in kwargs:
+        del kwargs['compoundplot']  # confuses VCS
     gm.datawc_x1 = -0.5
     gm.datawc_x2 = var.shape[1]-0.5
     gm.datawc_y1 = -0.5
