@@ -367,7 +367,7 @@ class basic_pole_variable(basic_plot_variable):
         """returns the hemisphere specific to this variable. """
         opts ={" Northern Hemisphere":(90, 0.), " Southern Hemisphere":(-90.,0) }
         return opts
-class station_id_variable():
+class station_id_variable(basic_plot_variable):
     """provides an index into a data array for a specific station."""
     @staticmethod
     def varoptions():
