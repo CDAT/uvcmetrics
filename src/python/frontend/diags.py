@@ -58,6 +58,7 @@ import metrics.frontend.defines as defines
 import cProfile
 from metrics.frontend.it import *
 from metrics.computation.region import *
+from metrics.frontend.amwg_plotting import *
 
 def mysort( lis ):
     lis.sort()
@@ -136,6 +137,7 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
 
     if opts['output']['plots'] == True:
         vcanvas = vcs.init()
+        vcsx = vcanvas   # ensures that uvcdat.py works on the same canvas
         vcanvas.setcolormap('bl_to_darkred') #Set the colormap to the NCAR colors
         if opts['output']['logo'] == False:
             vcanvas.drawlogooff()
@@ -286,8 +288,8 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                                     print "tmpl gms=",gms
                                     print "tmpl len(res)=",len(res),"ovly=",ovly,"onPage=",onPage
                                     print "tmpl gmobs=",gmobs
-                                    print "tmpl tmobs=",tmobs
-                                    print "tmpl tmmobs=",tmmobs
+                                    print "tmpl tmobs=",[tm.name for tm in tmobs]
+                                    print "tmpl tmmobs=",[tm.name for tm in tmmobs]
                                 
                                 # gmmobs provides the correct graphics methods to go with the templates.
                                 # Unfortunately, for the moment we have to use rmr.presentation instead
@@ -495,16 +497,21 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                                            else:
                                                #pdb.set_trace()
                                                if hasattr(plot, 'customizeTemplates'):
-                                                   tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)] )                                               
-                                               vcanvas.plot(var, rsr.presentation, tm, bg=1, title=title,
-                                                            units=getattr(var,'units',''), source=rsr.source )
+                                                   tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)] )
+                                               #vcanvas.plot(var, rsr.presentation, tm, bg=1, title=title,
+                                               #             units=getattr(var,'units',''), source=rsr.source )
+                                               plot.vcs_plot(vcanvas, var, rsr.presentation, tm, bg=1, title=title,
+                                                             units=getattr(var,'units',''), source=rsr.source )
 #                                               vcanvas3.clear()
 #                                               vcanvas3.plot(var, rsr.presentation )
                                                savePNG = True
                                                try:
                                                    if tm2 is not None:
-                                                       vcanvas2.plot(var, rsr.presentation, tm2, bg=1,
-                                                                         title=title, units=getattr(var,'units',''), source=rsr.source )
+                                                       #vcanvas2.plot(var, rsr.presentation, tm2, bg=1,
+                                                       #        title=title, units=getattr(var,'units',''), source=rsr.source )
+                                                       plot.vcs_plot( vcanvas2, var, rsr.presentation, tm2, bg=1,
+                                                                     title=title, units=getattr(var,'units',''),
+                                                                      source=rsr.source, compoundplot=onPage )
                                                except vcs.error.vcsError as e:
                                                    print "ERROR making summary plot:",e
                                                #pdb.set_trace()

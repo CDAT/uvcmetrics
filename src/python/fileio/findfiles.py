@@ -226,6 +226,15 @@ def path2filetable( opts, modelid=None, obsid=None):
     """
     datafiles = dirtree_datafiles( opts, modelid=modelid, obsid=obsid)
     filetable = datafiles.setup_filetable()
+    if modelid != None:
+         ftype = 'model'
+         fid = modelid
+    else:
+         ftype = 'obs'
+         fid = obsid
+    filetable._type = ftype 
+    filetable._climos = opts[ftype][fid]['climos']
+    filetable._name = opts[ftype][fid]['name']
     return filetable
 
 class dirtree_datafiles( basic_datafiles ):
@@ -261,19 +270,30 @@ class dirtree_datafiles( basic_datafiles ):
             self.files = []
             return None
         root = obj['path']
+        if obj.get('filter', False) == False:
+            obj['filter'] = None
+
         if type(root) is str:
             root = [root]
 
         root = [ os.path.expanduser(r) for r in root ]
         root = [ r if r[0:5]=='http:' else os.path.abspath(r) for r in root ]
         filt = obj['filter']
+        print 'filt: ', filt
 
         if filt is None or filt=="": 
            filt=basic_filter()
         elif type(filt) is str:
            filt = eval(str(filt))
 
-        self._type = obj['type']
+        # The GUI is not well-behaved for these things, so do this for now.
+        if obj.get('type', False) != False:
+           self._type = obj['type']
+        if obj.get('climos', False) != False:
+           self._climos = obj['climos']
+        if obj.get('name', False) != False:
+           self._name = obj['name']
+
         self._root = root
         self._filt = filt
         self.files = []
@@ -300,10 +320,14 @@ class dirtree_datafiles( basic_datafiles ):
         return self.files
 
     def short_name(self):
-        if self.opts[self._type][self._index]['name'] != None:
-            return self.opts[self._type][self._index]['name'] 
-        elif len(self._filt.mystr())>0:
-            return ','.join(['_'.join([os.path.basename(str(r)),self._filt.mystr()])
+        if self._type == None or self._index == None:
+            return ','.join([os.path.basename(str(r))
+                             for r in self._root])   # <base directory> <filter name>
+        if len(self.opts[self._type]) > self._index:
+            if self.opts[self._type][self._index].get('name', False) != False:
+               return self.opts[self._type][self._index]['name'] 
+            if self.opts[self._type][self._index].get('filter', False) != False:
+               return ','.join(['_'.join([os.path.basename(str(r)),self._filt.mystr()])
                              for r in self._root])   # <base directory> <filter name>
         else:
             return ','.join([os.path.basename(str(r))

@@ -335,24 +335,9 @@ class amwg_plot_spec(plot_spec):
 # plot set classes in other files:
 from metrics.packages.amwg.amwg1 import *
 
-# plot set classes we need which I haven't done yet:
+# plot set classes we need which we haven't done yet:
 class amwg_plot_set4a(amwg_plot_spec):
     pass
-class amwg_plot_set7(amwg_plot_spec):
-    pass
-class amwg_plot_set8(amwg_plot_spec):  
-    pass  
-class amwg_plot_set10(amwg_plot_spec):
-    pass
-#class amwg_plot_set11(amwg_plot_spec):
-#    pass
-class amwg_plot_set12(amwg_plot_spec):
-    pass
-class amwg_plot_set14(amwg_plot_spec):
-    pass
-class amwg_plot_set15(amwg_plot_spec):
-    pass
-
 
 class amwg_plot_set2(amwg_plot_spec):
     """represents one plot from AMWG Diagnostics Plot Set 2
@@ -2543,15 +2528,19 @@ class amwg_plot_set13(amwg_plot_spec):
                 vid = ps.dict_idid(vid2), zvars=[vid2], zfunc=(lambda z: z),
                 plottype = self.plottype,
                 title = ' '.join([varnom,seasonid,str(region),'(2)']),
-                source = ft2src ),
-            self.plot3_id: plotspec(
-                vid = ps.dict_id(varnom,'diff',seasonid,filetable1,filetable2,region=region), zvars=[vid1,vid2],
-                zfunc=aminusb_2ax, plottype = self.plottype,
-                title = ' '.join([varnom,seasonid,str(region),'(1)-(2)']),
-                source = ', '.join([ft1src,ft2src]) )
+                source = ft2src )
+# suppress the difference plot until I get interpolations right...
+#            ,
+#            self.plot3_id: plotspec(
+#                vid = ps.dict_id(varnom,'diff',seasonid,filetable1,filetable2,region=region), zvars=[vid1,vid2],
+#                zfunc=aminusb_2ax, plottype = self.plottype,
+#                title = ' '.join([varnom,seasonid,str(region),'(1)-(2)']),
+#                source = ', '.join([ft1src,ft2src]) )
             }
         self.composite_plotspecs = {
-            self.plotall_id: [self.plot1_id, self.plot2_id, self.plot3_id ]
+# suppress the difference plot until I get interpolations right...
+#            self.plotall_id: [self.plot1_id, self.plot2_id, self.plot3_id ]
+            self.plotall_id: [self.plot1_id, self.plot2_id ]
             }
         self.computation_planned = True
 

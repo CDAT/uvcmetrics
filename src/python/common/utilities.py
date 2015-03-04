@@ -47,3 +47,26 @@ def seqhasattr( z, attr ):
     else:
         return hasattr( z, attr )
 
+from math import floor,log10
+def round2(x,n=0,sigs4n=1):
+    """Return x rounded to the specified number of significant digits, n, as
+    counted from the first non-zero digit.
+
+    If n=0 (the default value for round2) then the magnitude of the
+    number will be returned (e.g. round2(12) returns 10.0).
+
+    If n<0 then x will be rounded to the nearest multiple of n which, by
+    default, will be rounded to 1 digit (e.g. round2(1.23,-.28) will round
+    1.23 to the nearest multiple of 0.3.
+
+    Regardless of n, if x=0, 0 will be returned."""
+    # adapted from http://osdir.com/ml/python-numeric-general/2001-09/msg00026.html
+    # There are many similar functions on the web.
+    if x==0:
+        return x
+    if n<0:
+        n=round2(-n,sigs4n)
+        return n*int(x/n+.5)
+    if n==0:
+        return 10.**(int(floor(log10(abs(x)))))
+    return round(x,int(n)-1-int(floor(log10(abs(x)))))
