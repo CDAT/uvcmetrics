@@ -4,10 +4,12 @@ class stationData():
     sets up the variables needed later for analysis."""
     def __init__(self, obsDataFile):
         import cdms2
+        if obsDataFile.find('RAOBS.nc')<0:
+            print "INFO: We usually get station data from RAOBS.nc.  This data file is",obsDataFile
         f=cdms2.open(obsDataFile)
         self.KEYS = f.listvariables() 
-        self.KEYS.remove('STATIONS')
-        self.KEYS.remove('MONTHS')
+        self.KEYS = [ a for a in self.KEYS if a!='STATIONS' and a!= 'MONTHS']
+        # ... better than remove, works even if STATIONS or MONTHS not in KEYS
         self.data = {}
         self.long_names = {}
         #read in all of the data, it's small
@@ -15,11 +17,16 @@ class stationData():
         for key in self.KEYS:
             #print key
             #pdb.set_trace()
-            self.data[key] = (f[key].getValue(), f[key].units, f[key].long_name), \
-                             (f[key].getAxis(plev_axis).getData(), f[key].getAxis(plev_axis).units, f[key].getAxis(plev_axis).long_name)
+            if len(f[key].getDomain())>plev_axis:
+                self.data[key] = (f[key].getValue(), f[key].units, f[key].long_name), \
+                    ( f[key].getAxis(plev_axis).getData(),
+                      f[key].getAxis(plev_axis).units,
+                      f[key].getAxis(plev_axis).long_name )
                              
         for key in ['slat', 'slon']:
             #print key
+            if f[key] is None:
+                raise Exception( "This plot requires station data, but there is none in file %s"%obsDataFile )
             self.data[key] = f[key].getValue()
         f.close()
         
