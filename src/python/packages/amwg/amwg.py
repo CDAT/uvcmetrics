@@ -1477,7 +1477,7 @@ class amwg_plot_set7(amwg_plot_spec):
     @staticmethod
     def _all_variables( model, obs ):
         allvars = amwg_plot_spec.package._all_variables( model, obs, "amwg_plot_spec" )
-        for varname in amwg_plot_spec.package._list_variables_with_levelaxis(
+        for varname in amwg_plot_spec.package._list_variables(
             model, obs, "amwg_plot_spec" ):
             allvars[varname] = basic_pole_variable
         return allvars
@@ -2284,8 +2284,17 @@ class amwg_plot_set12(amwg_plot_spec):
         return tm1, tm2
     def _results(self, newgrid=0):
         def getRanges(limits, model, obs):
-            xlow1, xhigh1, ylow1, yhigh1 = limits[model]
-            xlow2, xhigh2, ylow2, yhigh2 = limits[obs]
+            if model in limits:
+                xlow1, xhigh1, ylow1, yhigh1 = limits[model]
+                if obs in limits:
+                    xlow2, xhigh2, ylow2, yhigh2 = limits[obs]
+                else:
+                    return [xlow1, xhigh1, ylow1, yhigh1]
+            elif obs in limits:
+                xlow2, xhigh2, ylow2, yhigh2 = limits[obs]
+                return [xlow2, xhigh2, ylow2, yhigh2]
+            else:
+                return [None,None,None,None]
             xlow = min(xlow1, xlow2)
             xhigh = max(xhigh1, xhigh2)
             ylow = min(ylow1, ylow2)
@@ -2329,12 +2338,15 @@ class amwg_plot_set12(amwg_plot_spec):
                 model, obs = val
                 #resolve the mins and maxs for each plot
                 ranges = getRanges(limits, model, obs)
+                if None not in ranges:
+                    #set the ranges to the same in each presentation
+                    if model is not None and psv[model] is not None:
+                        psv[model].presentation = setRanges(psv[model].presentation, ranges)
+                    if obs is not None and psv[obs] is not None:
+                        psv[obs].presentation = setRanges(psv[obs].presentation, ranges)
 
-                #set the ranges to the same in each presentation 
-                psv[model].presentation = setRanges(psv[model].presentation, ranges)
-                psv[obs].presentation = setRanges(psv[obs].presentation, ranges)
-
-        return self.plotspec_values[self.plotall_id]
+        psvs = [ psv for psv in self.plotspec_values[self.plotall_id] if None not in psv ]
+        return psvs
     
 class amwg_plot_set13(amwg_plot_spec):
     """represents one plot from AMWG Diagnostics Plot Set 13, Cloud Simulator Histograms.
