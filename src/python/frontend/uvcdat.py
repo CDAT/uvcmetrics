@@ -273,7 +273,6 @@ class uvc_simple_plotspec():
                 # prime meridian in a lat-lon plot.  You get all the data, but ax.bounds[0][0] is a better
                 # lower bound than ax[0], and ax.bounds[-1][1] than ax[-1] (for example).  But also that's
                 # more complicated and buys you little, so it can be done later.
-                print "jfp var=",type(var),len(var)
                 if len(var)>0:
                     self.varmax[seqgetattr(var,'id','')] = var.max()
                     self.varmin[seqgetattr(var,'id','')] = var.min()
@@ -874,8 +873,15 @@ class plot_spec(object):
         #print "jfp in plot_spec._results, derived variables=",self.derived_variables.keys()
         for v in self.reduced_variables.keys():
             value = self.reduced_variables[v].reduce(None)
-            if len(value.data)<=0:
-                print "ERROR no data for",v
+            try:
+                if  len(value.data)<=0:
+                    print "ERROR no data for",v
+            except: # value.data may not exist, or may not accept len()
+                try:
+                    if value.size<=0:
+                        print "ERROR no data for",v
+                except: # value.size may not exist
+                    pass
             self.variable_values[v] = value  # could be None
         postponed = []   # derived variables we won't do right away
         for v in self.derived_variables.keys():
