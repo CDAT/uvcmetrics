@@ -388,9 +388,32 @@ def reduce2levlat_seasonal( mv, seasons=seasonsyr, region=None, vid=None ):
     avmv.id = vid
     if hasattr(mv,'units'):
         avmv.units = mv.units
-
     return avmv
 
+def reduce2levlon_seasonal( mv, seasons=seasonsyr, region=None, vid=None ):
+    """as reduce2levlat, but data is averaged only for time restricted to the specified season;
+    as in reduce2lon_seasona."""
+    if vid is None:   # Note that the averager function returns a variable with meaningless id.
+        vid = 'reduced_'+mv.id
+    if levAxis(mv) is None: return None
+    if lonAxis(mv) is None: return None
+    axes = allAxes( mv )
+
+    mvr = select_region(mv, region)
+    mvseas = reduce_time_seasonal(mvr, seasons, region)
+
+    axis_names = [ a.id for a in axes if a.isLevel()==False and a.isLongitude()==False and a.isTime()==False ]
+    axes_string = '('+')('.join(axis_names)+')'
+
+    if len(axes_string)>2:
+        avmv = averager( mvseas, axis=axes_string )
+    else:
+        avmv = mvseas
+    avmv.id = vid
+    if hasattr(mv,'units'):
+        avmv.units = mv.units
+    #pdb.set_trace()
+    return avmv
 def reduce2latlon( mv, vid=None ):
     """as reduce2lat, but averaging reduces coordinates to (lat,lon)"""
     if vid is None:   # Note that the averager function returns a variable with meaningless id.
@@ -477,6 +500,96 @@ def reduce2lat_seasonal( mv, seasons=seasonsyr, region=None, vid=None ):
         avmv.units = mv.units
     return avmv
 
+def reduce2lon_seasonal( mv, seasons=seasonsyr, region=None, vid=None ):
+    """This code was ripped from reduce2lat_seasonal.  The season
+    is specified as an object of type cdutil.ties.Seasons, and defaults to the whole year.
+    The returned variable will still have a time axis, with one value per season specified.
+    """
+
+    if vid is None:
+        vid = 'reduced_'+mv.id
+    # Note that the averager function returns a variable with meaningless id.
+    # The climatology function returns the same id as mv, which we also don't want.
+
+    mvr = select_region(mv, region)
+    mvseas = calculate_seasonal_climatology(mvr, seasons)
+
+    if mvseas is None:
+        # Among other cases, this can happen if mv has all missing values.
+        return None
+    
+    axes = allAxes( mvseas )
+    for ax in axes:
+        if ax.getBounds() is None:
+            ax._bounds_ = ax.genGenericBounds()
+    #axis_names = [ a.id for a in axes if a.id!='lat' and a.id!='time']
+    axis_names = [ a.id for a in axes if not a.isLongitude() and not a.isTime() ]
+    axes_string = '('+')('.join(axis_names)+')'
+
+    if len(axes_string)>2:
+        avmv = averager( mvseas, axis=axes_string )
+    else:
+        avmv = mvseas
+    avmv.id = vid
+
+    if hasattr(mv,'units'):
+        avmv.units = mv.units
+    #pdb.set_trace()
+    return avmv
+
+def reduce2level_seasonal( mv, seasons=seasonsyr, region='Global', vid=None ):
+    """as reduce2levlat, but data is averaged only for time restricted to the specified season;
+    as in reduce2lat_seasonal."""
+    #pdb.set_trace()
+    if vid is None:   # Note that the averager function returns a variable with meaningless id.
+        vid = 'reduced_'+mv.id
+    if levAxis(mv) is None: return None
+    axes = allAxes( mv )
+
+    #if region:
+    #    mvr = select_region(mv, region)
+    #else:
+    #    mvr = mv
+
+    
+    #mvseas = reduce_time_seasonal(mvr, seasons, region)
+    
+    #copied from reduce_time_seasonal
+    mvseas = calculate_seasonal_climatology(mv, seasons)
+
+    if vid is None:
+        #vid = 'reduced_'+mv.id
+        vid = mv.id
+    mvseas.id = vid
+    
+    # Note that the averager function returns a variable with meaningless id.
+    # The climatology function returns the same id as mv, which we also don't want.
+
+    #mvsr = select_region(mv, region)
+
+    if hasattr( mv, 'units' ):
+        mvseas.units = mv.units
+    #end of copy from reduce_time_seasonal
+
+    axis_names = [ a.id for a in axes if a.isLevel()==False and a.isTime()==False ]
+    axes_string = '('+')('.join(axis_names)+')'
+
+    if len(axes_string)>2:
+        avmv = averager( mvseas, axis=axes_string )
+    else:
+        avmv = mvseas
+    avmv.id = vid
+          
+    axis = avmv.getAxis(0)
+    if axis.units in ['lev', 'level', 'mbar', 'millibars']:
+        axis.units = 'mbar'
+        axis.id = 'pressure'
+    axis.designateLevel()
+    #avmv.info()
+    
+    #pdb.set_trace()    
+
+    return avmv
 
 def ttest_time(mv1, mv2, mv3):
 # mv1 = case1
@@ -2153,59 +2266,6 @@ def correlateData(mv1, mv2, aux):
     #print corr
 
     return corr
-def reduce2level_seasonal( mv, seasons=seasonsyr, region='Global', vid=None ):
-    """as reduce2levlat, but data is averaged only for time restricted to the specified season;
-    as in reduce2lat_seasonal."""
-    #pdb.set_trace()
-    if vid is None:   # Note that the averager function returns a variable with meaningless id.
-        vid = 'reduced_'+mv.id
-    if levAxis(mv) is None: return None
-    axes = allAxes( mv )
-
-    #if region:
-    #    mvr = select_region(mv, region)
-    #else:
-    #    mvr = mv
-
-    
-    #mvseas = reduce_time_seasonal(mvr, seasons, region)
-    
-    #copied from reduce_time_seasonal
-    mvseas = calculate_seasonal_climatology(mv, seasons)
-
-    if vid is None:
-        #vid = 'reduced_'+mv.id
-        vid = mv.id
-    mvseas.id = vid
-    
-    # Note that the averager function returns a variable with meaningless id.
-    # The climatology function returns the same id as mv, which we also don't want.
-
-    #mvsr = select_region(mv, region)
-
-    if hasattr( mv, 'units' ):
-        mvseas.units = mv.units
-    #end of copy from reduce_time_seasonal
-
-    axis_names = [ a.id for a in axes if a.isLevel()==False and a.isTime()==False ]
-    axes_string = '('+')('.join(axis_names)+')'
-
-    if len(axes_string)>2:
-        avmv = averager( mvseas, axis=axes_string )
-    else:
-        avmv = mvseas
-    avmv.id = vid
-          
-    axis = avmv.getAxis(0)
-    if axis.units in ['lev', 'level', 'mbar', 'millibars']:
-        axis.units = 'mbar'
-        axis.id = 'pressure'
-    axis.designateLevel()
-    #avmv.info()
-    
-    #pdb.set_trace()    
-
-    return avmv
 
 class reduced_variable(ftrow,basic_id):
     """Specifies a 'reduced variable', which is a single-valued part of an output specification.

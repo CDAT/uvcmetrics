@@ -18,7 +18,7 @@ import cdutil.times, numpy, pdb
 
 # The following two functions were originally in plot set 4, but I moved them out because they
 # are needed also for plot set 1.
-def reduced_variables_press_lev( filetable, varid, season, region='Global', filefilter=None, rf=None):
+def reduced_variables_press_lev( filetable, varid, season, region='Global', filefilter=None, rf=None, RF1=None, RF2=None ):
     """Returns a dictionary of a reduced variable for the specified variable id (string) and season
     using the supplied filetable.  The variable must have a level axis using pressure coordinates.
     The reduction function may be supplied as rf but will default to that used in AMWG plot set 4.
@@ -26,30 +26,34 @@ def reduced_variables_press_lev( filetable, varid, season, region='Global', file
     season = season2Season(season)
     region = interpret_region(region)
     print 'region in: ', region
+    #print " RFs = ", RF1, RF2
+    
     if filetable is None:
         return {}
     if rf is None:  # default can't be specified in the args because it depends on season
-        rf = (lambda x,vid=varid,season=season,region=region: reduce2levlat_seasonal(x,season,region,vid)) 
+        rf = (lambda x,vid=varid,season=season,region=region: RF2(x,season,region,vid)) 
     reduced_varlis = [
         reduced_variable(
             variableid=varid, filetable=filetable, season=season, filefilter=filefilter,
             reduction_function=rf ) ]
     reduced_variables = { v.id():v for v in reduced_varlis }
     return reduced_variables
-def reduced_variables_hybrid_lev( filetable, varid, season, region='Global', filefilter=None, rf=None, rf_PS=None ):
+def reduced_variables_hybrid_lev( filetable, varid, season, region='Global', filefilter=None, rf=None, rf_PS=None, RF1=None, RF2=None ):
     """Returns a dictionary of reduced variables needed for the specified variable id (string) and
     season using the supplied filetable.  The variable must have a level axis using hybrid coordinates.
     Some of the reduction functions may be supplied but will default to that used in AMWG plot set 4:
     rf for the variable varid and rf_PS for PS
     """
+    #print 'RFs = ', RF1, RF2
+    
     season = season2Season(season)
     region=interpret_region(region)
     if filetable is None:
         return {}
     if rf is None:  # default can't be specified in the args because it depends on season
-        rf=(lambda x,vid=varid,season=season,region=region: reduce2levlat_seasonal(x,season,region,vid))
+        rf=(lambda x,vid=varid,season=season,region=region: RF2(x,season,region,vid))
     if rf_PS is None:  # default can't be specified in the args because it depends on season
-        rf_PS=(lambda x,vid=varid,season=season,region=region: reduce2lat_seasonal(x,season,region,vid))
+        rf_PS=(lambda x,vid=varid,season=season,region=region: RF1(x,season,region,vid))
     reduced_varlis = [
         reduced_variable(
             variableid=varid, filetable=filetable, season=season, filefilter=filefilter,
