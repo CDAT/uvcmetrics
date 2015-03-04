@@ -273,18 +273,20 @@ class uvc_simple_plotspec():
                 # prime meridian in a lat-lon plot.  You get all the data, but ax.bounds[0][0] is a better
                 # lower bound than ax[0], and ax.bounds[-1][1] than ax[-1] (for example).  But also that's
                 # more complicated and buys you little, so it can be done later.
-                self.varmax[seqgetattr(var,'id','')] = var.max()
-                self.varmin[seqgetattr(var,'id','')] = var.min()
-                self.axmax[seqgetattr(var,'id','')]  = { ax[0].id:max(ax[0][:]) for ax in var.getDomain()[:]
-                                        if ax is not None }
-                self.axmin[seqgetattr(var,'id','')]  = { ax[0].id:min(ax[0][:]) for ax in var.getDomain()[:]
-                                        if ax is not None}
-                # The 'axis' attribute of an axis is typically X or Y and tells you where the axis
-                # goes in a plot.  It it's not there, we'll decide later.
-                self.axax[seqgetattr(var,'id','')]  = {
-                    ax[0].id:(ax[0].axis if hasattr(ax[0],'axis')\
-                                  else ax[0].id)
-                    for ax in var.getDomain()[:] if ax is not None
+                print "jfp var=",type(var),len(var)
+                if len(var)>0:
+                    self.varmax[seqgetattr(var,'id','')] = var.max()
+                    self.varmin[seqgetattr(var,'id','')] = var.min()
+                    self.axmax[seqgetattr(var,'id','')]  = { ax[0].id:max(ax[0][:]) for ax in var.getDomain()[:]
+                                            if ax is not None }
+                    self.axmin[seqgetattr(var,'id','')]  = { ax[0].id:min(ax[0][:]) for ax in var.getDomain()[:]
+                                            if ax is not None}
+                    # The 'axis' attribute of an axis is typically X or Y and tells you where the axis
+                    # goes in a plot.  It it's not there, we'll decide later.
+                    self.axax[seqgetattr(var,'id','')]  = {
+                        ax[0].id:(ax[0].axis if hasattr(ax[0],'axis')\
+                                      else ax[0].id)
+                        for ax in var.getDomain()[:] if ax is not None
                     }
         self.finalized = False
     def make_ranges(self, var):
@@ -311,7 +313,10 @@ class uvc_simple_plotspec():
                     VAR = var
             except:
                 VAR = var
-            yrange = [ VAR.min(), VAR.max()]
+            if len(VAR)>0:
+                yrange = [ VAR.min(), VAR.max()]
+            else:
+                yrange = [ None, None ]
         return xrange, yrange    
         
     def finalize( self, flip_x=False, flip_y=False ):
@@ -869,6 +874,8 @@ class plot_spec(object):
         #print "jfp in plot_spec._results, derived variables=",self.derived_variables.keys()
         for v in self.reduced_variables.keys():
             value = self.reduced_variables[v].reduce(None)
+            if len(value.data)<=0:
+                print "ERROR no data for",v
             self.variable_values[v] = value  # could be None
         postponed = []   # derived variables we won't do right away
         for v in self.derived_variables.keys():
@@ -901,7 +908,7 @@ class plot_spec(object):
             vars = []
             zlab=""
             z2lab=""
-            if zax is not None:
+            if zax is not None and len(zax.data)>0:
                 if hasattr(zax,'regridded') and newgrid!=0:
                     vars.append( regridded_vars[zax.regridded] )
                 else:
