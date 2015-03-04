@@ -22,6 +22,8 @@ echo "set 10"
 diags --outputdir ~/tmp/diagout/ --model path=~/metrics_data/cam35_data/,climos=yes --obs path=/Users/painter1/metrics_data/obs_data_5.6/,filter="f_startswith('NCEP')",climos=yes --package AMWG --set 10 --seasons ANN --vars TS
 echo "set 11"
 diags --outputdir ~/tmp/diagout/ --model path=~/metrics_data/cam35_data/,climos=yes --obs path=/Users/painter1/metrics_data/obs_data_5.6/,filter="f_startswith('NCEP')",climos=yes --package AMWG --set 11 --seasons ANN --vars TS
+echo "set 12"
+diags --outputdir ~/tmp/diagout/ --model path=~/metrics_data/fe11/,climos=yes --obs path=/Users/painter1/metrics_data/obs_data_5.6/,filter="f_startswith('RAOBS')",climos=yes --package AMWG --set 12 --vars T --varopts SanFrancisco_CA
 echo "set 13"
 mkdir ~/tmp/diagout/13
 diags --outputdir ~/tmp/diagout/13 --model path=~/metrics_data/cam35_data/,climos=yes --obs path=~/metrics_data/obs_data_5.6/,filter='f_startswith("ISCCPCOSP")' --package AMWG --set 13 --seasons ANN --vars CLISCCP
