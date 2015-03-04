@@ -219,7 +219,7 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                             varopts = list( set(vvaropts.keys()) & set(opts['varopts']) )
                             if varopts==[]:
                                 print "WARNING: requested varopts incompatible with available varopts"
-                                print "requeseted varopts=",opts['varopts']
+                                print "requested varopts=",opts['varopts']
                                 print "available varopts for variable",varid,"are",vvaropts.keys()
                                 print "No plots will be made."
 
