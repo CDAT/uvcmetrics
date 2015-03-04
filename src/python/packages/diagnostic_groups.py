@@ -47,6 +47,10 @@ class BasicDiagnosticGroup():
     def _list_variables( model, obs, diagnostic_set_name="" ):
         """a generic implementation of the list_variables method, should be a good
         starting point for developing something for a particular diagnostic group"""
+        if not hasattr(model,'__len__'):
+            model = [model]
+        if not hasattr(obs,'__len__'):
+            obs = [obs]
         if len(model) == 0 and len(obs) == 0: return []
         if len(model) != 0:
            vlist = model[0].list_variables_incl_axes()
