@@ -641,8 +641,8 @@ class amwg_plot_set3(amwg_plot_spec,basic_id):
         plot_b_val.finalize()
         return [ plot_a_val, plot_b_val ]
 
-class amwg_plot_set4(amwg_plot_spec):
-    """represents one plot from AMWG Diagnostics Plot Set 4.
+class amwg_plot_set4and41(amwg_plot_spec):
+    """represents one plot from AMWG Diagnostics Plot Set 4 or 4a.
     Each such plot is a set of three contour plots: one each for model output, observations, and
     the difference between the two.  A plot's x-axis is latitude and its y-axis is the level,
     measured as pressure.  The model and obs plots should have contours at the same values of
@@ -650,8 +650,11 @@ class amwg_plot_set4(amwg_plot_spec):
     time-averaged with times restricted to the specified season, DJF, JJA, or ANN."""
     # N.B. In plot_data.py, the plotspec contained keys identifying reduced variables.
     # Here, the plotspec contains the variables themselves.
-    name = '4 - Vertical Contour Plots Zonal Means'
-    number = '4'
+    #name = '4 - Vertical Contour Plots Zonal Means'
+    #number = '4'
+    reduction_functions = { '4':[reduce2lat_seasonal, reduce2levlat_seasonal], 
+                           '41':[reduce2lon_seasonal, reduce2levlon_seasonal]}
+    rf_ids = { '4': 'levlat', '41': 'levlon'}
     def __init__( self, model, obs, varid, seasonid=None, regionid=None, aux=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'.
@@ -688,10 +691,10 @@ class amwg_plot_set4(amwg_plot_spec):
             model, obs, "amwg_plot_spec" ):
             allvars[varname] = basic_level_variable
         return allvars
-    def reduced_variables_press_lev( self, filetable, varid, seasonid, ftno=None ):
-        return reduced_variables_press_lev( filetable, varid, seasonid, region=self.region )
-    def reduced_variables_hybrid_lev( self, filetable, varid, seasonid, ftno=None ):
-        return reduced_variables_hybrid_lev( filetable, varid, seasonid, region=self.region )
+    def reduced_variables_press_lev( self, filetable, varid, seasonid, ftno=None,  RF1=None, RF2=None ):
+        return reduced_variables_press_lev( filetable, varid, seasonid, region=self.region,  RF1=RF1, RF2=RF2 )
+    def reduced_variables_hybrid_lev( self, filetable, varid, seasonid, ftno=None,  RF1=None, RF2=None):
+        return reduced_variables_hybrid_lev( filetable, varid, seasonid, region=self.region,  RF1=RF1, RF2=RF2 )
     def plan_computation( self, model, obs, varid, seasonid ):
         filetable1, filetable2 = self.getfts(model, obs)
         ft1_hyam = filetable1.find_files('hyam')
@@ -701,20 +704,28 @@ class amwg_plot_set4(amwg_plot_spec):
             ft2_hyam = filetable2.find_files('hyam')
         hybrid1 = ft1_hyam is not None and ft1_hyam!=[]    # true iff filetable1 uses hybrid level coordinates
         hybrid2 = ft2_hyam is not None and ft2_hyam!=[]    # true iff filetable2 uses hybrid level coordinates
+        #print hybrid1, hybrid2
+        #retrieve the 1d and 2d reduction function; either lat & levlat or lon & levlon
+        RF_1d, RF_2d = self.reduction_functions[self.number]
+        rf_id = self.rf_ids[self.number]
+        
+        #print RF_1d
+        #print RF_2d
         if hybrid1:
-            reduced_variables_1 = self.reduced_variables_hybrid_lev( filetable1, varid, seasonid )
+            reduced_variables_1 = self.reduced_variables_hybrid_lev( filetable1, varid, seasonid, RF1=RF_1d, RF2=RF_2d)
         else:
-            reduced_variables_1 = self.reduced_variables_press_lev( filetable1, varid, seasonid )
+            reduced_variables_1 = self.reduced_variables_press_lev( filetable1, varid, seasonid, RF2=RF_2d)
         if hybrid2:
-            reduced_variables_2 = self.reduced_variables_hybrid_lev( filetable2, varid, seasonid )
+            reduced_variables_2 = self.reduced_variables_hybrid_lev( filetable2, varid, seasonid,  RF1=RF_1d, RF2=RF_2d)
         else:
-            reduced_variables_2 = self.reduced_variables_press_lev( filetable2, varid, seasonid )
+            reduced_variables_2 = self.reduced_variables_press_lev( filetable2, varid, seasonid, RF2=RF_2d )
         reduced_variables_1.update( reduced_variables_2 )
         self.reduced_variables = reduced_variables_1
+
         self.derived_variables = {}
         if hybrid1:
             # >>>> actually last arg of the derived var should identify the coarsest level, not nec. 2
-            vid1=dv.dict_id(varid,'levlat',seasonid,filetable1)
+            vid1=dv.dict_id(varid,rf_id,seasonid,filetable1)
             self.derived_variables[vid1] = derived_var(
                 vid=vid1, inputs=[rv.dict_id(varid,seasonid,filetable1), rv.dict_id('hyam',seasonid,filetable1),
                                   rv.dict_id('hybm',seasonid,filetable1), rv.dict_id('PS',seasonid,filetable1),
@@ -724,7 +735,7 @@ class amwg_plot_set4(amwg_plot_spec):
             vid1 = rv.dict_id(varid,seasonid,filetable1)
         if hybrid2:
             # >>>> actually last arg of the derived var should identify the coarsest level, not nec. 2
-            vid2=dv.dict_id(varid,'levlat',seasonid,filetable2)
+            vid2=dv.dict_id(varid,rf_id,seasonid,filetable2)
             self.derived_variables[vid2] = derived_var(
                 vid=vid2, inputs=[rv.dict_id(varid,seasonid,filetable2),
                                   rv.dict_id('hyam',seasonid,filetable2),
@@ -761,6 +772,7 @@ class amwg_plot_set4(amwg_plot_spec):
             }
         self.computation_planned = True
     def _results(self,newgrid=0):
+        #pdb.set_trace()
         results = plot_spec._results(self,newgrid)
         if results is None:
             print "WARNING, AMWG plot set 4 found nothing to plot"
@@ -772,12 +784,32 @@ class amwg_plot_set4(amwg_plot_spec):
         else:
             print "WARNING not synchronizing ranges for",self.plot1_id,"and",self.plot2_id
         for key,val in psv.items():
+            #print key, val
+            #pdb.set_trace()
             if type(val) is not list: val=[val]
             for v in val:
                 if v is None: continue
                 v.finalize(flip_y=True)
         return self.plotspec_values[self.plotall_id]
 
+class amwg_plot_set4(amwg_plot_set4and41):
+    """ Define the reduction to be used
+    sample script:
+    diags --outputdir $HOME/Documents/Climatology/ClimateData/diagout/ 
+    --model path=$HOME/uvcmetrics_test_data/cam35_data/,climos=yes 
+    --obs path=$HOME/uvcmetrics_test_data/obs_data/,filter="f_startswith('NCEP')",climos=yes 
+    --package AMWG --set 4 --vars T --seasons ANN"""
+    name = '4 - Vertical Contour Plots Zonal Means'
+    number = '4'
+class amwg_plot_set41(amwg_plot_set4and41):
+    """ Define the reduction to be used
+        sample script:
+        diags --outputdir $HOME/Documents/Climatology/ClimateData/diagout/ 
+        --model path=$HOME/uvcmetrics_test_data/cam35_data/,climos=yes 
+        --obs path=$HOME/uvcmetrics_test_data/obs_data/,filter="f_startswith('NCEP')",climos=yes 
+        --package AMWG --set 41 --vars T --seasons ANN"""
+    name = '41 - Horizontal Contour Plots of Meridional Means'
+    number = '41'    
 class amwg_plot_set5and6(amwg_plot_spec):
     """represents one plot from AMWG Diagnostics Plot Sets 5 and 6  <actually only the contours, set 5>
     NCAR has the same menu for both plot sets, and we want to ease the transition from NCAR

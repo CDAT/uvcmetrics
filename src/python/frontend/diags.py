@@ -151,7 +151,6 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
         LINE.type = 'solid'
         LINE.color = 242
 
-
     for pname in [ package ]: # converted to jsut a string; too much work to fix indents right now REVISIT THOUGH
         pclass = dm[pname.upper()]()
         # Find which plotsets the user requested which this package offers:
@@ -487,8 +486,11 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                                                vcanvas.plot(var, rsr.presentation, tm, bg=1, title=title,
                                                             units=getattr(var,'units',''), source=rsr.source )
                                                savePNG = True
-                                               #rsr.presentation.script("jim_td")
-                                               #tm.script("jim_tm")
+                                               rsr.presentation.script("jim_td")
+                                              # tm.script("jim_tm")
+                                              # fjim=cdms2.open("jim_data.nc","w")
+                                              # fjim.write(var,id="jim")
+                                              # fjim.close()
                                                
                                            else:
                                                #pdb.set_trace()
@@ -560,7 +562,7 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
 if __name__ == '__main__':
    print "UV-CDAT Diagnostics, command-line version"
    import pdb
-   pdb.set_trace()
+   #pdb.set_trace()
    o = Options()
    o.processCmdLine()
    o.verifyOptions()
