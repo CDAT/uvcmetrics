@@ -49,6 +49,10 @@ class AMWG(BasicDiagnosticGroup):
     def _list_variables_with_levelaxis( model, obs, diagnostic_set_name="" ):
         """like _list_variables, but only returns variables which have a level axis
         """
+        if type(model) is not list:
+            model = [model]
+        if type(obs) is not list:
+            obs = [obs]
         if len(model) == 0 and len(obs) == 0: return []
         if len(model) != 0:
             vlist = model[0].list_variables_with_levelaxis()
@@ -2607,7 +2611,10 @@ class amwg_plot_set14(amwg_plot_spec):
         #ft1id, ft2id = filetable_ids(filetable1, filetable2)
         self.datatype = ['model', 'obs']
         self.filetables = model
-        self.filetable2 = obs[0]
+        if type(obs) is list and len(obs)>0:
+            self.filetable2 = obs[0]
+        else:
+            self.filetable2 = obs
         #self.filetable_ids = [ft1id, ft2id]
         
         #vardi is a list of variables
