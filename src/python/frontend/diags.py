@@ -297,6 +297,7 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                                 # scaling which is not yet done as part of
 
                                 vcanvas2.clear()
+                                plotcv2 = False 
                                 ir = -1
                                 
                                 for r,resr in enumerate(res):
@@ -395,17 +396,18 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                                                    try:
                                                        if tm2 is not None and varIndex+1 == len(rsr.vars):
                                                             if hasattr(plot, 'compositeTitle'):
-                                                                title = plot.compositeTitle                                                               
+                                                                title = plot.compositeTitle
                                                             vcanvas2.plot(var,
                                                                           rsr_presentation, tm2, bg=1, title=title, 
                                                                           units='', source=subtitle ) 
+                                                            plotcv2 = True
                                                             savePNG = True
                                                    except vcs.error.vcsError as e:
                                                        print "ERROR making summary plot:",e
                                                        savePNG = True                                              
                                                elif len(rsr.vars) == 2:
                                                    if varIndex == 0:
-                                                       #first pass through just save the array                                              
+                                                       #first pass through just save the array
                                                        xvar = var.flatten()
                                                        savePNG = False
                                                    elif varIndex == 1:
@@ -444,10 +446,11 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                                                            #title refers to the title for the individual plots getattr(xvar,'units','')  
                                                            subtitle = title
                                                            if hasattr(plot, 'compositeTitle'):
-                                                               title = plot.compositeTitle                                                            
+                                                               title = plot.compositeTitle
                                                            vcanvas2.plot(xvar, yvar,
                                                                              rsr_presentation, tm2, bg=1, title=title,
                                                                              units='',  source=subtitle ) 
+                                                           plotcv2 = True
                                                            #tm2.units.list()
                                                            if varIndex+1 == len(rsr.vars):
                                                                savePNG = True
@@ -472,6 +475,7 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                                                                       rsr.presentation, tm2, bg=1,
                                                                       title=title, units=getattr(var,'units',''),
                                                                       source=rsr.source )
+                                                       plotcv2 = True
                                                        # the last two lines shouldn't be here.  These (title,units,source)
                                                        # should come from the contour plot, but that doesn't seem to
                                                        # have them.
@@ -512,6 +516,7 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                                                        plot.vcs_plot( vcanvas2, var, rsr.presentation, tm2, bg=1,
                                                                      title=title, units=getattr(var,'units',''),
                                                                       source=rsr.source, compoundplot=onPage )
+                                                       plotcv2 = True
                                                except vcs.error.vcsError as e:
                                                    print "ERROR making summary plot:",e
                                                #pdb.set_trace()
@@ -536,7 +541,9 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                                    filenames = resc.write_plot_data("xml-NetCDF", outdir )
                                print "wrote plots",resc.title," to",filenames
                             if opts['output']['plots']==True:
-                                if savePNG and tmmobs[0] is not None:  # If anything was plotted to vcanvas2
+                                if savePNG and tmmobs[0] is not None and plotcv2==True:  # If anything was plotted to vcanvas2
+                                    # Why check for 3 things?  The whole structure of diags.py is messed up
+                                    # and hard to get right any more.
                                     vname = varid.replace(' ', '_')
                                     vname = vname.replace('/', '_')
                                     if basename is None and postname is None:
