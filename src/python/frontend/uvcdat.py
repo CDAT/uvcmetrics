@@ -759,7 +759,7 @@ class uvc_simple_plotspec():
     def outfile( self, format="", where="" ):
         """returns a filename for writing out this plot"""
         if len(self.title)<=0:
-            fname = 'foo'
+            fname = 'foo.nc'
         else:
             fname = '_'.join([self.title.strip(),self.source]).replace(' ','_').replace('/','_') + '.nc'
         filename = os.path.join(where,fname)
