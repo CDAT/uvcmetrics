@@ -379,4 +379,5 @@ class station_id_variable(basic_plot_variable):
         for station in defines.station_names:
             opts[station] = data_index
             data_index += 1
+        opts['default'] = 26  # San Francisco (actually Hayward)
         return opts
