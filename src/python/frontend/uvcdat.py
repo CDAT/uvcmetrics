@@ -238,7 +238,7 @@ class uvc_simple_plotspec():
         else:
             self.presentation = presentation
         ## elif presentation == "":
-        ##     self.resentation = vcsx.create
+        ##     self.presentation = vcsx.create
         self.vars = pvars # vars[i] is either a cdms2 variable or a tuple of variables
         self.labels = labels
         self.title = title
