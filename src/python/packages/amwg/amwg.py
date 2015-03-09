@@ -2072,7 +2072,7 @@ class amwg_plot_set12(amwg_plot_spec):
         --outputdir $HOME/Documents/Climatology/ClimateData/diagout/ --package AMWG --sets 12 --seasons JAN 
         --plots yes --vars T --varopts='SanFrancisco_CA'
     """
-    name = '12 - Vertical Profiles at 17 selected raobs stations'
+    name = '12 (Experimental, doesnt work with GUI) - Vertical Profiles at 17 selected raobs stations'
     number = '12'
 
     def __init__( self, model, obs, varid, seasonid='ANN', region=None, aux=None ):
