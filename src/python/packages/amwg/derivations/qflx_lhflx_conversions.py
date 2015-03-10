@@ -75,28 +75,4 @@ def convert_energyflux_precip(mv, preferred_units):
 
     mv.id = mvid # reset variable id
 
-#    # Code to convert units using udunits if still needed (code
-#    # adapted from reductions.reconcile_units()) Note that I
-#    # hard-coded all the conversions above for the moment, so this is
-#    # not needed, but I left it here as a template in case we want to
-#    # generalize later. (SMB)
-#
-#
-#    tmp = udunits(1.0,mv.units)
-#    try:
-#        s,i = tmp.how(preferred_units)
-#    except Exception as e:
-#        # conversion not possible.
-#        print "ERROR could not convert from",mv.units,"to",preferred_units
-#        raise e
-#    if hasattr(mv,'id'):  # yes for TransientVariable, no for udunits
-#        mvid = mv.id
-#    if not ( numpy.allclose(s,1.0) and numpy.allclose(i,0.0) ):
-#        # The following line won't work if mv is an axis.
-#        mv = s*mv + i
-#        if hasattr(mv2,'id'):
-#            mv.id = mvid
-#    mv.units = preferred_units
-
-
     return mv
