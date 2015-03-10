@@ -78,6 +78,10 @@ def convert_energyflux_precip(mv, preferred_units):
         mv.units="kg/m2/s"      # [if 1 kg = 10^6 mm^3 as for water]
 
     # convert between energy flux (W/m2) and water flux (mm/day)
+    elif mv.units=="kg/m2/s" and preferred_units=="W/m^2":
+        mv = mv * kJperday * secondsperday * lhvap
+        mv.units = 'W/m^2'
+
     elif mv.units=='mm/day' and preferred_units=='W/m^2':
         # 1 W = 86.4 kJ / day
         mv = mv * lhvap / kJperday
