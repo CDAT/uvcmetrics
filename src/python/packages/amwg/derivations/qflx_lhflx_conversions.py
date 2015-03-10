@@ -20,16 +20,21 @@ def reconcile_energyflux_precip(mv1, mv2, preferred_units=None):
     #
     # Author: S.M. Burrows, 9 Feb 2015.
 
-    if hasattr(mv1,'units') and hasattr(mv2,'units') and\
-            (preferred_units is not None or mv1.units!=mv2.units):
-
     # If preferred_units is not provided, assume units of mv2 assumed
     # to be the preferred units.
-        if preferred_units is None:
-            preferred_units = mv2.units
+    if preferred_units is None:
+       preferred_units = mv2.units
+#        if mv2.id.find('_QFLX_'):
+#            preferred_units='mm/day'
+#        elif mv2.id.find('_LHFLX_'):
+#            preferred_units='W/m^2'
     # syntax correction (just in case)
-        if preferred_units=='W/m2' or preferred_units=='W/m^2':
-            preferred_units='W/m^2'
+    if preferred_units=='W/m2':
+        preferred_units='W/m^2'
+
+    if hasattr(mv1,'units') and hasattr(mv2,'units') and\
+            (preferred_units is not None):
+
         if mv1.units!=preferred_units:
             mv1 = convert_energyflux_precip(mv1, preferred_units)
         if mv2.units!=preferred_units:
@@ -50,11 +55,12 @@ def convert_energyflux_precip(mv, preferred_units):
     if hasattr(mv,'id'):
         mvid = mv.id
 
-    # syntax correction (jus in case)
-    if  mv.units=='W/m2' and preferred_units=='W/m^2':
+    # syntax correction (just in case)
+    if  mv.units=='W/m2':
         mv.units='W/m^2'
+
     # convert precip between kg/m2/s and mm/day
-    elif mv.units=='kg/m2/s' and preferred_units=="mm/day":
+    if mv.units=='kg/m2/s' and preferred_units=="mm/day":
         mv = mv * secondsperday # convert to kg/m2/s [= mm/s]
         mv.units="mm/day"         # [if 1 kg = 10^6 mm^3 as for water]
     elif mv.units=='mm/day' and preferred_units=="kg/m2/s":
