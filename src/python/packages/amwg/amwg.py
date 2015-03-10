@@ -12,6 +12,7 @@ from metrics.frontend import *
 from metrics.common.id import *
 from metrics.fileio import stationData
 from metrics.packages.amwg.derivations import *
+from metrics.packages.amwg.derivations import qflx_lhflx_conversions as flxconv
 from unidata import udunits
 import cdutil.times, numpy
 from numbers import Number
@@ -243,6 +244,16 @@ class amwg_plot_spec(plot_spec):
 
         'TGCLDLWP':[derived_var(
                 vid='TGCLDLWP', inputs=['TGCLDLWP_OCEAN'], outputs=['TGCLDLWP'],
+                func=(lambda x: x) ) ],
+        # To compare LHFLX and QFLX, need to unify these to a common variable
+        # e.g. LHFLX (latent heat flux in W/m^2) vs. QFLX (evaporation in mm/day).
+        # The conversion functions are defined in qflx_lhflx_conversions.py.
+        # [SMB: 25 Feb 2015]
+        'LHFLX':[derived_var(
+                vid='LHFLX', inputs=['QFLX'], outputs=['LHFLX'],
+                func=(lambda x: x) ) ],
+        'QFLX':[derived_var(
+                vid='QFLX', inputs=['LHFLX'], outputs=['QFLX'],
                 func=(lambda x: x) ) ]
         }
     @staticmethod
