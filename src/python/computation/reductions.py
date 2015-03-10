@@ -1590,7 +1590,8 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
     # still work for the cases that the previous code worked for.
     if mv1.id.find('_QFLX_') or mv1.id.find('_LHFLX_') or mv2.id.find('_QFLX_') \
             or mv2.id.find('_LHFLX_') or (mv1.units=='kg/m2/s' and mv2.units=='mm/day'):
-        flxconv.reconcile_energyflux_precip(mv1, mv2, preferred_units)
+
+        mv1,mv2 = flxconv.reconcile_energyflux_precip(mv1, mv2, preferred_units)
         return mv1, mv2
 
 # This probably needs expanded to be more general purpose for unit conversions.

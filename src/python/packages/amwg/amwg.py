@@ -247,10 +247,10 @@ class amwg_plot_spec(plot_spec):
         # [SMB: 25 Feb 2015]
         'LHFLX':[derived_var(
                 vid='LHFLX', inputs=['QFLX'], outputs=['LHFLX'],
-                func=(lambda x: flxconv.convert_energyflux_precip(x, preferred_units="W/m^2")) ) ],
+                func=(lambda x: x) ) ],
         'QFLX':[derived_var(
                 vid='QFLX', inputs=['LHFLX'], outputs=['QFLX'],
-                func=(lambda x: flxconv.convert_energyflux_precip(x, preferred_units="mm/day")) ) ]
+                func=(lambda x: x) ) ]
         }
     @staticmethod
     def _list_variables( model, obs ):

@@ -29,10 +29,11 @@ def reconcile_energyflux_precip(mv1, mv2, preferred_units=None):
             preferred_units = mv2.units
     # syntax correction (just in case)
         if preferred_units=='W/m2' or preferred_units=='W/m^2':
-            if mv1.units!=preferred_units:
-                mv1 = convert_energyflux_precip(mv1, preferred_units)
-            if mv2.units!=preferred_units:
-                mv2 = convert_energyflux_precip(mv2, preferred_units)
+            preferred_units='W/m^2'
+        if mv1.units!=preferred_units:
+            mv1 = convert_energyflux_precip(mv1, preferred_units)
+        if mv2.units!=preferred_units:
+            mv2 = convert_energyflux_precip(mv2, preferred_units)
     else:
         print "ERROR: missing units in arguments to reconcile_energyflux_precip."
         exit
@@ -44,6 +45,10 @@ def convert_energyflux_precip(mv, preferred_units):
     # The latent heat of vaporization for water is 2260 kJ/kg
     lhvap = 2260. # 'kJ/kg'
     secondsperday = 86400.
+    kJperday = 86.4 # 'kJ/day'
+
+    if hasattr(mv,'id'):
+        mvid = mv.id
 
     # syntax correction (jus in case)
     if  mv.units=='W/m2' and preferred_units=='W/m^2':
@@ -51,22 +56,24 @@ def convert_energyflux_precip(mv, preferred_units):
     # convert precip between kg/m2/s and mm/day
     elif mv.units=='kg/m2/s' and preferred_units=="mm/day":
         mv = mv * secondsperday # convert to kg/m2/s [= mm/s]
-        mv.units="mm/s"         # [if 1 kg = 10^6 mm^3 as for water]
+        mv.units="mm/day"         # [if 1 kg = 10^6 mm^3 as for water]
     elif mv.units=='mm/day' and preferred_units=="kg/m2/s":
         mv = mv / secondsperday # convert to mm/sec [= kg/m2/s]
         mv.units="kg/m2/s"      # [if 1 kg = 10^6 mm^3 as for water]
     # convert between energy flux (W/m2) and water flux (mm/day)
     elif mv.units=='mm/day' and preferred_units=='W/m^2':
         # 1 W = 86.4 kJ / day
-        mv = mv * lhvap / 86.4 
+        mv = mv * lhvap / kJperday
         mv.units = 'W/m^2'
     elif mv.units=='W/m^2' and preferred_units=='mm/day':
-        mv = mv * 86.4 / lhvap
+        mv = mv * kJperday / lhvap
         mv.units = 'mm/day'
 
     else:
         print "ERROR: unknown / invalid units in arguments to reconcile_energyflux_precip."
         exit
+
+    mv.id = mvid # reset variable id
 
 #    # Code to convert units using udunits if still needed (code
 #    # adapted from reductions.reconcile_units()) Note that I
@@ -90,5 +97,6 @@ def convert_energyflux_precip(mv, preferred_units):
 #        if hasattr(mv2,'id'):
 #            mv.id = mvid
 #    mv.units = preferred_units
+
 
     return mv
