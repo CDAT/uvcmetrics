@@ -592,10 +592,46 @@ def reduce2level_seasonal( mv, seasons=seasonsyr, region='Global', vid=None ):
 
     return avmv
 
+def ttest_ab(mv1, mv2):
+   mv1, mv2 = reconcile_units(mv1, mv2)
+   ax1 = mv1.getAxisList()
+   ax2 = mv2.getAxisList()
+
+   if ax1 is None or ax2 is None:
+      return
+   mv1new = mv1
+   mv2new = mv2
+   lat1, idx1 = latAxis2(mv1)
+   lat2, idx2 = latAxis2(mv2)
+
+   # Shall we go up or down? If this was 2 models, we probably need to go down.
+   if len(ax1[idx1]) < len(ax2[idx2]):
+      newgrid = mv2.getGrid()
+      mv1new = mv1.regrid(newgrid)
+   if len(ax1[idx1]) > len(ax2[idx2]):
+      newgrid = mv1.getGrid()
+      mv2new = mv2.regrid(newgrid)
+
+   tax1, tid1 = timeAxis2(mv1new)
+   tax2, tid2 = timeAxis2(mv2new)
+
+   if tid1 != tid2:
+      print 'Time axes between the two inputs are not the same.'
+      return
+   v1 = mv1new.asma()
+   v2 = mv2new.asma()
+   
+   import scipy.stats
+   prob = mv1new # maybe retain some metadata
+
+   t, prob = scipy.stats.ttest_ind(v1, v2, axis=tid1, equal_var=False)
+   probnew = MV2.where(MV2.less(prob, .000005), 0, prob) # get rid of the tiny values that are essentially 0
+
+   print 'This needs some more work probably'
+   return probnew
+
 def ttest_time(mv1, mv2, mv3):
-# mv1 = case1
-# mv2 = case2
-# mv3 = obs
+# mv1 = case1, mv2=case2, mv3=obs
 # Everything needs down-interpolated to obs' dimensionality first.
    mv3, mv1 = reconcile_units(mv3, mv1)
    mv3, mv2 = reconcile_units(mv3, mv2)
@@ -1155,18 +1191,30 @@ def reduce_time_space_seasonal_regional( mv, season=seasonsyr, region=None, vid=
 
     return mvtsav
 
+# This function takes an variable and season and a level value (i.e. an integer) and performs
+# a reduction on that.
+# Passing level to select_lev (which in turn calls reconcile_units on level) breaks things.
+# This function does not appear to be used in amwg, so I'm not sure why it was changed. 
+# Changed back to be functional for lmwg.
+# Brian Smith
+# 2/25/15
 def reduce2latlon_seasonal_level( mv, season, level, vid=None):
-# I wonder if this can be done faster somehow? need to ask Charles
 
    if vid is None:
       vid = 'reduced_'+mv.id
+   levax = levAxis(mv)
+   if levax is None or len(levax) <= 1:
+      return mv
 
-   mvl = select_lev(mv, level)
-   mvseas = calculate_seasonal_climatology( mvl, season)
+   levstr = levax.id
+   mvsub = mv(levstr=slice(level, level+1))
+
+   mvseas = calculate_seasonal_climatology( mvsub, season)
 
    mvseas.id = vid
    if hasattr(mv,'units'):
       mvseas.units = mv.units
+   mvseas = delete_singleton_axis(mvseas, vid=levax)
 
    return mvseas
 
@@ -2044,7 +2092,7 @@ def common_axis( axis1, axis2 ):
             # but it would be messy to have two.
             return axis1,[0],[0]
 
-    # to do: similar checks using isLatitude and isLongitude and isLevel <<<<<<
+    # to do: similar checks using isLatitude and isLongitude and isLevel 
     # Also, transfer long_name, standard_name, axis attributes if in agreement;
     # units and calendar attributes should always be transferred if present.
     # Also to do: use bounds if available
