@@ -330,11 +330,12 @@ class amwg_plot_spec(plot_spec):
                 func = svd._func
                 computable = True
                 break
-        #print "jfp4 rvs ids=",[rv.id() for rv in rvs]
         if len(rvs)<=0:
-            print "WARNING, no inputs found for",varnom,"in filetable",filetable.id()
+            print "ERROR, no inputs found for",varnom,"in filetable",filetable.id()
             print "need inputs",svd.inputs()
-            return None,[],[]
+            #return None,[],[]
+            raise DiagError( "ERROR, don't have %s, and don't have sufficient data to compute it!"\
+                                 % varnom )
         if not computable:
             print "DEBUG: standard variable",varnom,"is not computable"
             print "need inputs",svd.inputs()
@@ -1374,7 +1375,7 @@ class amwg_plot_set6(amwg_plot_spec):
                 vars2,rvars2,dvars2,var_cont2,vars_vec2,vid_cont2 =\
                     self.STRESS_setup( filetable2, varid, seasonid )
                 if vars1 is None and vars2 is None:
-                    raise Exception("cannot find standard variables in data 2")
+                    raise DiagError("cannot find standard variables in data 2")
             else:
                 print "ERROR, AMWG plot set 6 does not yet support",varid
                 return None
