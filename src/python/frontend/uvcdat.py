@@ -911,6 +911,13 @@ class plot_spec(object):
     def results(self,newgrid=0):
         return self._results(newgrid)
 
+    def uniquefts(self, ftlist):
+        names = []
+        for i in range(len(ftlist)):
+            names.append(ftlist[i]._name)
+        names = list(set(names))
+        return names
+
     def getfts(self, model, obs):
         if len(model) == 2:
 #           print 'Two models'
@@ -933,6 +940,40 @@ class plot_spec(object):
            filetable1 = obs[0]
            filetable2 = None
         return filetable1, filetable2
+
+    # This takes the list of filetables and returns 3 lists:
+    # 1) the indexes for the duplicatly named fts (the ones that are raw+climos)
+    # 2) the indexes for the purely climo fts
+    # 3) the indexes for the purely raw fts
+    def parse_fts(self, fts):
+    # First, find duplicates.
+    # eg, if ft[0] = foo, ft[1] = bar, ft[2] = foo, ft[3] = blah, ft[4] = bar it would return
+    # [ [0, 2], [1, 4]]
+        raw = []
+        climo = []
+        names = []
+        dups = []
+        for i in range(len(fts)):
+           if fts[i]._climos == 'yes':
+               climo.append(i)
+           else:
+               raw.append(i)
+           names.append(fts[i]._name)
+        newnames = list(set(names))
+        if len(newnames) != len(names):
+           dup_list = []
+           for i in range(len(fts)):
+              dup_list.append([])
+              for j in range(len(fts)):
+                 if i == j:
+                    pass
+                 if fts[i]._name == fts[j]._name:
+                    dup_list[i].append(j)
+           for elem in dup_list:
+              if elem not in dups and len(elem) == 2:
+                 dups.append(elem)
+        return dups, climo, raw 
+
 
 # To profile, replace (by name changes) the above results() with the following one:
     def profiled_results(self,newgrid=0):
@@ -1082,8 +1123,13 @@ class plot_spec(object):
         """Inputs: a plotspec object, a list zvars of precursor variables, and a function zfunc.
         This method computes the variable z to be plotted as zfunc(zvars), and returns it.
         It also returns zrv for use in building a label."""
+        print 'inside compute plot var value'
+#        print zvars
         vvals = self.variable_values
         zrv = [ vvals[k] for k in zvars ]
+#        print vvals
+#        print zrv
+
         if any([a is None for a in zrv]):
             print "WARNING - cannot compute plot results from zvars=",ps.zvars
             print "because missing results for",[k for k in ps.zvars if vvals[k] is None]
