@@ -70,3 +70,8 @@ def round2(x,n=0,sigs4n=1):
     if n==0:
         return 10.**(int(floor(log10(abs(x)))))
     return round(x,int(n)-1-int(floor(log10(abs(x)))))
+
+class DiagError (Exception):
+    """Error object for diagnostics"""
+    def __init__ ( self, args="Unspecified error from diagnostics" ):
+        self.args = (args,)
