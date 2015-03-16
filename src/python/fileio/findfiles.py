@@ -197,6 +197,7 @@ class basic_datafiles:
             f = open(cachefile,'rb')
             try:
                 filetable = pickle.load(f)
+                self.initialize_idnumber() # otherwise we could get 2 filetables with the same id.
                 cached=True
             except:
                 cached=False
