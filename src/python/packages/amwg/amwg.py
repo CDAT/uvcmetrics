@@ -10,6 +10,7 @@ from metrics.computation.plotspec import *
 from metrics.frontend.uvcdat import *
 from metrics.frontend import *
 from metrics.common.id import *
+from metrics.common.utilities import *
 from metrics.fileio import stationData
 from metrics.packages.amwg.derivations import *
 from metrics.packages.amwg.derivations import qflx_lhflx_conversions as flxconv
@@ -848,17 +849,26 @@ class amwg_plot_set5and6(amwg_plot_spec):
             self.plan_computation( model, obs, varid, seasonid, aux )
     @staticmethod
     def _list_variables( model, obs ):
+        """returns a list of variable names"""
         allvars = amwg_plot_set5and6._all_variables( model, obs )
         listvars = allvars.keys()
         listvars.sort()
         return listvars
     @staticmethod
     def _all_variables( model, obs, use_standard_vars=True ):
+        """returns a dict of varname:varobject entries"""
         allvars = amwg_plot_spec.package._all_variables( model, obs, "amwg_plot_spec" )
+        # ...this is what's in the data.  varname:basic_plot_variable
         for varname in amwg_plot_spec.package._list_variables_with_levelaxis(
             model, obs, "amwg_plot_spec" ):
             allvars[varname] = level_variable_for_amwg_set5
+            # ...this didn't add more variables, but changed the variable's class
+            # to indicate that you can specify a level for it
         if use_standard_vars:
+            # Now we add varname:basic_plot_variable for all standard_variables.
+            # This needs work because we don't always have the data needed to compute them...
+            # BTW when this part is done better, it should (insofar as it's reasonable) be moved to
+            # amwg_plot_spec and shared by all AMWG plot sets.
             for varname in amwg_plot_spec.standard_variables.keys():
                 allvars[varname] = basic_plot_variable
         return allvars
@@ -2413,8 +2423,8 @@ class amwg_plot_set13(amwg_plot_spec):
                 vid='CLISCCP', inputs=['FISCCP1','isccp_prs','isccp_tau'], outputs=['CLISCCP'],
                 func=uncompress_fisccp1 )]
         }
+
     def __init__( self, model, obs, varnom, seasonid=None, region=None, aux=None ):
-        filetable1, filetable2 = self.getfts(model, obs)
         """filetable1, filetable2 should be filetables for model and obs.
         varnom is a string.  The variable described may depend on time,lat,lon and will be averaged
         in those dimensions.  But it also should have two other axes which will be used for the
@@ -2422,6 +2432,7 @@ class amwg_plot_set13(amwg_plot_spec):
         Seasonid is a string, e.g. 'DJF'.
         Region is an instance of the class rectregion (region.py).
         """
+        filetable1, filetable2 = self.getfts(model, obs)
         plot_spec.__init__(self,seasonid)
         region = interpret_region(region)
         self.reduced_variables = {}
@@ -2548,12 +2559,14 @@ class amwg_plot_set13(amwg_plot_spec):
         #vid2 = rv.dict_id(  varnom,seasonid, filetable2, region=region)
         self.single_plotspecs = {
             self.plot1_id: plotspec(
-                vid = ps.dict_idid(vid1), zvars=[vid1], zfunc=(lambda z: z),
+                vid = ps.dict_idid(vid1), zvars=[vid1],\
+                    zfunc=(lambda z: standardize_and_check_cloud_variable(z)),
                 plottype = self.plottype,
                 title = ' '.join([varnom,seasonid,str(region),'(1)']),
                 source = ft1src ),
             self.plot2_id: plotspec(
-                vid = ps.dict_idid(vid2), zvars=[vid2], zfunc=(lambda z: z),
+                vid = ps.dict_idid(vid2), zvars=[vid2],\
+                    zfunc=(lambda z: standardize_and_check_cloud_variable(z)),
                 plottype = self.plottype,
                 title = ' '.join([varnom,seasonid,str(region),'(2)']),
                 source = ft2src )
