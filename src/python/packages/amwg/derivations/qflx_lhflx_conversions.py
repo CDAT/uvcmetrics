@@ -8,6 +8,8 @@
 #          - latent heat of vaporization (water)
 #          - density (water)
 
+from metrics.common.utilities import *
+
 def reconcile_energyflux_precip(mv1, mv2, preferred_units=None):
     # To compare LHFLX and QFLX, need to unify these to a common variables
     # e.g. LHFLX (latent heat flux in W/m^2) vs. QFLX (evaporation in mm/day)
@@ -22,8 +24,6 @@ def reconcile_energyflux_precip(mv1, mv2, preferred_units=None):
 
     # If preferred_units is not provided, assume units of mv2 assumed
     # to be the preferred units.
-
-    print "preferred_units passed to reconcile_energyflux_precip: ", preferred_units
 
     if hasattr(mv1,'units') and hasattr(mv2,'units'):
 
@@ -95,6 +95,7 @@ def convert_energyflux_precip(mv, preferred_units):
         print "ERROR: unknown / invalid units in arguments to reconcile_energyflux_precip."
         print "mv.units = ", mv.units
         print "preferred_units = ", preferred_units
+        raise DiagError("unknown / invalid units in arguments to reconcile_energyflux_precip.")
         exit
 
     mv.id = mvid # reset variable id
