@@ -910,8 +910,8 @@ class plot_spec(object):
            filetable2 = model[1]
         if len(model) == 1 and len(obs) == 1:
 #           print 'Model and Obs'
-           filetable1 = model[0]
-           filetable2 = obs[0]
+            filetable1 = model[0]
+            filetable2 = obs[0]
         if len(obs) == 2: # seems unlikely but whatever
 #           print 'Two obs'
            filetable1 = obs[0]
@@ -939,10 +939,6 @@ class plot_spec(object):
         that means a coarser grid, typically from regridding model data to the obs grid.
         In the future regrid>0 will mean regrid everything to the finest grid and regrid<0
         will mean regrid everything to the coarsest grid."""
-        #print "jfp in plot_spec._results, reduced variables=",self.reduced_variables.keys()
-        #print "jfp in plot_spec._results, derived variables=",self.derived_variables.keys()
-        
-        #print 'reduced var', len(self.reduced_variables.keys())
 
         for v in self.reduced_variables.keys():
             #print v
