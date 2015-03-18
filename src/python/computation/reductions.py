@@ -2263,9 +2263,11 @@ def correlateData(mv1, mv2, aux):
                 mv.setAxis(index, level)
             pselect = udunits(aux, 'mbar')
             sliced_mvs += [ select_lev(mv, pselect) ]
+            #pdb.set_trace()
     else:
         sliced_mvs = [mv1, mv2]
     mv1_new, mv2_new = sliced_mvs
+    
     mv2_new = mv2_new.regrid(mv1_new.getGrid(), regridTool='esmf', regridMethod='linear')
     corr = correlation(mv1_new.flatten(), mv2_new.flatten())
     #print corr
