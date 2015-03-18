@@ -621,8 +621,18 @@ class uvc_simple_plotspec():
             #self.presentation.IDs = IDs
             self.presentation.Marker.id = index
             #pdb.set_trace()
-            self.presentation.Marker.xoffset = (2*data[:,0]).tolist()
-            self.presentation.Marker.yoffset = (2*data[:,1]).tolist()
+            
+            #create list of offsets
+            XOFF = data[:,0]
+            YOFF = data[:,1]
+            if type(XOFF) is float:
+                XOFF = [XOFF]
+                YOFF = [YOFF]
+            else:
+                XOFF = XOFF.tolist()
+                YOFF = YOFF.tolist()
+            self.presentation.Marker.xoffset = XOFF
+            self.presentation.Marker.yoffset = YOFF
             self.presentation.Marker.id_size = len(markersizes)*[20]
 
             #self.presentation.list()
