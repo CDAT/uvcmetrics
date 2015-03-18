@@ -1694,9 +1694,8 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
     # TODO: The conditions for calling this function could perhaps be
     # better-defined.  I primarily wanted to ensure that it would
     # still work for the cases that the previous code worked for.
-    if mv1.id.find('_QFLX_') or mv1.id.find('_LHFLX_') or mv2.id.find('_QFLX_') \
-            or mv2.id.find('_LHFLX_') or (mv1.units=='kg/m2/s' and mv2.units=='mm/day'):
-
+    if mv1.id.find('_QFLX_')>=0 or mv1.id.find('_LHFLX_')>=0 or mv2.id.find('_QFLX_')>=0 \
+            or mv2.id.find('_LHFLX_')>=0 or (mv1.units=='kg/m2/s' and mv2.units=='mm/day'):
         mv1,mv2 = flxconv.reconcile_energyflux_precip(mv1, mv2, preferred_units)
         return mv1, mv2
 
