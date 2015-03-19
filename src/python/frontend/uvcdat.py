@@ -247,6 +247,14 @@ class uvc_simple_plotspec():
         self.ptype = ptype
         self.ranges = ranges
         self.overplotline = overplotline
+
+        # Initial data ranges for the plot. Often they will be expanded from the actual data
+        # range for compatibility with other plots.  For some plot types, they never get set at all.
+        self.presentation.datawc_x1 = None
+        self.presentation.datawc_x2 = None
+        self.presentation.datawc_y1 = None
+        self.presentation.datawc_y2 = None
+
         # Initial ranges - may later be changed to coordinate with related plots:
         # For each variable named 'v', the i-th member of self.vars, (most often there is just one),
         # varmax[v] is the maximum value of v, varmin[v] is the minimum value of v,
