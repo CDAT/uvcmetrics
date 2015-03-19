@@ -150,6 +150,7 @@ class prereduce ( reduced_variable ):
 class co2ppmvTrendRegionSingle( reduced_variable ):
    def __init__(self, filetable, region):
       duv = derived_var('CO2_PPMV_A', inputs=['PCO2', 'PBOT'], func=adivb)
+      print 'region: ', region
       reduced_variable.__init__(
          self, variableid='CO2_PPMV_A',
          filetable=filetable,
@@ -278,16 +279,20 @@ class lmwg_plot_set1(lmwg_plot_spec):
       plot_spec.__init__(self,seasonid)
       self.plottype = 'Yxvsx'
 
-      # This is step 1 - just take the two arrays of datasets, but only support 2 total.
-      # Step 2 will be to support >2 filetables as appropriate
-      # Assume some previous step has ensured len(model)+len(obs) <= 2
-      filetable1, filetable2 = self.getfts(model, obs)
+      # There should be 0 obs for this, or at least we don't care about any obs.
+      model_dict = make_ft_dict(model)
+
+      num_models = len(model_dict.keys())
 
       self._var_baseid = '_'.join([varid, 'set1'])
 
-      ft1id,ft2id = filetable_ids(filetable1,filetable2)
+      ft1id = model_dict[model_dict.keys()[0]]._strid
+
+      if num_models == 2:
+         ft2id = model_dict[model_dict.keys()[1]]._strid
+
       self.plot1_id = ft1id+'_'+varid
-      if filetable2 is not None:
+      if num_models == 2:
          self.plot2_id = ft1id+' - '+ft2id+'_'+varid
          self.plotall_id = ft1id+'_'+ft2id+'_'+varid
       else:
@@ -310,18 +315,34 @@ class lmwg_plot_set1(lmwg_plot_spec):
       allvars = lmwg_plot_spec.package._all_variables(model, obs, "lmwg_plot_spec")
       for dv in lmwg_plot_set1._derived_varnames:
          allvars[dv] = basic_plot_variable
-         if len(obs) == 1: ## Need to re-evaluate this, probably inside allvars?
-            if dv not in obs[1].list_variables():
-               del allvars[dv]
       return allvars
 
    def plan_computation(self, model, obs, varid, seasonid, region=None, aux=None):
-      filetable1, filetable2 = self.getfts(model, obs)
+      model_dict = make_ft_dict(model)
+
+      num_models = len(model_dict.keys())
+      climo0 = None
+      climo1 = None
+      raw0 = None
+      raw1 = None
+
+      # We can set the fts here too since none of the variables are nonlinear in this set.
+      if num_models == 1:
+         raw0 = model_dict[model_dict.keys()[0]]['raw']
+         climo0 = model_dict[model_dict.keys()[0]]['climos']
+         ft = (climo0 if climo0 is not None else raw0)
+      elif num_models == 2:
+         raw0 = model_dict[model_dict.keys()[0]]['raw']
+         climo0 = model_dict[model_dict.keys()[0]]['climos']
+         raw1 = model_dict[model_dict.keys()[1]]['raw']
+         climo1 = model_dict[model_dict.keys()[1]]['climos']
+         ft = (climo0 if climo0 is not None else raw0)
+         ft2 = (climo1 if climo1 is not None else raw1)
 
       self.reduced_variables = {}
       self.derived_variables = {}
       # No need for a separate function just use global. 
-      region = defines.all_regions['Global']['coords']
+      region = defines.all_regions['Global']
 
       # Take care of the oddballs first.
       if varid in lmwg_plot_set1._level_vars:
@@ -332,39 +353,40 @@ class lmwg_plot_set1(lmwg_plot_spec):
             vn = vbase+str(i+1)+'_ft1'
             ln = 'Layer '+str(i+1)
             self.reduced_variables[vn] = reduced_variable(
-               variableid = vbase, filetable=filetable1, reduced_var_id=vn,
+               variableid = vbase, filetable=ft, reduced_var_id=vn,
                reduction_function=(lambda x, vid, i=i: reduceAnnTrendRegionLevel(x, region, i, vid))) 
-            self.single_plotspecs[vn] = plotspec(vid=vn,
+            self.single_plotspecs[self.plot1_id] = plotspec(vid=vn,
                zvars = [vn], zfunc=(lambda z:z),
                # z2, # z3,
                plottype = self.plottype, title=ln)
-            self.composite_plotspecs[self.plotall_id].append(vn)
-         if filetable2 != None:
+            self.composite_plotspecs[self.plotall_id].append(self.plot1_id)
+         if num_models == 2:
             for i in range(0,10):
                vn = vbase+str(i+1)
+               ln = 'Layer '+str(i+1)
                self.reduced_variables[vn+'_ft2'] = reduced_variable(
-                  variableid = vbase, filetable=filetable2, reduced_var_id=vn+'_ft2',
+                  variableid = vbase, filetable=ft2, reduced_var_id=vn+'_ft2',
                   reduction_function=(lambda x, vid, i=i: reduceAnnTrendRegionLevel(x, region, i, vid)))
-               self.single_plotspec[vn+'_ft2'] = plotspec(vid=vn+'_ft2',
-                  zvars = [vn+'_ft2'], zfunc=(lambda z:z),
-                  plottype = self.plottype, title=ln)
-               self.single_plotspec[vn+'_3'] = plotspec(
-                  vid=vn+'_3', zvars = [vn+'_ft1', vn+'_ft2'],
+               self.single_plotspec[self.plot1_id].z2vars = [vn+'_ft2']
+               self.single_plotspec[self.plot1_id].z2func = (lambda z:z)
+
+               # Combine the difference plot for now. Otherwise we could handle this via a varopts perhaps?
+               self.single_plotspec[self.plot2_id] = plotspec(
+                  vid=vn+'_diff', zvars = [vn+'_ft1', vn+'_ft2'],
                   zfunc=aminusb,
                   plottype = self.plottype, title=ln)
-               self.composite_plotspecs[self.plotall_id].append(vn+'_ft2')
-               self.composite_plotspecs[self.plotall_id].append(vn+'_3')
+               self.composite_plotspecs[self.plotall_id].append(self.plot2_id)
                
       else: # Now everything else.
          # Get the easy ones first
          if varid not in lmwg_plot_set1._derived_varnames and varid not in lmwg_plot_set1._level_vars:
             self.reduced_variables[varid+'_ft1'] = reduced_variable(variableid = varid,
-               filetable=filetable1, reduced_var_id = varid+'_ft1',
+               filetable=ft, reduced_var_id = varid+'_ft1',
                reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid)))
    
-            if(filetable2 != None):
+            if num_models == 2:
                self.reduced_variables[varid+'_ft2'] = reduced_variable(variableid = varid,
-                  filetable=filetable2, reduced_var_id = varid+'_ft2',
+                  filetable=ft2, reduced_var_id = varid+'_ft2',
                   reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid)))
 
          # Now some derived variables.
@@ -380,51 +402,34 @@ class lmwg_plot_set1(lmwg_plot_spec):
 
             for v in red_vars:
                self.reduced_variables[v+'_ft1'] = reduced_variable(
-                  variableid = v, filetable=filetable1, reduced_var_id = v+'_ft1',
+                  variableid = v, filetable=ft, reduced_var_id = v+'_ft1',
                   reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid)))
             self.derived_variables[varid+'_ft1'] = derived_var(
                vid=varid+'_ft1', inputs=in1, func=myfunc)
 
-            if filetable2 != None: ### Assume ft2 is 2nd model
+            if num_models == 2:
                for v in red_vars:
                   self.reduced_variables[v+'_ft2'] = reduced_variable(
-                     variableid = v, filetable=filetable2, reduced_var_id = v+'_ft2',
+                     variableid = v, filetable=ft2, reduced_var_id = v+'_ft2',
                      reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid)))
                self.derived_variables[varid+'_ft2'] = derived_var(
                   vid=varid+'_ft2', inputs=in2, func=myfunc)
 
-               # This code would be for when ft2 is obs data
-               #            print 'This is assuming FT2 is observation data'
-               #            if varid == 'TOTRUNOFF':
-               #               v='RUNOFF' ### Obs set names it such
-               #            else:
-               #               v='PREC'
-               #            self.reduced_variables[v+'_ft2'] = reduced_variable(
-               #               variableid = v, filetable=filetable2, reduced_var_id = v+'_ft2',
-               #               reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid)))
-               #
-               #            self.single_plotspecs[varid+'_ft2'] = plotspec(vid=varid+'_ft2',
-               #               zvars=[varid+'_ft2'], zfunc=(lambda z:z),
-               #               plottype = self.plottype)
-               #            self.single_plotspecs[varid+'_3'] = plotspec(vid=varid+'_3',
-               #               zvars=[varid+'_ft1', v+'_ft2'], zfunc=aminusb,
-               #               plottype = self.plottype)
-
          # Now some derived variables that are sums over a level dimension
          if varid == 'TOTSOILICE' or varid=='TOTSOILLIQ':
             self.composite_plotspecs[self.plotall_id] = []
-            region = defines.all_regions['Global']['coords']
+            region = defines.all_regions['Global']
             if varid == 'TOTSOILICE':
                vname = 'SOILICE'
             else:
                vname = 'SOILLIQ'
             self.reduced_variables[varid+'_ft1'] = reduced_variable(
-               variableid = vname, filetable=filetable1, reduced_var_id=varid+'_ft1',
+               variableid = vname, filetable=ft, reduced_var_id=varid+'_ft1',
                reduction_function=(lambda x, vid: reduceAnnTrendRegionSumLevels(x, region, 1, 10, vid)))
 
-            if filetable2 != None:
+            if num_models == 2:
                self.reduced_variables[varid+'_ft2'] = reduced_variable(
-                  variableid = vname, filetable=filetable2, reduced_var_id=varid+'_ft2',
+                  variableid = vname, filetable=ft2, reduced_var_id=varid+'_ft2',
                   reduction_function=(lambda x, vid: reduceAnnTrendRegionSumLevels(x, region, 1, 10, vid)))
 
          # set up the plots
@@ -435,8 +440,7 @@ class lmwg_plot_set1(lmwg_plot_spec):
                plottype = self.plottype, title=varinfo[varid]['desc']) } 
          self.composite_plotspecs[self.plotall_id] = [self.plot1_id]
 
-         if filetable2 != None:
-            # Add to plot 1
+         if num_models == 2:
             self.single_plotspecs[self.plot1_id].z2vars = [varid+'_ft2']
             self.single_plotspecs[self.plot1_id].z2func = (lambda z:z)
 
@@ -550,7 +554,7 @@ class lmwg_plot_set2(lmwg_plot_spec):
 
       ### Set up the complicated plot possiblities
       # 1) One dataset -> 1 plot
-      # 2) Two datasets or dataset+obs -> a, b, a-b plots
+      # 3) Two datasets or dataset+obs -> a, b, a-b plots
       # 3) Two datasets+obs -> a, b, c, a-b, a-c, a-b, ttest1, ttest2 plots
 
       # For convenience.
@@ -630,12 +634,16 @@ class lmwg_plot_set2(lmwg_plot_spec):
       ft = None
       ft2 = None
       ft3 = None
+      ft_raw = None
+      ft2_raw = None
       plots_defined = False
 
       # Ok, one filetable and a simple variable. The easy case.
       if simple_flag and num_fts == 1:
          if num_models == 1:
             ft = (climo0 if climo0 is not None else raw0)
+            if raw0 is not None:
+               ft_raw = raw0
          else:
             ft = obs0
             # only an obs specified, is this a valid variable for obs-only?
@@ -646,10 +654,17 @@ class lmwg_plot_set2(lmwg_plot_spec):
             filetable=ft,
             reduced_var_id=varid+'_ft1',
             reduction_function=(lambda x, vid: reduce2latlon_seasonal(x, self.season, vid)))
+         if ft_raw != None:
+            self.reduced_variables[varid+'_ft1_ttest'] = reduced_variable(variableid = varid,
+               filetable = ft_raw,
+               reduced_var_id = varid+'_ft1_ttest',
+               reduction_function = (lambda x,vid : x) ) 
       # Starting to get more complicated. Simple variables but 2 filetables
       elif simple_flag and num_fts == 2:
          if num_models == 1: # implies num obs == 1
             ft = (climo0 if climo0 is not None else raw0)
+            if raw0 is not None:
+               ft_raw = raw0
             ft2 = obs0
             if varid not in lmwg_plot_set2._obs_vars:
                print 'Varid %s is not in obsvars list and observation sets specified. Ignoring' % varid
@@ -657,21 +672,36 @@ class lmwg_plot_set2(lmwg_plot_spec):
          elif num_models == 2:
             ft = (climo0 if climo0 is not None else raw0)
             ft2 = (climo1 if climo1 is not None else raw1)
+            if raw0 is not None:
+               ft_raw = raw0
+            if raw1 is not None:
+               ft2_raw = raw1
          else: # num_obs == 2
             if varid not in lmwg_plot_set2._obs_vars:
                print 'Varid %s is not in obsvars list and only observation sets specified. Returning' % varid
                return
             ft = obs0
             ft2 = obs1
+         print 'IN SIMPLEFLAG - self.season:', self.season
          self.reduced_variables[varid+'_ft1'] = reduced_variable(variableid = varid, 
             filetable=ft,
             reduced_var_id=varid+'_ft1',
-            reduction_function=(lambda x, vid: reduce2latlon_seasonal(x, self.season, vid)))
+            reduction_function=(lambda x, vid: reduce2latlon_seasonal(x, season=self.season, region=None, vid=vid)))
+         if ft_raw != None:
+            self.reduced_variables[varid+'_ft1_ttest'] = reduced_variable(variableid = varid,
+               filetable = ft_raw,
+               reduced_var_id = varid+'_ft1_ttest',
+               reduction_function = (lambda x, vid:dummy(x, vid) ) )
          if ft2 != None:
             self.reduced_variables[varid+'_ft2'] = reduced_variable(variableid = varid, 
                filetable=ft2,
                reduced_var_id=varid+'_ft2',
-               reduction_function=(lambda x, vid: reduce2latlon_seasonal(x, self.season, vid)))
+               reduction_function=(lambda x, vid: reduce2latlon_seasonal(x, season=self.season, region=None, vid=vid)))
+            if ft2_raw != None:
+               self.reduced_variables[varid+'_ft2_ttest'] = reduced_variable(variableid = varid,
+                  filetable = ft2_raw,
+                  reduced_var_id = varid+'_ft2_ttest',
+                  reduction_function = (lambda x, vid:dummy(x, vid) ) )
 
       # And the most complicated with a simple variable...
       elif simple_flag and num_fts >= 3:
@@ -840,13 +870,16 @@ class lmwg_plot_set2(lmwg_plot_spec):
                vid=varid+'_ft1-ft2',
                zvars = [varid+'_ft1', varid+'_ft2'], zfunc = aminusb,
                plottype = self.plottype)
-            self.single_plotspecs[self.plot7_id] = plotspec(
-               vid=varid+'_models_ttest',
-               zvars = [varid+'_ft1', varid+'_ft2'], zfunc = ttest_ab,
-               plottype = self.plottype)
+            if ft_raw != None and ft2_raw != None:
+               self.single_plotspecs[self.plot7_id] = plotspec(
+                  vid=varid+'_models_ttest',
+                  zvars = [varid+'_ft1_ttest', varid+'_ft2_ttest'], zfunc = ttest_ab,
+                  plottype = 'Boxfill')
+#                  plottype = self.plottype)
+               self.composite_plotspecs[self.plotall_id].append(self.plot7_id)
+
             self.composite_plotspecs[self.plotall_id].append(self.plot2_id)
             self.composite_plotspecs[self.plotall_id].append(self.plot3_id)
-            self.composite_plotspecs[self.plotall_id].append(self.plot7_id)
          if ft3 != None:
             print 'Going to add 3rd dataset procspecs %s' % '_'.join([ft3._strid, varid, seasonid])
             self.single_plotspecs[self.plot4_id] = plotspec(
@@ -998,12 +1031,16 @@ class lmwg_plot_set2(lmwg_plot_spec):
             self.composite_plotspecs[self.plotall_id].append(self.plot6_id)
             print 'Need to implement plots 7 and 8'
          if ft2 != None and ft3 == None:
-            self.single_plotspecs[self.plot7_id] = plotspec(
-               vid = varid+'_ttest',
-               zvars = [varid+'_ft1', varid+'_ft2'], zfunc = ttest_ab,
-               plottype = self.plottype)
-            print 'appending 7', self.plot7_id
-            self.composite_plotspecs[self.plotall_id].append(self.plot7_id)
+            if ft_raw != None and ft2_raw != None:
+               self.single_plotspecs[self.plot7_id] = plotspec(
+                  vid = varid+'_ttest',
+                  zvars = [varid+'_ft1_ttest', varid+'_ft2_ttest'], zfunc = ttest_ab,
+#                  plottype = self.plottype)
+                  plottype = 'Boxfill')
+               print 'appending 7', self.plot7_id
+               self.composite_plotspecs[self.plotall_id].append(self.plot7_id)
+            else:
+               print 'NO RAW DATASETS TO MAKE TTEST WITH'
 
       self.computation_planned = True
 
@@ -1025,28 +1062,22 @@ class lmwg_plot_set2(lmwg_plot_spec):
 ###############################################################################
 ### This should be combined with set6. They share lots of common code.
 class lmwg_plot_set3(lmwg_plot_spec):
+   _nonlinear_vars = ['EVAPFRAC', 'ASA', 'VBSA', 'NBSA', 'VWSA', 'NWSA', 'RNET']
+   _derived_varnames = ['EVAPFRAC', 'PREC', 'TOTRUNOFF', 'LHEAT', 'ASA', 'VBSA', 'NBSA', 'VWSA', 'NWSA', 'RNET']
    name = '3 - Grouped Line plots of monthly climatology: regional air temperature, precipitation, runoff, snow depth, radiative fluxes, and turbulent fluxes'
    number = '3'
    def __init__(self, model, obs, varid, seasonid=None, region=None, aux=None):
-      filetable1, filetable2 = self.getfts(model, obs)
 
       plot_spec.__init__(self, seasonid)
       self.plottype = 'Yxvsx'
       self.seasons = defines.all_months
+      self.season = cdutil.times.Seasons('JFMAMJJASOND')
 
       self._var_baseid = '_'.join([varid, 'set3'])
-      ft1id,ft2id = filetable_ids(filetable1,filetable2)
-      self.plot1_id = ft1id+'_'+varid
-      if filetable2 is not None:
-         self.plot2_id = ft2id+'_'+varid
-         self.plot3_id = ft1id+' - '+ft2id+'_'+varid
-         self.plotall_id = ft1id+'_'+ft2id+'_'+varid
-      else:
-         self.plot2_id = None
-         self.plot3_id = None
-         self.plotall_id = None
+
       if not self.computation_planned:
          self.plan_computation(model, obs, varid, seasonid, region, aux)
+
    @staticmethod
    def _list_variables( model, obs ):
       # conceivably these could be the same names as the composite plot IDs but this is not a problem now.
@@ -1063,104 +1094,166 @@ class lmwg_plot_set3(lmwg_plot_spec):
       return vlist
 
    def plan_computation(self, model, obs, varid, seasonid, region, aux):
-      filetable1, filetable2 = self.getfts(model, obs)
+      
+      model_dict = make_ft_dict(model)
+      num_obs = len(obs)
+      num_models = len(model_dict.keys())
+
+      num_fts = num_obs+num_models
+
+      self.plot_ids = []
+
+      if num_models == 0 and num_obs == 0:
+         print 'Nothing to plot'
+         return
+
+      obs0 = None
+      obs1 = None
+      raw0 = None
+      raw1 = None
+      climo0 = None
+      climo1 = None
+
+      if num_models == 1:
+         raw0 = model_dict[model_dict.keys()[0]]['raw']
+         climo0 = model_dict[model_dict.keys()[0]]['climos']
+      elif num_models == 2:
+         raw0 = model_dict[model_dict.keys()[0]]['raw']
+         climo0 = model_dict[model_dict.keys()[0]]['climos']
+         raw1 = model_dict[model_dict.keys()[1]]['raw']
+         climo1 = model_dict[model_dict.keys()[1]]['climos']
+
+      if num_obs == 1:
+         obs0 = obs[0]
+      if num_obs == 2:
+         obs0 = obs[0]
+         obs1 = obs[1]
+
+      ### Note: If we have climos we need to manually construct the resultant reduced_variable
+      ### Basically, JAN/FEB/.../DEC variable of interest combined into {time axis=12} variable
+      ### Then do the reduction.
+
       # This is not scalable, but apparently is the way to do things. Fortunately, we only have 9 variables to deal with
       if 'Albedo' in varid:
          self.composite_plotspecs['Albedo_vs_Obs'] = []
 
+         # These are all nonlinear derivations so we need raw data.
+         if raw0 == None and raw1 == None:
+            print 'Albedos are nonlinear derived variables and require a raw (non climo) dataset'
+            return
          for v in self.albedos.keys():
-            self.reduced_variables[v+'_ft1'] = albedos_redvar(filetable1, 'TREND', self.albedos[v], region=region, flag='MONTHLY')
+            if raw0 != None:
+               self.reduced_variables[v+'_ft1'] = albedos_redvar(raw0, 'TREND', self.albedos[v], region=region, flag='MONTHLY')
+            if raw1 != None:
+               self.reduced_variables[v+'_ft2'] = albedos_redvar(raw1, 'TREND', self.albedos[v], region=region, flag='MONTHLY')
 
          vlist = ['ASA', 'VBSA', 'NBSA', 'VWSA', 'NWSA']
-#         vlist = ['ASA', 'VBSA', 'NBSA', 'VWSA', 'NWSA']
          # This assumes FT2 is obs. Needs some way to determine if that is true
          # TODO: ASA is much more complicated than the others.
-         if filetable2 != None:
+         if obs0 != None and obs1 != None:
             for v in vlist:
                if v == 'ASA':
                   print 'Comparison to ASA in obs set not implemented yet\n'
                   pass
-               self.reduced_variables[v+'_ft2'] = reduced_variable(
-                  variableid = v, filetable=filetable2, reduced_var_id=v+'_ft2',
+               ft = None
+               if obs0 != None and v in obs0.list_variables():
+                  ft = obs0
+               if obs1 != None and v in obs1.list_variables():
+                  ft = obs1
+               if ft == None:
+                  print 'Couldnt find %s in any of the obs sets. Defaulting to no obs comparisons' % v
+               self.reduced_variables[v+'_ft3'] = reduced_variable(
+                  variableid = v, filetable=ft, reduced_var_id=v+'_ft3',
                   reduction_function=(lambda x, vid: reduceRegion(x, region, vid=vid)))
 
          for v in vlist:
-            self.single_plotspecs[v+'_ft1'] = plotspec(vid=v+'_ft1', zvars=[v+'_ft1'], zfunc=(lambda z:z),
+            self.single_plotspecs[v+'_fts'] = plotspec(vid=v+'_fts', zfunc = (lambda z:z), 
                plottype = self.plottype, title=varinfo[v]['desc'])
-            if filetable2 != None:
-               if v == 'ASA':
-                  pass
-               self.single_plotspecs[v+'_ft1'].z2vars=[v+'_ft2']
-               self.single_plotspecs[v+'_ft1'].z2func=(lambda z:z)
 
-            self.composite_plotspecs['Albedo_vs_Obs'].append(v+'_ft1')
+            if raw0 != None:
+               self.single_plotspecs[v+'_fts'].zvars = [v+'_ft1']
+            if raw1 != None:
+               print 'Adding z2vars'
+               self.single_plotspecs[v+'_fts'].z2vars = [v+'_ft2']
+               self.single_plotspecs[v+'_fts'].z2func = (lambda z:z)
+            # TODO: Can we have z2var/func WITHOUT z1 var/func????
+            if v != 'ASA' and (
+               (obs0 != None and v in obs0.list_variables()) or 
+               (obs1 != None and v in obs1.list_variables())):
+               print '****** z3vars/z3funcs NOT (yet) supported ********'
+               self.single_plotspecs[v+'_fts'].z3vars = [v+'_ft3']
+               self.single_plotspecs[v+'_fts'].z3func = (lambda z:z)
+
+            self.composite_plotspecs['Albedo_vs_Obs'].append(v+'_fts')
 
          ### TODO Figure out how to generate Obs ASA
-#         if filetable2 == None:
-#            self.single_plotspecs['ASA_ft1'] = plotspec(vid='ASA_ft1', zvars=['ASA_ft1'], zfunc=(lambda z:z),
-#               plottype = self.plottype)
-#            self.composite_plotspecs['Albedo_vs_Obs'].append('ASA_ft1')
-         if filetable2 != None:
-            print "NOTE: TODO - NEED TO CALCULATE ASA FROM OBS DATA"
 
-      # No obs, so second DS is models
-      # Plots are RNET and PREC and ET? on same graph
+      # Plots are RNET and PREC and ET? on same graph and then 2 graphs if we have 2 models
       if 'Moist' in varid:
          red_varlist = ['QVEGE', 'QVEGT', 'QSOIL', 'RAIN', 'SNOW']
          for v in red_varlist:
+            ft = (climo0 if climo0 is not None else raw0)
+            ft2 = (climo1 if climo1 is not None else raw1)
+            print '**** TODO - Why is this not working with climo files? We should be able to grab each month from each climo file and not reduce ******'
+#            ft = raw0 #(climo0 if climo0 is not None else raw0)
+#            ft2 = raw1 # (climo1 if climo1 is not None else raw1)
             self.reduced_variables[v+'_ft1'] = reduced_variable(
-               variableid = v, filetable=filetable1, reduced_var_id=v+'_ft1',
+               variableid = v, filetable=ft, reduced_var_id=v+'_ft1',
                reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid)))
-            if filetable2 != None:
+            if num_models == 2: 
                self.reduced_variables[v+'_ft2'] = reduced_variable(
-                  variableid = v, filetable=filetable2, reduced_var_id=v+'_ft2',
+                  variableid = v, filetable=ft2, reduced_var_id=v+'_ft2',
                   reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid)))
-         self.reduced_variables['RNET_ft1'] = rnet_redvar(filetable1, 'TREND', region=region, flag='MONTHLY')
+
          self.derived_variables['ET_ft1'] = derived_var(
             vid='ET_ft1', inputs=['QVEGE_ft1', 'QVEGT_ft1', 'QSOIL_ft1'], func=sum3)
          self.derived_variables['PREC_ft1'] = derived_var(
             vid='PREC_ft1', inputs=['RAIN_ft1', 'SNOW_ft1'], func=aplusb)
-         if filetable2 != None:
-            self.reduced_variables['RNET_ft2'] = rnet_redvar(filetable2, 'TREND', region=region, flag='MONTHLY')
+         if num_models == 2:
             self.derived_variables['ET_ft2'] = derived_var(
                vid='ET_ft2', inputs=['QVEGE_ft2', 'QVEGT_ft2', 'QSOIL_ft2'], func=sum3)
             self.derived_variables['PREC_ft2'] = derived_var(
                vid='PREC_ft2', inputs=['RAIN_ft2', 'SNOW_ft2'], func=aplusb)
+         # The nonlinear variables.
+         if raw0 != None:
+            self.reduced_variables['RNET_ft1'] = rnet_redvar(raw0, 'TREND', region=region, flag='MONTHLY')
+         else:
+            print 'No non-climo datasets (model 1) for nonlinear derived variable RNET. Skipping over it.'
+         if raw1 != None:
+            self.reduced_variables['RNET_ft2'] = rnet_redvar(raw1, 'TREND', region=region, flag='MONTHLY')
+         else:
+            print 'No non-climo datasets (model 2) for nonlinear derived variable RNET. Skipping over it.'
 
-# The NCAR plots do something like this; we don't support z3vars yet though, so making it separate plots
-#         self.single_plotspecs['DS_ft1'] = plotspec(vid='DS_ft1',
-#            zvars=['ET_ft1'], zfunc=(lambda z:z),
-#            z2vars=['PREC_ft1'], z2func=(lambda z:z),
-#            z3vars=['RNET_ft1'], z3func=(lambda z:z),
-#            plottype = self.plottype)
+         print '****** z3vars/z3funcs NOT (yet) supported ********'
+         # When z3func/z3vars is supported, these should be one plot.
          self.single_plotspecs['ET_ft1'] = plotspec(vid='ET_ft1',
             zvars=['ET_ft1'], zfunc=(lambda z:z),
             plottype = self.plottype, title=varinfo['ET']['desc'])
          self.single_plotspecs['PREC_ft1'] = plotspec(vid='PREC_ft1',
             zvars=['PREC_ft1'], zfunc=(lambda z:z),
             plottype = self.plottype, title=varinfo['PREC']['desc'])
-         self.single_plotspecs['RNET_ft1'] = plotspec(vid='RNET_ft1',
-            zvars=['RNET_ft1'], zfunc=(lambda z:z),
-            plottype = self.plottype, title=varinfo['RNET']['desc'])
+         if raw0 != None:
+            self.single_plotspecs['RNET_ft1'] = plotspec(vid='RNET_ft1',
+               zvars=['RNET_ft1'], zfunc=(lambda z:z),
+               plottype = self.plottype, title=varinfo['RNET']['desc'])
 
-         if filetable2 != None:
+         if num_models == 2:
             self.single_plotspecs['ET_ft2'] = plotspec(vid='ET_ft2',
                zvars=['ET_ft2'], zfunc=(lambda z:z),
                plottype = self.plottype)
             self.single_plotspecs['PREC_ft2'] = plotspec(vid='PREC_ft2',
                zvars=['PREC_ft2'], zfunc=(lambda z:z),
                plottype = self.plottype)
-            self.single_plotspecs['RNET_ft2'] = plotspec(vid='RNET_ft2',
-               zvars=['RNET_ft2'], zfunc=(lambda z:z),
-               plottype = self.plottype)
-         self.composite_plotspecs = {
-#            'Energy_Moisture' : ['DS_ft1']
-            'Energy_Moisture' : ['ET_ft1', 'RNET_ft1', 'PREC_ft1']
-         }
-         if filetable2 != None:
+            if raw1 != None:
+               self.single_plotspecs['RNET_ft2'] = plotspec(vid='RNET_ft2',
+                  zvars=['RNET_ft2'], zfunc=(lambda z:z),
+                  plottype = self.plottype)
+         self.composite_plotspecs = { 'Energy_Moisture' : ['ET_ft1', 'RNET_ft1', 'PREC_ft1'] }
+         if num_models == 2:
             self.composite_plotspecs['Energy_Moisture'].append('ET_ft2')
             self.composite_plotspecs['Energy_Moisture'].append('PREC_ft2')
-            self.composite_plotspecs['Energy_Moisture'].append('RNET_ft2')
+            if raw1 != 0:
+               self.composite_plotspecs['Energy_Moisture'].append('RNET_ft2')
 
       # No obs for this, so FT2 should be a 2nd model
       if 'Radiative' in varid:
@@ -1168,34 +1261,39 @@ class lmwg_plot_set3(lmwg_plot_spec):
 
          red_varlist = ['FSDS', 'FSA', 'FLDS', 'FIRE', 'FIRA']
          for v in red_varlist:
+            ft = (climo0 if climo0 is not None else raw0)
+            ft2 = (climo1 if climo1 is not None else raw1)
             self.reduced_variables[v+'_ft1'] = reduced_variable(
-               variableid = v, filetable=filetable1, reduced_var_id=v+'_ft1',
+               variableid = v, filetable=ft, reduced_var_id=v+'_ft1',
                reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid)))
             self.single_plotspecs[v] = plotspec(vid=v+'_ft1', 
                zvars = [v+'_ft1'], zfunc=(lambda z:z),
                plottype = self.plottype, title=varinfo[v]['desc'])
-            if filetable2 != None:
+            if num_models == 2:
                self.reduced_variables[v+'_ft2'] = reduced_variable(
-                  variableid = v, filetable=filetable2, reduced_var_id=v+'_ft2',
+                  variableid = v, filetable=ft2, reduced_var_id=v+'_ft2',
                   reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid)))
                self.single_plotspecs[v].z2vars = [v+'_ft2']
                self.single_plotspecs[v].z2func = (lambda z:z)
                
             self.composite_plotspecs['Radiative_Fluxes'].append(v)
 
-         self.reduced_variables['ASA_ft1'] =  albedos_redvar(filetable1, 'TREND', ['FSR', 'FSDS'], region=region, flag='MONTHLY')
-         self.reduced_variables['RNET_ft1' ] = rnet_redvar(filetable1, 'TREND', region=region, flag='MONTHLY')
-         if filetable2 != None:
-            self.reduced_variables['ASA_ft2'] =  albedos_redvar(filetable2, 'TREND', ['FSR', 'FSDS'], region=region, flag='MONTHLY')
-            self.reduced_variables['RNET_ft2' ] = rnet_redvar(filetable2, 'TREND', region=region, flag='MONTHLY')
+         # Non linear variables need raw datasets
+         if raw0 != None:
+            self.reduced_variables['ASA_ft1'] =  albedos_redvar(raw0, 'TREND', ['FSR', 'FSDS'], region=region, flag='MONTHLY')
+            self.reduced_variables['RNET_ft1' ] = rnet_redvar(raw0, 'TREND', region=region, flag='MONTHLY')
+         if raw1 != None:
+            self.reduced_variables['ASA_ft2'] =  albedos_redvar(raw0, 'TREND', ['FSR', 'FSDS'], region=region, flag='MONTHLY')
+            self.reduced_variables['RNET_ft2' ] = rnet_redvar(raw1, 'TREND', region=region, flag='MONTHLY')
 
-         self.single_plotspecs['Albedo'] = plotspec(vid='ASA_ft1',
-            zvars = ['ASA_ft1'], zfunc=(lambda z:z),
-            plottype = self.plottype, title=varinfo['ASA']['desc'])
-         self.single_plotspecs['NetRadiation'] = plotspec(vid='RNET_ft1',
-            zvars = ['RNET_ft1'], zfunc=(lambda z:z),
-            plottype = self.plottype, title=varinfo['RNET']['desc'])
-         if filetable2 != None:
+         if raw0 != None:
+            self.single_plotspecs['Albedo'] = plotspec(vid='ASA_ft1',
+               zvars = ['ASA_ft1'], zfunc=(lambda z:z),
+               plottype = self.plottype, title=varinfo['ASA']['desc'])
+            self.single_plotspecs['NetRadiation'] = plotspec(vid='RNET_ft1',
+               zvars = ['RNET_ft1'], zfunc=(lambda z:z),
+               plottype = self.plottype, title=varinfo['RNET']['desc'])
+         if raw1 != None:
             self.single_plotspecs['Albedo'].z2vars = ['ASA_ft2']
             self.single_plotspecs['Albedo'].z2func = (lambda z:z)
             self.single_plotspecs['NetRadiation'].z2vars = ['RNET_ft2']
@@ -1432,7 +1530,6 @@ class lmwg_plot_set5(lmwg_plot_spec):
    # change that for the next release.
    def __init__( self, model, obs, varid, seasonid=None, region=None, aux=None, jsonflag=False):
 #      print 'jsonflag passed in: ', jsonflag
-      filetable1, filetable2 = self.getfts(model, obs)
 
       plot_spec.__init__(self,seasonid)
       self.jsonflag = jsonflag
@@ -1445,24 +1542,17 @@ class lmwg_plot_set5(lmwg_plot_spec):
       self.seasons = ['ANN']
 
       self._var_baseid = '_'.join([varid,'set5'])   # e.g. TREFHT_set5
-      ft1id,ft2id = filetable_ids(filetable1,filetable2)
-      self.plot1_id = ft1id+'_'+varid+'_'+seasonid
-      if(filetable2 != None):
-         self.plot2_id = ft2id+'_'+varid+'_'+seasonid
-         self.plot3_id = ft1id+' - '+ft2id+'_'+varid+'_'+seasonid
-         self.plotall_id = ft1id+'_'+ft2id+'_'+varid+'_'+seasonid
-      else:
-         self.plotall_id = filetable1._strid+'_'+varid+'_'+seasonid
 
       if not self.computation_planned:
          self.plan_computation( model, obs, varid, seasonid, region, aux )
 
    @staticmethod
    def _list_variables( model, obs ):
-      varlist = ['Regional Hydrologic Cycle', 'Global Biogeophysics', 'Global Carbon/Nitrogen']
-      if filetable2 != None:
-         varlist.extend( [ 'Regional Hydrologic Cycle - Difference', 'Global Biogeophysics - Difference', 
-                 'Global Carbon/Nitrogen - Difference'])
+      varlist = ['Regional_Hydrologic_Cycle', 'Global_Biogeophysics', 'Global_Carbon_Nitrogen']
+      model_dict = make_ft_dict(model)
+      if len(model_dict.keys()) >= 2:
+         varlist.extend( [ 'Regional_Hydrologic_Cycle_Difference', 'Global_Biogeophysics_Difference', 
+                 'Global_Carbon_Nitrogen_Difference'])
       return varlist
 
    @staticmethod
@@ -1471,17 +1561,39 @@ class lmwg_plot_set5(lmwg_plot_spec):
       return vlist
 
    def plan_computation( self, model, obs, varid, seasonid, region=None, aux=None):
-      filetable1, filetable2 = self.getfts(model, obs)
+
+      model_dict = make_ft_dict(model)
+      num_models = len(model_dict.keys())
+
+      if num_models == 0: 
+         print 'Nothing to plot'
+         return
+
+      raw0 = None
+      raw1 = None
+      climo0 = None
+      climo1 = None
+
+      if num_models == 1:
+         raw0 = model_dict[model_dict.keys()[0]]['raw']
+         climo0 = model_dict[model_dict.keys()[0]]['climos']
+      elif num_models == 2:
+         raw0 = model_dict[model_dict.keys()[0]]['raw']
+         climo0 = model_dict[model_dict.keys()[0]]['climos']
+         raw1 = model_dict[model_dict.keys()[1]]['raw']
+         climo1 = model_dict[model_dict.keys()[1]]['climos']
 
       self.hasregions = 0
       self.twosets = 0
-      self.differences = 0
+      self.difference = 0
       self.setname = ''
       self.reduced_variables = {}
       self.derived_variables = {}
       self.derived_variables1 = None
       self.reduced_variables1 = None
       import sys # needed for the "pretty" table output
+
+      # Ok, which table are we producing?
 
       if 'Regional' in varid:
          # This one will take 2 passes over the input list for efficiency.
@@ -1493,19 +1605,21 @@ class lmwg_plot_set5(lmwg_plot_spec):
          #         reduce spatially to a single value
          # Of course, some of these are overly complicated nonlinear variables
          self.hasregions = 1
-         self.setnmae = 'DIAG SET 5: REGIONAL HYDROLOGIC CYCLE OVER LAND'
+         self.setname = 'DIAG SET 5: REGIONAL HYDROLOGIC CYCLE OVER LAND'
          # Do the initial temporar reductions on Global
-         region = defines.all_regions['Global'].coords
+         region = 'Global'
+         # These are all linear at least.
          _red_vars = ['RAIN', 'SNOW', 'QVEGE', 'QVEGT', 'QSOIL', 'QOVER', 'QDRAI', 'QRGWL']
          _derived_varnames = ['PREC', 'CE', 'TOTRUNOFF']
          self.display_vars = ['PREC', 'QVEGE', 'QVEGEP', 'QVEGT', 'QSOIL', 'TOTRUNOFF']
 
+         ft = (climo0 if climo0 is not None else raw0)
          for v in _red_vars:
             self.reduced_variables1[v+'_ft1'] = reduced_variable(variableid = v,
-               filetable = filetable1, reduced_var_id=v+'_ft1',
+               filetable = ft, reduced_var_id=v+'_ft1',
                reduction_function = (lambda x, vid: reduceAnnSingle(x, vid=vid)))
 
-         self.reduced_variables1['QVEGEP_ft1'] = canopyevapTrend(filetable1)
+         self.reduced_variables1['QVEGEP_ft1'] = canopyevapTrend(ft)
          self.derived_variables1['TOTRUNOFF_ft1'] = derived_var(vid='TOTRUNOFF_ft1', inputs=['QOVER_ft1', 'QDRAI_ft1', 'QRGWL_ft1'], func=sum3)
          self.derived_variables1['PREC_ft1'] = derived_var(vid='PREC_ft1', inputs=['RAIN_ft1', 'SNOW_ft1'], func=aplusb)
 
@@ -1514,13 +1628,14 @@ class lmwg_plot_set5(lmwg_plot_spec):
             for r in defines.all_regions.keys():
                self.derived_variables[v+'_'+r+'_ft1'] = derived_var(vid=v+'_'+r+'_ft1', inputs=[v+'_ft1'], special_value=r, func=reduceRegion)
 
-         if filetable2 != None:
+         if num_models == 2:
             self.twosets = 1
+            ft2 = (climo1 if climo1 is not None else raw1)
             for v in _red_vars:
                self.reduced_variables1[v+'_ft2'] = reduced_variable(variableid = v,
-                  filetable = filetable2, reduced_var_id=v+'_ft2',
+                  filetable = ft2, reduced_var_id=v+'_ft2',
                   reduction_function = (lambda x, vid: reduceAnnSingle(x, vid=vid)))
-            self.reduced_variables1['QVEGEP_ft2'] = canopyevapTrend(filetable2)
+            self.reduced_variables1['QVEGEP_ft2'] = canopyevapTrend(ft)
             self.derived_variables1['TOTRUNOFF_ft2'] = derived_var(vid='TOTRUNOFF_ft2', inputs=['QOVER_ft2', 'QDRAI_ft2', 'QRGWL_ft2'], func=sum3)
             self.derived_variables1['PREC_ft2'] = derived_var(vid='PREC_ft2', inputs=['RAIN_ft2', 'SNOW_ft2'], func=aplusb)
 
@@ -1534,58 +1649,68 @@ class lmwg_plot_set5(lmwg_plot_spec):
 
       if 'Biogeophysics' in varid: 
          self.setname = 'DIAG SET 5: CLM ANNUAL MEANS OVER LAND'
-         region = defines.all_regions['Global'].coords
+         region = 'Global'
          _derived_varnames = ['PREC', 'RNET', 'LHEAT', 'CO2_PPMV', 'ET']
+         _nonlinear_varnames = ['RNET', 'LHEAT', 'CO2_PPMV', 'ET']
          _red_vars = ['TSA', 'RAIN', 'SNOW', 'SNOWDP', 'FSNO', 'H2OSNO', 'FSH', 'FSDS', 'FSA', 'FLDS', 
                       'FIRE', 'FCTR', 'FCEV', 'FGEV', 'FGR', 'FSM', 'TLAI', 'TSAI', 'LAISUN', 'LAISHA', 'QOVER', 
                       'QDRAI', 'QRGWL', 'WA', 'WT', 'ZWT', 'QCHARGE', 'FCOV', 'QVEGE', 'QVEGT', 'QSOIL']
          self.display_vars = ['TSA', 'PREC', 'RAIN', 'SNOW', 'SNOWDP', 'FSNO','H2OSNO', 'VBSA', 'NBSA','VWSA','NWSA',
          'RNET','LHEAT','FSH','FSDS','FSA','FLDS','FIRE','FCTR','FCEV','FGEV','FGR','FSM','TLAI','TSAI','LAISUN','LAISHA','ET','QOVER',
          'QDRAI','QRGWL','WA','WT','ZWT','QCHARGE','FCOV','CO2_PPMV']
+         ft = (climo0 if climo0 is not None else raw0)
+         ft2 = (climo1 if climo1 is not None else raw1)
          for v in _red_vars:
             self.reduced_variables[v+'_ft1'] = reduced_variable(variableid = v,
-               filetable = filetable1, reduced_var_id=v+'_ft1',
+               filetable = ft, reduced_var_id=v+'_ft1',
                reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, single=True, vid=vid)))
-            if filetable2 != None:
+            if num_models == 2:
                self.twosets = 1
                self.reduced_variables[v+'_ft2'] = reduced_variable(variableid = v,
-                  filetable = filetable2, reduced_var_id=v+'_ft2',
+                  filetable = ft2, reduced_var_id=v+'_ft2',
                   reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, single=True, vid=vid)))
                if 'Difference' in varid:
-                  self.differences = 1
+                  self.difference = 1
                   self.derived_variables[v+'_diff'] = derived_var(vid=v+'_diff', inputs=[v+'_ft1', v+'_ft2'], func=aminusb_2ax)
 
          for v in self.albedos.keys():
-            self.reduced_variables[v+'_ft1'] = albedos_redvar(filetable1, 'SINGLE', self.albedos[v], region=region)
-            if filetable2 != None:
-               self.reduced_variables[v+'_ft2'] = albedos_redvar(filetable2, 'SINGLE', self.albedos[v], region=region)
+            if raw0 == None:
+               print 'Nonclimo dataset required for albedos'
+            else:
+               self.reduced_variables[v+'_ft1'] = albedos_redvar(raw0, 'SINGLE', self.albedos[v], region=region)
+               if num_models == 2 and raw1 != None:
+                  self.reduced_variables[v+'_ft2'] = albedos_redvar(raw1, 'SINGLE', self.albedos[v], region=region)
             if 'Difference' in varid:
                self.derived_variables[v+'_diff'] = derived_var(vid=v+'_diff', inputs=[v+'_ft1', v+'_ft2'], func = aminusb_2ax)
 
          self.derived_variables['ET_ft1'] = derived_var(vid='ET_ft1', inputs=['QVEGE_ft1', 'QVEGT_ft1', 'QSOIL_ft1'], func=sum3)
-         self.reduced_variables['CO2_PPMV_ft1'] = co2ppmvTrendRegionSingle(filetable1, region=region)
-         self.reduced_variables['RNET_ft1'] = rnet_redvar(filetable1, 'SINGLE', region=region)
-         # Is this correct, or do these need to do the math in a different order?
-         self.derived_variables['PREC_ft1'] = derived_var(vid='PREC_ft1', inputs=['RAIN_ft1', 'SNOW_ft1'], func=aplusb)
          self.derived_variables['LHEAT_ft1'] = derived_var(vid='LHEAT_ft1', inputs=['FCTR_ft1', 'FGEV_ft1', 'FCEV_ft1'], func=sum3)
-         if filetable2 != None:
+         self.derived_variables['PREC_ft1'] = derived_var(vid='PREC_ft1', inputs=['RAIN_ft1', 'SNOW_ft1'], func=aplusb)
+         if num_models == 2:
             self.derived_variables['ET_ft2'] = derived_var(vid='ET_ft2', inputs=['QVEGE_ft2', 'QVEGT_ft2', 'QSOIL_ft2'], func=sum3)
-            self.reduced_variables['CO2_PPMV_ft2'] = co2ppmvTrendRegionSingle(filetable2, region=region)
-            self.reduced_variables['RNET_ft2'] = rnet_redvar(filetable2, 'SINGLE', region=region)
-            # Is this correct, or do these need to do the math in a different order?
-            self.derived_variables['PREC_ft2'] = derived_var(vid='PREC_ft2', inputs=['RAIN_ft2', 'SNOW_ft2'], func=aplusb)
             self.derived_variables['LHEAT_ft2'] = derived_var(vid='LHEAT_ft2', inputs=['FCTR_ft2', 'FGEV_ft2', 'FCEV_ft2'], func=sum3)
+            self.derived_variables['PREC_ft2'] = derived_var(vid='PREC_ft2', inputs=['RAIN_ft2', 'SNOW_ft2'], func=aplusb)
+         if raw0 == None:
+            print 'Nonclimo dataset required for nonlinear variables CO2_PPMV, and RNET'
+         else:
+            self.reduced_variables['CO2_PPMV_ft1'] = co2ppmvTrendRegionSingle(raw0, region=region)
+            self.reduced_variables['RNET_ft1'] = rnet_redvar(raw0, 'SINGLE', region=region)
+            if num_models == 2 and raw1 != None:
+               self.reduced_variables['CO2_PPMV_ft2'] = co2ppmvTrendRegionSingle(raw1, region=region)
+               self.reduced_variables['RNET_ft2'] = rnet_redvar(raw1, 'SINGLE', region=region)
+
          if 'Difference' in varid:
             self.derived_variables['ET_diff'] = derived_var(vid='ET_diff', inputs=['ET_ft1', 'ET_ft2' ], func=aminusb)
-            self.derived_variables['CO2_PPMV_diff'] = derived_var(vid='CO2_PPMV_diff', inputs=['CO2_PPMV_ft1', 'CO2_PPMV_ft2'], func=aminusb)
-            self.reduced_variables['RNET_diff'] = derived_var(vid='RNET_diff', inputs=['RNET_ft1', 'RNET_ft2'], func=aminusb)
             # Is this correct, or do these need to do the math in a different order?
             self.derived_variables['PREC_diff'] = derived_var(vid='PREC_diff', inputs=['PREC_ft1', 'PREC_ft2'], func=aminusb)
             self.derived_variables['LHEAT_diff'] = derived_var(vid='LHEAT_diff', inputs=['LHEAT_ft1', 'LHEAT_ft2' ], func=aminusb)
+            if raw0 != None and raw1 != None:
+               self.derived_variables['CO2_PPMV_diff'] = derived_var(vid='CO2_PPMV_diff', inputs=['CO2_PPMV_ft1', 'CO2_PPMV_ft2'], func=aminusb)
+               self.reduced_variables['RNET_diff'] = derived_var(vid='RNET_diff', inputs=['RNET_ft1', 'RNET_ft2'], func=aminusb)
 
       if 'Carbon' in varid:
          self.setname = 'DIAG SET 5: CN ANNUAL MEANS OVER LAND'
-         region = defines.all_regions['Global'].coords
+         region = 'Global'
          _red_vars = ['NEE', 'NEP', 'GPP', 'PSNSUN_TO_CPOOL', 'PSNSHADE_TO_CPOOL', 'NPP', 'AGNPP', 'BGNPP', 
               'MR', 'GR', 'AR', 'LITHR', 'SOMHR', 'HR', 'RR', 'SR', 'ER', 'LEAFC', 'XSMRPOOL', 'SOIL3C', 'SOIL4C', 
               'FROOTC', 'LIVESTEMC', 'DEADSTEMC', 'LIVECROOTC', 'DEADCROOTC', 'CPOOL', 'TOTVEGC', 'CWDC', 'TOTLITC', 
@@ -1599,17 +1724,19 @@ class lmwg_plot_set5(lmwg_plot_spec):
          # No derived vars, so the table is everything above
          self.display_vars = _red_vars
 
+         ft = (climo0 if climo0 is not None else raw0)
+         ft2 = (climo1 if climo1 is not None else raw1)
          for v in _red_vars:
             self.reduced_variables[v+'_ft1'] = reduced_variable(variableid = v,
-               filetable=filetable1, reduced_var_id=v+'_ft1', 
+               filetable=ft, reduced_var_id=v+'_ft1', 
                reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, single=True, vid=vid)))
-            if filetable2 != None:
+            if num_models == 2:
                self.twosets = 1
                self.reduced_variables[v+'_ft2'] = reduced_variable(variableid = v,
-                  filetable=filetable2, reduced_var_id=v+'_ft2', 
+                  filetable=ft2, reduced_var_id=v+'_ft2', 
                   reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, single=True, vid=vid)))
                if 'Difference' in varid:
-                  self.differences = 1
+                  self.difference = 1
                   self.derived_variables[v+'_diff'] = derived_var(
                      vid=v+'_diff', inputs=[v+'_ft1', v+'_ft2'], func=aminusb_2ax)
 
@@ -1658,14 +1785,14 @@ class lmwg_plot_set5(lmwg_plot_spec):
 
             # Headers
             sys.stdout.write('%s' % self.setname)
-            if self.differences == 1:
+            if self.difference == 1:
                print ' - DIFFERENCE (case1 - case2)'
             else:
                sys.stdout.write('\n')
 
             print 'TEST CASE (case1): '
             print 'REFERENCE CASE (case2): '
-            if self.differences == 1:
+            if self.difference == 1:
                print 'DIFFERENCE: '
             print 'Variables:'
             print '\t\t\t PREC = ppt: rain+snow ((mm/y))'
@@ -1680,13 +1807,13 @@ class lmwg_plot_set5(lmwg_plot_spec):
             if self.twosets == 1:
                print 'case1\t\tcase2\t\tcase1\t\tcase2\t\tcase1\t\tcase2\t\tcase1\t\tcase2\t\tcase1\t\tcase2\t\tcase1\t\tcase2'
             else:
-               if self.differences == 1:
+               if self.difference == 1:
                   print 'diff\t\tdiff\t\tdiff\t\tdiff\t\tdiff\t\tdiff'
                else:
                   print '\t\t\t\t\t\tcase1\t\t\tcase1\t\t\tcase1\t\t\t\tcase1\t\t\tcase1\t\t\tcase1'
 
    #         sys.stdout.write(ostr % ' ')
-            if self.differences == 1:
+            if self.difference == 1:
                sys.stdout.write('\t')
             print '\t\t\t\t\t\tppt: rain+snow\tcanopy evaporation\tcanopy evap:QVEGE/(RAIN+SNOW)*100\tcanopy transpiration\tground evaporation\tRunoff:qover+qdrai+qrgwl'
 
@@ -1694,34 +1821,34 @@ class lmwg_plot_set5(lmwg_plot_spec):
             for r in rk:
                ostr = '%-'+str(maxl+3)+'s\t'
                sys.stdout.write(ostr % r)
-               sys.stdout.write('%8.3f\t' % varvals['PREC_'+r+'_ft1'])
+               sys.stdout.write('%10.5f\t' % convert_units(varvals['PREC_'+r+'_ft1'], 'mm/year'))
                if self.twosets == 1:
-                  sys.stdout.write('%8.3f\t' % varvals['PREC_'+r+'_ft2'])
+                  sys.stdout.write('%10.5f\t' % convert_units(varvals['PREC_'+r+'_ft2'], 'mm/year'))
                else:
                   sys.stdout.write('\t')
-               sys.stdout.write('%8.3f\t' % varvals['QVEGE_'+r+'_ft1'])
+               sys.stdout.write('%10.5f\t' % convert_units(varvals['QVEGE_'+r+'_ft1'], 'mm/year'))
                if self.twosets == 1:
-                  sys.stdout.write('%8.3f\t' % varvals['QVEGE_'+r+'_ft2'])
+                  sys.stdout.write('%10.5f\t' % convert_units(varvals['QVEGE_'+r+'_ft2'], 'mm/year'))
                else:
                   sys.stdout.write('\t')
-               sys.stdout.write('%8.3f\t' % varvals['QVEGEP_'+r+'_ft1'])
+               sys.stdout.write('%10.5f\t' % varvals['QVEGEP_'+r+'_ft1'])
                if self.twosets == 1:
-                  sys.stdout.write('%8.3f\t' % varvals['QVEGEP_'+r+'_ft2'])
+                  sys.stdout.write('%10.5f\t' % varvals['QVEGEP_'+r+'_ft2'])
                else:
                   sys.stdout.write('\t\t')
-               sys.stdout.write('%8.3f\t' % varvals['QVEGT_'+r+'_ft1'])
+               sys.stdout.write('%10.5f\t' % convert_units(varvals['QVEGT_'+r+'_ft1'], 'mm/year'))
                if self.twosets == 1:
-                  sys.stdout.write('%8.3f\t' % varvals['QVEGT_'+r+'_ft2'])
+                  sys.stdout.write('%10.5f\t' % convert_units(varvals['QVEGT_'+r+'_ft2'], 'mm/year'))
                else:
                   sys.stdout.write('\t')
-               sys.stdout.write('%8.3f\t' % varvals['QSOIL_'+r+'_ft1'])
+               sys.stdout.write('%10.5f\t' % convert_units(varvals['QSOIL_'+r+'_ft1'], 'mm/year'))
                if self.twosets == 1:
-                  sys.stdout.write('%8.3f\t' % varvals['QSOIL_'+r+'_ft2'])
+                  sys.stdout.write('%10.5f\t' % convert_units(varvals['QSOIL_'+r+'_ft2'], 'mm/year'))
                else:
                   sys.stdout.write('\t\t')
-               sys.stdout.write('%8.3f\t' % varvals['TOTRUNOFF_'+r+'_ft1'])
+               sys.stdout.write('%10.5f\t' % convert_units(varvals['TOTRUNOFF_'+r+'_ft1'], 'mm/year'))
                if self.twosets == 1:
-                  sys.stdout.write('%8.3f\t' % varvals['TOTRUNOFF_'+r+'_ft2'])
+                  sys.stdout.write('%10.5f\t' % convert_units(varvals['TOTRUNOFF_'+r+'_ft2'], 'mm/year'))
                sys.stdout.write('\n')
          else: # var 2 or 3
             from metrics.packages.lmwg.defines import varinfo
@@ -1731,18 +1858,33 @@ class lmwg_plot_set5(lmwg_plot_spec):
             print 'desc: ', descmax, 'unit: ', unitmax, 'var: ', varmax
 
             if self.difference == 0:
-               print 'DATA SET 5: CLM ANNUAL MEANS OVER LAND - DIFFERENCE (case1 - case2)'
+               print 'DATA SET 5: CLM ANNUAL MEANS OVER LAND'
                print 'TEST CASE (case1): '
-               print 'REFERENCE CASE (case2): '
-               print 'DIFFERENCE: '
-               print '%-*s %-12s' % (varmax+descmax+unitmax, 'Variable', 'case1-case2')
+               casestr = 'case1'
+               if self.twosets == 1:
+                  print 'REFERENCE CASE (case2): '
+                  casestr = casestr+' case2'
+               print '%-*s %-12s' % (varmax+descmax+unitmax, 'Variable', casestr)
                for v in self.display_vars:
                   if varvals[v+'_ft1'] == None:
    #                  print v,' was none. setting to -999.000'
                      varvals[v+'_ft1'] = -999.000
-                  sys.stdout.write('%-*s(%-*s) %-*s %8.3f' % (varmax, v, unitmax, varinfo[v]['RepUnits'], descmax, varinfo[v]['desc'], varvals[v+'_ft1']))
+                  try:
+                     print varinfo[v]['RepUnits']
+                     try:
+                        print varval[v+'_ft1'].units
+                     except:
+                        print v,' had no units'
+                        print 'type for it: ( %s )' % type(varvals[v+'_ft1'])
+                     sys.stdout.write('%-*s(%-*s) %-*s %13.7f %s' % (varmax, v, unitmax, varinfo[v]['RepUnits'], descmax, varinfo[v]['desc'], varvals[v+'_ft1'].units, convert_units(varvals[v+'_ft1'], varinfo[v]['RepUnits'])))
+                     if varinfo[v].get('units', False) != False:
+                        print 'varinfo units: ', varinfo[v].units
+                  except:
+                     sys.stdout.write('%-*s(%-*s) %-*s %13.7f ' % (varmax, v, unitmax, varinfo[v]['RepUnits'], descmax, varinfo[v]['desc'], varvals[v+'_ft1']))
                   if self.twosets == 1:
-                     sys.stdout.write(' %8.3f' % varvals[v+'_ft2'])
+                     if varvals[v+'_ft2'] == None:
+                        varvals[v+'_ft2'] = -999.00
+                     sys.stdout.write(' %13.7f' % varvals[v+'_ft2'])
                   sys.stdout.write('\n')
             else:
                print 'DATA SET 5: CLM ANNUAL MEANS OVER LAND - DIFFERENCE (case1 - case2)'
@@ -1753,7 +1895,7 @@ class lmwg_plot_set5(lmwg_plot_spec):
                for v in self.display_vars:
                   if varvals[v+'_diff'] == None:
                      varvals[v+'_diff'] = -999.00
-                  sys.stdout.write('%-*s(%-*s) %-*s %10.7f\n' % (varmax, v, unitmax, varinfo[v]['RepUnits'], descmax, varinfo[v]['desc'], varvals[v+'_diff']))
+                  sys.stdout.write('%-*s(%-*s) %-*s %13.7f\n' % (varmax, v, unitmax, varinfo[v]['RepUnits'], descmax, varinfo[v]['desc'], varvals[v+'_diff']))
 
          
 
@@ -1771,21 +1913,10 @@ class lmwg_plot_set6(lmwg_plot_spec):
    name = '6 - Group Line plots of annual trends in regional soil water/ice and temperature, runoff, snow water/ice, photosynthesis'
    number = '6'
    def __init__(self, model, obs, varid, seasonid=None, region=None, aux=None):
-      filetable1, filetable2 = self.getfts(model, obs)
       plot_spec.__init__(self, seasonid)
       self.plottype = 'Yxvsx'
 
       self._var_baseid = '_'.join([varid, 'set6'])
-      ft1id,ft2id = filetable_ids(filetable1,filetable2)
-      self.plot1_id = ft1id+'_'+varid
-      if filetable2 is not None:
-         self.plot2_id = ft2id+'_'+varid
-         self.plot3_id = ft1id+' - '+ft2id+'_'+varid
-         self.plotall_id = ft1id+'_'+ft2id+'_'+varid
-      else:
-         self.plot2_id = None
-         self.plot3_id = None
-         self.plotall_id = None
 
       self.seasons = ['ANN']
 
@@ -1803,8 +1934,42 @@ class lmwg_plot_set6(lmwg_plot_spec):
       return vlist
 
    def plan_computation(self, model, obs, varid, seasonid, region, aux=None):
-      filetable1, filetable2 = self.getfts(model, obs)
-      # None of set6 has obs, so ft2 is/should always be a model set
+
+      model_dict = make_ft_dict(model)
+
+      num_models = len(model_dict.keys())
+
+      climo0 = None
+      climo1 = None
+      raw0 = None
+      raw1 = None
+
+      raw0 = model_dict[model_dict.keys()[0]]['raw']
+      climo0 = model_dict[model_dict.keys()[0]]['climos']
+      if raw0 == None:
+         print 'Set 6 requires raw data for now. We need to create climatology files that have a series of annual averages'
+         return
+      ft = raw0
+
+      ft1id = ft._strid
+      self.plot1_id = ft1id+'_'+varid
+      self.plotall_id = ft1id+'__'+varid # needs to be different than plotall_id
+
+      if num_models == 2:
+         raw1 = model_dict[model_dict.keys()[1]]['raw']
+         climo1 = model_dict[model_dict.keys()[1]]['climos']
+         if raw1 == None:
+            print 'Set 6 requires raw data for now. We need to create climatology files that have a series of annual averages'
+            num_models = 1
+            if raw0 == None:
+               return
+         ft2 = raw1
+
+         ft2id = ft2._strid
+         self.plot2_id = ft2id+'_'+varid
+         self.plot3_id = ft1id+' - '+ft2id+'_'+varid
+         self.plotall_id = ft1id+'_'+ft2id+'_'+varid
+
 
       if varid == 'SoilIce' or varid == 'Soil_Temp' or varid == 'SoilLiq_Water':
          if varid == 'SoilIce':
@@ -1821,18 +1986,17 @@ class lmwg_plot_set6(lmwg_plot_spec):
          for i in range(0,10):
             vn = vbase+str(i+1)
             self.reduced_variables[vn+'_ft1'] = reduced_variable(
-               variableid = vbase, filetable=filetable1, reduced_var_id=vn+'_ft1',
-               # hackish to get around python scope pass by ref/value issues
+               variableid = vbase, filetable=ft, reduced_var_id=vn+'_ft1',
                reduction_function=(lambda x, vid, i=i: reduceAnnTrendRegionLevel(x, region, i, vid))) 
-            if filetable2 != None:
+            if num_models == 2:
                self.reduced_variables[vn+'_ft2'] = reduced_variable(
-                  variableid = vbase, filetable=filetable2, reduced_var_id=vn+'_ft2',
+                  variableid = vbase, filetable=ft2, reduced_var_id=vn+'_ft2',
                   reduction_function=(lambda x, vid, i=i: reduceAnnTrendRegionLevel(x, region, i, vid))) 
                
             self.single_plotspecs[vn] = plotspec(vid=vn,
                zvars = [vn+'_ft1'], zfunc=(lambda z:z),
                plottype = self.plottype)
-            if filetable2 != None:
+            if num_models == 2:
                self.single_plotspecs[vn].z2vars = [vn+'_ft2']
                self.single_plotspecs[vn].z2func = (lambda z:z)
 
@@ -1841,11 +2005,12 @@ class lmwg_plot_set6(lmwg_plot_spec):
       if 'TotalSoil' in varid:
          self.composite_plotspecs['TotalSoilIce_TotalSoilH2O'] = []
          self.reduced_variables['TOTAL_SOIL_ICE_ft1'] = reduced_variable(
-            variableid = 'SOILICE', filetable=filetable1, reduced_var_id='TOTAL_SOIL_ICE_ft1',
+            variableid = 'SOILICE', filetable=ft, reduced_var_id='TOTAL_SOIL_ICE_ft1',
             reduction_function=(lambda x, vid: reduceAnnTrendRegionSumLevels(x, region, 1, 10, vid)))
          self.reduced_variables['TOTAL_SOIL_LIQ_ft1'] = reduced_variable(
-            variableid = 'SOILLIQ', filetable=filetable1, reduced_var_id='TOTAL_SOIL_LIQ_ft1',
+            variableid = 'SOILLIQ', filetable=ft, reduced_var_id='TOTAL_SOIL_LIQ_ft1',
             reduction_function=(lambda x, vid: reduceAnnTrendRegionSumLevels(x, region, 1, 10, vid)))
+
          self.single_plotspecs['TOTAL_SOIL_ICE'] = plotspec(vid='TOTAL_SOIL_ICE_ft1',
             zvars = ['TOTAL_SOIL_ICE_ft1'], zfunc=(lambda z:z),
             plottype = self.plottype)
@@ -1853,12 +2018,12 @@ class lmwg_plot_set6(lmwg_plot_spec):
             zvars = ['TOTAL_SOIL_LIQ_ft1'], zfunc=(lambda z:z),
             plottype = self.plottype)
 
-         if filetable2 != None:
+         if num_models == 2:
             self.reduced_variables['TOTAL_SOIL_ICE_ft2'] = reduced_variable(
-               variableid = 'SOILICE', filetable=filetable2, reduced_var_id='TOTAL_SOIL_ICE_ft2',
+               variableid = 'SOILICE', filetable=ft2, reduced_var_id='TOTAL_SOIL_ICE_ft2',
                reduction_function=(lambda x, vid: reduceAnnTrendRegionSumLevels(x, region, 1, 10, vid)))
             self.reduced_variables['TOTAL_SOIL_LIQ_ft2'] = reduced_variable(
-               variableid = 'SOILLIQ', filetable=filetable2, reduced_var_id='TOTAL_SOIL_LIQ_ft2',
+               variableid = 'SOILLIQ', filetable=ft2, reduced_var_id='TOTAL_SOIL_LIQ_ft2',
                reduction_function=(lambda x, vid: reduceAnnTrendRegionSumLevels(x, region, 1, 10, vid)))
             self.single_plotspecs['TOTAL_SOIL_LIQ'].z2vars = ['TOTAL_SOIL_LIQ_ft2']
             self.single_plotspecs['TOTAL_SOIL_LIQ'].z2func = (lambda z:z)
@@ -1873,122 +2038,141 @@ class lmwg_plot_set6(lmwg_plot_spec):
          red_varlist = ['FSH', 'FCTR', 'FCEV', 'FGEV', 'FGR', 'BTRAN', 'TLAI']
          for v in red_varlist:
             self.reduced_variables[v+'_ft1'] = reduced_variable(
-               variableid = v, filetable=filetable1, reduced_var_id=v+'_ft1',
+               variableid = v, filetable=ft, reduced_var_id=v+'_ft1',
                reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid)))
             self.single_plotspecs[v] = plotspec(vid=v+'_ft1',
                zvars = [v+'_ft1'], zfunc=(lambda z:z),
                plottype = self.plottype)
-            if filetable2 != None:
+            if num_models == 2:
                self.reduced_variables[v+'_ft2'] = reduced_variable(
-                  variableid = v, filetable=filetable2, reduced_var_id=v+'_ft2',
+                  variableid = v, filetable=ft2, reduced_var_id=v+'_ft2',
                   reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid)))
                self.single_plotspecs[v].z2vars = [v+'_ft2']
                self.single_plotspecs[v].z2func = (lambda z:z)
 
             self.composite_plotspecs['Turbulent_Fluxes'].append(v)
-         sub_varlist = ['FCTR', 'FGEV', 'FCEV']
+         sub_varlist = ['FCTR', 'FGEV', 'FCEV'] # needed for lheat
          for v in sub_varlist:
             self.reduced_variables[v+'_ft1'] = reduced_variable(
-               variableid = v, filetable=filetable1, reduced_var_id=v+'_ft1',
+               variableid = v, filetable=ft, reduced_var_id=v+'_ft1',
                reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid)))
             if filetable2 != None:
                self.reduced_variables[v+'_ft2'] = reduced_variable(
-                  variableid = v, filetable=filetable2, reduced_var_id=v+'_ft2',
+                  variableid = v, filetable=ft2, reduced_var_id=v+'_ft2',
                   reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid)))
 
                ### Can we do these with reduceMonthlyTrendRegion? Needs investigation
          self.derived_variables['LHEAT_ft1'] = derived_var(
                vid='LHEAT_ft1', inputs=['FCTR_ft1', 'FGEV_ft1', 'FCEV_ft1'], func=sum3)
-         self.reduced_variables['EVAPFRAC_ft1'] = evapfrac_redvar(filetable1, 'TREND', region=region, flag='ANN')
-         self.reduced_variables['RNET_ft1'] = rnet_redvar(filetable1, 'TREND', region=region, flag='ANN')
+         if raw0 != None:
+            self.reduced_variables['EVAPFRAC_ft1'] = evapfrac_redvar(raw0, 'TREND', region=region, flag='ANN')
+            self.reduced_variables['RNET_ft1'] = rnet_redvar(raw0, 'TREND', region=region, flag='ANN')
 
          self.single_plotspecs['LatentHeat'] = plotspec(vid='LHEAT_ft1',
             zvars = ['LHEAT_ft1'], zfunc=(lambda z:z),
             plottype = self.plottype)
-         self.single_plotspecs['EvaporativeFraction'] = plotspec(vid='EVAPFRAC_ft1',
-            zvars=['EVAPFRAC_ft1'], zfunc=(lambda z:z),
-            plottype = self.plottype)
-         self.single_plotspecs['NetRadiation'] = plotspec(vid='RNET_ft1',
-            zvars=['RNET_ft1'], zfunc=(lambda z:z),
-            plottype = self.plottype)
+         if raw0 != None:
+            self.single_plotspecs['EvaporativeFraction'] = plotspec(vid='EVAPFRAC_ft1',
+               zvars=['EVAPFRAC_ft1'], zfunc=(lambda z:z),
+               plottype = self.plottype)
+            self.single_plotspecs['NetRadiation'] = plotspec(vid='RNET_ft1',
+               zvars=['RNET_ft1'], zfunc=(lambda z:z),
+               plottype = self.plottype)
 
-         if filetable2 != None:
+         if num_models == 2:
             self.derived_variables['LHEAT_ft2'] = derived_var(
                   vid='LHEAT_ft2', inputs=['FCTR_ft2', 'FGEV_ft2', 'FCEV_ft2'], func=sum3)
-            self.reduced_variables['EVAPFRAC_ft2'] = evapfrac_redvar(filetable2, 'TREND', region=region, flag='ANN')
-            self.reduced_variables['RNET_ft2'] = rnet_redvar(filetable2, 'TREND', region=region, flag='ANN')
-            self.single_plotspecs['LatentHeat'].z2vars = ['LHEAT_ft2']
             self.single_plotspecs['LatentHeat'].z2func = (lambda z:z)
-            self.single_plotspecs['EvaporativeFraction'].z2vars = ['EVAPFRAC_ft2']
-            self.single_plotspecs['EvaporativeFraction'].z2func = (lambda z:z)
-            self.single_plotspecs['NetRadiation'].z2vars = ['RNET_ft2']
-            self.single_plotspecs['NetRadiation'].z2func = (lambda z:z)
+
+            if raw1 != None:
+               self.reduced_variables['EVAPFRAC_ft2'] = evapfrac_redvar(ft2, 'TREND', region=region, flag='ANN')
+               self.reduced_variables['RNET_ft2'] = rnet_redvar(ft2, 'TREND', region=region, flag='ANN')
+               if raw0 != None:
+                  self.single_plotspecs['EvaporativeFraction'].z2vars = ['EVAPFRAC_ft2']
+                  self.single_plotspecs['EvaporativeFraction'].z2func = (lambda z:z)
+                  self.single_plotspecs['NetRadiation'].z2vars = ['RNET_ft2']
+                  self.single_plotspecs['NetRadiation'].z2func = (lambda z:z)
+                  self.single_plotspecs['LatentHeat'].z2vars = ['LHEAT_ft2']
+               else:
+                  self.single_plotspecs['EvaporativeFraction'] = plotspec(vid='EVAPFRAC_ft2',
+                     zvars=['EVAPFRAC_ft2'], zfunc=(lambda z:z),
+                     plottype = self.plottype)
+                  self.single_plotspecs['NetRadiation'] = plotspec(vid='RNET_ft2',
+                     zvars=['RNET_ft2'], zfunc=(lambda z:z),
+                     plottype = self.plottype)
+
    
-         self.composite_plotspecs['Turbulent_Fluxes'].append('EvaporativeFraction')
+         if raw1 != None and raw0 != None:
+            self.composite_plotspecs['Turbulent_Fluxes'].append('EvaporativeFraction')
+            self.composite_plotspecs['Turbulent_Fluxes'].append('NetRadiation')
          self.composite_plotspecs['Turbulent_Fluxes'].append('LatentHeat')
-         self.composite_plotspecs['Turbulent_Fluxes'].append('NetRadiation')
 
       if 'Precip' in varid:
          self.composite_plotspecs['Total_Precipitation'] = []
+
          red_varlist=['SNOWDP', 'TSA', 'RAIN', 'SNOW', 'QOVER', 'QDRAI', 'QRGWL']
          plotnames = ['TSA', 'PREC', 'TOTRUNOFF', 'SNOWDP']
          for v in red_varlist:
             self.reduced_variables[v+'_ft1'] = reduced_variable(
-               variableid = v, filetable=filetable1, reduced_var_id=v+'_ft1',
+               variableid = v, filetable=ft, reduced_var_id=v+'_ft1',
                reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid)))
-            if filetable2 != None:
+            if num_models == 2:
                self.reduced_variables[v+'_ft2'] = reduced_variable(
-                  variableid = v, filetable=filetable2, reduced_var_id=v+'_ft2',
+                  variableid = v, filetable=ft2, reduced_var_id=v+'_ft2',
                   reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid)))
          self.derived_variables['PREC_ft1'] = derived_var(vid='PREC_ft1', inputs=['SNOW_ft1', 'RAIN_ft1'], func=aplusb)
          self.derived_variables['TOTRUNOFF_ft1'] = derived_var(vid='TOTRUNOFF_ft1', inputs=['QOVER_ft1', 'QDRAI_ft1', 'QRGWL_ft1'], func=sum3)
-         if filetable2 != None:
+         if num_models == 2:
             self.derived_variables['PREC_ft2'] = derived_var(vid='PREC_ft2', inputs=['SNOW_ft2', 'RAIN_ft2'], func=aplusb)
             self.derived_variables['TOTRUNOFF_ft2'] = derived_var(vid='TOTRUNOFF_ft2', inputs=['QOVER_ft2', 'QDRAI_ft2', 'QRGWL_ft2'], func=sum3)
 
          for p in plotnames:
             self.single_plotspecs[p] = plotspec(vid=p+'_ft1', zvars=[p+'_ft1'], zfunc=(lambda z:z), plottype = self.plottype)
             self.composite_plotspecs['Total_Precipitation'].append(p)
-            if filetable2 != None:
+            if num_models == 2:
                self.single_plotspecs[p].z2vars = [p+'_ft2']
                self.single_plotspecs[p].z2func = (lambda z:z)
 
       if 'Radiative' in varid:
          self.composite_plotspecs['Radiative_Fluxes'] = []
-         red_varlist = ['FSDS', 'FSA', 'FLDS', 'FIRE', 'FIRA']
+         red_varlist = ['FSDS', 'FSA', 'FLDS', 'FIRE', 'FIRA'] # these are in the models typically and not derived
          for v in red_varlist:
             self.reduced_variables[v+'_ft1'] = reduced_variable(
-               variableid = v, filetable=filetable1, reduced_var_id=v+'_ft1',
+               variableid = v, filetable=ft, reduced_var_id=v+'_ft1_composite', # this is what gets fed to var.id eventually.
                reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid)))
-            self.single_plotspecs[v] = plotspec(vid=v+'_ft1',
+            self.single_plotspecs[v+'_composite'] = plotspec(vid=v+'_ft1',
                zvars = [v+'_ft1'], zfunc=(lambda z:z),
                plottype = self.plottype)
 
-            if filetable2 != None:
+            if num_models == 2:
                self.reduced_variables[v+'_ft2'] = reduced_variable(
-                  variableid = v, filetable=filetable2, reduced_var_id=v+'_ft2',
+                  variableid = v, filetable=ft2, reduced_var_id=v+'_ft2_composite',
                   reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid)))
-               self.single_plotspecs[v].z2vars = [v+'_ft2']
-               self.single_plotspecs[v].z2func = (lambda z:z)
+               self.single_plotspecs[v+'_composite'].z2vars = [v+'_ft2']
+               self.single_plotspecs[v+'_composite'].z2func = (lambda z:z)
                
-            self.composite_plotspecs['Radiative_Fluxes'].append(v+'_ft1')
+            self.composite_plotspecs['Radiative_Fluxes'].append(v+'_composite')
 
-         self.reduced_variables['ASA_ft1'] =  albedos_redvar(filetable1, 'TREND', ['FSR', 'FSDS'], region=region, flag='ANN')
-         self.reduced_variables['RNET_ft1' ] = rnet_redvar(filetable1, 'TREND', region=region, flag='ANN')
-         if filetable2 != None:
-            self.reduced_variables['ASA_ft2'] =  albedos_redvar(filetable2, 'TREND', ['FSR', 'FSDS'], region=region, flag='ANN')
-            self.reduced_variables['RNET_ft2' ] = rnet_redvar(filetable2, 'TREND', region=region, flag='ANN')
+         if raw0 != None:
+            self.reduced_variables['ASA_ft1'] =  albedos_redvar(raw0, 'TREND', ['FSR', 'FSDS'], region=region, flag='ANN')
+            self.reduced_variables['RNET_ft1' ] = rnet_redvar(raw0, 'TREND', region=region, flag='ANN')
+            self.single_plotspecs['Albedo_composite'] = plotspec(vid='ASA_ft1', zvars = ['ASA_ft1'], zfunc=(lambda z:z), plottype = self.plottype)
+            self.single_plotspecs['NetRadiation_composite'] = plotspec(vid='RNET_ft1', zvars = ['RNET_ft1'], zfunc=(lambda z:z), plottype = self.plottype)
+         if num_models == 2 and raw1 != None:
+            self.reduced_variables['ASA_ft2'] =  albedos_redvar(raw1, 'TREND', ['FSR', 'FSDS'], region=region, flag='ANN')
+            self.reduced_variables['RNET_ft2' ] = rnet_redvar(raw1, 'TREND', region=region, flag='ANN')
+            if raw0 != None:
+               self.single_plotspecs['Albedo_composite'].z2vars = ['ASA_ft2']
+               self.single_plotspecs['Albedo_composite'].z2func = (lambda z:z)
+               self.single_plotspecs['NetRadiation_composite'].z2vars = ['RNET_ft2']
+               self.single_plotspecs['NetRadiation_composite'].z2func = (lambda z:z)
+            else:
+               self.single_plotspecs['Albedo_composite'] = plotspec(vid='ASA_ft2', zvars = ['ASA_ft2'], zfunc=(lambda z:z), plottype = self.plottype)
+               self.single_plotspecs['NetRadiation_composite'] = plotspec(vid='RNET_ft2', zvars = ['RNET_ft2'], zfunc=(lambda z:z), plottype = self.plottype)
 
-         self.single_plotspecs['Albedo'] = plotspec(vid='ASA_ft1', zvars = ['ASA_ft1'], zfunc=(lambda z:z), plottype = self.plottype)
-         self.single_plotspecs['NetRadiation'] = plotspec(vid='RNET_ft1', zvars = ['RNET_ft1'], zfunc=(lambda z:z), plottype = self.plottype)
-         if filetable2 != None:
-            self.single_plotspecs['Albedo'].z2vars = ['ASA_ft2']
-            self.single_plotspecs['Albedo'].z2func = (lambda z:z)
-            self.single_plotspecs['NetRadiation'].z2vars = ['RNET_ft2']
-            self.single_plotspecs['NetRadiation'].z2func = (lambda z:z)
-
-         self.composite_plotspecs['Radiative_Fluxes'].append('Albedo_ft1')
-         self.composite_plotspecs['Radiative_Fluxes'].append('NetRadiation_ft1')
+         self.composite_plotspecs['Radiative_Fluxes'].append('Albedo_composite')
+         self.composite_plotspecs['Radiative_Fluxes'].append('NetRadiation_composite')
+         print self.composite_plotspecs
          
       if 'Carbon' in varid or 'Fire' in varid or 'Hydrology' in varid or 'TotalSnow' in varid:
          if 'TotalSnow' in varid:
@@ -2008,14 +2192,14 @@ class lmwg_plot_set6(lmwg_plot_spec):
 
          for v in red_varlist:
             self.reduced_variables[v+'_ft1'] = reduced_variable(
-               variableid = v, filetable=filetable1, reduced_var_id=v+'_ft1',
+               variableid = v, filetable=ft, reduced_var_id=v+'_ft1',
                reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid)))
             self.single_plotspecs[v] = plotspec(vid=v+'_ft1', 
                zvars = [v+'_ft1'], zfunc=(lambda z:z),
                plottype = self.plottype)
-            if filetable2 != None:
+            if num_models == 2:
                self.reduced_variables[v+'_ft2'] = reduced_variable(
-                  variableid = v, filetable=filetable2, reduced_var_id=v+'_ft2',
+                  variableid = v, filetable=ft2, reduced_var_id=v+'_ft2',
                   reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid)))
                self.single_plotspecs[v].z2vars = [v+'_ft2']
                self.single_plotspecs[v].z2func = (lambda z:z)
@@ -2037,9 +2221,13 @@ class lmwg_plot_set6(lmwg_plot_spec):
          'Fire_Fluxes', 'Radiative_Fluxes', 'Turbulent_Fluxes', 'SoilIce', 
          'SoilLiq_Water', 'Soil_Temp', 'TotalSnowH2O_TotalSnowIce', 'TotalSoilIce_TotalSoilH2O']
 
+      print '******************* PSV KEYS ************'
+      print psv.keys()
       for plot in composite_names:
+         print 'plot name:', plot
          if plot in psv.keys():
             return self.plotspec_values[plot]
+
 
 
 ###############################################################################
@@ -2053,7 +2241,7 @@ class lmwg_plot_set7(lmwg_plot_spec):
    pass
 
 class lmwg_plot_set9(lmwg_plot_spec):
-#   name = '9 - Contour plots and statistics for precipitation and temperature. Statistics include DJF, JJA, and ANN biases, and RMSE, correlation and standard deviation of the annual cycle relative to observations'
+   name = '9 - Contour plots and statistics for precipitation and temperature. Statistics include DJF, JJA, and ANN biases, and RMSE, correlation and standard deviation of the annual cycle relative to observations'
    number = '9'
    def __init__(self, model, obs, varid, seasonid=None, region=None, aux=None):
       filetable1, filetable2 = self.getfts(model, obs)

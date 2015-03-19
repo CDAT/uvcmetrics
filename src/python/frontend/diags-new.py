@@ -310,12 +310,14 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
    #   which has the entire compound plot - that's vcanvas2
    gmobs, tmobs, tmmobs = return_templates_graphic_methods( vcanvas, gms, ovly, onPage )
    if 1==1: # optional debugging:
+      print '*************************************************'
       print "tmpl nsingleplots=",nsingleplots,"nsimpleplots=",nsimpleplots
       print "tmpl gms=",gms
       print "tmpl len(res)=",len(res),"ovly=",ovly,"onPage=",onPage
       print "tmpl gmobs=",gmobs
       print "tmpl tmobs=",tmobs
       print "tmpl tmmobs=",tmmobs
+      print '*************************************************'
 
    # gmmobs provides the correct graphics methods to go with the templates.
    # Unfortunately, for the moment we have to use rmr.presentation instead
@@ -363,6 +365,10 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                   var_id_save = seqgetattr(var,'id','')
                   seqsetattr( var,'id','' )
                else:
+                  print 'in the else clause.'
+                  print var
+                  print type(var)
+
                   vname = var.id.replace(' ', '_')
                   var_id_save = var.id
                   var.id = ''         # If id exists, vcs uses it as a plot title
@@ -376,13 +382,24 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                elif '_obs' in vname:
                   fname = fnamebase+'-model-and-obs.png'
                else:
-                  if '_ft1' in vname and '_ft2' not in vname:
+                  if '_ttest' in vname:
+                     if 'ft1' in vname and 'ft2' in vname:
+                        fname = fnamebase+'-model1_model2_ttest.png'
+                     elif 'ft1' in vname and 'ft2' not in vname:
+                        fname = fnamebase+'-model1_ttest.png'
+                     elif 'ft2' in vname and 'ft1' not in vname:
+                        fname = fnamebase+'-model2_ttest.png'
+                  elif '_ft1' in vname and '_ft2' not in vname:
                      fname = fnamebase+'-model.png'  
                      # if we had switched to model1 it would affect classic view, etc.
-                  if '_ft2' in vname and '_ft1' not in vname:
+                  elif '_ft2' in vname and '_ft1' not in vname:
                      fname = fnamebase+'-model2.png'
-                  if '_ft1' in vname and '_ft2' in vname:
+                  elif '_ft1' in vname and '_ft2' in vname:
                      fname = fnamebase+'-model-model2.png'
+                  elif '_fts' in vname: # a special variable; typically like lmwg set3/6 or amwg set 2
+                     fname = fnamebase+'_'+vname.replace('_fts','')+'.png'
+                  else:
+                     fname = fnamebase+'-unknown.png'
 
 
                print "png file name: ",fname
