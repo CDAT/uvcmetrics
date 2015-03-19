@@ -592,7 +592,7 @@ def reduce2level_seasonal( mv, seasons=seasonsyr, region='Global', vid=None ):
 
     return avmv
 
-def ttest_ab(mv1, mv2):
+def ttest_ab(mv1, mv2, constant = .1):
    mv1, mv2 = reconcile_units(mv1, mv2)
    ax1 = mv1.getAxisList()
    ax2 = mv2.getAxisList()
@@ -620,15 +620,32 @@ def ttest_ab(mv1, mv2):
       return
    v1 = mv1new.asma()
    v2 = mv2new.asma()
+   print 'V1:', v1
+   print 'V2:' , v2
+   print v1.max()
+   print v1.min()
+   print v2.max()
+   print v2.min()
+   print 'shapes:'
+   print mv1new.shape
+   print mv2new.shape
+   print dir(v1)
+
    
    import scipy.stats
    prob = mv1new # maybe retain some metadata
 
    t, prob = scipy.stats.ttest_ind(v1, v2, axis=tid1, equal_var=False)
-   probnew = MV2.where(MV2.less(prob, .000005), 0, prob) # get rid of the tiny values that are essentially 0
+   print 'prob:', prob
+   print type(prob)
+   print 't: ', t
+   print type(t)
+   missing = mv1.missing_value
+   probnew = MV2.where(MV2.greater(prob, constant), 1, 0) # get rid of the tiny values that are essentially 0
+   tnew = MV2.where(MV2.greater(t, constant), 1, 0)
 
-   print 'This needs some more work probably'
-   return probnew
+   print 'This needs some more work probably. Do we return t or prob?'
+   return tnew
 
 def ttest_time(mv1, mv2, mv3):
 # mv1 = case1, mv2=case2, mv3=obs
@@ -1052,7 +1069,11 @@ def reduceAnnSingle(mv, vid=None):
    else:
       mvann = mv
 
-   mvtrend = cdutil.averager(mvann, axis='t')
+   if timeax is not None:
+      mvtrend = cdutil.averager(mvann, axis='t')
+   else:
+      mvtrend = mvann
+
    mvtrend.id = vid
    if hasattr(mv, 'units'):
        mvtrend.units = mv.units # probably needs some help
@@ -1066,22 +1087,27 @@ def reduceAnnTrendRegion(mv, region, single=False, vid=None):
    if vid is None:
       vid = 'reduced_'+mv.id
 
+#   print 'units coming in: ', mv.units
+#   print 'REGION PASSED TO REDUCEANNTRENDREGION: ', region
    timeax = timeAxis(mv)
    if timeax is not None and timeax.getBounds() is None:
       timeax._bounds_ = timeax.genGenericBounds()
    if timeax is not None:
-      mvsub = mv(latitude=(region[0], region[1]), longitude=(region[2], region[3]))
+      mvsub = select_region(mv, region)
       mvann = cdutil.times.YEAR(mvsub) 
    else:
       mvann = mv
    axisstr = 'xy'
-   if single is True:
+   if single is True and timeax is not None:
       # This is primarily for table views (e.g. land set 5)
-      print 'Doing single value reduction'
+#      print 'Doing single value reduction'
       axisstr = 'xyt'
    else:
       print 'NOT doing single value reduction'
+#   print 'timeax was: ', timeax
 
+#   print 'axisstr: ', axisstr
+#   print mvann.shape
    #print 'Calculating land averages...'
    mvtrend = cdutil.averager(mvann, axis=axisstr)
    mvtrend.id = vid
@@ -1089,6 +1115,7 @@ def reduceAnnTrendRegion(mv, region, single=False, vid=None):
        mvtrend.units = mv.units # probably needs some help
 #   if mvtrend.shape == ():
 #      print 'Returning single point; This could be an invalid input dataset for this diagnostic'
+#   print 'units going out: ', mvtrend.units
    return mvtrend
 
 # Used for lmwg set 3
@@ -1114,6 +1141,7 @@ def reduceRegion(mv, region, vid=None):
 #   print 'in reduce region. region/mv: ', region, mv.id
    if vid is None:
       vid = 'reduced_'+mv.id
+#   print 'vid shape incoming: ', mv.shape
 
    mvsub = select_region(mv, region)
 
@@ -1123,7 +1151,8 @@ def reduceRegion(mv, region, vid=None):
    mvvals.id = vid
 #   print 'done calling averager on mvsub', mvsub.id
    if hasattr(mv, 'units'): mvvals.units = mv.units # probably needs some help
-   #print 'reduceMonthlyTrendRegion - Returning ', mvvals
+#   print 'reduceMonthlyTrendRegion - Returning ', mvvals.shape
+#   print mvvals
    return mvvals
 
 
@@ -1133,6 +1162,7 @@ def reduceMonthlyTrendRegion(mv, region, vid=None):
    #print 'IN REDUCEMONTHLYTRENDREGION, vid=', vid, 'mv.id=', mv.id
    if vid is None:
       vid = 'reduced_'+mv.id
+#   print 'INCOMING VARIABLE ', vid, ' SHAPE: ', mv.shape
    timeax = timeAxis(mv)
    if timeax is not None and timeax.getBounds() is None:
       timeax._bounds_ = timeax.genGenericBounds()
@@ -1228,8 +1258,14 @@ def reduce2latlon_seasonal( mv, season=seasonsyr, region=None, vid=None, exclude
         vid = 'reduced_'+mv.id
     # Note that the averager function returns a variable with meaningless id.
     # The climatology function returns the same id as mv, which we also don't want.
-
-    mvr = select_region(mv, region)
+    print 'region in reduce2latlon_seasonal: ', region, type(region)
+    print 'mv: ', mv
+    print 'season: ', season
+    if region is None or region=="global" or region=="Global" or\
+            getattr(region,'filekey',None)=="Global" or str(region)=="Global":
+        mvr = mv
+    else:
+        mvr = select_region(mv, region)
     mvseas = calculate_seasonal_climatology(mvr, season)
 
     axes = allAxes( mv )
@@ -1357,10 +1393,14 @@ def select_region(mv, region=None):
     # Select lat-lon region
     if region is None or region=="global" or region=="Global" or\
             getattr(region,'filekey',None)=="Global" or str(region)=="Global":
+#        print 'first case'
         mvreg = mv
     else:
+#        print 'second case'
         region = interpret_region(region)
+#        print 'region after interpret region:', region
         mvreg = mv(latitude=(region[0], region[1]), longitude=(region[2], region[3]))
+            
     return mvreg
 
 def select_lev( mv, slev ):
@@ -1534,6 +1574,10 @@ def aplusb(mv1, mv2, units=None):
 
 def sum3(mv1, mv2, mv3):
    """ returns mv1+mv2+mv3; they should be dimensioned alike."""
+#   print type(mv1)
+#   print type(mv2)
+#   print type(mv3)
+#   print 'sizes: ', mv1.shape, mv2.shape, mv3.shape
    mv = mv1+mv2+mv3
    if hasattr(mv, 'long_name'):
       if mv.long_name == mv1.long_name:
@@ -1597,6 +1641,8 @@ def adivb(mv1, mv2):
 
 # N.B. The following function is specific to LMWG calculating evaporative fraction derived variable
 def dummy(mv, vid=None):
+   print 'mv shape passed to dummy: ', mv.shape
+
    return mv
 
 def ab_ratio(mv1, mv2):
@@ -1627,7 +1673,7 @@ def canopy_special(mv1, mv2, mv3):
    rv.id = 'qvegep'
    rv.setattribute('long_name', 'canopy evap percent')
    rv.setattribute('name', 'qvegep')
-   rv.units=''
+   rv.units='%'
    return rv
 
 ### This function is pretty much lmwg specific but is in here for now
@@ -1731,6 +1777,29 @@ def aminusb_ax2( mv1, mv2 ):
     if hasattr(mv1,'units'):  aminusb.units = mv1.units
     aminusb.initDomain( ab_axes )
     return aminusb
+
+
+def convert_units(mv, units):
+   if type(mv) == float:
+      return mv
+   if not hasattr(mv, 'units'):
+      mv.units = '1'
+   tmp = udunits(1.0,mv.units)
+   try:
+      s,i = tmp.how(units)
+   except Exception as e:
+      # conversion not possible.
+#      print "ERROR could not convert from",mv.units,"to",units
+      return mv
+   if hasattr(mv,'id'):  # yes for TransientVariable, no for udunits
+      mvid = mv.id
+   if not ( numpy.allclose(s,1.0) and numpy.allclose(i,0.0) ):
+      # The following line won't work if mv1 be an axis.
+      mv = s*mv + i
+      if hasattr(mv,'id'):
+         mv.id = mvid
+   mv.units = units
+   return mv
 
 def reconcile_units( mv1, mv2, preferred_units=None ):
     """Changes the units of variables (instances of TransientVariable) mv1,mv2 to be the same,
