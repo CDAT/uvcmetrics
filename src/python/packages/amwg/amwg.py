@@ -1963,7 +1963,7 @@ class amwg_plot_set11(amwg_plot_spec):
     diags.py --model path=$HOME/uvcmetrics_test_data/cam35_data/,climos=yes 
     --obs path=$HOME/uvcmetrics_test_data/obs_data/,filter='f_startswith("CERES-EBAF")',climos=yes 
     --outputdir $HOME/Documents/Climatology/ClimateData/diagout/ --package AMWG --sets 11 --seasons JAN --plots yes  --vars LWCF """
-    name = '11 - Pacific annual cycle, Scatter plots'
+    name = '11 (Experimental, doesnt work with GUI) - Pacific annual cycle, Scatter plots'
     number = '11'
     def __init__( self, model, obs, varid, seasonid='ANN', region=None, aux=None ):
         filetable1, filetable2 = self.getfts(model, obs)
@@ -2608,7 +2608,7 @@ class amwg_plot_set14(amwg_plot_spec):
     --seasons JAN --plots yes --vars T Z3 --varopts '200 mbar' """
     name = '14 - Taylor diagrams'
     number = '14'
-    def __init__( self, model, obs, varid, seasonid='ANN', region=None, aux=None ):
+    def __init__( self, model, obs, varid, seasonid='JAN', region=None, aux=None ):
         
         """filetable1, filetable2 should be filetables for each model.
         varid is a string, e.g. 'TREFHT'.  The seasonal difference is Seasonid
