@@ -13,6 +13,7 @@ from metrics import *
 from metrics.fileio.filetable import *
 from metrics.fileio.findfiles import *
 from metrics.computation.reductions import *
+from metrics.frontend.amwg_plotting import *
 # These next 5 liens really shouldn't be necessary. We should have a top level 
 # file in packages/ that import them all. Otherwise, this needs done in every
 # script that does anything with diags, and would need updated if new packages
@@ -112,6 +113,7 @@ def run_diags( opts ):
    # set up some VCS things if we are going to eventually plot things
    if opts['output']['plots'] == True:
       vcanvas = vcs.init()
+      vcsx = vcanvas
       vcanvas.setcolormap('bl_to_darkred') #Set the colormap to the NCAR colors
       vcanvas2 = vcs.init()
       vcanvas2.portrait()
@@ -192,7 +194,7 @@ def run_diags( opts ):
             print 'Region filename: ', r_fname
 
             # loop over variables now
-            for varid in variables:
+            for ivarid, varid in enumerate(variables):
                print "Processing variable",varid," in season",time, " in plotset ",sname
                vard = pclass.all_variables( modelfts, obsfts, sname )
                plotvar = vard[varid]
@@ -315,8 +317,8 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
       print "tmpl gms=",gms
       print "tmpl len(res)=",len(res),"ovly=",ovly,"onPage=",onPage
       print "tmpl gmobs=",gmobs
-      print "tmpl tmobs=",tmobs
-      print "tmpl tmmobs=",tmmobs
+      print "tmpl tmobs=",[tm.name for tm in tmobs]
+      print "tmpl tmmobs=",[tm.name for tm in tmmobs]
       print '*************************************************'
 
    # gmmobs provides the correct graphics methods to go with the templates.
@@ -325,6 +327,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
    # scaling which is not yet done as part of
 
    vcanvas2.clear()
+   plotcv2 = False
    ir = -1
    for r,resr in enumerate(res):
       if resr is None:
@@ -340,7 +343,8 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
             continue
          ir += 1
          tm = tmobs[ir]
-         tm2 = tmmobs[ir]
+         if tmmobs != []:
+            tm2 = tmmobs[ir]
          title = rsr.title
          rsr_presentation = rsr.presentation
          for varIndex, var in enumerate(rsr.vars):
@@ -424,6 +428,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                         vcanvas2.plot(var,
                            rsr_presentation, tm2, bg=1, title=title, 
                            units='', source=subtitle )
+                        plotcv2 = True
                         savePNG = True
                   except vcs.error.vcsError as e:
                      print "ERROR making summary plot:",e
@@ -472,6 +477,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                         vcanvas2.plot(xvar, yvar,
                            rsr_presentation, tm2, bg=1, title=title, 
                            units='', source=subtitle)
+                        plotcv2 = True
                         #tm2.units.list()
                         if varIndex+1 == len(rsr.vars):
                            savePNG = True
@@ -501,17 +507,40 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                         # have them.
                except vcs.error.vcsError as e:
                   print "ERROR making summary plot:",e
-            else:
-               #pdb.set_trace()
+            elif vcs.istaylordiagram(rsr.presentation):
+               # this is a total hack that is related to the hack in uvdat.py
+               vcanvas.legendTitles = rsr.legendTitles
+               if hasattr(plot, 'customizeTemplates'):
+                  vcanvas.setcolormap("bl_to_darkred")
+                  print vcanvas.listelements("colormap")
+                  tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (None, None)] )
                vcanvas.plot(var, rsr.presentation, tm, bg=1,
                   title=title, units=getattr(var,'units',''), source=rsr.source )
+               savePNG = True
+               rsr.presentation.script("jim_td")
+               # tm.script("jim_tm")
+               # fjim=cdms2.open("jim_data.nc","w")
+               # fjim.write(var,id="jim")
+               # fjim.close()
+            else:
+               #pdb.set_trace()
+               if hasattr(plot, 'customizeTemplates'):
+                  tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)] )
+               #vcanvas.plot(var, rsr.presentation, tm, bg=1,
+               #   title=title, units=getattr(var,'units',''), source=rsr.source )
+               plot.vcs_plot(vcanvas, var, rsr.presentation, tm, bg=1, title=title,
+                  units=getattr(var, 'units', ''), source=rsr.source)
 #                                      vcanvas3.clear()
 #                                      vcanvas3.plot(var, rsr.presentation )
                savePNG = True
                try:
                   if tm2 is not None:
-                     vcanvas2.plot(var, rsr.presentation, tm2, bg=1,
-                        title=title, units=getattr(var,'units',''), source=rsr.source )
+                     #vcanvas2.plot(var, rsr.presentation, tm2, bg=1,
+                     #   title=title, units=getattr(var,'units',''), source=rsr.source )
+                     plot.vcs_plot( vcanvas2, var, rsr.presentation, tm2, bg=1,
+                        title=title, units=getattr(var, 'units', ''), 
+                        source = rsr.source, compoundplot=onPage )
+                     plotcv2 = True
                except vcs.error.vcsError as e:
                   print "ERROR making summary plot:",e
             if var_id_save is not None:
