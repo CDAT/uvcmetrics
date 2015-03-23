@@ -89,7 +89,7 @@ class rnet_redvar( reduced_variable ):
             duvs={'RNET_A':duv})
 
 class albedos_redvar( reduced_variable ):
-   def __init__(self, filetable, fn, varlist, season=None, region=None, flag=None):
+   def __init__(self, filetable, fn, varlist, season=None, region=None, flag=None, obs_ft=None):
       vname = varlist[0]+'_'+varlist[1]
       duv = derived_var(vname, inputs=varlist, func=ab_ratio)
       if fn == 'SEASONAL':
@@ -117,6 +117,61 @@ class albedos_redvar( reduced_variable ):
             filetable=filetable,
             reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, single=True, vid=vid)),
             duvs={vname:duv})
+      if fn == 'RMSE':
+         reduced_variable.__init__(
+            self, variableid=vname,
+            filetable=filetable,
+            reduction_function=(lambda x, vid: rmse(x, season, vid=vid)),
+            duvs={vname:duv})
+      if fn == 'CORR':
+         reduced_variable.__init__(
+            self, variableid=vname,
+            filetable=filetable,
+            reduction_function=(lambda x, vid: correlation(x, season, vid=vid)),
+            duvs={vname:duv})
+      if fn == 'STDDEV':
+         reduced_variable.__init__(
+            self, variableid=vname,
+            filetable=filetable,
+            reduction_function=(lambda x, vid: stddev(x, season, vid=vid)),
+            duvs={vname:duv})
+      if fn == 'BIAS':
+         reduced_variable.__init__(
+            self, variableid=vname,
+            filetable=filetable,
+            reduction_function=(lambda x, vid: seasonal_bias(x, season, vid=vid)),
+            duvs={vname:duv})
+
+
+# These could be passed in as snow/rain reduced, but still need to add them and then do more work, so
+# it requires a derived class like this.
+class prec_redvar( reduced_variable ): # only used for set 9
+   def __init__(self, filetable, fn, season=None, region=None, flag=None, obs_ft=None):
+      duv = derived_var('PREC_A', inputs = ['RAIN', 'SNOW'], func = aplusb)
+      if fn == 'RMSE':
+         reduced_variable.__init__(
+            self, variableid='PREC_A',
+            filetable = filetable,
+            reduction_function=(lambda x, vid: rmse(x, season, vid=vid)), # will need to call reduce2latlon_seasonsl(ANN) first
+         duvs = {'PREC_A':duv})
+      if fn == 'CORR':
+         reduced_variable.__init__(
+            self, variableid='PREC_A',
+            filetable = filetable,
+            reduction_function=(lambda x, vid: correlation(x, season, vid=vid)), # will need to call reduce2latlon_seasonsl(ANN) first
+         duvs = {'PREC_A':duv})
+      if fn == 'STDDEV':
+         reduced_variable.__init__(
+            self, variableid='PREC_A',
+            filetable = filetable,
+            reduction_function=(lambda x, vid: stddev(x, season, vid=vid)), # will need to call reduce2latlon_seasonsl(ANN) first
+         duvs = {'PREC_A':duv})
+      if fn == 'BIAS':
+         reduced_variable.__init__(
+            self, variableid='PREC_A',
+            filetable = filetable,
+            reduction_function=(lambda x, vid: seasonal_bias(x, season, vid=vid)),
+         duvs = {'PREC_A':duv})
 
 # A couple only used for one set, so don't need more generalized.
 class pminuse_seasonal( reduced_variable ):
@@ -2244,22 +2299,23 @@ class lmwg_plot_set9(lmwg_plot_spec):
    name = '9 - Contour plots and statistics for precipitation and temperature. Statistics include DJF, JJA, and ANN biases, and RMSE, correlation and standard deviation of the annual cycle relative to observations'
    number = '9'
    def __init__(self, model, obs, varid, seasonid=None, region=None, aux=None):
-      filetable1, filetable2 = self.getfts(model, obs)
 
       plot_spec.__init__(self, seasonid)
 
-      self._var_baseid = '_'.join([varid, 'set9'])
-      ft1id,ft2id = filetable_ids(filetable1,filetable2)
-      self.plot1_id = ft1id+'_'+varid
-      if filetable2 is not None:
-         self.plot2_id = ft2id+'_'+varid
-         self.plot3_id = ft1id+' - '+ft2id+'_'+varid
-         self.plotall_id = ft1id+'_'+ft2id+'_'+varid
+      if seasonid == None:
+         print 'Season required for this plot set'
+         return
+
+      if seasonid == 'ANN':
+         self.season = cdutil.times.Seasons('JFMAMJJASOND')
       else:
-         self.plot2_id = None
-         self.plot3_id = None
-         self.plotall_id = None
+         self.season = cdutil.times.Seasons(seasonid)
+
+      self._var_baseid = '_'.join([varid, 'set9'])
+
       self.seasons = ['DJF', 'MAM', 'JJA', 'SON', 'ANN']
+
+      self.plottype = 'Isofill'
 
       if not self.computation_planned:
          self.plan_computation(model, obs, varid, seasonid, region, aux)
@@ -2285,10 +2341,99 @@ class lmwg_plot_set9(lmwg_plot_spec):
       return vlist
 
    def plan_computation(self, model, obs, varid, seasonid, region, aux=None):
-      filetable1, filetable2 = self.getfts(model, obs)
-      if varid == 'RMSE':
-         v = aux
+      
+      model_dict = make_ft_dict(model)
 
+      num_obs = len(obs)
+      num_models = len(model_dict.keys())
+
+      num_fts = num_obs + num_models
+
+      obs0 = None
+      obs1 = None
+      raw0 = None
+      raw1 = None
+      climo0 = None
+      climo1 = None
+
+      if num_fts < 3:
+         print 'This requires two models (%d supplied) and at least one obs set (%d supplied).' % (num_models, num_obs)
+         return
+
+      raw0 = model_dict[model_dict.keys()[0]]['raw']
+      climo0 = model_dict[model_dict.keys()[0]]['climos']
+      raw1 = model_dict[model_dict.keys()[1]]['raw']
+      climo1 = model_dict[model_dict.keys()[1]]['climos']
+
+      if num_obs == 1:
+         obs0 = obs[0]
+
+      if num_obs == 2:
+         obs0 = obs[0]
+         obs1 = obs[1]
+      # This one always has 3 plots, assuming num_models==2 and num_obs >= 1
+
+      # Actual variable passed in via varopts. 
+
+      if 'Seasonal' in varid:
+         pass
+
+      elif 'Table' in varid:
+         pass
+      else:
+         if 'RMSE' in varid:
+            fn = 'RMSE'
+            mapfunc = rmse_map
+            redfunc = rmse
+         elif 'Standard' in varid:
+            fn = 'STDDEV'
+            mapfunc = stddev_map
+            redfunc = stddev
+         else:
+            fn = 'CORR'
+            mapfunc = correlation_map
+            redfunc = correlation
+
+         self.composite_plotspecs[fn] = []
+         ft = (climo0 if climo0 is not None else raw0)
+         ft2 = (climo1 if climo1 is not None else raw1)
+         if aux == 'TSA':
+            name1 = 'TSA_'+fn+'_1'
+            name2 = 'TSA_'+fn+'_2'
+            namemap = 'TSA_'+fn+'_MAP'
+            self.reduced_variables[name1] = reduced_variable(variableid = aux,
+               filetable = ft,
+               reduced_var_id = name1,
+               reduction_function = (lambda x, vid: redfunc(x, self.season, vid)))
+            self.reduced_variables[name2] = reduced_variable(variableid = aux,
+               filetable = ft2,
+               reduced_var_id = name2,
+               reduction_function = (lambda x, vid: redfunc(x, self.season, vid)))
+
+         else:
+            if aux == 'PREC':
+               name1 = 'PREC_'+fn+'_1'
+               name2 = 'PREC_'+fn+'_2'
+               namemap = 'PREC_'+fn+'_MAP'
+               self.reduced_variables[name1] = prec_redvar(ft, fn, season=self.season, obs_ft = obs0)
+               self.reduced_variables[name2] = prec_redvar(ft2, fn, season=self.season, obs_ft = obs0)
+            else:
+               name1 = 'ASA'+fn+'_1'
+               name2 = 'ASA'+fn+'_2'
+               namemap = 'ASA'+fn+'_MAP'
+               if raw0 != None and raw1 != None:
+                  self.reduced_variables[name1] = albedos_redvar(raw0, fn, self.albedos['ASA'], season=self.season, obs_ft = obs0)
+                  self.reduced_variables[name2] = albedos_redvar(raw1, fn, self.albedos['ASA'], season=self.season, obs_ft = obs0)
+               else:
+                  print 'All sky albedos requires raw data'
+                  return
+
+
+         self.single_plotspecs[name1] = plotspec( vid=name1, zfunc = (lambda z:z), plottype = self.plottype)
+         self.single_plotspecs[name2] = plotspec( vid=name2, zfunc = (lambda z:z), plottype = self.plottype)
+         self.single_plotspecs[namemap] = plotspec( vid=namemap, zfunc = mapfunc,
+            zvars = [name1, name2], plottype = self.plottype)
+         self.composite_plotspecs[fn] = [name1, name2, namemap]
 
 
 ###############################################################################
