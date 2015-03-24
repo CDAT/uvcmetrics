@@ -1007,7 +1007,7 @@ class plot_spec(object):
             vars = []
             zlab=""
             z2lab=""
-            if zax is not None and len(zax.data)>0:
+            if zax is not None and len(getattr(zax,'data',[None]))>0:  # a tuple always passes
                 if hasattr(zax,'regridded') and newgrid!=0:
                     vars.append( regridded_vars[zax.regridded] )
                 else:
