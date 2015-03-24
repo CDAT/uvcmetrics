@@ -18,7 +18,8 @@ import cdutil.times, numpy, pdb
 
 # The following two functions were originally in plot set 4, but I moved them out because they
 # are needed also for plot set 1.
-def reduced_variables_press_lev( filetable, varid, season, region='Global', filefilter=None, rf=None, RF1=None, RF2=None ):
+def reduced_variables_press_lev( filetable, varid, season, region='Global', filefilter=None, rf=None,
+                                 RF1=reduce2lat_seasonal, RF2=reduce2levlat_seasonal ):
     """Returns a dictionary of a reduced variable for the specified variable id (string) and season
     using the supplied filetable.  The variable must have a level axis using pressure coordinates.
     The reduction function may be supplied as rf but will default to that used in AMWG plot set 4.
@@ -38,7 +39,8 @@ def reduced_variables_press_lev( filetable, varid, season, region='Global', file
             reduction_function=rf ) ]
     reduced_variables = { v.id():v for v in reduced_varlis }
     return reduced_variables
-def reduced_variables_hybrid_lev( filetable, varid, season, region='Global', filefilter=None, rf=None, rf_PS=None, RF1=None, RF2=None ):
+def reduced_variables_hybrid_lev( filetable, varid, season, region='Global', filefilter=None, rf=None,
+                                  rf_PS=None, RF1=reduce2lat_seasonal, RF2=reduce2levlat_seasonal ):
     """Returns a dictionary of reduced variables needed for the specified variable id (string) and
     season using the supplied filetable.  The variable must have a level axis using hybrid coordinates.
     Some of the reduction functions may be supplied but will default to that used in AMWG plot set 4:
@@ -329,11 +331,14 @@ class amwg_plot_set1(amwg_plot_spec):
             else:
                 # It's a more complicated calculation, which we can treat as a derived variable.
                 # If it's a standard_variable, we know how to do it...
-                vid,rvs,dvs = amwg_plot_spec.stdvar2var(
-                    self.var, filetable, self.season, reduction_function=\
-                        (lambda x,vid=None,season=self.season,dom0=domrange[0],dom1=domrange[1],gw=gw:
-                             reduce2scalar_seasonal_zonal(
-                            x,season,latmin=dom0,latmax=dom1,vid=vid,gw=gw) ))
+                try:
+                    vid,rvs,dvs = amwg_plot_spec.stdvar2var(
+                        self.var, filetable, self.season, reduction_function=\
+                            (lambda x,vid=None,season=self.season,dom0=domrange[0],dom1=domrange[1],gw=gw:
+                                 reduce2scalar_seasonal_zonal(
+                                x,season,latmin=dom0,latmax=dom1,vid=vid,gw=gw) ))
+                except DiagError as e:
+                    vid = None
                 if vid is None:
                     print "cannot compute mean for",self.var,filetable
                     return -999.000     # In the NCAR table, this number means 'None'.
