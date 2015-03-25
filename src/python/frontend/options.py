@@ -594,49 +594,11 @@ class Options():
       if(args.sets != None):
          self._opts['sets'] = args.sets
 
-      # check for some varopts first.
-      if(args.varopts != None):
-         self._opts['varopts'] = args.varopts
-      # Add some hackery here to convert pressure level vars to var+varopts
+      # TODO: Check against an actual list of variables from the set
       if args.vars != None:
          self._opts['vars'] = args.vars
       if(args.varopts != None):
          self._opts['varopts'] = args.varopts
-
-         vpl = ['Z3_300', 'Z3_500', 'U_200', 'T_200', 'T_850']
-         vl = list(set(args.vars) - set(vpl))
-         if vl == args.vars: # no pressure level vars made it this far.
-            print 'No pressure level vars found in input vars list.'
-         else: # more complicated....
-            print 'Pressure level vars found in input vars list.... Processing....'
-            vopts = []
-            if self._opts['varopts'] != [] and self._opts['varopts'] != None: # hopefully the user didn't also specify varopts....
-               print 'User passed in varopts but there are pressure-level variables in the vars list.'
-               print 'This will append the pressure levels found to the varopts array'
-               # see which pressure level vars were passed. this will be the super set of pressure levels.
-            if 'Z3_300' in self._opts['vars']:
-               vopts.append('300')
-               self._opts['vars'] = [x.replace('Z3_300','Z3') for x in self._opts['vars']]
-            if 'Z3_500' in self._opts['vars']:
-               vopts.append('500')
-               self._opts['vars'] = [x.replace('Z3_500','Z3') for x in self._opts['vars']]
-            if 'T_200' in self._opts['vars']:
-               vopts.append('200')
-               self._opts['vars'] = [x.replace('T_200','T') for x in self._opts['vars']]
-            if 'T_850' in self._opts['vars']:
-               vopts.append('850')
-               self._opts['vars'] = [x.replace('T_850','T') for x in self._opts['vars']]
-            if 'U_200' in self._opts['vars']:
-               vopts.append('200')
-               self._opts['vars'] = [x.replace('U_200', 'U') for x in self._opts['vars']]
-            vopts = list(set(vopts))
-            if self._opts['varopts'] == [] or self._opts['varopts'] == None:
-               self._opts['varopts'] = vopts
-            else:
-               self._opts['varopts'].extend(vopts)
-               self._opts['varopts'] = list(set(self._opts['varopts']))
-            print 'Updated vars list: ', self._opts['vars']
-            
 
       # If --yearly is set, then we will add 'ANN' to the list of climatologies
       if(args.yearly == True):
