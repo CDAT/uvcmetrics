@@ -6,6 +6,10 @@ def uncompress_fisccp1( fisccp1, isccp_prs, isccp_tau ):
     The resulting variable, CLISCCP, is returned.
     """
     # Charles Doutriaux told me how to use reshape, setAxisList, etc. Any errors are mine. (JfP)
+    if fisccp1.units=='mixed':
+        # stupid data problem
+        print "WARNING, units of",fisccp1.id,"are mixed, which is nonsense!  Please fix your data."
+        fisccp1.units = '1'
     axes = list(fisccp1.getAxisList())
     alen = [len(ax) for ax in axes]
     aid = [ax.id for ax in axes]

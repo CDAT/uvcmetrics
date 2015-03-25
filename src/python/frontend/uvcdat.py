@@ -200,6 +200,7 @@ class uvc_simple_plotspec():
     # Isofill is a contour plot.  To make it polar, set projection=polar.  I'll
     # probably communicate that by passing a name "Isofill_polar".
     def __init__( self, pvars, presentation, labels=[], title='', source='', ranges=None, overplotline=False):
+
         pvars = [v for v in pvars if v is not None]
         # ... Maybe something else is broken to let None get into pvars.
         if len(pvars)<=0:
@@ -237,7 +238,7 @@ class uvc_simple_plotspec():
         else:
             self.presentation = presentation
         ## elif presentation == "":
-        ##     self.resentation = vcsx.create
+        ##     self.presentation = vcsx.create
         self.vars = pvars # vars[i] is either a cdms2 variable or a tuple of variables
         self.labels = labels
         self.title = title
@@ -246,6 +247,7 @@ class uvc_simple_plotspec():
         self.ptype = ptype
         self.ranges = ranges
         self.overplotline = overplotline
+
         # Initial ranges - may later be changed to coordinate with related plots:
         # For each variable named 'v', the i-th member of self.vars, (most often there is just one),
         # varmax[v] is the maximum value of v, varmin[v] is the minimum value of v,
@@ -273,18 +275,19 @@ class uvc_simple_plotspec():
                 # prime meridian in a lat-lon plot.  You get all the data, but ax.bounds[0][0] is a better
                 # lower bound than ax[0], and ax.bounds[-1][1] than ax[-1] (for example).  But also that's
                 # more complicated and buys you little, so it can be done later.
-                self.varmax[seqgetattr(var,'id','')] = var.max()
-                self.varmin[seqgetattr(var,'id','')] = var.min()
-                self.axmax[seqgetattr(var,'id','')]  = { ax[0].id:max(ax[0][:]) for ax in var.getDomain()[:]
-                                        if ax is not None }
-                self.axmin[seqgetattr(var,'id','')]  = { ax[0].id:min(ax[0][:]) for ax in var.getDomain()[:]
-                                        if ax is not None}
-                # The 'axis' attribute of an axis is typically X or Y and tells you where the axis
-                # goes in a plot.  It it's not there, we'll decide later.
-                self.axax[seqgetattr(var,'id','')]  = {
-                    ax[0].id:(ax[0].axis if hasattr(ax[0],'axis')\
-                                  else ax[0].id)
-                    for ax in var.getDomain()[:] if ax is not None
+                if len(var)>0:
+                    self.varmax[seqgetattr(var,'id','')] = var.max()
+                    self.varmin[seqgetattr(var,'id','')] = var.min()
+                    self.axmax[seqgetattr(var,'id','')]  = { ax[0].id:max(ax[0][:]) for ax in var.getDomain()[:]
+                                            if ax is not None }
+                    self.axmin[seqgetattr(var,'id','')]  = { ax[0].id:min(ax[0][:]) for ax in var.getDomain()[:]
+                                            if ax is not None}
+                    # The 'axis' attribute of an axis is typically X or Y and tells you where the axis
+                    # goes in a plot.  It it's not there, we'll decide later.
+                    self.axax[seqgetattr(var,'id','')]  = {
+                        ax[0].id:(ax[0].axis if hasattr(ax[0],'axis')\
+                                      else ax[0].id)
+                        for ax in var.getDomain()[:] if ax is not None
                     }
         self.finalized = False
     def make_ranges(self, var):
@@ -311,7 +314,10 @@ class uvc_simple_plotspec():
                     VAR = var
             except:
                 VAR = var
-            yrange = [ VAR.min(), VAR.max()]
+            if len(VAR)>0:
+                yrange = [ VAR.min(), VAR.max()]
+            else:
+                yrange = [ None, None ]
         return xrange, yrange    
         
     def finalize( self, flip_x=False, flip_y=False ):
@@ -325,9 +331,9 @@ class uvc_simple_plotspec():
         #        self.presentation.__class__.__name__=="Gfi":
         # interim test here and below.  Once all the is* functions work, I should
         # drop the tests on self.presentation.__class__.__name__ :
+        #pdb.set_trace()
         if vcs.isscatter(self.presentation):
-            ylabel, xlabel = string.split(self.title, ' vs ')
-            #pdb.set_trace()
+            #ylabel, xlabel = string.split(self.title, ' vs ')
             #in the case of scatter plots there are 2 variables packed together
             var = self.vars[0]
             [xMIN, xMAX], [yMIN, yMAX] = self.make_ranges(var)
@@ -338,7 +344,7 @@ class uvc_simple_plotspec():
             self.presentation.xticlabels1 = vcs.mklabels(vcs.mkscale(xMIN, xMAX))
             self.presentation.datawc_x1 = xMIN
             self.presentation.datawc_x2 = xMAX
-            self.presentation.xticlabels2 = {(xMIN+xMAX)/2.: xlabel}
+            #self.presentation.xticlabels2 = {(xMIN+xMAX)/2.: xlabel}
             if flip_y:
                 self.presentation.datawc_y2 = yMIN
                 self.presentation.datawc_y1 = yMAX
@@ -347,15 +353,17 @@ class uvc_simple_plotspec():
                 self.presentation.datawc_y1 = yMIN
                 self.presentation.datawc_y2 = yMAX   
             self.presentation.yticlabels1 = vcs.mklabels(vcs.mkscale(yMIN, yMAX))
-            self.presentation.yticlabels2 = {(yMIN+yMAX)/2.: ylabel}
+            #self.presentation.yticlabels2 = {(yMIN+yMAX)/2.: ylabel}
             self.presentation.linewidth = 0
             self.presentation.markercolor = 1
-            self.presentation.markersize = 5
+            self.presentation.markersize = 10
             #add overplotline is a total kludge
             self.presentation.overplotline = self.overplotline
             if flip_y:
                 self.presentation.flip = True
-            #self.presentation.list()              
+            #self.presentation.list()   
+            #pdb.set_trace()
+    
         elif vcs.isyxvsx(self.presentation) or\
                 vcs.isisofill(self.presentation) or\
                 vcs.isboxfill(self.presentation) or\
@@ -401,7 +409,7 @@ class uvc_simple_plotspec():
             if vcs.isisofill(self.presentation) or self.presentation.__class__.__name__=="Gfi"\
                     or vcs.isboxfill(self.presentation):
                 # VCS Isofill or Boxfill
-
+                #pdb.set_trace()
                 # First we have to identify which axes will be plotted as X and Y.
                 # If the axes each had an 'axis' attribute, axaxi will look something like
                 # {'X':'axis1id', 'Y':'axis2id'}.  If one misses the attribute, 'axis0id':'axis0id'.
@@ -413,9 +421,12 @@ class uvc_simple_plotspec():
                     axx = axaxi['Y']
                     axy = axaxi['Z']
                 #added case of time vs variable
-                elif 'T' in axaxi.keys() and 'Y' in axaxi.keys():
+                elif 'T' in axaxi.keys() and ('Y' in axaxi.keys() or 'Z' in axaxi.keys()):
                     axx = axaxi['T']
-                    axy = axaxi['Y']
+                    if 'Y' in axaxi.keys():
+                        axy = axaxi['Y']
+                    else:
+                        axy = axaxi['Z']
                     if axx == 'time':
                         t=var.getTime()
                         if 'units' in dir(t) and t.units == "months since 1800":
@@ -426,6 +437,7 @@ class uvc_simple_plotspec():
                                 time_lables[v] = months_names[tc[i].month-1]
                             self.presentation.xticlabels1 = time_lables
                             self.presentation.datawc_timeunits = t.units
+                            #pdb.set_trace()
                             #self.presentation.list()
                 elif len(axaxi.keys())==2:
                     # It's not clear what should be the X variable and what the Y variable,
@@ -434,7 +446,7 @@ class uvc_simple_plotspec():
                     axy = None
                     for axetc in var.getDomain()[:]:
                         ax = axetc[0]
-                        if getattr(ax,'units',None)=='mbar':
+                        if getattr(ax,'units',None) in ['mbar', 'millibars']:
                             # probably pressure levels, a vertical axis
                             axy = ax.id
                         else:
@@ -468,6 +480,7 @@ class uvc_simple_plotspec():
                 if vcs.isboxfill(self.presentation):
                     self.presentation.boxfill_type = 'custom'  # without this, can't set levels
                 nlevels = 16
+
                 try:
                     levels = [float(v) for v in vcs.mkscale( varmin, varmax, nlevels )]
                     # Exceptions occur because mkscale doesn't always work.  E.g. vcs.mkscale(0,1.e35,16)
@@ -501,6 +514,8 @@ class uvc_simple_plotspec():
                 if levels is not None and len(levels)>0:
                     self.presentation.levels = levels
                 #nlevels = max(1, len(levels) - 1)
+                #self.presentation.list()
+ 
                 #nlrange = range(nlevels+1)
                 #nlrange.reverse()
                 #self.presentation.legend = vcs.mklabels( self.presentation.levels )
@@ -552,6 +567,77 @@ class uvc_simple_plotspec():
                 #self.strideY = int( 0.6* vcsx.bgY/nlats )
                 self.strideX = max(1, int( nlons/nlonvs )) # stride values must be at least 1
                 self.strideY = max(1, int( nlats/nlatvs ))
+        elif vcs.istaylordiagram(self.presentation):
+            #pdb.set_trace()
+            data = self.vars[0]
+            
+            #intercept the bias to be used as markersize
+            markersizes = data.bias
+            markerids   = data.IDs
+            self.vars[0].__delattr__('IDs')
+            self.vars[0].__delattr__('bias')
+            #print markersizes
+            #print self.vars
+            
+            #setup the markersize and colors
+            MAX = max(markersizes)
+            MIN = min(markersizes)
+            scale = vcs.mkscale(MIN, MAX)
+            #labels = vcs.mklabels(scale)
+            colorScale = vcs.getcolors(scale, split=False)
+            sizes = range(10, 10+len(colorScale))
+                            
+            dotsizes = []
+            dotcolors = []
+            
+            #determine dot size and color
+            for size in markersizes:
+                for index in range(0, len(scale)-1):
+                    low, high = scale[index], scale[index+1]
+                    if low <= size and size < high:
+                        dotsizes +=  [sizes[index]]
+                        dotcolors += [colorScale[index]]
+                        #print dotsizes
+                        #print dotcolors
+                        break        
+
+            #determine the identifier for the legend
+            IDs = []
+            for ID in markerids:
+                s = ID.split('___')
+                #print s
+                mid = s[1]+'_'
+                for e in s[5:]:
+                    mid += e + '_'
+                IDs += [mid]
+            #this is a total hack! I have no other way of getting this info
+            #out to the plot
+            self.legendTitles = IDs
+            
+            index = []
+            for i in range(len(markersizes)):
+                index += [str(i)]    
+            self.presentation.Marker.size = dotsizes          
+            self.presentation.Marker.color = dotcolors 
+            #self.presentation.IDs = IDs
+            self.presentation.Marker.id = index
+            #pdb.set_trace()
+            
+            #create list of offsets
+            XOFF = data[:,0]
+            YOFF = data[:,1]
+            if type(XOFF) is float:
+                XOFF = [XOFF]
+                YOFF = [YOFF]
+            else:
+                XOFF = XOFF.tolist()
+                YOFF = YOFF.tolist()
+            self.presentation.Marker.xoffset = XOFF
+            self.presentation.Marker.yoffset = YOFF
+            self.presentation.Marker.id_size = len(markersizes)*[20]
+
+            #self.presentation.list()
+            
         else:
             print "ERROR cannot identify graphics method",self.presentation.__class__.__name__
 
@@ -684,7 +770,7 @@ class uvc_simple_plotspec():
     def outfile( self, format="", where="" ):
         """returns a filename for writing out this plot"""
         if len(self.title)<=0:
-            fname = 'foo'
+            fname = 'foo.nc'
         else:
             fname = '_'.join([self.title.strip(),self.source]).replace(' ','_').replace('/','_') + '.nc'
         filename = os.path.join(where,fname)
@@ -714,6 +800,7 @@ class uvc_simple_plotspec():
         writer.source = "UV-CDAT Diagnostics"
         writer.presentation = self.ptype
         plot_these = []
+
         for zax in self.vars:
             writer.write( zax )
             plot_these.append( str(seqgetattr(zax,'id','')) )
@@ -826,6 +913,30 @@ class plot_spec(object):
         return self.results(newgrid)
     def results(self,newgrid=0):
         return self._results(newgrid)
+
+    def getfts(self, model, obs):
+        if len(model) == 2:
+#           print 'Two models'
+           filetable1 = model[0]
+           filetable2 = model[1]
+        if len(model) == 1 and len(obs) == 1:
+#           print 'Model and Obs'
+            filetable1 = model[0]
+            filetable2 = obs[0]
+        if len(obs) == 2: # seems unlikely but whatever
+#           print 'Two obs'
+           filetable1 = obs[0]
+           filetable2 = obs[1]
+        if len(model) == 1 and (obs != None and len(obs) == 0):
+#           print 'Model only'
+           filetable1 = model[0]
+           filetable2 = None
+        if len(obs) == 1 and (model != None and len(model) == 0): #also unlikely
+#           print 'Obs only'
+           filetable1 = obs[0]
+           filetable2 = None
+        return filetable1, filetable2
+
 # To profile, replace (by name changes) the above results() with the following one:
     def profiled_results(self,newgrid=0):
         if newgrid!=0:
@@ -839,25 +950,48 @@ class plot_spec(object):
         that means a coarser grid, typically from regridding model data to the obs grid.
         In the future regrid>0 will mean regrid everything to the finest grid and regrid<0
         will mean regrid everything to the coarsest grid."""
+
         for v in self.reduced_variables.keys():
+            #print v
             value = self.reduced_variables[v].reduce(None)
+            try:
+                if  len(value.data)<=0:
+                    print "ERROR no data for",v
+            except: # value.data may not exist, or may not accept len()
+                try:
+                    if value.size<=0:
+                        print "ERROR no data for",v
+                except: # value.size may not exist
+                    pass
             self.variable_values[v] = value  # could be None
+            #print value.id, value.shape
+            #pdb.set_trace()
         postponed = []   # derived variables we won't do right away
+
+        #print 'derived var'
         for v in self.derived_variables.keys():
+            #pdb.set_trace()
+            #print v
             value = self.derived_variables[v].derive(self.variable_values)
+            #print value.id, value.shape
             if value is None:
                 # couldn't compute v - probably it depends on another derived variables which
                 # hasn't been computed yet
                 postponed.append(v)
             else:
                 self.variable_values[v] = value
+        
+        #print 'postponed', postponed
         for v in postponed:   # Finish up with derived variables
+            #print v
             value = self.derived_variables[v].derive(self.variable_values)
+            #print value.id, value.shape
             self.variable_values[v] = value  # could be None
         varvals = self.variable_values
-        #pdb.set_trace()
+        
         for p,ps in self.single_plotspecs.iteritems():
             print "uvcdat preparing data for",ps._strid, ps.plottype
+            #pdb.set_trace()
             try:
                 zax,zrv  = self.compute_plot_var_value( ps, ps.zvars, ps.zfunc )
                 z2ax,z2rv = self.compute_plot_var_value( ps, ps.z2vars, ps.z2func )
@@ -873,7 +1007,7 @@ class plot_spec(object):
             vars = []
             zlab=""
             z2lab=""
-            if zax is not None:
+            if zax is not None and len(getattr(zax,'data',[None]))>0:  # a tuple always passes
                 if hasattr(zax,'regridded') and newgrid!=0:
                     vars.append( regridded_vars[zax.regridded] )
                 else:

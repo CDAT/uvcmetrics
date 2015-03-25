@@ -154,26 +154,25 @@ class LMWG(BasicDiagnosticGroup):
     #at some point. I would very much like to drop the "sets" baggage 
     #from NCAR and define properties of diags. Then, "sets" could be
     #very simple descriptions involving highly reusable components.
-    
     def __init__(self):
         pass
       
-    def list_variables( self, filetable1, filetable2=None, diagnostic_set_name="" ):
+    def list_variables( self, model, obs, diagnostic_set_name="" ):
         if diagnostic_set_name!="":
             dset = self.list_diagnostic_sets().get( str(diagnostic_set_name), None )
             if dset is None:
-                return self._list_variables( filetable1, filetable2 )
+                return self._list_variables( model, obs )
             else:   # Note that dset is a class not an object.
-                return dset._list_variables( filetable1, filetable2 )
+                return dset._list_variables( model, obs )
         else:
-            return self._list_variables( filetable1, filetable2 )
+            return self._list_variables( model, obs )
     @staticmethod
-    def _list_variables( filetable1, filetable2=None, diagnostic_set_name="" ):
-        return BasicDiagnosticGroup._list_variables( filetable1, filetable2, diagnostic_set_name )
+    def _list_variables( model, obs , diagnostic_set_name="" ):
+        return BasicDiagnosticGroup._list_variables( model, obs, diagnostic_set_name )
 
     @staticmethod
-    def _all_variables( filetable1, filetable2, diagnostic_set_name ):
-        return BasicDiagnosticGroup._all_variables( filetable1, filetable2, diagnostic_set_name )
+    def _all_variables( model, obs, diagnostic_set_name ):
+        return BasicDiagnosticGroup._all_variables( model, obs, diagnostic_set_name )
 
     def list_diagnostic_sets( self ):
         psets = lmwg_plot_spec.__subclasses__()
@@ -187,11 +186,11 @@ class lmwg_plot_spec(plot_spec):
     package = LMWG  # Note that this is a class not an object.. 
     albedos = {'VBSA':['FSRVDLN', 'FSDSVDLN'], 'NBSA':['FSRNDLN', 'FSDSNDLN'], 'VWSA':['FSRVI', 'FSDSVI'], 'NWSA':['FSRNI', 'FSDSNI'], 'ASA':['FSR', 'FSDS']}
     @staticmethod
-    def _list_variables( filetable1, filetable2=None ):
-        return lmwg_plot_spec.package._list_variables( filetable1, filetable2, "lmwg_plot_spec" )
+    def _list_variables( model, obs ):
+        return lmwg_plot_spec.package._list_variables( model, obs, "lmwg_plot_spec" )
     @staticmethod
-    def _all_variables( filetable1, filetable2=None ):
-        return lmwg_plot_spec.package._all_variables( filetable1, filetable2, "lmwg_plot_spec" )
+    def _all_variables( model, obs ):
+        return lmwg_plot_spec.package._all_variables( model, obs, "lmwg_plot_spec" )
 
 
 ###############################################################################
@@ -222,11 +221,17 @@ class lmwg_plot_set1(lmwg_plot_spec):
    ### These are special cased since they have 10 levels plotted. However, they are not "derived" per se.
    _level_vars = ['SOILLIQ', 'SOILICE', 'SOILPSI', 'TSOI']
 
-   def __init__(self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None):
+   def __init__(self, model, obs, varid, seasonid=None, region=None, aux=None):
       plot_spec.__init__(self,seasonid)
       self.plottype = 'Yxvsx'
 
+      # This is step 1 - just take the two arrays of datasets, but only support 2 total.
+      # Step 2 will be to support >2 filetables as appropriate
+      # Assume some previous step has ensured len(model)+len(obs) <= 2
+      filetable1, filetable2 = self.getfts(model, obs)
+
       self._var_baseid = '_'.join([varid, 'set1'])
+
       ft1id,ft2id = filetable_ids(filetable1,filetable2)
       self.plot1_id = ft1id+'_'+varid
       if filetable2 is not None:
@@ -237,27 +242,29 @@ class lmwg_plot_set1(lmwg_plot_spec):
 
       self.seasons = ['ANN']
       if not self.computation_planned:
-         self.plan_computation(filetable1, filetable2, varid, seasonid, region, aux)
+         self.plan_computation(model, obs, varid, seasonid, region, aux)
 
    @staticmethod
-   def _list_variables(filetable1, filetable2=None):
-      filevars = lmwg_plot_set1._all_variables(filetable1, filetable2)
+   def _list_variables(model, obs):
+      filevars = lmwg_plot_set1._all_variables(model, obs)
       allvars = filevars
       listvars = allvars.keys()
       listvars.sort()
       return listvars
 
    @staticmethod
-   def _all_variables(filetable1, filetable2=None):
-      allvars = lmwg_plot_spec.package._all_variables(filetable1, filetable2, "lmwg_plot_spec")
+   def _all_variables(model, obs):
+      allvars = lmwg_plot_spec.package._all_variables(model, obs, "lmwg_plot_spec")
       for dv in lmwg_plot_set1._derived_varnames:
          allvars[dv] = basic_plot_variable
-         if filetable2 != None:
-            if dv not in filetable2.list_variables():
+         if len(obs) == 1: ## Need to re-evaluate this, probably inside allvars?
+            if dv not in obs[1].list_variables():
                del allvars[dv]
       return allvars
 
-   def plan_computation(self, filetable1, filetable2, varid, seasonid, region=None, aux=None):
+   def plan_computation(self, model, obs, varid, seasonid, region=None, aux=None):
+      filetable1, filetable2 = self.getfts(model, obs)
+
       self.reduced_variables = {}
       self.derived_variables = {}
       # No need for a separate function just use global. 
@@ -414,8 +421,11 @@ class lmwg_plot_set2(lmwg_plot_spec):
    _derived_varnames = ['EVAPFRAC', 'PREC', 'TOTRUNOFF', 'LHEAT', 'P-E', 'ASA', 'VBSA', 'NBSA', 'VWSA', 'NWSA', 'RNET']
    _level_vars = ['TLAKE', 'SOILLIQ', 'SOILICE', 'H2OSOI', 'TSOI']
    _level_varnames = [x+y for y in ['(1)', '(5)', '(10)'] for x in _level_vars]
-   def __init__( self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None):
-      """filetable1, filetable2 should be filetables for two datasets for now. Need to figure
+   def __init__( self, model, obs, varid, seasonid=None, region=None, aux=None):
+
+      filetable1, filetable2 = self.getfts(model, obs)
+
+      """ftlist should be filetables for two datasets for now. Need to figure
       out obs data stuff for lmwg at some point
       varid is a string identifying the variable to be plotted, e.g. 'TREFHT'.
       seasonid is a string such as 'DJF'."""
@@ -428,6 +438,7 @@ class lmwg_plot_set2(lmwg_plot_spec):
 
       self.seasons = ['ANN', 'DJF', 'MAM', 'JJA', 'SON']
       self._var_baseid = '_'.join([varid,'set2'])   # e.g. TREFHT_set2
+
       ft1id,ft2id = filetable_ids(filetable1,filetable2)
       self.plot1_id = ft1id+'_'+varid+'_'+seasonid
       if(filetable2 != None):
@@ -438,31 +449,31 @@ class lmwg_plot_set2(lmwg_plot_spec):
          self.plotall_id = filetable1._strid+'__'+varid+'_'+seasonid # must differ from plot1_id
 
       if not self.computation_planned:
-         self.plan_computation( filetable1, filetable2, varid, seasonid, region, aux )
+         self.plan_computation( model, obs, varid, seasonid, region, aux )
 
    @staticmethod
-   def _list_variables( filetable1, filetable2=None ):
-      filevars = lmwg_plot_set2._all_variables( filetable1, filetable2 )
+   def _list_variables( model, obs ):
+      filevars = lmwg_plot_set2._all_variables( model, obs )
       allvars = filevars
       listvars = allvars.keys()
       listvars.sort()
       return listvars
 
    @staticmethod
-   def _all_variables( filetable1, filetable2=None ):
-      allvars = lmwg_plot_spec.package._all_variables( filetable1, filetable2, "lmwg_plot_spec" )
+   def _all_variables( model, obs ):
+      allvars = lmwg_plot_spec.package._all_variables( model, obs, "lmwg_plot_spec" )
 
       ### TODO: Fix variable list based on filetable2 after adding derived/level vars
       for dv in lmwg_plot_set2._derived_varnames:
          allvars[dv] = basic_plot_variable
-         if filetable2 != None:
-            if dv not in filetable2.list_variables():
+         if len(obs) == 1:
+            if dv not in obs[0].list_variables():
                del allvars[dv]
 
       for dv in lmwg_plot_set2._level_varnames:
          allvars[dv] = basic_plot_variable
-         if filetable2 != None:
-            if dv not in filetable2.list_variables():
+         if len(obs) == 1:
+            if dv not in obs[0].list_variables():
                del allvars[dv]
 
       # Only the 1/5/10 levels are in the varlist, so remove the levelvars
@@ -473,9 +484,11 @@ class lmwg_plot_set2(lmwg_plot_spec):
       return allvars
 
    # This seems like variables should be a dictionary... Varname, components, operation, units, etc
-   def plan_computation( self, filetable1, filetable2, varid, seasonid, region=None, aux=None):
+   def plan_computation( self, model, obs, varid, seasonid, region=None, aux=None):
 #      if filetable2 != None:
 #         print 'SET 2 ASSUMES SECOND DATASET IS OBSERVATION FOR NOW'
+      filetable1, filetable2 = self.getfts(model, obs)
+
       self.reduced_variables = {}
       self.derived_variables = {}
       self.single_plotspecs = None
@@ -674,7 +687,9 @@ class lmwg_plot_set2(lmwg_plot_spec):
 class lmwg_plot_set3(lmwg_plot_spec):
    name = '3 - Grouped Line plots of monthly climatology: regional air temperature, precipitation, runoff, snow depth, radiative fluxes, and turbulent fluxes'
    number = '3'
-   def __init__(self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None):
+   def __init__(self, model, obs, varid, seasonid=None, region=None, aux=None):
+      filetable1, filetable2 = self.getfts(model, obs)
+
       plot_spec.__init__(self, seasonid)
       self.plottype = 'Yxvsx'
       self.seasons = defines.all_months
@@ -691,9 +706,9 @@ class lmwg_plot_set3(lmwg_plot_spec):
          self.plot3_id = None
          self.plotall_id = None
       if not self.computation_planned:
-         self.plan_computation(filetable1, filetable2, varid, seasonid, region, aux)
+         self.plan_computation(model, obs, varid, seasonid, region, aux)
    @staticmethod
-   def _list_variables(filetable1=None, filetable2 = None):
+   def _list_variables( model, obs ):
       # conceivably these could be the same names as the composite plot IDs but this is not a problem now.
       # see _results() for what I'm getting at
       varlist = ['Total_Precip_Runoff_SnowDepth', 'Radiative_Fluxes', 'Turbulent_Fluxes', 'Carbon_Nitrogen_Fluxes',
@@ -703,11 +718,12 @@ class lmwg_plot_set3(lmwg_plot_spec):
    @staticmethod
    # given the list_vars list above, I don't understand why this is here, or why it is listing what it is....
    # but, being consistent with amwg2
-   def _all_variables(filetable1=None,filetable2=None):
-      vlist = {vn:basic_plot_variable for vn in lmwg_plot_set3._list_variables(filetable1, filetable2) }
+   def _all_variables( model, obs ):
+      vlist = {vn:basic_plot_variable for vn in lmwg_plot_set3._list_variables( model, obs ) }
       return vlist
 
-   def plan_computation(self, filetable1, filetable2, varid, seasonid, region, aux):
+   def plan_computation(self, model, obs, varid, seasonid, region, aux):
+      filetable1, filetable2 = self.getfts(model, obs)
       # This is not scalable, but apparently is the way to do things. Fortunately, we only have 9 variables to deal with
       if 'Albedo' in varid:
          self.composite_plotspecs['Albedo_vs_Obs'] = []
@@ -1074,11 +1090,13 @@ class lmwg_plot_set5(lmwg_plot_spec):
 
    # This jsonflag is gross, but Options has always been a 2nd class part of the design. Maybe I'll get to
    # change that for the next release.
-   def __init__( self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None, jsonflag=False):
-      print 'jsonflag passed in: ', jsonflag
+   def __init__( self, model, obs, varid, seasonid=None, region=None, aux=None, jsonflag=False):
+#      print 'jsonflag passed in: ', jsonflag
+      filetable1, filetable2 = self.getfts(model, obs)
+
       plot_spec.__init__(self,seasonid)
       self.jsonflag = jsonflag
-      print 'jsonflag passed in: ', jsonflag
+#      print 'jsonflag passed in: ', jsonflag
       self.plottype = 'Isofill'
       if self._seasonid == 'ANN':
          self.season = cdutil.times.Seasons('JFMAMJJASOND')
@@ -1097,22 +1115,24 @@ class lmwg_plot_set5(lmwg_plot_spec):
          self.plotall_id = filetable1._strid+'_'+varid+'_'+seasonid
 
       if not self.computation_planned:
-         self.plan_computation( filetable1, filetable2, varid, seasonid, region, aux )
+         self.plan_computation( model, obs, varid, seasonid, region, aux )
 
    @staticmethod
-   def _list_variables( filetable1, filetable2=None ):
-      varlist = ['Regional Hydrologic Cycle - Table', 'Global Biogeophysics - Table', 'Global Carbon/Nitrogen - Table']
+   def _list_variables( model, obs ):
+      varlist = ['Regional Hydrologic Cycle', 'Global Biogeophysics', 'Global Carbon/Nitrogen']
       if filetable2 != None:
          varlist.extend( [ 'Regional Hydrologic Cycle - Difference', 'Global Biogeophysics - Difference', 
                  'Global Carbon/Nitrogen - Difference'])
       return varlist
 
    @staticmethod
-   def _all_variables( filetable1, filetable2=None ):
-      vlist = {vn:basic_plot_variable for vn in lmwg_plot_set5._list_variables(filetable1, filetable2) }
+   def _all_variables( model, obs ):
+      vlist = {vn:basic_plot_variable for vn in lmwg_plot_set5._list_variables(model, obs) }
       return vlist
 
-   def plan_computation( self, filetable1, filetable2, varid, seasonid, region=None, aux=None):
+   def plan_computation( self, model, obs, varid, seasonid, region=None, aux=None):
+      filetable1, filetable2 = self.getfts(model, obs)
+
       self.hasregions = 0
       self.twosets = 0
       self.differences = 0
@@ -1410,7 +1430,8 @@ class lmwg_plot_set6(lmwg_plot_spec):
    varlist = []
    name = '6 - Group Line plots of annual trends in regional soil water/ice and temperature, runoff, snow water/ice, photosynthesis'
    number = '6'
-   def __init__(self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None):
+   def __init__(self, model, obs, varid, seasonid=None, region=None, aux=None):
+      filetable1, filetable2 = self.getfts(model, obs)
       plot_spec.__init__(self, seasonid)
       self.plottype = 'Yxvsx'
 
@@ -1429,19 +1450,20 @@ class lmwg_plot_set6(lmwg_plot_spec):
       self.seasons = ['ANN']
 
       if not self.computation_planned:
-         self.plan_computation(filetable1, filetable2, varid, seasonid, region, aux)
+         self.plan_computation(model, obs, varid, seasonid, region, aux)
 
    @staticmethod
-   def _list_variables(filetable1, filetable2 = None):
+   def _list_variables(model, obs):
       varlist = ['Total_Precip', 'Radiative_Fluxes', 'Turbulent_Fluxes', 'Carbon_Nitrogen_Fluxes',
                  'Fire_Fluxes', 'Soil_Temp', 'SoilLiq_Water', 'SoilIce', 'TotalSoilIce_TotalSoilH2O', 'TotalSnowH2O_TotalSnowIce', 'Hydrology']
       return varlist
    @staticmethod
-   def _all_variables(filetable1, filetable2=None):
-      vlist = {vn:basic_plot_variable for vn in lmwg_plot_set6._list_variables(filetable1, filetable2) }
+   def _all_variables(model, obs):
+      vlist = {vn:basic_plot_variable for vn in lmwg_plot_set6._list_variables(model, obs) }
       return vlist
 
-   def plan_computation(self, filetable1, filetable2, varid, seasonid, region, aux=None):
+   def plan_computation(self, model, obs, varid, seasonid, region, aux=None):
+      filetable1, filetable2 = self.getfts(model, obs)
       # None of set6 has obs, so ft2 is/should always be a model set
 
       if varid == 'SoilIce' or varid == 'Soil_Temp' or varid == 'SoilLiq_Water':
@@ -1693,7 +1715,9 @@ class lmwg_plot_set7(lmwg_plot_spec):
 class lmwg_plot_set9(lmwg_plot_spec):
 #   name = '9 - Contour plots and statistics for precipitation and temperature. Statistics include DJF, JJA, and ANN biases, and RMSE, correlation and standard deviation of the annual cycle relative to observations'
    number = '9'
-   def __init__(self, filetable1, filetable2, varid, seasonid=None, region=None, aux=None):
+   def __init__(self, model, obs, varid, seasonid=None, region=None, aux=None):
+      filetable1, filetable2 = self.getfts(model, obs)
+
       plot_spec.__init__(self, seasonid)
 
       self._var_baseid = '_'.join([varid, 'set9'])
@@ -1710,19 +1734,19 @@ class lmwg_plot_set9(lmwg_plot_spec):
       self.seasons = ['DJF', 'MAM', 'JJA', 'SON', 'ANN']
 
       if not self.computation_planned:
-         self.plan_computation(filetable1, filetable2, varid, seasonid, region, aux)
+         self.plan_computation(model, obs, varid, seasonid, region, aux)
 
    @staticmethod
-   def _list_variables(filetable1, filetable2 = None):
+   def _list_variables(model, obs):
       varlist = ['RMSE', 'Seasonal_Bias', 'Correlation', 'Standard_Deviation', 'Tables']
       return varlist
    @staticmethod
-   def _all_variables(filetable1, filetable2=None):
+   def _all_variables(model, obs):
       vlist = {}
       def retvarlist(self):
          return {'TSA':'TSA', 'PREC':'PREC', 'ASA':'ASA'}
 
-      for vn in lmwg_plot_set9._list_variables(filetable1, filetable2):
+      for vn in lmwg_plot_set9._list_variables(model, obs):
          vlist[vn] = basic_plot_variable
          if vn != 'Tables':
             vlist[vn].varoptions = (lambda x: {'TSA':'TSA', 'PREC':'PREC', 'ASA':'ASA'})
@@ -1732,7 +1756,8 @@ class lmwg_plot_set9(lmwg_plot_spec):
          
       return vlist
 
-   def plan_computation(self, filetable1, filetable2, varid, seasonid, region, aux=None):
+   def plan_computation(self, model, obs, varid, seasonid, region, aux=None):
+      filetable1, filetable2 = self.getfts(model, obs)
       if varid == 'RMSE':
          v = aux
 

@@ -48,13 +48,13 @@ all_regions['Central_and_Eastern_Mongolia_and_NE_China'] = rectregion('Central_a
 all_regions['Sahara_Desert_and_Arabian_Peninsula'] = rectregion('Sahara_Desert_and_Arabian_Peninsula',  [15, 30, -15, 60],filekey='NAfrica_Arabia')
 all_regions['Southern_Asia'] = rectregion('Southern_Asia',  [20, 30, 60, 120],  filekey='Southern_Asia')
 all_regions['Tibetan_Plaeau'] = rectregion('Tibetan_Plaeau',  [30, 40, 80, 100],filekey='Tibet')
-all_regions['N._Hemisphere_Land'] = rectregion('N._Hemisphere_Land',  [0, 90, -180, 180],  filekey='N_H_Land')
-all_regions['S._Hemisphere_Land'] = rectregion('S._Hemisphere_Land',  [-90, 0, -180, 180],  filekey='S_H_Land')
+all_regions['N_Hemisphere_Land'] = rectregion('N_Hemisphere_Land',  [0, 90, -180, 180],  filekey='N_H_Land')
+all_regions['S_Hemisphere_Land'] = rectregion('S_Hemisphere_Land',  [-90, 0, -180, 180],  filekey='S_H_Land')
 all_regions['Global'] = rectregion('Global',  [-90, 90, -180, 180],filekey='Global')
-all_regions['global'] = rectregion('global',  [-90,90, -180, 180],filekey='Global')
-all_regions['tropics'] = rectregion('tropics',  [-20,20, -180, 180],filekey='tropics')
-all_regions['southern extratropics'] = rectregion('southern extratropics',  [-90,-20, -180, 180],filekey='S_Extratropics')
-all_regions['northern extratropics'] = rectregion('northern extratropics',  [20,90, -180, 180], filekey='N_Extratropics')
+all_regions['Tropics'] = rectregion('Tropics',  [-20,20, -180, 180],filekey='Tropics')
+all_regions['Southern_Extratropics'] = rectregion('southern_extratropics',  [-90,-20, -180, 180],filekey='S_Extratropics')
+all_regions['Northern_Extratropics'] = rectregion('northern_extratropics',  [20,90, -180, 180], filekey='N_Extratropics')
+all_regions['Southern_Ocean'] = rectregion('Southern_Ocean', [-90, -40, -180, 180], filekey='S_Ocean')
 
 #"User defined'] = {'coords': [0, 0, 0, 0],
 
@@ -72,16 +72,23 @@ region_categories = {
 'Hemispheric and Global': ['Global Land', 'Northern Hemisphere Land', 'Southern Hemisphere Land']
 }
 
+#station ids used in plot set 12
+station_names = ["Ascension_Island","Diego_Garcia","Truk_Island", 
+                "Western_Europe","Ethiopia","Resolute_Canada","Western_Desert_Australia", 
+                "Great_Plains_USA","Central_India","Marshall_Islands","Easter_Island", 
+                "McMurdo_Antarctica","SouthPole_Antarctica","Panama","Western_North_Atlantic",
+                "Singapore","Manila","Gilbert_Islands","Hawaii","San_Paulo","Heard_Island", 
+                "Kagoshima_Japan","Port_Moresby","San_Juan_PR","Western_Alaska", 
+                "Thule_Greenland","SanFrancisco_CA","Denver_CO","London_UK","Crete", 
+                "Tokyo","Sydney_Australia","Christchurch_NZ","Lima_Peru","Miami_FL","Samoa", 
+                "ShipP_GulfofAlaska","ShipC_North_Atlantic","Azores","NewYork_USA",
+                "Darwin_Australia","Christmas_Island","Cocos_Islands","Midway_Island", 
+                "Raoui_Island","Whitehorse_Canada","OklahomaCity_OK","Gibraltor", 
+                "Mexico_City","Recife_Brazil","Nairobi_Kenya","New_Delhi_India", 
+                "Madras_India","DaNang_Vietnam","Yap_Island","Falkland_Islands" ]
 
 all_months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
 all_seasons = all_months+['ANN', 'DJF', 'MAM', 'JJA', 'SON', 'ASO', 'FMA'] # The last 2 were in some obs sets
-
-# I'd like these to move to a packages/defines.py, but the current design
-# doesn't favor that
-#all_packages = ['lmwg', 'amwg']
-#lmwg_sets = []
-#amwg_sets = []
-#lmwg_set1_properties = []
-# ...
+all_packages = ['lmwg', 'amwg']
 
 

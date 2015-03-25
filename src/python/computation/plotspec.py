@@ -5,6 +5,7 @@ from metrics.common import *
 from metrics.common.id import *
 from metrics.packages.diagnostic_groups import *
 from metrics.computation.reductions import *
+from metrics.frontend import *
 import sys, traceback
 
 class derived_var(basic_id):
@@ -55,6 +56,7 @@ class derived_var(basic_id):
         nonevals = [ inp for inp in self._inputs if inpdict.get(inp,None) is None ]
         if len(nonevals)>0:
             print "cannot yet derive",self._id,"because missing inputs",nonevals
+            print "what's available is",inpdict.keys()
             return None
         output = apply( self._func, [ inpdict[inp] for inp in self._inputs ] )
         if type(output) is tuple or type(output) is list:
@@ -365,4 +367,19 @@ class basic_pole_variable(basic_plot_variable):
     def varoptions():
         """returns the hemisphere specific to this variable. """
         opts ={" Northern Hemisphere":(90, 0.), " Southern Hemisphere":(-90.,0) }
+        opts['default'] = (90, 0.)
+        return opts
+class station_id_variable(basic_plot_variable):
+    """provides an index into a data array for a specific station."""
+    @staticmethod
+    def varoptions():
+        """returns the station index specific to this variable. """
+        #copied from profiles.ncl in amwg diagnostics
+
+        opts ={}
+        data_index = 0
+        for station in defines.station_names:
+            opts[station] = data_index
+            data_index += 1
+        opts['default'] = 26  # San Francisco (actually Hayward)
         return opts
