@@ -1983,17 +1983,24 @@ class amwg_plot_set11(amwg_plot_spec):
         self.seasons = ['ANN', 'DJF', 'JJA']
         self.vars = ['LWCF', 'SWCF']
         
+        self.ft_ids = {}
+        for dt, ft in zip(self.datatype, self.filetables):
+            fn = ft._files[0]
+            self.ft_ids[dt] = fn.split('/')[-1:][0]
+        #print self.ft_ids
+        
         self.plot_ids = []
         vars_id = '_'.join(self.vars)
-        for dt in self.datatype:
-            for season in self.seasons:
+        for season in self.seasons:
+            for dt in self.datatype:     
                 plot_id = '_'.join([dt,  season])
                 self.plot_ids += [plot_id]
+        #print self.plot_ids
         
         self.plotall_id = '_'.join(self.datatype + ['Warm', 'Pool'])
         if not self.computation_planned:
             self.plan_computation( model, obs, varid, seasonid )
-    def plan_computation( self, model, obs, varid, seasonid ):
+    def oldplan_computation( self, model, obs, varid, seasonid ):
         filetable1, filetable2 = self.getfts(model, obs)
         self.computation_planned = False
         #check if there is data to process
@@ -2056,6 +2063,115 @@ class amwg_plot_set11(amwg_plot_spec):
 
         self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
         self.computation_planned = True
+    def plan_computation( self, model, obs, varid, seasonid ):
+        filetable1, filetable2 = self.getfts(model, obs)
+        self.computation_planned = False
+        #check if there is data to process
+        ft1_valid = False
+        ft2_valid = False
+        if filetable1 is not None and filetable2 is not None:
+            #the filetables must contain the variables LWCF and SWCF
+            ft10 = filetable1.find_files(self.vars[0])
+            ft11 = filetable1.find_files(self.vars[1])
+            ft20 = filetable2.find_files(self.vars[0])
+            ft21 = filetable2.find_files(self.vars[1])
+            ft1_valid = ft10 is not None and ft10!=[] and ft11 is not None and ft11!=[] 
+            ft2_valid = ft20 is not None and ft20!=[] and ft21 is not None and ft21!=[]  
+        else:
+            print "ERROR: user must specify 2 data files"
+            return None
+        if not ft1_valid or not ft2_valid:
+            return None
+
+        VIDs = {}
+        for season in self.seasons:
+            for dt, ft in zip(self.datatype, self.filetables):
+                
+                pair = []
+                for var in self.vars:
+                    VID = rv.dict_id(var, season, ft)
+                    VID = id2str(VID)
+                    pair += [VID]
+                    #print VID
+                    if ft == filetable1:
+                        RF = ( lambda x, vid=VID:x)
+                    else:
+                        RF = ( lambda x, vid=VID:x[0])
+                    RV = reduced_variable( variableid=var, 
+                                           filetable=ft, 
+                                           season=cdutil.times.Seasons(season), 
+                                           reduction_function=RF)
+                    self.reduced_variables[VID] = RV      
+                ID = dt + '_' + season
+                VIDs[ID] = pair              
+        
+        #setup the rdeuced variable pairs
+        self.derived_variables = {}
+        for plot_id in self.plot_ids:
+            pair = VIDs[plot_id]
+            DVid = 'DV_' + plot_id
+            self.derived_variables[DVid] = derived_var(vid=DVid, inputs=pair, func=create_yvsx)
+        
+        self.single_plotspecs = {}
+        self.composite_plotspecs[self.plotall_id] = []
+        self.compositeTitle = self.vars[0] + ' vs ' + self.vars[1]
+        for plot_id in self.plot_ids:
+            title = plot_id#.split('_')[1]
+            VID = 'DV_' + plot_id
+            self.single_plotspecs[plot_id] = plotspec(vid = plot_id, 
+                                                      zvars=[VID], 
+                                                      zfunc = (lambda x: x),
+                                                      zrangevars={'xrange':[0., 120.], 'yrange':[-120., 0.]},
+                                                      plottype = 'Scatter', 
+                                                      title = title,
+                                                      overplotline = True)
+
+        self.composite_plotspecs = { self.plotall_id: self.plot_ids }
+        self.computation_planned = True
+        #pdb.set_trace()
+    def customizeTemplates(self, templates):
+        """Theis method does what the title says.  It is a hack that will no doubt change as diags changes."""
+        (cnvs1, tm1), (cnvs2, tm2) = templates
+        #pdb.set_trace()
+        tm2.yname.priority=0
+        tm2.xname.priority=0
+        tm2.title.y=.98
+
+        ly = .96      
+        xpos = {'model':.15, 'obs':.6}  
+        for key in self.ft_ids.keys():
+            text = cnvs2.createtext()
+            text.string = self.ft_ids[key]
+            text.x = xpos[key]
+            text.y = ly
+            text.height = 12
+            cnvs2.plot(text, bg=1)  
+      
+        
+        #horizontal labels
+        th=cnvs2.createtextorientation(None, tm2.xlabel1.textorientation)
+        th.height=8
+        tm2.xlabel1.textorientation = th
+        #vertical labels
+        
+        tv=cnvs2.createtextorientation(None, tm2.ylabel1.textorientation)
+        tv.height=8
+        tm2.ylabel1.textorientation = tv        
+        
+        #plot diagonal lines
+        tm1.line1.x1 = tm1.box1.x1
+        tm1.line1.x2 = tm1.box1.x2
+        tm1.line1.y1 = tm1.box1.y2
+        tm1.line1.y2 = tm1.box1.y1
+        tm1.line1.line = 'LINE'
+        tm1.line1.priority = 1
+        tm2.line1.x1 = tm2.box1.x1
+        tm2.line1.x2 = tm2.box1.x2
+        tm2.line1.y1 = tm2.box1.y2
+        tm2.line1.y2 = tm2.box1.y1
+        tm2.line1.line = 'LINE'
+        tm2.line1.priority = 1     
+        return tm1, tm2  
     def _results(self, newgrid=0):
         #pdb.set_trace()
         results = plot_spec._results(self, newgrid)
@@ -2068,22 +2184,6 @@ class amwg_plot_set11(amwg_plot_spec):
         for key in self.plot_ids:
             val = psv[key]
             val.finalize()
-        
-        #force an order in the multi plot to compare columns
-        vals = psv[self.plotall_id]
-        newvals = []
-        order = [3,0,4,1,5,2]
-        for i in order:
-            plot_id = self.plot_ids[i]
-            print plot_id
-            for val in vals:
-                if plot_id != val.title:
-                    continue
-                val.finalize()
-                newvals += [val]
-                break
-        self.plotspec_values[self.plotall_id] = newvals
-        #pdb.set_trace()
             
         return self.plotspec_values[self.plotall_id]
 
