@@ -2274,7 +2274,22 @@ def correlateData(mv1, mv2, aux):
     #print corr
 
     return corr
-
+def create_yvsx(x, y, stride=10):
+    """ create a variable that is y(x).  It is a assumed that x.shape=y.shape."""
+    import cdms2, numpy
+    #pdb.set_trace()
+    xdata = x.data.flatten()
+    N = len(xdata)/stride
+    index = stride*numpy.arange(N)
+    xdata = xdata[index]
+    xbounds = numpy.array( [xdata-1., xdata+1.])
+    xbounds = xbounds.T
+    
+    ydata = y.data.flatten()[index]
+    X = cdms2.createAxis(xdata, bounds=xbounds, id=x.id )
+    Y = cdms2.createVariable(ydata, axes=[X], id=y.id )
+    Y.units = y.units
+    return Y
 class reduced_variable(ftrow,basic_id):
     """Specifies a 'reduced variable', which is a single-valued part of an output specification.
     This would be a variable(s) and its domain, a reduction function, and perhaps
