@@ -258,7 +258,8 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                                 # Here we'll count up the plots and run through them to build lists
                                 # of graphics methods and overlay statuses.
                                 nsingleplots = len(res)
-                                nsimpleplots = nsingleplots + sum([len(resr)-1 for resr in res if type(resr) is tuple])
+                                nsimpleplots = nsingleplots + sum([len(resr)-1 for resr in res
+                                                                   if type(resr) is tuple])
                                 gms = nsimpleplots * [None]
                                 ovly = nsimpleplots * [0]
                                 onPage = nsingleplots
@@ -267,7 +268,7 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                                 for r,resr in enumerate(res):
                                     if type(resr) is tuple:
                                         for jr,rsr in enumerate(resr):
-                                            gms[ir] = resr[jr].ptype.lower()
+                                            gms[ir] = rsr.ptype.lower()
                                             ovly[ir] = jr
                                             #print ir, ovly[ir], gms[ir]
                                             ir += 1

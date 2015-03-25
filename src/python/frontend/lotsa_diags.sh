@@ -41,6 +41,7 @@ diags --outputdir ~/tmp/diagout/cosp --model path=/A-Train_data/integration_cosp
 diags --outputdir ~/tmp/diagout/cosp --model path=/A-Train_data/integration_cosp_cam/amip10yr,filter="f_startswith('cam5_2deg')",climos=no --obs path=~/metrics_data/obs_data_5.6/,filter="f_startswith('MODISCOSP')",climos=yes --package AMWG --sets  5 --seasons ANN --vars CLDHGH_TAU1.3_MODIS
 
 echo "Land.  I don't have suitable obs data."
-diags --outputdir ~/tmp/diagout/ --model path=~/metrics_data/smaller_testdata/acme_hires_land,climos=no --package LMWG --set 1 --vars RAIN
+mkdir ~/tmp/diagout/land
+diags --outputdir ~/tmp/diagout/ --model path=~/metrics_data/smaller_testdata/acme_hires_land,climos=no --outputdir ~/tmp/diagout/land --package LMWG --set 1 --vars RAIN
 echo "set 2, only does model data for LHEAT"
-diags --outputdir ~/tmp/diagout/ --model path=~/metrics_data/acme_clm_climo,climos=yes --package LMWG --set 2 --vars LHEAT
+diags --outputdir ~/tmp/diagout/ --model path=~/metrics_data/acme_clm_climo,climos=yes --outputdir ~/tmp/diagout/land --package LMWG --set 2 --vars LHEAT
