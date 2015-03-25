@@ -376,9 +376,24 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                                                if basename is None and postname is None:
                                                    print "writing png file0",fname
                                                else:
-                                                   print "writing png file1",fname,"for",vname
-                                               if len(fname)>255:
-                                                   print "file name too long",fname
+                                               # basename and/or postname passed, so we expect some consistent filenames
+                                                  pname = postname
+                                                  if pname == None:
+                                                      pname = ''
+                                                  if basename == '' or basename == None:
+                                                      basename = 'set'+snum
+                                                  if '_obs' in vname or '_diff' in vname:
+                                                      if '_diff' in vname:
+                                                          pname = postname+'_diff'
+                                                      # Note postname will have the obsfile key and things like _NP
+                                                      if aux == None or aux == 'default' or aux == ' default': #(no idea but it exists)
+                                                         fname = outdir+'/'+basename+'_'+seasonid+'_'+varid+pname+'.png'
+                                                      else:
+                                                         fname = outdir+'/'+basename+'_'+seasonid+'_'+varid+'_'+aux+pname+'.png'
+                                                      print "writing png file1",fname, vname
+                                                  else: # this file is usually not of use to classic view so give it the verbose name.
+                                                     fname = outdir+'/figure-set'+snum+'_'+rname+'_'+seasonid+'_'+\
+                                                         vname+'_plot-'+str(r)+'.png'
                                                #rsr_presentation.script("jeff.json")   #example of writing a json file
 
                                            if vcs.isscatter(rsr.presentation) or plot.number in ['11', '12']: 
@@ -552,9 +567,9 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                                            seasonid+'_'+vname+'_plot-'+str(r)+'.png'
                                     else:
                                        pname = postname
-                                       if pname is None:
+                                       if pname == None:
                                           pname = ''
-                                       if basename == '' or basename is None:
+                                       if basename == '':
                                           basename = 'set'+snum
                                        if '_obs' in vname or '_diff' in vname:
                                           if '_diff' in vname:
