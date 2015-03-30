@@ -2827,7 +2827,6 @@ class amwg_plot_set14(amwg_plot_spec):
         
         #correlation coefficient 
         self.derived_variables['TaylorData'] = derived_var(vid='TaylorData', inputs=triples, func=join_data) 
-        print "self.derived_variables['TaylorData']:",self.derived_variables['TaylorData']
         #self.derived_variables['TaylorBias'] = derived_var(vid='TaylorBias', inputs=bias, func=join_scalar_data)
         
         self.single_plotspecs = {}

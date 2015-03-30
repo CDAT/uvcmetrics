@@ -230,7 +230,6 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                            plot = sclass( modelfts, obsfts, varid, seasonid, region, vvaropts[aux], jsonflag=True )
                         else:
                            if snum == '14': #Taylor diagrams
-                              print "WE do come in here"
                               #this is a total kludge so that the list of variables is passed in for processing
                               plot = sclass( modelfts, obsfts, variables, seasonid, region, vvaropts[aux] )
                            else:

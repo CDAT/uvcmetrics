@@ -633,7 +633,7 @@ class uvc_simple_plotspec():
                     xoffset=XOFF[i],yoffset=YOFF[i])
             self.presentation.Marker.equalize()
 
-            self.presentation.list()
+            #self.presentation.list()
             
         else:
             print "ERROR cannot identify graphics method",self.presentation.__class__.__name__
