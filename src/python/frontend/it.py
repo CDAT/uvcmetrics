@@ -8,7 +8,6 @@ import numpy as np
 #                                                                                                     #
 #######################################################################################################
 def return_templates_graphic_methods(canvas1=None, gms=None, ovly=None, onPage=None):
-
    if len(gms) == len(ovly): 
 
       # Create a unique graphics method for each diagnostic display
@@ -36,7 +35,7 @@ def return_templates_graphic_methods(canvas1=None, gms=None, ovly=None, onPage=N
                gmobs[i].linewidth = 2.0
                gmobs[i].linecolor = 242
                gmobs[i].markersize = 1
-         if (gms[i] == 'taylor'):
+         if (gms[i] == 'taylordiagram'):
             td = canvas1.createtaylordiagram('taylor_' + (str(random.random())[2:]), 'default')
             gmobs.append( td )
             #gmobs[i].addMarker()
@@ -54,7 +53,7 @@ def return_templates_graphic_methods(canvas1=None, gms=None, ovly=None, onPage=N
                tmobs.append( canvas1.createtemplate('uvwg_' + (str(random.random())[2:]), 'UVWG1D') )
              else:                # overlay plot use DUD - only plot the data
                tmobs.append( canvas1.createtemplate('uvwg_DUD_' + (str(random.random())[2:]), 'UVWG1D_DUD') )
-          elif (gms[i] in ['taylor']):
+          elif (gms[i] in ['taylordiagram']):
              tmpl = canvas1.createtemplate('taylor_' + (str(random.random())[2:]), 'deftaylor')
              tmobs.append( tmpl )
 

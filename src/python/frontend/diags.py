@@ -230,6 +230,7 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                            plot = sclass( modelfts, obsfts, varid, seasonid, region, vvaropts[aux], jsonflag=True )
                         else:
                            if snum == '14': #Taylor diagrams
+                              print "WE do come in here"
                               #this is a total kludge so that the list of variables is passed in for processing
                               plot = sclass( modelfts, obsfts, variables, seasonid, region, vvaropts[aux] )
                            else:
@@ -284,7 +285,7 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                                 # tmmobs[ir] is the template for plotting a simple plot on a page
                                 #   which has the entire compound plot - that's vcanvas2
                                 gmobs, tmobs, tmmobs = return_templates_graphic_methods( vcanvas, gms, ovly, onPage )
-                                if 1==1: # optional debugging:
+                                if 1: # optional debugging:
                                     print "tmpl nsingleplots=",nsingleplots,"nsimpleplots=",nsimpleplots
                                     print "tmpl gms=",gms
                                     print "tmpl len(res)=",len(res),"ovly=",ovly,"onPage=",onPage

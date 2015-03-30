@@ -230,7 +230,7 @@ class uvc_simple_plotspec():
                 self.presentation = vcsx.createisoline()
             elif presentation == "Scatter":
                 self.presentation = vcsx.createscatter()
-            elif presentation == "Taylor":
+            elif presentation == "Taylordiagram":
                 self.presentation = vcsx.createtaylordiagram()
             else:
                 print "ERROR, uvc_plotspec doesn't recognize presentation",presentation
@@ -579,28 +579,6 @@ class uvc_simple_plotspec():
             #print markersizes
             #print self.vars
             
-            #setup the markersize and colors
-            MAX = max(markersizes)
-            MIN = min(markersizes)
-            scale = vcs.mkscale(MIN, MAX)
-            #labels = vcs.mklabels(scale)
-            colorScale = vcs.getcolors(scale, split=False)
-            sizes = range(10, 10+len(colorScale))
-                            
-            dotsizes = []
-            dotcolors = []
-            
-            #determine dot size and color
-            for size in markersizes:
-                for index in range(0, len(scale)-1):
-                    low, high = scale[index], scale[index+1]
-                    if low <= size and size < high:
-                        dotsizes +=  [sizes[index]]
-                        dotcolors += [colorScale[index]]
-                        #print dotsizes
-                        #print dotcolors
-                        break        
-
             #determine the identifier for the legend
             IDs = []
             for ID in markerids:
@@ -614,13 +592,10 @@ class uvc_simple_plotspec():
             #out to the plot
             self.legendTitles = IDs
             
-            index = []
-            for i in range(len(markersizes)):
-                index += [str(i)]    
-            self.presentation.Marker.size = dotsizes          
-            self.presentation.Marker.color = dotcolors 
+            #self.presentation.Marker.size = dotsizes          
+            #self.presentation.Marker.color = dotcolors 
             #self.presentation.IDs = IDs
-            self.presentation.Marker.id = index
+            #self.presentation.Marker.id = index
             #pdb.set_trace()
             
             #create list of offsets
@@ -632,11 +607,33 @@ class uvc_simple_plotspec():
             else:
                 XOFF = XOFF.tolist()
                 YOFF = YOFF.tolist()
-            self.presentation.Marker.xoffset = XOFF
-            self.presentation.Marker.yoffset = YOFF
-            self.presentation.Marker.id_size = len(markersizes)*[20]
+            #self.presentation.Marker.xoffset = XOFF
+            #self.presentation.Marker.yoffset = YOFF
+            #self.presentation.Marker.id_size = len(markersizes)*[20]
+            for i in range(len(markersizes)):
+                if markersizes[i]>1.01:
+                  mtype = "triangle_up"
+                elif markersizes[i]<.99:
+                  mtype = "triangle_down"
+                else:
+                  mtype = "circle"
+                b = abs(1.-markersizes[i])
+                if b<5:
+                  size = 12
+                elif b<10:
+                  size = 16
+                elif b<20:
+                  size = 20
+                else:
+                  size = 25
 
-            #self.presentation.list()
+                self.presentation.Marker.addMarker(size=size,
+                    id=str(i),id_size=20,
+                    symbol = mtype,
+                    xoffset=XOFF[i],yoffset=YOFF[i])
+            self.presentation.Marker.equalize()
+
+            self.presentation.list()
             
         else:
             print "ERROR cannot identify graphics method",self.presentation.__class__.__name__
