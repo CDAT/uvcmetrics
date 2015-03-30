@@ -791,6 +791,11 @@ class uvc_simple_plotspec():
         filename = self.outfile( format, where )
 
         if format=="NetCDF file":
+            value=0
+            cdms2.setNetcdfShuffleFlag(value) ## where value is either 0 or 1
+            cdms2.setNetcdfDeflateFlag(value) ## where value is either 0 or 1
+            cdms2.setNetcdfDeflateLevelFlag(value) ## where value is a integer between 0 and 9 included
+
             writer = cdms2.open( filename, 'w' )    # later, choose a better name and a path!
         elif format=="JSON file":
             print "ERROR: JSON file not implemented yet"

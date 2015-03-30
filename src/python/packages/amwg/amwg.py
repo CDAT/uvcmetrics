@@ -1740,7 +1740,7 @@ class amwg_plot_set9(amwg_plot_spec):
     and enter the file name.  Repeat this for dataset 2 and then apply.
     Example script
     diags.py --model path=$HOME/uvcmetrics_test_data/cam35_data/,climos=yes 
-    --model path=$HOME/uvcmetrics_test_data/cam35_data/,climos=yes 
+    --obs path=$HOME/uvcmetrics_test_data/obs_data/,filter='f_startswith("NCEP")',climos=yes 
     --outputdir $HOME/Documents/Climatology/ClimateData/diagout/ 
     --package AMWG --sets 9 --seasons JAN --plots yes  --vars T
     """
@@ -2156,20 +2156,29 @@ class amwg_plot_set11(amwg_plot_spec):
         
         tv=cnvs2.createtextorientation(None, tm2.ylabel1.textorientation)
         tv.height=8
-        tm2.ylabel1.textorientation = tv        
+        tm2.ylabel1.textorientation = tv    
         
+        #return tm1, tm2      
+        pdb.set_trace()
         #plot diagonal lines
+        if "UVC_TMP_LINE" not in vcs.listelements("line"):
+            LINE = cnvs1.createline('UVC_TMP_LINE')
+        else:
+            LINE = cnvs1.getline("UVC_TMP_LINE")
+        LINE.width = 3.0
+        LINE.type = 'solid'
+        LINE.color = 242
         tm1.line1.x1 = tm1.box1.x1
-        tm1.line1.x2 = tm1.box1.x2
         tm1.line1.y1 = tm1.box1.y2
+        tm1.line1.x2 = tm1.box1.x2        
         tm1.line1.y2 = tm1.box1.y1
-        tm1.line1.line = 'LINE'
+        tm1.line1.line = LINE
         tm1.line1.priority = 1
         tm2.line1.x1 = tm2.box1.x1
-        tm2.line1.x2 = tm2.box1.x2
         tm2.line1.y1 = tm2.box1.y2
+        tm2.line1.x2 = tm2.box1.x2
         tm2.line1.y2 = tm2.box1.y1
-        tm2.line1.line = 'LINE'
+        tm2.line1.line = LINE
         tm2.line1.priority = 1     
         return tm1, tm2  
     def _results(self, newgrid=0):

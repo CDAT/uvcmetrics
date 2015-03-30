@@ -148,10 +148,10 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
             vcanvas2.drawlogooff()
 #       vcanvas3 = vcs.init()
         savePNG = False
-        LINE = vcanvas.createline('LINE', 'default')
-        LINE.width = 3.0
-        LINE.type = 'solid'
-        LINE.color = 242
+        #LINE = vcanvas.createline('LINE', 'default')
+        #LINE.width = 3.0
+        #LINE.type = 'solid'
+        #LINE.color = 242
 
     for pname in [ package ]: # converted to jsut a string; too much work to fix indents right now REVISIT THOUGH
         pclass = dm[pname.upper()]()
@@ -388,6 +388,7 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                                                    tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)] )
                                                if len(rsr.vars) == 1:
                                                    #scatter plot for plot set 12
+                                                   #pdb.set_trace()
                                                    subtitle = title
                                                    vcanvas.plot(var, 
                                                                 rsr_presentation, tm, bg=1, title=title,
