@@ -2626,7 +2626,7 @@ class amwg_plot_set14(amwg_plot_spec):
             self.obsfns = [obsfn]
         self.legendTitles = []
         plot_spec.__init__(self, seasonid)
-        self.plottype = 'Taylor'
+        self.plottype = 'Taylordiagram'
         self._seasonid = seasonid
         self.season = cdutil.times.Seasons(self._seasonid) 
         #ft1id, ft2id = filetable_ids(filetable1, filetable2)
