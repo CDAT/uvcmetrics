@@ -42,14 +42,16 @@ cdms2.setNetcdfShuffleFlag(0)
 cdms2.setNetcdfDeflateFlag(0)
 cdms2.setNetcdfDeflateLevelFlag(0)
 
-def copy_next_tbounds_from_data( red_time_bnds, data_time_bnds ):
+def next_tbounds_copyfrom_data( red_time_bnds, data_time_bnds ):
     """This is one of many ways to provide a time interval for the computing a partial time
     reduction of data.  This one works for no real time reduction.  A typical case is that
     we have a sequence of monthly averages and the 'reduced' time is monthly averages.
     The idea is simply that if the data time bounds are greater than the reduced time bounds,
     use the data time bounds as the next interval in the reduced time sequence.
-    red_time_bnds and data_time_bnds are lists like a typical time_bnds variable, e.g.
-    numpy.array([[1234,1244],[1244,1256],[1256,1267]]).
+    red_time_bnds and data_time_bnds may be treated as arrays like a typical time_bnds variable,
+    e.g. numpy.array([[1234,1244],[1244,1256],[1256,1267]]).  In practice, red_time_bnds is
+    normally a FileVariable with such a value.
+    You get an initial value for red_time_bnds by calling this function with red_time_bnds==[].
     """
     if len(data_time_bnds)==0:
         return red_time_bnds
@@ -60,6 +62,18 @@ def copy_next_tbounds_from_data( red_time_bnds, data_time_bnds ):
     else:
         return red_time_bnds
 
+def next_tbounds_prescribed_step( red_time_bnds, data_time_bnds, dt ):
+    """The next bounds will be a prescribed step above the existing one.
+    This uses data_time_bnds only to use its lowest bound in initialization of red_time_bnds.
+    This is intended to be called from another function, e.g. a lambda expression which includes
+    a fixed step size."""
+    if len(red_time_bnds)==0:
+        t0 = data_time_bnds[0][0]
+        return numpy.array([[t0,t0+dt]])
+    t1 = red_time_bnds[-1][1]
+    t1t2 = [[t1, t1+dt]]
+    return numpy.concatenate( ( red_time_bnds, t1t2 ), axis=0 )
+
 def initialize_redfile( filen, axisdict, varnames ):
     """Initializes the file containing reduced data.  Input is the filename, axes
     variables representing bounds on axes, and names of variables to be initialized.
@@ -67,29 +81,41 @@ def initialize_redfile( filen, axisdict, varnames ):
     Time should always be present as the first axis.
     Note that cdms2 will automatically write the bounds variable if it writes an axis which has bounds.
     """
-    f = cdms2.open( filen, 'w' )
+    g = cdms2.open( filen, 'w' )
     for varn in varnames:
         axes = axisdict[varn]
         var = cdms2.createVariable( numpy.zeros([len(ax) for ax in axes]),
                                      axes=axes, copyaxes=False )
         var.id = varn
-        f.write(var)
-    timeax = var.getTime()
+        g.write(var)
+    timeax = axisdict['time']
     time_wts = cdms2.createVariable( numpy.zeros(len(timeax)), axes=[timeax], copyaxes=False )
     time_wts.id = 'time_weights'
-    f.write( time_wts )
-    f.close()
+    g.write( time_wts )
+    g.close()
 
-def initialize_redfile_from_datafile( redfilen, varnames, datafilen ):
+def initialize_redfile_from_datafile( redfilen, varnames, datafilen, dt=0 ):
     """Initializes a file containing the partially-time-reduced average data, given the names
-    of the variables to reduce and the name of a data file containing those variables with axes."""
-    axisdict = {}
+    of the variables to reduce and the name of a data file containing those variables with axes.
+    If provided, dt is a fixed time interval for defining the time axis."""
     boundless_axes = set([])
-    f = cdms2.open( datafilen )  # has TS, time, lat, lon and bounds
+    f = cdms2.open( datafilen )
+    axisdict = {}
+    if dt>0:   # time axis should have fixed intervals, size dt
+        red_time_bnds = next_tbounds_prescribed_step( [], f.getAxis('time').getBounds(), dt )
+        red_time = [ 0.5*(tb[0]+tb[1]) for tb in red_time_bnds ]
+        timeaxis = cdms2.createAxis( red_time, red_time_bnds, 'time' )
+        axisdict['time'] = timeaxis
     for varn in varnames:
-        axisdict[varn] = f[varn].getAxisList()
-        for ax in axisdict[varn]:
+        dataaxes = f[varn].getAxisList()
+        axes = []
+        for ax in dataaxes:
+            if dt>0 and ax.isTime():
+                axes.append( timeaxis )
+            else:
+                axes.append( ax )
             if not hasattr( ax,'bounds' ): boundless_axes.add(ax)
+        axisdict[varn] = axes
     for ax in boundless_axes:
         print "WARNING, axis",ax.id,"has no bounds"
     initialize_redfile( 'redtest.nc', axisdict, varnames )
@@ -161,7 +187,7 @@ def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds )
     return redvars,redtime_wts,redtime
 
 def update_time_avg_from_files( redvars, redtime_bnds, redtime_wts, filenames,
-                                fun_next_tbounds=copy_next_tbounds_from_data ):
+                                fun_next_tbounds=next_tbounds_copyfrom_data ):
     """Updates the time-reduced data for a several variables.  The reduced-time and averaged
     variables are the list redvars.  Its weights (for time averaging) are another variable, redtime_wts.
     (Each variable redvar of redvars has the same time axis, and it normally has an attribute wgts
@@ -183,14 +209,22 @@ def update_time_avg_from_files( redvars, redtime_bnds, redtime_wts, filenames,
 
 # Second test
 def test_time_avg( redfilen, varnames, datafilenames ):
-    initialize_redfile_from_datafile( redfilen, varnames, datafilenames[0] )
+    #dt = 0   # if =0, the "reduced" time bounds are exactly the same as in the input data
+    dt = 365   # if >0, a fixed time interval for partially time-reduced data
+    initialize_redfile_from_datafile( redfilen, varnames, datafilenames[0], dt )
 
     g = cdms2.open( redfilen, 'r+' )
     redtime_wts = g['time_weights']
     redtime_bnds = g[ g.getAxis('time').bounds ]
     redvars = [ g[varn] for varn in varnames ]
 
-    update_time_avg_from_files( redvars, redtime_bnds, redtime_wts, datafilenames )
+    if dt==0:
+        update_time_avg_from_files( redvars, redtime_bnds, redtime_wts, datafilenames )
+    else:
+        print "In test_time_avg, redtime_bnds=",redtime_bnds[:]
+        update_time_avg_from_files(
+            redvars, redtime_bnds, redtime_wts, datafilenames,
+            fun_next_tbounds = (lambda rtb,dtb,dt=dt: next_tbounds_prescribed_step(rtb,dtb,dt) ) )
 
     g.close()
 
