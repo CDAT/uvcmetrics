@@ -80,45 +80,39 @@ def initialize_redfile( filen, axisdict, varnames ):
     f.write( time_wts )
     f.close()
 
-def update_time_avg( redvar, redtime_bnds, redtime_wts, newvar, next_tbounds ):
-    """Updates the time-reduced data for a single variable.  The reduced-time and averaged variable
-    is redvar.  Its weights (for time averaging) are another variable, redtime_wts.
-    (Normally the time axis of redvar has an attribute wgts which is the same as redtime_wts.id.)
-    redvar.  The new data is in newvar.  Each variable is an MV.  Normally redvar and redtime_wts
-    will be a FileVariable (required if their length might change) and newvar a TransientVariable.
-    If newvar needs any spatial reductions
-    to match redvar, they should have been performed before calling this function.
+def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds ):
+    """Updates the time-reduced data for a list of variables.  The reduced-time and averaged
+    variables are listed in redvars.  Its weights (for time averaging) are another variable,
+    redtime_wts.
+    (Each member of redvars should have the same the time axis.  Each member of newvars should have
+    the same time axis.  Normally it has an attribute wgts which is the same as redtime_wts.id.)
+    The new data is listed in newvars, and this list should correspond to redvars, e.g.
+    newvars[i].id==redvars[i].id.  The length of both should be equal and at least one.
+    Each variable is an MV.  Normally redvar and redtime_wts will be a FileVariable (required if
+    they might change) and newvar a TransientVariable.
+    If newvar needs any spatial reductions to match redvar, they should have been performed before
+    calling this function.
     next_tbounds is the next time interval, used if newvar is defined on a time beyond redvar's
     present time axis.  If next_tbounds==[], newvar will be ignored on such times.  Normally
     next_tbounds will be set to [] when updating a climatology file which has been initialized.
     """
 
-    # >>>> TO DO <<<< Ensure that redvar, redtime_wts, newvar have consistent units
+    # >>>> TO DO <<<< Ensure that each redvar, redtime_wts, newvar have consistent units
     # >>>> for the variable and for time.  Assert that they have the same shape, axes, etc.
 
+    if redvars is None or len(redvars)==0:  # formerly redvar was initialized here
+        raise Exception("update_time_avg requires a reduced variable list")
+    nvars = len(redvars)
     # The following two asserts express my assumption that the first index of the variable is time.
     # This is almost universal, but in the future I should generalize this code.  That would make
     # slicing more verbose, e.g. if time were changed from the first index to second then
     # v[j] would become v[:,j,:] (for a 2-D variable v).
-    # (moved below... assert( redvar.getDomain()[0][0].isTime() ) )
-    assert( newvar.getDomain()[0][0].isTime() )
+    assert( newvars[0].getDomain()[0][0].isTime() )
+    assert( redvars[0].getDomain()[0][0].isTime() )
 
-# >>> TO DO: take out this initialization stuff, and minj <<<
-    if redvar is None:
-        redvar = cdms2.createVariable( newvar[0:1], copy=True )
-        redtime = redvar.getTime()  # an axis
-        redtime.setBounds( next_tbounds )
-        wt = next_tbounds[1] - next_tbounds[0]
-        redtime_wts = cdms2.createVariable( [wt] )
-        redtime_wts.id = 'time_weights'
-        minj = 1
-    else:
-        minj = 0
-    assert( redvar.getDomain()[0][0].isTime() )
-
-    redtime = redvar.getTime()  # an axis
+    redtime = redvars[0].getTime()  # an axis
     redtime_len = redtime.shape[0]
-    newtime = newvar.getTime()
+    newtime = newvars[0].getTime()
     newtime_bounds = newtime.getBounds()
     newtime_wts = numpy.zeros( newtime.shape[0] )
     for j in range( newtime.shape[0] ):
@@ -126,35 +120,33 @@ def update_time_avg( redvar, redtime_bnds, redtime_wts, newvar, next_tbounds ):
         # I couldn't figure out how to do this with slicing syntax.
 
     for j,nt in enumerate(newtime):
-        if j<minj:  # If we used newtime[j] to create a new redvar
-            continue
         if nt>redtime_bnds[-1][1]:
             if next_tbounds==[]:
                 continue
             # Extend redtime, redtime_bnds, redvar, redtime_wts.
             redtime_wts[redtime_len] = newtime_wts[j]
-            redvar[redtime_len] = newvar[j]
+            for iv in range(nvars):
+                redvars[iv][redtime_len] = newvars[iv][j]
             redtime_bnds[redtime_len] = next_tbounds
             #redtime_bnds = numpy.append( redtime_bnds, [next_tbounds], axis=0 )
             redtime[redtime_len] = 0.5*(
                 redtime_bnds[redtime_len][1] + redtime_bnds[redtime_len][0] )
+            redtime_len +=1
         else:
             # time is in an existing interval, probably the last one.
-            print "redtime_bnds=",redtime_bnds[:]
             for i in range( redtime_len-1, -1, -1 ):  # same as range(redtime_len) but reversed
-                print "nt=",nt
-                print "redtime_bnds[",i,"]=",redtime_bnds[i]
                 if nt<redtime_bnds[i][0]: continue
-                print "redtime_bnds[i][1]-nt=",redtime_bnds[i][1]-nt
                 assert( nt<=redtime_bnds[i][1] )
-                redvar[i] = ( redvar[i]*redtime_wts[i] + newvar[j]*newtime_wts[j] ) /\
-                    ( redtime_wts[i] + newtime_wts[j] )
+                for iv in range(nvars):
+                    redvars[iv][i] = ( redvars[iv][i]*redtime_wts[i] + newvars[iv][j]*newtime_wts[j] ) /\
+                        ( redtime_wts[i] + newtime_wts[j] )
                 redtime_wts[i] += newtime_wts[j]
                 break
 
-    return redvar,redtime_wts,redtime
-                
-def update_time_avg_from_files( redvars, redtime_bnds, redtime_wts, filenames ):
+    return redvars,redtime_wts,redtime
+
+def update_time_avg_from_files( redvars, redtime_bnds, redtime_wts, filenames,
+                                fun_next_tbounds=copy_next_tbounds_from_data ):
     """Updates the time-reduced data for a several variables.  The reduced-time and averaged
     variables are the list redvars.  Its weights (for time averaging) are another variable, redtime_wts.
     (Each variable redvar of redvars has the same time axis, and it normally has an attribute wgts
@@ -162,33 +154,17 @@ def update_time_avg_from_files( redvars, redtime_bnds, redtime_wts, filenames ):
     The new data will be read from the specified files, which should cover a time sequence in order.
     We expect each member of redvar; and redtime_bnds and redtime_wts, to be a FileVariable.
     This function doesn't perform any spatial reductions.
+    The last argument is a function which will compute the next_tbounds argument of update_time_avg,
+    i.e. the next time interval (if any) to be appended to the bounds of the time axis of redvars.
     """
     for filen in filenames:
         f = cdms2.open(filen)
         data_tbounds = f.getAxis('time').getBounds()
-        tbnds = copy_next_tbounds_from_data( redtime_bnds, data_tbounds )
-
-# >>>> TO DO >>>> remove update of redtime_wts from update_time_avg, and do it only once per variable <<<<<<
-        for redvar in redvars:
-            varn = redvar.id
-            print "varn=",varn
-            redvar,redtime_wts,redtime =\
-                update_time_avg( redvar, redtime_bnds, redtime_wts, f(varn), tbnds[-1] )
+        tbnds = apply( fun_next_tbounds, ( redtime_bnds, data_tbounds ) )
+        newvars = [ f(redvar.id) for redvar in redvars ]
+        redvar,redtime_wts,redtime =\
+            update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, tbnds[-1] )
         f.close()
-
-if False:
-    # First test
-    f = cdms2.open( 'b30.009.cam2.h0.0600-01.nc' )  # has TS, time, lat, lon and bounds
-    g = cdms2.open( 'redtest.nc', 'w' )
-    TS = f('TS')
-    tsbnds = TS.getTime().getBounds()[0]
-    redvar,redtime_wts = update_time_avg( None, None, TS, tsbnds )
-    redtime = redvar.getTime()  # an axis
-    redtime.wgts = redtime_wts.id
-    g.write( redvar )
-    g.write( redtime_wts )
-    g.close()
-    f.close()
 
 # Second test
 varnames = ['TS', 'PS']
@@ -224,5 +200,17 @@ update_time_avg_from_files( [g['TS'],g['PS']], redtime_bnds, redtime_wts,
 #    f.close()
 
 g.close()
+g = cdms2.open( 'redtest.nc', 'r+' )
+redtime = g.getAxis('time')
+redtime_bnds = g( redtime.bounds )
+redtime_wts = g('time_weights')
+TS = g('TS')
+PS = g('PS')
+print "redtime=",redtime
+print "redtime_bnds=",redtime_bnds.shape
+print "redtime_wts=",redtime_wts
+print "TS=",TS
+print "PS=",PS
+
 
 
