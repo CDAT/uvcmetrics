@@ -35,7 +35,7 @@
 # >>>> TO DO:
 # Create a suitable time axis when reading climo data without one.
 
-import numpy, cdms2
+import numpy, cdms2, sys
 
 # Silence annoying messages about setting the NetCDF file type.  I don't care what we get...
 cdms2.setNetcdfShuffleFlag(0)
@@ -78,6 +78,21 @@ def initialize_redfile( filen, axisdict, varnames ):
     time_wts = cdms2.createVariable( numpy.zeros(len(timeax)), axes=[timeax], copyaxes=False )
     time_wts.id = 'time_weights'
     f.write( time_wts )
+    f.close()
+
+def initialize_redfile_from_datafile( redfilen, varnames, datafilen ):
+    """Initializes a file containing the partially-time-reduced average data, given the names
+    of the variables to reduce and the name of a data file containing those variables with axes."""
+    axisdict = {}
+    boundless_axes = set([])
+    f = cdms2.open( datafilen )  # has TS, time, lat, lon and bounds
+    for varn in varnames:
+        axisdict[varn] = f[varn].getAxisList()
+        for ax in axisdict[varn]:
+            if not hasattr( ax,'bounds' ): boundless_axes.add(ax)
+    for ax in boundless_axes:
+        print "WARNING, axis",ax.id,"has no bounds"
+    initialize_redfile( 'redtest.nc', axisdict, varnames )
     f.close()
 
 def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds ):
@@ -167,50 +182,38 @@ def update_time_avg_from_files( redvars, redtime_bnds, redtime_wts, filenames,
         f.close()
 
 # Second test
-varnames = ['TS', 'PS']
-axisdict = {}
-boundless_axes = set([])
+def test_time_avg( redfilen, varnames, datafilenames ):
+    initialize_redfile_from_datafile( redfilen, varnames, datafilenames[0] )
 
-f = cdms2.open( 'b30.009.cam2.h0.0600-01.nc' )  # has TS, time, lat, lon and bounds
-for varn in varnames:
-    axisdict[varn] = f[varn].getAxisList()
-    for ax in axisdict[varn]:
-        if not hasattr( ax,'bounds' ): boundless_axes.add(ax)
-for ax in boundless_axes:
-    print "WARNING, axis",ax.id,"has no bounds"
+    g = cdms2.open( redfilen, 'r+' )
+    redtime_wts = g['time_weights']
+    redtime_bnds = g[ g.getAxis('time').bounds ]
+    redvars = [ g[varn] for varn in varnames ]
 
-initialize_redfile( 'redtest.nc', axisdict, varnames )
-f.close()
+    update_time_avg_from_files( redvars, redtime_bnds, redtime_wts, datafilenames )
 
-g = cdms2.open( 'redtest.nc', 'r+' )
-#redvar = g['TS']
-redtime_wts = g['time_weights']
-redtime_bnds = g[ g.getAxis('time').bounds ]
+    g.close()
 
+    # For testing, print results...
+    g = cdms2.open( redfilen )
+    redtime = g.getAxis('time')
+    redtime_bnds = g( redtime.bounds )
+    redtime_wts = g('time_weights')
+    TS = g('TS')
+    PS = g('PS')
+    print "redtime=",redtime
+    print "redtime_bnds=",redtime_bnds
+    print "redtime_wts=",redtime_wts
+    print "TS=",TS
+    print "PS=",PS
 
-update_time_avg_from_files( [g['TS'],g['PS']], redtime_bnds, redtime_wts,
-                            ['b30.009.cam2.h0.0600-01.nc','b30.009.cam2.h0.0600-02.nc'] )
-#for filen in ['b30.009.cam2.h0.0600-01.nc','b30.009.cam2.h0.0600-02.nc']:
-#    f = cdms2.open(filen)
-#    data_tbounds = f.getAxis('time').getBounds()
-#    tbnds = copy_next_tbounds_from_data( redtime_bnds, data_tbounds )
-#
-#    redvar,redtime_wts,redtime =\
-#        update_time_avg( redvar, redtime_bnds, redtime_wts, f('TS'), tbnds[-1] )
-#    f.close()
-
-g.close()
-g = cdms2.open( 'redtest.nc', 'r+' )
-redtime = g.getAxis('time')
-redtime_bnds = g( redtime.bounds )
-redtime_wts = g('time_weights')
-TS = g('TS')
-PS = g('PS')
-print "redtime=",redtime
-print "redtime_bnds=",redtime_bnds.shape
-print "redtime_wts=",redtime_wts
-print "TS=",TS
-print "PS=",PS
-
+if __name__ == '__main__':
+    if len( sys.argv )>=2:
+        datafilenames = sys.argv[1:]
+    else:
+        datafilenames = ['b30.009.cam2.h0.0600-01.nc','b30.009.cam2.h0.0600-02.nc']        
+    redfilen = 'redtest.nc'
+    varnames = ['TS', 'PS']
+    test_time_avg( redfilen, varnames, datafilenames )
 
 
