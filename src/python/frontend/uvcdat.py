@@ -1033,7 +1033,10 @@ class plot_spec(object):
             try:
                 zax,zrv  = self.compute_plot_var_value( ps, ps.zvars, ps.zfunc )
                 z2ax,z2rv = self.compute_plot_var_value( ps, ps.z2vars, ps.z2func )
-                if zax is None and z2ax is None:
+                z3ax,z3rv = self.compute_plot_var_value( ps, ps.z3vars, ps.z3func )
+                z4ax,z4rv = self.compute_plot_var_value( ps, ps.z4vars, ps.z4func )
+
+                if zax is None and z2ax is None and z3ax is None and z4ax is None:
                     continue
             except Exception as e:
                 if ps._id != plotspec.dict_id( None, None, None, None, None ):
@@ -1045,6 +1048,8 @@ class plot_spec(object):
             vars = []
             zlab=""
             z2lab=""
+            z3lab =""
+            z3lab = ""
             if zax is not None and len(getattr(zax,'data',[None]))>0:  # a tuple always passes
                 if hasattr(zax,'regridded') and newgrid!=0:
                     vars.append( regridded_vars[zax.regridded] )
@@ -1062,6 +1067,23 @@ class plot_spec(object):
                 new_id = self._build_label( z2rv, p )
                 z2ax.id = new_id
                 z2lab += ' '+z2ax.id
+            if z3ax is not None:
+               if hasattr(z3ax,'regridded') and newgrid != 0:
+                  vars.append( regridded_vars[z3ax.regridded] )
+               else:
+                  vars.append( z3ax)
+               new_id = self._build_labal( z3rv, p )
+               z3ax.id = new_id
+               z3lab += ' '+z3ax.id
+            if z4ax is not None:
+               if hasattr(z4ax,'regridded') and newgrid != 0:
+                  vars.append( regridded_vars[z4ax.regridded] )
+               else:
+                  vars.append( z4ax)
+               new_id = self._build_labal( z4rv, p )
+               z4ax.id = new_id
+               z4lab += ' '+z4ax.id
+
             if vars==[]:
                 self.plotspec_values[p] = None
                 continue
@@ -1075,11 +1097,17 @@ class plot_spec(object):
             #process the ranges if present
             zrange = ps.zrangevars
             z2range = ps.z2rangevars
+            z3range = ps.z3rangevars
+            z4range = ps.z4rangevars
             ranges = {}
-            if zrange != None and z2range != None:
+            if zrange != None and z2range != None and z3range != None and z4range != None:
                 ranges.update(ps.zrangevars)
                 if ps.z2rangevars:
-                    ranges.update(ps.z2rangevars)
+                   ranges.update(ps.z2rangevars)
+                if ps.z3rangevars:
+                   ranges.update(ps.z3rangevars)
+                if ps.z4rangevars:
+                   ranges.upadte(ps.z4rangevars)
             else:
                 ranges = None
             
@@ -1136,6 +1164,8 @@ class plot_spec(object):
             return None, None
         z = apply( zfunc, zrv )
         if hasattr(z,'mask') and z.mask.all():
+#            print type(z)
+            print 'in uvcdat.py' # this next line is printed from two different possible places.
             print "ERROR, all values of",z.id,"are missing!"
             return None,None
         return z, zrv
