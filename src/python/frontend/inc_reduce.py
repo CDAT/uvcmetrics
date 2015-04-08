@@ -12,7 +12,10 @@
 
 # This script, when finished, will also be able to compute climatologies.  Just replace each
 # model output file's time units from "...since 1850-00-00" to "...since 0000-00-00" which
-# would be the time units of a climatology file.
+# would be the time units of a climatology file.  And shift all its time values by an integer
+# number of years, so that all time values fall within the same year (time bounds may slip
+# into another year.  There may be an issue here, especially if the time isn't centered
+# within its bounds.)
 
 # It will be essential that the time axis be present, with a bounds attribute.
 # Time averaging will be weighted by the size of the time interval.  Thus, for the noleap calendar
@@ -35,7 +38,7 @@
 # >>>> TO DO:
 # Create a suitable time axis when reading climo data without one.
 
-import numpy, cdms2, sys
+import numpy, cdms2, sys, math
 
 # Silence annoying messages about setting the NetCDF file type.  I don't care what we get...
 cdms2.setNetcdfShuffleFlag(0)
@@ -70,11 +73,12 @@ def next_tbounds_prescribed_step( red_time_bnds, data_time_bnds, dt ):
     if len(red_time_bnds)==0:
         t0 = data_time_bnds[0][0]
         return numpy.array([[t0,t0+dt]])
+    t0 = red_time_bnds[-1][0]
     t1 = red_time_bnds[-1][1]
-    t1t2 = [[t1, t1+dt]]
+    t1t2 = numpy.array([[t0+dt, t1+dt]],dtype=numpy.int32)
     return numpy.concatenate( ( red_time_bnds, t1t2 ), axis=0 )
 
-def initialize_redfile( filen, axisdict, varnames ):
+def initialize_redfile( filen, axisdict, varnames, fill_value ):
     """Initializes the file containing reduced data.  Input is the filename, axes
     variables representing bounds on axes, and names of variables to be initialized.
     Axes are represented as a dictionary, with items like varname:[timeaxis, lataxis, lonaxis].
@@ -84,7 +88,7 @@ def initialize_redfile( filen, axisdict, varnames ):
     g = cdms2.open( filen, 'w' )
     for varn in varnames:
         axes = axisdict[varn]
-        var = cdms2.createVariable( numpy.zeros([len(ax) for ax in axes]),
+        var = cdms2.createVariable( numpy.zeros([len(ax) for ax in axes]), fill_value=fill_value,
                                      axes=axes, copyaxes=False )
         var.id = varn
         g.write(var)
@@ -94,20 +98,31 @@ def initialize_redfile( filen, axisdict, varnames ):
     g.write( time_wts )
     g.close()
 
-def initialize_redfile_from_datafile( redfilen, varnames, datafilen, dt=0 ):
+def initialize_redfile_from_datafile( redfilen, varnames, datafilen, dt=0, init_red_tbounds=None ):
     """Initializes a file containing the partially-time-reduced average data, given the names
     of the variables to reduce and the name of a data file containing those variables with axes.
-    If provided, dt is a fixed time interval for defining the time axis."""
+    If provided, dt is a fixed time interval for defining the time axis.
+    If provided, init_red_tbounds is the first interval for time_bnds.
+    For example in the 360-day calendar with time units of days, dt=360 and
+    init_red_tbounds=[[150,240]] would set up the partially-time-reduced averages for annual
+    trends of values averaged over the JJA season.
+    """
     boundless_axes = set([])
     f = cdms2.open( datafilen )
     axisdict = {}
     if dt>0:   # time axis should have fixed intervals, size dt
-        red_time_bnds = next_tbounds_prescribed_step( [], f.getAxis('time').getBounds(), dt )
+        if init_red_tbounds is None or init_red_tbounds==[] or init_red_tbounds==[[]]:
+            init_red_tbounds=[]
+        red_time_bnds = next_tbounds_prescribed_step(
+            init_red_tbounds, f.getAxis('time').getBounds(), dt )
         red_time = [ 0.5*(tb[0]+tb[1]) for tb in red_time_bnds ]
         timeaxis = cdms2.createAxis( red_time, red_time_bnds, 'time' )
         axisdict['time'] = timeaxis
+    fill_value = None
     for varn in varnames:
         dataaxes = f[varn].getAxisList()
+        if fill_value is None:
+            fill_value = f[varn].getMissing()
         axes = []
         for ax in dataaxes:
             if dt>0 and ax.isTime():
@@ -118,7 +133,7 @@ def initialize_redfile_from_datafile( redfilen, varnames, datafilen, dt=0 ):
         axisdict[varn] = axes
     for ax in boundless_axes:
         print "WARNING, axis",ax.id,"has no bounds"
-    initialize_redfile( 'redtest.nc', axisdict, varnames )
+    initialize_redfile( 'redtest.nc', axisdict, varnames, fill_value )
     f.close()
 
 def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds ):
@@ -151,39 +166,66 @@ def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds )
     assert( newvars[0].getDomain()[0][0].isTime() )
     assert( redvars[0].getDomain()[0][0].isTime() )
 
-    redtime = redvars[0].getTime()  # an axis
+    redtime = redvars[0].getTime()  # the partially-reduced time axis
     redtime_len = redtime.shape[0]
-    newtime = newvars[0].getTime()
-    newtime_bounds = newtime.getBounds()
-    newtime_wts = numpy.zeros( newtime.shape[0] )
+    newtime = newvars[0].getTime()  # original time axis, from the new variable
+    newtime_bnds = newtime.getBounds()
+    # newtime_wts[j][i] is the weight applied to the data at time newtime[j] in computing
+    # an average, reduced time for time newtime[ newtime_rti[i] ], 0<=i<2.
+    # If newtime_rti[i]<0, that means the weight is 0.
+    maxolaps = 3  # Maximum number of data time intervals which could overlap with a single
+    #               reduced-time interval.  We're unlikely to see more than 2.
+    newtime_wts = numpy.zeros(( newtime.shape[0], maxolaps ))
+    newtime_rti = numpy.zeros(( newtime.shape[0], maxolaps ), numpy.int32) - 1
     for j in range( newtime.shape[0] ):
-        newtime_wts[j] = newtime_bounds[j][1] - newtime_bounds[j][0]
-        # I couldn't figure out how to do this with slicing syntax.
+        # First, extend redtime and redtime_bnds if necessary:
+        if newtime_bnds[j][1] > redtime_bnds[-1][1]:
+            bndmin = max( newtime_bnds[j][0], next_tbounds[0] )
+            bndmax = min( newtime_bnds[j][1], next_tbounds[1] )
+            weight = bndmax-bndmin
+            if weight>0:
+                redtime_bnds[redtime_len] = next_tbounds
+                redtime[redtime_len] = 0.5*(
+                    redtime_bnds[redtime_len][1] + redtime_bnds[redtime_len][0] )
+                redtime_wts[redtime_len] = 0.0
+                redtime_len +=1
+
+        # The weight of time newtime[j] is the part of its bounds which lie within some reduced-
+        # time bounds.  We'll also need to remember the indices of the reduced-times for
+        # which this is nonzero (there will be few of those, many reduced times total)
+        k = -1
+        for i,red_bnds in enumerate( redtime_bnds ):
+            bndmin = max( newtime_bnds[j][0], red_bnds[0] )
+            bndmax = min( newtime_bnds[j][1], red_bnds[1] )
+            weight = bndmax-bndmin
+            if weight<0:
+                continue
+            else:
+                k += 1
+                newtime_wts[j][k] = weight
+                newtime_rti[j][k] = i
+        #  This much simpler expression works if there is no overlap:
+        #newtime_wts[j] = newtime_bnds[j][1] - newtime_bnds[j][0]
+        assert( k<maxolaps ) # If k be unlimited, coding is more complicated.
 
     for j,nt in enumerate(newtime):
-        if nt>redtime_bnds[-1][1]:
-            if next_tbounds==[]:
-                continue
-            # Extend redtime, redtime_bnds, redvar, redtime_wts.
-            redtime_wts[redtime_len] = newtime_wts[j]
+        for k in range(maxolaps):
+            i = int( newtime_rti[j][k] )
+            if i<0: continue
             for iv in range(nvars):
-                redvars[iv][redtime_len] = newvars[iv][j]
-            redtime_bnds[redtime_len] = next_tbounds
-            #redtime_bnds = numpy.append( redtime_bnds, [next_tbounds], axis=0 )
-            redtime[redtime_len] = 0.5*(
-                redtime_bnds[redtime_len][1] + redtime_bnds[redtime_len][0] )
-            redtime_len +=1
-        else:
-            # time is in an existing interval, probably the last one.
-            for i in range( redtime_len-1, -1, -1 ):  # same as range(redtime_len) but reversed
-                if nt<redtime_bnds[i][0]: continue
-                assert( nt<=redtime_bnds[i][1] )
-                for iv in range(nvars):
-                    redvars[iv][i] = ( redvars[iv][i]*redtime_wts[i] + newvars[iv][j]*newtime_wts[j] ) /\
-                        ( redtime_wts[i] + newtime_wts[j] )
-                redtime_wts[i] += newtime_wts[j]
-                break
+                if newtime_wts[j,k]>0:
+                    redvars[iv][i] =\
+                        ( redvars[iv][i]*redtime_wts[i] + newvars[iv][j]*newtime_wts[j,k] ) /\
+                        ( redtime_wts[i] + newtime_wts[j,k] )
+            redtime_wts[i] += newtime_wts[j,k]
 
+    #print "next_tbounds= ",next_tbounds
+    #print "redtime_bnds=",redtime_bnds[:][:]
+    #print "redtime_wts=",redtime_wts[:][:]
+    #print "newtime_bnds=",newtime_bnds[:][:]
+    #print "newtime_wts=",newtime_wts[:][:]
+    #print "newtime_rti=",newtime_rti[:][:]
+    #print
     return redvars,redtime_wts,redtime
 
 def update_time_avg_from_files( redvars, redtime_bnds, redtime_wts, filenames,
@@ -207,11 +249,26 @@ def update_time_avg_from_files( redvars, redtime_bnds, redtime_wts, filenames,
             update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, tbnds[-1] )
         f.close()
 
-# Second test
 def test_time_avg( redfilen, varnames, datafilenames ):
     #dt = 0   # if =0, the "reduced" time bounds are exactly the same as in the input data
-    dt = 365   # if >0, a fixed time interval for partially time-reduced data
-    initialize_redfile_from_datafile( redfilen, varnames, datafilenames[0], dt )
+    dt = 365   # if >0, a fixed time step for partially time-reduced data
+    #init_red_tbounds = [[]] # if [[]] or  [] or None, a reduced time interval is dt, the time step from
+    #                       one interval to the next; thus all time is covered
+    f = cdms2.open(datafilenames[0])
+    data_time = f.getAxis('time')
+    init_data_tbounds = data_time.getBounds()[0]
+    # N is used to start the intervals off in the right year.  Note that this works only if calendar has a fixed-length year
+    N = math.floor(data_time[0]/365.)
+    print "N=",N
+    print "data_time=",data_time, data_time[0]-N*365, data_time[-1]-N*365
+    print "init_data_tbounds=",init_data_tbounds, [init_data_tbounds[0]-N*365,init_data_tbounds[1]-N*365]
+    init_red_tbounds = numpy.array([[150,240]], dtype=numpy.int32) # example time interval for a single season - not all times
+    init_red_tbounds = init_red_tbounds + N*365
+    print "init_red_tbounds=",init_red_tbounds
+
+    #                              go into time-reduced data if dt=365
+    initialize_redfile_from_datafile( redfilen, varnames, datafilenames[0], dt,
+                                      init_red_tbounds )
 
     g = cdms2.open( redfilen, 'r+' )
     redtime_wts = g['time_weights']
@@ -221,7 +278,6 @@ def test_time_avg( redfilen, varnames, datafilenames ):
     if dt==0:
         update_time_avg_from_files( redvars, redtime_bnds, redtime_wts, datafilenames )
     else:
-        print "In test_time_avg, redtime_bnds=",redtime_bnds[:]
         update_time_avg_from_files(
             redvars, redtime_bnds, redtime_wts, datafilenames,
             fun_next_tbounds = (lambda rtb,dtb,dt=dt: next_tbounds_prescribed_step(rtb,dtb,dt) ) )
