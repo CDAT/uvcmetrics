@@ -120,6 +120,7 @@ class plotspec(basic_id):
             basic_id.__init__(self,*vid)
         else:
             basic_id.__init__(self,vid)
+
         if zfunc==None:
             if len(zvars)==0:
                 zfunc = (lambda: None)
@@ -127,6 +128,7 @@ class plotspec(basic_id):
                 zfunc = (lambda z: z)
         if zrangefunc==None:
             zrangefunc = (lambda: None)
+
         if z2func==None:
             if len(z2vars)==0:
                 z2func = (lambda: None)
@@ -134,6 +136,23 @@ class plotspec(basic_id):
                 z2func = (lambda z2: z2)
         if z2rangefunc==None:
             z2rangefunc = (lambda: None)
+        
+        if z3func==None:
+            if len(z3vars) == 0:
+               z3func = (lambda: None)
+            else:
+               z3func = (lambda z3 :z3)
+        if z3rangefunc == None:
+            z3rangefunc = (lambda: None)
+
+        if z4func==None:
+            if len(z4vars) == 0:
+               z4func = (lambda: None)
+            else:
+               z4func = (lambda z4 :z4)
+        if z4rangefunc == None:
+            z4rangefunc = (lambda: None)
+
         self.zfunc = zfunc
         self.zvars = zvars
         self.zrangevars = zrangevars
@@ -360,6 +379,13 @@ class level_variable_for_amwg_set5(basic_level_variable):
             "200":200, "300":300, "500":500, "850":850,
             }
         return opts
+
+#class lmwg_set9_variable(basic_plot_variable):
+#   """ i see no reaason why these stubs live in here instead of in amwg*.py or lmwg.py. So I moved the one for land to lmwg.
+#   @staticmethod
+#   def varoptions():
+#      opts={'TSA':'TSA', 'PREC':'PREC','ASA':'ASA'}
+#      return opts
 
 class basic_pole_variable(basic_plot_variable):
     """represents a typical variable that reduces the latitude axis."""
