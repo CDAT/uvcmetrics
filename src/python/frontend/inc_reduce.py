@@ -113,8 +113,10 @@ def initialize_redfile_from_datafile( redfilen, varnames, datafilen, dt=0, init_
     if dt>0:   # time axis should have fixed intervals, size dt
         if init_red_tbounds is None or init_red_tbounds==[] or init_red_tbounds==[[]]:
             init_red_tbounds=[]
-        red_time_bnds = next_tbounds_prescribed_step(
-            init_red_tbounds, f.getAxis('time').getBounds(), dt )
+            red_time_bnds = next_tbounds_prescribed_step(
+                init_red_tbounds, f.getAxis('time').getBounds(), dt )
+        else:
+            red_time_bnds = init_red_tbounds
         red_time = [ 0.5*(tb[0]+tb[1]) for tb in red_time_bnds ]
         timeaxis = cdms2.createAxis( red_time, red_time_bnds, 'time' )
         axisdict['time'] = timeaxis
@@ -184,11 +186,18 @@ def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds )
             bndmax = min( newtime_bnds[j][1], next_tbounds[1] )
             weight = bndmax-bndmin
             if weight>0:
+                # Extend the time axis to add a new time, time bounds, and weight.  With one more
+                # silly step (see below), this will also have the effect of extending redvars along
+                # the time axis.
                 redtime_bnds[redtime_len] = next_tbounds
                 redtime[redtime_len] = 0.5*(
                     redtime_bnds[redtime_len][1] + redtime_bnds[redtime_len][0] )
                 redtime_wts[redtime_len] = 0.0
                 redtime_len +=1
+        for iv in range(nvars):
+            # Without this silly step, the data in redvars[iv] won't be expanded to match the
+            # newly expanded time axis...
+            dummy = redvars[iv].shape
 
         # The weight of time newtime[j] is the part of its bounds which lie within some reduced-
         # time bounds.  We'll also need to remember the indices of the reduced-times for
@@ -214,6 +223,7 @@ def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds )
             if i<0: continue
             for iv in range(nvars):
                 if newtime_wts[j,k]>0:
+                    #print "jfp redvars[",iv,"][",i,"]=",redvars[iv][i]
                     redvars[iv][i] =\
                         ( redvars[iv][i]*redtime_wts[i] + newvars[iv][j]*newtime_wts[j,k] ) /\
                         ( redtime_wts[i] + newtime_wts[j,k] )
