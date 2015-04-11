@@ -40,7 +40,8 @@
 
 import numpy, cdms2, sys, math
 
-# Silence annoying messages about setting the NetCDF file type.  I don't care what we get...
+# Silence annoying messages about setting the NetCDF file type.  Also, these three lines will
+# ensure that we get NetCDF-3 files.  Expansion of a FileAxis may not work on NetCDF-4 files.
 cdms2.setNetcdfShuffleFlag(0)
 cdms2.setNetcdfDeflateFlag(0)
 cdms2.setNetcdfDeflateLevelFlag(0)
@@ -98,10 +99,11 @@ def initialize_redfile( filen, axisdict, varnames, fill_value ):
     g.write( time_wts )
     g.close()
 
-def initialize_redfile_from_datafile( redfilen, varnames, datafilen, dt=0, init_red_tbounds=None ):
+def initialize_redfile_from_datafile( redfilen, varnames, datafilen, dt=-1, init_red_tbounds=None ):
     """Initializes a file containing the partially-time-reduced average data, given the names
     of the variables to reduce and the name of a data file containing those variables with axes.
     If provided, dt is a fixed time interval for defining the time axis.
+    dt=0 is special in that it creates a climatology file.
     If provided, init_red_tbounds is the first interval for time_bnds.
     For example in the 360-day calendar with time units of days, dt=360 and
     init_red_tbounds=[[150,240]] would set up the partially-time-reduced averages for annual
@@ -110,7 +112,7 @@ def initialize_redfile_from_datafile( redfilen, varnames, datafilen, dt=0, init_
     boundless_axes = set([])
     f = cdms2.open( datafilen )
     axisdict = {}
-    if dt>0:   # time axis should have fixed intervals, size dt
+    if dt>=0:   # time axis should have fixed intervals, size dt
         if init_red_tbounds is None or init_red_tbounds==[] or init_red_tbounds==[[]]:
             init_red_tbounds=[]
             red_time_bnds = next_tbounds_prescribed_step(
@@ -127,7 +129,7 @@ def initialize_redfile_from_datafile( redfilen, varnames, datafilen, dt=0, init_
             fill_value = f[varn].getMissing()
         axes = []
         for ax in dataaxes:
-            if dt>0 and ax.isTime():
+            if dt>=0 and ax.isTime():
                 axes.append( timeaxis )
             else:
                 axes.append( ax )
@@ -138,7 +140,19 @@ def initialize_redfile_from_datafile( redfilen, varnames, datafilen, dt=0, init_
     initialize_redfile( 'redtest.nc', axisdict, varnames, fill_value )
     f.close()
 
-def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds ):
+def adjust_time_for_climatology( newtime, redtime ):
+    """Changes the time axis newtime for use in a climatology calculation.  That is, the values of
+    the time axis are shifted to lie within a single year suitable for averaging with the existing
+    reduced (climatology) variables redvars.
+    """
+    newtime.toRelativeTime( redtime.units, redtime.getCalendar() )
+    assert( newtime.calendar=='noleap' ) # btw, newtime.getCalendar()==4113 means newtime.calendar=="noleap"
+    N = math.floor(newtime[0]/365.)   # >>>> assumes noleap calendar!
+    newtime[:] -= N*365               # >>>> assumes noleap calendar!
+    newtime.setBounds( newtime.getBounds() - N*365 ) # >>>> assumes noleap calendar!
+    return newtime
+
+def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds, dt=None ):
     """Updates the time-reduced data for a list of variables.  The reduced-time and averaged
     variables are listed in redvars.  Its weights (for time averaging) are another variable,
     redtime_wts.
@@ -153,6 +167,8 @@ def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds )
     next_tbounds is the next time interval, used if newvar is defined on a time beyond redvar's
     present time axis.  If next_tbounds==[], newvar will be ignored on such times.  Normally
     next_tbounds will be set to [] when updating a climatology file which has been initialized.
+    The last argument dt is used only in that dt=0 means that we are computing climatologies - hence
+    the new data's time axis must be adjusted before averaging the data into redvars.
     """
 
     # >>>> TO DO <<<< Ensure that each redvar, redtime_wts, newvar have consistent units
@@ -171,6 +187,8 @@ def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds )
     redtime = redvars[0].getTime()  # the partially-reduced time axis
     redtime_len = redtime.shape[0]
     newtime = newvars[0].getTime()  # original time axis, from the new variable
+    if dt==0:
+        newtime = adjust_time_for_climatology( newtime, redtime )
     newtime_bnds = newtime.getBounds()
     # newtime_wts[j][i] is the weight applied to the data at time newtime[j] in computing
     # an average, reduced time for time newtime[ newtime_rti[i] ], 0<=i<2.
@@ -198,6 +216,11 @@ def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds )
             # Without this silly step, the data in redvars[iv] won't be expanded to match the
             # newly expanded time axis...
             dummy = redvars[iv].shape
+            # This also will do the job, but it looks like a lot of i/o:
+            #   redvars[iv].parent.write(redvars[iv])
+            # It doesn't help to write redtime_wts or redtime_bnds.  You need to write a variable
+            # with the same axes as redvars.
+            # This doesn't do the job:  redvars[iv].parent.sync()
 
         # The weight of time newtime[j] is the part of its bounds which lie within some reduced-
         # time bounds.  We'll also need to remember the indices of the reduced-times for
@@ -239,7 +262,7 @@ def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds )
     return redvars,redtime_wts,redtime
 
 def update_time_avg_from_files( redvars, redtime_bnds, redtime_wts, filenames,
-                                fun_next_tbounds=next_tbounds_copyfrom_data ):
+                                fun_next_tbounds=next_tbounds_copyfrom_data, dt=None ):
     """Updates the time-reduced data for a several variables.  The reduced-time and averaged
     variables are the list redvars.  Its weights (for time averaging) are another variable, redtime_wts.
     (Each variable redvar of redvars has the same time axis, and it normally has an attribute wgts
@@ -247,8 +270,9 @@ def update_time_avg_from_files( redvars, redtime_bnds, redtime_wts, filenames,
     The new data will be read from the specified files, which should cover a time sequence in order.
     We expect each member of redvar; and redtime_bnds and redtime_wts, to be a FileVariable.
     This function doesn't perform any spatial reductions.
-    The last argument is a function which will compute the next_tbounds argument of update_time_avg,
+    The penultimate argument is a function which will compute the next_tbounds argument of update_time_avg,
     i.e. the next time interval (if any) to be appended to the bounds of the time axis of redvars.
+    The last argument dt is used only in that dt=0 means that we are computing climatologies.
     """
     for filen in filenames:
         f = cdms2.open(filen)
@@ -256,16 +280,16 @@ def update_time_avg_from_files( redvars, redtime_bnds, redtime_wts, filenames,
         tbnds = apply( fun_next_tbounds, ( redtime_bnds, data_tbounds ) )
         newvars = [ f(redvar.id) for redvar in redvars ]
         redvar,redtime_wts,redtime =\
-            update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, tbnds[-1] )
+            update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, tbnds[-1], dt )
         f.close()
 
 def test_time_avg( redfilen, varnames, datafilenames ):
-    #dt = 0   # if =0, the "reduced" time bounds are exactly the same as in the input data
+    #dt = None   # if None, the "reduced" time bounds are exactly the same as in the input data
     dt = 365   # if >0, a fixed time step for partially time-reduced data
     #init_red_tbounds = [[]] # if [[]] or  [] or None, a reduced time interval is dt, the time step from
     #                       one interval to the next; thus all time is covered
     f = cdms2.open(datafilenames[0])
-    data_time = f.getAxis('time')
+    data_time = f.getAxis('time')  # a FileAxis
     init_data_tbounds = data_time.getBounds()[0]
     # N is used to start the intervals off in the right year.  Note that this works only if calendar has a fixed-length year
     N = math.floor(data_time[0]/365.)
@@ -285,12 +309,51 @@ def test_time_avg( redfilen, varnames, datafilenames ):
     redtime_bnds = g[ g.getAxis('time').bounds ]
     redvars = [ g[varn] for varn in varnames ]
 
-    if dt==0:
+    if dt is None:
         update_time_avg_from_files( redvars, redtime_bnds, redtime_wts, datafilenames )
     else:
         update_time_avg_from_files(
             redvars, redtime_bnds, redtime_wts, datafilenames,
             fun_next_tbounds = (lambda rtb,dtb,dt=dt: next_tbounds_prescribed_step(rtb,dtb,dt) ) )
+
+    g.close()
+
+    # For testing, print results...
+    g = cdms2.open( redfilen )
+    redtime = g.getAxis('time')
+    redtime_bnds = g( redtime.bounds )
+    redtime_wts = g('time_weights')
+    TS = g('TS')
+    PS = g('PS')
+    print "redtime=",redtime
+    print "redtime_bnds=",redtime_bnds
+    print "redtime_wts=",redtime_wts
+    print "TS=",TS
+    print "PS=",PS
+
+def test_climos( redfilen, varnames, datafilenames ):
+    # Assumes, without checking, the noleap (365 day) calendar, and time units in "days since..."
+    season = 'JJA'  # >>>> DJF will be more complicated because it spans years, and we may want to
+    #                 >>>> ignore data which covers only part of a season
+    f = cdms2.open(datafilenames[0])
+    data_time = f.getAxis('time')  # a FileAxis
+    init_data_tbounds = data_time.getBounds()[0]
+
+    dt = 0      # specifies climatology file
+    init_red_tbounds = numpy.array([[151,243]], dtype=numpy.int32) # JJA in noleap calendar, in days, Jan 1 is day 0.
+    initialize_redfile_from_datafile( redfilen, varnames, datafilenames[0], dt,
+                                      init_red_tbounds )
+
+    g = cdms2.open( redfilen, 'r+' )
+    redtime = g.getAxis('time')
+    redtime.units = 'days since 0'
+    redtime.calendar = 'noleap'
+    redtime_wts = g['time_weights']
+    redtime_bnds = g[ g.getAxis('time').bounds ]
+    redvars = [ g[varn] for varn in varnames ]
+
+    update_time_avg_from_files( redvars, redtime_bnds, redtime_wts, datafilenames,
+                                fun_next_tbounds = (lambda rtb,dtb,dt=dt: rtb), dt=dt )
 
     g.close()
 
@@ -314,6 +377,7 @@ if __name__ == '__main__':
         datafilenames = ['b30.009.cam2.h0.0600-01.nc','b30.009.cam2.h0.0600-02.nc']        
     redfilen = 'redtest.nc'
     varnames = ['TS', 'PS']
-    test_time_avg( redfilen, varnames, datafilenames )
+    #test_time_avg( redfilen, varnames, datafilenames )
+    test_climos( redfilen, varnames, datafilenames )
 
 
