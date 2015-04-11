@@ -22,7 +22,8 @@ from cdutil.times import Seasons
 from pprint import pprint
 from metrics.frontend.options import *
 # For psutil, see https://github.com/giampaolo/psutil ...
-import cProfile, time, resource, psutil
+# import psutil # used only for memory profiling
+import cProfile, time, resource
 
 class climatology_variable( reduced_variable ):
     def __init__(self,varname,filetable,seasonname='ANN'):
@@ -149,8 +150,8 @@ def compute_and_write_climatologies( varkeys, reduced_variables, season, case=''
             pmemusg = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss # "maximum resident set size"
             pmemusg = pmemusg / 1024./1024.  # On Linux, should be 1024 for MB
             #print "jfp   peak memory",pmemusg,"MB (GB on Linux)"
-            process = psutil.Process(os.getpid())
-            mem = process.get_memory_info()[0] / float(2**20)
+            #requires psutil process = psutil.Process(os.getpid())
+            #requires psutil mem = process.get_memory_info()[0] / float(2**20)
             #print "jfp   process memory",mem,"MB"
         else:
             continue
