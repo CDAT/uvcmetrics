@@ -911,6 +911,13 @@ class plot_spec(object):
     def results(self,newgrid=0):
         return self._results(newgrid)
 
+    def uniquefts(self, ftlist):
+        names = []
+        for i in range(len(ftlist)):
+            names.append(ftlist[i]._name)
+        names = list(set(names))
+        return names
+
     def getfts(self, model, obs):
         if len(model) == 2:
 #           print 'Two models'
@@ -933,6 +940,40 @@ class plot_spec(object):
            filetable1 = obs[0]
            filetable2 = None
         return filetable1, filetable2
+
+    # This takes the list of filetables and returns 3 lists:
+    # 1) the indexes for the duplicatly named fts (the ones that are raw+climos)
+    # 2) the indexes for the purely climo fts
+    # 3) the indexes for the purely raw fts
+    def parse_fts(self, fts):
+    # First, find duplicates.
+    # eg, if ft[0] = foo, ft[1] = bar, ft[2] = foo, ft[3] = blah, ft[4] = bar it would return
+    # [ [0, 2], [1, 4]]
+        raw = []
+        climo = []
+        names = []
+        dups = []
+        for i in range(len(fts)):
+           if fts[i]._climos == 'yes':
+               climo.append(i)
+           else:
+               raw.append(i)
+           names.append(fts[i]._name)
+        newnames = list(set(names))
+        if len(newnames) != len(names):
+           dup_list = []
+           for i in range(len(fts)):
+              dup_list.append([])
+              for j in range(len(fts)):
+                 if i == j:
+                    pass
+                 if fts[i]._name == fts[j]._name:
+                    dup_list[i].append(j)
+           for elem in dup_list:
+              if elem not in dups and len(elem) == 2:
+                 dups.append(elem)
+        return dups, climo, raw 
+
 
 # To profile, replace (by name changes) the above results() with the following one:
     def profiled_results(self,newgrid=0):
@@ -992,7 +1033,10 @@ class plot_spec(object):
             try:
                 zax,zrv  = self.compute_plot_var_value( ps, ps.zvars, ps.zfunc )
                 z2ax,z2rv = self.compute_plot_var_value( ps, ps.z2vars, ps.z2func )
-                if zax is None and z2ax is None:
+                z3ax,z3rv = self.compute_plot_var_value( ps, ps.z3vars, ps.z3func )
+                z4ax,z4rv = self.compute_plot_var_value( ps, ps.z4vars, ps.z4func )
+
+                if zax is None and z2ax is None and z3ax is None and z4ax is None:
                     continue
             except Exception as e:
                 if ps._id != plotspec.dict_id( None, None, None, None, None ):
@@ -1004,6 +1048,8 @@ class plot_spec(object):
             vars = []
             zlab=""
             z2lab=""
+            z3lab =""
+            z3lab = ""
             if zax is not None and len(getattr(zax,'data',[None]))>0:  # a tuple always passes
                 if hasattr(zax,'regridded') and newgrid!=0:
                     vars.append( regridded_vars[zax.regridded] )
@@ -1021,6 +1067,23 @@ class plot_spec(object):
                 new_id = self._build_label( z2rv, p )
                 z2ax.id = new_id
                 z2lab += ' '+z2ax.id
+            if z3ax is not None:
+               if hasattr(z3ax,'regridded') and newgrid != 0:
+                  vars.append( regridded_vars[z3ax.regridded] )
+               else:
+                  vars.append( z3ax)
+               new_id = self._build_labal( z3rv, p )
+               z3ax.id = new_id
+               z3lab += ' '+z3ax.id
+            if z4ax is not None:
+               if hasattr(z4ax,'regridded') and newgrid != 0:
+                  vars.append( regridded_vars[z4ax.regridded] )
+               else:
+                  vars.append( z4ax)
+               new_id = self._build_labal( z4rv, p )
+               z4ax.id = new_id
+               z4lab += ' '+z4ax.id
+
             if vars==[]:
                 self.plotspec_values[p] = None
                 continue
@@ -1034,11 +1097,17 @@ class plot_spec(object):
             #process the ranges if present
             zrange = ps.zrangevars
             z2range = ps.z2rangevars
+            z3range = ps.z3rangevars
+            z4range = ps.z4rangevars
             ranges = {}
-            if zrange != None and z2range != None:
+            if zrange != None and z2range != None and z3range != None and z4range != None:
                 ranges.update(ps.zrangevars)
                 if ps.z2rangevars:
-                    ranges.update(ps.z2rangevars)
+                   ranges.update(ps.z2rangevars)
+                if ps.z3rangevars:
+                   ranges.update(ps.z3rangevars)
+                if ps.z4rangevars:
+                   ranges.upadte(ps.z4rangevars)
             else:
                 ranges = None
             
@@ -1082,14 +1151,21 @@ class plot_spec(object):
         """Inputs: a plotspec object, a list zvars of precursor variables, and a function zfunc.
         This method computes the variable z to be plotted as zfunc(zvars), and returns it.
         It also returns zrv for use in building a label."""
+        print 'inside compute plot var value'
+#        print zvars
         vvals = self.variable_values
         zrv = [ vvals[k] for k in zvars ]
+#        print vvals
+#        print zrv
+
         if any([a is None for a in zrv]):
             print "WARNING - cannot compute plot results from zvars=",ps.zvars
             print "because missing results for",[k for k in ps.zvars if vvals[k] is None]
             return None, None
         z = apply( zfunc, zrv )
         if hasattr(z,'mask') and z.mask.all():
+#            print type(z)
+            print 'in uvcdat.py' # this next line is printed from two different possible places.
             print "ERROR, all values of",z.id,"are missing!"
             return None,None
         return z, zrv

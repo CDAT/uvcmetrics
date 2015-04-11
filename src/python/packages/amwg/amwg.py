@@ -14,6 +14,7 @@ from metrics.common.utilities import *
 from metrics.fileio import stationData
 from metrics.packages.amwg.derivations import *
 from metrics.packages.amwg.derivations import qflx_lhflx_conversions as flxconv
+from metrics.frontend.defines import *
 from unidata import udunits
 import cdutil.times, numpy
 from numbers import Number

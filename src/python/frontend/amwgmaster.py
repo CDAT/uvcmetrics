@@ -1,6 +1,7 @@
 diags_varlist = {}
 diags_collection = {}
 diags_obslist = {}
+from metrics.frontend.defines import *
 
 # These are special "variables" that we need to skip over when iterating over real variables. 
 # They are usually flags or parameters for the entire collection.
@@ -127,6 +128,10 @@ diags_collection['12']['desc'] = 'Vertical profile plots from 17 selected statio
 diags_collection['12']['package'] = 'AMWG'
 diags_collection['12']['options'] = {'logo':'no'}
 diags_collection['12']['seasons'] = ['NA']
+diags_collection['12']['T'] = {'plottype':'12', 'obs':['RAOBS_1'], 'varopts':station_names}
+diags_collection['12']['Q'] = {'plottype':'12', 'obs':['RAOBS_1'], 'varopts':station_names}
+diags_collection['12']['H'] = {'plottype':'12', 'obs':['RAOBS_1'], 'varopts':station_names}
+
 # 3 variables, treat the stations like regions maybe? or as obs sets for the vars?
 # *** Collection 15 ***
 diags_collection['15'] = {}
@@ -488,6 +493,7 @@ diags_varlist['FLUTC'] = {'desc': 'TOA clearsky upward LW flux (Northern)'}
 diags_varlist['CLDTOT'] = {'desc': 'Mid cloud amount (IR clouds)'}
 diags_varlist['CLDMED'] = {'desc': 'Mid cloud amount (IR clouds) (Northern)'}
 diags_varlist['Q'] = {'desc': 'Specific Humidity'}
+diags_varlist['H'] = {'desc': 'Moist Static Energy'}
 diags_varlist['FSDS'] = {'desc': 'Surf SW downwelling flux (Northern)'}
 diags_varlist['U'] = {'desc': 'Zonal Wind'}
 diags_varlist['Ocean_Heat'] = {'desc': 'Ocean Heat', 'filekey':'OCN_HEAT'}
@@ -543,6 +549,7 @@ diags_obslist['HADISST_1'] = {'filekey': 'HADISST', 'desc': 'HadISST/OI.v2 (Clim
 diags_obslist['XA_1'] = {'filekey': 'XA', 'desc': 'CMAP (Xie-Arkin) 1979-98'}
 diags_obslist['SSMI_1'] = {'filekey': 'SSMI', 'desc': 'SSM/I (Wentz) 1987-2000'}
 diags_obslist['ECMWF_1'] = {'filekey': 'ECMWF', 'desc': 'ECMWF Reanalysis 1979-93'}
+diags_obslist['RAOBS_1'] = {'filekey': 'RAOBS', 'desc':'raobs station data'}
 
 
 # Code testing collection. These will not be run but will generate the command line for testing/verification

@@ -8,6 +8,10 @@ import numpy as np
 #                                                                                                     #
 #######################################################################################################
 def return_templates_graphic_methods(canvas1=None, gms=None, ovly=None, onPage=None):
+   print canvas1
+   print gms
+   print ovly
+   print onPage
    if len(gms) == len(ovly): 
 
       # Create a unique graphics method for each diagnostic display
@@ -61,6 +65,7 @@ def return_templates_graphic_methods(canvas1=None, gms=None, ovly=None, onPage=N
       tmmobs = []
       ct = 0
       for i in range(len(gms)):
+          print '******* onPage ', onPage, ' ***** gms[',i,']: ', gms[i],' ***********************'
           if onPage == 2 and gms[i] in ['yxvsx', 'scatter']:
              if ovly[i] == 0:     # use full template
                 ct += 1
@@ -81,13 +86,38 @@ def return_templates_graphic_methods(canvas1=None, gms=None, ovly=None, onPage=N
                 tmmobs.append( canvas1.createtemplate('UVWG_%dof4_'%ct + (str(random.random())[2:]), 'UVWG_%dof4'%ct) )
              else:                # overlay plot use DUD - only plot the data
                 tmmobs.append( canvas1.createtemplate('UVWG_DUD_%dof4_'%ct + (str(random.random())[2:]), 'UVWG_DUD_%dof4'%ct) )
+          elif onPage == 5:
+             if ovly[i] == 0:     # use full template
+                ct += 1
+                tmmobs.append( canvas1.createtemplate('UVWG_%dof5_'%ct + (str(random.random())[2:]), 'UVWG_%dof5'%ct) )
+             else:                # overlay plot use DUD - only plot the data
+                tmmobs.append( canvas1.createtemplate('UVWG_DUD_%dof5_'%ct + (str(random.random())[2:]), 'UVWG_DUD_%dof5'%ct) )
           elif onPage == 6:
              if ovly[i] == 0:     # use full template
                 ct += 1
                 tmmobs.append( canvas1.createtemplate('UVWG_%dof6_'%ct + (str(random.random())[2:]), 'UVWG_%dof6'%ct) )
              else:                # overlay plot use DUD - only plot the data
                 tmmobs.append( canvas1.createtemplate('UVWG_DUD_%dof6_'%ct + (str(random.random())[2:]), 'UVWG_DUD_%dof6'%ct) )
+          elif onPage == 7:
+             if ovly[i] == 0:     # use full template
+                ct += 1
+                tmmobs.append( canvas1.createtemplate('UVWG_%dof7_'%ct + (str(random.random())[2:]), 'UVWG_%dof7'%ct) )
+             else:                # overlay plot use DUD - only plot the data
+                tmmobs.append( canvas1.createtemplate('UVWG_DUD_%dof7_'%ct + (str(random.random())[2:]), 'UVWG_DUD_%dof7'%ct) )
+          elif onPage == 8:
+             if ovly[i] == 0:     # use full template
+                ct += 1
+                tmmobs.append( canvas1.createtemplate('UVWG_%dof8_'%ct + (str(random.random())[2:]), 'UVWG_%dof8'%ct) )
+             else:                # overlay plot use DUD - only plot the data
+                tmmobs.append( canvas1.createtemplate('UVWG_DUD_%dof8_'%ct + (str(random.random())[2:]), 'UVWG_DUD_%dof8'%ct) )
+          elif onPage == 9:
+             if ovly[i] == 0:     # use full template
+                ct += 1
+                tmmobs.append( canvas1.createtemplate('UVWG_%dof9_'%ct + (str(random.random())[2:]), 'UVWG_%dof9'%ct) )
+             else:                # overlay plot use DUD - only plot the data
+                tmmobs.append( canvas1.createtemplate('UVWG_DUD_%dof9_'%ct + (str(random.random())[2:]), 'UVWG_DUD_%dof9'%ct) )
           else:
+             print 'onpage: ', onPage
              tmmobs.append(None)  #jfp
              #return (None, None, None)
       return (gmobs, tmobs, tmmobs)
