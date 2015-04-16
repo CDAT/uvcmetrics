@@ -186,8 +186,11 @@ def compute_and_write_climatologies( varkeys, reduced_variables, season, case=''
         for attr,val in var._file_attributes.items():
             if not hasattr( g, attr ):
                 setattr( g, attr, val )
-    g.season = season
-    g.close()
+    if firsttime:
+        print "ERROR, no variables found.  Did you specify the right input data?"
+    else:
+        g.season = season
+        g.close()
     return case
 
 def climo_driver(opts):
