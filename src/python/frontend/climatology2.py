@@ -16,7 +16,7 @@ from inc_reduce import *
 import os
 import argparse
 
-def climos( fileout, seasonname, varnames, datafilenames ):
+def climos( fileout, seasonname, varnames, datafilenames, omitBySeason=[] ):
     assert( len(datafilenames)>0 )
     assert( len(varnames)>0 )
     f = cdms2.open(datafilenames[0])
@@ -32,6 +32,11 @@ def climos( fileout, seasonname, varnames, datafilenames ):
         print "ERROR. So far climos() has only been implemented for time in days.  Sorry!"
         raise Exception("So far climos() has not been implemented for time in units %s."%
                         getattr( data_time, 'units', '' ) )
+
+    omit_files = {seasonname:[]}
+    for omits in omitBySeason:
+        omit_files[omits[0]] = omits[1:]
+    datafilenames = [fn for fn in datafilenames if fn not in omit_files[seasonname]]
     init_data_tbounds = data_time.getBounds()[0]
     dt = 0      # specifies climatology file
     season = daybounds(seasonname)  # assumes noleap calendar, returns time in days.
@@ -39,7 +44,6 @@ def climos( fileout, seasonname, varnames, datafilenames ):
     initialize_redfile_from_datafile( fileout, varnames, datafilenames[0], dt,
                                       init_red_tbounds )
     g = cdms2.open( fileout, 'r+' )
-    g.season = seasonname
     redtime = g.getAxis('time')
     redtime.units = 'days since 0'
     redtime.calendar = calendar
@@ -49,19 +53,59 @@ def climos( fileout, seasonname, varnames, datafilenames ):
 
     update_time_avg_from_files( redvars, redtime_bnds, redtime_wts, datafilenames,
                                 fun_next_tbounds = (lambda rtb,dtb,dt=dt: rtb), dt=dt )
+    if len(redtime)==2:
+        # This occurs when multiple time units (redtime_bnds) contribute to a single season,
+        # as for DJF in "days since 0" units.  We need a final reduction to a single time point.
+        # This is possible (with sensible time bounds) only if a 1-year shift can join the
+        # intervals.
+        # I can't find a way to shrink a FileVariable, so we need to make a new file:
+        h = cdms2.open('climo2_temp.nc','w')
+        if redtime_bnds[0][1]-365 == redtime_bnds[1][0]:
+            newtime = ( (redtime[0]-365)*redtime_wts[0] + redtime[1]*redtime_wts[1] ) /\
+                ( redtime_wts[0] + redtime_wts[1] )
+            newbnd0 = redtime_bnds[0][0]-365
+            newbnds = numpy.array([[newbnd0, redtime_bnds[1][1]]], dtype=numpy.int32)
+            newwt = redtime_wts[0]+redtime_wts[1]
+            axes = [dom[0] for dom in redvars[0].getDomain()]
+            if axes[0].isTime():
+                axes[0] = cdms2.createAxis( [newtime], id='time', bounds=newbnds )
+                axes[0].units = redtime.units
+            else:
+                raise Exception("haven't coded this case yet, sorry")
+            for iv,var in enumerate(redvars):
+                newvd = (var[0:1]*redtime_wts[0] + var[1:2]*redtime_wts[1])/(redtime_wts[0]+redtime_wts[1])
+                newvar = cdms2.createVariable( newvd, id=var.id, axes=axes )
+                if hasattr(var,'units'): newvar.units = var.units
+                h.write( newvar )
+            h.write( cdms2.createVariable( [newwt], id='time_weights' ) )
+            h.close()
+            g.close()
+            os.rename( fileout, 'climo2_old.nc' )
+            os.rename( 'climo2_temp.nc', fileout )
+            g = cdms2.open( fileout, 'r+' )
+
+    g.season = seasonname
     g.close()
 
 if __name__ == '__main__':
     p = argparse.ArgumentParser(description="Climatology")
     # TO DO: test with various paths.  Does this work naturally? <<<<<<<<<<<<
-    p.add_argument("--outfile", dest="outfile", help="Name of output file (mandatory)", nargs=1, required=True )
-    p.add_argument("--infiles", dest="infiles", help="Names of input files (mandatory)", nargs='+', required=True )
-    p.add_argument("--season", dest="season", help="Season, 3 characters (mandatory)", nargs=1, required=True )
-    p.add_argument("--variables", dest="variables", help="Variable names (mandatory)", nargs='+', required=True )
+    p.add_argument("--outfile", dest="outfile", help="Name of output file (mandatory)", nargs=1,
+                   required=True )
+    p.add_argument("--infiles", dest="infiles", help="Names of input files (mandatory)", nargs='+',
+                   required=True )
+    p.add_argument("--season", dest="season", help="Season, 3 characters (mandatory)", nargs=1,
+                   required=True )
+    p.add_argument("--variables", dest="variables", help="Variable names (mandatory)", nargs='+',
+                   required=True )
+    p.add_argument("--omitBySeason", dest="omitBySeason", help=
+               "Omit files for just the specified season.  For multiple seasons, provide this"+
+                   "argument multiple times. E.g. --omitBySeason DJF lastDECfile.nc\"",
+                   nargs='+', action='append', default=[] )
     args = p.parse_args(sys.argv[1:])
     print args
 
-    climos( args.outfile[0], args.season[0], args.variables, args.infiles )
+    climos( args.outfile[0], args.season[0], args.variables, args.infiles, args.omitBySeason )
 
     # For testing, print results...
     g = cdms2.open( args.outfile[0] )
