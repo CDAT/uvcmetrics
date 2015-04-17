@@ -46,6 +46,35 @@ cdms2.setNetcdfShuffleFlag(0)
 cdms2.setNetcdfDeflateFlag(0)
 cdms2.setNetcdfDeflateLevelFlag(0)
 
+def daybounds( season ):
+    """Input is a 3-character season, e.g. JAN, JJA, ANN.  Output is bounds for that season
+    in units of "days since 0".
+    In most cases the bounds will be like [[lo,hi]].  But for DJF it will be like
+    [[lo1,hi1],[lo2,hi2]].
+    The noleap (365 day) calendar is required."""
+    # This is an incredibly crude way to do it, but works for now.
+    # If permanent, I would make these dictionaries global for performance.
+    dbddic = { 'JAN': [[0,31]],
+               'FEB': [[31,59]],
+               'MAR': [[59,90]],
+               'APR': [[90,120]],
+               'MAY': [[120,151]],
+               'JUN': [[151,181]],
+               'JUL': [[181,212]],
+               'AUG': [[212,243]],
+               'SEP': [[243,273]],
+               'OCT': [[273,304]],
+               'NOV': [[304,334]],
+               'DEC': [[334,365]] }
+    sesdic = { 'MAM': [[ dbddic['MAR'][0][0], dbddic['MAY'][0][1] ]],
+               'JJA': [[ dbddic['JUN'][0][0], dbddic['AUG'][0][1] ]],
+               'SON': [[ dbddic['SEP'][0][0], dbddic['NOV'][0][1] ]],
+               'DJF': [ dbddic['DEC'][0],
+                        dbddic['JAN'][0][0], dbddic['FEB'][0][1] ],
+               'ANN': [[ dbddic['JAN'][0][0], dbddic['DEC'][0][1] ]] }
+    dbddic.update( sesdic )
+    return dbddic[season]        
+
 def next_tbounds_copyfrom_data( red_time_bnds, data_time_bnds ):
     """This is one of many ways to provide a time interval for the computing a partial time
     reduction of data.  This one works for no real time reduction.  A typical case is that
@@ -146,10 +175,19 @@ def adjust_time_for_climatology( newtime, redtime ):
     reduced (climatology) variables redvars.
     """
     newtime.toRelativeTime( redtime.units, redtime.getCalendar() )
-    assert( newtime.calendar=='noleap' ) # btw, newtime.getCalendar()==4113 means newtime.calendar=="noleap"
-    N = math.floor(newtime[0]/365.)   # >>>> assumes noleap calendar!
-    newtime[:] -= N*365               # >>>> assumes noleap calendar!
-    newtime.setBounds( newtime.getBounds() - N*365 ) # >>>> assumes noleap calendar!
+    assert( newtime.calendar=='noleap' )
+    # btw, newtime.getCalendar()==4113 means newtime.calendar=="noleap"
+    
+    # We need to adjust the time to be in the year 0, the year we use for climatology.
+    # It would be natural to compute the adjustment from newtime[0].  But sometimes it's equal to
+    # one of its bounds, on the border between two years!  So it's better to use the midpoint
+    # between two bounds.
+    # Usually we can assume that the time bounds are on monthly borders.  This should be checked, but isn't yet.<<<<
+    timebnds = newtime.getBounds()
+    midtime = 0.5*(timebnds[0][0]+timebnds[0][1])
+    N = math.floor(midtime/365.)   # >>>> assumes noleap calendar, day time units!
+    newtime[:] -= N*365               # >>>> assumes noleap calendar, day time units!
+    newtime.setBounds( newtime.getBounds() - N*365 ) # >>>> assumes noleap calendar, day time units!
     return newtime
 
 def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds, dt=None ):
