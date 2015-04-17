@@ -38,7 +38,7 @@
 # >>>> TO DO:
 # Create a suitable time axis when reading climo data without one.
 
-import numpy, cdms2, sys, math
+import numpy, cdms2, sys, os, math
 
 # Silence annoying messages about setting the NetCDF file type.  Also, these three lines will
 # ensure that we get NetCDF-3 files.  Expansion of a FileAxis may not work on NetCDF-4 files.
@@ -99,7 +99,7 @@ def initialize_redfile( filen, axisdict, varnames, fill_value ):
     g.write( time_wts )
     g.close()
 
-def initialize_redfile_from_datafile( redfilen, varnames, datafilen, dt=-1, init_red_tbounds=None ):
+def initialize_redfile_from_datafile( redfilename, varnames, datafilen, dt=-1, init_red_tbounds=None ):
     """Initializes a file containing the partially-time-reduced average data, given the names
     of the variables to reduce and the name of a data file containing those variables with axes.
     If provided, dt is a fixed time interval for defining the time axis.
@@ -137,7 +137,7 @@ def initialize_redfile_from_datafile( redfilen, varnames, datafilen, dt=-1, init
         axisdict[varn] = axes
     for ax in boundless_axes:
         print "WARNING, axis",ax.id,"has no bounds"
-    initialize_redfile( 'redtest.nc', axisdict, varnames, fill_value )
+    initialize_redfile( redfilename, axisdict, varnames, fill_value )
     f.close()
 
 def adjust_time_for_climatology( newtime, redtime ):
@@ -283,7 +283,7 @@ def update_time_avg_from_files( redvars, redtime_bnds, redtime_wts, filenames,
             update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, tbnds[-1], dt )
         f.close()
 
-def test_time_avg( redfilen, varnames, datafilenames ):
+def test_time_avg( redfilename, varnames, datafilenames ):
     #dt = None   # if None, the "reduced" time bounds are exactly the same as in the input data
     dt = 365   # if >0, a fixed time step for partially time-reduced data
     #init_red_tbounds = [[]] # if [[]] or  [] or None, a reduced time interval is dt, the time step from
@@ -301,10 +301,10 @@ def test_time_avg( redfilen, varnames, datafilenames ):
     print "init_red_tbounds=",init_red_tbounds
 
     #                              go into time-reduced data if dt=365
-    initialize_redfile_from_datafile( redfilen, varnames, datafilenames[0], dt,
+    initialize_redfile_from_datafile( redfilename, varnames, datafilenames[0], dt,
                                       init_red_tbounds )
 
-    g = cdms2.open( redfilen, 'r+' )
+    g = cdms2.open( redfilename, 'r+' )
     redtime_wts = g['time_weights']
     redtime_bnds = g[ g.getAxis('time').bounds ]
     redvars = [ g[varn] for varn in varnames ]
@@ -319,7 +319,7 @@ def test_time_avg( redfilen, varnames, datafilenames ):
     g.close()
 
     # For testing, print results...
-    g = cdms2.open( redfilen )
+    g = cdms2.open( redfilename )
     redtime = g.getAxis('time')
     redtime_bnds = g( redtime.bounds )
     redtime_wts = g('time_weights')
@@ -331,7 +331,7 @@ def test_time_avg( redfilen, varnames, datafilenames ):
     print "TS=",TS
     print "PS=",PS
 
-def test_climos( redfilen, varnames, datafilenames ):
+def test_climos( redfilename, varnames, datafilenames ):
     # Assumes, without checking, the noleap (365 day) calendar, and time units in "days since..."
     season = 'JJA'  # >>>> DJF will be more complicated because it spans years, and we may want to
     #                 >>>> ignore data which covers only part of a season
@@ -341,10 +341,10 @@ def test_climos( redfilen, varnames, datafilenames ):
 
     dt = 0      # specifies climatology file
     init_red_tbounds = numpy.array([[151,243]], dtype=numpy.int32) # JJA in noleap calendar, in days, Jan 1 is day 0.
-    initialize_redfile_from_datafile( redfilen, varnames, datafilenames[0], dt,
+    initialize_redfile_from_datafile( redfilename, varnames, datafilenames[0], dt,
                                       init_red_tbounds )
 
-    g = cdms2.open( redfilen, 'r+' )
+    g = cdms2.open( redfilename, 'r+' )
     redtime = g.getAxis('time')
     redtime.units = 'days since 0'
     redtime.calendar = 'noleap'
@@ -358,7 +358,7 @@ def test_climos( redfilen, varnames, datafilenames ):
     g.close()
 
     # For testing, print results...
-    g = cdms2.open( redfilen )
+    g = cdms2.open( redfilename )
     redtime = g.getAxis('time')
     redtime_bnds = g( redtime.bounds )
     redtime_wts = g('time_weights')
@@ -375,9 +375,9 @@ if __name__ == '__main__':
         datafilenames = sys.argv[1:]
     else:
         datafilenames = ['b30.009.cam2.h0.0600-01.nc','b30.009.cam2.h0.0600-02.nc']        
-    redfilen = 'redtest.nc'
+    redfilename = 'redtest.nc'
     varnames = ['TS', 'PS']
-    #test_time_avg( redfilen, varnames, datafilenames )
-    test_climos( redfilen, varnames, datafilenames )
+    #test_time_avg( redfilename, varnames, datafilenames )
+    test_climos( redfilename, varnames, datafilenames )
 
 
