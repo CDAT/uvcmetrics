@@ -34,13 +34,13 @@ def climos( fileout, seasonname, varnames, datafilenames ):
                         getattr( data_time, 'units', '' ) )
     init_data_tbounds = data_time.getBounds()[0]
     dt = 0      # specifies climatology file
-    # TO DO: convert season name to time in suitable units. <<<<<<<<<<<<<<<<<<
-    assert( seasonname=='ANN' ) # <<<<<<< DO BETTER SOON <<<<<<<<
-    season = [0,365] # This is ANN and assumes noleap calendar, time in days.<<<<<<<<<
+    season = daybounds(seasonname)[0]  # assumes noleap calendar, time in days.
+    # DO MULTIPLE TIME INTERVALS SO AS TO SUPPORT DJF <<<<<<<<<<
     init_red_tbounds = numpy.array([season], dtype=numpy.int32)
     initialize_redfile_from_datafile( fileout, varnames, datafilenames[0], dt,
                                       init_red_tbounds )
     g = cdms2.open( fileout, 'r+' )
+    g.season = season
     redtime = g.getAxis('time')
     redtime.units = 'days since 0'
     redtime.calendar = calendar
@@ -55,11 +55,25 @@ def climos( fileout, seasonname, varnames, datafilenames ):
 if __name__ == '__main__':
     p = argparse.ArgumentParser(description="Climatology")
     # TO DO: test with various paths.  Does this work naturally? <<<<<<<<<<<<
-    p.add_argument("--outfile", dest="outfile", help="Name of output file", nargs=1 )
-    p.add_argument("--infiles", dest="infiles", help="Names of input files", nargs='+' )
-    p.add_argument("--season", dest="season", help="Season, 3 characters", nargs=1 )
-    p.add_argument("--variables", dest="variables", help="Variable names", nargs='+' )
+    p.add_argument("--outfile", dest="outfile", help="Name of output file (mandatory)", nargs=1, required=True )
+    p.add_argument("--infiles", dest="infiles", help="Names of input files (mandatory)", nargs='+', required=True )
+    p.add_argument("--season", dest="season", help="Season, 3 characters (mandatory)", nargs=1, required=True )
+    p.add_argument("--variables", dest="variables", help="Variable names (mandatory)", nargs='+', required=True )
     args = p.parse_args(sys.argv[1:])
     print args
 
     climos( args.outfile[0], args.season[0], args.variables, args.infiles )
+
+    # For testing, print results...
+    g = cdms2.open( args.outfile[0] )
+    redtime = g.getAxis('time')
+    redtime_bnds = g( redtime.bounds )
+    redtime_wts = g('time_weights')
+    TS = g('TS')
+    PS = g('PS')
+    print "redtime=",redtime
+    print "redtime_bnds=",redtime_bnds
+    print "redtime_wts=",redtime_wts
+    print "TS=",TS,TS.shape
+    #print "PS=",PS,PS.shape
+
