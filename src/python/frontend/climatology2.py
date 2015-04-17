@@ -34,13 +34,12 @@ def climos( fileout, seasonname, varnames, datafilenames ):
                         getattr( data_time, 'units', '' ) )
     init_data_tbounds = data_time.getBounds()[0]
     dt = 0      # specifies climatology file
-    season = daybounds(seasonname)[0]  # assumes noleap calendar, time in days.
-    # DO MULTIPLE TIME INTERVALS SO AS TO SUPPORT DJF <<<<<<<<<<
-    init_red_tbounds = numpy.array([season], dtype=numpy.int32)
+    season = daybounds(seasonname)  # assumes noleap calendar, returns time in days.
+    init_red_tbounds = numpy.array(season, dtype=numpy.int32)
     initialize_redfile_from_datafile( fileout, varnames, datafilenames[0], dt,
                                       init_red_tbounds )
     g = cdms2.open( fileout, 'r+' )
-    g.season = season
+    g.season = seasonname
     redtime = g.getAxis('time')
     redtime.units = 'days since 0'
     redtime.calendar = calendar

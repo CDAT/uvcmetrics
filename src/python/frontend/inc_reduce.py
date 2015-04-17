@@ -70,7 +70,7 @@ def daybounds( season ):
                'JJA': [[ dbddic['JUN'][0][0], dbddic['AUG'][0][1] ]],
                'SON': [[ dbddic['SEP'][0][0], dbddic['NOV'][0][1] ]],
                'DJF': [ dbddic['DEC'][0],
-                        dbddic['JAN'][0][0], dbddic['FEB'][0][1] ],
+                        [dbddic['JAN'][0][0], dbddic['FEB'][0][1]] ],
                'ANN': [[ dbddic['JAN'][0][0], dbddic['DEC'][0][1] ]] }
     dbddic.update( sesdic )
     return dbddic[season]        
