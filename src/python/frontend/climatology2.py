@@ -51,7 +51,7 @@ def climos( fileout, seasonname, varnames, datafilenames, omitBySeason=[] ):
     redtime_bnds = g[ g.getAxis('time').bounds ]
     redvars = [ g[varn] for varn in varnames ]
 
-    update_time_avg_from_files( redvars, redtime_bnds, redtime_wts, datafilenames,
+    update_time_avg_from_files( redvars, [redtime_bnds], [redtime_wts], datafilenames,
                                 fun_next_tbounds = (lambda rtb,dtb,dt=dt: rtb), dt=dt )
     if len(redtime)==2:
         # This occurs when multiple time units (redtime_bnds) contribute to a single season,

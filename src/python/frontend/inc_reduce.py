@@ -304,9 +304,10 @@ def update_time_avg_from_files( redvars, redtime_bnds, redtime_wts, filenames,
     """Updates the time-reduced data for a several variables.  The reduced-time and averaged
     variables are the list redvars.  Its weights (for time averaging) are another variable, redtime_wts.
     (Each variable redvar of redvars has the same time axis, and it normally has an attribute wgts
-    which is the same as redtime_wts.id.)  redtime_bnds is the reduced time bounds.
+    which is the same as redtime_wts.id.)  redtime_bnds is a list of reduced time bounds.
+    Corresponging to it is the weights redtime_wts.
     The new data will be read from the specified files, which should cover a time sequence in order.
-    We expect each member of redvar; and redtime_bnds and redtime_wts, to be a FileVariable.
+    We expect each member of redvar; and redtime_bnds[i] and redtime_wts[i], to be a FileVariable.
     This function doesn't perform any spatial reductions.
     The penultimate argument is a function which will compute the next_tbounds argument of update_time_avg,
     i.e. the next time interval (if any) to be appended to the bounds of the time axis of redvars.
@@ -315,10 +316,11 @@ def update_time_avg_from_files( redvars, redtime_bnds, redtime_wts, filenames,
     for filen in filenames:
         f = cdms2.open(filen)
         data_tbounds = f.getAxis('time').getBounds()
-        tbnds = apply( fun_next_tbounds, ( redtime_bnds, data_tbounds ) )
         newvars = [ f(redvar.id) for redvar in redvars ]
-        redvar,redtime_wts,redtime =\
-            update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, tbnds[-1], dt )
+        for i,rtime_bnds in enumerate(redtime_bnds):
+            tbnds = apply( fun_next_tbounds, ( rtime_bnds, data_tbounds ) )
+            redvar,redtime_wts[i],redtime =\
+                update_time_avg( redvars, rtime_bnds, redtime_wts[i], newvars, tbnds[-1], dt )
         f.close()
 
 def test_time_avg( redfilename, varnames, datafilenames ):
@@ -348,50 +350,11 @@ def test_time_avg( redfilename, varnames, datafilenames ):
     redvars = [ g[varn] for varn in varnames ]
 
     if dt is None:
-        update_time_avg_from_files( redvars, redtime_bnds, redtime_wts, datafilenames )
+        update_time_avg_from_files( redvars, [redtime_bnds], [redtime_wts], datafilenames )
     else:
         update_time_avg_from_files(
-            redvars, redtime_bnds, redtime_wts, datafilenames,
+            redvars, [redtime_bnds], [redtime_wts], datafilenames,
             fun_next_tbounds = (lambda rtb,dtb,dt=dt: next_tbounds_prescribed_step(rtb,dtb,dt) ) )
-
-    g.close()
-
-    # For testing, print results...
-    g = cdms2.open( redfilename )
-    redtime = g.getAxis('time')
-    redtime_bnds = g( redtime.bounds )
-    redtime_wts = g('time_weights')
-    TS = g('TS')
-    PS = g('PS')
-    print "redtime=",redtime
-    print "redtime_bnds=",redtime_bnds
-    print "redtime_wts=",redtime_wts
-    print "TS=",TS
-    print "PS=",PS
-
-def test_climos( redfilename, varnames, datafilenames ):
-    # Assumes, without checking, the noleap (365 day) calendar, and time units in "days since..."
-    season = 'JJA'  # >>>> DJF will be more complicated because it spans years, and we may want to
-    #                 >>>> ignore data which covers only part of a season
-    f = cdms2.open(datafilenames[0])
-    data_time = f.getAxis('time')  # a FileAxis
-    init_data_tbounds = data_time.getBounds()[0]
-
-    dt = 0      # specifies climatology file
-    init_red_tbounds = numpy.array([[151,243]], dtype=numpy.int32) # JJA in noleap calendar, in days, Jan 1 is day 0.
-    initialize_redfile_from_datafile( redfilename, varnames, datafilenames[0], dt,
-                                      init_red_tbounds )
-
-    g = cdms2.open( redfilename, 'r+' )
-    redtime = g.getAxis('time')
-    redtime.units = 'days since 0'
-    redtime.calendar = 'noleap'
-    redtime_wts = g['time_weights']
-    redtime_bnds = g[ g.getAxis('time').bounds ]
-    redvars = [ g[varn] for varn in varnames ]
-
-    update_time_avg_from_files( redvars, redtime_bnds, redtime_wts, datafilenames,
-                                fun_next_tbounds = (lambda rtb,dtb,dt=dt: rtb), dt=dt )
 
     g.close()
 
