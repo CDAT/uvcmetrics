@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 Usage = """Usage:
-python climatology2.py --outfile fileout.nc --season SSS --variables var1 var2 ... --infiles file1.nc file2.nc ....
+python climatology2.py --outfile fileout.nc --seasons SS1 SS2 ... --variables var1 var2 ... --infiles file1.nc file2.nc ....
 where:
   fileout.nc is the name of an output file.  If it already exists, it will be overwritten.
   SSS is the season in three letters, e.g. ANN, JJA, APR
@@ -16,7 +16,7 @@ from inc_reduce import *
 import os
 import argparse
 
-def climos( fileout, seasonname, varnames, datafilenames, omitBySeason=[] ):
+def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason=[] ):
     assert( len(datafilenames)>0 )
     assert( len(varnames)>0 )
     f = cdms2.open(datafilenames[0])
@@ -33,26 +33,32 @@ def climos( fileout, seasonname, varnames, datafilenames, omitBySeason=[] ):
         raise Exception("So far climos() has not been implemented for time in units %s."%
                         getattr( data_time, 'units', '' ) )
 
-    omit_files = {seasonname:[]}
+    omit_files = {seasonname:[] for seasonname in seasonnames}
     for omits in omitBySeason:
         omit_files[omits[0]] = omits[1:]
-    datafilenames = [fn for fn in datafilenames if fn not in omit_files[seasonname]]
     init_data_tbounds = data_time.getBounds()[0]
     dt = 0      # specifies climatology file
-    season = daybounds(seasonname)  # assumes noleap calendar, returns time in days.
-    init_red_tbounds = numpy.array(season, dtype=numpy.int32)
-    initialize_redfile_from_datafile( fileout, varnames, datafilenames[0], dt,
-                                      init_red_tbounds )
-    g = cdms2.open( fileout, 'r+' )
-    redtime = g.getAxis('time')
-    redtime.units = 'days since 0'
-    redtime.calendar = calendar
-    redtime_wts = g['time_weights']
-    redtime_bnds = g[ g.getAxis('time').bounds ]
-    redvars = [ g[varn] for varn in varnames ]
+    redfiles = []
+    for seasonname in seasonnames:
+        datafilenames = [fn for fn in datafilenames if fn not in omit_files[seasonname]]
+        season = [daybounds(seasonname)[0]]
+        # ... assumes noleap calendar, returns time in days.
+        init_red_tbounds = numpy.array( season, dtype=numpy.int32 )
+        fileout = fileout_template.replace('XXX',seasonname)
+        initialize_redfile_from_datafile( fileout, varnames, datafilenames[0], dt,
+                                          init_red_tbounds )
+        g = cdms2.open( fileout, 'r+' )
+        redfiles.append(g)
+        redtime = g.getAxis('time')
+        redtime.units = 'days since 0'
+        redtime.calendar = calendar
+        redtime_wts = g['time_weights']
+        redtime_bnds = g[ g.getAxis('time').bounds ]
+        redvars = [ g[varn] for varn in varnames ]
 
-    update_time_avg_from_files( redvars, [redtime_bnds], [redtime_wts], datafilenames,
-                                fun_next_tbounds = (lambda rtb,dtb,dt=dt: rtb), dt=dt )
+    update_time_avg_from_files( redvars, redtime_bnds, redtime_wts, datafilenames,
+                                fun_next_tbounds = (lambda rtb,dtb,dt=dt: rtb),
+                                redfiles=redfiles, dt=dt )
     if len(redtime)==2:
         # This occurs when multiple time units (redtime_bnds) contribute to a single season,
         # as for DJF in "days since 0" units.  We need a final reduction to a single time point.
@@ -84,17 +90,18 @@ def climos( fileout, seasonname, varnames, datafilenames, omitBySeason=[] ):
             os.rename( 'climo2_temp.nc', fileout )
             g = cdms2.open( fileout, 'r+' )
 
-    g.season = seasonname
-    g.close()
+    for g in redfiles:
+        g.season = seasonname
+        g.close()
 
 if __name__ == '__main__':
     p = argparse.ArgumentParser(description="Climatology")
     # TO DO: test with various paths.  Does this work naturally? <<<<<<<<<<<<
-    p.add_argument("--outfile", dest="outfile", help="Name of output file (mandatory)", nargs=1,
+    p.add_argument("--outfile", dest="outfile", help="Name of output file, XXX for season (mandatory)", nargs=1,
                    required=True )
     p.add_argument("--infiles", dest="infiles", help="Names of input files (mandatory)", nargs='+',
                    required=True )
-    p.add_argument("--season", dest="season", help="Season, 3 characters (mandatory)", nargs=1,
+    p.add_argument("--seasons", dest="seasons", help="Seasons, each 3 characters (mandatory)", nargs='+',
                    required=True )
     p.add_argument("--variables", dest="variables", help="Variable names (mandatory)", nargs='+',
                    required=True )
@@ -103,20 +110,22 @@ if __name__ == '__main__':
                    "argument multiple times. E.g. --omitBySeason DJF lastDECfile.nc\"",
                    nargs='+', action='append', default=[] )
     args = p.parse_args(sys.argv[1:])
-    print args
+    print "input args=",args
 
-    climos( args.outfile[0], args.season[0], args.variables, args.infiles, args.omitBySeason )
+    climos( args.outfile[0], args.seasons, args.variables, args.infiles, args.omitBySeason )
 
     # For testing, print results...
-    g = cdms2.open( args.outfile[0] )
-    redtime = g.getAxis('time')
-    redtime_bnds = g( redtime.bounds )
-    redtime_wts = g('time_weights')
-    TS = g('TS')
-    PS = g('PS')
-    print "redtime=",redtime
-    print "redtime_bnds=",redtime_bnds
-    print "redtime_wts=",redtime_wts
-    print "TS=",TS,TS.shape
-    #print "PS=",PS,PS.shape
+    for seasname in args.seasons:
+        g = cdms2.open( args.outfile[0].replace('XXX',seasname) )
+        redtime = g.getAxis('time')
+        redtime_bnds = g( redtime.bounds )
+        redtime_wts = g('time_weights')
+        TS = g('TS')
+        PS = g('PS')
+        print "season=",seasname
+        print "redtime=",redtime
+        print "redtime_bnds=",redtime_bnds
+        print "redtime_wts=",redtime_wts
+        print "TS=",TS,TS.shape
+        #print "PS=",PS,PS.shape
 

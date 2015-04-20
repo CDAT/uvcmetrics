@@ -237,6 +237,7 @@ def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds, 
     newtime_rti = numpy.zeros(( newtime.shape[0], maxolaps ), numpy.int32) - 1
     for j in range( newtime.shape[0] ):
         # First, extend redtime and redtime_bnds if necessary:
+        # This should be moved to a separate function.
         if newtime_bnds[j][1] > redtime_bnds[-1][1]:
             bndmin = max( newtime_bnds[j][0], next_tbounds[0] )
             bndmax = min( newtime_bnds[j][1], next_tbounds[1] )
@@ -299,8 +300,9 @@ def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds, 
     #print
     return redvars,redtime_wts,redtime
 
-def update_time_avg_from_files( redvars, redtime_bnds, redtime_wts, filenames,
-                                fun_next_tbounds=next_tbounds_copyfrom_data, dt=None ):
+def update_time_avg_from_files( redvars0, redtime_bnds, redtime_wts, filenames,
+                                fun_next_tbounds=next_tbounds_copyfrom_data,
+                                redfiles=[], dt=None ):
     """Updates the time-reduced data for a several variables.  The reduced-time and averaged
     variables are the list redvars.  Its weights (for time averaging) are another variable, redtime_wts.
     (Each variable redvar of redvars has the same time axis, and it normally has an attribute wgts
@@ -309,18 +311,28 @@ def update_time_avg_from_files( redvars, redtime_bnds, redtime_wts, filenames,
     The new data will be read from the specified files, which should cover a time sequence in order.
     We expect each member of redvar; and redtime_bnds[i] and redtime_wts[i], to be a FileVariable.
     This function doesn't perform any spatial reductions.
-    The penultimate argument is a function which will compute the next_tbounds argument of update_time_avg,
-    i.e. the next time interval (if any) to be appended to the bounds of the time axis of redvars.
+    The fun_next_tbounds argument is a function which will compute the next_tbounds argument of
+    update_time_avg, i.e. the next time interval (if any) to be appended to the bounds of the time
+    axis of redvars.
+    redfiles is a list of reduced-time files for output.  They should already be open as 'r+'.
     The last argument dt is used only in that dt=0 means that we are computing climatologies.
     """
     for filen in filenames:
         f = cdms2.open(filen)
         data_tbounds = f.getAxis('time').getBounds()
-        newvars = [ f(redvar.id) for redvar in redvars ]
-        for i,rtime_bnds in enumerate(redtime_bnds):
-            tbnds = apply( fun_next_tbounds, ( rtime_bnds, data_tbounds ) )
-            redvar,redtime_wts[i],redtime =\
-                update_time_avg( redvars, rtime_bnds, redtime_wts[i], newvars, tbnds[-1], dt )
+        newvars = [ f(redvar.id) for redvar in redvars0 ]
+        if len(redfiles)==0:
+            redvars = redvars0
+            tbnds = apply( fun_next_tbounds, ( redtime_bnds, data_tbounds ) )
+            update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, tbnds[-1], dt )
+        else:
+            for g in redfiles:
+                redtime = g.getAxis('time')
+                redtime_wts = g['time_weights']
+                redtime_bnds = g[ g.getAxis('time').bounds ]
+                redvars = [ g[varn] for varn in [rv.id for rv in redvars0] ]
+                tbnds = apply( fun_next_tbounds, ( redtime_bnds, data_tbounds ) )
+                update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, tbnds[-1], dt )
         f.close()
 
 def test_time_avg( redfilename, varnames, datafilenames ):
