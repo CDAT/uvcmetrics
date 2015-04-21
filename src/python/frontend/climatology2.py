@@ -38,17 +38,19 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
         omit_files[omits[0]] = omits[1:]
     init_data_tbounds = data_time.getBounds()[0]
     dt = 0      # specifies climatology file
-    redfiles = []
+    redfilenames = []
+    redfiles = {}
     for seasonname in seasonnames:
         datafilenames = [fn for fn in datafilenames if fn not in omit_files[seasonname]]
-        season = [daybounds(seasonname)[0]]
+        season = daybounds(seasonname)
         # ... assumes noleap calendar, returns time in days.
         init_red_tbounds = numpy.array( season, dtype=numpy.int32 )
         fileout = fileout_template.replace('XXX',seasonname)
         initialize_redfile_from_datafile( fileout, varnames, datafilenames[0], dt,
                                           init_red_tbounds )
         g = cdms2.open( fileout, 'r+' )
-        redfiles.append(g)
+        redfilenames.append(fileout)
+        redfiles[fileout] = g
         redtime = g.getAxis('time')
         redtime.units = 'days since 0'
         redtime.calendar = calendar
@@ -58,7 +60,7 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
 
     update_time_avg_from_files( redvars, redtime_bnds, redtime_wts, datafilenames,
                                 fun_next_tbounds = (lambda rtb,dtb,dt=dt: rtb),
-                                redfiles=redfiles, dt=dt )
+                                redfiles=redfiles.values(), dt=dt )
     if len(redtime)==2:
         # This occurs when multiple time units (redtime_bnds) contribute to a single season,
         # as for DJF in "days since 0" units.  We need a final reduction to a single time point.
@@ -89,8 +91,9 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
             os.rename( fileout, 'climo2_old.nc' )
             os.rename( 'climo2_temp.nc', fileout )
             g = cdms2.open( fileout, 'r+' )
+            redfiles[fileout] = g
 
-    for g in redfiles:
+    for g in redfiles.values():
         g.season = seasonname
         g.close()
 
