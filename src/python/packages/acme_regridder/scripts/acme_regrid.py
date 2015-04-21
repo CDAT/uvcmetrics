@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env pytho
 # Import regrid2 package for regridder functions
 import cdms2 
 import sys, os
@@ -30,12 +30,12 @@ class WeightFileRegridder:
       self.lats.designateLatitude()
       self.lats.units="degrees_north"
       self.lats.setBounds(numpy.array(sorted(set(wFile("yv_b").ravel().tolist()))))
-      self.lats.id="latitude"
+      self.lats.id="lat"
       self.lons=cdms2.createAxis(sorted(set(wFile("xc_b").tolist())))
       self.lons.designateLongitude()
       self.lons.units="degrees_east"
       self.lons.setBounds(numpy.array(sorted(set(wFile("xv_b").ravel().tolist()))))
-      self.lons.id="longitude"
+      self.lons.id="lon"
     else:
       self.yc_b=wFile("yc_b")
       self.xc_b=wFile("xc_b")
