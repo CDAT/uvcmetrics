@@ -50,7 +50,7 @@ class WeightFileRegridder:
     input=input.filled()
     sh=input.shape
     #dest_field=numpy.zeros((n,self.n_b,))
-    dest_field = acme_regridder._regrid.apply_weights(input,self.S,self.row,self.col,self.frac_b)
+    dest_field = metrics.packages.acme_regridder._regrid.apply_weights(input,self.S,self.row,self.col,self.frac_b)
     print "DEST FIELD",dest_field.shape
     dest_field = dest_field.astype(input.dtype)
     dest_field=numpy.ma.masked_where(self.mask_b,dest_field)
