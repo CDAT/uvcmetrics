@@ -116,6 +116,8 @@ if __name__=="__main__":
       dat2 = regdr.regrid(V())
       fo.write(dat2,dtype=V.dtype)
       fo.sync()
+    elif V.id in ["lat","lon"]:
+      print "Skipping no longer needed:",V.id
     else:
       print "Rewriting as is:",V.id
       try:
