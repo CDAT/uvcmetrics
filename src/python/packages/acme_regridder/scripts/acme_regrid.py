@@ -5,6 +5,7 @@ import sys, os
 import numpy
 import MV2
 import argparse
+import metrics
 import metrics.packages.acme_regridder._regrid
 
 class WeightFileRegridder:
@@ -94,6 +95,16 @@ if __name__=="__main__":
   else:
     onm = args.out
   fo=cdms2.open(onm,"w")
+  history = ""
+  ## Ok now let's start by copying the attributes back onto the new file
+  for a in f.attributes:
+    if a!="history":
+      setattr(fo,a,getattr(f,a))
+    else:
+      history=getattr(f,a)+"\n"
+  history+="weights applied via acme_regrid (git commit: %s)\n%s" % (metrics.git.commit," ".join(sys.argv))
+  fo.history=history 
+  
   if args.var is not None:
     vars=[args.var,]
   else:
@@ -105,11 +116,11 @@ if __name__=="__main__":
       dat2 = regdr.regrid(V())
       fo.write(dat2,dtype=V.dtype)
       fo.sync()
-  else:
-    print "Rewriting as is:",V.id
-    try:
-      fo.write(V())
-      fo.sync()
-    except:
-      pass
+    else:
+      print "Rewriting as is:",V.id
+      try:
+        fo.write(V())
+        fo.sync()
+      except:
+        pass
   fo.close()
