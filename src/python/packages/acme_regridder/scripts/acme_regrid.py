@@ -112,7 +112,9 @@ if __name__=="__main__":
     vars= f.variables.keys()
   for v in vars:
     V=f[v]
-    if "ncol" in V.getAxisIds():
+    if V.id in ["lat","lon"]:
+      print "Skipping no longer needed:",V.id
+    elif "ncol" in V.getAxisIds():
       print "Processing:",V.id
       dat2 = regdr.regrid(V())
       fo.write(dat2,dtype=V.dtype)
@@ -124,8 +126,6 @@ if __name__=="__main__":
         wgts.setMissing(1.e20)
         fo.write(wgts,id="wgt")
         fo.sync()
-    elif V.id in ["lat","lon"]:
-      print "Skipping no longer needed:",V.id
     else:
       print "Rewriting as is:",V.id
       try:
