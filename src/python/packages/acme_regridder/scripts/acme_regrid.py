@@ -1,4 +1,4 @@
-#!/usr/bin/env pytho
+#!/usr/bin/env python
 # Import regrid2 package for regridder functions
 import cdms2 
 import sys, os
@@ -105,6 +105,7 @@ if __name__=="__main__":
   history+="weights applied via acme_regrid (git commit: %s)\n%s" % (metrics.git.commit," ".join(sys.argv))
   fo.history=history 
   
+  wgts = None
   if args.var is not None:
     vars=[args.var,]
   else:
@@ -116,6 +117,13 @@ if __name__=="__main__":
       dat2 = regdr.regrid(V())
       fo.write(dat2,dtype=V.dtype)
       fo.sync()
+      if wgts is None:
+        print "trying to get weights"
+        wgts = cdms2.MV2.array([ numpy.sin(x[1]*numpy.pi/180.)-numpy.sin(x[0]*numpy.pi/180.) for x in dat2.getLatitude().getBounds()])
+        wgts.setAxis(0,dat2.getLatitude())
+        wgts.setMissing(1.e20)
+        fo.write(wgts,id="wgt")
+        fo.sync()
     elif V.id in ["lat","lon"]:
       print "Skipping no longer needed:",V.id
     else:
