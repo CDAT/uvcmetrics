@@ -35,6 +35,7 @@ packages = {'metrics': 'src/python',
               'metrics.packages.amwg': 'src/python/packages/amwg',
               'metrics.packages.amwg.derivations': 'src/python/packages/amwg/derivations',
               'metrics.packages.lmwg': 'src/python/packages/lmwg',
+              'metrics.packages.acme_regridder': 'src/python/packages/acme_regridder',
             }
 for d in packages.itervalues():
     shutil.copy("git.py",os.path.join(d,"git.py"))
@@ -48,6 +49,7 @@ setup (name = "metrics",
                    'metrics.fileio',
                    'metrics.common',
                    'metrics.packages.wgne',
+                   'metrics.packages.acme_regridder',
                    'metrics.packages.amwg',
                    'metrics.packages.amwg.derivations',
                    'metrics.packages.lmwg',
@@ -65,19 +67,21 @@ setup (name = "metrics",
                   "src/python/frontend/climatology.py",
                   "src/python/frontend/climatology",
                   "src/python/frontend/metadiags.py",
-                  "src/python/frontend/metadiags"],
+                  "src/python/frontend/metadiags",
+                  "src/python/packages/acme_regridder/scripts/acme_regrid.py",
+                  "src/python/packages/acme_regridder/scripts/acme_regrid"],
        data_files = [("share/uvcmetrics",("share/uvcmetrics.json",)),
-                    ]
-       #include_dirs = [numpy.lib.utils.get_include()],
-       #       ext_modules = [
-       #    Extension('metrics.exts',
-       #              ['src/C/add.c',],
-       #              library_dirs = [],
-       #              libraries = [],
-       #              define_macros = [],
-       #              extra_compile_args = [],
-       #              extra_link_args = [],
-       #              ),
-       #    ]
-      )
+                    ],
+       include_dirs = [numpy.lib.utils.get_include()],
+       ext_modules = [
+           Extension('metrics.packages.acme_regridder._regrid',
+               ['src/C/packages/acme_regridder/_regridmodule.c',],
+               library_dirs = [],
+               libraries = [],
+               define_macros = [],
+               extra_compile_args = ["-fopenmp",],
+               extra_link_args = [],
+               ),
+           ]
+       )
 
