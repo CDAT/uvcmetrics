@@ -116,7 +116,9 @@ if __name__=="__main__":
       print "Skipping no longer needed:",V.id
     elif "ncol" in V.getAxisIds():
       print "Processing:",V.id
-      dat2 = regdr.regrid(V())
+      dat2 = cdms2.MV2.array(regdr.regrid(V()))
+      for a in V.attributes:
+        setattr(dat2,a,getattr(V,a))
       fo.write(dat2,dtype=V.dtype)
       fo.sync()
       if wgts is None:
