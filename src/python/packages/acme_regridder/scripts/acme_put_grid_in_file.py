@@ -77,7 +77,7 @@ if __name__=="__main__":
         if hasattr(V,"coordinates"):
           print V.coordinates
         else:
-          V.coordinates="ncol"
+          V.coordinates="lat lon"
       else:
         print "Storing %s as is" % v
       fo.write(V)
