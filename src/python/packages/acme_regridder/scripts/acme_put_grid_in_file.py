@@ -46,6 +46,10 @@ if __name__=="__main__":
     args.out = args.file[:-3]+"_with_grid_info.nc"
 
   fo=cdms2.open(args.out,"w")
+  ## Preserve global attributes
+  for a in f.attributes:
+      setattr(fo,a,getattr(f,a))
+
   for v in vars:
     print "Dealing with:",v
     try:
@@ -55,18 +59,14 @@ if __name__=="__main__":
       except:
         axIds = [] # num variable
       if v=="lat":
-        if hasattr(V,"bounds"):
-          print "LAT OBNUDS:",V.bounds
-        else:
+        if not hasattr(V,"bounds"):
           V.bounds="grid_corner_lat"
         ## Ok now we need to read in the vertices
         b = fg(V.bounds)
         b.setAxis(0,V.getAxis(-1))
         fo.write(b)
       elif v=="lon":
-        if hasattr(V,"bounds"):
-          print "LON OBNUDS:",V.bounds
-        else:
+        if not hasattr(V,"bounds"):
           V.bounds="grid_corner_lon"
         ## Ok now we need to read in the vertices
         b = fg(V.bounds)
@@ -74,9 +74,7 @@ if __name__=="__main__":
         fo.write(b)
       if "ncol" in axIds:
         print "tweaking %s" % v
-        if hasattr(V,"coordinates"):
-          print V.coordinates
-        else:
+        if not hasattr(V,"coordinates"):
           V.coordinates="lat lon"
       else:
         print "Storing %s as is" % v
