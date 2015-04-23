@@ -52,7 +52,7 @@ if __name__=="__main__":
       if a != "history":
           setattr(fo,a,getattr(f,a))
       else:
-          history = f.history
+          history = f.history+"\n"
   history+="Created via: %s" % " ".join(sys.argv)
   fo.history=history
 
