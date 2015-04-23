@@ -47,8 +47,14 @@ if __name__=="__main__":
 
   fo=cdms2.open(args.out,"w")
   ## Preserve global attributes
+  history = ""
   for a in f.attributes:
-      setattr(fo,a,getattr(f,a))
+      if a != "history":
+          setattr(fo,a,getattr(f,a))
+      else:
+          history = f.history
+  history+="Created via: %s" % " ".join(sys.argv)
+  fo.history=history
 
   for v in vars:
     print "Dealing with:",v
