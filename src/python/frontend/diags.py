@@ -572,6 +572,8 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                                 number_diagnostic_plots += 1
                                 print "wrote table",resc.title," to",filenames
 
+    vcanvas2.close()
+    vcanvas.close()
     print "total number of (compound) diagnostic plots generated =", number_diagnostic_plots
 
 if __name__ == '__main__':
