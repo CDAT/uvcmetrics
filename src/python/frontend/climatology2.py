@@ -117,18 +117,19 @@ if __name__ == '__main__':
 
     climos( args.outfile[0], args.seasons, args.variables, args.infiles, args.omitBySeason )
 
-    # For testing, print results...
-    for seasname in args.seasons:
-        g = cdms2.open( args.outfile[0].replace('XXX',seasname) )
-        redtime = g.getAxis('time')
-        redtime_bnds = g( redtime.bounds )
-        redtime_wts = g('time_weights')
-        TS = g('TS')
-        PS = g('PS')
-        print "season=",seasname
-        print "redtime=",redtime
-        print "redtime_bnds=",redtime_bnds
-        print "redtime_wts=",redtime_wts
-        print "TS=",TS,TS.shape
-        #print "PS=",PS,PS.shape
+    if False:
+        # For testing, print results...
+        for seasname in args.seasons:
+            g = cdms2.open( args.outfile[0].replace('XXX',seasname) )
+            redtime = g.getAxis('time')
+            redtime_bnds = g( redtime.bounds )
+            redtime_wts = g('time_weights')
+            TS = g('TS')
+            PS = g('PS')
+            print "season=",seasname
+            print "redtime=",redtime
+            print "redtime_bnds=",redtime_bnds
+            print "redtime_wts=",redtime_wts
+            print "TS=",TS,TS.shape
+            #print "PS=",PS,PS.shape
 
