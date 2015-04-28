@@ -39,6 +39,7 @@
 # Create a suitable time axis when reading climo data without one.
 
 import numpy, cdms2, sys, os, math
+from numbers import Number
 
 # Silence annoying messages about setting the NetCDF file type.  Also, these three lines will
 # ensure that we get NetCDF-3 files.  Expansion of a FileAxis may not work on NetCDF-4 files.
@@ -320,7 +321,15 @@ def update_time_avg_from_files( redvars0, redtime_bnds, redtime_wts, filenames,
     for filen in filenames:
         f = cdms2.open(filen)
         data_tbounds = f.getAxis('time').getBounds()
-        newvars = [ f(redvar.id) for redvar in redvars0 ]
+        newvars = []
+        for redvar in redvars0:
+            try:
+                newvar = f(redvar.id)
+                testarray = numpy.array([0],newvar._getdtype())
+                if isinstance( testarray[0], Number):
+                    newvars.append( newvar )
+            except:
+                pass
         if len(redfiles)==0:
             redvars = redvars0
             tbnds = apply( fun_next_tbounds, ( redtime_bnds, data_tbounds ) )
