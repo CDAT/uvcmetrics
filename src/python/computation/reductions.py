@@ -1921,6 +1921,13 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
     be a udunits object.
     If preferred units are specified, they will be used if possible."""
 
+    # First, if there are no units, take a guess.  I'm reluctant to do this because it will surely
+    # be wrong sometimes.  But usually it is correct.
+    if not hasattr(mv1,'units'):
+        mv1.units = '1'
+    if not hasattr(mv2,'units'):
+        mv2.units = '1'
+
     # For QFLX and LHFLX variables, call dedicated functions instead.
     # TODO: The conditions for calling this function could perhaps be
     # better-defined.  I primarily wanted to ensure that it would
@@ -1933,12 +1940,6 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
             return mv1, mv2
 
 # This probably needs expanded to be more general purpose for unit conversions.
-    # First, if there are no units, take a guess.  I'm reluctant to do this because it will surely
-    # be wrong sometimes.  But usually it is correct.
-    if not hasattr(mv1,'units'):
-        mv1.units = '1'
-    if not hasattr(mv2,'units'):
-        mv2.units = '1'
     # I'm still checking for the units attribute here because maybe some time I'll be able to
     # delete the above lines which set it to a default value.
     if hasattr(mv1,'units') and hasattr(mv2,'units') and\
