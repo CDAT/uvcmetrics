@@ -338,12 +338,13 @@ def update_time_avg_from_files( redvars0, redtime_bnds, redtime_wts, filenames,
         for redvar in redvars0:
             try:
                 newvar = f(redvar.id)
-                testarray = numpy.array([0],newvar._getdtype())
+                testarray = numpy.array([0],newvar.dtype)
                 if isinstance( testarray[0], Number):
                     newvars.append( newvar )
                 else:
                     print "skipping",redvar.id
-            except:
+            except Exception as e:
+                print e
                 pass
         if len(newvars)==0:
             continue
