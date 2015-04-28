@@ -343,6 +343,7 @@ def update_time_avg_from_files( redvars0, redtime_bnds, redtime_wts, filenames,
                 newvar = f(varid)
                 testarray = numpy.array([0],newvar.dtype)
                 if isinstance( testarray[0], Number):
+                    varids.append( varid )
                     newvard[varid] = newvar
                     redvard[varid] = redvar
                 else:
