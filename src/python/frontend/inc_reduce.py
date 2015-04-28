@@ -220,8 +220,21 @@ def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds, 
     # This is almost universal, but in the future I should generalize this code.  That would make
     # slicing more verbose, e.g. if time were changed from the first index to second then
     # v[j] would become v[:,j,:] (for a 2-D variable v).
-    assert( newvars[0].getDomain()[0][0].isTime() )
-    assert( redvars[0].getDomain()[0][0].isTime() )
+    try:
+        assert( newvars[0].getDomain()[0][0].isTime() )
+    except Exception as e:
+        print "newvars=",newvars
+        print "newvars[0]=",newvars[0]
+        print "newvars[0].getDomain()=",newvars[0].getDomain()
+        raise e
+    try:
+        assert( redvars[0].getDomain()[0][0].isTime() )
+    except Exception as e:
+        print "redvars=",redvars
+        print "redvars[0]=",redvars[0]
+        print "redvars[0].getDomain()=",redvars[0].getDomain()
+        raise e
+        
 
     redtime = redvars[0].getTime()  # the partially-reduced time axis
     redtime_len = redtime.shape[0]
