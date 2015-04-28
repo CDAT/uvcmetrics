@@ -357,7 +357,7 @@ def update_time_avg_from_files( redvars0, redtime_bnds, redtime_wts, filenames,
         redvars = [ redvard[varid] for varid in varids ]
         newvars = [ newvard[varid] for varid in varids ]
         if len(redfiles)==0:
-            redvars = redvars0
+            #redvars = redvars0
             tbnds = apply( fun_next_tbounds, ( redtime_bnds, data_tbounds ) )
             update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, tbnds[-1], dt )
         else:
@@ -365,7 +365,7 @@ def update_time_avg_from_files( redvars0, redtime_bnds, redtime_wts, filenames,
                 redtime = g.getAxis('time')
                 redtime_wts = g['time_weights']
                 redtime_bnds = g[ g.getAxis('time').bounds ]
-                redvars = [ g[varn] for varn in [rv.id for rv in redvars0] ]
+                redvars = [ g[varn] for varn in varids ]
                 tbnds = apply( fun_next_tbounds, ( redtime_bnds, data_tbounds ) )
                 update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, tbnds[-1], dt )
         f.close()
