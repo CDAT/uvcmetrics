@@ -334,20 +334,27 @@ def update_time_avg_from_files( redvars0, redtime_bnds, redtime_wts, filenames,
     for filen in filenames:
         f = cdms2.open(filen)
         data_tbounds = f.getAxis('time').getBounds()
-        newvars = []
+        newvard = {}
+        redvard = {}
+        varids = []
         for redvar in redvars0:
             try:
-                newvar = f(redvar.id)
+                varid = redvar.id
+                newvar = f(varid)
                 testarray = numpy.array([0],newvar.dtype)
                 if isinstance( testarray[0], Number):
-                    newvars.append( newvar )
+                    newvard[varid] = newvar
+                    redvard[varid] = redvar
                 else:
                     print "skipping",redvar.id
             except Exception as e:
+                print "skipping",redvar.id,"due to exception"
                 print e
                 pass
-        if len(newvars)==0:
+        if len(varids)==0:
             continue
+        redvars = [ redvard[varid] for varid in varids ]
+        newvars = [ newvard[varid] for varid in varids ]
         if len(redfiles)==0:
             redvars = redvars0
             tbnds = apply( fun_next_tbounds, ( redtime_bnds, data_tbounds ) )
