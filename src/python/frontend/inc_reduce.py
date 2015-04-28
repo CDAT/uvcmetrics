@@ -328,8 +328,12 @@ def update_time_avg_from_files( redvars0, redtime_bnds, redtime_wts, filenames,
                 testarray = numpy.array([0],newvar._getdtype())
                 if isinstance( testarray[0], Number):
                     newvars.append( newvar )
+                else:
+                    print "skipping",redvar.id
             except:
                 pass
+        if len(newvars)==0:
+            continue
         if len(redfiles)==0:
             redvars = redvars0
             tbnds = apply( fun_next_tbounds, ( redtime_bnds, data_tbounds ) )
