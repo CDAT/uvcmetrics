@@ -77,6 +77,11 @@ static PyObject *
       }
     }
     dest_field->data=out;
+    Py_DECREF(S);
+    Py_DECREF(col);
+    Py_DECREF(row);
+    Py_DECREF(data);
+    Py_DECREF(fracb);
   return Py_BuildValue("N",dest_field);
 }
 
