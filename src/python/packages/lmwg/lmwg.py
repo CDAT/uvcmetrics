@@ -2,15 +2,15 @@
 
 
 # TODO List
-# 1) Fix multiple plots->single png (set 3, set 6 primarily, set 1/2 level vars). Need to investigate template stuff
-# 2) Fix obs vs model variable name issues (requires lots of framework changes, probably need Jeff to poke at it) DONE for hardcoded variables
-# 3) Merge set3(b) and 6(b) code since it is very similar. Readd set3b/6b and make them work in case EA needs them? Does EA need them?
+# 1) Fix multiple plots->single png (set 3, set 6 primarily, set 1/2 level vars). Need to investigate template stuff. IN PROGRESS, LIMITS IN FRAMEWORK
+# 2) Fix obs vs model variable name issues DONE VIA HARDCODED UNSCALABLE CODE. HOWEVER MIGHT NOT BE A BIG DEAL
+# 3) Merge set3(b) and 6(b) code since it is very similar. Readd set3b/6b and make them work in case EA needs them? Does EA need them? DEPRECATED 3b/6b
 # 4) Further code clean up IN PROGRESS
 # 5) Work on set 5 DONE
 # 6) Work on set 9 IN PROGRESS
-# 7) Work on splitting up opts and add >2 filetable support
-# 8) Clean up computation/reductions.py redundant/duplicated functions
-# 9) Fix labels on set 3 (numbers->JAN FEB ... DEC) (Email sent to Jim/Jeff)
+# 7) Work on splitting up opts and add >2 filetable support DONE
+# 8) Clean up computation/reductions.py redundant/duplicated functions 
+# 9) Fix labels on set 3 (numbers->JAN FEB ... DEC) (Email sent to Jim/Jeff. No help.)
 
 from metrics.packages.diagnostic_groups import *
 #from metrics.packages.common.diagnostic_groups import *
@@ -21,14 +21,22 @@ import metrics.frontend.defines as defines
 from metrics.packages.lmwg.defines import *
 
 
-### Derived unreduced variables (DUV) definitions
-### These are variables that are nonlinear or require 2 passes to get a final
-### result. 
+# This needs to be here for some unknown reason.
 class lmwg_set9_variable(basic_plot_variable):
    @staticmethod
    def varoptions():
       opts={'TSA':'TSA', 'PREC':'PREC','ASA':'ASA'}
       return opts
+
+class lwmg_set5_variable(basic_plot_variable):
+   @staticmethod
+   def varoptions():
+      opts={'default':'', 'difference':'difference'}
+      return opts
+
+### Derived unreduced variables (DUV) definitions
+### These are variables that are nonlinear or require 2 passes to get a final
+### result. 
 
 # Probably could pass the reduction_function for all of these instead of a flag, but this puts
 # all of the reduction functions in the same place in case they need to change or something.
@@ -42,7 +50,7 @@ class level_var_redvar( reduced_variable ):
          duvs={varid+str(level)+'_A':duv})
 
 class evapfrac_redvar ( reduced_variable ):
-   def __init__(self, filetable, fn, season=None, region=None, flag=None):
+   def __init__(self, filetable, fn, season=None, region=None, flag=None, weights=None):
       duv = derived_var('EVAPFRAC_A', inputs=['FCTR', 'FCEV', 'FGEV', 'FSH'], func=evapfrac_special)
       if fn == 'SEASONAL':
          reduced_variable.__init__(
@@ -55,17 +63,17 @@ class evapfrac_redvar ( reduced_variable ):
             reduced_variable.__init__(
                self, variableid='EVAPFRAC_A', 
                filetable=filetable, 
-               reduction_function=(lambda x, vid=None: reduceMonthlyTrendRegion(x, region, vid=vid)),
+               reduction_function=(lambda x, vid=None: reduceMonthlyTrendRegion(x, region, weights=weights, vid=vid)),
                duvs={'EVAPFRAC_A':duv})
          else:
             reduced_variable.__init__(
                self, variableid='EVAPFRAC_A', 
                filetable=filetable, 
-               reduction_function=(lambda x, vid=None: reduceAnnTrendRegion(x, region, vid=vid)),
+               reduction_function=(lambda x, vid=None: reduceAnnTrendRegion(x, region, weights=weights, vid=vid)),
                duvs={'EVAPFRAC_A':duv})
          
 class rnet_redvar( reduced_variable ):
-   def __init__(self, filetable, fn, season=None, region=None, flag=None):
+   def __init__(self, filetable, fn, season=None, region=None, flag=None, weights=None):
       duv = derived_var('RNET_A', inputs=['FSA', 'FIRA'], func=aminusb)
       if fn == 'SEASONAL':
          reduced_variable.__init__(
@@ -78,23 +86,23 @@ class rnet_redvar( reduced_variable ):
             reduced_variable.__init__(
                self, variableid='RNET_A',
                filetable=filetable,
-               reduction_function=(lambda x, vid=None: reduceMonthlyTrendRegion(x, region, vid=vid)),
+               reduction_function=(lambda x, vid=None: reduceMonthlyTrendRegion(x, region, weights=weights, vid=vid)),
                duvs={'RNET_A':duv})
          else:
             reduced_variable.__init__(
                self, variableid='RNET_A',
                filetable=filetable,
-               reduction_function=(lambda x, vid=None: reduceAnnTrendRegion(x, region, vid=vid)),
+               reduction_function=(lambda x, vid=None: reduceAnnTrendRegion(x, region, weights=weights, vid=vid)),
                duvs={'RNET_A':duv})
       if fn == 'SINGLE':
          reduced_variable.__init__(
             self, variableid='RNET_A',
             filetable=filetable,
-            reduction_function=(lambda x, vid=None: reduceAnnTrendRegion(x, region, single=True, vid=vid)),
+            reduction_function=(lambda x, vid=None: reduceAnnTrendRegion(x, region, weights=weights, single=True, vid=vid)),
             duvs={'RNET_A':duv})
 
 class albedos_redvar( reduced_variable ):
-   def __init__(self, filetable, fn, varlist, season=None, region=None, flag=None, obs_ft=None):
+   def __init__(self, filetable, fn, varlist, season=None, region=None, flag=None, obs_ft=None, weights=None):
       vname = varlist[0]+'_'+varlist[1]
       duv = derived_var(vname, inputs=varlist, func=ab_ratio)
       if fn == 'SEASONAL':
@@ -108,19 +116,19 @@ class albedos_redvar( reduced_variable ):
             reduced_variable.__init__(
                self, variableid=vname,
                filetable=filetable,
-               reduction_function=(lambda x, vid=None: reduceMonthlyTrendRegion(x, region, vid=vid)),
+               reduction_function=(lambda x, vid=None: reduceMonthlyTrendRegion(x, region, weights=weights, vid=vid)),
                duvs={vname: duv})
          else:
             reduced_variable.__init__(
                self, variableid=vname,
                filetable=filetable,
-               reduction_function=(lambda x, vid=None: reduceAnnTrendRegion(x, region, vid=vid)),
+               reduction_function=(lambda x, vid=None: reduceAnnTrendRegion(x, region, weights=weights, vid=vid)),
                duvs={vname: duv})
       if fn == 'SINGLE':
          reduced_variable.__init__(
             self, variableid=vname,
             filetable=filetable,
-            reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, single=True, vid=vid)),
+            reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, weights=weights, single=True, vid=vid)),
             duvs={vname:duv})
       if fn == 'RMSE':
          reduced_variable.__init__(
@@ -207,14 +215,29 @@ class prereduce ( reduced_variable ):
          reduction_function=(lambda x, vid=None: reduceRegion(x, defines.all_regions[region]['coords'], vid=vid)),
          duvs={var+'_'+region:duv})
 
+class land_weights( reduced_variable ):
+   def __init__(self, filetable, region=None):
+      print 'In land_weights init()'
+      if 'area' in filetable.list_variables() and 'landfrac' in filetable.list_variables():
+         duv = derived_var('landweights', inputs=['area', 'landfrac'], func=atimesb)
+      elif 'weight' in filetable.list_variables() and 'LANDFRAC' in filetable.list_variables():
+         duv = derived_var('landweights', inputs=['weights', 'LANDFRAC'], func=atimesb)
+      elif 'weight' in filetable.list_variables() and 'LANDFRAC' not in filetable.list_variables():
+         duv = derived_var('landweights', inputs=['weight', 'weight'], func=dummy2) # there has to be a better way....
+      reduced_variable.__init__(
+         self, variableid='landweights',
+         filetable=filetable,
+         reduction_function=(lambda x, vid=None: dummy(x, vid=vid)),
+         duvs={'landweights': duv})
+
 class co2ppmvTrendRegionSingle( reduced_variable ):
-   def __init__(self, filetable, region):
+   def __init__(self, filetable, region, weights):
       duv = derived_var('CO2_PPMV_A', inputs=['PCO2', 'PBOT'], func=adivb)
       print 'region: ', region
       reduced_variable.__init__(
          self, variableid='CO2_PPMV_A',
          filetable=filetable,
-         reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, single=True, vid=vid)),
+         reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, single=True, weights=weights, vid=vid)),
          duvs={'CO2_PPMV_A':duv})
 
 class LMWG(BasicDiagnosticGroup):
@@ -1193,6 +1216,18 @@ class lmwg_plot_set3(lmwg_plot_spec):
       ### Basically, JAN/FEB/.../DEC variable of interest combined into {time axis=12} variable
       ### Then do the reduction.
 
+      # Need to get land weights available. This is required regardless of variable selected.
+      # These can come from either climos or raw. No big deal. 
+      # TODO SHould we list_variables() in ftX and make sure they have area/land_frac?
+      ft0 = (climo0 if climo0 is not None else raw0)
+      ft1 = (climo1 if climo1 is not None else raw1)
+      lw0 = land_weights(ft0, region=region).reduce()
+      if ft1 != None:
+         lw1 = land_weights(ft1, region=region).reduce()
+      lw_obs0 = None
+      lw_obs1 = None
+
+
       # This is not scalable, but apparently is the way to do things. Fortunately, we only have 9 variables to deal with
       if 'Albedo' in varid:
          self.composite_plotspecs['Albedo_vs_Obs'] = []
@@ -1202,30 +1237,42 @@ class lmwg_plot_set3(lmwg_plot_spec):
             print 'Albedos are nonlinear derived variables and require a raw (non climo) dataset'
             return
          for v in self.albedos.keys():
+            print 'Albedos - ', v
             if raw0 != None:
-               self.reduced_variables[v+'_ft1'] = albedos_redvar(raw0, 'TREND', self.albedos[v], region=region, flag='MONTHLY')
+               self.reduced_variables[v+'_ft1'] = albedos_redvar(raw0, 'TREND', self.albedos[v], region=region, flag='MONTHLY', weights=lw0)
             if raw1 != None:
-               self.reduced_variables[v+'_ft2'] = albedos_redvar(raw1, 'TREND', self.albedos[v], region=region, flag='MONTHLY')
+               self.reduced_variables[v+'_ft2'] = albedos_redvar(raw1, 'TREND', self.albedos[v], region=region, flag='MONTHLY', weights=lw1)
 
+         # Process observations.
          vlist = ['ASA', 'VBSA', 'NBSA', 'VWSA', 'NWSA']
-         # This assumes FT2 is obs. Needs some way to determine if that is true
-         # TODO: ASA is much more complicated than the others.
-         if obs0 != None and obs1 != None:
-            for v in vlist:
-               if v == 'ASA':
-                  print 'Comparison to ASA in obs set not implemented yet\n'
-                  pass
-               ft = None
-               if obs0 != None and v in obs0.list_variables():
-                  ft = obs0
-               if obs1 != None and v in obs1.list_variables():
-                  ft = obs1
-               if ft == None:
-                  print 'Couldnt find %s in any of the obs sets. Defaulting to no obs comparisons' % v
-               self.reduced_variables[v+'_ft3'] = reduced_variable(
-                  variableid = v, filetable=ft, reduced_var_id=v+'_ft3',
-                  reduction_function=(lambda x, vid: reduceRegion(x, region, vid=vid)))
 
+         if obs0 != None or obs1 != None: # we have at least one obs set
+            if obs0 != None:
+               if (('weights' in obs0.list_variables() and 'LANDFRAC' in obs0.list_variables() ) or
+                     ('area' in obs0.list_variables() and 'landfrac' in obs0.list_variables() )):
+                  lw_obs0 = land_weights(obs0, region=region).reduce()
+               for v in vlist:
+                  if v == 'ASA':
+                     print '***** Comparison to ASA in obs set not implemented yet ***** \n'
+                     pass
+                  if v in obs0.list_variables():
+                     self.reduced_variables[v+'_obs0'] = reduced_variable(
+                     variableid = v, filetable=obs0, reduced_var_id=v+'_obs0',
+                     reduction_function=(lambda x, vid: reduceRegion(x, region, vid=vid)))
+            if obs1 != None:
+               if (('weights' in obs1.list_variables() and 'LANDFRAC' in obs1.list_variables() ) or
+                  ('area' in obs1.list_variables() and 'landfrac' in obs1.list_variables() )):
+                  lw_obs1 = land_weights(obs1, region=region).reduce()
+               for v in vlist:
+                  if v == 'ASA':
+                     print '***** Comparison to ASA in obs set not implemented yet ***** \n'
+                     pass
+                  if v in obs1.list_variables():
+                     self.reduced_variables[v+'_obs1'] = reduced_variable(
+                     variableid = v, filetable=obs1, reduced_var_id=v+'_obs1',
+                     reduce_function=(lambda x, vid: reduceRegion(x, region, vid=vid)))
+
+         ### TODO Figure out how to generate Obs ASA
          for v in vlist:
             self.single_plotspecs[v+'_fts'] = plotspec(vid=v+'_fts', zfunc = (lambda z:z), 
                plottype = self.plottype, title=varinfo[v]['desc'])
@@ -1233,20 +1280,24 @@ class lmwg_plot_set3(lmwg_plot_spec):
             if raw0 != None:
                self.single_plotspecs[v+'_fts'].zvars = [v+'_ft1']
             if raw1 != None:
-               print 'Adding z2vars'
                self.single_plotspecs[v+'_fts'].z2vars = [v+'_ft2']
                self.single_plotspecs[v+'_fts'].z2func = (lambda z:z)
             # TODO: Can we have z2var/func WITHOUT z1 var/func????
-            if v != 'ASA' and (
-               (obs0 != None and v in obs0.list_variables()) or 
-               (obs1 != None and v in obs1.list_variables())):
-               print '****** z3vars/z3funcs NOT (yet) supported ********'
-               self.single_plotspecs[v+'_fts'].z3vars = [v+'_ft3']
-               self.single_plotspecs[v+'_fts'].z3func = (lambda z:z)
+            if v != 'ASA':
+               if obs0 != None and v in obs0.list_variables():
+                  print '****** z3/4vars/z3/4funcs NOT (yet) fully supported ********'
+                  self.single_plotspecs[v+'_fts'].z3vars = [v+'_obs0']
+                  self.single_plotspecs[v+'_fts'].z3func = (lambda z:z)
+               if obs1 != None and v in obs1.list_variables():
+                  if obs0 != None and v in obs0.list_variables():
+                     self.single_plotspecs[v+'_fts'].z4vars = [v+'_obs1']
+                     self.single_plotspecs[v+'_fts'].z4func = (lambda z:z)
+                  else:
+                     self.single_plotspecs[v+'_fts'].z3vars = [v+'_obs1']
+                     self.single_plotspecs[v+'_fts'].z3func = (lambda z:z)
 
             self.composite_plotspecs['Albedo_vs_Obs'].append(v+'_fts')
 
-         ### TODO Figure out how to generate Obs ASA
 
       # Plots are RNET and PREC and ET? on same graph and then 2 graphs if we have 2 models
       if 'Moist' in varid:
@@ -1255,15 +1306,16 @@ class lmwg_plot_set3(lmwg_plot_spec):
             ft = (climo0 if climo0 is not None else raw0)
             ft2 = (climo1 if climo1 is not None else raw1)
             print '**** TODO - Why is this not working with climo files? We should be able to grab each month from each climo file and not reduce ******'
+            print '^^^^ CLIMATOLOGY.PY IS SUPPOSED TO FIX THIS BY ADDING TIME STAMPS IN THE FILES'
 #            ft = raw0 #(climo0 if climo0 is not None else raw0)
 #            ft2 = raw1 # (climo1 if climo1 is not None else raw1)
             self.reduced_variables[v+'_ft1'] = reduced_variable(
                variableid = v, filetable=ft, reduced_var_id=v+'_ft1',
-               reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid)))
+               reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, weights=lw0, vid=vid)))
             if num_models == 2: 
                self.reduced_variables[v+'_ft2'] = reduced_variable(
                   variableid = v, filetable=ft2, reduced_var_id=v+'_ft2',
-                  reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid)))
+                  reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, weights=lw1, vid=vid)))
 
          self.derived_variables['ET_ft1'] = derived_var(
             vid='ET_ft1', inputs=['QVEGE_ft1', 'QVEGT_ft1', 'QSOIL_ft1'], func=sum3)
@@ -1276,15 +1328,15 @@ class lmwg_plot_set3(lmwg_plot_spec):
                vid='PREC_ft2', inputs=['RAIN_ft2', 'SNOW_ft2'], func=aplusb)
          # The nonlinear variables.
          if raw0 != None:
-            self.reduced_variables['RNET_ft1'] = rnet_redvar(raw0, 'TREND', region=region, flag='MONTHLY')
+            self.reduced_variables['RNET_ft1'] = rnet_redvar(raw0, 'TREND', region=region, flag='MONTHLY', weights=lw0)
          else:
             print 'No non-climo datasets (model 1) for nonlinear derived variable RNET. Skipping over it.'
          if raw1 != None:
-            self.reduced_variables['RNET_ft2'] = rnet_redvar(raw1, 'TREND', region=region, flag='MONTHLY')
+            self.reduced_variables['RNET_ft2'] = rnet_redvar(raw1, 'TREND', region=region, flag='MONTHLY', weights=lw1)
          else:
             print 'No non-climo datasets (model 2) for nonlinear derived variable RNET. Skipping over it.'
 
-         print '****** z3vars/z3funcs NOT (yet) supported ********'
+         print '****** z3vars/z3funcs NOT (yet) supported ******** so 2 graphs generated instead of 1'
          # When z3func/z3vars is supported, these should be one plot.
          self.single_plotspecs['ET_ft1'] = plotspec(vid='ET_ft1',
             zvars=['ET_ft1'], zfunc=(lambda z:z),
@@ -1315,7 +1367,6 @@ class lmwg_plot_set3(lmwg_plot_spec):
             if raw1 != 0:
                self.composite_plotspecs['Energy_Moisture'].append('RNET_ft2')
 
-      # No obs for this, so FT2 should be a 2nd model
       if 'Radiative' in varid:
          self.composite_plotspecs['Radiative_Fluxes'] = []
 
@@ -1325,14 +1376,14 @@ class lmwg_plot_set3(lmwg_plot_spec):
             ft2 = (climo1 if climo1 is not None else raw1)
             self.reduced_variables[v+'_ft1'] = reduced_variable(
                variableid = v, filetable=ft, reduced_var_id=v+'_ft1',
-               reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid)))
+               reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, weights=lw0, vid=vid)))
             self.single_plotspecs[v] = plotspec(vid=v+'_ft1', 
                zvars = [v+'_ft1'], zfunc=(lambda z:z),
                plottype = self.plottype, title=varinfo[v]['desc'])
             if num_models == 2:
                self.reduced_variables[v+'_ft2'] = reduced_variable(
                   variableid = v, filetable=ft2, reduced_var_id=v+'_ft2',
-                  reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid)))
+                  reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, weights=lw1, vid=vid)))
                self.single_plotspecs[v].z2vars = [v+'_ft2']
                self.single_plotspecs[v].z2func = (lambda z:z)
                
@@ -1340,11 +1391,11 @@ class lmwg_plot_set3(lmwg_plot_spec):
 
          # Non linear variables need raw datasets
          if raw0 != None:
-            self.reduced_variables['ASA_ft1'] =  albedos_redvar(raw0, 'TREND', ['FSR', 'FSDS'], region=region, flag='MONTHLY')
-            self.reduced_variables['RNET_ft1' ] = rnet_redvar(raw0, 'TREND', region=region, flag='MONTHLY')
+            self.reduced_variables['ASA_ft1'] =  albedos_redvar(raw0, 'TREND', ['FSR', 'FSDS'], region=region, flag='MONTHLY', weights=lw0)
+            self.reduced_variables['RNET_ft1' ] = rnet_redvar(raw0, 'TREND', region=region, flag='MONTHLY', weights=lw0)
          if raw1 != None:
-            self.reduced_variables['ASA_ft2'] =  albedos_redvar(raw0, 'TREND', ['FSR', 'FSDS'], region=region, flag='MONTHLY')
-            self.reduced_variables['RNET_ft2' ] = rnet_redvar(raw1, 'TREND', region=region, flag='MONTHLY')
+            self.reduced_variables['ASA_ft2'] =  albedos_redvar(raw0, 'TREND', ['FSR', 'FSDS'], region=region, flag='MONTHLY', weights=lw1)
+            self.reduced_variables['RNET_ft2' ] = rnet_redvar(raw1, 'TREND', region=region, flag='MONTHLY', weights=lw1)
 
          if raw0 != None:
             self.single_plotspecs['Albedo'] = plotspec(vid='ASA_ft1',
@@ -1373,11 +1424,11 @@ class lmwg_plot_set3(lmwg_plot_spec):
          for v in red_varlist:
             self.reduced_variables[v+'_ft1'] = reduced_variable(
                variableid = v, filetable=ft, reduced_var_id=v+'_ft1',
-               reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid)))
+               reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, weights=lw0, vid=vid)))
             if num_models == 2:
                self.reduced_variables[v+'_ft2'] = reduced_variable(
                   variableid = v, filetable=ft2, reduced_var_id=v+'_ft2',
-                  reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid)))
+                  reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, weights=lw1, vid=vid)))
             self.single_plotspecs[v] = plotspec(vid=v+'_ft1', 
                zvars = [v+'_ft1'], zfunc=(lambda z:z),
                plottype = self.plottype, title=varinfo[v]['desc'])
@@ -1391,23 +1442,23 @@ class lmwg_plot_set3(lmwg_plot_spec):
          for v in sub_varlist:
             self.reduced_variables[v+'_ft1'] = reduced_variable(
                variableid = v, filetable=ft, reduced_var_id=v+'_ft1',
-               reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid)))
+               reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, weights=lw0, vid=vid)))
             if num_models == 2:
                self.reduced_variables[v+'_ft2'] = reduced_variable(
                   variableid = v, filetable=ft2, reduced_var_id=v+'_ft2',
-                  reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid)))
+                  reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, weights=lw1, vid=vid)))
          ### Can we do these with reduceMonthlyTrendRegion? Needs investigation
          self.derived_variables['LHEAT_ft1'] = derived_var(
                vid='LHEAT_ft1', inputs=['FCTR_ft1', 'FGEV_ft1', 'FCEV_ft1'], func=sum3)
          if raw0 != None:
-            self.reduced_variables['EVAPFRAC_ft1'] = evapfrac_redvar(raw0, 'TREND', region=region, flag='MONTHLY')
-            self.reduced_variables['RNET_ft1'] = rnet_redvar(raw0, 'TREND', region=region, flag='MONTHLY')
+            self.reduced_variables['EVAPFRAC_ft1'] = evapfrac_redvar(raw0, 'TREND', region=region, flag='MONTHLY', weights=lw0)
+            self.reduced_variables['RNET_ft1'] = rnet_redvar(raw0, 'TREND', region=region, flag='MONTHLY', weights=lw0)
          if num_models == 2:
             self.derived_variables['LHEAT_ft2'] = derived_var(
                vid='LHEAT_ft2', inputs=['FCTR_ft2', 'FGEV_ft2', 'FCEV_ft2'], func=sum3)
             if raw1 != None:
-               self.reduced_variables['EVAPFRAC_ft2'] = evapfrac_redvar(raw1, 'TREND', region=region, flag='MONTHLY')
-               self.reduced_variables['RNET_ft2'] = rnet_redvar(raw1, 'TREND', region=region, flag='MONTHLY')
+               self.reduced_variables['EVAPFRAC_ft2'] = evapfrac_redvar(raw1, 'TREND', region=region, flag='MONTHLY', weights=lw1)
+               self.reduced_variables['RNET_ft2'] = rnet_redvar(raw1, 'TREND', region=region, flag='MONTHLY', weights=lw1)
 
 
          self.single_plotspecs['LatentHeat'] = plotspec(vid='LHEAT_ft1', 
@@ -1442,9 +1493,6 @@ class lmwg_plot_set3(lmwg_plot_spec):
             self.composite_plotspecs['Turbulent_Fluxes'].append('NetRadiation')
 
       if 'Precip' in varid:
-         print '********************************************************************************************'
-         print '** This requires 2 observation sets to recreate the NCAR plots. That is not supported yet **'
-         print '********************************************************************************************'
          red_varlist = ['SNOWDP', 'TSA', 'SNOW', 'RAIN', 'QOVER', 'QDRAI', 'QRGWL']
          ft = (climo0 if climo0 is not None else raw0)
          ft2 = (climo1 if climo1 is not None else raw1)
@@ -1452,11 +1500,11 @@ class lmwg_plot_set3(lmwg_plot_spec):
          for v in red_varlist:
             self.reduced_variables[v+'_ft1'] = reduced_variable(
                variableid = v, filetable=ft, reduced_var_id=v+'_ft1',
-               reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid)))
+               reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, weights=lw0, vid=vid)))
             if num_models == 2:
                self.reduced_variables[v+'_ft2'] = reduced_variable(
                   variableid = v, filetable=ft2, reduced_var_id=v+'_ft2',
-                  reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid)))
+                  reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, weights=lw1, vid=vid)))
 
          # These are all linaer, so we can take reduced vars and add them together. I think that is the VAR_ft1 variables
          self.derived_variables = {
@@ -1470,65 +1518,163 @@ class lmwg_plot_set3(lmwg_plot_spec):
             self.derived_variables['TOTRUNOFF_ft2'] = derived_var(vid='TOTRUNOFF_ft2', inputs=['QOVER_ft2', 'QDRAI_ft2', 'QRGWL_ft2'], func=sum3)
 
          
+         # This one takes (up to) 4 observations.
+         # PREC, TEMP is Willmott-Matsuura 
+         # Snow cover/depth is NOAA_AVHRR and CMC
+         # Runoff is GRDC
+         # Ok, so we have our various obs sets... Now we need to reduce some variables.
+         num_prec=0
+         num_run=0
+         num_temp=0
+         num_snowd = 0
+         weights = []
          for i in range(num_obs):
-            if i == 0: 
-               obsft = obs0
-               ext = '_obs0'
-            if i == 1:
-               obsft == obs1
-               ext = '_obs1'
+            # Do this first for each obs set.
+            if 'weight' in obs[i].list_variables():
+               weights.append(land_weights(ft0, region=region).reduce())
+            else:
+               print 'No weights found for obs set ', i
 
-            if 'PREC' in obsft.list_variables():
-               self.reduce_variables['PREC'+ext] = reduced_variable(
-                  variableid = 'PREC', filetable=obsft, reduced_var_id='PREC'+ext,
-                  reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid)))
-            if 'PRECIP_LAND' in obsft.list_variables():
-               self.reduced_variables['PREC'+ext] = reduced_variable(
-                  varialeid = 'PRECIP_LAND', filetable=obsft, reduced_var_id='PREC'+ext,
-                  reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid)))
-            if 'RUNOFF' in obsft.list_variables():
-               self.reduced_variables['TOTRUNOFF'+ext] = reduced_variable(
-                  varialeid = 'RUNOFF', filetable=obsft, reduced_var_id='TOTRUNOFF'+ext,
-                  reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid)))
-            if 'SNOWDP' in obsft.list_varialbes():
-               self.reduced_variables['SNOWDP'+ext] = reduced_variable(
-                  variableid = 'SNOWDP', filetable=obsft, reduced_var_id='SNOWDP'+ext,
-                  reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid)))
-            if 'TSA' in obsft.list_variables():
-               self.reduced_variables['TSA'+ext] = reduced_variable(
-                  variableid = 'TSA', filetable=obsft, reduced_var_id='TSA'+ext,
-                  reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid)))
-            if 'TREFHT' in obsft.list_variables():
-               self.reduced_variables['TSA'+ext] = reduced_variable(
-                  variableid = 'TREFHT', filetable=obsft, reduced_var_id='TSA'+ext,
-                  reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid)))
+            if 'PREC' in obs[i].list_variables():
+               num_prec = num_prec+1
+               self.reduced_variables['PREC_obs'+num_prec] = reduced_variable(
+                  variableid = 'PREC', filetable=obs[i], reduced_var_id='PREC_obs'+num_prec,
+                  reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region=region, weights=weights[i], vid=vid)))
+            if 'PRECIP_LAND' in obs[i].list_variables():
+               num_prec = num_prec+1
+               self.reduced_variables['PREC_obs'+num_prec] = reduced_variable(
+                  variableid = 'PRECIP_LAND', filetable=obs[i], reduced_var_id='PREC_obs'+num_prec,
+                  reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region=region, weights=weights[i], vid=vid)))
+            if 'RUNOFF' in obs[i].list_variables():
+               num_run = num_run+1
+               self.reduced_variables['TOTRUNOFF_obs'+num_run] = reduced_variable(
+                  variableid = 'RUNOFF', filetable=obs[i], reduced_var_id='TOTRUNOFF_obs'+num_run,
+                  reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region=region, weights=weights[i], vid=vid)))
+            if 'SNOWDP' in obs[i].list_variables():
+               num_snowd = num_snowd+1
+               self.reduced_variables['SNOWDP_obs'+num_snowd] = reduced_variable(
+                  variableid = 'SNOWDP', filetable=obs[i], reduced_var_id='SNOWDP_obs'+num_snowd,
+                  reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region=region, weights=weights[i], vid=vid)))
+#            if 'SCF' in obs[i].list_variables():
+#               print '***** IS SCF SNOWDP????? ******'
+#               num_snowd = num_snowd+1
+#               self.reduced_variables['SNOWDP_obs'+num_snowd] = reduced_variable(
+#                  variableid = 'SCF', filetable=obs[i], reduced_var_id='SNOWDP_obs'+num_snowd,
+#                  reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region=region, weights=weights[i], vid=vid)))
+            if 'SNOWD' in obs[i].list_variables():
+               num_snowd = num_snowd+1
+               self.reduced_variables['SNOWDP_obs'+num_snowd] = reduced_variable(
+                  variableid = 'SNOWD', filetable=obs[i], reduced_var_id='SNOWDP_obs'+num_snowd,
+                  reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region=region, weights=weights[i], vid=vid)))
+            if 'TSA' in obs[i].list_variables():
+               num_temp = num_temp+1
+               self.reduced_variables['TSA_obs'+num_temp] = reduced_variable(
+                  variableid = 'TSA', filetable=obs[i], reduced_var_id='TSA_obs'+num_temp,
+                  reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region=region, weights=weights[i], vid=vid)))
+            if 'TREFHT' in obs[i].list_variables():
+               num_temp = num_temp+1
+               self.reduced_variables['TSA_obs'+num_temp] = reduced_variable(
+                  variableid = 'TREFHT', filetable=obs[i], reduced_var_id='TSA_obs'+num_temp,
+                  reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region=region, weights=weights[i], vid=vid)))
+            if 'SWE' in obs[i].list_variables():
+               # snow water equivalent. what is this? units in mm so not a rate, so prec maybe?
+               pass
+
+
 
          # Now, define the individual plots.
          self.single_plotspecs = {
             '2mAir_ft1': plotspec(vid='2mAir_ft1', 
-               zvars=['TSA_ft1'], zfunc=(lambda z:z),
-               #z2vars = obs
-               #z3vars = obs2
-               plottype = self.plottype, title='2m Air Temperature'),
+               zvars=['TSA_ft1'], zfunc=(lambda z:z), plottype = self.plottype, title='2m Air Temperature'),
             'Prec_ft1': plotspec(vid='Prec_ft1',
-               zvars=['PREC_ft1'], zfunc=(lambda z:z),
-               #z2vars = obs
-               #z3vars = obs2
-               plottype = self.plottype, title='Precipitation'),
+               zvars=['PREC_ft1'], zfunc=(lambda z:z), plottype = self.plottype, title='Precipitation'),
             'Runoff_ft1': plotspec(vid='Runoff_ft1',
-               zvars=['TOTRUNOFF_ft1'], zfunc=(lambda z:z),
-               #z2vars = obs
-               #z3vars = obs2
-               plottype = self.plottype, title='Runoff'),
+               zvars=['TOTRUNOFF_ft1'], zfunc=(lambda z:z), plottype = self.plottype, title='Runoff'),
             'SnowDepth_ft1': plotspec(vid='SnowDepth_ft1',
-               zvars=['SNOWDP_ft1'], zfunc=(lambda z:z),
-               #z2vars = obs
-               #z3vars = obs2
-               plottype = self.plottype, title='Snow Depth')
+               zvars=['SNOWDP_ft1'], zfunc=(lambda z:z), plottype = self.plottype, title='Snow Depth')
          }
          if num_models == 2:
+            self.single_plotspecs['Prec_ft1'].z2vars = ['PREC_ft2']
+            self.single_plotspecs['Prec_ft1'].z2func = (lambda z:z)
             self.single_plotspecs['2mAir_ft1'].z2vars = ['TSA_ft2']
             self.single_plotspecs['2mAir_ft1'].z2func = (lambda z:z)
+            self.single_plotspecs['SnowDepth_ft1'].z2vars = ['SNOWDP_ft2']
+            self.single_plotspecs['SnowDepth_ft1'].z2func = (lambda z:z)
+            self.single_plotspecs['Runoff_ft1'].z2vars = ['TOTRUNOFF_ft2']
+            self.single_plotspecs['Runoff_ft1'].z2func = (lambda z:z)
+
+         if num_obs != 0:
+            if num_models == 2:
+               if num_prec >= 1:
+                  self.single_plotspecs['Prec_ft1'].z3vars = ['PREC_obs1']
+                  self.single_plotspecs['Prec_ft1'].z3func = (lambda z:z)
+               if num_prec >= 2:
+                  self.single_plotspecs['Prec_ft1'].z4vars = ['PREC_obs2']
+                  self.single_plotspecs['Prec_ft1'].z4func = (lambda z:z)
+               if num_prec > 2:
+                  print 'Only 2 obs sets plotted for precipitation'
+
+               if num_temp >= 1:
+                  self.single_plotspecs['2mAir_ft1'].z3vars = ['TSA_obs1']
+                  self.single_plotspecs['2mAir_ft1'].z3func = (lambda z:z)
+               if num_temp >= 2:
+                  self.single_plotspecs['2mAir_ft1'].z4vars = ['TSA_obs2']
+                  self.single_plotspecs['2mAir_ft1'].z4func = (lambda z:z)
+               if num_temp > 2:
+                  print 'Only 2 obs sets plotted for temp'
+               if num_snowd >= 1:
+                  self.single_plotspecs['SnowDepth_ft1'].z3vars = ['SNOWDP_obs1']
+                  self.single_plotspecs['SnowDepth_ft1'].z3func = (lambda z:z)
+               if num_snowd >= 2:
+                  self.single_plotspecs['SnowDepth_ft1'].z4vars = ['SNOWDP_obs2']
+                  self.single_plotspecs['SnowDepth_ft1'].z4func = (lambda z:z)
+               if num_snowd > 2:
+                  print 'Only 2 obs sets plotted for snowdepth'
+               if num_run >= 1:
+                  self.single_plotspecs['Runoff_ft1'].z3vars = ['TOTRUNOFF_obs1']
+                  self.single_plotspecs['Runoff_ft1'].z3func = (lambda z:z)
+               if num_run >= 2:
+                  self.single_plotspecs['Runoff_ft1'].z4vars = ['TOTRUNOFF_obs2']
+                  self.single_plotspecs['Runoff_ft1'].z4func = (lambda z:z)
+               if num_run > 2:
+                  print 'Only 2 obs sets plotted for total runoff'
+            else:
+               if num_prec >= 1:
+                  self.single_plotspecs['Prec_ft1'].z2vars = ['PREC_obs1']
+                  self.single_plotspecs['Prec_ft1'].z2func = (lambda z:z)
+               if num_prec >= 2:
+                  self.single_plotspecs['Prec_ft1'].z3vars = ['PREC_obs2']
+                  self.single_plotspecs['Prec_ft1'].z3func = (lambda z:z)
+               if num_prec > 2:
+                  print 'Only 2 obs sets plotted for precipitation'
+
+               if num_temp >= 1:
+                  self.single_plotspecs['2mAir_ft1'].z2vars = ['TSA_obs1']
+                  self.single_plotspecs['2mAir_ft1'].z2func = (lambda z:z)
+               if num_temp >= 2:
+                  self.single_plotspecs['2mAir_ft1'].z3vars = ['TSA_obs2']
+                  self.single_plotspecs['2mAir_ft1'].z3func = (lambda z:z)
+               if num_temp > 2:
+                  print 'Only 2 obs sets plotted for temp'
+               if num_snowd >= 1:
+                  self.single_plotspecs['SnowDepth_ft1'].z2vars = ['SNOWDP_obs1']
+                  self.single_plotspecs['SnowDepth_ft1'].z2func = (lambda z:z)
+               if num_snowd >= 2:
+                  self.single_plotspecs['SnowDepth_ft1'].z3vars = ['SNOWDP_obs2']
+                  self.single_plotspecs['SnowDepth_ft1'].z3func = (lambda z:z)
+               if num_snowd > 2:
+                  print 'Only 2 obs sets plotted for snowdepth'
+               if num_run >= 1:
+                  self.single_plotspecs['Runoff_ft1'].z2vars = ['TOTRUNOFF_obs1']
+                  self.single_plotspecs['Runoff_ft1'].z2func = (lambda z:z)
+               if num_run >= 2:
+                  self.single_plotspecs['Runoff_ft1'].z3vars = ['TOTRUNOFF_obs2']
+                  self.single_plotspecs['Runoff_ft1'].z3func = (lambda z:z)
+               if num_run > 2:
+                  print 'Only 2 obs sets plotted for total runoff'
+
+
+
 
          self.composite_plotspecs={
             'Total_Precipitation':
@@ -1537,6 +1683,9 @@ class lmwg_plot_set3(lmwg_plot_spec):
       if 'Snow' in varid:
          ft = (climo0 if climo0 is not None else raw0)
          ft2 = (climo1 if climo1 is not None else raw1)
+         print '******* NEED MONTHLY FILES, USING RAW FOR NOW *********'
+         print '******* CALCULATE LAND WEIGHTS *******'
+         XXX
          ft = raw0
          ft2 = raw1
          red_varlist = ['SNOWDP', 'FSNO', 'H2OSNO']
@@ -1555,27 +1704,86 @@ class lmwg_plot_set3(lmwg_plot_spec):
                   reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid)))
                self.single_plotspecs[v].z2vars = [v+'_ft2']
                self.single_plotspecs[v].z2func = (lambda z:z)
-
-            for i in range(num_obs):
-               if i == 0: 
-                  obsft = obs0
-                  ext = '_obs0'
-               if i == 1:
-                  obsft == obs1
-                  ext = '_obs1'
-               if v in obsft.list_variables():
-                  self.reduced_variables[v+ext] = reduced_variable(
-                     variableid = v, filetable=obsft, reduced_var_id=v+ext,
-                     reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid)))
-                  if i == 0:
-                     self.single_plotspecs[v].z3vars = [v+ext]
-                     self.single_plotspecs[v].z3func = (lambda z:z)
-                  if i == 1:
-                     self.single_plotspecs[v].z4vars = [v+ext]
-                     self.single_plotspecs[v].z4func = (lambda z:z)
-                  
             self.composite_plotspecs[pspec_name].append(v)
-            
+
+         # Process any/all observation sets now
+         weights = []
+         num_snowd = 0
+         num_fsno = 0
+         num_swe = 0
+         for i in range(num_obs):
+            if 'SNOWDP' in obs[i].list_variables():
+               num_snowd = num_snowd+1
+               self.reduced_variables['SNOWDP_obs'+num_run] = reduced_variable(
+                  variableid = 'SNOWDP', filetable=obs[i], reduced_var_id='SNOWDP_obs'+num_snowd,
+                  reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region=region, weights=weights[i], vid=vid)))
+            if 'SCF' in obs[i].list_variables():
+               num_fsno = num_fsno+1
+               self.reduced_variables['FSNO_obs'+num_run] = reduced_variable(
+                  variableid = 'SCF', filetable=obs[i], reduced_var_id='FSNO_obs'+num_fsno,
+                  reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region=region, weights=weights[i], vid=vid)))
+            if 'SNOWD' in obs[i].list_variables():
+               num_snowd = num_snowd+1
+               self.reduced_variables['SNOWDP_obs'+num_run] = reduced_variable(
+                  variableid = 'SNOWD', filetable=obs[i], reduced_var_id='SNOWDP_obs'+num_snowd,
+                  reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region=region, weights=weights[i], vid=vid)))
+            if 'SWE' in obs[i].list_variables():
+               num_swe = num_swe+1
+               self.reduced_variables['H2OSNO'+num_swe] = reduced_variable(
+                  variableid = 'H2OSNO', filetable=obs[i], reduced_var_id='H2OSNO_obs'+num_swe,
+                  reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region=region, weights=weights[i], vid=vid)))
+         if num_obs != 0:
+            if num_models == 2:
+               if num_snowd >= 1:
+                  self.single_plotspecs['SNOWDP'].z3vars = ['SNOWDP_obs1']
+                  self.single_plotspecs['SNOWDP'].z3func = (lambda z:z)
+               if num_snowd >= 2:
+                  self.single_plotspecs['SNOWDP'].z4vars = ['SNOWDP_obs2']
+                  self.single_plotspecs['SNOWDP'].z4func = (lambda z:z)
+               if num_snowd > 2:
+                  print 'Only plotting first 2 snow depth obs sets'
+               if num_fsno >= 1:
+                  self.single_plotspecs['FSNO'].z3vars = ['FSNO_obs1']
+                  self.single_plotspecs['FSNO'].z3func = (lambda z:z)
+               if num_fsno >= 2:
+                  self.single_plotspecs['FSNO'].z4vars = ['FSNO_obs2']
+                  self.single_plotspecs['FSNO'].z4func = (lambda z:z)
+               if num_fsno > 2:
+                  print 'Only plotting first 2 fractional snow coverage obs sets'
+               if num_swe >= 1:
+                  self.single_plotspecs['H2OSNO'].z3vars = ['H2OSNO_obs1']
+                  self.single_plotspecs['H2OSNO'].z3func = (lambda z:z)
+               if num_swe >= 2:
+                  self.single_plotspecs['H2OSNO'].z4vars = ['H2OSNO_obs2']
+                  self.single_plotspecs['H2OSNO'].z4func = (lambda z:z)
+               if num_swe > 2: 
+                  print 'Only plotting first 2 snow/water equivalent obs sets'
+            else:
+               if num_snowd >= 1:
+                  self.single_plotspecs['SNOWDP'].z2vars = ['SNOWDP_obs1']
+                  self.single_plotspecs['SNOWDP'].z2func = (lambda z:z)
+               if num_snowd >= 2:
+                  self.single_plotspecs['SNOWDP'].z3vars = ['SNOWDP_obs2']
+                  self.single_plotspecs['SNOWDP'].z3func = (lambda z:z)
+               if num_snowd > 2:
+                  print 'Only plotting first 2 snow depth obs sets'
+               if num_fsno >= 1:
+                  self.single_plotspecs['FSNO'].z2vars = ['FSNO_obs1']
+                  self.single_plotspecs['FSNO'].z2func = (lambda z:z)
+               if num_fsno >= 2:
+                  self.single_plotspecs['FSNO'].z3vars = ['FSNO_obs2']
+                  self.single_plotspecs['FSNO'].z3func = (lambda z:z)
+               if num_fsno > 2:
+                  print 'Only plotting first 2 fractional snow coverage obs sets'
+               if num_swe >= 1:
+                  self.single_plotspecs['H2OSNO'].z2vars = ['H2OSNO_obs1']
+                  self.single_plotspecs['H2OSNO'].z2func = (lambda z:z)
+               if num_swe >= 2:
+                  self.single_plotspecs['H2OSNO'].z3vars = ['H2OSNO_obs2']
+                  self.single_plotspecs['H2OSNO'].z3func = (lambda z:z)
+               if num_swe > 2: 
+                  print 'Only plotting first 2 snow/water equivalent obs sets'
+
       # No obs sets for these 3
       if 'Carbon' in varid or 'Fire' in varid or 'Hydrology' in varid:
          if 'Carbon' in varid:
@@ -1591,6 +1799,11 @@ class lmwg_plot_set3(lmwg_plot_spec):
          self.composite_plotspecs[pspec_name] = []
          ft = (climo0 if climo0 is not None else raw0)
          ft2 = (climo1 if climo1 is not None else raw1)
+         print '******* NEED MON CLIMOS *******'
+         print '***** CALC LAND WEIGHTS *****'
+         XXXX
+         ft = raw0
+         ft2 = raw1
 
          for v in red_varlist:
             self.reduced_variables[v+'_ft1'] = reduced_variable(
@@ -1642,6 +1855,8 @@ class lmwg_plot_set5(lmwg_plot_spec):
    name = '5 - Tables of annual means'
    number = '5'
 
+   print ' ****** NEED LAND WEIGHTS FOR ONE OF THE OPTIONS ********'
+   print '***** NEED PROPER UNIT CONVERSIONS TOO ******'
    # This jsonflag is gross, but Options has always been a 2nd class part of the design. Maybe I'll get to
    # change that for the next release.
    def __init__( self, model, obs, varid, seasonid=None, region=None, aux=None, jsonflag=False):
@@ -1666,15 +1881,20 @@ class lmwg_plot_set5(lmwg_plot_spec):
    def _list_variables( model, obs ):
       varlist = ['Regional_Hydrologic_Cycle', 'Global_Biogeophysics', 'Global_Carbon_Nitrogen']
       model_dict = make_ft_dict(model)
-      if len(model_dict.keys()) >= 2:
-         varlist.extend( [ 'Regional_Hydrologic_Cycle_Difference', 'Global_Biogeophysics_Difference', 
-                 'Global_Carbon_Nitrogen_Difference'])
+#      if len(model_dict.keys()) >= 2:
+#         varlist.extend( [ 'Regional_Hydrologic_Cycle_Difference', 'Global_Biogeophysics_Difference', 
+#                 'Global_Carbon_Nitrogen_Difference'])
       return varlist
 
    @staticmethod
    def _all_variables( model, obs ):
-      vlist = {vn:basic_plot_variable for vn in lmwg_plot_set5._list_variables(model, obs) }
+      vlist = {}
+      varlist = ['Regional_Hydrologic_Cycle', 'Global_Biogeophysics', 'Global_Carbon_Nitrogen']
+      for v in varlist:
+         vlist[v] = lwmg_set5_variable
       return vlist
+#      vlist = {vn:basic_plot_variable for vn in lmwg_plot_set5._list_variables(model, obs) }
+#      return vlist
 
    def plan_computation( self, model, obs, varid, seasonid, region=None, aux=None):
 
@@ -1699,6 +1919,7 @@ class lmwg_plot_set5(lmwg_plot_spec):
          raw1 = model_dict[model_dict.keys()[1]]['raw']
          climo1 = model_dict[model_dict.keys()[1]]['climos']
 
+      
       self.hasregions = 0
       self.twosets = 0
       self.difference = 0
@@ -1715,26 +1936,32 @@ class lmwg_plot_set5(lmwg_plot_spec):
          # This one will take 2 passes over the input list for efficiency.
          self.derived_variables1 = {}
          self.reduced_variables1 = {}
+
+         # Get our land weights
+         ft = (climo0 if climo0 is not None else raw0)
+
+         lw0 = land_weights(ft, region=region).reduce()
+
          # For each var:
          #     reduce temporarily
          #     for each region:
          #         reduce spatially to a single value
-         # Of course, some of these are overly complicated nonlinear variables
          self.hasregions = 1
          self.setname = 'DIAG SET 5: REGIONAL HYDROLOGIC CYCLE OVER LAND'
-         # Do the initial temporar reductions on Global
-         region = 'Global'
          # These are all linear at least.
          _red_vars = ['RAIN', 'SNOW', 'QVEGE', 'QVEGT', 'QSOIL', 'QOVER', 'QDRAI', 'QRGWL']
          _derived_varnames = ['PREC', 'CE', 'TOTRUNOFF']
          self.display_vars = ['PREC', 'QVEGE', 'QVEGEP', 'QVEGT', 'QSOIL', 'TOTRUNOFF']
 
-         ft = (climo0 if climo0 is not None else raw0)
          for v in _red_vars:
             self.reduced_variables1[v+'_ft1'] = reduced_variable(variableid = v,
                filetable = ft, reduced_var_id=v+'_ft1',
                reduction_function = (lambda x, vid: reduceAnnSingle(x, vid=vid)))
 
+         # Do the initial temporal reductions on Global
+         region = 'Global'
+
+         # Of course, some of these are more complicated variables
          self.reduced_variables1['QVEGEP_ft1'] = canopyevapTrend(ft)
          self.derived_variables1['TOTRUNOFF_ft1'] = derived_var(vid='TOTRUNOFF_ft1', inputs=['QOVER_ft1', 'QDRAI_ft1', 'QRGWL_ft1'], func=sum3)
          self.derived_variables1['PREC_ft1'] = derived_var(vid='PREC_ft1', inputs=['RAIN_ft1', 'SNOW_ft1'], func=aplusb)
@@ -1742,11 +1969,13 @@ class lmwg_plot_set5(lmwg_plot_spec):
          # Ok, assume the first pass variables are done. Now, reduce regions.
          for v in self.display_vars:
             for r in defines.all_regions.keys():
-               self.derived_variables[v+'_'+r+'_ft1'] = derived_var(vid=v+'_'+r+'_ft1', inputs=[v+'_ft1'], special_value=r, func=reduceRegion)
+               self.derived_variables[v+'_'+r+'_ft1'] = derived_var(vid=v+'_'+r+'_ft1', inputs=[v+'_ft1'], special_values=[r, lw0], func=reduceRegion)
 
          if num_models == 2:
             self.twosets = 1
             ft2 = (climo1 if climo1 is not None else raw1)
+            lw1 = land_weights(ft2, region=region).reduce()
+
             for v in _red_vars:
                self.reduced_variables1[v+'_ft2'] = reduced_variable(variableid = v,
                   filetable = ft2, reduced_var_id=v+'_ft2',
@@ -1755,13 +1984,15 @@ class lmwg_plot_set5(lmwg_plot_spec):
             self.derived_variables1['TOTRUNOFF_ft2'] = derived_var(vid='TOTRUNOFF_ft2', inputs=['QOVER_ft2', 'QDRAI_ft2', 'QRGWL_ft2'], func=sum3)
             self.derived_variables1['PREC_ft2'] = derived_var(vid='PREC_ft2', inputs=['RAIN_ft2', 'SNOW_ft2'], func=aplusb)
 
-            if 'Difference' in varid:
-               self.difference = 1
             for v in self.display_vars:
                for r in defines.all_regions.keys():
-                  self.derived_variables[v+'_'+r+'_ft2'] = derived_var(vid=v+'_'+r+'_ft2', inputs=[v+'_ft2'], special_value=r, func=reduceRegion)
-                  if self.difference == 1:
-                     self.derived_variables[v+'_'+r+'_diff'] = derived_var(vid=v+'_'+r+'_diff', inputs=[v+'_'+r+'_ft1', v+'_'+r+'_ft2'], func=aminusb)
+                  self.derived_variables[v+'_'+r+'_ft2'] = derived_var(vid=v+'_'+r+'_ft2', inputs=[v+'_ft2'], special_values=[r, lw1], func=reduceRegion)
+
+         if aux == 'difference':
+            self.difference = 1
+            for v in self.display_vars:
+               for r in defines.all_regions.keys():
+                  self.derived_variables[v+'_'+r+'_diff'] = derived_var(vid=v+'_'+r+'_diff', inputs=[v+'_'+r+'_ft1', v+'_'+r+'_ft2'], func=aminusb)
 
       if 'Biogeophysics' in varid: 
          self.setname = 'DIAG SET 5: CLM ANNUAL MEANS OVER LAND'
@@ -1776,27 +2007,33 @@ class lmwg_plot_set5(lmwg_plot_spec):
          'QDRAI','QRGWL','WA','WT','ZWT','QCHARGE','FCOV','CO2_PPMV']
          ft = (climo0 if climo0 is not None else raw0)
          ft2 = (climo1 if climo1 is not None else raw1)
+         global_lw0 = land_weights(ft, region=region).reduce()
+         if ft2 != None:
+            global_lw1 = land_weights(ft2, region=region).reduce()
+
          for v in _red_vars:
             self.reduced_variables[v+'_ft1'] = reduced_variable(variableid = v,
                filetable = ft, reduced_var_id=v+'_ft1',
-               reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, single=True, vid=vid)))
+               reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, single=True, weights=global_lw0, vid=vid)))
             if num_models == 2:
                self.twosets = 1
                self.reduced_variables[v+'_ft2'] = reduced_variable(variableid = v,
                   filetable = ft2, reduced_var_id=v+'_ft2',
-                  reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, single=True, vid=vid)))
-               if 'Difference' in varid:
+                  reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, single=True, weights=global_lw1, vid=vid)))
+               if 'difference' in aux:
                   self.difference = 1
+                  print 'CALLING AMINUSB_2AX --- NEEDS INVESTIGATED'
                   self.derived_variables[v+'_diff'] = derived_var(vid=v+'_diff', inputs=[v+'_ft1', v+'_ft2'], func=aminusb_2ax)
 
          for v in self.albedos.keys():
             if raw0 == None:
                print 'Nonclimo dataset required for albedos'
             else:
-               self.reduced_variables[v+'_ft1'] = albedos_redvar(raw0, 'SINGLE', self.albedos[v], region=region)
+               self.reduced_variables[v+'_ft1'] = albedos_redvar(raw0, 'SINGLE', self.albedos[v], region=region, weights=global_lw0)
                if num_models == 2 and raw1 != None:
-                  self.reduced_variables[v+'_ft2'] = albedos_redvar(raw1, 'SINGLE', self.albedos[v], region=region)
-            if 'Difference' in varid:
+                  self.reduced_variables[v+'_ft2'] = albedos_redvar(raw1, 'SINGLE', self.albedos[v], region=region, weights=global_lw1)
+            if 'difference' in aux:
+               print 'CALLING AMINUSB_2AX --- NEEDS INVESTIGATED'
                self.derived_variables[v+'_diff'] = derived_var(vid=v+'_diff', inputs=[v+'_ft1', v+'_ft2'], func = aminusb_2ax)
 
          self.derived_variables['ET_ft1'] = derived_var(vid='ET_ft1', inputs=['QVEGE_ft1', 'QVEGT_ft1', 'QSOIL_ft1'], func=sum3)
@@ -1809,13 +2046,14 @@ class lmwg_plot_set5(lmwg_plot_spec):
          if raw0 == None:
             print 'Nonclimo dataset required for nonlinear variables CO2_PPMV, and RNET'
          else:
-            self.reduced_variables['CO2_PPMV_ft1'] = co2ppmvTrendRegionSingle(raw0, region=region)
-            self.reduced_variables['RNET_ft1'] = rnet_redvar(raw0, 'SINGLE', region=region)
+            self.reduced_variables['CO2_PPMV_ft1'] = co2ppmvTrendRegionSingle(raw0, region=region, weights=global_lw0)
+            self.reduced_variables['RNET_ft1'] = rnet_redvar(raw0, 'SINGLE', region=region, weights=global_lw0)
             if num_models == 2 and raw1 != None:
-               self.reduced_variables['CO2_PPMV_ft2'] = co2ppmvTrendRegionSingle(raw1, region=region)
-               self.reduced_variables['RNET_ft2'] = rnet_redvar(raw1, 'SINGLE', region=region)
+               self.reduced_variables['CO2_PPMV_ft2'] = co2ppmvTrendRegionSingle(raw1, region=region, weights=global_lw1)
+               self.reduced_variables['RNET_ft2'] = rnet_redvar(raw1, 'SINGLE', region=region, weights=global_lw1)
 
-         if 'Difference' in varid:
+         if 'Difference' in aux:
+            self.difference = 1
             self.derived_variables['ET_diff'] = derived_var(vid='ET_diff', inputs=['ET_ft1', 'ET_ft2' ], func=aminusb)
             # Is this correct, or do these need to do the math in a different order?
             self.derived_variables['PREC_diff'] = derived_var(vid='PREC_diff', inputs=['PREC_ft1', 'PREC_ft2'], func=aminusb)
@@ -1842,20 +2080,24 @@ class lmwg_plot_set5(lmwg_plot_spec):
 
          ft = (climo0 if climo0 is not None else raw0)
          ft2 = (climo1 if climo1 is not None else raw1)
+         global_lw0 = land_weights(ft, region=region).reduce()
+         if ft2 != None:
+            global_lw1 = land_weights(ft2, region=region).reduce()
          for v in _red_vars:
             self.reduced_variables[v+'_ft1'] = reduced_variable(variableid = v,
                filetable=ft, reduced_var_id=v+'_ft1', 
-               reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, single=True, vid=vid)))
+               reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, single=True, weights=global_lw0, vid=vid)))
             if num_models == 2:
                self.twosets = 1
                self.reduced_variables[v+'_ft2'] = reduced_variable(variableid = v,
                   filetable=ft2, reduced_var_id=v+'_ft2', 
-                  reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, single=True, vid=vid)))
-               if 'Difference' in varid:
+                  reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, single=True, weights=global_lw1, vid=vid)))
+               if aux == 'Difference':
                   self.difference = 1
                   self.derived_variables[v+'_diff'] = derived_var(
                      vid=v+'_diff', inputs=[v+'_ft1', v+'_ft2'], func=aminusb_2ax)
 
+         print 'global_lw0: ', global_lw0.max()
       self.computation_planned = True
 
    def _results(self,newgrid=0):
@@ -1902,7 +2144,9 @@ class lmwg_plot_set5(lmwg_plot_spec):
             # Headers
             sys.stdout.write('%s' % self.setname)
             if self.difference == 1:
+               print '*****************************'
                print ' - DIFFERENCE (case1 - case2)'
+               print '*****************************'
             else:
                sys.stdout.write('\n')
 
@@ -1917,16 +2161,16 @@ class lmwg_plot_set5(lmwg_plot_spec):
             print '\t\t\t QVEGT = canopy transpiration ((mm/y))'
             print '\t\t\t QSOIL = ground evaporation ((mm/y))'
             print '\t\t\t TOTRUNOFF = Runoff:qover+qdrai+qrgwl ((mm/y))'
-            print '%-*s\tPREC(mm/y)\t\tQVEGE(mm/y)\t\tQVEGEP(%%)\t\t\tQVEGT\t\t\tQSOIL(mm/y)\t\tTOTRUNOFF(mm/y)' % ((maxl+3), 'Region')
+            print '%-*s\tPREC(mm/y)\t\t\tQVEGE(mm/y)\t\tQVEGEP(%%)\t\t\tQVEGT\t\t\tQSOIL(mm/y)\t\tTOTRUNOFF(mm/y)' % ((maxl+3), 'Region')
 
 
             if self.twosets == 1:
-               print 'case1\t\tcase2\t\tcase1\t\tcase2\t\tcase1\t\tcase2\t\tcase1\t\tcase2\t\tcase1\t\tcase2\t\tcase1\t\tcase2'
-            else:
                if self.difference == 1:
-                  print 'diff\t\tdiff\t\tdiff\t\tdiff\t\tdiff\t\tdiff'
+                  print '\t\t\t\t\t\tdiff\t\tdiff\t\tdiff\t\tdiff\t\tdiff\t\tdiff'
                else:
-                  print '\t\t\t\t\t\tcase1\t\t\tcase1\t\t\tcase1\t\t\t\tcase1\t\t\tcase1\t\t\tcase1'
+                  print '\t\t\t\t\t\tcase1\t\tcase2\t\tcase1\t\tcase2\t\tcase1\t\tcase2\t\tcase1\t\tcase2\t\tcase1\t\tcase2\t\tcase1\t\tcase2'
+            else:
+               print '\t\t\t\t\t\tcase1\t\t\tcase1\t\t\tcase1\t\t\t\tcase1\t\t\tcase1\t\t\tcase1'
 
    #         sys.stdout.write(ostr % ' ')
             if self.difference == 1:
@@ -1937,34 +2181,42 @@ class lmwg_plot_set5(lmwg_plot_spec):
             for r in rk:
                ostr = '%-'+str(maxl+3)+'s\t'
                sys.stdout.write(ostr % r)
-               sys.stdout.write('%10.5f\t' % convert_units(varvals['PREC_'+r+'_ft1'], 'mm/year'))
-               if self.twosets == 1:
-                  sys.stdout.write('%10.5f\t' % convert_units(varvals['PREC_'+r+'_ft2'], 'mm/year'))
+               if self.difference == 1:
+                  sys.stdout.write('%10.5f\t' % convert_units(varvals['PREC_'+r+'_diff'], 'mm/year'))
+                  sys.stdout.write('%10.5f\t' % convert_units(varvals['QVEGE_'+r+'_diff'], 'mm/year'))
+                  sys.stdout.write('%10.5f\t' % varvals['QVEGEP_'+r+'_diff'])
+                  sys.stdout.write('%10.5f\t' % convert_units(varvals['QVEGT_'+r+'_diff'], 'mm/year'))
+                  sys.stdout.write('%10.5f\t' % convert_units(varvals['QSOIL_'+r+'_diff'], 'mm/year'))
+                  sys.stdout.write('%10.5f\t' % convert_units(varvals['TOTRUNOFF_'+r+'_diff'], 'mm/year'))
                else:
-                  sys.stdout.write('\t')
-               sys.stdout.write('%10.5f\t' % convert_units(varvals['QVEGE_'+r+'_ft1'], 'mm/year'))
-               if self.twosets == 1:
-                  sys.stdout.write('%10.5f\t' % convert_units(varvals['QVEGE_'+r+'_ft2'], 'mm/year'))
-               else:
-                  sys.stdout.write('\t')
-               sys.stdout.write('%10.5f\t' % varvals['QVEGEP_'+r+'_ft1'])
-               if self.twosets == 1:
-                  sys.stdout.write('%10.5f\t' % varvals['QVEGEP_'+r+'_ft2'])
-               else:
-                  sys.stdout.write('\t\t')
-               sys.stdout.write('%10.5f\t' % convert_units(varvals['QVEGT_'+r+'_ft1'], 'mm/year'))
-               if self.twosets == 1:
-                  sys.stdout.write('%10.5f\t' % convert_units(varvals['QVEGT_'+r+'_ft2'], 'mm/year'))
-               else:
-                  sys.stdout.write('\t')
-               sys.stdout.write('%10.5f\t' % convert_units(varvals['QSOIL_'+r+'_ft1'], 'mm/year'))
-               if self.twosets == 1:
-                  sys.stdout.write('%10.5f\t' % convert_units(varvals['QSOIL_'+r+'_ft2'], 'mm/year'))
-               else:
-                  sys.stdout.write('\t\t')
-               sys.stdout.write('%10.5f\t' % convert_units(varvals['TOTRUNOFF_'+r+'_ft1'], 'mm/year'))
-               if self.twosets == 1:
-                  sys.stdout.write('%10.5f\t' % convert_units(varvals['TOTRUNOFF_'+r+'_ft2'], 'mm/year'))
+                  sys.stdout.write('%10.5f\t' % convert_units(varvals['PREC_'+r+'_ft1'], 'mm/year'))
+                  if self.twosets == 1:
+                     sys.stdout.write('%10.5f\t' % convert_units(varvals['PREC_'+r+'_ft2'], 'mm/year'))
+                  else:
+                     sys.stdout.write('\t')
+                  sys.stdout.write('%10.5f\t' % convert_units(varvals['QVEGE_'+r+'_ft1'], 'mm/year'))
+                  if self.twosets == 1:
+                     sys.stdout.write('%10.5f\t' % convert_units(varvals['QVEGE_'+r+'_ft2'], 'mm/year'))
+                  else:
+                     sys.stdout.write('\t')
+                  sys.stdout.write('%10.5f\t' % varvals['QVEGEP_'+r+'_ft1'])
+                  if self.twosets == 1:
+                     sys.stdout.write('%10.5f\t' % varvals['QVEGEP_'+r+'_ft2'])
+                  else:
+                     sys.stdout.write('\t\t')
+                  sys.stdout.write('%10.5f\t' % convert_units(varvals['QVEGT_'+r+'_ft1'], 'mm/year'))
+                  if self.twosets == 1:
+                     sys.stdout.write('%10.5f\t' % convert_units(varvals['QVEGT_'+r+'_ft2'], 'mm/year'))
+                  else:
+                     sys.stdout.write('\t')
+                  sys.stdout.write('%10.5f\t' % convert_units(varvals['QSOIL_'+r+'_ft1'], 'mm/year'))
+                  if self.twosets == 1:
+                     sys.stdout.write('%10.5f\t' % convert_units(varvals['QSOIL_'+r+'_ft2'], 'mm/year'))
+                  else:
+                     sys.stdout.write('\t\t')
+                  sys.stdout.write('%10.5f\t' % convert_units(varvals['TOTRUNOFF_'+r+'_ft1'], 'mm/year'))
+                  if self.twosets == 1:
+                     sys.stdout.write('%10.5f\t' % convert_units(varvals['TOTRUNOFF_'+r+'_ft2'], 'mm/year'))
                sys.stdout.write('\n')
          else: # var 2 or 3
             from metrics.packages.lmwg.defines import varinfo
@@ -1985,21 +2237,42 @@ class lmwg_plot_set5(lmwg_plot_spec):
                   if varvals[v+'_ft1'] == None:
    #                  print v,' was none. setting to -999.000'
                      varvals[v+'_ft1'] = -999.000
-                  try:
-                     print varinfo[v]['RepUnits']
-                     try:
-                        print varval[v+'_ft1'].units
-                     except:
-                        print v,' had no units'
-                        print 'type for it: ( %s )' % type(varvals[v+'_ft1'])
-                     sys.stdout.write('%-*s(%-*s) %-*s %13.7f %s' % (varmax, v, unitmax, varinfo[v]['RepUnits'], descmax, varinfo[v]['desc'], varvals[v+'_ft1'].units, convert_units(varvals[v+'_ft1'], varinfo[v]['RepUnits'])))
-                     if varinfo[v].get('units', False) != False:
-                        print 'varinfo units: ', varinfo[v].units
-                  except:
-                     sys.stdout.write('%-*s(%-*s) %-*s %13.7f ' % (varmax, v, unitmax, varinfo[v]['RepUnits'], descmax, varinfo[v]['desc'], varvals[v+'_ft1']))
+                  if hasattr(varvals[v+'_ft1'], 'units'):
+                     # Try to convert the units first.
+                     # try:
+                     varvals[v+'_ft1'] = convert_units(varvals[v+'_ft1'], varinfo[v]['RepUnits'])
+                     # except:
+                  sys.stdout.write('%-*s(%-*s) %-*s %13.7f ' % (varmax, v, unitmax, varinfo[v]['RepUnits'], descmax, varinfo[v]['desc'], varvals[v+'_ft1']))
+
+#                  try: #convert units if needed
+##                     print 'START LMWG BLOCK - reported units for ', v, ': ', varinfo[v]['RepUnits']
+#                     print '****************************************************** current units for ',v,':', varvals[v+'_ft1'].units
+##                     print 'type for it: ( %s )' % type(varvals[v+'_ft1'])
+##                    print dir(varvals[v+'_ft1'])
+#                     varvals[v+'_ft1'] = convert_units(varvals[v+'_ft1'], varinfo[v]['RepUnits'])
+#                     print '****************************************************** after converting, units: ', varvals[v+'_ft1'].units
+#                     sys.stdout.write('%-*s(%-*s) %-*s %13.7f %s %s' % (varmax, v, unitmax, varinfo[v]['RepUnits'], descmax, varinfo[v]['desc'], varvals[v+'_ft1'], ' <- unit conversion success'))
+#                     print '****************************************************** after printing'
+#
+#                  except:
+#                     sys.stdout.write('%-*s(%-*s) %-*s %13.7f %s' % (varmax, v, unitmax, varinfo[v]['RepUnits'], descmax, varinfo[v]['desc'], varvals[v+'_ft1'], ' <- unit conversion failed'))
+#                     print 'NO UNITS FOR ', v
+#                     print 'type for it: ( %s )' % type(varvals[v+'_ft1'])
+#                    print dir(varvals[v+'_ft1'])
+#                    print v,' had no units'
+#                    print 'type for it: ( %s )' % type(varvals[v+'_ft1'])
+#                     print 'END LMWG BLOCK'
+#                     print 'model1 unit conversion failed for ', v
+
                   if self.twosets == 1:
                      if varvals[v+'_ft2'] == None:
                         varvals[v+'_ft2'] = -999.00
+                     if hasattr(varvals[v+'_ft2'], 'units'):
+#                     try:
+                        varvals[v+'_ft2'] = convert_units(varvals[v+'_ft2'], varinfo[v]['RepUnits'])
+#                     except:
+#                        print 'model2 Unit conversion failed for ', v
+                        
                      sys.stdout.write(' %13.7f' % varvals[v+'_ft2'])
                   sys.stdout.write('\n')
             else:
