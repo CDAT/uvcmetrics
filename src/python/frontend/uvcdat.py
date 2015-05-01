@@ -1072,7 +1072,7 @@ class plot_spec(object):
                   vars.append( regridded_vars[z3ax.regridded] )
                else:
                   vars.append( z3ax)
-               new_id = self._build_labal( z3rv, p )
+               new_id = self._build_label( z3rv, p )
                z3ax.id = new_id
                z3lab += ' '+z3ax.id
             if z4ax is not None:
@@ -1080,7 +1080,7 @@ class plot_spec(object):
                   vars.append( regridded_vars[z4ax.regridded] )
                else:
                   vars.append( z4ax)
-               new_id = self._build_labal( z4rv, p )
+               new_id = self._build_label( z4rv, p )
                z4ax.id = new_id
                z4lab += ' '+z4ax.id
 

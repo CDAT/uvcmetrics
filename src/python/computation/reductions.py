@@ -1089,7 +1089,7 @@ def bias_map(mv1, mv2, obs, constant=.1):
 # Does a yearly climatology, then spatial reduction over a subregion, then returns
 # an MV that is the sum of a given level axis range
 # This could probably just call reduceAnnTrendRegionLevel() in a loop and calculate the sum
-def reduceAnnTrendRegionSumLevels(mv, region, slevel, elevel, vid=None):
+def reduceAnnTrendRegionSumLevels(mv, region, slevel, elevel, weights=None, vid=None):
    timeax = timeAxis(mv)
    if timeax is not None and timeax.getBounds() is None:
       timeax._bounds_ = timeax.genGenericBounds()
@@ -1099,7 +1099,10 @@ def reduceAnnTrendRegionSumLevels(mv, region, slevel, elevel, vid=None):
    else:
       mvann = mv
 
-   mvtrend = cdutil.averager(mvann, axis='xy')
+   wsub = None
+   if weights is not None:
+      wsub = weights(latitude=(region[0], region[1]), longitude=(region[2], region[3]))
+   mvtrend = cdutil.averager(mvann, axis='xy', weights=wsub)
 
    levax = levAxis(mvtrend)
 
@@ -1124,7 +1127,7 @@ def reduceAnnTrendRegionSumLevels(mv, region, slevel, elevel, vid=None):
    #print 'Returning mvvar: ', mvsum
    return mvsum
 
-def reduceAnnTrendRegionLevel(mv, region, level, vid=None):
+def reduceAnnTrendRegionLevel(mv, region, level, weights=None, vid=None):
 # Need to compute year1, year2, ... yearN individual climatologies then get a line plot.
    if vid is None:
       vid = 'reduced_'+mv.id
@@ -1138,7 +1141,10 @@ def reduceAnnTrendRegionLevel(mv, region, level, vid=None):
    else:
       mvann = mv
 
-   mvtrend = cdutil.averager(mvann, axis='xy')
+   wsub = None
+   if weights is not None:
+      wsub = weights(latitude=(region[0], region[1]), longitude=(region[2], region[3]))
+   mvtrend = cdutil.averager(mvann, axis='xy', weights=wsub)
    mvtrend.id = vid
 
    levax = levAxis(mvtrend)
@@ -1190,7 +1196,7 @@ def reduceAnnSingle(mv, vid=None):
    return mvtrend
 
 
-def reduceAnnTrendRegion(mv, region, single=False, vid=None):
+def reduceAnnTrendRegion(mv, region, single=False, weights=None, vid=None):
 # Need to compute year1, year2, ... yearN individual climatologies then get a line plot.
 #   print 'mv passed in:', mv
    if vid is None:
@@ -1206,29 +1212,64 @@ def reduceAnnTrendRegion(mv, region, single=False, vid=None):
       mvann = cdutil.times.YEAR(mvsub) 
    else:
       mvann = mv
-   axisstr = 'xy'
+
+   # We have to do this in two steps because cdutil.averager can't have 2 different shapes.
+   wsubnew = None
+   if weights is not None:
+      import genutil
+      wsub = select_region(weights, region)
+      mvann, wsubnew = genutil.grower(mvann, wsub)
+
    if single is True and timeax is not None:
-      # This is primarily for table views (e.g. land set 5)
-#      print 'Doing single value reduction'
       axisstr = 'xyt'
    else:
-      print 'NOT doing single value reduction'
-#   print 'timeax was: ', timeax
+      axisstr = 'xy'
 
-#   print 'axisstr: ', axisstr
-#   print mvann.shape
-   #print 'Calculating land averages...'
-   mvtrend = cdutil.averager(mvann, axis=axisstr)
+   mvtrend = cdutil.averager(mvann, axis=axisstr, weights=wsubnew)
+
+
+#   mvtrend, weights12 = genutil.grower(mvtrend, weightsub)
+
+#   mvtrend = cdutil.averager(mvann, axis='xy', weights=wsub)
+
+#   if single is True and timeax is not None:
+#      mvtrend = cdutil.averager(mvtrend, axis='t')
+
    mvtrend.id = vid
+#   axisstr = 'xy'
+#   if single is True and timeax is not None:
+#      # This is primarily for table views (e.g. land set 5)
+##      print 'Doing single value reduction'
+#      axisstr = 'xyt'
+#   else:
+#      print 'NOT doing single value reduction'
+##   print 'timeax was: ', timeax
+#
+##   print 'axisstr: ', axisstr
+##   print mvann.shape
+#   #print 'Calculating land averages...'
+#   wsub = None
+#   if weights is not None:
+#      wsub = select_region(weights, region)
+#   print 'ASSUMING WEIGHTS=NONE is equivalent to no weights argument'
+#   print 'axisstr: ', axisstr
+#   print 'weights shape: ', wsub.shape
+#   print 'mvann shape: ', mvann.shape
+#   # probably need to split off the "SINGLE" thing..... but lets see.
+#   mvtrend = cdutil.averager(mvann, axis=axisstr, weights=wsub)
+#   mvtrend.id = vid
+
+   # probably needs some help but it should at least get us some units.
    if hasattr(mv, 'units'):
-       mvtrend.units = mv.units # probably needs some help
+       mvtrend.units = mv.units 
 #   if mvtrend.shape == ():
 #      print 'Returning single point; This could be an invalid input dataset for this diagnostic'
 #   print 'units going out: ', mvtrend.units
    return mvtrend
 
 # Used for lmwg set 3
-def reduceMonthlyRegion(mv, region, vid=None):
+def reduceMonthlyRegion(mv, region, weights=None, vid=None):
+   print 'REDUCEMONTHLYREGION STILL NEEDS AREA WEIGHTS ADDED'
    vals = []
    if vid is None:
       vid = 'reduced_'+mv.id
@@ -1246,31 +1287,41 @@ def reduceMonthlyRegion(mv, region, vid=None):
    return mvtrend
 
 # Used to get just a spatial region average of a var, i.e. when climos are passed in
-def reduceRegion(mv, region, vid=None):
+def reduceRegion(mv, region, weights=None, vid=None):
+
 #   print 'in reduce region. region/mv: ', region, mv.id
    if vid is None:
       vid = 'reduced_'+mv.id
 #   print 'vid shape incoming: ', mv.shape
 
    mvsub = select_region(mv, region)
+   wsub=None
+   if weights is not None:
+      wsub = select_region(weights, region)
+
 
 #   print 'about to call averager on mvsub: ', mvsub.shape
 #   print 'mv going in:', mvsub
-   mvvals = cdutil.averager(mvsub, axis='xy')
+   mvvals = cdutil.averager(mvsub, axis='xy', weights=wsub)
    mvvals.id = vid
 #   print 'done calling averager on mvsub', mvsub.id
    if hasattr(mv, 'units'): mvvals.units = mv.units # probably needs some help
 #   print 'reduceMonthlyTrendRegion - Returning ', mvvals.shape
 #   print mvvals
+#   print 'returning ',vid,' shape: ', mvvals.shape
    return mvvals
 
 
-def reduceMonthlyTrendRegion(mv, region, vid=None):
+def reduceMonthlyTrendRegion(mv, region, weights=None, vid=None):
 # it would be nice if it was easy to tell if these climos were already done
 # but annualcycle is pretty fast.
    #print 'IN REDUCEMONTHLYTRENDREGION, vid=', vid, 'mv.id=', mv.id
    if vid is None:
       vid = 'reduced_'+mv.id
+
+   # annualcycle with weights doesn't work the way I want, so do a time reduction then spatial.
+   # might be performance issues.....
+
 #   print 'INCOMING VARIABLE ', vid, ' SHAPE: ', mv.shape
    timeax = timeAxis(mv)
    if timeax is not None and timeax.getBounds() is None:
@@ -1282,11 +1333,15 @@ def reduceMonthlyTrendRegion(mv, region, vid=None):
    else:
       mvtrend = mv
 
-   mvvals = cdutil.averager(mvtrend, axis='xy')
+   # This is gross. But, how do I make cdutil.averager (T, X, Y) use land weights (X, Y) to get a (T) array?
+   import genutil
+   weightsub = select_region(weights, region)
+   mvtrend, weights12 = genutil.grower(mvtrend, weightsub)
+
+   mvvals = cdutil.averager(mvtrend, axis='xy', weights=weights12)
 
    mvvals.id = vid
    if hasattr(mv, 'units'): mvvals.units = mv.units # probably needs some help
-   #print 'reduceMonthlyTrendRegion - Returning ', mvvals
    return mvvals
 
 def reduce_time_space_seasonal_regional( mv, season=seasonsyr, region=None, vid=None,
@@ -1367,19 +1422,12 @@ def reduce2latlon_seasonal( mv, season=seasonsyr, region=None, vid=None, exclude
         vid = 'reduced_'+mv.id
     # Note that the averager function returns a variable with meaningless id.
     # The climatology function returns the same id as mv, which we also don't want.
-    print 'region in reduce2latlon_seasonal: ', region, type(region)
-    print 'id: ', mv.id
-    print 'season: ', season
-    print dir(season)
-    print season.title
-    print '**** shape going in: ', mv.shape
     if region is None or region=="global" or region=="Global" or\
             getattr(region,'filekey',None)=="Global" or str(region)=="Global":
         mvr = mv
     else:
         mvr = select_region(mv, region)
     mvseas = calculate_seasonal_climatology(mvr, season)
-    print 'seasonal shape out: ', mvseas.shape
 
     axes = allAxes( mv )
     #axis_names = [ a.id for a in axes if a.id!='lat' and a.id!='lon' and a.id!='time' and\
@@ -1394,7 +1442,6 @@ def reduce2latlon_seasonal( mv, season=seasonsyr, region=None, vid=None, exclude
         avmv = averager( mvseas, axis=axes_string )
     else:
         avmv = mvseas
-    print 'and final shape: ', avmv.shape
     if avmv is None: return avmv
     avmv.id = vid
 
@@ -1674,6 +1721,12 @@ def aplusb0(mv1, mv2 ):
    if hasattr(mv ,'long_name'):
       if mv.long_name == mv1.long_name:
          mv.long_name = ''
+   # We are adding, so unless we call udunits, the units have to be the same on mv1, mv2, and their sum.
+   if hasattr(mv1, 'units'):
+      mv.units = mv1.units
+   if hasattr(mv2, 'units'):
+      mv.units = mv2.units
+      
    return mv
 
 def aplusb(mv1, mv2, units=None):
@@ -1681,6 +1734,10 @@ def aplusb(mv1, mv2, units=None):
    or change them to supplied units."""
    mv1,mv2 = reconcile_units(mv1,mv2,units)
    mv = mv1 + mv2
+   if hasattr(mv1, 'units') and hasattr(mv2, 'units'):
+      if mv1.units == mv2.units:
+         mv.units = mv1.units
+
    if hasattr(mv, 'long_name'):
       if mv.long_name == mv1.long_name:
          mv.long_name = ''
@@ -1688,11 +1745,18 @@ def aplusb(mv1, mv2, units=None):
 
 def sum3(mv1, mv2, mv3):
    """ returns mv1+mv2+mv3; they should be dimensioned alike."""
-#   print type(mv1)
-#   print type(mv2)
-#   print type(mv3)
-#   print 'sizes: ', mv1.shape, mv2.shape, mv3.shape
+   mv1, mv2 = reconcile_units(mv1, mv2)
+   mv1, mv3 = reconcile_units(mv1, mv3)
+
    mv = mv1+mv2+mv3
+   if hasattr(mv1, 'units') and hasattr(mv2, 'units') and hasattr(mv3, 'units'):
+      if mv1.units == mv2.units and mv1.units == mv3.units: #they should
+         mv.units = mv1.units
+      else: 
+         print 'IN SUM3 - - DIFFERENT UNITS'
+   else: 
+      print 'IN SUM3 - - NO UNITS'
+
    if hasattr(mv, 'long_name'):
       if mv.long_name == mv1.long_name:
          mv.long_name = ''
@@ -1725,7 +1789,12 @@ def aminusb(mv1, mv2):
    """ returns mv1-mv2; they should be dimensioned alike."""
    if mv1 is None or mv2 is None:
        return None
+
+   mv1, mv2 = reconcile_units(mv1, mv2)
    mv = mv1 - mv2
+   if hasattr(mv1, 'units') and hasattr(mv2, 'units'):
+      if mv1.units == mv2.units: #they better
+         mv.units = mv1.units
    if hasattr(mv, 'long_name'):
       if mv.long_name == mv1.long_name:
          mv.long_name = ''
@@ -1743,20 +1812,29 @@ def aminusb0( mv1, mv2 ):
 def adivb(mv1, mv2):
    """ returns mv1/mv2; they should be dimensioned alike.
    Primarily used for ASA - all sky albedo in LMWG but generally useful function"""
+         
    # This should probably be more of an abs(value - epsilon) check
-   #pdb.set_trace()
    denom = MV2.where(MV2.equal(mv2, 0.), mv2.missing_value, mv2)
    mv = mv1/denom
+   if hasattr(mv1, 'units') and hasattr(mv2, 'units'):
+      if mv1.units == mv2.units:
+         mv.units = '1'
+      else:
+         # I don't know if this will work.....
+         mv.units = mv1.units+'/'+mv2.units
+
    if hasattr(mv, 'long_name'):
       if mv.long_name == mv1.long_name:
          mv.long_name = ''
+
    return mv
 
 
-# N.B. The following function is specific to LMWG calculating evaporative fraction derived variable
+# N.B. The following functions are specific to LMWG calculating evaporative fraction derived variable
+def dummy2(mv1, mv2):
+   return mv1
 def dummy(mv, vid=None):
-   print 'mv shape passed to dummy: ', mv.shape
-
+#   print 'mv shape passed to dummy: ', mv.shape
    return mv
 
 def ab_ratio(mv1, mv2):
@@ -1770,6 +1848,9 @@ def ab_ratio(mv1, mv2):
    if hasattr(mv, 'long_name'):
       if mv.long_name == mv1.long_name:
          mv.long_name = ''
+   # If this is called, we can assume the units are now unitless/fractions.
+   # This should probably be '1', e.g. unitless, but ...
+   mv.units = 'fraction'
    return mv
 
 ### This function is pretty much lmwg specific but is in here for now
@@ -1898,17 +1979,37 @@ def convert_units(mv, units):
       return mv
    if not hasattr(mv, 'units'):
       mv.units = '1'
+   if mv.units == units or mv.units == 'none':
+      return mv
+   if mv.units=='gC/m^2/s' and units == 'PgC/y': # land set 5 table stuff. 
+      # The area is taken care of, but need to convert grams to petagrams and seconds to years
+#      print 'mv max in: ', mv.max()
+#      print 'multiplying by ', 60*60*24*365, 'and dividing by ', 1.0e15
+      mv = mv * (60*60*24*365)
+      mv = mv / (1.0e15)
+#      print 'new max: ', mv.max()
+      mv.units = units
+      return mv
+#   if mv.units == 'proportion':
+#      mv.units = '1'
+#   if mv.units == 'fraction':
+#      mv.units = '1'
+#   if units == 'proportion':
+#      units = 1
+#   if units = 'fraction':
+#      units = 1
+
    tmp = udunits(1.0,mv.units)
    try:
       s,i = tmp.how(units)
    except Exception as e:
       # conversion not possible.
-#      print "ERROR could not convert from",mv.units,"to",units
+      print "ERROR could not convert from",mv.units,"to",units
       return mv
    if hasattr(mv,'id'):  # yes for TransientVariable, no for udunits
       mvid = mv.id
    if not ( numpy.allclose(s,1.0) and numpy.allclose(i,0.0) ):
-      # The following line won't work if mv1 be an axis.
+      # The following line won't work if mv1 is an axis.
       mv = s*mv + i
       if hasattr(mv,'id'):
          mv.id = mvid
@@ -1923,9 +2024,9 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
 
     # First, if there are no units, take a guess.  I'm reluctant to do this because it will surely
     # be wrong sometimes.  But usually it is correct.
-    if not hasattr(mv1,'units'):
+    if not hasattr(mv1,'units') or mv1.units == 'none':
         mv1.units = '1'
-    if not hasattr(mv2,'units'):
+    if not hasattr(mv2,'units') or mv2.units == 'none':
         mv2.units = '1'
 
     # For QFLX and LHFLX variables, call dedicated functions instead.
@@ -1939,7 +2040,6 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
             mv1,mv2 = flxconv.reconcile_energyflux_precip(mv1, mv2, preferred_units)
             return mv1, mv2
 
-# This probably needs expanded to be more general purpose for unit conversions.
     # I'm still checking for the units attribute here because maybe some time I'll be able to
     # delete the above lines which set it to a default value.
     if hasattr(mv1,'units') and hasattr(mv2,'units') and\
@@ -1986,6 +2086,7 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
             mv2 = 100*mv2
             mv2.units=mv1.units
             return mv1, mv2
+
         if preferred_units is None:
             # Look for whichever of mv1.units, mv2.units gives numbers more O(1).
             try:
