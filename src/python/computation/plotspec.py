@@ -9,7 +9,7 @@ from metrics.frontend import *
 import sys, traceback
 
 class derived_var(basic_id):
-    def __init__( self, vid, inputs=[], outputs=['output'], func=(lambda: None), special_value=None ):
+    def __init__( self, vid, inputs=[], outputs=['output'], func=(lambda: None), special_values=None ):
         """Arguments:
         vid, an id for this dervied variable;
         func=function to compute values of this variable;
@@ -28,13 +28,13 @@ class derived_var(basic_id):
         self._file_attributes = {}
         # This is primarily used for 2-phase derived variables where we need to pass in a
         # special value that wouldn't be part of the input dictionary. The current example is
-        # passing in a region for land set 5 when we compute reduced/derived variables, then
+        # passing in a region and weights for land set 5 when we compute reduced/derived variables, then
         # construct new variables based on those which all require a 'region' argument.
         # I could see this being used for passing in seasons perhaps as well, and perhaps
         # any other arbitary sort of argument. Perhaps there is a better way of doing this,
         # but this is what worked for me in land.
         #   -BES
-        self._special = special_value
+        self._special = special_values
     def inputs( self ):
         return self._inputs
     def derive( self, inpdict ):
@@ -48,10 +48,17 @@ class derived_var(basic_id):
         object)."""
         # error from checking this way!... if None in [ vardict[inp] for inp in self._inputs ]:
         if self._special != None:
-           # First, we have to add to inpdict to make sure the special_value isn't thrown away.
-           inpdict[self._special] = self._special
+           # First, we have to add to inpdict to make sure the special_values isn't thrown away.
+#           print 'inpdict: ', inpdict
+#           print 'inpdict type:' ,type(inpdict)
+#           print 'special: ', type(self._special)
+           for k in self._special:
+            inpdict[k] = k
+#           inpdict[self._special] = self._special
+#           print 'inpdict after'
+#           print type(self._inputs)
            # Then we need to add it to inputs
-           self._inputs.append(self._special)
+           self._inputs.extend(self._special)
         dictvals = [ inpdict.get(inp,None) for inp in self._inputs ]
         nonevals = [ inp for inp in self._inputs if inpdict.get(inp,None) is None ]
         if len(nonevals)>0:
