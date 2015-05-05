@@ -1094,15 +1094,17 @@ def reduceAnnTrendRegionSumLevels(mv, region, slevel, elevel, weights=None, vid=
    if timeax is not None and timeax.getBounds() is None:
       timeax._bounds_ = timeax.genGenericBounds()
    if timeax is not None:
-      mvsub = mv(latitude=(region[0], region[1]), longitude=(region[2], region[3]))
+      mvsub = select_region(mv, region)
       mvann = cdutil.times.YEAR(mvsub) 
    else:
       mvann = mv
 
-   wsub = None
+   wsubnew = None
    if weights is not None:
-      wsub = weights(latitude=(region[0], region[1]), longitude=(region[2], region[3]))
-   mvtrend = cdutil.averager(mvann, axis='xy', weights=wsub)
+      import genutil
+      wsub = select_region(weights, region)
+      mvann, wsubnew = genutil.grower(mvann, wsub)
+   mvtrend = cdutil.averager(mvann, axis='xy', weights=wsubnew)
 
    levax = levAxis(mvtrend)
 
@@ -1141,10 +1143,13 @@ def reduceAnnTrendRegionLevel(mv, region, level, weights=None, vid=None):
    else:
       mvann = mv
 
-   wsub = None
+   wsubnew = None
    if weights is not None:
-      wsub = weights(latitude=(region[0], region[1]), longitude=(region[2], region[3]))
-   mvtrend = cdutil.averager(mvann, axis='xy', weights=wsub)
+      import genutil
+      wsub = select_region(weights, region)
+      mvann, wsubnew = genutil.grower(mvann, wsub)
+
+   mvtrend = cdutil.averager(mvann, axis='xy', weights=wsubnew)
    mvtrend.id = vid
 
    levax = levAxis(mvtrend)
