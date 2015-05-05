@@ -2339,6 +2339,7 @@ class lmwg_plot_set6(lmwg_plot_spec):
          print 'Set 6 requires raw data for now. We need to create climatology files that have a series of annual averages'
          return
       ft = raw0
+      lw0 = land_weights(ft, region=region).reduce()
 
       ft1id = ft._strid
       self.plot1_id = ft1id+'_'+varid
@@ -2353,6 +2354,8 @@ class lmwg_plot_set6(lmwg_plot_spec):
             if raw0 == None:
                return
          ft2 = raw1
+
+         lw1 = land_weights(ft2, region=region).reduce()
 
          ft2id = ft2._strid
          self.plot2_id = ft2id+'_'+varid
@@ -2376,11 +2379,11 @@ class lmwg_plot_set6(lmwg_plot_spec):
             vn = vbase+str(i+1)
             self.reduced_variables[vn+'_ft1'] = reduced_variable(
                variableid = vbase, filetable=ft, reduced_var_id=vn+'_ft1',
-               reduction_function=(lambda x, vid, i=i: reduceAnnTrendRegionLevel(x, region, i, vid))) 
+               reduction_function=(lambda x, vid, i=i: reduceAnnTrendRegionLevel(x, region, i, weights=lw0, vid=vid))) 
             if num_models == 2:
                self.reduced_variables[vn+'_ft2'] = reduced_variable(
                   variableid = vbase, filetable=ft2, reduced_var_id=vn+'_ft2',
-                  reduction_function=(lambda x, vid, i=i: reduceAnnTrendRegionLevel(x, region, i, vid))) 
+                  reduction_function=(lambda x, vid, i=i: reduceAnnTrendRegionLevel(x, region, i, weights=lw1, vid=vid))) 
                
             self.single_plotspecs[vn] = plotspec(vid=vn,
                zvars = [vn+'_ft1'], zfunc=(lambda z:z),
@@ -2395,10 +2398,10 @@ class lmwg_plot_set6(lmwg_plot_spec):
          self.composite_plotspecs['TotalSoilIce_TotalSoilH2O'] = []
          self.reduced_variables['TOTAL_SOIL_ICE_ft1'] = reduced_variable(
             variableid = 'SOILICE', filetable=ft, reduced_var_id='TOTAL_SOIL_ICE_ft1',
-            reduction_function=(lambda x, vid: reduceAnnTrendRegionSumLevels(x, region, 1, 10, vid)))
+            reduction_function=(lambda x, vid: reduceAnnTrendRegionSumLevels(x, region, 1, 10, weights=lw0, vid=vid)))
          self.reduced_variables['TOTAL_SOIL_LIQ_ft1'] = reduced_variable(
             variableid = 'SOILLIQ', filetable=ft, reduced_var_id='TOTAL_SOIL_LIQ_ft1',
-            reduction_function=(lambda x, vid: reduceAnnTrendRegionSumLevels(x, region, 1, 10, vid)))
+            reduction_function=(lambda x, vid: reduceAnnTrendRegionSumLevels(x, region, 1, 10, weights=lw1, vid=vid)))
 
          self.single_plotspecs['TOTAL_SOIL_ICE'] = plotspec(vid='TOTAL_SOIL_ICE_ft1',
             zvars = ['TOTAL_SOIL_ICE_ft1'], zfunc=(lambda z:z),
@@ -2410,10 +2413,10 @@ class lmwg_plot_set6(lmwg_plot_spec):
          if num_models == 2:
             self.reduced_variables['TOTAL_SOIL_ICE_ft2'] = reduced_variable(
                variableid = 'SOILICE', filetable=ft2, reduced_var_id='TOTAL_SOIL_ICE_ft2',
-               reduction_function=(lambda x, vid: reduceAnnTrendRegionSumLevels(x, region, 1, 10, vid)))
+               reduction_function=(lambda x, vid: reduceAnnTrendRegionSumLevels(x, region, 1, 10, weights=lw0, vid=vid)))
             self.reduced_variables['TOTAL_SOIL_LIQ_ft2'] = reduced_variable(
                variableid = 'SOILLIQ', filetable=ft2, reduced_var_id='TOTAL_SOIL_LIQ_ft2',
-               reduction_function=(lambda x, vid: reduceAnnTrendRegionSumLevels(x, region, 1, 10, vid)))
+               reduction_function=(lambda x, vid: reduceAnnTrendRegionSumLevels(x, region, 1, 10, weights=lw1, vid=vid)))
             self.single_plotspecs['TOTAL_SOIL_LIQ'].z2vars = ['TOTAL_SOIL_LIQ_ft2']
             self.single_plotspecs['TOTAL_SOIL_LIQ'].z2func = (lambda z:z)
             self.single_plotspecs['TOTAL_SOIL_ICE'].z2vars = ['TOTAL_SOIL_ICE_ft2']
@@ -2428,14 +2431,14 @@ class lmwg_plot_set6(lmwg_plot_spec):
          for v in red_varlist:
             self.reduced_variables[v+'_ft1'] = reduced_variable(
                variableid = v, filetable=ft, reduced_var_id=v+'_ft1',
-               reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid)))
+               reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, weights=lw0, vid=vid)))
             self.single_plotspecs[v] = plotspec(vid=v+'_ft1',
                zvars = [v+'_ft1'], zfunc=(lambda z:z),
                plottype = self.plottype)
             if num_models == 2:
                self.reduced_variables[v+'_ft2'] = reduced_variable(
                   variableid = v, filetable=ft2, reduced_var_id=v+'_ft2',
-                  reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid)))
+                  reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, weights=lw1, vid=vid)))
                self.single_plotspecs[v].z2vars = [v+'_ft2']
                self.single_plotspecs[v].z2func = (lambda z:z)
 
@@ -2444,18 +2447,18 @@ class lmwg_plot_set6(lmwg_plot_spec):
          for v in sub_varlist:
             self.reduced_variables[v+'_ft1'] = reduced_variable(
                variableid = v, filetable=ft, reduced_var_id=v+'_ft1',
-               reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid)))
+               reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, weights=lw0, vid=vid)))
             if filetable2 != None:
                self.reduced_variables[v+'_ft2'] = reduced_variable(
                   variableid = v, filetable=ft2, reduced_var_id=v+'_ft2',
-                  reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid)))
+                  reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, weights=lw1, vid=vid)))
 
                ### Can we do these with reduceMonthlyTrendRegion? Needs investigation
          self.derived_variables['LHEAT_ft1'] = derived_var(
                vid='LHEAT_ft1', inputs=['FCTR_ft1', 'FGEV_ft1', 'FCEV_ft1'], func=sum3)
          if raw0 != None:
-            self.reduced_variables['EVAPFRAC_ft1'] = evapfrac_redvar(raw0, 'TREND', region=region, flag='ANN')
-            self.reduced_variables['RNET_ft1'] = rnet_redvar(raw0, 'TREND', region=region, flag='ANN')
+            self.reduced_variables['EVAPFRAC_ft1'] = evapfrac_redvar(raw0, 'TREND', region=region, weights=lw0, flag='ANN')
+            self.reduced_variables['RNET_ft1'] = rnet_redvar(raw0, 'TREND', region=region, weights=lw0, flag='ANN')
 
          self.single_plotspecs['LatentHeat'] = plotspec(vid='LHEAT_ft1',
             zvars = ['LHEAT_ft1'], zfunc=(lambda z:z),
@@ -2474,8 +2477,8 @@ class lmwg_plot_set6(lmwg_plot_spec):
             self.single_plotspecs['LatentHeat'].z2func = (lambda z:z)
 
             if raw1 != None:
-               self.reduced_variables['EVAPFRAC_ft2'] = evapfrac_redvar(ft2, 'TREND', region=region, flag='ANN')
-               self.reduced_variables['RNET_ft2'] = rnet_redvar(ft2, 'TREND', region=region, flag='ANN')
+               self.reduced_variables['EVAPFRAC_ft2'] = evapfrac_redvar(ft2, 'TREND', region=region, weights=lw1, flag='ANN')
+               self.reduced_variables['RNET_ft2'] = rnet_redvar(ft2, 'TREND', region=region, weights=lw1, flag='ANN')
                if raw0 != None:
                   self.single_plotspecs['EvaporativeFraction'].z2vars = ['EVAPFRAC_ft2']
                   self.single_plotspecs['EvaporativeFraction'].z2func = (lambda z:z)
@@ -2504,11 +2507,11 @@ class lmwg_plot_set6(lmwg_plot_spec):
          for v in red_varlist:
             self.reduced_variables[v+'_ft1'] = reduced_variable(
                variableid = v, filetable=ft, reduced_var_id=v+'_ft1',
-               reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid)))
+               reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, weights=lw0, vid=vid)))
             if num_models == 2:
                self.reduced_variables[v+'_ft2'] = reduced_variable(
                   variableid = v, filetable=ft2, reduced_var_id=v+'_ft2',
-                  reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid)))
+                  reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, weights=lw1, vid=vid)))
          self.derived_variables['PREC_ft1'] = derived_var(vid='PREC_ft1', inputs=['SNOW_ft1', 'RAIN_ft1'], func=aplusb)
          self.derived_variables['TOTRUNOFF_ft1'] = derived_var(vid='TOTRUNOFF_ft1', inputs=['QOVER_ft1', 'QDRAI_ft1', 'QRGWL_ft1'], func=sum3)
          if num_models == 2:
@@ -2528,7 +2531,7 @@ class lmwg_plot_set6(lmwg_plot_spec):
          for v in red_varlist:
             self.reduced_variables[v+'_ft1'] = reduced_variable(
                variableid = v, filetable=ft, reduced_var_id=v+'_ft1_composite', # this is what gets fed to var.id eventually.
-               reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid)))
+               reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, weights=lw0, vid=vid)))
             self.single_plotspecs[v+'_composite'] = plotspec(vid=v+'_ft1',
                zvars = [v+'_ft1'], zfunc=(lambda z:z),
                plottype = self.plottype)
@@ -2536,20 +2539,20 @@ class lmwg_plot_set6(lmwg_plot_spec):
             if num_models == 2:
                self.reduced_variables[v+'_ft2'] = reduced_variable(
                   variableid = v, filetable=ft2, reduced_var_id=v+'_ft2_composite',
-                  reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid)))
+                  reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, weights=lw1, vid=vid)))
                self.single_plotspecs[v+'_composite'].z2vars = [v+'_ft2']
                self.single_plotspecs[v+'_composite'].z2func = (lambda z:z)
                
             self.composite_plotspecs['Radiative_Fluxes'].append(v+'_composite')
 
          if raw0 != None:
-            self.reduced_variables['ASA_ft1'] =  albedos_redvar(raw0, 'TREND', ['FSR', 'FSDS'], region=region, flag='ANN')
-            self.reduced_variables['RNET_ft1' ] = rnet_redvar(raw0, 'TREND', region=region, flag='ANN')
+            self.reduced_variables['ASA_ft1'] =  albedos_redvar(raw0, 'TREND', ['FSR', 'FSDS'], region=region, weights=lw0, flag='ANN')
+            self.reduced_variables['RNET_ft1' ] = rnet_redvar(raw0, 'TREND', region=region, weights=lw0, flag='ANN')
             self.single_plotspecs['Albedo_composite'] = plotspec(vid='ASA_ft1', zvars = ['ASA_ft1'], zfunc=(lambda z:z), plottype = self.plottype)
             self.single_plotspecs['NetRadiation_composite'] = plotspec(vid='RNET_ft1', zvars = ['RNET_ft1'], zfunc=(lambda z:z), plottype = self.plottype)
          if num_models == 2 and raw1 != None:
-            self.reduced_variables['ASA_ft2'] =  albedos_redvar(raw1, 'TREND', ['FSR', 'FSDS'], region=region, flag='ANN')
-            self.reduced_variables['RNET_ft2' ] = rnet_redvar(raw1, 'TREND', region=region, flag='ANN')
+            self.reduced_variables['ASA_ft2'] =  albedos_redvar(raw1, 'TREND', ['FSR', 'FSDS'], region=region, weights=lw1, flag='ANN')
+            self.reduced_variables['RNET_ft2' ] = rnet_redvar(raw1, 'TREND', region=region, weights=lw1, flag='ANN')
             if raw0 != None:
                self.single_plotspecs['Albedo_composite'].z2vars = ['ASA_ft2']
                self.single_plotspecs['Albedo_composite'].z2func = (lambda z:z)
@@ -2582,14 +2585,14 @@ class lmwg_plot_set6(lmwg_plot_spec):
          for v in red_varlist:
             self.reduced_variables[v+'_ft1'] = reduced_variable(
                variableid = v, filetable=ft, reduced_var_id=v+'_ft1',
-               reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid)))
+               reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, weights=lw0, vid=vid)))
             self.single_plotspecs[v] = plotspec(vid=v+'_ft1', 
                zvars = [v+'_ft1'], zfunc=(lambda z:z),
                plottype = self.plottype)
             if num_models == 2:
                self.reduced_variables[v+'_ft2'] = reduced_variable(
                   variableid = v, filetable=ft2, reduced_var_id=v+'_ft2',
-                  reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid)))
+                  reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, weights=lw1, vid=vid)))
                self.single_plotspecs[v].z2vars = [v+'_ft2']
                self.single_plotspecs[v].z2func = (lambda z:z)
                
