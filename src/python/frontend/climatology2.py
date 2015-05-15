@@ -12,7 +12,7 @@ Each file is expected to cover a different, and disjoint, time range, and the ti
 increasing.  That is, for any times tn, tm in files filen, filem, if n>m then tn>tm.
 """
 
-from inc_reduce import *
+from metrics.frontend.inc_reduce import *
 import os
 import argparse
 
