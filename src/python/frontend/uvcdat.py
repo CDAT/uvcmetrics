@@ -199,7 +199,7 @@ class uvc_simple_plotspec():
     # re presentation (plottype): Yxvsx is a line plot, for Y=Y(X).  It can have one or several lines.
     # Isofill is a contour plot.  To make it polar, set projection=polar.  I'll
     # probably communicate that by passing a name "Isofill_polar".
-    def __init__( self, pvars, presentation, labels=[], title='', source='', ranges=None, overplotline=False):
+    def __init__( self, pvars, presentation, labels=[], title='', source='', ranges=None, overplotline=False, linetypes=['solid'], linecolors=[241]):
 
         pvars = [v for v in pvars if v is not None]
         # ... Maybe something else is broken to let None get into pvars.
@@ -247,6 +247,8 @@ class uvc_simple_plotspec():
         self.ptype = ptype
         self.ranges = ranges
         self.overplotline = overplotline
+        self.linetypes = linetypes
+        self.linecolors = linecolors
 
         # Initial ranges - may later be changed to coordinate with related plots:
         # For each variable named 'v', the i-th member of self.vars, (most often there is just one),
@@ -1115,12 +1117,22 @@ class plot_spec(object):
                    ranges.upadte(ps.z4rangevars)
             else:
                 ranges = None
-            
+
             #over plot line flag
             overplotline = False
             if  hasattr(ps, 'overplotline'):
                 overplotline = ps.overplotline
             
+            #get line types for each curve (solid, dot, ...)
+            linetypes = [ps.zlinetype]
+            if z2ax is not None:
+                linetypes += [ps.z2linetype]
+
+            #get the line color for each curve
+            linecolors = [ps.zlinecolor]
+            if z2ax is not None:
+                linetcolors = [ps.z2linecolor]
+                            
             # The following line is getting specific to UV-CDAT, although not any GUI...
             # >>>> jfp a bad hack for temporary use - I MUST MUST MUST get plot_type out of something else!!!>>>>
             #pdb.set_trace()
@@ -1134,22 +1146,35 @@ class plot_spec(object):
                     plot_type_temp = self.plottype
             else:
                 plot_type_temp = ps.plottype
-            self.plotspec_values[p] = uvc_simple_plotspec( vars, plot_type_temp, labels, title, ps.source, ranges, overplotline )
-            
+            self.plotspec_values[p] = uvc_simple_plotspec( vars, plot_type_temp, labels, title, ps.source, ranges, overplotline, linetypes, linecolors )
+            #print p
+            #print self.plotspec_values[p]
+        #pdb.set_trace()
+        print 'now composite plot'
         for p,ps in self.composite_plotspecs.iteritems():
             self.plotspec_values[p] = [ self.plotspec_values[sp] for sp in ps if sp in self.plotspec_values ]
             # Normally ps is a list of names of a plots, we'll remember its value as a list of their values.
             if type( ps ) is tuple:
                 # ps is a tuple of names of simple plots which should be overlapped
                 self.plotspec_values[p] = tuple( self.plotspec_values[p] )
+            #print p
+            #print self.plotspec_values[p]
+        #This next loop is a duplicate of the previous loop.  It can be viewed as a cleenup. The reason it's 
+        #needed is that there is no guaranteed order of execution with a dictionary.  So if a composite plot
+        #is a composite of others then there may be an incomplete plot if the individual plots are defined
+        #later.  Plot set 11 is an example of this.
         for p,ps in self.composite_plotspecs.iteritems():
             self.plotspec_values[p] = [ self.plotspec_values[sp] for sp in ps if sp in self.plotspec_values ]
             # Normally ps is a list of names of a plots, we'll remember its value as a list of their values.
             if type( ps ) is tuple:
                 # ps is a tuple of names of simple plots which should be overlapped
                 self.plotspec_values[p] = tuple( self.plotspec_values[p] )
+            #print p
+            #print self.plotspec_values[p]
         # note: we may have to += other lists into the same ...[p]
         # note: if we have a composite of composites we can deal with it by building a second time
+        #print 'leaving _results'
+        #print self.plotspec_values.keys()
         return self
 
     def compute_plot_var_value( self, ps, zvars, zfunc ):

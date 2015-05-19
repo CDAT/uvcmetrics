@@ -433,11 +433,8 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                                                            tm2.line1.priority = 1                                                   
                                                            #tm.line1.list()
                                                        if hasattr(plot, 'customizeTemplates'):
-                                                           
-                                                           #pdb.set_trace()     
-                                                           tm2.xname.list()                                                  
+                                                           #pdb.set_trace()                                                       
                                                            tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)] )
-                                                           tm2.xname.list()
                                                        vcanvas.plot(xvar, yvar, 
                                                                     rsr_presentation, tm, bg=1, title=title,
                                                                     units='', source=rsr.source ) 
