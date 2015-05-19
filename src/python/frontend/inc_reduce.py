@@ -220,25 +220,32 @@ def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds, 
     # This is almost universal, but in the future I should generalize this code.  That would make
     # slicing more verbose, e.g. if time were changed from the first index to second then
     # v[j] would become v[:,j,:] (for a 2-D variable v).
-    try:
-        assert( newvars[0].getDomain()[0][0].isTime() )
-    except Exception as e:
-        print "newvars=",newvars
-        print "newvars[0]=",newvars[0]
-        print "newvars[0].getDomain()=",newvars[0].getDomain()
-        raise e
-    try:
-        assert( redvars[0].getDomain()[0][0].isTime() )
-    except Exception as e:
-        print "redvars=",redvars
-        print "redvars[0]=",redvars[0]
-        print "redvars[0].getDomain()=",redvars[0].getDomain()
-        raise e
-        
 
-    redtime = redvars[0].getTime()  # the partially-reduced time axis
+    for var in redvars:
+        redtime = var.getTime()  # partially-reduced time axis
+        if redtime is not None:  # some variables have no time axis
+            try:
+                assert( var.getDomain()[0][0].isTime() )
+            except Exception as e:
+                print "redvars=",redvars
+                print "var=",var
+                print "var.getDomain()=",var.getDomain()
+                raise e
+            break
+    assert( redtime is not None )
     redtime_len = redtime.shape[0]
-    newtime = newvars[0].getTime()  # original time axis, from the new variable
+    for var in newvars:
+        newtime = var.getTime()  # original time axis, from the new variable
+        if newtime is not None:
+            try:
+                assert( var.getDomain()[0][0].isTime() )
+            except Exception as e:
+                print "newvars=",newvars
+                print "var=",var
+                print "var.getDomain()=",var.getDomain()
+                raise e
+            break
+    assert( newtime is not None ) # The input data should have a time axis!
     if dt==0:
         newtime = adjust_time_for_climatology( newtime, redtime )
     newtime_bnds = newtime.getBounds()
@@ -298,11 +305,17 @@ def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds, 
             i = int( newtime_rti[j][k] )
             if i<0: continue
             for iv in range(nvars):
-                if newtime_wts[j,k]>0:
-                    #print "jfp redvars[",iv,"][",i,"]=",redvars[iv][i]
-                    redvars[iv][i] =\
-                        ( redvars[iv][i]*redtime_wts[i] + newvars[iv][j]*newtime_wts[j,k] ) /\
-                        ( redtime_wts[i] + newtime_wts[j,k] )
+                if redvars[iv].getTime() is None:
+                    if newtime_wts[j,k]>0:
+                        redvars[iv] =\
+                            ( redvars[iv]*redtime_wts[i] + newvars[iv]*newtime_wts[j,k] ) /\
+                            ( redtime_wts[i] + newtime_wts[j,k] )
+                else:
+                    if newtime_wts[j,k]>0:
+                        #print "jfp redvars[",iv,"][",i,"]=",redvars[iv][i]
+                        redvars[iv][i] =\
+                            ( redvars[iv][i]*redtime_wts[i] + newvars[iv][j]*newtime_wts[j,k] ) /\
+                            ( redtime_wts[i] + newtime_wts[j,k] )
             redtime_wts[i] += newtime_wts[j,k]
 
     #print "next_tbounds= ",next_tbounds
