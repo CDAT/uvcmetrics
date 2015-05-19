@@ -13,6 +13,7 @@ from metrics import *
 from metrics.fileio.filetable import *
 from metrics.fileio.findfiles import *
 from metrics.computation.reductions import *
+from metrics.frontend.amwg_plotting import *
 # These next 5 liens really shouldn't be necessary. We should have a top level 
 # file in packages/ that import them all. Otherwise, this needs done in every
 # script that does anything with diags, and would need updated if new packages
@@ -57,6 +58,10 @@ def run_diags( opts ):
    for i in range(len(opts['obs'])):
       obsfts.append(path2filetable(opts, obsid=i))
 
+   for i in range(len(modelfts)):
+      print 'model %s id: %s' % (i, modelfts[i]._strid)
+   for i in range(len(obsfts)):
+      print 'obs %s id: %s' % (i, obsfts[i]._strid)
    # Setup some output things
 
    outdir = opts['output']['outputdir']
@@ -108,6 +113,7 @@ def run_diags( opts ):
    # set up some VCS things if we are going to eventually plot things
    if opts['output']['plots'] == True:
       vcanvas = vcs.init()
+      vcsx = vcanvas
       vcanvas.setcolormap('bl_to_darkred') #Set the colormap to the NCAR colors
       vcanvas2 = vcs.init()
       vcanvas2.portrait()
@@ -188,7 +194,7 @@ def run_diags( opts ):
             print 'Region filename: ', r_fname
 
             # loop over variables now
-            for varid in variables:
+            for ivarid, varid in enumerate(variables):
                print "Processing variable",varid," in season",time, " in plotset ",sname
                vard = pclass.all_variables( modelfts, obsfts, sname )
                plotvar = vard[varid]
@@ -236,7 +242,7 @@ def run_diags( opts ):
 
                      
                      if opts['output']['plots'] == True:
-                        makeplots(res, vcanvas, vcanvas2, varid, fname)
+                        makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package)
                         number_diagnostic_plots += 1
                      
 
@@ -270,7 +276,8 @@ def run_diags( opts ):
    print "total number of (compound) diagnostic plots generated =", number_diagnostic_plots
 
 
-def makeplots(res, vcanvas, vcanvas2, varid, fname):
+def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
+   # need to add plot and pacakge for the amwg 11,12 special cases. need to rethink how to deal with that
    # At this loop level we are making one compound plot.  In consists
    # of "single plots", each of which we would normally call "one" plot.
    # But some "single plots" are made by drawing multiple "simple plots",
@@ -305,12 +312,14 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname):
    #   which has the entire compound plot - that's vcanvas2
    gmobs, tmobs, tmmobs = return_templates_graphic_methods( vcanvas, gms, ovly, onPage )
    if 1==1: # optional debugging:
+      print '*************************************************'
       print "tmpl nsingleplots=",nsingleplots,"nsimpleplots=",nsimpleplots
       print "tmpl gms=",gms
       print "tmpl len(res)=",len(res),"ovly=",ovly,"onPage=",onPage
       print "tmpl gmobs=",gmobs
-      print "tmpl tmobs=",tmobs
-      print "tmpl tmmobs=",tmmobs
+      print "tmpl tmobs=",[tm.name for tm in tmobs]
+      print "tmpl tmmobs=",[tm.name for tm in tmmobs]
+      print '*************************************************'
 
    # gmmobs provides the correct graphics methods to go with the templates.
    # Unfortunately, for the moment we have to use rmr.presentation instead
@@ -318,6 +327,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname):
    # scaling which is not yet done as part of
 
    vcanvas2.clear()
+   plotcv2 = False
    ir = -1
    for r,resr in enumerate(res):
       if resr is None:
@@ -333,7 +343,8 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname):
             continue
          ir += 1
          tm = tmobs[ir]
-         tm2 = tmmobs[ir]
+         if tmmobs != []:
+            tm2 = tmmobs[ir]
          title = rsr.title
          rsr_presentation = rsr.presentation
          for varIndex, var in enumerate(rsr.vars):
@@ -358,6 +369,10 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname):
                   var_id_save = seqgetattr(var,'id','')
                   seqsetattr( var,'id','' )
                else:
+                  print 'in the else clause.'
+                  print var
+                  print type(var)
+
                   vname = var.id.replace(' ', '_')
                   var_id_save = var.id
                   var.id = ''         # If id exists, vcs uses it as a plot title
@@ -371,24 +386,49 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname):
                elif '_obs' in vname:
                   fname = fnamebase+'-model-and-obs.png'
                else:
-                  fname = fnamebase+'-model.png'
+                  if '_ttest' in vname:
+                     if 'ft1' in vname and 'ft2' in vname:
+                        fname = fnamebase+'-model1_model2_ttest.png'
+                     elif 'ft1' in vname and 'ft2' not in vname:
+                        fname = fnamebase+'-model1_ttest.png'
+                     elif 'ft2' in vname and 'ft1' not in vname:
+                        fname = fnamebase+'-model2_ttest.png'
+                  elif '_ft1' in vname and '_ft2' not in vname:
+                     fname = fnamebase+'-model.png'  
+                     # if we had switched to model1 it would affect classic view, etc.
+                  elif '_ft2' in vname and '_ft1' not in vname:
+                     fname = fnamebase+'-model2.png'
+                  elif '_ft1' in vname and '_ft2' in vname:
+                     fname = fnamebase+'-model-model2.png'
+                  elif '_fts' in vname: # a special variable; typically like lmwg set3/6 or amwg set 2
+                     fname = fnamebase+'_'+vname.replace('_fts','')+'.png'
+                  else:
+                     fname = fnamebase+'-unknown.png'
+
 
                print "png file name: ",fname
 
-            if vcs.isscatter(rsr.presentation):
-               #pdb.set_trace()
+            if vcs.isscatter(rsr.presentation) or (plot.number in ['11', '12'] and package.upper == 'AMWG'):
+               if hasattr(plot, 'customizeTemplates'):
+                  if hasattr(plot, 'replaceIDs'):
+                     var = plot.replaceIds(var)
+                  tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)] )
                if len(rsr.vars) == 1:
                   #scatter plot for plot set 12
+                  subtitle = title
                   vcanvas.plot(var, 
                      rsr_presentation, tm, bg=1, title=title,
-                     units=getattr(var,'units',''), source=rsr.source )
+                     units='', source=rsr.source )
                   savePNG = False    
                   #plot the multibox plot
                   try:
                      if tm2 is not None and varIndex+1 == len(rsr.vars):
+                        if hasattr(plot, 'compositeTitle'):
+                           title = plot.compositeTitle
                         vcanvas2.plot(var,
                            rsr_presentation, tm2, bg=1, title=title, 
-                           units=getattr(var,'units',''), source=rsr.source ) 
+                           units='', source=subtitle )
+                        plotcv2 = True
                         savePNG = True
                   except vcs.error.vcsError as e:
                      print "ERROR making summary plot:",e
@@ -403,7 +443,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname):
                      yvar = var.flatten()
                      #pdb.set_trace()
                      #this is only for amwg plot set 11
-                     if rsr_presentation.overplotline:
+                     if seqhasattr(rsr_presentation, 'overplotline') and rsr_presentation.overplotline:
                         tm.line1.x1 = tm.box1.x1
                         tm.line1.x2 = tm.box1.x2
                         tm.line1.y1 = tm.box1.y2
@@ -418,16 +458,27 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname):
                         tm2.line1.line = 'LINE'
                         tm2.line1.priority = 1                                                   
                         #tm.line1.list()
+                     if hasattr(plot, 'customizeTemplates'):
+                        tm2.xname.list()
+                        tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)])
+                        tm2.xname.list()
                      vcanvas.plot(xvar, yvar, 
                         rsr_presentation, tm, bg=1, title=title,
-                        units=getattr(xvar,'units',''), source=rsr.source ) 
+                        units='', source=rsr.source ) 
                     
                   #plot the multibox plot
                   try:
                      if tm2 is not None and varIndex+1 == len(rsr.vars):
+                        #title refers to the title for the individual plots getattr(xvar,'units','')
+                        subtitle = title
+                        if hasattr(plot, 'compositeTitle'):
+                           title = plot.compositeTitle
+
                         vcanvas2.plot(xvar, yvar,
                            rsr_presentation, tm2, bg=1, title=title, 
-                           units=getattr(var,'units',''), source=rsr.source ) 
+                           units='', source=subtitle)
+                        plotcv2 = True
+                        #tm2.units.list()
                         if varIndex+1 == len(rsr.vars):
                            savePNG = True
                   except vcs.error.vcsError as e:
@@ -456,17 +507,40 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname):
                         # have them.
                except vcs.error.vcsError as e:
                   print "ERROR making summary plot:",e
-            else:
-               #pdb.set_trace()
+            elif vcs.istaylordiagram(rsr.presentation):
+               # this is a total hack that is related to the hack in uvdat.py
+               vcanvas.legendTitles = rsr.legendTitles
+               if hasattr(plot, 'customizeTemplates'):
+                  vcanvas.setcolormap("bl_to_darkred")
+                  print vcanvas.listelements("colormap")
+                  tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (None, None)] )
                vcanvas.plot(var, rsr.presentation, tm, bg=1,
                   title=title, units=getattr(var,'units',''), source=rsr.source )
+               savePNG = True
+               rsr.presentation.script("jim_td")
+               # tm.script("jim_tm")
+               # fjim=cdms2.open("jim_data.nc","w")
+               # fjim.write(var,id="jim")
+               # fjim.close()
+            else:
+               #pdb.set_trace()
+               if hasattr(plot, 'customizeTemplates'):
+                  tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)] )
+               #vcanvas.plot(var, rsr.presentation, tm, bg=1,
+               #   title=title, units=getattr(var,'units',''), source=rsr.source )
+               plot.vcs_plot(vcanvas, var, rsr.presentation, tm, bg=1, title=title,
+                  units=getattr(var, 'units', ''), source=rsr.source)
 #                                      vcanvas3.clear()
 #                                      vcanvas3.plot(var, rsr.presentation )
                savePNG = True
                try:
                   if tm2 is not None:
-                     vcanvas2.plot(var, rsr.presentation, tm2, bg=1,
-                        title=title, units=getattr(var,'units',''), source=rsr.source )
+                     #vcanvas2.plot(var, rsr.presentation, tm2, bg=1,
+                     #   title=title, units=getattr(var,'units',''), source=rsr.source )
+                     plot.vcs_plot( vcanvas2, var, rsr.presentation, tm2, bg=1,
+                        title=title, units=getattr(var, 'units', ''), 
+                        source = rsr.source, compoundplot=onPage )
+                     plotcv2 = True
                except vcs.error.vcsError as e:
                   print "ERROR making summary plot:",e
             if var_id_save is not None:

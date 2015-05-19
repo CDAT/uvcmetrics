@@ -122,7 +122,7 @@ varinfo['COL_FIRE_NLOSS']={'RepUnits': 'TgN/y', 'sets': ['1', '2',  '5'], 'NatUn
 varinfo['ER']={'RepUnits': 'PgC/y', 'sets': ['1', '2',  '5'], 'NatUnits': 'gC/m^2/s', 'desc': 'total ecosystem respiration (AR + HR)'}
 varinfo['QDRAI']={'RepUnits': 'mm/d', 'sets': ['1', '2', '5'], 'NatUnits': 'mm/s', 'desc': 'sub-surface drainage'}
 varinfo['WOODC']={'RepUnits': 'PgC', 'sets': ['1', '2', '5'], 'NatUnits': 'gC/m2', 'desc': 'Wood C'}
-varinfo['FCOV']={'RepUnits': 'unitless [0-1]', 'sets': ['1', '2',  '5'], 'NatUnits': 'unitless [0-1]', 'desc': 'fractional area with water table at surface'}
+varinfo['FCOV']={'RepUnits': 'unitless', 'sets': ['1', '2',  '5'], 'NatUnits': 'unitless', 'desc': 'fractional area with water table at surface'}
 varinfo['TSAI']={'RepUnits': 'm2/m2', 'sets': ['1', '2', '5'], 'NatUnits': 'm2/m2', 'desc': 'total one-sided stem area index'}
 varinfo['FSRVDLN']={'RepUnits': 'NA', 'sets': ['2'], 'NatUnits': 'W/m^2', 'desc': 'direct vis reflected solar radiation at local noon'}
 varinfo['ESAI']={'RepUnits': 'm2/m2', 'sets': ['1', '2'], 'NatUnits': 'm2/m2', 'desc': 'exposed one-sided stem area index'}
@@ -215,7 +215,7 @@ varinfo['QVEGEP']={'RepUnits': '%', 'sets': ['5'], 'NatUnits': '%', 'desc': 'can
 varinfo['ERRSOI']={'RepUnits': 'NA', 'sets': ['2'], 'NatUnits': 'W/m^2', 'desc': 'soil/lake energy conservation error'}
 varinfo['LITTERC_LOSS']={'RepUnits': 'PgC/m2y', 'sets': ['1', '2', '5'], 'NatUnits': 'gC/m2s', 'desc': 'Litter C Loss'}
 varinfo['DEADCROOTC']={'RepUnits': 'PgC', 'sets': ['1', '2', '5'], 'NatUnits': 'gC/m^2', 'desc': 'dead coarse root carbon'}
-varinfo['H2OSNO']={'RepUnits': 'NA', 'sets': ['2',  '5'], 'NatUnits': 'mm', 'desc': 'total snow water equiv (SNOWICE + SNOWLIQ)',
+varinfo['H2OSNO']={'RepUnits': 'mm', 'sets': ['2',  '5'], 'NatUnits': 'mm', 'desc': 'total snow water equiv (SNOWICE + SNOWLIQ)',
 'obssets':{'CMC':{'filekey':'CMC', 'usedin':['2']}}}
 varinfo['LAISUN']={'RepUnits': 'm^2/m^2', 'sets': ['1', '2', '5'], 'NatUnits': 'm2/m2', 'desc': 'Sunlit Projected Leaf Area Index'}
 varinfo['SOILPSI']={'RepUnits': 'MPa', 'sets': ['1'], 'NatUnits': 'MPa', 'desc': 'Soil Water Potential in Each Soil Layer'}

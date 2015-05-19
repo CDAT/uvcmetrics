@@ -14,6 +14,7 @@ from metrics.common.utilities import *
 from metrics.fileio import stationData
 from metrics.packages.amwg.derivations import *
 from metrics.packages.amwg.derivations import qflx_lhflx_conversions as flxconv
+from metrics.frontend.defines import *
 from unidata import udunits
 import cdutil.times, numpy
 from numbers import Number
@@ -577,20 +578,67 @@ class amwg_plot_set3(amwg_plot_spec,basic_id):
 
         if not self.computation_planned:
             self.plan_computation( model, obs, varnom, seasonid )
+    @staticmethod
+    def _list_variables( model, obs ):
+        """returns a list of variable names"""
+        allvars = amwg_plot_set5and6._all_variables( model, obs )
+        listvars = allvars.keys()
+        listvars.sort()
+        return listvars
+    @staticmethod
+    def _all_variables( model, obs, use_standard_vars=True ):
+        """returns a dict of varname:varobject entries"""
+        allvars = amwg_plot_spec.package._all_variables( model, obs, "amwg_plot_spec" )
+        if use_standard_vars:
+            # Now we add varname:basic_plot_variable for all standard_variables.
+            # This needs work because we don't always have the data needed to compute them...
+            # BTW when this part is done better, it should (insofar as it's reasonable) be moved to
+            # amwg_plot_spec and shared by all AMWG plot sets.
+            for varname in amwg_plot_spec.standard_variables.keys():
+                allvars[varname] = basic_plot_variable
+        return allvars
     def plan_computation( self, model, obs, varnom, seasonid ):
         filetable1, filetable2 = self.getfts(model, obs)
-        zvar = reduced_variable(
-            variableid=varnom,
-            filetable=filetable1, season=self.season, region=self.region,
-            reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,self.season,self.region,vid=vid)) )
-        self.reduced_variables[zvar._strid] = zvar
+
+        if varnom in filetable1.list_variables():
+            zvar = reduced_variable(
+                variableid=varnom,
+                filetable=filetable1, season=self.season, region=self.region,
+                reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,self.season,self.region,vid=vid)) )
+            self.reduced_variables[zvar._strid] = zvar
+        elif varnom in self.standard_variables.keys():
+                    zvar,rvs,dvs = self.stdvar2var(
+                        varnom, filetable1, self.season,\
+                            (lambda x,vid=None:
+                                 reduce2lat_seasonal(x, self.season, self.region, vid=vid) ))
+                    if zvar is None: return None
+                    for rv in rvs:
+                        self.reduced_variables[rv.id()] = rv
+                    for dv in dvs:
+                        self.derived_variables[dv.id()] = dv
+                    zvar = self.derived_variables[zvar]
+                    zvar._filetable = filetable1
+
         #self.reduced_variables[varnom+'_1'] = zvar
         #zvar._vid = varnom+'_1'      # _vid is deprecated
-        z2var = reduced_variable(
-            variableid=varnom,
-            filetable=filetable2, season=self.season, region=self.region,
-            reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,self.season,self.region,vid=vid)) )
-        self.reduced_variables[z2var._strid] = z2var
+        if varnom in filetable2.list_variables():
+            z2var = reduced_variable(
+                variableid=varnom,
+                filetable=filetable2, season=self.season, region=self.region,
+                reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,self.season,self.region,vid=vid)) )
+            self.reduced_variables[z2var._strid] = z2var
+        elif varnom in self.standard_variables.keys():
+                    z2var,rvs,dvs = self.stdvar2var(
+                        varnom, filetable2, self.season,\
+                            (lambda x,vid:
+                                 reduce2latlon_seasonal(x, self.season, self.region, vid) ))
+                    if z2var is None: return None
+                    for rv in rvs:
+                        self.reduced_variables[rv.id()] = rv
+                    for dv in dvs:
+                        self.derived_variables[dv.id()] = dv
+                    z2var = self.derived_variables[z2var]
+
         #self.reduced_variables[varnom+'_2'] = z2var
         #z2var._vid = varnom+'_2'      # _vid is deprecated
         self.plot_a = basic_two_line_plot( zvar, z2var )
@@ -608,7 +656,10 @@ class amwg_plot_set3(amwg_plot_spec,basic_id):
         zvar = self.plot_a.zvars[0]
         z2var = self.plot_a.z2vars[0]
         #zval = zvar.reduce()
-        zval = self.variable_values[zvar._strid]
+        try:
+            zval = self.variable_values[zvar._strid]  # old-style key
+        except KeyError:
+            zval = self.variable_values[zvar.id()]  # new-style key
         #zval = self.variable_values[zvar._vid] # _vid is deprecated
         if zval is None: return None
         zunam = zvar._filetable._strid  # part of y1 distinguishing it from y2, e.g. ft_1
@@ -2735,7 +2786,7 @@ class amwg_plot_set14(amwg_plot_spec):
             self.obsfns = [obsfn]
         self.legendTitles = []
         plot_spec.__init__(self, seasonid)
-        self.plottype = 'Taylor'
+        self.plottype = 'Taylordiagram'
         self._seasonid = seasonid
         self.season = cdutil.times.Seasons(self._seasonid) 
         #ft1id, ft2id = filetable_ids(filetable1, filetable2)
@@ -2829,7 +2880,7 @@ class amwg_plot_set14(amwg_plot_spec):
         
         FTs = {'model': model, 'obs': obs}
         self.reduced_variables = {}
-        RVs = {}  
+        RVs = {}
         for dt in self.datatype:
             for ft in FTs[dt]:
                 for var in self.vars:

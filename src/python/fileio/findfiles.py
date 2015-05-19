@@ -175,6 +175,7 @@ class basic_datafiles:
         cache_path = self.opts['cachepath']
         cache_path = os.path.expanduser(cache_path)
         cache_path = os.path.abspath(cache_path)
+        print "cache_path=",cache_path
         datafile_ls = [ f+'size'+(str(os.path.getsize(f)) if os.path.isfile(f) else '0')+\
                             'mtime'+(str(os.path.getmtime(f)) if os.path.isfile(f) else '0')\
                             for f in self.files ]
@@ -239,12 +240,13 @@ def path2filetable( opts, modelid=None, obsid=None):
     return filetable
 
 class dirtree_datafiles( basic_datafiles ):
-    def __init__( self, options, modelid=None, obsid=None ):
+    def __init__( self, options, pathid=None, modelid=None, obsid=None ):
         """Finds all the data files in the directory tree specified one of two ways:
-        (1) (undeprecated) inside the options structure, as specified by a path or obs ID. 
+        (1) inside the options structure, as specified by a path or obs ID. 
         An optional filter, of type basic_filter can be passed to options as well.
         modelid and obsid are numbers, usually 0 or 1, for looking up paths in the Options object.
-        (2) (deprecated) explicitly set the path through the keyword argument (It can be a string; or a list of strings
+        (2) (to be re-implemented.  This class really just needs a path, filter, and cache path)
+        explicitly set the path through the keyword argument (It can be a string; or a list of strings
         to specify multiple paths).  In this case the filter, if any,
         also must be specified through the keyword argument.  The Options object will still
         be used for the cache path."""
@@ -253,19 +255,22 @@ class dirtree_datafiles( basic_datafiles ):
         self._root = None
         self._type = None
         filt = None
+        obj = {}
 
-        if modelid == None and obsid == None:
+        if modelid is None and obsid is None and pathid is None:
             self._root = None
             self._filt = None
             self.files = []
             return None
-        if modelid == None: # We were passed an obs set
+        if obsid is not None:
             obj = self.opts['obs'][obsid]
             self._index = obsid
-        else: # we were passed a model set
+        elif modelid is not None:
             obj = self.opts['model'][modelid]
             self._index = modelid
-        if obj['path'] == None: # However, the object desired has no path information.
+        if pathid is not None and pathid in self.opts['path']:
+            obj['path'] = self.opts['path'][pathid]
+        if obj['path'] is None: # However, the object desired has no path information.
             self._root = None
             self._filt = None
             self.files = []
@@ -280,6 +285,7 @@ class dirtree_datafiles( basic_datafiles ):
         root = [ os.path.expanduser(r) for r in root ]
         root = [ r if r[0:5]=='http:' else os.path.abspath(r) for r in root ]
         filt = obj['filter']
+        print 'root: ', root
         print 'filt: ', filt
 
         if filt is None or filt=="": 
@@ -321,7 +327,7 @@ class dirtree_datafiles( basic_datafiles ):
         return self.files
 
     def short_name(self):
-        if self._type == None or self._index == None:
+        if self._type == None or self._index == None or not hasattr(self,'_index'):
             return ','.join([os.path.basename(str(r))
                              for r in self._root])   # <base directory> <filter name>
         if len(self.opts[self._type]) > self._index:

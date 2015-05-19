@@ -592,10 +592,63 @@ def reduce2level_seasonal( mv, seasons=seasonsyr, region='Global', vid=None ):
 
     return avmv
 
+def ttest_ab(mv1, mv2, constant = .1):
+   mv1, mv2 = reconcile_units(mv1, mv2)
+   ax1 = mv1.getAxisList()
+   ax2 = mv2.getAxisList()
+
+   if ax1 is None or ax2 is None:
+      return
+   mv1new = mv1
+   mv2new = mv2
+   lat1, idx1 = latAxis2(mv1)
+   lat2, idx2 = latAxis2(mv2)
+
+   # Shall we go up or down? If this was 2 models, we probably need to go down.
+   if len(ax1[idx1]) < len(ax2[idx2]):
+      newgrid = mv2.getGrid()
+      mv1new = mv1.regrid(newgrid)
+   if len(ax1[idx1]) > len(ax2[idx2]):
+      newgrid = mv1.getGrid()
+      mv2new = mv2.regrid(newgrid)
+
+   tax1, tid1 = timeAxis2(mv1new)
+   tax2, tid2 = timeAxis2(mv2new)
+
+   if tid1 != tid2:
+      print 'Time axes between the two inputs are not the same.'
+      return
+   v1 = mv1new.asma()
+   v2 = mv2new.asma()
+   print 'V1:', v1
+   print 'V2:' , v2
+   print v1.max()
+   print v1.min()
+   print v2.max()
+   print v2.min()
+   print 'shapes:'
+   print mv1new.shape
+   print mv2new.shape
+   print dir(v1)
+
+   
+   import scipy.stats
+   prob = mv1new # maybe retain some metadata
+
+   t, prob = scipy.stats.ttest_ind(v1, v2, axis=tid1, equal_var=False)
+   print 'prob:', prob
+   print type(prob)
+   print 't: ', t
+   print type(t)
+   missing = mv1.missing_value
+   probnew = MV2.where(MV2.greater(prob, constant), 1, 0) # get rid of the tiny values that are essentially 0
+   tnew = MV2.where(MV2.greater(t, constant), 1, 0)
+
+   print 'This needs some more work probably. Do we return t or prob?'
+   return tnew
+
 def ttest_time(mv1, mv2, mv3):
-# mv1 = case1
-# mv2 = case2
-# mv3 = obs
+# mv1 = case1, mv2=case2, mv3=obs
 # Everything needs down-interpolated to obs' dimensionality first.
    mv3, mv1 = reconcile_units(mv3, mv1)
    mv3, mv2 = reconcile_units(mv3, mv2)
@@ -674,123 +727,45 @@ def ttest_time(mv1, mv2, mv3):
 # Step 3b - Add a 't' axis if it's not there. Does this need done? Should this need done?
 # Step 4 - RMSE
 def rmse_time(mv1, mv2):
-   mv1, mv2 = reconcile_units(mv1, mv2)
-   if hasattr(mv1, 'units') and hasattr(mv2, 'units') and mv1.units != mv2.units:
-      print 'WARNING - RMSE - variables have different units:', mv1.units, mv2.units
-   axes1 = mv1.getAxisList()
-   axes2 = mv2.getAxisList()
-   if axes1 is None or axes2 is None: 
-      return None
-   mv1new = mv1
-   mv2new = mv2
-   lat1, idx1 = latAxis2 (mv1)
-   lat2, idx2 = latAxis2 (mv2)
-   # assumes we want to regrid on lat/lon.
-   # determine which variable has the coarsest grid
-   if len(axes1[idx1]) < len(axes2[idx2]): 
-      # mv1 is more coarse, regrid to it
-      newgrid = mv1.getGrid()
-      mv2new = mv2.regrid(newgrid)
-   if len(axes1[idx1]) > len(axes2[idx2]): 
-      # mv2 is more coarse, regrid to it
-      newgrid = mv2.getGrid()
-      mv1new = mv1.regrid(newgrid)
-   # we can now calculate rms
-   #### If one of these is obs, do we need to convert 'months' to 't' for example?
-   ### Does mv2 have a axis=t?
-   flag = False
-   for i in range(len(axes1)):
-      if 'axis' in axes1[i].attributes:
-         pass
-      else:
-         #print 'axis ', axes1[i].id, ' has no axis attribute'
-         ### Assuming that is a time axis...
-         axes1[i].axis='T'
-         flag = True
-   if flag == True:
-      mv1new.setAxisList(axes1)
+   print 'in rmse_time'
+   print mv1.id, 'mv1.shape: ', mv1.shape
+   print mv2.id, 'mv2.shape: ', mv2.shape
 
-   flag = False
-   for i in range(len(axes2)):
-      if 'axis' in axes2[i].attributes:
-         pass
-      else:
-         #print 'axis ', axes2[i].id, ' has no axis attribute'
-         ### Assuming that is a time axis...
-         axes2[i].axis='T'
-         flag = True
-   if flag == True:
-      mv2new.setAxisList(axes2)
+   mv1new, mv2new = regrid_without_obs(mv1, mv2)
+#   print mv1new.shape
+#   print mv2new.shape
+   print 'after regrid: ', mv1new.shape, mv2new.shape
 
    rmse = statistics.rms(mv1new, mv2new, axis='t')
+   print 'min/max:'
+   print rmse.min()
+   print rmse.max()
+   print rmse.shape
    return rmse
 
-# Calculate the correlation between mv1 and mv2. Regrid as appropriate
-# This is used by land set 9 but might be generally usable
-# Step 0? - NCL masks off land and glacier. Do we need to do glaciers too?
-# Step 1 - Reconcile units
-# Step 2 - ANNUALCYCLE.climatology(mv1, mv2)
-# Step 3 - Regrid to same grid
-# Step 3b - Add a 't' axis if it's not there. Does this need done? Should this need done?
-# Step 4 - Calculate correlation
-def corr_time(mv1, mv2):
-   mv1, mv2 = reconcile_units(mv1, mv2)
-   if hasattr(mv1, 'units') and hasattr(mv2, 'units') and mv1.units != mv2.units:
-      print 'WARNING - CORR - variables have different units:', mv1.units, mv2.units
-   axes1 = mv1.getAxisList()
-   axes2 = mv2.getAxisList()
-   if axes1 is None or axes2 is None: 
-      return None
-   mv1new = mv1
-   mv2new = mv2
-   lat1, idx1 = latAxis2 (mv1)
-   lat2, idx2 = latAxis2 (mv2)
-   # assumes we want to regrid on lat/lon.
-   # determine which variable has the coarsest grid
-   if len(axes1[idx1]) < len(axes2[idx2]): 
-      # mv1 is more coarse, regrid to it
-      newgrid = mv1.getGrid()
-      mv2new = mv2.regrid(newgrid)
-   if len(axes1[idx1]) > len(axes2[idx2]): 
-      # mv2 is more coarse, regrid to it
-      newgrid = mv2.getGrid()
-      mv1new = mv1.regrid(newgrid)
-   # we can now calculate correlation
-   #### If one of these is obs, do we need to convert 'months' to 't' for example?
-   ### Does mv2 have a axis=t?
-   flag = False
-   for i in range(len(axes1)):
-      if 'axis' in axes1[i].attributes:
-         pass
-      else:
-         print 'axis ', axes1[i].id, ' has no axis attribute'
-         ### Assuming that is a time axis...
-         axes1[i].axis='T'
-         flag = True
-   if flag == True:
-      mv1new.setAxisList(axes1)
+def correlation_time(mv1, mv2):
 
-   flag = False
-   for i in range(len(axes2)):
-      if 'axis' in axes2[i].attributes:
-         pass
-      else:
-         print 'axis ', axes2[i].id, ' has no axis attribute'
-         ### Assuming that is a time axis...
-         axes2[i].axis='T'
-         flag = True
-   if flag == True:
-      mv2new.setAxisList(axes2)
+   mv1new, mv2new = regrid_without_obs(mv1, mv2)
+   print 'mv1new/2 shapes: ', mv1new.shape, mv2new.shape
 
-   axes1 = mv1new.getAxisList()
-   axes2 = mv2new.getAxisList()
-   # determine which index is T.
-   t = 0
-   if len(axes1[0]) != len(axes2[0]):
-      print 'Need to temporarily reduce one of the two vars first'
-   else:
-      corr = statistics.correlation(mv1new, mv2new, axis='t')
-      return corr
+   corr = statistics.correlation(mv1new, mv2new, axis='t')
+   print 'min/max:'
+   print corr.min()
+   print corr.max()
+   print 'correlation result shape: ', corr.shape
+   return corr
+
+
+# mv2 is usually an obs set here.
+def stddev_time(mv1, mv2):
+   
+   mv1new, mv2new = regrid_without_obs(mv1, mv2)
+
+   mv1std = statistics.std(mv1new)
+   mv2std = statistics.std(mv2new)
+
+   return mv1std-mv2std
+
 
 # Calculate the std dev between mv1 and mv2. Regrid as appropriate
 # Step 1 - Reconcile units
@@ -887,37 +862,224 @@ def std_3time(mv1, mv2, mv3, constant = 1.):
    return mv1_sd, mv2_sd, sd_map
 
 
+# This function is used primarily by the {stat function}_time functions. There is a similar
+# function for the {stat function}_map except with observation data.
+# Given 2 datasets everything is reduced to the "lowest common denominator"
+# for units and grid sizes. Time axes are added if needed.
+def regrid_without_obs(mv1, mv2):
+
+   mv1, mv2 = reconcile_units(mv1, mv2)
+
+   axes1 = mv1.getAxisList()
+   axes2 = mv2.getAxisList()
+   if axes1 is None or axes2 is None: 
+      return None
+
+   print 'THERES A BUG HERE SOMEWHERE. PRINT AXES LIST TO SEE WHICH ONES ARE T'
+   print 'ALSO NEED TO AT LEAST REDUCE/REGRID TO A SINGLE T DIMENSION (OR SAME T DIMENSION)'
+   print 'I HATE THIS CODE'
+   mv1new = mv1
+   mv2new = mv2
+   lat1, idx1 = latAxis2 (mv1)
+   lat2, idx2 = latAxis2 (mv2)
+   # assumes we want to regrid on lat/lon.
+   # determine which variable has the coarsest grid
+   if len(axes1[idx1]) < len(axes2[idx2]): 
+      # mv1 is more coarse, regrid to it
+      newgrid = mv1.getGrid()
+      mv2new = mv2.regrid(newgrid)
+   if len(axes1[idx1]) > len(axes2[idx2]): 
+      # mv2 is more coarse, regrid to it
+      newgrid = mv2.getGrid()
+      mv1new = mv1.regrid(newgrid)
+   # we can now calculate rms
+   #### If one of these is obs, do we need to convert 'months' to 't' for example?
+   ### Does mv2 have a axis=t?
+   flag = False
+   for i in range(len(axes1)):
+      if 'axis' in axes1[i].attributes:
+         pass
+      else:
+         #print 'axis ', axes1[i].id, ' has no axis attribute'
+         ### Assuming that is a time axis...
+         axes1[i].axis='T'
+         flag = True
+   if flag == True:
+      mv1new.setAxisList(axes1)
+
+   flag = False
+   for i in range(len(axes2)):
+      if 'axis' in axes2[i].attributes:
+         pass
+      else:
+         #print 'axis ', axes2[i].id, ' has no axis attribute'
+         ### Assuming that is a time axis...
+         axes2[i].axis='T'
+         flag = True
+   if flag == True:
+      mv2new.setAxisList(axes2)
+
+   if timeAxis(mv1new) == None and timeAxis(mv2new) == None:
+      print 'No time axis left for variables. mv1.id: ', mv1new.id, mv1new.shape, 'mv2.id: ', mv2new.id, mv2new.shape
+
+   return mv1new, mv2new
+   
+# This function is used primarily by the {stat function}_map functions. There is a similar
+# function for the {stat function}_time except without observation data.
+# Given 2 datasets and an obs set, everything is reduced to the "lowest common denominator"
+# for units and grid sizes. Time axes are added to obs data if needed.
+def regrid_with_obs(mv1, mv2, obs1):
+   mv1, mv2 = reconcile_units(mv1, mv2)
+   mv1, obs1 = reconcile_units(mv1, obs1)
+   print 'passed in shapes (regrid with units): ', mv1.shape, mv2.shape, obs1.shape
+
+   axes1 = mv1.getAxisList()
+   axes2 = mv2.getAxisList()
+   axesobs = obs1.getAxisList()
+
+   if axes1 is None or axes2 is None or axesobs is None:
+      return None
+
+   mv1new = mv1
+   mv2new = mv2
+   obsnew = obs1
+
+   lat1, idx1 = latAxis2(mv1)
+   lat2, idx2 = latAxis2(mv2)
+   latobs, idxobs = latAxis2(obs1)
+
+   minlat = min( len(axes1[idx1]), len(axes2[idx2]), len(axesobs[idxobs]) )
+   if len(axes1[idx1]) == minlat:
+      grid = mv1.getGrid()
+   elif len(axes2[idx2]) == minlat:
+      grid = mv2.getGrid()
+   else:
+      grid = obs1.getGrid()
+
+   if len(axes1[idx1]) > minlat:
+      mv1new = mv1.regrid(grid)
+   if len(axes2[idx2]) > minlat:
+      mv2new = mv2.regrid(grid)
+   if len(axesobs[idxobs]) > minlat:
+      obsnew = obs1.regrid(grid)
+
+   print 'Regridding shapes:', mv1new.shape, mv2new.shape, obsnew.shape
+   
+   flag = False
+   for i in range(len(axes1)):
+      if 'axis' in axes1[i].attributes:
+         pass
+      else:
+         axes1[i].axis='T'
+         flag = True
+   if flag == True:
+      mv1new.setAxisList(axes1)
+
+   flag = False
+   for i in range(len(axes2)):
+      if 'axis' in axes2[i].attributes:
+         pass
+      else:
+         axes2[i].axis='T'
+         flag = True
+   if flag == True:
+      mv2new.setAxisList(axes2)
+
+   flag = False
+   for i in range(len(axesobs)):
+      if 'axis' in axesobs[i].attributes:
+         pass
+      else:
+         axesobs[i].axis='T'
+         flag = True
+   if flag == True:
+      obsnew.setAxisList(axesobs)
+
+   if timeAxis(mv1new) == None and timeAxis(mv2new) == None and timeAxis(obsnew) == None:
+      print 'No time axes left for variables. This is bad.'
+
+   print 'and done shapes: ', mv1new.shape, mv2new.shape, obsnew.shape
+   return mv1new, mv2new, obsnew
+
+
 # Takes 2 rmse variables in. Could be required to take 2 normal variables and we might have to calculate rmse?
 # Also, we might want to specify constant somehow.
-def rmse_map(mv1, mv2, constant=.1):
-   diff = mv2-mv1
+def rmse_map(mv1, mv2, obs1, recalc=True, constant=.1):
+# for now, recalculating rmse for mv1 vs obs1 and mv2 vs obs2. maybe some day this can be done properly
+
+   print 'MAP IN SHAPES:', mv1.shape, mv2.shape, obs1.shape
+   rmse1 = mv1
+   rmse2 = mv2
+
+   if recalc == True:
+      mv1new, mv2new, obsnew = regrid_with_obs(mv1, mv2, obs1)
+      print 'OUT SHAPES:' , mv1new.shape, mv2new.shape, obsnew.shape
+
+      rmse1 = statistics.rms(mv1new, obsnew, axis='t')
+      rmse2 = statistics.rms(mv2new, obsnew, axis='t')
+   
+   print 'RMSE shapes:', rmse1.shape, rmse2.shape
+
+
+   diff = rmse2-rmse1
    absdiff = MV2.absolute(diff)
-   b = MV2.where ( MV2.greater_equal(absdiff, constant), MV2.where(MV2.less(mv2, mv1), 1, 0), 0)
-   g = MV2.where ( MV2.greater_equal(absdiff, constant), MV2.where(MV2.greater(mv2, mv1), 2, 0), 0)
+   b = MV2.where ( MV2.greater_equal(absdiff, constant), MV2.where(MV2.less(rmse2, rmse1), 1, 0), 0)
+   g = MV2.where ( MV2.greater_equal(absdiff, constant), MV2.where(MV2.greater(rmse2, rmse1), 2, 0), 0)
    vsum = b+g
-   vmap = MV2.where (MV2.equal(vsum, 0), absdiff.missing_value, vsum)
+   vmap = MV2.where (MV2.equal(vsum, 0), diff.missing_value, vsum)
+   print 'result shape: ', vmap.shape
    return vmap
 
 # Basically the same as rmse_map, but the math is different.
-def corr_map(mv1, mv2, constant=.1):
-   diff = mv2-mv1
+def correlation_map(mv1, mv2, obs1, recalc=True, constant=.1):
+
+   print 'MAP IN shapes: ', mv1.shape, mv2.shape, obs1.shape
+   corr1 = mv1
+   corr2 = mv2
+
+   if recalc == True:
+      mv1new, mv2new, obsnew = regrid_with_obs(mv1, mv2, obs1)
+      print 'MAP OUT shapes: ', mv1new.shape, mv2new.shape, obsnew.shape
+
+      corr1 = statistics.correlation(mv1new, obsnew, axis='t')
+      corr2 = statistics.correlation(mv2new, obsnew, axis='t')
+
+   print 'CORR SHAPE:' ,corr1.shape, corr2.shape
+   diff = corr2 - corr1
    b = MV2.where(MV2.greater_equal(diff, constant), 1, 0)
    g = MV2.where(MV2.less_equal(diff, -1*constant), -1, 0)
    vsum = b+g
    vmap = MV2.where (MV2.equal(vsum, 0), diff.missing_value, vsum)
+   print 'vmap shape: ', vmap.shape
 
-def stdev_map(mv1, mv2, obs, constant=.1):
-   diff = mv2-mv1
+   return vmap
+
+def stddev_map(mv1, mv2, obs, recalc=True, constant=.1):
+
+   std1 = mv1
+   std2 = mv2
+   stdobs = obs
+   if recalc == True:
+      mv1new, mv2new, obs1new = regrid_with_obs(mv1, mv2, obs)
+
+      std1 = statistics.std(mv1new)
+      std2 = statistics.std(mv2new)
+      stdobs = statistics.std(obsnew)
+
+   diff = std2-std2
    absdiff = MV2.absolute(diff)
-   mv1obs = mv1-obs
-   mv1obs_abs = MV2.absolute(mv1obs)
-   mv2obs = mv2-obs
-   mv2obs_abs = MV2.absolute(mv2obs)
+   mv1_obs = std1-stdobs
+   mv1obs_abs = MV2.absolute(mv1_obs)
+
+   mv2_obs = std2-stdobs
+   mv2obs_abs = MV2.absolute(mv2_obs)
 
    b = MV2.where( MV2.greater_equal(absdiff, constant), MV2.where(MV2.less_equal(mv2obs_abs, mv1obs_abs), 1, 0), 0)
    g = MV2.where( MV2.greater_equal(absdiff, constant), MV2.where(MV2.greater(mv2obs_abs, mv1obs_abs), 2, 0), 0)
    vsum = b+g
    vmap = MV2.where(MV2.equal(vsum, 0), absdiff.missing_value, vsum)
+
+   return vmap
 
 def bias_map(mv1, mv2, obs, constant=.1):
    # eww, this one is more complicated, plus need to implement T-test
@@ -927,17 +1089,22 @@ def bias_map(mv1, mv2, obs, constant=.1):
 # Does a yearly climatology, then spatial reduction over a subregion, then returns
 # an MV that is the sum of a given level axis range
 # This could probably just call reduceAnnTrendRegionLevel() in a loop and calculate the sum
-def reduceAnnTrendRegionSumLevels(mv, region, slevel, elevel, vid=None):
+def reduceAnnTrendRegionSumLevels(mv, region, slevel, elevel, weights=None, vid=None):
    timeax = timeAxis(mv)
    if timeax is not None and timeax.getBounds() is None:
       timeax._bounds_ = timeax.genGenericBounds()
    if timeax is not None:
-      mvsub = mv(latitude=(region[0], region[1]), longitude=(region[2], region[3]))
+      mvsub = select_region(mv, region)
       mvann = cdutil.times.YEAR(mvsub) 
    else:
       mvann = mv
 
-   mvtrend = cdutil.averager(mvann, axis='xy')
+   wsubnew = None
+   if weights is not None:
+      import genutil
+      wsub = select_region(weights, region)
+      mvann, wsubnew = genutil.grower(mvann, wsub)
+   mvtrend = cdutil.averager(mvann, axis='xy', weights=wsubnew)
 
    levax = levAxis(mvtrend)
 
@@ -962,7 +1129,7 @@ def reduceAnnTrendRegionSumLevels(mv, region, slevel, elevel, vid=None):
    #print 'Returning mvvar: ', mvsum
    return mvsum
 
-def reduceAnnTrendRegionLevel(mv, region, level, vid=None):
+def reduceAnnTrendRegionLevel(mv, region, level, weights=None, vid=None):
 # Need to compute year1, year2, ... yearN individual climatologies then get a line plot.
    if vid is None:
       vid = 'reduced_'+mv.id
@@ -976,7 +1143,13 @@ def reduceAnnTrendRegionLevel(mv, region, level, vid=None):
    else:
       mvann = mv
 
-   mvtrend = cdutil.averager(mvann, axis='xy')
+   wsubnew = None
+   if weights is not None:
+      import genutil
+      wsub = select_region(weights, region)
+      mvann, wsubnew = genutil.grower(mvann, wsub)
+
+   mvtrend = cdutil.averager(mvann, axis='xy', weights=wsubnew)
    mvtrend.id = vid
 
    levax = levAxis(mvtrend)
@@ -1016,7 +1189,11 @@ def reduceAnnSingle(mv, vid=None):
    else:
       mvann = mv
 
-   mvtrend = cdutil.averager(mvann, axis='t')
+   if timeax is not None:
+      mvtrend = cdutil.averager(mvann, axis='t')
+   else:
+      mvtrend = mvann
+
    mvtrend.id = vid
    if hasattr(mv, 'units'):
        mvtrend.units = mv.units # probably needs some help
@@ -1024,39 +1201,80 @@ def reduceAnnSingle(mv, vid=None):
    return mvtrend
 
 
-def reduceAnnTrendRegion(mv, region, single=False, vid=None):
+def reduceAnnTrendRegion(mv, region, single=False, weights=None, vid=None):
 # Need to compute year1, year2, ... yearN individual climatologies then get a line plot.
 #   print 'mv passed in:', mv
    if vid is None:
       vid = 'reduced_'+mv.id
 
+#   print 'units coming in: ', mv.units
+#   print 'REGION PASSED TO REDUCEANNTRENDREGION: ', region
    timeax = timeAxis(mv)
    if timeax is not None and timeax.getBounds() is None:
       timeax._bounds_ = timeax.genGenericBounds()
    if timeax is not None:
-      mvsub = mv(latitude=(region[0], region[1]), longitude=(region[2], region[3]))
+      mvsub = select_region(mv, region)
       mvann = cdutil.times.YEAR(mvsub) 
    else:
       mvann = mv
-   axisstr = 'xy'
-   if single is True:
-      # This is primarily for table views (e.g. land set 5)
-      print 'Doing single value reduction'
+
+   # We have to do this in two steps because cdutil.averager can't have 2 different shapes.
+   wsubnew = None
+   if weights is not None:
+      import genutil
+      wsub = select_region(weights, region)
+      mvann, wsubnew = genutil.grower(mvann, wsub)
+
+   if single is True and timeax is not None:
       axisstr = 'xyt'
    else:
-      print 'NOT doing single value reduction'
+      axisstr = 'xy'
 
-   #print 'Calculating land averages...'
-   mvtrend = cdutil.averager(mvann, axis=axisstr)
+   mvtrend = cdutil.averager(mvann, axis=axisstr, weights=wsubnew)
+
+
+#   mvtrend, weights12 = genutil.grower(mvtrend, weightsub)
+
+#   mvtrend = cdutil.averager(mvann, axis='xy', weights=wsub)
+
+#   if single is True and timeax is not None:
+#      mvtrend = cdutil.averager(mvtrend, axis='t')
+
    mvtrend.id = vid
+#   axisstr = 'xy'
+#   if single is True and timeax is not None:
+#      # This is primarily for table views (e.g. land set 5)
+##      print 'Doing single value reduction'
+#      axisstr = 'xyt'
+#   else:
+#      print 'NOT doing single value reduction'
+##   print 'timeax was: ', timeax
+#
+##   print 'axisstr: ', axisstr
+##   print mvann.shape
+#   #print 'Calculating land averages...'
+#   wsub = None
+#   if weights is not None:
+#      wsub = select_region(weights, region)
+#   print 'ASSUMING WEIGHTS=NONE is equivalent to no weights argument'
+#   print 'axisstr: ', axisstr
+#   print 'weights shape: ', wsub.shape
+#   print 'mvann shape: ', mvann.shape
+#   # probably need to split off the "SINGLE" thing..... but lets see.
+#   mvtrend = cdutil.averager(mvann, axis=axisstr, weights=wsub)
+#   mvtrend.id = vid
+
+   # probably needs some help but it should at least get us some units.
    if hasattr(mv, 'units'):
-       mvtrend.units = mv.units # probably needs some help
+       mvtrend.units = mv.units 
 #   if mvtrend.shape == ():
 #      print 'Returning single point; This could be an invalid input dataset for this diagnostic'
+#   print 'units going out: ', mvtrend.units
    return mvtrend
 
 # Used for lmwg set 3
-def reduceMonthlyRegion(mv, region, vid=None):
+def reduceMonthlyRegion(mv, region, weights=None, vid=None):
+   print 'REDUCEMONTHLYREGION STILL NEEDS AREA WEIGHTS ADDED'
    vals = []
    if vid is None:
       vid = 'reduced_'+mv.id
@@ -1074,29 +1292,42 @@ def reduceMonthlyRegion(mv, region, vid=None):
    return mvtrend
 
 # Used to get just a spatial region average of a var, i.e. when climos are passed in
-def reduceRegion(mv, region, vid=None):
+def reduceRegion(mv, region, weights=None, vid=None):
+
 #   print 'in reduce region. region/mv: ', region, mv.id
    if vid is None:
       vid = 'reduced_'+mv.id
+#   print 'vid shape incoming: ', mv.shape
 
    mvsub = select_region(mv, region)
+   wsub=None
+   if weights is not None:
+      wsub = select_region(weights, region)
+
 
 #   print 'about to call averager on mvsub: ', mvsub.shape
 #   print 'mv going in:', mvsub
-   mvvals = cdutil.averager(mvsub, axis='xy')
+   mvvals = cdutil.averager(mvsub, axis='xy', weights=wsub)
    mvvals.id = vid
 #   print 'done calling averager on mvsub', mvsub.id
    if hasattr(mv, 'units'): mvvals.units = mv.units # probably needs some help
-   #print 'reduceMonthlyTrendRegion - Returning ', mvvals
+#   print 'reduceMonthlyTrendRegion - Returning ', mvvals.shape
+#   print mvvals
+#   print 'returning ',vid,' shape: ', mvvals.shape
    return mvvals
 
 
-def reduceMonthlyTrendRegion(mv, region, vid=None):
+def reduceMonthlyTrendRegion(mv, region, weights=None, vid=None):
 # it would be nice if it was easy to tell if these climos were already done
 # but annualcycle is pretty fast.
    #print 'IN REDUCEMONTHLYTRENDREGION, vid=', vid, 'mv.id=', mv.id
    if vid is None:
       vid = 'reduced_'+mv.id
+
+   # annualcycle with weights doesn't work the way I want, so do a time reduction then spatial.
+   # might be performance issues.....
+
+#   print 'INCOMING VARIABLE ', vid, ' SHAPE: ', mv.shape
    timeax = timeAxis(mv)
    if timeax is not None and timeax.getBounds() is None:
       timeax._bounds_ = timeax.genGenericBounds()
@@ -1107,11 +1338,15 @@ def reduceMonthlyTrendRegion(mv, region, vid=None):
    else:
       mvtrend = mv
 
-   mvvals = cdutil.averager(mvtrend, axis='xy')
+   # This is gross. But, how do I make cdutil.averager (T, X, Y) use land weights (X, Y) to get a (T) array?
+   import genutil
+   weightsub = select_region(weights, region)
+   mvtrend, weights12 = genutil.grower(mvtrend, weightsub)
+
+   mvvals = cdutil.averager(mvtrend, axis='xy', weights=weights12)
 
    mvvals.id = vid
    if hasattr(mv, 'units'): mvvals.units = mv.units # probably needs some help
-   #print 'reduceMonthlyTrendRegion - Returning ', mvvals
    return mvvals
 
 def reduce_time_space_seasonal_regional( mv, season=seasonsyr, region=None, vid=None,
@@ -1155,18 +1390,30 @@ def reduce_time_space_seasonal_regional( mv, season=seasonsyr, region=None, vid=
 
     return mvtsav
 
+# This function takes an variable and season and a level value (i.e. an integer) and performs
+# a reduction on that.
+# Passing level to select_lev (which in turn calls reconcile_units on level) breaks things.
+# This function does not appear to be used in amwg, so I'm not sure why it was changed. 
+# Changed back to be functional for lmwg.
+# Brian Smith
+# 2/25/15
 def reduce2latlon_seasonal_level( mv, season, level, vid=None):
-# I wonder if this can be done faster somehow? need to ask Charles
 
    if vid is None:
       vid = 'reduced_'+mv.id
+   levax = levAxis(mv)
+   if levax is None or len(levax) <= 1:
+      return mv
 
-   mvl = select_lev(mv, level)
-   mvseas = calculate_seasonal_climatology( mvl, season)
+   levstr = levax.id
+   mvsub = mv(levstr=slice(level, level+1))
+
+   mvseas = calculate_seasonal_climatology( mvsub, season)
 
    mvseas.id = vid
    if hasattr(mv,'units'):
       mvseas.units = mv.units
+   mvseas = delete_singleton_axis(mvseas, vid=levax)
 
    return mvseas
 
@@ -1180,8 +1427,11 @@ def reduce2latlon_seasonal( mv, season=seasonsyr, region=None, vid=None, exclude
         vid = 'reduced_'+mv.id
     # Note that the averager function returns a variable with meaningless id.
     # The climatology function returns the same id as mv, which we also don't want.
-
-    mvr = select_region(mv, region)
+    if region is None or region=="global" or region=="Global" or\
+            getattr(region,'filekey',None)=="Global" or str(region)=="Global":
+        mvr = mv
+    else:
+        mvr = select_region(mv, region)
     mvseas = calculate_seasonal_climatology(mvr, season)
 
     axes = allAxes( mv )
@@ -1309,10 +1559,14 @@ def select_region(mv, region=None):
     # Select lat-lon region
     if region is None or region=="global" or region=="Global" or\
             getattr(region,'filekey',None)=="Global" or str(region)=="Global":
+#        print 'first case'
         mvreg = mv
     else:
+#        print 'second case'
         region = interpret_region(region)
+#        print 'region after interpret region:', region
         mvreg = mv(latitude=(region[0], region[1]), longitude=(region[2], region[3]))
+            
     return mvreg
 
 def select_lev( mv, slev ):
@@ -1472,6 +1726,12 @@ def aplusb0(mv1, mv2 ):
    if hasattr(mv ,'long_name'):
       if mv.long_name == mv1.long_name:
          mv.long_name = ''
+   # We are adding, so unless we call udunits, the units have to be the same on mv1, mv2, and their sum.
+   if hasattr(mv1, 'units'):
+      mv.units = mv1.units
+   if hasattr(mv2, 'units'):
+      mv.units = mv2.units
+      
    return mv
 
 def aplusb(mv1, mv2, units=None):
@@ -1479,6 +1739,10 @@ def aplusb(mv1, mv2, units=None):
    or change them to supplied units."""
    mv1,mv2 = reconcile_units(mv1,mv2,units)
    mv = mv1 + mv2
+   if hasattr(mv1, 'units') and hasattr(mv2, 'units'):
+      if mv1.units == mv2.units:
+         mv.units = mv1.units
+
    if hasattr(mv, 'long_name'):
       if mv.long_name == mv1.long_name:
          mv.long_name = ''
@@ -1486,7 +1750,18 @@ def aplusb(mv1, mv2, units=None):
 
 def sum3(mv1, mv2, mv3):
    """ returns mv1+mv2+mv3; they should be dimensioned alike."""
+   mv1, mv2 = reconcile_units(mv1, mv2)
+   mv1, mv3 = reconcile_units(mv1, mv3)
+
    mv = mv1+mv2+mv3
+   if hasattr(mv1, 'units') and hasattr(mv2, 'units') and hasattr(mv3, 'units'):
+      if mv1.units == mv2.units and mv1.units == mv3.units: #they should
+         mv.units = mv1.units
+      else: 
+         print 'IN SUM3 - - DIFFERENT UNITS'
+   else: 
+      print 'IN SUM3 - - NO UNITS'
+
    if hasattr(mv, 'long_name'):
       if mv.long_name == mv1.long_name:
          mv.long_name = ''
@@ -1519,7 +1794,12 @@ def aminusb(mv1, mv2):
    """ returns mv1-mv2; they should be dimensioned alike."""
    if mv1 is None or mv2 is None:
        return None
+
+   mv1, mv2 = reconcile_units(mv1, mv2)
    mv = mv1 - mv2
+   if hasattr(mv1, 'units') and hasattr(mv2, 'units'):
+      if mv1.units == mv2.units: #they better
+         mv.units = mv1.units
    if hasattr(mv, 'long_name'):
       if mv.long_name == mv1.long_name:
          mv.long_name = ''
@@ -1537,18 +1817,29 @@ def aminusb0( mv1, mv2 ):
 def adivb(mv1, mv2):
    """ returns mv1/mv2; they should be dimensioned alike.
    Primarily used for ASA - all sky albedo in LMWG but generally useful function"""
+         
    # This should probably be more of an abs(value - epsilon) check
-   #pdb.set_trace()
    denom = MV2.where(MV2.equal(mv2, 0.), mv2.missing_value, mv2)
    mv = mv1/denom
+   if hasattr(mv1, 'units') and hasattr(mv2, 'units'):
+      if mv1.units == mv2.units:
+         mv.units = '1'
+      else:
+         # I don't know if this will work.....
+         mv.units = mv1.units+'/'+mv2.units
+
    if hasattr(mv, 'long_name'):
       if mv.long_name == mv1.long_name:
          mv.long_name = ''
+
    return mv
 
 
-# N.B. The following function is specific to LMWG calculating evaporative fraction derived variable
+# N.B. The following functions are specific to LMWG calculating evaporative fraction derived variable
+def dummy2(mv1, mv2):
+   return mv1
 def dummy(mv, vid=None):
+#   print 'mv shape passed to dummy: ', mv.shape
    return mv
 
 def ab_ratio(mv1, mv2):
@@ -1562,6 +1853,9 @@ def ab_ratio(mv1, mv2):
    if hasattr(mv, 'long_name'):
       if mv.long_name == mv1.long_name:
          mv.long_name = ''
+   # If this is called, we can assume the units are now unitless/fractions.
+   # This should probably be '1', e.g. unitless, but ...
+   mv.units = 'fraction'
    return mv
 
 ### This function is pretty much lmwg specific but is in here for now
@@ -1579,7 +1873,7 @@ def canopy_special(mv1, mv2, mv3):
    rv.id = 'qvegep'
    rv.setattribute('long_name', 'canopy evap percent')
    rv.setattribute('name', 'qvegep')
-   rv.units=''
+   rv.units='%'
    return rv
 
 ### This function is pretty much lmwg specific but is in here for now
@@ -1684,11 +1978,61 @@ def aminusb_ax2( mv1, mv2 ):
     aminusb.initDomain( ab_axes )
     return aminusb
 
+
+def convert_units(mv, units):
+   if type(mv) == float:
+      return mv
+   if not hasattr(mv, 'units'):
+      mv.units = '1'
+   if mv.units == units or mv.units == 'none':
+      return mv
+   if mv.units=='gC/m^2/s' and units == 'PgC/y': # land set 5 table stuff. 
+      # The area is taken care of, but need to convert grams to petagrams and seconds to years
+#      print 'mv max in: ', mv.max()
+#      print 'multiplying by ', 60*60*24*365, 'and dividing by ', 1.0e15
+      mv = mv * (60*60*24*365)
+      mv = mv / (1.0e15)
+#      print 'new max: ', mv.max()
+      mv.units = units
+      return mv
+#   if mv.units == 'proportion':
+#      mv.units = '1'
+#   if mv.units == 'fraction':
+#      mv.units = '1'
+#   if units == 'proportion':
+#      units = 1
+#   if units = 'fraction':
+#      units = 1
+
+   tmp = udunits(1.0,mv.units)
+   try:
+      s,i = tmp.how(units)
+   except Exception as e:
+      # conversion not possible.
+      print "ERROR could not convert from",mv.units,"to",units
+      return mv
+   if hasattr(mv,'id'):  # yes for TransientVariable, no for udunits
+      mvid = mv.id
+   if not ( numpy.allclose(s,1.0) and numpy.allclose(i,0.0) ):
+      # The following line won't work if mv1 is an axis.
+      mv = s*mv + i
+      if hasattr(mv,'id'):
+         mv.id = mvid
+   mv.units = units
+   return mv
+
 def reconcile_units( mv1, mv2, preferred_units=None ):
     """Changes the units of variables (instances of TransientVariable) mv1,mv2 to be the same,
     mv1 is a TransientVariable or an axis.  mv2 may be a TransientVariable or axis, or it may
     be a udunits object.
     If preferred units are specified, they will be used if possible."""
+
+    # First, if there are no units, take a guess.  I'm reluctant to do this because it will surely
+    # be wrong sometimes.  But usually it is correct.
+    if not hasattr(mv1,'units') or mv1.units == 'none':
+        mv1.units = '1'
+    if not hasattr(mv2,'units') or mv2.units == 'none':
+        mv2.units = '1'
 
     # For QFLX and LHFLX variables, call dedicated functions instead.
     # TODO: The conditions for calling this function could perhaps be
@@ -1701,13 +2045,6 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
             mv1,mv2 = flxconv.reconcile_energyflux_precip(mv1, mv2, preferred_units)
             return mv1, mv2
 
-# This probably needs expanded to be more general purpose for unit conversions.
-    # First, if there are no units, take a guess.  I'm reluctant to do this because it will surely
-    # be wrong sometimes.  But usually it is correct.
-    if not hasattr(mv1,'units'):
-        mv1.units = '1'
-    if not hasattr(mv2,'units'):
-        mv2.units = '1'
     # I'm still checking for the units attribute here because maybe some time I'll be able to
     # delete the above lines which set it to a default value.
     if hasattr(mv1,'units') and hasattr(mv2,'units') and\
@@ -1754,6 +2091,7 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
             mv2 = 100*mv2
             mv2.units=mv1.units
             return mv1, mv2
+
         if preferred_units is None:
             # Look for whichever of mv1.units, mv2.units gives numbers more O(1).
             try:
@@ -2044,7 +2382,7 @@ def common_axis( axis1, axis2 ):
             # but it would be messy to have two.
             return axis1,[0],[0]
 
-    # to do: similar checks using isLatitude and isLongitude and isLevel <<<<<<
+    # to do: similar checks using isLatitude and isLongitude and isLevel 
     # Also, transfer long_name, standard_name, axis attributes if in agreement;
     # units and calendar attributes should always be transferred if present.
     # Also to do: use bounds if available

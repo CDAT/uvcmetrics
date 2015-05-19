@@ -9,7 +9,7 @@ from metrics.frontend import *
 import sys, traceback
 
 class derived_var(basic_id):
-    def __init__( self, vid, inputs=[], outputs=['output'], func=(lambda: None), special_value=None ):
+    def __init__( self, vid, inputs=[], outputs=['output'], func=(lambda: None), special_values=None ):
         """Arguments:
         vid, an id for this dervied variable;
         func=function to compute values of this variable;
@@ -28,13 +28,13 @@ class derived_var(basic_id):
         self._file_attributes = {}
         # This is primarily used for 2-phase derived variables where we need to pass in a
         # special value that wouldn't be part of the input dictionary. The current example is
-        # passing in a region for land set 5 when we compute reduced/derived variables, then
+        # passing in a region and weights for land set 5 when we compute reduced/derived variables, then
         # construct new variables based on those which all require a 'region' argument.
         # I could see this being used for passing in seasons perhaps as well, and perhaps
         # any other arbitary sort of argument. Perhaps there is a better way of doing this,
         # but this is what worked for me in land.
         #   -BES
-        self._special = special_value
+        self._special = special_values
     def inputs( self ):
         return self._inputs
     def derive( self, inpdict ):
@@ -48,10 +48,17 @@ class derived_var(basic_id):
         object)."""
         # error from checking this way!... if None in [ vardict[inp] for inp in self._inputs ]:
         if self._special != None:
-           # First, we have to add to inpdict to make sure the special_value isn't thrown away.
-           inpdict[self._special] = self._special
+           # First, we have to add to inpdict to make sure the special_values isn't thrown away.
+#           print 'inpdict: ', inpdict
+#           print 'inpdict type:' ,type(inpdict)
+#           print 'special: ', type(self._special)
+           for k in self._special:
+            inpdict[k] = k
+#           inpdict[self._special] = self._special
+#           print 'inpdict after'
+#           print type(self._inputs)
            # Then we need to add it to inputs
-           self._inputs.append(self._special)
+           self._inputs.extend(self._special)
         dictvals = [ inpdict.get(inp,None) for inp in self._inputs ]
         nonevals = [ inp for inp in self._inputs if inpdict.get(inp,None) is None ]
         if len(nonevals)>0:
@@ -120,6 +127,7 @@ class plotspec(basic_id):
             basic_id.__init__(self,*vid)
         else:
             basic_id.__init__(self,vid)
+
         if zfunc==None:
             if len(zvars)==0:
                 zfunc = (lambda: None)
@@ -127,6 +135,7 @@ class plotspec(basic_id):
                 zfunc = (lambda z: z)
         if zrangefunc==None:
             zrangefunc = (lambda: None)
+
         if z2func==None:
             if len(z2vars)==0:
                 z2func = (lambda: None)
@@ -134,6 +143,23 @@ class plotspec(basic_id):
                 z2func = (lambda z2: z2)
         if z2rangefunc==None:
             z2rangefunc = (lambda: None)
+        
+        if z3func==None:
+            if len(z3vars) == 0:
+               z3func = (lambda: None)
+            else:
+               z3func = (lambda z3 :z3)
+        if z3rangefunc == None:
+            z3rangefunc = (lambda: None)
+
+        if z4func==None:
+            if len(z4vars) == 0:
+               z4func = (lambda: None)
+            else:
+               z4func = (lambda z4 :z4)
+        if z4rangefunc == None:
+            z4rangefunc = (lambda: None)
+
         self.zfunc = zfunc
         self.zvars = zvars
         self.zrangevars = zrangevars
@@ -360,6 +386,13 @@ class level_variable_for_amwg_set5(basic_level_variable):
             "200":200, "300":300, "500":500, "850":850,
             }
         return opts
+
+#class lmwg_set9_variable(basic_plot_variable):
+#   """ i see no reaason why these stubs live in here instead of in amwg*.py or lmwg.py. So I moved the one for land to lmwg.
+#   @staticmethod
+#   def varoptions():
+#      opts={'TSA':'TSA', 'PREC':'PREC','ASA':'ASA'}
+#      return opts
 
 class basic_pole_variable(basic_plot_variable):
     """represents a typical variable that reduces the latitude axis."""

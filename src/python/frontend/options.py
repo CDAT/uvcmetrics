@@ -156,6 +156,9 @@ class Options():
          self._opts[dictkey][i]['type'] = dictkey # ensure this one is at least set.
          kvs = data[i].split(',')
          for k in kvs:
+            if '=' not in k:
+               print 'All options need specified as {option}={value}. No equal sign in option - ', k
+               quit()
             key, value = k.split('=')
             if key in defkeys:
                if key == 'climo':
@@ -641,9 +644,57 @@ class Options():
             self._opts['times'] = self._opts['times']+slist
 
 
+def make_ft_dict(models):
+   model_dict = {}
+   index = 0
+
+   for i in range(len(models)):
+      key = 'model%s' % index
+      if models[i]._name == None: # just add it if it has no name
+         model_dict[key] = {}
+         model_dict[key]['name'] = None
+         if models[i]._climos == 'yes':
+            model_dict[key]['climos'] = models[i]
+            model_dict[key]['raw'] = None
+         else:
+            model_dict[key]['climos'] = None
+            model_dict[key]['raw'] = models[i]
+         index = index + 1
+      else: # it has a name. have we seen it already?
+         name = models[i]._name
+         model_names = [model_dict[x]['name'] for x in model_dict.keys()]
+         if name in model_names: # we've seen it before
+            print 'Found %s in model_names weve seen already.' % name
+            for j in model_dict.keys():
+               if model_dict[j]['name'] == name:
+                  if models[i]._climos == 'yes':
+                     model_dict[j]['climos'] = models[i]
+                  else:
+                     model_dict[j]['raw'] = models[i]
+         else:
+            model_dict[key] = {}
+            model_dict[key]['name'] = name
+            if models[i]._climos == 'yes':
+               model_dict[key]['climos'] = models[i]
+               model_dict[key]['raw'] = None
+            else:
+               model_dict[key]['raw'] = models[i]
+               model_dict[key]['climos'] = None
+            index = index +1
+            
+   return model_dict
+
 
 if __name__ == '__main__':
    o = Options()
    o.processCmdLine()
+   from metrics.fileio.findfiles import *
    print o._opts
+   modelfts = []
+   for i in range(len(o['model'])):
+      modelfts.append(path2filetable(o, modelid=i))
+   model_dict = make_ft_dict(modelfts)
+   for i in model_dict.keys():
+      print 'key: %s - %s' % (i, model_dict[i])
+
 

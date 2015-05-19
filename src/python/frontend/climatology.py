@@ -22,7 +22,8 @@ from cdutil.times import Seasons
 from pprint import pprint
 from metrics.frontend.options import *
 # For psutil, see https://github.com/giampaolo/psutil ...
-import cProfile, time, resource, psutil
+# import psutil # used only for memory profiling
+import cProfile, time, resource
 
 class climatology_variable( reduced_variable ):
     def __init__(self,varname,filetable,seasonname='ANN'):
@@ -107,6 +108,9 @@ def compute_and_write_climatologies_keepvars( varkeys, reduced_variables, season
     print "writing climatology file for",case,variant,season
     if variant!='':
         variant = variant+'_'
+    print 'case: ',case
+    print 'variant: ', variant
+    print 'season: ', season
     filename = case + variant + season + "_climo.nc"
     # ...actually we want to write this to a full directory structure like
     #    root/institute/model/realm/run_name/season/
@@ -154,8 +158,8 @@ def compute_and_write_climatologies( varkeys, reduced_variables, season, case=''
             pmemusg = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss # "maximum resident set size"
             pmemusg = pmemusg / 1024./1024.  # On Linux, should be 1024 for MB
             #print "jfp   peak memory",pmemusg,"MB (GB on Linux)"
-            process = psutil.Process(os.getpid())
-            mem = process.get_memory_info()[0] / float(2**20)
+            #requires psutil process = psutil.Process(os.getpid())
+            #requires psutil mem = process.get_memory_info()[0] / float(2**20)
             #print "jfp   process memory",mem,"MB"
         else:
             continue
@@ -192,14 +196,17 @@ def compute_and_write_climatologies( varkeys, reduced_variables, season, case=''
         for attr,val in var._file_attributes.items():
             if not hasattr( g, attr ):
                 setattr( g, attr, val )
-    g.season = season
-    g.close()
+    if firsttime:
+        print "ERROR, no variables found.  Did you specify the right input data?"
+    else:
+        g.season = season
+        g.close()
     return case
 
 def climo_driver(opts):
     """ Test driver for setting up data for plots"""
     # This script should just generate climos 
-    opts['plots'] = False
+    opts['output']['plots'] = False
     datafiles1 = dirtree_datafiles(opts, modelid = 0)
     filetable1 = basic_filetable(datafiles1, opts)
 
@@ -217,6 +224,7 @@ def climo_driver(opts):
        print 'Defaulting to all seasons'
        cseasons = ['ANN','DJF','MAM','JJA','SON',
                    'JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC']
+    
 
     #cseasons = ['ANN', 'DJF', 'JJA' ] 
     #cseasons = ['JAN']
@@ -245,14 +253,15 @@ def climo_driver(opts):
         #varkeys = varkeys[0:2]  # quick version for testing
 
         casename = ''
-        if opts['dsnames'] != []:
-           casename = opts['dsnames'][0]
+        if opts['model'][0]['name'] != None:
+           casename = opts['model'][0]['name']
            print 'Using ', casename,' as dataset name'
-        if opts['outputdir'] is not None and opts['outputdir']!='':
-            outdir = opts['outputdir']
+        if opts['output']['outputdir'] is not None and opts['output']['outputdir']!='':
+            outdir = opts['output']['outputdir']
         else:
             outdir = ''
         outdir = os.path.join(outdir, 'climos')
+        print 'casename: ', casename
         if not os.path.isdir(outdir):
             try:
                os.mkdir(outdir) # processOptions() verifies up to the /climos part, so make /climos now
