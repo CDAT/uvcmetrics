@@ -47,8 +47,8 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
         # ... assumes noleap calendar, returns time in days.
         init_red_tbounds = numpy.array( season, dtype=numpy.int32 )
         fileout = fileout_template.replace('XXX',seasonname)
-        initialize_redfile_from_datafile( fileout, varnames, datafilenames[0], dt,
-                                          init_red_tbounds )
+        out_varnames = initialize_redfile_from_datafile( fileout, varnames, datafilenames[0], dt,
+                                                         init_red_tbounds )
         g = cdms2.open( fileout, 'r+' )
         redfilenames.append(fileout)
         redfiles[fileout] = g
@@ -57,7 +57,7 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
         redtime.calendar = calendar
         redtime_wts = g['time_weights']
         redtime_bnds = g[ g.getAxis('time').bounds ]
-        redvars = [ g[varn] for varn in varnames ]
+        redvars = [ g[varn] for varn in out_varnames ]
 
     update_time_avg_from_files( redvars, redtime_bnds, redtime_wts, datafilenames,
                                 fun_next_tbounds = (lambda rtb,dtb,dt=dt: rtb),
