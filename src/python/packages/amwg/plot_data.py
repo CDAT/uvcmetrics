@@ -520,6 +520,11 @@ def test_driver( path1, path2=None, filt2=None ):
                 and (zax is None or len(zrv)==0):
                 continue
             filename = ps._strid+"_test.nc"
+            value=0
+            cdms2.setNetcdfShuffleFlag(value) ## where value is either 0 or 1
+            cdms2.setNetcdfDeflateFlag(value) ## where value is either 0 or 1
+            cdms2.setNetcdfDeflateLevelFlag(value) ## where value is a integer between 0 and 9 included
+
             g = cdms2.open( filename, 'w' )    # later, choose a better name and a path!
             # Much more belongs in g, e.g. axis and graph names.
             if xax is not None and len(xrv)>0:

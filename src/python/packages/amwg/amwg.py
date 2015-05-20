@@ -1791,7 +1791,7 @@ class amwg_plot_set9(amwg_plot_spec):
     and enter the file name.  Repeat this for dataset 2 and then apply.
     Example script
     diags.py --model path=$HOME/uvcmetrics_test_data/cam35_data/,climos=yes 
-    --model path=$HOME/uvcmetrics_test_data/cam35_data/,climos=yes 
+    --obs path=$HOME/uvcmetrics_test_data/obs_data/,filter='f_startswith("NCEP")',climos=yes 
     --outputdir $HOME/Documents/Climatology/ClimateData/diagout/ 
     --package AMWG --sets 9 --seasons JAN --plots yes  --vars T
     """
@@ -1919,8 +1919,8 @@ class amwg_plot_set10(amwg_plot_spec, basic_id):
     its y-axis is the specified variable.  The data presented is a climatological mean - i.e.,
     time-averaged with times restricted to the specified month.
     Example script:
-    diags.py --model path=$HOME/uvcmetrics_test_data/cam35_data/,climos=yes 
-    --obs path=$HOME/uvcmetrics_test_data/obs_data/,filter='f_startswith("NCEP")',climos=yes 
+    diags.py --model path=$HOME/uvcmetrics_test_data/cam35_data/,climos=yes \
+    --obs path=$HOME/uvcmetrics_test_data/obs_data/,filter='f_startswith("NCEP")',climos=yes \
     --outputdir $HOME/Documents/Climatology/ClimateData/diagout/ --package AMWG --sets 10 --seasons JAN --plots yes --vars T
     """
     # N.B. In plot_data.py, the plotspec contained keys identifying reduced variables.
@@ -2014,7 +2014,7 @@ class amwg_plot_set11(amwg_plot_spec):
     diags.py --model path=$HOME/uvcmetrics_test_data/cam35_data/,climos=yes 
     --obs path=$HOME/uvcmetrics_test_data/obs_data/,filter='f_startswith("CERES-EBAF")',climos=yes 
     --outputdir $HOME/Documents/Climatology/ClimateData/diagout/ --package AMWG --sets 11 --seasons JAN --plots yes  --vars LWCF """
-    name = '11 (Experimental, doesnt work with GUI) - Pacific annual cycle, Scatter plots'
+    name = '11 - Pacific annual cycle, Scatter plots'
     number = '11'
     def __init__( self, model, obs, varid, seasonid='ANN', region=None, aux=None ):
         filetable1, filetable2 = self.getfts(model, obs)
@@ -2034,16 +2034,24 @@ class amwg_plot_set11(amwg_plot_spec):
         self.seasons = ['ANN', 'DJF', 'JJA']
         self.vars = ['LWCF', 'SWCF']
         
+        self.ft_ids = {}
+        for dt, ft in zip(self.datatype, self.filetables):
+            fn = ft._files[0]
+            self.ft_ids[dt] = fn.split('/')[-1:][0]
+        #print self.ft_ids
+        
         self.plot_ids = []
         vars_id = '_'.join(self.vars)
-        for dt in self.datatype:
-            for season in self.seasons:
+        for season in self.seasons:
+            for dt in self.datatype:     
                 plot_id = '_'.join([dt,  season])
                 self.plot_ids += [plot_id]
+        #print self.plot_ids
         
         self.plotall_id = '_'.join(self.datatype + ['Warm', 'Pool'])
         if not self.computation_planned:
             self.plan_computation( model, obs, varid, seasonid )
+
     def plan_computation( self, model, obs, varid, seasonid ):
         filetable1, filetable2 = self.getfts(model, obs)
         self.computation_planned = False
@@ -2051,21 +2059,28 @@ class amwg_plot_set11(amwg_plot_spec):
         ft1_valid = False
         ft2_valid = False
         if filetable1 is not None and filetable2 is not None:
-            ft1 = filetable1.find_files(self.vars[0])
-            ft2 = filetable2.find_files(self.vars[1])
-            ft1_valid = ft1 is not None and ft1!=[]    # true iff filetable1 uses hybrid level coordinates
-            ft2_valid = ft2 is not None and ft2!=[]    # true iff filetable2 uses hybrid level coordinates
+            #the filetables must contain the variables LWCF and SWCF
+            ft10 = filetable1.find_files(self.vars[0])
+            ft11 = filetable1.find_files(self.vars[1])
+            ft20 = filetable2.find_files(self.vars[0])
+            ft21 = filetable2.find_files(self.vars[1])
+            ft1_valid = ft10 is not None and ft10!=[] and ft11 is not None and ft11!=[] 
+            ft2_valid = ft20 is not None and ft20!=[] and ft21 is not None and ft21!=[]  
         else:
             print "ERROR: user must specify 2 data files"
             return None
         if not ft1_valid or not ft2_valid:
             return None
-        VIDs = []
-        for ft in self.filetables:
-            for season in self.seasons:
+
+        VIDs = {}
+        for season in self.seasons:
+            for dt, ft in zip(self.datatype, self.filetables):
+                
+                pair = []
                 for var in self.vars:
                     VID = rv.dict_id(var, season, ft)
                     VID = id2str(VID)
+                    pair += [VID]
                     #print VID
                     if ft == filetable1:
                         RF = ( lambda x, vid=VID:x)
@@ -2076,37 +2091,109 @@ class amwg_plot_set11(amwg_plot_spec):
                                            season=cdutil.times.Seasons(season), 
                                            reduction_function=RF)
                     self.reduced_variables[VID] = RV      
-                    VIDs += [VID]              
-        #pdb.set_trace()
-        #setup the rdeuced variable pairs
-        self.rv_pairs = []
-        i = 0
-        while i <= 10:
-            #print VIDs[i], VIDs[i+1]
-            self.rv_pairs += [(VIDs[i], VIDs[i+1])]   #( self.reduced_variables[VIDs[i]], self.reduced_variables[VIDs[i+1]] )]
-            i += 2
+                ID = dt + '_' + season
+                VIDs[ID] = pair              
+                
+        #create a line as a derived variable
+        self.derived_variables = {}
+        xline = cdms2.createVariable([0., 120.])
+        xline.id = 'LWCF'
+        yline = cdms2.createVariable([0., -120.])
+        yline.id = 'SWCF'
+        yline.units = 'Wm-2'             
+        self.derived_variables['LINE'] = derived_var(vid='LINE',  func=create_yvsx(xline, yline, stride=1))  #inputs=[xline, yline],
         
         self.single_plotspecs = {}
         self.composite_plotspecs[self.plotall_id] = []
         self.compositeTitle = self.vars[0] + ' vs ' + self.vars[1]
-        for i, plot_id in enumerate(self.plot_ids):
-            title = plot_id#.split('_')[1]
-            #zvars, z2vars = self.reduced_variables[VIDs[i]], self.reduced_variables[VIDs[i+1]]
-            xVID, yVID = self.rv_pairs[i]
-            #print xVID, yVID z2rangevars=[-120., 0.], zrangevars=[0., 120.], z2vars = [yVID],
+        SLICE = slice(0, None, 10) #return every 10th datum
+        for plot_id in self.plot_ids:
+            title = plot_id
+            xVID, yVID = VIDs[plot_id]
+            #print xVID, yVID 
             self.single_plotspecs[plot_id] = plotspec(vid = plot_id, 
                                                       zvars=[xVID], 
-                                                      zfunc = (lambda x: x),
+                                                      zfunc = (lambda x: x.flatten()[SLICE]),
                                                       zrangevars={'xrange':[0., 120.]},
                                                       z2vars = [yVID],
-                                                      z2func = (lambda x: x),
+                                                      z2func = (lambda x: x.flatten()[SLICE]),
                                                       z2rangevars={'yrange':[-120., 0.]},
                                                       plottype = 'Scatter', 
                                                       title = title,
-                                                      overplotline = True)
+                                                      overplotline = False)
+        self.single_plotspecs['DIAGONAL_LINE'] = plotspec(vid = 'LINE_PS', 
+                                                          zvars=['LINE'], 
+                                                          zfunc = (lambda x: x),
+                                                          plottype = 'Yxvsx',
+                                                          zlinecolor = 242,
+                                                          title='', 
+                                                          overplotline = False)
 
-        self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
+        self.composite_plotspecs = {}
+        plotall_id = []
+        for plot_id in self.plot_ids:
+            ID = plot_id + '_with_line'
+            self.composite_plotspecs[ID] =  (plot_id, 'DIAGONAL_LINE' )
+            plotall_id += [ID]
+        self.composite_plotspecs[self.plotall_id] = plotall_id
         self.computation_planned = True
+        #pdb.set_trace()
+    def customizeTemplates(self, templates):
+        """Theis method does what the title says.  It is a hack that will no doubt change as diags changes."""
+        (cnvs1, tm1), (cnvs2, tm2) = templates
+        #pdb.set_trace()
+        tm2.yname.priority=0
+        tm2.xname.priority=0
+        tm2.title.y=.98
+
+        ly = .96      
+        xpos = {'model':.15, 'obs':.6}  
+        for key in self.ft_ids.keys():
+            text = cnvs2.createtext()
+            text.string = self.ft_ids[key]
+            text.x = xpos[key]
+            text.y = ly
+            text.height = 12
+            cnvs2.plot(text, bg=1)  
+      
+        
+        #horizontal labels
+        th=cnvs2.createtextorientation(None, tm2.xlabel1.textorientation)
+        th.height=8
+        tm2.xlabel1.textorientation = th
+        #vertical labels
+        
+        tv=cnvs2.createtextorientation(None, tm2.ylabel1.textorientation)
+        tv.height=8
+        tm2.ylabel1.textorientation = tv    
+        
+        return tm1, tm2    
+    
+        #the following is dead code that I'm keeping for now
+        #because it has some info on how to change elements
+        #of a template  
+        #pdb.set_trace()
+        #plot diagonal lines
+        if "UVC_TMP_LINE" not in vcs.listelements("line"):
+            LINE = cnvs1.createline('UVC_TMP_LINE')
+        else:
+            LINE = cnvs1.getline("UVC_TMP_LINE")
+        LINE.width = 3.0
+        LINE.type = 'solid'
+        LINE.color = 242
+        tm1.line1.x1 = tm1.box1.x1
+        tm1.line1.y1 = tm1.box1.y2
+        tm1.line1.x2 = tm1.box1.x2        
+        tm1.line1.y2 = tm1.box1.y1
+        tm1.line1.line = LINE
+        tm1.line1.priority = 1
+        tm2.line1.x1 = tm2.box1.x1
+        tm2.line1.y1 = tm2.box1.y2
+        tm2.line1.x2 = tm2.box1.x2
+        tm2.line1.y2 = tm2.box1.y1
+        tm2.line1.line = LINE
+        tm2.line1.priority = 1     
+        return tm1, tm2  
     def _results(self, newgrid=0):
         #pdb.set_trace()
         results = plot_spec._results(self, newgrid)
@@ -2116,36 +2203,23 @@ class amwg_plot_set11(amwg_plot_spec):
         psv = self.plotspec_values
     
         #finalize the individual plots
-        for key in self.plot_ids:
-            val = psv[key]
-            val.finalize()
-        
-        #force an order in the multi plot to compare columns
-        vals = psv[self.plotall_id]
-        newvals = []
-        order = [3,0,4,1,5,2]
-        for i in order:
-            plot_id = self.plot_ids[i]
-            print plot_id
-            for val in vals:
-                if plot_id != val.title:
-                    continue
+        for key,val in psv.items():
+            if type(val) in [tuple, list]:
+                #these are composites of the others
+                pass
+            else:
                 val.finalize()
-                newvals += [val]
-                break
-        self.plotspec_values[self.plotall_id] = newvals
-        #pdb.set_trace()
-            
+                val.presentation.linecolor = val.linecolors[0]
         return self.plotspec_values[self.plotall_id]
-
+    
 class amwg_plot_set12(amwg_plot_spec):
     """ Example script: 
-        diags.py --model path=$HOME/uvcmetrics_test_data/esg_data/f.e11.F2000C5.f09_f09.control.001/,climos=yes 
-        --obs path=$HOME/uvcmetrics_test_data/obs_data/,filter='f_startswith("RAOBS")',climos=yes 
-        --outputdir $HOME/Documents/Climatology/ClimateData/diagout/ --package AMWG --sets 12 --seasons JAN 
+        diags.py --model path=$HOME/uvcmetrics_test_data/esg_data/f.e11.F2000C5.f09_f09.control.001/,climos=yes \
+        --obs path=$HOME/uvcmetrics_test_data/obs_data/,filter='f_startswith("RAOBS")',climos=yes \
+        --outputdir $HOME/Documents/Climatology/ClimateData/diagout/ --package AMWG --sets 12 --seasons JAN \
         --plots yes --vars T --varopts='SanFrancisco_CA'
     """
-    name = '12 (Experimental, doesnt work with GUI) - Vertical Profiles at 17 selected raobs stations'
+    name = '12 - Vertical Profiles at 17 selected raobs stations'
     number = '12'
 
     def __init__( self, model, obs, varid, seasonid='ANN', region=None, aux=None ):
@@ -2261,6 +2335,7 @@ class amwg_plot_set12(amwg_plot_spec):
                                                                zvars = [VIDmodel],                                                   
                                                                zfunc = (lambda z: z),
                                                                zrangevars={'xrange':[1000., 0.]},
+                                                               zlinetype='solid',
                                                                plottype = "Yxvsx", 
                                                                title = month)
 
@@ -2271,7 +2346,8 @@ class amwg_plot_set12(amwg_plot_spec):
                                                              zvars  = [VIDobs],
                                                              zfunc = (lambda z: z),
                                                              zrangevars={'xrange':[1000., 0.]}, 
-                                                             plottype='Scatter', title="")
+                                                             zlinetype='dot',
+                                                             plottype="Yxvsx", title="")#'Scatter', title="")
         self.composite_plotspecs = {}
         plotall_id = []
         for plot_id in self.plot_ids:
@@ -2426,6 +2502,7 @@ class amwg_plot_set12(amwg_plot_spec):
         #pdb.set_trace()
         limits = {}
         for key,val in psv.items():
+            #pdb.set_trace()
             if type(val) is not list and type(val) is not tuple: 
                 val=[val]
             for v in val:
@@ -2438,10 +2515,10 @@ class amwg_plot_set12(amwg_plot_spec):
  
                     #save the limits for further processing
                     limits[key] = [xMIN, xMAX, yMIN, yMAX]    
-                    if v.ptype == 'Scatter':
-                        v.presentation.markersize = 10
+
                     #flip the plot from y vs x to x vs y
                     v.presentation.flip = True
+                    v.presentation.line = v.linetypes[0]
         for key, val in self.composite_plotspecs.items():
             if key != 'all_seasons':           
                 model, obs = val
@@ -2449,12 +2526,14 @@ class amwg_plot_set12(amwg_plot_spec):
                 ranges = getRanges(limits, model, obs)
                 if None not in ranges:
                     #set the ranges to the same in each presentation
+                    #pdb.set_trace()
                     if model is not None and psv[model] is not None:
                         psv[model].presentation = setRanges(psv[model].presentation, ranges)
                     if obs is not None and psv[obs] is not None:
                         psv[obs].presentation = setRanges(psv[obs].presentation, ranges)
 
         psvs = [ psv for psv in self.plotspec_values[self.plotall_id] if None not in psv ]
+        #pdb.set_trace()
         return psvs
     
 class amwg_plot_set13(amwg_plot_spec):
@@ -2652,10 +2731,10 @@ class amwg_plot_set13(amwg_plot_spec):
 
 class amwg_plot_set14(amwg_plot_spec):
     """ Example script
-      diags.py --model path=$HOME/amwg_diagnostics/cam35_data/,filter='f_startswith("ccsm")',climos=yes 
-    --model path=$HOME/uvcmetrics_test_data/cam35_data/,climos=yes 
-    --obs path=$HOME/uvcmetrics_test_data/obs_data/,filter='f_startswith("NCEP")',climos=yes 
-    --outputdir $HOME/Documents/Climatology/ClimateData/diagout/ --package AMWG --sets 14 
+      diags.py --model path=$HOME/amwg_diagnostics/cam35_data/,filter='f_startswith("ccsm")',climos=yes \
+    --model path=$HOME/uvcmetrics_test_data/cam35_data/,climos=yes \
+    --obs path=$HOME/uvcmetrics_test_data/obs_data/,filter='f_startswith("NCEP")',climos=yes \
+    --outputdir $HOME/Documents/Climatology/ClimateData/diagout/ --package AMWG --sets 14 \
     --seasons JAN --plots yes --vars T Z3 --varopts '200 mbar' """
     name = '14 - Taylor diagrams'
     number = '14'

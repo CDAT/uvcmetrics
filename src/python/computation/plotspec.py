@@ -105,10 +105,10 @@ class dv(derived_var):
 class plotspec(basic_id):
     def __init__(
         self, vid,
-        zvars=[], zfunc=None, zrangevars=[], zrangefunc=None,
-        z2vars=[], z2func=None, z2rangevars=[], z2rangefunc=None,
-        z3vars=[], z3func=None, z3rangevars=[], z3rangefunc=None,
-        z4vars=[], z4func=None, z4rangevars=[], z4rangefunc=None,
+        zvars=[], zfunc=None, zrangevars=[], zrangefunc=None, zlinetype='solid', zlinecolor=241,
+        z2vars=[], z2func=None, z2rangevars=[], z2rangefunc=None, z2linetype='solid', z2linecolor=241,
+        z3vars=[], z3func=None, z3rangevars=[], z3rangefunc=None, z3linetype='solid', z3linecolor=241,
+        z4vars=[], z4func=None, z4rangevars=[], z4rangefunc=None, z4linetype='solid', z4linecolor=241,
         plottype='table',
         title = None,
         source = '',
@@ -164,21 +164,29 @@ class plotspec(basic_id):
         self.zvars = zvars
         self.zrangevars = zrangevars
         self.zrangefunc = zrangefunc
+        self.zlinetype = zlinetype
+        self.zlinecolor = zlinecolor
         
         self.z2func = z2func
         self.z2vars = z2vars
         self.z2rangevars = z2rangevars
         self.z2rangefunc = z2rangefunc
+        self.z2linetype = z2linetype
+        self.z2linecolor = z2linecolor
         
         self.z3func = z3func
         self.z3vars = z3vars
         self.z3rangevars = z3rangevars
         self.z3rangefunc = z3rangefunc
+        self.z3linetype = z3linetype
+        self.z3linecolor = z3linecolor
         
         self.z4func = z4func
         self.z4vars = z4vars
         self.z4rangevars = z4rangevars
         self.z4rangefunc = z4rangefunc
+        self.z4linetype = z4linetype
+        self.z4linecolor = z4linecolor
         
         self.plottype = plottype
         if title is not None:
