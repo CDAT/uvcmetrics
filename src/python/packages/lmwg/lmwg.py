@@ -1881,9 +1881,6 @@ class lmwg_plot_set5(lmwg_plot_spec):
    def _list_variables( model, obs ):
       varlist = ['Regional_Hydrologic_Cycle', 'Global_Biogeophysics', 'Global_Carbon_Nitrogen']
       model_dict = make_ft_dict(model)
-#      if len(model_dict.keys()) >= 2:
-#         varlist.extend( [ 'Regional_Hydrologic_Cycle_Difference', 'Global_Biogeophysics_Difference', 
-#                 'Global_Carbon_Nitrogen_Difference'])
       return varlist
 
    @staticmethod
@@ -1893,8 +1890,6 @@ class lmwg_plot_set5(lmwg_plot_spec):
       for v in varlist:
          vlist[v] = lwmg_set5_variable
       return vlist
-#      vlist = {vn:basic_plot_variable for vn in lmwg_plot_set5._list_variables(model, obs) }
-#      return vlist
 
    def plan_computation( self, model, obs, varid, seasonid, region=None, aux=None):
 
@@ -1988,7 +1983,7 @@ class lmwg_plot_set5(lmwg_plot_spec):
                for r in defines.all_regions.keys():
                   self.derived_variables[v+'_'+r+'_ft2'] = derived_var(vid=v+'_'+r+'_ft2', inputs=[v+'_ft2'], special_values=[r, lw1], func=reduceRegion)
 
-         if aux == 'difference':
+         if aux == 'difference' and num_models == 2:
             self.difference = 1
             for v in self.display_vars:
                for r in defines.all_regions.keys():
@@ -2032,7 +2027,7 @@ class lmwg_plot_set5(lmwg_plot_spec):
                self.reduced_variables[v+'_ft1'] = albedos_redvar(raw0, 'SINGLE', self.albedos[v], region=region, weights=global_lw0)
                if num_models == 2 and raw1 != None:
                   self.reduced_variables[v+'_ft2'] = albedos_redvar(raw1, 'SINGLE', self.albedos[v], region=region, weights=global_lw1)
-            if 'difference' in aux:
+            if 'difference' in aux and num_models == 2:
                print 'CALLING AMINUSB_2AX --- NEEDS INVESTIGATED'
                self.derived_variables[v+'_diff'] = derived_var(vid=v+'_diff', inputs=[v+'_ft1', v+'_ft2'], func = aminusb_2ax)
 
@@ -2052,7 +2047,7 @@ class lmwg_plot_set5(lmwg_plot_spec):
                self.reduced_variables['CO2_PPMV_ft2'] = co2ppmvTrendRegionSingle(raw1, region=region, weights=global_lw1)
                self.reduced_variables['RNET_ft2'] = rnet_redvar(raw1, 'SINGLE', region=region, weights=global_lw1)
 
-         if 'Difference' in aux:
+         if 'Difference' in aux and num_models == 2:
             self.difference = 1
             self.derived_variables['ET_diff'] = derived_var(vid='ET_diff', inputs=['ET_ft1', 'ET_ft2' ], func=aminusb)
             # Is this correct, or do these need to do the math in a different order?
@@ -2161,12 +2156,15 @@ class lmwg_plot_set5(lmwg_plot_spec):
             print '\t\t\t QVEGT = canopy transpiration ((mm/y))'
             print '\t\t\t QSOIL = ground evaporation ((mm/y))'
             print '\t\t\t TOTRUNOFF = Runoff:qover+qdrai+qrgwl ((mm/y))'
-            print '%-*s\tPREC(mm/y)\t\t\tQVEGE(mm/y)\t\tQVEGEP(%%)\t\t\tQVEGT\t\t\tQSOIL(mm/y)\t\tTOTRUNOFF(mm/y)' % ((maxl+3), 'Region')
+            if self.difference == 1:
+               print '%-*s\tPREC(mm/y)\t\tQVEGE(mm/y)\tQVEGEP(%%)\t\tQVEGT\t\tQSOIL(mm/y)\tTOTRUNOFF(mm/y)' % ((maxl+3), 'Region')
+            else:
+               print '%-*s\tPREC(mm/y)\t\t\tQVEGE(mm/y)\t\tQVEGEP(%%)\t\t\tQVEGT\t\t\tQSOIL(mm/y)\t\tTOTRUNOFF(mm/y)' % ((maxl+3), 'Region')
 
 
             if self.twosets == 1:
                if self.difference == 1:
-                  print '\t\t\t\t\t\tdiff\t\tdiff\t\tdiff\t\tdiff\t\tdiff\t\tdiff'
+                  print '\t\t\t\tdiff\tdiff\tdiff\tdiff\tdiff\tdiff'
                else:
                   print '\t\t\t\t\t\tcase1\t\tcase2\t\tcase1\t\tcase2\t\tcase1\t\tcase2\t\tcase1\t\tcase2\t\tcase1\t\tcase2\t\tcase1\t\tcase2'
             else:
@@ -2622,15 +2620,6 @@ class lmwg_plot_set6(lmwg_plot_spec):
 
 
 
-###############################################################################
-###############################################################################
-### These are not implemented yet                                           ###
-###############################################################################
-###############################################################################
-class lmwg_plot_set7(lmwg_plot_spec):
-#   name = '7 - Line plots, tables, and maps of RTM river flow and discharge to oceans'
-   number = '7'
-   pass
 
 class lmwg_plot_set9(lmwg_plot_spec):
    name = '9 - Contour plots and statistics for precipitation and temperature. Statistics include DJF, JJA, and ANN biases, and RMSE, correlation and standard deviation of the annual cycle relative to observations'
@@ -2674,18 +2663,6 @@ class lmwg_plot_set9(lmwg_plot_spec):
          vlist[v] = lmwg_set9_variable
       vlist['Tables'] = basic_plot_variable
       return vlist
-#
-#      def retvarlist(self):
-#         return {'TSA':'TSA', 'PREC':'PREC', 'ASA':'ASA'}
-#
-#      for vn in lmwg_plot_set9._list_variables(model, obs):
-#         vlist[vn] = basic_plot_variable
-#         if vn != 'Tables':
-#            vlist[vn].varoptions = (lambda x: {'TSA':'TSA', 'PREC':'PREC', 'ASA':'ASA'})
-#            retvarlist
-#         else:
-#            print 'Not assigning retvarlist to tables'
-#         
 
    def plan_computation(self, model, obs, varid, seasonid, region, aux=None):
       
@@ -2714,13 +2691,14 @@ class lmwg_plot_set9(lmwg_plot_spec):
 
       obs0 = obs[0]
       # This one always has 3 plots, assuming num_models==2 and num_obs >= 1
-
       # Actual variable passed in via varopts. 
 
       if 'Seasonal' in varid:
+         print 'SEASONAL BIAS NOT IMPLEMENTED YET'
          pass
 
       elif 'Table' in varid:
+         print 'TABLE VIEW NOT IMPLEMENTED YET'
          pass
       else:
          if 'RMSE' in varid:
@@ -2739,6 +2717,9 @@ class lmwg_plot_set9(lmwg_plot_spec):
          self.composite_plotspecs[pname] = []
          ft = (climo0 if climo0 is not None else raw0)
          ft2 = (climo1 if climo1 is not None else raw1)
+         print 'PASSING RAW DATA'
+         ft = raw0
+         ft2 = raw1
          # Calculate the reduced varaibles first. This is just a reduce2latlon_seasonal(season) for the variables
          if aux == 'TSA':
             name1 = 'TSA_'+fn+'_1'
@@ -2746,12 +2727,10 @@ class lmwg_plot_set9(lmwg_plot_spec):
             obs1 = 'TSA_'+fn+'_obs'
             namemap = 'TSA_'+fn+'_MAP'
             self.reduced_variables[name1] = reduced_variable(variableid = aux,
-               filetable = ft,
-               reduced_var_id = name1,
+               filetable = ft, reduced_var_id = name1,
                reduction_function = (lambda x, vid: dummy(x, vid))) #reduce2latlon_seasonal(x, season=season, region=None, vid=vid)))
             self.reduced_variables[name2] = reduced_variable(variableid = aux,
-               filetable = ft2,
-               reduced_var_id = name2,
+               filetable = ft2, reduced_var_id = name2,
                reduction_function = (lambda x, vid: dummy(x, vid))) # reduce2latlon_seasonal(x, season=season, region=None, vid=vid)))
             if aux in obs0.list_variables():
                vname = aux
@@ -2763,8 +2742,7 @@ class lmwg_plot_set9(lmwg_plot_spec):
                print 'Couldnt find variable ',aux,' or equivalent in ', obs0.list_variables()
                return
             self.reduced_variables[obs1] = reduced_variable(variableid = vname,
-               filetable=obs0,
-               reduced_var_id = obs1,
+               filetable=obs0, reduced_var_id = obs1,
                reduction_function = (lambda x, vid: dummy(x, vid))) #reduce2latlon_seasonal(x, season=season, region=None, vid=vid)))
          else:
             if aux == 'PREC':
@@ -2784,8 +2762,7 @@ class lmwg_plot_set9(lmwg_plot_spec):
                   vname = 'PRECIP_LAND'
                   print 'Using PRECIP_LAND from the obs set to compare to PREC calculated'
                self.reduced_variables[obs1] = reduced_variable(variableid = vname,
-                  filetable = obs0,
-                  reduced_var_id = obs1,
+                  filetable = obs0, reduced_var_id = obs1,
                   reduction_function = (lambda x, vid: reduce2latlon_seasonal(x, season=season, region=None, vid=vid)))
             else:
                name1 = 'ASA'+fn+'_1'
@@ -2830,6 +2807,15 @@ class lmwg_plot_set9(lmwg_plot_spec):
             return self.plotspec_values[plot]
 
 
+###############################################################################
+###############################################################################
+###   This is not implemented yet                                           ###
+###############################################################################
+###############################################################################
+class lmwg_plot_set7(lmwg_plot_spec):
+#   name = '7 - Line plots, tables, and maps of RTM river flow and discharge to oceans'
+   number = '7'
+   pass
 
 ###############################################################################
 ###############################################################################
