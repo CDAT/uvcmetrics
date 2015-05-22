@@ -916,9 +916,10 @@ def regrid_without_obs(mv1, mv2):
    if axes1 is None or axes2 is None: 
       return None
 
+   print 'axes1:', axes1
+   print 'axes2:', axes2
    print 'THERES A BUG HERE SOMEWHERE. PRINT AXES LIST TO SEE WHICH ONES ARE T'
    print 'ALSO NEED TO AT LEAST REDUCE/REGRID TO A SINGLE T DIMENSION (OR SAME T DIMENSION)'
-   print 'I HATE THIS CODE'
    mv1new = mv1
    mv2new = mv2
    lat1, idx1 = latAxis2 (mv1)
@@ -1888,7 +1889,7 @@ def adivb(mv1, mv2):
 def dummy2(mv1, mv2):
    return mv1
 def dummy(mv, vid=None):
-#   print 'mv shape passed to dummy: ', mv.shape
+   print '--------> mv shape passed to dummy: ', mv.shape
    return mv
 
 def ab_ratio(mv1, mv2):
