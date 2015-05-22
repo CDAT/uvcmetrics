@@ -4,10 +4,10 @@
 ### This file converts the dictionary file (in this case amwgmaster2.py) to a series of diags.py commands.
 import sys, getopt, os, subprocess
 from metrics.frontend.options import Options
+from metrics.frontend.options import make_ft_dict
 from metrics.fileio.filetable import *
 from metrics.fileio.findfiles import *
 from metrics.packages.diagnostic_groups import *
-from metrics.frontend.amwgmaster import *
 
 
 # The user specified a package; see what collections are available.
@@ -42,25 +42,117 @@ def getCollections(pname):
    print 'The following diagnostic collections appear to be available: %s' %colls
    return colls
 
-def makeTables(modelpath, obspath, outpath, pname, outlog):
-   if pname.upper() == 'AMWG':
-      seasons = diags_collection['1'].get('seasons', ['ANN'])
-      regions = diags_collection['1'].get('regions', ['Global'])
-      if 'NA' in seasons:
-         seasonstr = ''
+def makeTables(collnum, model_dict, obspath, outpath, pname, outlog):
+   seasons = diags_collection[collnum].get('seasons', ['ANN'])
+   regions = diags_collection[collnum].get('regions', ['Global'])
+   vlist = list( set(diags_collection[collnum].keys()) - set(collection_special_vars))
+   aux = ['default']
+
+   num_models = len(model_dict.keys())
+   if vlist == []:
+      print 'varlist was empty. Assuming all variables.'
+      vlist = ['ALL']
+
+   if num_models > 2:
+      print 'Only <=2 models supported for tables'
+      quit()
+
+   raw0 = None
+   raw1 = None
+   climo0 = None
+   climo1 = None
+   cf0 = 'yes' #climo flag
+   cf1 = 'yes'
+   raw0 = model_dict[model_dict.keys()[0]]['raw']
+   climo0 = model_dict[model_dict.keys()[0]]['climos']
+   name0 = model_dict[model_dict.keys()[0]].get('name', 'ft0')
+   if num_models == 2:
+      raw1 = model_dict[model_dict.keys()[1]]['raw']
+      climo1 = model_dict[model_dict.keys()[1]]['climos']
+      name1 = model_dict[model_dict.keys()[1]].get('name', 'ft1')
+
+
+   print 'NEED TO SEE IF --REGIONS ARG TO LAND SET 5 REGIONAL CARES'
+   # This assumes no per-variable regions/seasons. .... See if land set 5 cares
+   seasonstr = '--seasons '+' '.join(seasons)
+   regionstr = '--regions '+' '.join(regions)
+
+   obsstr = ''
+   if obspath != None:
+      obsstr = '--obs path=%s' % obspath
+
+   for v in vlist:
+      ft0 = (climo0 if climo0 is not None else raw0)
+      ft1 = (climo1 if climo1 is not None else raw1)
+      if ft0 == climo0:
+         cf0 = 'yes'
       else:
-         seasonstr = '--seasons '+' '.join(seasons)
-      regionstr = '--regions '+' '.join(regions)
-      cmdline = 'diags-new.py --model path=%s,climos=yes,type=model --obs path=%s,climos=yes,type=obs --set 1 --prefix set1 --package AMWG %s %s --outputdir %s' % (modelpath, obspath, seasonstr, regionstr, outpath)
-      runcmdline(cmdline, outlog)
+         cf0 = 'no'
+      if ft1 == climo1:
+         cf1 = 'yes'
+      else:
+         cf1 = 'no'
+      if v == 'ALL':
+         vstr = ''
+      else:
+         ps0 = ''
+         ps1 = ''
+         if diags_collection[collnum][v].get('options', False) != False:
+            optkeys = diags_collection[collnum][v]['options'].keys()
+            if 'requiresraw' in optkeys and diags_collection[collnum][v]['options']['requiresraw'] == True:
+               ft0 = raw0
+               ft1 = raw1
+               cf0 = 'no'
+               cf1 = 'no'
+               if ft0 == None: 
+                  print 'Variable ', v, 'requires raw data. No raw data provided. Passing'
+                  continue
+               if num_models == 2 and ft1 == None:
+                  print 'Variable ', v, 'requires raw data. No second raw dataset provided. Passing on differences'
+                  continue
+               ps0 = '--model path=%s,climos=no' % (ft0.root_dir())
+               if num_models == 2:
+                  ps1 = '--model path=%s,climos=no' % (ft1.root_dir())
+               # do we also have climos? if so pass both instead.
+               if climo0 != None:
+                  ps0 = '--model path=%s,climos=yes,name=%s --model path=%s,climos=no,name=%s' % (climo0.root_dir(), name0, raw0.root_dir(), name0)
+               if num_models == 2 and climo1 != None:
+                  ps1 = '--model path=%s,climos=yes,name=%s --model path=%s,clmios=no,name=%s' % (climo1.root_dir(), name1, raw1.root_dir(), name1)
+         else:
+            ps0 = '--model path=%s,climos=%s' % (ft0.root_dir(), cf0)
+            if num_models == 2 and ft1 != None:
+               ps1 = '--model path=%s,climos=%s' % (ft1.root_dir(), cf1)
+               
+         vstr = v
+         if diags_collection[collnum][v].get('varopts', False) != False:
+            aux = diags_collection[collnum][v]['varopts']
+
+      # Ok, variable(s) and varopts ready to go. Get some path strings.
+      # Create path strings.
+      if ft0 == None:
+         print 'ft0 was none'
+         continue
+      else:
+         path0str = ps0
+         path1str = ''
+         if num_models == 2 and ft1 != None:
+            path1str = ps1
+         for a in aux:
+            if a == 'default':
+               auxstr = ''
+            else:
+               auxstr = '--varopts '+a
+
+            cmdline = 'diags-new.py %s %s %s --table --set %s --prefix set%s --package %s --vars %s %s %s %s --outputdir %s' % (path0str, path1str, obsstr, collnum, collnum, package, vstr, seasonstr, regionstr, auxstr, outpath)
+            runcmdline(cmdline, outlog)
          
-def generatePlots(modelpath, obspath, outpath, pname, xmlflag, colls=None):
+def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
    # Did the user specify a single collection? If not find out what collections we have
    if colls == None:
       colls = getCollections(pname) #find out which colls are available
 
    # Create the outpath/{package} directory. options processing should take care of 
-   # makign sure outpath exists to get this far.
+   # making sure outpath exists to get this far.
    outpath = os.path.join(outpath,pname.lower())
    if not os.path.isdir(outpath):
       try:
@@ -81,11 +173,8 @@ def generatePlots(modelpath, obspath, outpath, pname, xmlflag, colls=None):
    for collnum in colls:
       print 'Working on collection ', collnum
       # Special case the tables since they are a bit special. (at least amwg)
-      if collnum == '1' and pname.upper() == 'AMWG':
-         makeTables(modelpath, obspath, outpath, pname, outlog)
-         continue
-      if collnum == '5' and pname.upper() == 'LMWG': 
-         makeTables(modelpath, obspath, outpath, pname, outlog)
+      if diags_collection[collnum].get('tables', False) != False:
+         makeTables(collnum, model_dict, obspath, outpath, pname, outlog)
          continue
 
       # deal with collection-specific optional arguments
@@ -105,6 +194,8 @@ def generatePlots(modelpath, obspath, outpath, pname, xmlflag, colls=None):
       if diags_collection[collnum].get('mixed_packages', False) == False:  #no mixed
          # Check global package
          if diags_collection[collnum].get('package', False) != False and diags_collection[collnum]['package'].upper() != pname.upper():
+            print pname.upper()
+            print diags_collection[collnum]['package']
             # skip over this guy
             print 'Skipping over collection ', collnum
             continue
@@ -252,14 +343,7 @@ def setnum( setname ):
         setnumber = setname[index1:index1+index2]
     return setnumber
 
-def list_vars(path, package):
-    opts = Options()
-    opts['path'] = [path]
-    opts['packages'] = [package.upper()]
-
-    dtree1 = dirtree_datafiles(opts, modelid=0)
-    filetable1 = basic_filetable(dtree1, opts)
-
+def list_vars(ft, package):
     dm = diagnostics_menu()
     vlist = []
     for pname in opts['packages']:
@@ -270,19 +354,24 @@ def list_vars(path, package):
         # now to get all variables, we need to extract just the integer from the slist entries.
         snums = [setnum(x) for x in slist.keys()]
         for s in slist.keys():
-            vlist.extend(pclass.list_variables(filetable1, None, s))
+            vlist.extend(pclass.list_variables(ft, ft, s)) # pass ft as "obs" since some of the code is not hardened against no obs fts
     vlist = list(set(vlist))
     return vlist
 
-def postDB(modelpath, dsname, package, host=None):
+### This assumes dsname reflects the combination of datasets (somehow) if >2 datasets are provided
+### Otherwise, the variable list could be off.
+def postDB(fts, dsname, package, host=None):
    if host == None:
       host = 'localhost:8081'
-   vl = list_vars(modelpath, package)
-   vl = ', '.join(vl)
+
+   vl = list_vars(fts[0], package)
+   vlstr = ', '.join(vl)
+   for i in range(len(fts)-1):
+      vl_tmp = list_vars(fts[i+1], package)
+      vlstr = vlstr+', '.join(vl_tmp)
 
    string = '\'{"variables": "'+vl+'"}\''
-   print string
-   ### Need the curl string here
+   print 'Variable list: ', string
    command = "echo "+string+' | curl -d @- \'http://'+host+'/exploratory_analysis/dataset_variables/'+dsname+'/\' -H "Accept:application/json" -H "Context-Type:application/json"'
    print 'Adding variable list to database on ', host
    subprocess.call(command, shell=True)
@@ -290,89 +379,87 @@ def postDB(modelpath, dsname, package, host=None):
 
 ### The driver part of the script
 if __name__ == '__main__':
-   modelpath = ''
-   obspath = ''
-   outpath = ''
-   colls = None
-   dsname = ''
-   hostname = 'acme-dev-0.ornl.gov'
-   package = ''
+   opts = Options()
+   opts.processCmdLine()
+   opts.verifyOptions()
+      
+   package = opts['package'].upper()
+   if package == 'AMWG':
+      from metrics.frontend.amwgmaster import *
+   elif package == 'LMWG':
+      from metrics.frontend.lmwgmaster import *
+
+
+   # do a little (post-)processing on the model/obs passed in.
+   model_fts = []
+   for i in range(len(opts['model'])):
+      model_fts.append(path2filetable(opts, modelid=i))
+
+   model_dict = make_ft_dict(model_fts)
+
+   raw_fts = []
+   climo_fts = []
+   fts = []
+   for i in range(len(model_dict.keys())):
+      raw_fts.append(None)
+      climo_fts.append(None)
+      fts.append(None)
+      item = model_dict[model_dict.keys()[i]]
+      if item['raw'] != None:
+         raw_fts[i] = item['raw']
+      if item['climos'] != None:
+         climo_fts[i] = item['climos']
+      fts[i] = (climo_fts[i] if climo_fts[i] is not None else raw_fts[i])
+
+
+   num_models = len(model_dict.keys())
+   num_obs = len(opts['obs'])
+   if num_obs != 0:
+      obspath = opts['obs'][0]['path']
+   else:
+      obspath = None
+
+   # Set some defaults.
    dbflag = True
    dbonly = False
    xmlflag = True #default to generating xml/netcdf files
-   helpflag = False
-   try:
-      opts, args = getopt.getopt(sys.argv[1:], 'p:m:v:o:c:d:H:b:h',["package=", "model=", "path=", "obs=", "obspath=", "output=", "outpath=", "outputdir=", "collections=", "colls=", "dsname=", "hostname=", "db=", "figures=", "help"])
-   except getopt.GetoptError as err:
-      print 'Error processing command line arguments'
-      print str(err)
+   hostname = 'acme-dev-2.ornl.gov'
+
+   if opts['dbopts'] == 'no':
+      dbflag = False
+      dbonly = False
+   elif opts['dbopts'] == 'only':
+      dbflag = True
+      dbonly = True
+   elif opts['dbopts'] == 'yes':
+      dbflag = True
+      dbonly = False
+
+   outpath = opts['output']['outputdir']
+   colls = opts['sets']
+   if opts['dsname'] == None and dbflag == True:
+      print 'Please provide a dataset name for this dataset for the database with the --dsname option'
       quit()
+   dsname = opts['dsname']
 
-   for opt, arg in opts:
-      if opt in ("-b", "--db"):
-         if arg == 'no':
-            dbflag = False
-            dbonly = False
-         if arg == 'only':
-            dbonly = True
-            dbflag = True
-         if arg == 'yes':
-            dbflag = True
-            dbonly = False
-      elif opt in ("-h", "--help"):
-         helpflag = True
-      elif opt in ("-m", "--model", "--path"):
-         modelpath = arg
-      elif opt in ("-v", "--obs", "--obspath"):
-         obspath = arg
-      elif opt in ("-p", "--package"):
-         package = arg.upper()
-         print package
-      elif opt in ("-o", "--output", "--outputdir", "--outpath"):
-         outpath = arg
-      elif opt in ("-c", "--collections", "--colls"):
-         print arg
-         colls = [ arg ]
-         print colls
-      elif opt in ("-d", "--dsname"):
-         dsname = arg
-      elif opt in ("-H", "--hostname"):
-         hostname = arg
-      elif opt in ("--figures"):
-         if arg == 'only':
-            xmlflag = False
-      else:
-        print "Unknown option ", opt
+   if opts['dbhost'] != None:
+      hostname = opts['dbhost']
 
-   # fewer arguments required
-   if dbflag == True and dbonly == True and (modelpath == '' or dsname == '' or package == ''):
-      print 'Please specify --model, --dsname, and --package with the db update'
-      quit()
+   if opts['output']['xml'] != True:
+      xmlflag = False
 
-   if helpflag == True or (dbonly == False and (modelpath == '' or obspath == '' or outpath == '' or package == '' or dsname == '')):
-      print 'Please specify at least:'
-      print '   --model /path for the model output path (e.g. climos.nc)'
-      print '   --obspath /path for the observation sets'
-      print '   --outpath /path for where to put the png files'
-      print '   --dsname somename for a short name of the dataset for later referencing'
-      print '   --package amwg for the type of diags to run, e.g. amwg or lmwg'
-      print 'Optional:'
-      print '   --hostname=host:port for the hostname where the django app is running' 
-      print '     The default is acme-dev-0.ornl.gov'
-      print '   --colls 3 to just run a subset of the diagnostic collections'
-      print '   --db only -- Just update the database of datasets on {hostname}'
-      print '   --db no -- Do not update the database of datasets on {hostname}'
-      print '   --figures only -- Just generate figures, not xml/netcdf files of the calculated data'
+   if dbflag == True and dbonly == True and (num_models == 0 or dsname == None or package == None):
+      print 'Please specify --model, --dsname, and --package with the db update option'
       quit()
 
    if dbonly == True:
       print 'Updating the remote database only...'
-      postDB(modelpath, dsname, package, host=hostname) 
+      postDB(fts, dsname, package, host=hostname) 
       quit()
 
-   generatePlots(modelpath, obspath, outpath, package, xmlflag, colls=colls)
+   generatePlots(model_dict, obspath, outpath, package, xmlflag, colls=colls)
 
    if dbflag == True:
       print 'Updating the remote database...'
-      postDB(modelpath, dsname, package, host=hostname) 
+      postDB(fts, dsname, package, host=hostname) 
 

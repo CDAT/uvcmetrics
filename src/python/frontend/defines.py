@@ -88,7 +88,8 @@ station_names = ["Ascension_Island","Diego_Garcia","Truk_Island",
                 "Madras_India","DaNang_Vietnam","Yap_Island","Falkland_Islands" ]
 
 all_months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
-all_seasons = all_months+['ANN', 'DJF', 'MAM', 'JJA', 'SON', 'ASO', 'FMA'] # The last 2 were in some obs sets
+just_seasons = ['DJF', 'MAM', 'JJA', 'SON', 'ASO', 'FMA'] # The last 2 were in some obs sets
+all_seasons = all_months+just_seasons+['ANN']
 all_packages = ['lmwg', 'amwg']
 
 
