@@ -1,3 +1,4 @@
+### See master-README for description of this file.
 diags_varlist = {}
 diags_collection = {}
 diags_obslist = {}
@@ -6,59 +7,7 @@ from metrics.frontend.defines import *
 # These are special "variables" that we need to skip over when iterating over real variables. 
 # They are usually flags or parameters for the entire collection.
 # Make sure no actual variables have these names, but that shouldn't be a problem.
-collection_special_vars = ['desc', 'preamble', 'regions', 'seasons', 'package', 'options', 'combined']
-
-
-# There are three sections to this file.
-# The first section (diags_collection) is used to define the diagnostics collections.
-# Each collection starts with an empty dictionary, then has a few basic parameters -
-# 1) desc - a brief (1 or 2 sentences) description of the plot, used to generate an index page
-# 2) preamble - a longer description of the set. used as the introduction before plot links in the classic viewer
-#        preamble is assumed empty if nothing is provided.
-#
-# After that, additional optional arguments that encompass the entire collection can be specified. The additional arguments are:
-# seasons - a collection-level set of seasons. all variables in the collection will iterate over this list of seasons. 
-#           if this is not specified the code will look for seasons in individual variable definitions.
-#           if no seasons are found in individual variable definitions ANN is assumed
-# regions - a collection-level set of regions. all variables in the collection will iterate over this list of regions.
-#           if this is not specified, the code will look for regions in individual variable definitions.
-#           if not regions are found in individual variable definitions, Global is assumed
-# package - a collection-level indicate of what package the plots are from. e.g. AMWG or LMWG
-#           if this is not specified, the code will look for packages in individual variable definitions.
-#           No assumptions are made on package. It must be collection-defined or all variables need to define it
-# options - A dictionary of options specific to the collection. These are passed as command line options to diags.py
-#           The current primary one is:
-#           'logo':'no' - does not draw the UVCDAT logo on output plots.
-# Collection-level Flags:
-#           combined:True - indicates this collection produces combined single image plots which are model, 
-#              then obs, then model-obs. This helps classic viewer. 
-#              Note: This is only for plots that want the 3-pane view. If obs and model data are 
-#              combined on the plot as plot production (e.g. set amwg 10) you don't need to set this.
-# Once any optional additional arguments have been specified, the variables that make up the set are defined.
-# A typical variable entry has the variable name (as found in the obs sets and model output) as a key, then a plottype, 
-# a list of observation sets, and optional paraemeters.
-# Optional parameters include a list of seasons, regions, and variable options, and  specific to a variable
-# All arguments (except plot type) are lists. Here is a complicated example:
-# 
-# diags_collection['example']['Z3'] = {'plottype': '10', 'obs': ['ECMWF_1', 'NCEP_1', 'JRA25_1', 'ERA40_1'], 'varopts':['300', '500'], 'regions':['Global', 'Tropics'], 'seasons':['ANN', 'DJF']}
-# This would create a total of 4*2*2*2 plots (each obs set, each pressure level, each region, and each season).
-# metadiags attempts to group as many of these together as possible for efficient IO
-# A much simpler minimal example would just be:
-# diags_collection['example']['T'] = {'plottype': '5', 'obs':['ECMWF_1']}
- 
-# The second part of the file is a list of variables.
-# A typical entry looks like:
-# diags_varlist['TREFHT'] = {'desc': '2-meter temperature (land) (Northern)'}
-# This is primarily used in web-page creation to have a description for a given variable.
-# Eventually, other metadata about a variable might be included. Note: This section is primarily required
-# because of the lack of consistency in CF-compliance in data sets and observation sets.
-
-# The third part of the file is a list of observatino sets.
-# A typical entry looks like:
-# diags_obslist['HADISST_PD_1'] = {'filekey': 'HADISST_PD', 'desc': 'HadISST/OI.v2 (Present Day) 1999-2008'}
-# This converts the obs set keys specified in the collections sections to a filename key (ie, HADISST_PD* has the data we need)
-# and a description (again for web page generation)
-
+collection_special_vars = ['desc', 'preamble', 'regions', 'seasons', 'package', 'options', 'combined', 'imagesonly', 'tables']
 
 # *** Collection 11 ***
 diags_collection['11'] = {}
@@ -205,6 +154,7 @@ diags_collection['1']['seasons'] = ['DJF', 'JJA', 'ANN']
 diags_collection['1']['package'] = 'AMWG'
 diags_collection['1']['options'] = {'logo':'no'}
 diags_collection['1']['regions'] = ['Global', 'Tropics', 'Southern_Extratropics', 'Northern_Extratropics']
+diags_collection['1']['tables'] = True
 # *** Collection so (southern ocean) (part of Tier 1B) ***
 diags_collection['so'] = {}
 diags_collection['so']['desc'] = 'Tier 1B Diagnostics (Southern Ocean)'
