@@ -105,13 +105,19 @@ class albedos_redvar( reduced_variable ):
    def __init__(self, filetable, fn, varlist, season=None, region=None, flag=None, obs_ft=None, weights=None):
       vname = varlist[0]+'_'+varlist[1]
       duv = derived_var(vname, inputs=varlist, func=ab_ratio)
-      if fn == 'SEASONAL':
+      if fn == None:
+         reduced_variable.__init__(
+            self, variableid=vname,
+            filetable=filetable,
+            reduction_function=(lambda x, vid=None: dummy(x,vid)),
+            duvs={vname: duv})
+      elif fn == 'SEASONAL':
          reduced_variable.__init__(
             self, variableid=vname,
             filetable=filetable,
             reduction_function=(lambda x, vid=None: reduce2latlon_seasonal(x, season=season, region=None, vid=vid)),
             duvs={vname: duv})
-      if fn == 'TREND':
+      elif fn == 'TREND':
          if flag == 'MONTHLY':
             reduced_variable.__init__(
                self, variableid=vname,
@@ -124,66 +130,40 @@ class albedos_redvar( reduced_variable ):
                filetable=filetable,
                reduction_function=(lambda x, vid=None: reduceAnnTrendRegion(x, region, weights=weights, vid=vid)),
                duvs={vname: duv})
-      if fn == 'SINGLE':
+      elif fn == 'SINGLE':
          reduced_variable.__init__(
             self, variableid=vname,
             filetable=filetable,
             reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, weights=weights, single=True, vid=vid)),
             duvs={vname:duv})
-      if fn == 'RMSE':
+      elif fn == 'BIAS':
          reduced_variable.__init__(
             self, variableid=vname,
             filetable=filetable,
-            reduction_function=(lambda x, vid: rmse(x, season, vid=vid)),
+            reduction_function=(lambda x, vid: reduce2latlon_seasonal(x, season=season, vid=vid)),
             duvs={vname:duv})
-      if fn == 'CORR':
-         reduced_variable.__init__(
-            self, variableid=vname,
-            filetable=filetable,
-            reduction_function=(lambda x, vid: correlation(x, season, vid=vid)),
-            duvs={vname:duv})
-      if fn == 'STDDEV':
-         reduced_variable.__init__(
-            self, variableid=vname,
-            filetable=filetable,
-            reduction_function=(lambda x, vid: stddev(x, season, vid=vid)),
-            duvs={vname:duv})
-      if fn == 'BIAS':
-         reduced_variable.__init__(
-            self, variableid=vname,
-            filetable=filetable,
-            reduction_function=(lambda x, vid: seasonal_bias(x, season, vid=vid)),
-            duvs={vname:duv})
-
+      else:
+         print 'Unknown function for albedo_redvar - ', fn
+         quit()
 
 # These could be passed in as snow/rain reduced, but still need to add them and then do more work, so
 # it requires a derived class like this.
 class prec_redvar( reduced_variable ): # only used for set 9
-   def __init__(self, filetable, fn, season=None, region=None, flag=None, obs_ft=None):
+   def __init__(self, filetable, fn, season=None, region=None, flag=None, obs_ft=None, reduced_var_id=None, vid=None):
       duv = derived_var('PREC_A', inputs = ['RAIN', 'SNOW'], func = aplusb)
-      if fn == 'RMSE':
-         reduced_variable.__init__(
-            self, variableid='PREC_A',
-            filetable = filetable,
-            reduction_function=(lambda x, vid: rmse(x, season, vid=vid)), # will need to call reduce2latlon_seasonsl(ANN) first
-         duvs = {'PREC_A':duv})
-      if fn == 'CORR':
-         reduced_variable.__init__(
-            self, variableid='PREC_A',
-            filetable = filetable,
-            reduction_function=(lambda x, vid: correlation(x, season, vid=vid)), # will need to call reduce2latlon_seasonsl(ANN) first
-         duvs = {'PREC_A':duv})
-      if fn == 'STDDEV':
-         reduced_variable.__init__(
-            self, variableid='PREC_A',
-            filetable = filetable,
-            reduction_function=(lambda x, vid: stddev(x, season, vid=vid)), # will need to call reduce2latlon_seasonsl(ANN) first
-         duvs = {'PREC_A':duv})
       if fn == 'BIAS':
          reduced_variable.__init__(
             self, variableid='PREC_A',
             filetable = filetable,
-            reduction_function=(lambda x, vid: seasonal_bias(x, season, vid=vid)),
+            reduction_function=(lambda x, vid: reduce2latlon_seasonal(x, season=season, vid=vid)),
+            reduced_var_id=reduced_var_id,
+         duvs = {'PREC_A':duv})
+      if fn == None:
+         reduced_variable.__init__(
+            self, variableid='PREC_A',
+            filetable = filetable,
+            reduction_function=(lambda x, vid: dummy(x, vid)),
+            reduced_var_id=reduced_var_id,
          duvs = {'PREC_A':duv})
 
 # A couple only used for one set, so don't need more generalized.
@@ -224,6 +204,9 @@ class land_weights( reduced_variable ):
          duv = derived_var('landweights', inputs=['weights', 'LANDFRAC'], func=atimesb)
       elif 'weight' in filetable.list_variables() and 'LANDFRAC' not in filetable.list_variables():
          duv = derived_var('landweights', inputs=['weight', 'weight'], func=dummy2) # there has to be a better way....
+      else:
+         print 'Couldnt find anything usable for land weights in - ', filetable.list_variables()
+         quit()
       reduced_variable.__init__(
          self, variableid='landweights',
          filetable=filetable,
@@ -358,7 +341,7 @@ class lmwg_plot_set1(lmwg_plot_spec):
    ### These are special cased since they have 10 levels plotted. However, they are not "derived" per se.
    _level_vars = ['SOILLIQ', 'SOILICE', 'SOILPSI', 'TSOI']
 
-   def __init__(self, model, obs, varid, seasonid=None, region=None, aux=None):
+   def __init__(self, model, obs, varid, seasonid=None, region=None, aux=None, levels=None):
       plot_spec.__init__(self,seasonid)
       self.plottype = 'Yxvsx'
 
@@ -564,7 +547,7 @@ class lmwg_plot_set2(lmwg_plot_spec):
    _level_varnames = [x+y for y in ['(1)', '(5)', '(10)'] for x in _level_vars]
    _obs_vars = ['TSA', 'PREC', 'TOTRUNOFF', 'SNOWDP', 'H2OSNO', 'FSNO', 'VBSA', 'NBSA', 'VWSA', 'NWSA', 'ASA']
    _nonlinear_vars = ['EVAPFRAC', 'ASA', 'VBSA', 'NBSA', 'VWSA', 'NWSA', 'RNET']
-   def __init__( self, model, obs, varid, seasonid=None, region=None, aux=None):
+   def __init__( self, model, obs, varid, seasonid=None, region=None, aux=None, levels=None):
       # common regardless of number of fts
       plot_spec.__init__(self,seasonid)
       self.plottype = 'Isofill'
@@ -1149,7 +1132,7 @@ class lmwg_plot_set3(lmwg_plot_spec):
    _derived_varnames = ['EVAPFRAC', 'PREC', 'TOTRUNOFF', 'LHEAT', 'ASA', 'VBSA', 'NBSA', 'VWSA', 'NWSA', 'RNET']
    name = '3 - Grouped Line plots of monthly climatology: regional air temperature, precipitation, runoff, snow depth, radiative fluxes, and turbulent fluxes'
    number = '3'
-   def __init__(self, model, obs, varid, seasonid=None, region=None, aux=None):
+   def __init__(self, model, obs, varid, seasonid=None, region=None, aux=None, levels=None):
 
       plot_spec.__init__(self, seasonid)
       self.plottype = 'Yxvsx'
@@ -1265,7 +1248,7 @@ class lmwg_plot_set3(lmwg_plot_spec):
                   lw_obs1 = land_weights(obs1, region=region).reduce()
                for v in vlist:
                   if v == 'ASA':
-                     print '***** Comparison to ASA in obs set not implemented yet ***** \n'
+                     print 'TODO ---- ***** Comparison to ASA in obs set not implemented yet ***** \n'
                      pass
                   if v in obs1.list_variables():
                      self.reduced_variables[v+'_obs1'] = reduced_variable(
@@ -1285,7 +1268,7 @@ class lmwg_plot_set3(lmwg_plot_spec):
             # TODO: Can we have z2var/func WITHOUT z1 var/func????
             if v != 'ASA':
                if obs0 != None and v in obs0.list_variables():
-                  print '****** z3/4vars/z3/4funcs NOT (yet) fully supported ********'
+                  print 'TODO ---- ****** z3/4vars/z3/4funcs NOT (yet) fully supported ********'
                   self.single_plotspecs[v+'_fts'].z3vars = [v+'_obs0']
                   self.single_plotspecs[v+'_fts'].z3func = (lambda z:z)
                if obs1 != None and v in obs1.list_variables():
@@ -1336,7 +1319,7 @@ class lmwg_plot_set3(lmwg_plot_spec):
          else:
             print 'No non-climo datasets (model 2) for nonlinear derived variable RNET. Skipping over it.'
 
-         print '****** z3vars/z3funcs NOT (yet) supported ******** so 2 graphs generated instead of 1'
+         print 'TODO -- ****** z3vars/z3funcs NOT (yet) supported ******** so 2 graphs generated instead of 1'
          # When z3func/z3vars is supported, these should be one plot.
          self.single_plotspecs['ET_ft1'] = plotspec(vid='ET_ft1',
             zvars=['ET_ft1'], zfunc=(lambda z:z),
@@ -1855,11 +1838,11 @@ class lmwg_plot_set5(lmwg_plot_spec):
    name = '5 - Tables of annual means'
    number = '5'
 
-   print ' ****** NEED LAND WEIGHTS FOR ONE OF THE OPTIONS ********'
-   print '***** NEED PROPER UNIT CONVERSIONS TOO ******'
+   print '***** NEED PROPER UNIT CONVERSIONS FOR A FEW MORE UNITS ******'
+   print '(Probably what is wrong with regional. carbon needs some more conversions too though)'
    # This jsonflag is gross, but Options has always been a 2nd class part of the design. Maybe I'll get to
    # change that for the next release.
-   def __init__( self, model, obs, varid, seasonid=None, region=None, aux=None, jsonflag=False):
+   def __init__( self, model, obs, varid, seasonid=None, region=None, aux=None, jsonflag=False, levels=None):
 #      print 'jsonflag passed in: ', jsonflag
 
       plot_spec.__init__(self,seasonid)
@@ -1873,6 +1856,21 @@ class lmwg_plot_set5(lmwg_plot_spec):
       self.seasons = ['ANN']
 
       self._var_baseid = '_'.join([varid,'set5'])   # e.g. TREFHT_set5
+      self._end = 0
+
+      model_dict = make_ft_dict(model)
+      num_models = len(model_dict.keys())
+
+      if num_models == 0: 
+         print 'Nothing to plot'
+         self._end = 1
+         return
+
+      if aux.lower() == 'difference' and num_models != 2: # ie, difference was passed any only one dataset
+         print 'difference variable option requires two models'
+         print 'Only one model passed in. Nothing to do'
+         self._end = 1
+         return
 
       if not self.computation_planned:
          self.plan_computation( model, obs, varid, seasonid, region, aux )
@@ -1881,9 +1879,6 @@ class lmwg_plot_set5(lmwg_plot_spec):
    def _list_variables( model, obs ):
       varlist = ['Regional_Hydrologic_Cycle', 'Global_Biogeophysics', 'Global_Carbon_Nitrogen']
       model_dict = make_ft_dict(model)
-#      if len(model_dict.keys()) >= 2:
-#         varlist.extend( [ 'Regional_Hydrologic_Cycle_Difference', 'Global_Biogeophysics_Difference', 
-#                 'Global_Carbon_Nitrogen_Difference'])
       return varlist
 
    @staticmethod
@@ -1893,17 +1888,12 @@ class lmwg_plot_set5(lmwg_plot_spec):
       for v in varlist:
          vlist[v] = lwmg_set5_variable
       return vlist
-#      vlist = {vn:basic_plot_variable for vn in lmwg_plot_set5._list_variables(model, obs) }
-#      return vlist
 
    def plan_computation( self, model, obs, varid, seasonid, region=None, aux=None):
 
       model_dict = make_ft_dict(model)
+      print 'model dict:', model_dict
       num_models = len(model_dict.keys())
-
-      if num_models == 0: 
-         print 'Nothing to plot'
-         return
 
       raw0 = None
       raw1 = None
@@ -1918,7 +1908,6 @@ class lmwg_plot_set5(lmwg_plot_spec):
          climo0 = model_dict[model_dict.keys()[0]]['climos']
          raw1 = model_dict[model_dict.keys()[1]]['raw']
          climo1 = model_dict[model_dict.keys()[1]]['climos']
-
       
       self.hasregions = 0
       self.twosets = 0
@@ -1933,6 +1922,7 @@ class lmwg_plot_set5(lmwg_plot_spec):
       # Ok, which table are we producing?
 
       if 'Regional' in varid:
+         print 'NOTE: Set 5, Regional still has bug fixes required'
          # This one will take 2 passes over the input list for efficiency.
          self.derived_variables1 = {}
          self.reduced_variables1 = {}
@@ -1988,7 +1978,7 @@ class lmwg_plot_set5(lmwg_plot_spec):
                for r in defines.all_regions.keys():
                   self.derived_variables[v+'_'+r+'_ft2'] = derived_var(vid=v+'_'+r+'_ft2', inputs=[v+'_ft2'], special_values=[r, lw1], func=reduceRegion)
 
-         if aux == 'difference':
+         if aux == 'difference' and num_models == 2:
             self.difference = 1
             for v in self.display_vars:
                for r in defines.all_regions.keys():
@@ -2022,19 +2012,18 @@ class lmwg_plot_set5(lmwg_plot_spec):
                   reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, single=True, weights=global_lw1, vid=vid)))
                if 'difference' in aux:
                   self.difference = 1
-                  print 'CALLING AMINUSB_2AX --- NEEDS INVESTIGATED'
-                  self.derived_variables[v+'_diff'] = derived_var(vid=v+'_diff', inputs=[v+'_ft1', v+'_ft2'], func=aminusb_2ax)
+                  self.derived_variables[v+'_diff'] = derived_var(vid=v+'_diff', inputs=[v+'_ft1', v+'_ft2'], func=aminusb)
 
          for v in self.albedos.keys():
             if raw0 == None:
-               print 'Nonclimo dataset required for albedos'
+               print 'Nonclimo dataset required for albedos. Removing them from the display'
+               self.display_vars = list(set(self.display_vars) - set(self.albedos.keys()))
             else:
                self.reduced_variables[v+'_ft1'] = albedos_redvar(raw0, 'SINGLE', self.albedos[v], region=region, weights=global_lw0)
                if num_models == 2 and raw1 != None:
                   self.reduced_variables[v+'_ft2'] = albedos_redvar(raw1, 'SINGLE', self.albedos[v], region=region, weights=global_lw1)
-            if 'difference' in aux:
-               print 'CALLING AMINUSB_2AX --- NEEDS INVESTIGATED'
-               self.derived_variables[v+'_diff'] = derived_var(vid=v+'_diff', inputs=[v+'_ft1', v+'_ft2'], func = aminusb_2ax)
+            if 'difference' in aux.lower() and num_models == 2:
+               self.derived_variables[v+'_diff'] = derived_var(vid=v+'_diff', inputs=[v+'_ft1', v+'_ft2'], func = aminusb)
 
          self.derived_variables['ET_ft1'] = derived_var(vid='ET_ft1', inputs=['QVEGE_ft1', 'QVEGT_ft1', 'QSOIL_ft1'], func=sum3)
          self.derived_variables['LHEAT_ft1'] = derived_var(vid='LHEAT_ft1', inputs=['FCTR_ft1', 'FGEV_ft1', 'FCEV_ft1'], func=sum3)
@@ -2044,7 +2033,9 @@ class lmwg_plot_set5(lmwg_plot_spec):
             self.derived_variables['LHEAT_ft2'] = derived_var(vid='LHEAT_ft2', inputs=['FCTR_ft2', 'FGEV_ft2', 'FCEV_ft2'], func=sum3)
             self.derived_variables['PREC_ft2'] = derived_var(vid='PREC_ft2', inputs=['RAIN_ft2', 'SNOW_ft2'], func=aplusb)
          if raw0 == None:
-            print 'Nonclimo dataset required for nonlinear variables CO2_PPMV, and RNET'
+            print 'Nonclimo dataset required for nonlinear variables CO2_PPMV, and RNET. Removing them from display'
+            self.display_vars.remove('CO2_PPMV')
+            self.display_vars.remove('RNET')
          else:
             self.reduced_variables['CO2_PPMV_ft1'] = co2ppmvTrendRegionSingle(raw0, region=region, weights=global_lw0)
             self.reduced_variables['RNET_ft1'] = rnet_redvar(raw0, 'SINGLE', region=region, weights=global_lw0)
@@ -2052,7 +2043,7 @@ class lmwg_plot_set5(lmwg_plot_spec):
                self.reduced_variables['CO2_PPMV_ft2'] = co2ppmvTrendRegionSingle(raw1, region=region, weights=global_lw1)
                self.reduced_variables['RNET_ft2'] = rnet_redvar(raw1, 'SINGLE', region=region, weights=global_lw1)
 
-         if 'Difference' in aux:
+         if 'difference' in aux.lower() and num_models == 2:
             self.difference = 1
             self.derived_variables['ET_diff'] = derived_var(vid='ET_diff', inputs=['ET_ft1', 'ET_ft2' ], func=aminusb)
             # Is this correct, or do these need to do the math in a different order?
@@ -2092,15 +2083,17 @@ class lmwg_plot_set5(lmwg_plot_spec):
                self.reduced_variables[v+'_ft2'] = reduced_variable(variableid = v,
                   filetable=ft2, reduced_var_id=v+'_ft2', 
                   reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, single=True, weights=global_lw1, vid=vid)))
-               if aux == 'Difference':
+               if 'difference' in aux.lower() and num_models == 2:
                   self.difference = 1
                   self.derived_variables[v+'_diff'] = derived_var(
-                     vid=v+'_diff', inputs=[v+'_ft1', v+'_ft2'], func=aminusb_2ax)
+                     vid=v+'_diff', inputs=[v+'_ft1', v+'_ft2'], func=aminusb)
 
          print 'global_lw0: ', global_lw0.max()
       self.computation_planned = True
 
    def _results(self,newgrid=0):
+      if self._end == 1:
+         return
       print 'JSON FLAG', self.jsonflag
       # Do we have some first-pass variables to do?
       if self.reduced_variables1 != None:
@@ -2130,6 +2123,8 @@ class lmwg_plot_set5(lmwg_plot_spec):
          self.variable_values[v] = value
 
       varvals = self.variable_values
+      import StringIO
+      strbuf = StringIO.StringIO()
 
       # See if we have json set
       if self.jsonflag == True:
@@ -2142,82 +2137,85 @@ class lmwg_plot_set5(lmwg_plot_spec):
             maxl = max(map(len, rk))
 
             # Headers
-            sys.stdout.write('%s' % self.setname)
+            strbuf.write('%s' % self.setname)
             if self.difference == 1:
-               print '*****************************'
-               print ' - DIFFERENCE (case1 - case2)'
-               print '*****************************'
+               print >>strbuf, '*****************************'
+               print >>strbuf, ' - DIFFERENCE (case1 - case2)'
+               print >>strbuf, '*****************************'
             else:
-               sys.stdout.write('\n')
+               strbuf.write('\n')
 
-            print 'TEST CASE (case1): '
-            print 'REFERENCE CASE (case2): '
+            print >>strbuf, 'TEST CASE (case1): '
+            print >>strbuf, 'REFERENCE CASE (case2): '
             if self.difference == 1:
-               print 'DIFFERENCE: '
-            print 'Variables:'
-            print '\t\t\t PREC = ppt: rain+snow ((mm/y))'
-            print '\t\t\t QVEGE = canopy evaporation ((mm/y))'
-            print '\t\t\t QVEGEP = canopy evap:QVEGE/(RAIN+SNOW)*100 ((%))'
-            print '\t\t\t QVEGT = canopy transpiration ((mm/y))'
-            print '\t\t\t QSOIL = ground evaporation ((mm/y))'
-            print '\t\t\t TOTRUNOFF = Runoff:qover+qdrai+qrgwl ((mm/y))'
-            print '%-*s\tPREC(mm/y)\t\t\tQVEGE(mm/y)\t\tQVEGEP(%%)\t\t\tQVEGT\t\t\tQSOIL(mm/y)\t\tTOTRUNOFF(mm/y)' % ((maxl+3), 'Region')
+               print >>strbuf, 'DIFFERENCE: '
+            print >>strbuf, 'Variables:'
+            print >>strbuf, '\t\t\t PREC = ppt: rain+snow ((mm/y))'
+            print >>strbuf, '\t\t\t QVEGE = canopy evaporation ((mm/y))'
+            print >>strbuf, '\t\t\t QVEGEP = canopy evap:QVEGE/(RAIN+SNOW)*100 ((%))'
+            print >>strbuf, '\t\t\t QVEGT = canopy transpiration ((mm/y))'
+            print >>strbuf, '\t\t\t QSOIL = ground evaporation ((mm/y))'
+            print >>strbuf, '\t\t\t TOTRUNOFF = Runoff:qover+qdrai+qrgwl ((mm/y))'
+            if self.difference == 1:
+               print >>strbuf, '%-*s\tPREC(mm/y)\t\tQVEGE(mm/y)\tQVEGEP(%%)\t\tQVEGT\t\tQSOIL(mm/y)\tTOTRUNOFF(mm/y)' % ((maxl+3), 'Region')
+            else:
+               print >>strbuf, '%-*s\tPREC(mm/y)\t\t\tQVEGE(mm/y)\t\tQVEGEP(%%)\t\t\tQVEGT\t\t\tQSOIL(mm/y)\t\tTOTRUNOFF(mm/y)' % ((maxl+3), 'Region')
 
 
             if self.twosets == 1:
                if self.difference == 1:
-                  print '\t\t\t\t\t\tdiff\t\tdiff\t\tdiff\t\tdiff\t\tdiff\t\tdiff'
+                  print >>strbuf, '\t\t\t\tdiff\tdiff\tdiff\tdiff\tdiff\tdiff'
                else:
-                  print '\t\t\t\t\t\tcase1\t\tcase2\t\tcase1\t\tcase2\t\tcase1\t\tcase2\t\tcase1\t\tcase2\t\tcase1\t\tcase2\t\tcase1\t\tcase2'
+                  print >>strbuf, '\t\t\t\t\t\tcase1\t\tcase2\t\tcase1\t\tcase2\t\tcase1\t\tcase2\t\tcase1\t\tcase2\t\tcase1\t\tcase2\t\tcase1\t\tcase2'
             else:
-               print '\t\t\t\t\t\tcase1\t\t\tcase1\t\t\tcase1\t\t\t\tcase1\t\t\tcase1\t\t\tcase1'
+               print >>strbuf, '\t\t\t\t\t\tcase1\t\t\tcase1\t\t\tcase1\t\t\t\tcase1\t\t\tcase1\t\t\tcase1'
 
    #         sys.stdout.write(ostr % ' ')
             if self.difference == 1:
-               sys.stdout.write('\t')
-            print '\t\t\t\t\t\tppt: rain+snow\tcanopy evaporation\tcanopy evap:QVEGE/(RAIN+SNOW)*100\tcanopy transpiration\tground evaporation\tRunoff:qover+qdrai+qrgwl'
+               strbuf.write('\t')
+            print >>strbuf, '\t\t\t\t\t\tppt: rain+snow\tcanopy evaporation\tcanopy evap:QVEGE/(RAIN+SNOW)*100\tcanopy transpiration\tground evaporation\tRunoff:qover+qdrai+qrgwl'
 
             # Dump out the data now
             for r in rk:
                ostr = '%-'+str(maxl+3)+'s\t'
-               sys.stdout.write(ostr % r)
+               strbuf.write(ostr % r)
                if self.difference == 1:
-                  sys.stdout.write('%10.5f\t' % convert_units(varvals['PREC_'+r+'_diff'], 'mm/year'))
-                  sys.stdout.write('%10.5f\t' % convert_units(varvals['QVEGE_'+r+'_diff'], 'mm/year'))
-                  sys.stdout.write('%10.5f\t' % varvals['QVEGEP_'+r+'_diff'])
-                  sys.stdout.write('%10.5f\t' % convert_units(varvals['QVEGT_'+r+'_diff'], 'mm/year'))
-                  sys.stdout.write('%10.5f\t' % convert_units(varvals['QSOIL_'+r+'_diff'], 'mm/year'))
-                  sys.stdout.write('%10.5f\t' % convert_units(varvals['TOTRUNOFF_'+r+'_diff'], 'mm/year'))
+                  strbuf.write('%10.5f\t' % convert_units(varvals['PREC_'+r+'_diff'], 'mm/year'))
+                  strbuf.write('%10.5f\t' % convert_units(varvals['QVEGE_'+r+'_diff'], 'mm/year'))
+                  strbuf.write('%10.5f\t' % varvals['QVEGEP_'+r+'_diff'])
+                  strbuf.write('%10.5f\t' % convert_units(varvals['QVEGT_'+r+'_diff'], 'mm/year'))
+                  strbuf.write('%10.5f\t' % convert_units(varvals['QSOIL_'+r+'_diff'], 'mm/year'))
+                  strbuf.write('%10.5f\t' % convert_units(varvals['TOTRUNOFF_'+r+'_diff'], 'mm/year'))
                else:
-                  sys.stdout.write('%10.5f\t' % convert_units(varvals['PREC_'+r+'_ft1'], 'mm/year'))
+                  strbuf.write('%10.5f\t' % convert_units(varvals['PREC_'+r+'_ft1'], 'mm/year'))
                   if self.twosets == 1:
-                     sys.stdout.write('%10.5f\t' % convert_units(varvals['PREC_'+r+'_ft2'], 'mm/year'))
+                     strbuf.write('%10.5f\t' % convert_units(varvals['PREC_'+r+'_ft2'], 'mm/year'))
                   else:
-                     sys.stdout.write('\t')
-                  sys.stdout.write('%10.5f\t' % convert_units(varvals['QVEGE_'+r+'_ft1'], 'mm/year'))
+                     strbuf.write('\t')
+                  strbuf.write('%10.5f\t' % convert_units(varvals['QVEGE_'+r+'_ft1'], 'mm/year'))
                   if self.twosets == 1:
-                     sys.stdout.write('%10.5f\t' % convert_units(varvals['QVEGE_'+r+'_ft2'], 'mm/year'))
+                     strbuf.write('%10.5f\t' % convert_units(varvals['QVEGE_'+r+'_ft2'], 'mm/year'))
                   else:
-                     sys.stdout.write('\t')
-                  sys.stdout.write('%10.5f\t' % varvals['QVEGEP_'+r+'_ft1'])
+                     strbuf.write('\t')
+                  strbuf.write('%10.5f\t' % varvals['QVEGEP_'+r+'_ft1'])
                   if self.twosets == 1:
-                     sys.stdout.write('%10.5f\t' % varvals['QVEGEP_'+r+'_ft2'])
+                     strbuf.write('%10.5f\t' % varvals['QVEGEP_'+r+'_ft2'])
                   else:
-                     sys.stdout.write('\t\t')
-                  sys.stdout.write('%10.5f\t' % convert_units(varvals['QVEGT_'+r+'_ft1'], 'mm/year'))
+                     strbuf.write('\t\t')
+                  strbuf.write('%10.5f\t' % convert_units(varvals['QVEGT_'+r+'_ft1'], 'mm/year'))
                   if self.twosets == 1:
-                     sys.stdout.write('%10.5f\t' % convert_units(varvals['QVEGT_'+r+'_ft2'], 'mm/year'))
+                     strbuf.write('%10.5f\t' % convert_units(varvals['QVEGT_'+r+'_ft2'], 'mm/year'))
                   else:
-                     sys.stdout.write('\t')
-                  sys.stdout.write('%10.5f\t' % convert_units(varvals['QSOIL_'+r+'_ft1'], 'mm/year'))
+                     strbuf.write('\t')
+                  strbuf.write('%10.5f\t' % convert_units(varvals['QSOIL_'+r+'_ft1'], 'mm/year'))
                   if self.twosets == 1:
-                     sys.stdout.write('%10.5f\t' % convert_units(varvals['QSOIL_'+r+'_ft2'], 'mm/year'))
+                     strbuf.write('%10.5f\t' % convert_units(varvals['QSOIL_'+r+'_ft2'], 'mm/year'))
                   else:
-                     sys.stdout.write('\t\t')
-                  sys.stdout.write('%10.5f\t' % convert_units(varvals['TOTRUNOFF_'+r+'_ft1'], 'mm/year'))
+                     strbuf.write('\t\t')
+                  strbuf.write('%10.5f\t' % convert_units(varvals['TOTRUNOFF_'+r+'_ft1'], 'mm/year'))
                   if self.twosets == 1:
-                     sys.stdout.write('%10.5f\t' % convert_units(varvals['TOTRUNOFF_'+r+'_ft2'], 'mm/year'))
-               sys.stdout.write('\n')
+                     strbuf.write('%10.5f\t' % convert_units(varvals['TOTRUNOFF_'+r+'_ft2'], 'mm/year'))
+               strbuf.write('\n')
          else: # var 2 or 3
             from metrics.packages.lmwg.defines import varinfo
             descmax = max(map(len, [varinfo[x]['desc'] for x in self.display_vars]))
@@ -2226,13 +2224,13 @@ class lmwg_plot_set5(lmwg_plot_spec):
             print 'desc: ', descmax, 'unit: ', unitmax, 'var: ', varmax
 
             if self.difference == 0:
-               print 'DATA SET 5: CLM ANNUAL MEANS OVER LAND'
-               print 'TEST CASE (case1): '
+               print >>strbuf, 'DATA SET 5: CLM ANNUAL MEANS OVER LAND'
+               print >>strbuf, 'TEST CASE (case1): '
                casestr = 'case1'
                if self.twosets == 1:
-                  print 'REFERENCE CASE (case2): '
+                  print >>strbuf, 'REFERENCE CASE (case2): '
                   casestr = casestr+' case2'
-               print '%-*s %-12s' % (varmax+descmax+unitmax, 'Variable', casestr)
+               print >>strbuf, '%-*s %-12s' % (varmax+descmax+unitmax, 'Variable', casestr)
                for v in self.display_vars:
                   if varvals[v+'_ft1'] == None:
    #                  print v,' was none. setting to -999.000'
@@ -2242,7 +2240,7 @@ class lmwg_plot_set5(lmwg_plot_spec):
                      # try:
                      varvals[v+'_ft1'] = convert_units(varvals[v+'_ft1'], varinfo[v]['RepUnits'])
                      # except:
-                  sys.stdout.write('%-*s(%-*s) %-*s %13.7f ' % (varmax, v, unitmax, varinfo[v]['RepUnits'], descmax, varinfo[v]['desc'], varvals[v+'_ft1']))
+                  strbuf.write('%-*s(%-*s) %-*s %13.7f ' % (varmax, v, unitmax, varinfo[v]['RepUnits'], descmax, varinfo[v]['desc'], varvals[v+'_ft1']))
 
 #                  try: #convert units if needed
 ##                     print 'START LMWG BLOCK - reported units for ', v, ': ', varinfo[v]['RepUnits']
@@ -2273,19 +2271,21 @@ class lmwg_plot_set5(lmwg_plot_spec):
 #                     except:
 #                        print 'model2 Unit conversion failed for ', v
                         
-                     sys.stdout.write(' %13.7f' % varvals[v+'_ft2'])
-                  sys.stdout.write('\n')
+                     strbuf.write(' %13.7f' % varvals[v+'_ft2'])
+                  strbuf.write('\n')
             else:
-               print 'DATA SET 5: CLM ANNUAL MEANS OVER LAND - DIFFERENCE (case1 - case2)'
-               print 'TEST CASE (case1): '
-               print 'REFERENCE CASE (case2): '
-               print 'DIFFERENCE: '
-               print '%-*s %-12s' % (varmax+descmax+unitmax, 'Variable', 'case1-case2')
+               print >>strbuf, 'DATA SET 5: CLM ANNUAL MEANS OVER LAND - DIFFERENCE (case1 - case2)'
+               print >>strbuf, 'TEST CASE (case1): '
+               print >>strbuf, 'REFERENCE CASE (case2): '
+               print >>strbuf, 'DIFFERENCE: '
+               print >>strbuf, '%-*s %-12s' % (varmax+descmax+unitmax, 'Variable', 'case1-case2')
                for v in self.display_vars:
                   if varvals[v+'_diff'] == None:
                      varvals[v+'_diff'] = -999.00
-                  sys.stdout.write('%-*s(%-*s) %-*s %13.7f\n' % (varmax, v, unitmax, varinfo[v]['RepUnits'], descmax, varinfo[v]['desc'], varvals[v+'_diff']))
+                  strbuf.write('%-*s(%-*s) %-*s %13.7f\n' % (varmax, v, unitmax, varinfo[v]['RepUnits'], descmax, varinfo[v]['desc'], varvals[v+'_diff']))
 
+
+      return str(strbuf.getvalue())
          
 
 
@@ -2301,7 +2301,7 @@ class lmwg_plot_set6(lmwg_plot_spec):
    varlist = []
    name = '6 - Group Line plots of annual trends in regional soil water/ice and temperature, runoff, snow water/ice, photosynthesis'
    number = '6'
-   def __init__(self, model, obs, varid, seasonid=None, region=None, aux=None):
+   def __init__(self, model, obs, varid, seasonid=None, region=None, aux=None, levels=None):
       plot_spec.__init__(self, seasonid)
       self.plottype = 'Yxvsx'
 
@@ -2622,26 +2622,13 @@ class lmwg_plot_set6(lmwg_plot_spec):
 
 
 
-###############################################################################
-###############################################################################
-### These are not implemented yet                                           ###
-###############################################################################
-###############################################################################
-class lmwg_plot_set7(lmwg_plot_spec):
-#   name = '7 - Line plots, tables, and maps of RTM river flow and discharge to oceans'
-   number = '7'
-   pass
 
 class lmwg_plot_set9(lmwg_plot_spec):
    name = '9 - Contour plots and statistics for precipitation and temperature. Statistics include DJF, JJA, and ANN biases, and RMSE, correlation and standard deviation of the annual cycle relative to observations'
    number = '9'
-   def __init__(self, model, obs, varid, seasonid=None, region=None, aux=None):
+   def __init__(self, model, obs, varid, seasonid=None, region=None, aux=None, levels=None):
 
       plot_spec.__init__(self, seasonid)
-
-      if seasonid == None:
-         print 'Season required for this plot set'
-         return
 
       if seasonid == 'ANN':
          self.season = cdutil.times.Seasons('JFMAMJJASOND')
@@ -2674,20 +2661,9 @@ class lmwg_plot_set9(lmwg_plot_spec):
          vlist[v] = lmwg_set9_variable
       vlist['Tables'] = basic_plot_variable
       return vlist
-#
-#      def retvarlist(self):
-#         return {'TSA':'TSA', 'PREC':'PREC', 'ASA':'ASA'}
-#
-#      for vn in lmwg_plot_set9._list_variables(model, obs):
-#         vlist[vn] = basic_plot_variable
-#         if vn != 'Tables':
-#            vlist[vn].varoptions = (lambda x: {'TSA':'TSA', 'PREC':'PREC', 'ASA':'ASA'})
-#            retvarlist
-#         else:
-#            print 'Not assigning retvarlist to tables'
-#         
 
    def plan_computation(self, model, obs, varid, seasonid, region, aux=None):
+      print '******* TODO - Add weighted single number averages above the tables as per NCL ********'
       
       model_dict = make_ft_dict(model)
 
@@ -2713,46 +2689,54 @@ class lmwg_plot_set9(lmwg_plot_spec):
       climo1 = model_dict[model_dict.keys()[1]]['climos']
 
       obs0 = obs[0]
+      print dir(obs0)
+      print obs0.list_variables()
       # This one always has 3 plots, assuming num_models==2 and num_obs >= 1
-
       # Actual variable passed in via varopts. 
 
-      if 'Seasonal' in varid:
-         pass
-
-      elif 'Table' in varid:
+      if 'Table' in varid:
+         print 'TABLE NOT IMPLEMENTED YET'
          pass
       else:
-         if 'RMSE' in varid:
-            pname = 'RMSE'
-            fn = 'RMSE'
-            season = cdutil.times.Seasons('JFMAMJJASOND')
-         elif 'Standard' in varid:
-            pname = 'Standard_Deviation'
-            fn = 'STDDEV'
-            season = seasonid
-         else:
-            pname = 'Correlation'
-            fn = 'CORR'
-            season = cdutil.times.Seasons('JFMAMJJASOND')
 
-         self.composite_plotspecs[pname] = []
          ft = (climo0 if climo0 is not None else raw0)
          ft2 = (climo1 if climo1 is not None else raw1)
-         # Calculate the reduced varaibles first. This is just a reduce2latlon_seasonal(season) for the variables
-         if aux == 'TSA':
-            name1 = 'TSA_'+fn+'_1'
-            name2 = 'TSA_'+fn+'_2'
-            obs1 = 'TSA_'+fn+'_obs'
-            namemap = 'TSA_'+fn+'_MAP'
-            self.reduced_variables[name1] = reduced_variable(variableid = aux,
-               filetable = ft,
-               reduced_var_id = name1,
-               reduction_function = (lambda x, vid: dummy(x, vid))) #reduce2latlon_seasonal(x, season=season, region=None, vid=vid)))
-            self.reduced_variables[name2] = reduced_variable(variableid = aux,
-               filetable = ft2,
-               reduced_var_id = name2,
-               reduction_function = (lambda x, vid: dummy(x, vid))) # reduce2latlon_seasonal(x, season=season, region=None, vid=vid)))
+         print '----> PASSING RAW DATA'
+         print 'TODO -- NEED NON-REDUCED DATA SUPPORT WHEN POSSIBLE'
+         ft = raw0
+         ft2 = raw1
+
+         func = None
+         if 'RMSE' in varid.upper():
+            fn = 'RMSE'
+            season = cdutil.times.Seasons('JFMAMJJASOND')
+         elif 'STANDARD_DEVIATION' in varid.upper():
+            fn = 'STDDEV'
+            season = seasonid
+         elif 'SEASONAL_BIAS' in varid.upper():
+            fn = 'BIAS'
+            season = seasonid
+            func = 'BIAS'
+         elif 'CORRELATION' in varid.upper():
+            fn = 'CORR'
+            season = cdutil.times.Seasons('JFMAMJJASOND')
+         else:
+            print 'Unknown variable - ', varid
+            quit()
+
+         var1 = fn+'_'+aux+'_1' # the 3 input variables
+         var2 = fn+'_'+aux+'_2'
+         varobs = fn+'_'+aux+'_obs'
+         graph1 = fn+'_'+aux+'_1' # the final variable to get plotted
+         graph2 = fn+'_'+aux+'_2'
+         graphobs = fn+'_'+aux+'_obs' # never actually plotted
+         map1 = fn+'_'+aux+'_MAP'
+         pname = varid # the plot collections name
+         self.composite_plotspecs[pname] = []
+
+         # First, set up the real "variables", ie, what is going to get manipulated based on user input
+         if aux == 'TSA': # the simplest one
+            # See if we can find an observation variable.
             if aux in obs0.list_variables():
                vname = aux
             elif 'TREFHT' in obs0.list_variables():
@@ -2762,58 +2746,96 @@ class lmwg_plot_set9(lmwg_plot_spec):
             else:
                print 'Couldnt find variable ',aux,' or equivalent in ', obs0.list_variables()
                return
-            self.reduced_variables[obs1] = reduced_variable(variableid = vname,
-               filetable=obs0,
-               reduced_var_id = obs1,
-               reduction_function = (lambda x, vid: dummy(x, vid))) #reduce2latlon_seasonal(x, season=season, region=None, vid=vid)))
-         else:
-            if aux == 'PREC':
-               name1 = 'PREC_'+fn+'_1'
-               name2 = 'PREC_'+fn+'_2'
-               obs1 = 'PREC_'+fn+'_obs'
-               namemap = 'PREC_'+fn+'_MAP'
-               self.reduced_variables['RAIN_ft1'] = reduced_variable(variableid = 'RAIN', filetable=ft,reduced_var_id='RAIN_ft1', reduction_function=(lambda x, vid: reduce2latlon_seasonal(x, season=season, region=None, vid=vid)))
-               self.reduced_variables['RAIN_ft2'] = reduced_variable(variableid = 'RAIN', filetable=ft2,reduced_var_id='RAIN_ft2', reduction_function=(lambda x, vid: reduce2latlon_seasonal(x, season=season, region=None, vid=vid)))
-               self.reduced_variables['RAIN_ft1'] = reduced_variable(variableid = 'RAIN', filetable=ft,reduced_var_id='RAIN_ft1', reduction_function=(lambda x, vid: reduce2latlon_seasonal(x, season=season, region=None, vid=vid)))
-               self.reduced_variables['SNOW_ft2'] = reduced_variable(variableid = 'SNOW', filetable=ft2,reduced_var_id='SNOW_ft2', reduction_function=(lambda x, vid: reduce2latlon_seasonal(x, season=season, region=None, vid=vid)))
-               self.derived_variables[name1] = derived_var(vid=name1, inputs=['RAIN_ft1', 'SNOW_ft1'], func=aplusb)
-               self.derived_variables[name2] = derived_var(vid=name2, inputs=['RAIN_ft2', 'SNOW_ft2'], func=aplusb)
-               if aux in obs0.list_variables():
-                  vname = aux
-               elif 'PRECIP_LAND' in obs0.list_variables():
-                  vname = 'PRECIP_LAND'
-                  print 'Using PRECIP_LAND from the obs set to compare to PREC calculated'
-               self.reduced_variables[obs1] = reduced_variable(variableid = vname,
-                  filetable = obs0,
-                  reduced_var_id = obs1,
-                  reduction_function = (lambda x, vid: reduce2latlon_seasonal(x, season=season, region=None, vid=vid)))
+            # Now, is this Seasonal_Bias or not?
+            if func == None:
+               print '---------> func is NONE'
+               self.reduced_variables[var1] = reduced_variable(variableid = aux, filetable = ft, reduced_var_id = var1, reduction_function = (lambda x, vid: dummy(x, vid))) 
+               self.reduced_variables[var2] = reduced_variable(variableid = aux, filetable = ft2, reduced_var_id = var2, reduction_function = (lambda x, vid: dummy(x, vid))) 
+               self.reduced_variables[varobs] = reduced_variable(variableid = vname, filetable=obs0, reduced_var_id = varobs, reduction_function = (lambda x, vid: dummy(x, vid))) 
+            else: #seasonal bias, prereduce to a season
+               print '---------> func is NOT NONE'
+               self.reduced_variables[var1] = reduced_variable(variableid = aux, filetable = ft, reduced_var_id = var1, reduction_function = (lambda x, vid: reduce2latlon_seasonal(x, vid=vid, season=self.season)))
+               self.reduced_variables[var2] = reduced_variable(variableid = aux, filetable = ft2, reduced_var_id = var2, reduction_function = (lambda x, vid: reduce2latlon_seasonal(x, vid=vid, season=self.season)))
+               self.reduced_variables[varobs] = reduced_variable(variableid = vname, filetable=obs0, reduced_var_id = varobs, reduction_function = (lambda x, vid: reduce2latlon_seasonal(x, vid=vid, season=self.season))) 
+#               self.reduced_variables[name1+'_raw'] = reduced_variable(variableid = aux+'_raw', filetable = ft, reduced_var_id = name1+'_raw', reduction_function = (lambda x, vid: dummy(x, vid)))
+#               self.reduced_variables[name2+'_raw'] = reduced_variable(variableid = aux+'_raw', filetable = ft2, reduced_var_id = name2+'_raw', reduction_function = (lambda x, vid: dummy(x, vid)))
+#                self.reduced_variables[obs+'_raw'] = reduced_variable(variableid = vname, filetable=obs0, reduced_var_id = obs+'_raw', reduction_function = (lambda x, vid: dummy(x, vid))) 
+         elif aux == 'PREC':
+            self.reduced_variables[var1] = prec_redvar(ft, func, season=self.season, reduced_var_id=var1)
+            self.reduced_variables[var2] = prec_redvar(ft2, func, season=self.season, reduced_var_id=var2)
+            
+            # See if we can find an observation variable
+            if aux in obs0.list_variables():
+               vname = aux
+            elif 'PRECIP_LAND' in obs0.list_variables():
+               vname = 'PRECIP_LAND'
+               print 'Using PRECIP_LAND from the obs set to compare to PREC calculated'
             else:
-               name1 = 'ASA'+fn+'_1'
-               name2 = 'ASA'+fn+'_2'
-               obs1 = 'ASA_'+fn+'_obs'
-               namemap = 'ASA'+fn+'_MAP'
-               if raw0 != None and raw1 != None:
-                  self.reduced_variables[name1] = albedos_redvar(raw0, 'SEASONAL', self.albedos['ASA'], season=self.season)
-                  self.reduced_variables[name2] = albedos_redvar(raw1, 'SEASONAL', self.albedos['ASA'], season=self.season)
-               else:
-                  print 'All sky albedos requires raw data'
-                  return
-               print 'Not calculating ASA from obs currently'
+               print 'Couldnt find variable ', aux, ' or equivalent in ', obs0.list_variables()
 
-         if 'RMSE' in varid:
-            self.single_plotspecs[name1] = plotspec( vid=name1, zfunc = rmse_time, zvars=[name1, obs1], plottype = 'Isofill')
-            self.single_plotspecs[name2] = plotspec( vid=name2, zfunc = rmse_time, zvars=[name2, obs1], plottype = 'Isofill')
-            self.single_plotspecs[namemap] = plotspec( vid=namemap, zfunc = rmse_map, zvars = [name1, name2, obs1], plottype = 'Boxfill')
-         if 'Standard' in varid:
-            self.single_plotspecs[name1] = plotspec( vid=name1, zfunc = stddev_time, zvars=[name1, obs1], plottype = 'Isofill')
-            self.single_plotspecs[name2] = plotspec( vid=name2, zfunc = stddev_time, zvars=[name2, obs1], plottype = 'Isofill')
-            self.single_plotspecs[namemap] = plotspec( vid=namemap, zfunc = stddev_map, zvars = [name1, name2, obs1], plottype = 'Boxfill')
-         if 'Correlation' in varid:
-            self.single_plotspecs[name1] = plotspec( vid=name1, zfunc = correlation_time, zvars=[name1, obs1], plottype = 'Isofill')
-            self.single_plotspecs[name2] = plotspec( vid=name2, zfunc = correlation_time, zvars=[name2, obs1], plottype = 'Isofill')
-            self.single_plotspecs[namemap] = plotspec( vid=namemap, zfunc = correlation_map, zvars = [name1, name2, obs1], plottype = 'Boxfill')
+            # "Extract" PREC from the obs set
+            if func == None:
+               self.reduced_variables[varobs] = reduced_variable(variableid = vname, filetable=obs0, reduced_var_id = varobs, reduction_function = (lambda x, vid: dummy(x, vid)))
+            else:
+               self.reduced_variables[varobs] = reduced_variable(variableid = vname, filetable=obs0, reduced_var_id = varobs, reduction_function = (lambda x, vid: reduce2latlon_seasonal(x, vid=vid, season=self.season)))
 
-         self.composite_plotspecs[pname] = [name1, name2, namemap]
+            # do i need these too........?
+#            if func != None:
+#               self.reduced_variables[aux+'_1_raw'] = prec_redvar(ft, None, season=self.season)
+#               self.reduced_variables[aux+'_2_raw'] = prec_redvar(ft2, None, season=self.season)
+#               self.reduced_variables[vname+'_obs_raw'] = reduced_variable(variableid = vname, filetable=obs0, reduced_var_id = varobs, reduction_function = (lambda x, vid: dummy(x, vid)))
+
+         elif aux == 'ASA':
+            if raw0 == None or raw1 == None:
+               print 'All sky albedos requires raw data'
+               return
+
+            self.reduced_variables[var1] = albedos_redvar(raw0, fn, self.albedos['ASA'], season=self.season)
+            self.reduced_variables[var2] = albedos_redvar(raw1, fn, self.albedos['ASA'], season=self.season) # none should be dummy for the reduction function
+
+            # Check for obs data.
+            if aux in obs0.list_variables():
+               vname = aux
+            elif 'BRDALB' in obs0.list_variables():
+               vname = 'BRDALB'
+               ow = 'LANDMASK' # all caps in the modisradweight* files
+               print 'Using BRDALB from the obs set to compare to ASA calculated'
+            else:
+               print 'Couldnt find variable ',aux,' or equivalent in ', obs0.list_variables()
+            if func == None:
+               self.reduced_variables[varobs] = reduced_variable(variableid = vname, filetable = obs0, reduced_var_id = varobs, reduction_function = (lambda x, vid: dummy(x, vid)))
+            else:
+               self.reduced_variables[varobs] = reduced_variable(variableid = vname, filetable = obs0, reduced_var_id = varobs, reduction_function = (lambda x, vid: reduce2latlon_seasonal(x, vid=vid, season=self.season)))
+
+         else:
+            print 'Invalid variable option - ', aux
+            quit()
+                  
+         # Now, do the actual manipulations based on user input
+         if 'RMSE' in varid.upper():
+            self.single_plotspecs[graph1] = plotspec( vid=graph1, zfunc = rmse_time, zvars=[var1, varobs], plottype = 'Isofill')
+            self.single_plotspecs[graph2] = plotspec( vid=graph2, zfunc = rmse_time, zvars=[var2, varobs], plottype = 'Isofill')
+            self.single_plotspecs[map1] = plotspec( vid=map1, zfunc = rmse_map, zvars = [var1, var2, varobs], plottype = 'Boxfill')
+         if 'STANDARD_DEVIATION' in varid.upper():
+            self.single_plotspecs[graph1] = plotspec( vid=graph1, zfunc = stddev_time, zvars=[var1, varobs], plottype = 'Isofill')
+            self.single_plotspecs[graph2] = plotspec( vid=graph2, zfunc = stddev_time, zvars=[var2, varobs], plottype = 'Isofill')
+            self.single_plotspecs[map1] = plotspec( vid=map1, zfunc = stddev_map, zvars = [var1, var2, varobs], plottype = 'Boxfill')
+         if 'CORRELATION' in varid.upper():
+            self.single_plotspecs[graph1] = plotspec( vid=graph1, zfunc = correlation_time, zvars=[var1, varobs], plottype = 'Isofill')
+            self.single_plotspecs[graph2] = plotspec( vid=graph2, zfunc = correlation_time, zvars=[var2, varobs], plottype = 'Isofill')
+            self.single_plotspecs[map1] = plotspec( vid=map1, zfunc = correlation_map, zvars = [var1, var2, varobs], plottype = 'Boxfill')
+         if 'SEASONAL_BIAS' in varid.upper():
+            self.single_plotspecs[graph1] = plotspec( vid=graph1, zfunc = aminusb_regrid, zvars=[var1, varobs], plottype = 'Isofill')
+            self.single_plotspecs[graph2] = plotspec( vid=graph2, zfunc = aminusb_regrid, zvars=[var2, varobs], plottype = 'Isofill')
+            self.derived_variables[map1+'_var'] = derived_var(vid = map1+'_var', inputs=[var1, var2, varobs], special_values=[self.season], func = bias_map)
+            self.single_plotspecs[map1] = plotspec( vid = map1, zfunc = (lambda z:z), zvars = [map1+'_var'], plottype = 'Boxfill')
+            print 'SELF KEYS'
+            print self.derived_variables.keys()
+            print self.reduced_variables.keys()
+            print 'SELF DONE'
+
+
+         self.composite_plotspecs[pname] = [graph1, graph2, map1]
 
    def _results(self, newgrid = 0):
       results = plot_spec._results(self, newgrid)
@@ -2821,7 +2843,7 @@ class lmwg_plot_set9(lmwg_plot_spec):
          print 'No results'
          return None
       psv = self.plotspec_values
-      composite_names = ['RMSE', 'Correlation', 'Standard_Deviation']
+      composite_names = ['RMSE', 'Correlation', 'Standard_Deviation', 'Seasonal_Bias']
 
       print 'psv.keys: ', psv.keys()
       for plot in composite_names:
@@ -2830,6 +2852,15 @@ class lmwg_plot_set9(lmwg_plot_spec):
             return self.plotspec_values[plot]
 
 
+###############################################################################
+###############################################################################
+###   This is not implemented yet                                           ###
+###############################################################################
+###############################################################################
+class lmwg_plot_set7(lmwg_plot_spec):
+#   name = '7 - Line plots, tables, and maps of RTM river flow and discharge to oceans'
+   number = '7'
+   pass
 
 ###############################################################################
 ###############################################################################
