@@ -12,6 +12,12 @@ Each file is expected to cover a different, and disjoint, time range, and the ti
 increasing.  That is, for any times tn, tm in files filen, filem, if n>m then tn>tm.
 """
 
+# TO DO:
+# >>>> look at DJF file.  Too big?  times?  values????? <<<<<<<<<
+# --seasons ALL for all 17 seasons, and default to this if seasons are not specified.
+#   In that case, investigate whether it would save any time to compute only months, and
+#   then other seasons from the months (probably slower on Rhea, but maybe not).
+
 from metrics.frontend.inc_reduce import *
 import os
 import argparse
