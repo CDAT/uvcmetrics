@@ -67,11 +67,19 @@ def convert_energyflux_precip(mv, preferred_units):
     # syntax correction (just in case)
     if  mv.units=='W/m2':
         mv.units='W/m^2'
+    if mv.units=='mm/d':
+        mv.units = 'mm/day'
+
+    if mv.units==preferred_units:
+        return mv
 
     # convert precip between kg/m2/s and mm/day
-    if mv.units=="kg/m2/s" and preferred_units=="mm/day":
+    if ( mv.units=="kg/m2/s" or mv.units=="kg/m^2/s" or mv.units=="kg/s/m2" or\
+             mv.units=="kg/s/m^2") and preferred_units=="mm/day":
         mv = mv * secondsperday # convert to kg/m2/s [= mm/s]
         mv.units="mm/day"         # [if 1 kg = 10^6 mm^3 as for water]
+        print "jfp mvu",mv.units
+        print "jfp pfu",preferred_units
 
     elif mv.units=='mm/day' and preferred_units=="kg/m2/s":
         mv = mv / secondsperday # convert to mm/sec [= kg/m2/s]
