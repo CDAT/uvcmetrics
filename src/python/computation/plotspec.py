@@ -65,7 +65,13 @@ class derived_var(basic_id):
             print "cannot yet derive",self._id,"because missing inputs",nonevals
             print "what's available is",inpdict.keys()
             return None
-        output = apply( self._func, [ inpdict[inp] for inp in self._inputs ] )
+        try:
+            output = apply( self._func, [ inpdict[inp] for inp in self._inputs ] )
+        except TypeError as e:
+            print "In derived_var.derive, _inputs=",self._inputs
+            print "WARNING, derivation function failed.  Probably not enough valid inputs." 
+            print e
+            return None
         if type(output) is tuple or type(output) is list:
             for o in output:
                 if o is None: return None
