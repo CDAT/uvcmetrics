@@ -97,6 +97,21 @@ class amwg_plot_spec(plot_spec):
     # list is the preferred method.  Of course, if the variable be already available as data,
     # then that is preferred over any computation.
     standard_variables = {
+        # water cycle, Chris Terai:
+        'QFLX_LND':[derived_var(
+                vid='QFLX_LND', inputs=['QFLX','OCNFRAC'], outputs=['QFLX_LND'],
+                func=WC_diag_amwg.surface_maskvariable ),
+                    derived_var(
+                vid='QFLX_LND', inputs=['QFLX'], outputs=['QFLX_LND'],
+                func=(lambda x: x) ) ],
+        'QFLX_OCN':[derived_var(
+                vid='QFLX_OCN', inputs=['QFLX','LANDFRAC'], outputs=['QFLX_OCN'],
+                func=WC_diag_amwg.surface_maskvariable ),
+                    derived_var(
+                vid='QFLX_OCN', inputs=['QFLX'], outputs=['QFLX_OCN'],
+                func=(lambda x: x) ) ],
+
+        # miscellaneous:
         'PRECT':[derived_var(
                 vid='PRECT', inputs=['PRECC','PRECL'], outputs=['PRECT'],
                 func=(lambda a,b,units="mm/day": aplusb(a,b,units) ))],
@@ -110,6 +125,8 @@ class amwg_plot_spec(plot_spec):
         'RESTOM':[derived_var(
                 vid='RESTOM', inputs=['FSNT','FLNT'], outputs=['RESTOM'],
                 func=aminusb )],   # RESTOM = net radiative flux
+
+        # clouds, Yuying Zhang:
         'CLISCCP':[
             derived_var(
                 # old style vid='CLISCCP', inputs=['FISCCP1_COSP','cosp_prs','cosp_tau'], outputs=['CLISCCP'],
@@ -247,6 +264,8 @@ class amwg_plot_spec(plot_spec):
         'TGCLDLWP':[derived_var(
                 vid='TGCLDLWP', inputs=['TGCLDLWP_OCEAN'], outputs=['TGCLDLWP'],
                 func=(lambda x: x) ) ],
+        #...end of clouds, Yuying Zhang
+
         # To compare LHFLX and QFLX, need to unify these to a common variable
         # e.g. LHFLX (latent heat flux in W/m^2) vs. QFLX (evaporation in mm/day).
         # The conversion functions are defined in qflx_lhflx_conversions.py.
