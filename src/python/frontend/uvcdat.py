@@ -1181,12 +1181,8 @@ class plot_spec(object):
         """Inputs: a plotspec object, a list zvars of precursor variables, and a function zfunc.
         This method computes the variable z to be plotted as zfunc(zvars), and returns it.
         It also returns zrv for use in building a label."""
-        print 'inside compute plot var value'
-#        print zvars
         vvals = self.variable_values
         zrv = [ vvals[k] for k in zvars ]
-#        print vvals
-#        print zrv
 
         if any([a is None for a in zrv]):
             print "WARNING - cannot compute plot results from zvars=",ps.zvars
@@ -1194,7 +1190,6 @@ class plot_spec(object):
             return None, None
         z = apply( zfunc, zrv )
         if hasattr(z,'mask') and z.mask.all():
-#            print type(z)
             print 'in uvcdat.py' # this next line is printed from two different possible places.
             print "ERROR, all values of",z.id,"are missing!"
             return None,None
