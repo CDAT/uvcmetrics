@@ -2189,7 +2189,9 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
         axes1 = allAxes(mv1)
     if axes2 is None:
         axes2 = allAxes(mv2)
-    if axes1 is None or axes2 is None: return None
+    if axes1 is None or axes2 is None:
+        print "WARNING, In aminusb_2ax, both axes are None, returning None."
+        return None
 
     # Forget about a trivial extra axis; for now only if it's the first axis:
     new_axes1 = axes1
@@ -2209,8 +2211,10 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
         print "WARNING, In aminusb_2ax, mv2=",mv2.id,"doesn't have enough axes.  It has",axes2
         raise Exception("In aminusb_2ax, mv1 doesn't have enough axes")
 
-    if len(axes1)!=2: print "ERROR @1, wrong number of axes for aminusb_2ax",axes1
-    if len(axes2)!=2: print "ERROR @2, wrong number of axes for aminusb_2ax",axes2
+    if len(axes1)!=2: print "ERROR @1, wrong number of axes for aminusb_2ax",len(axes1),\
+            [ax.id for ax in axes1]
+    if len(axes2)!=2: print "ERROR @2, wrong number of axes for aminusb_2ax",len(axes2),\
+            [ax.id for ax in axes2]
     if len(axes1[0])==len(axes2[0]):
         # Only axis2 differs, there's a better way...
         return aminusb_ax2( mv1, mv2 )
@@ -2674,6 +2678,8 @@ class reduced_variable(ftrow,basic_id):
         """varid, seasonid are strings identifying a variable name (usually of a model output
         variable) and season, ft is a filetable.  ff is an optional filefilter.
         This method constructs and returns an id for the corresponding reduced_variable object."""
+        if seasonid=='JFMAMJJASOND':
+            seasonid = 'ANN'
         if ft is None:
             return None
         if ff is None:

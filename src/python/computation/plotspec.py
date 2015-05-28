@@ -90,6 +90,8 @@ class derived_var(basic_id):
         """varid, varmod, seasonid are strings identifying a variable name, a name modifier
         (often '' is a good value) and season, ft is a filetable, or a string id for the filetable.
         This method constructs and returns an id for the corresponding derived_var object."""
+        if seasonid=='JFMAMJJASOND':
+            seasonid = 'ANN'
         if type(ft1) is str:  # can happen if id has already been computed, and is used as input here.
             ft1id = ft1
         else:
