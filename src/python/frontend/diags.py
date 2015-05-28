@@ -104,6 +104,7 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
          filetable2 = None
     else:
          filetable2 = obsfts[0]
+    #print "dbg obs filetable is",filetable2.full_repr()
 
     outdir = opts['output']['outputdir']
     if outdir is None:
