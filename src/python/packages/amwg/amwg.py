@@ -103,16 +103,22 @@ class amwg_plot_spec(plot_spec):
                 func=WC_diag_amwg.surface_maskvariable ),
                     derived_var(
                 vid='QFLX_LND', inputs=['QFLX'], outputs=['QFLX_LND'],
-                func=(lambda x: x) ) ],
+                func=(lambda x: x) ) ],  # assumes that QFLX is from a land-only dataset
         'QFLX_OCN':[derived_var(
                 vid='QFLX_OCN', inputs=['QFLX','LANDFRAC'], outputs=['QFLX_OCN'],
                 func=WC_diag_amwg.surface_maskvariable ),
                     derived_var(
                 vid='QFLX_OCN', inputs=['QFLX'], outputs=['QFLX_OCN'],
-                func=(lambda x: x) ) ],
+                func=(lambda x: x) ) ],  # assumes that QFLX is from an ocean-only dataset
+        'EminusP':[derived_var(
+                vid='EminusP', inputs=['QFLX','PRECT'], outputs=['EminusP'],
+                func=aminusb_2ax )],  # assumes that QFLX,PRECT are time-reduced
 
         # miscellaneous:
         'PRECT':[derived_var(
+                vid='PRECT', inputs=['pr'], outputs=['PRECT'],
+                func=(lambda x:x)),
+                 derived_var(
                 vid='PRECT', inputs=['PRECC','PRECL'], outputs=['PRECT'],
                 func=(lambda a,b,units="mm/day": aplusb(a,b,units) ))],
         'AODVIS':[derived_var(
@@ -306,28 +312,34 @@ class amwg_plot_spec(plot_spec):
         #if varnom not in amwg_plot_spec.standard_variables:
         if varnom not in cls.standard_variables:
             return None,[],[]
-        #print "jfp varnom=",varnom
         computable = False
         rvs = []
         dvs = []
+        #print "dbg in stdvar2var to compute varnom=",varnom,"from filetable=",filetable
         for svd in cls.standard_variables[varnom]:  # loop over ways to compute varnom
             invarnoms = svd.inputs()
-            #print "jfp first round, invarnoms=",invarnoms
-            #print "jfp filetable variables=",filetable.list_variables()
+            #print "dbg first round, invarnoms=",invarnoms
+            #print "dbg filetable variables=",filetable.list_variables()
             if len( set(invarnoms) - set(filetable.list_variables_incl_axes()) )<=0:
                 func = svd._func
                 computable = True
                 break
         if computable:
+            #print "dbg",varnom,"is computable by",func,"from..."
             for ivn in invarnoms:
-                #print "jfp computing reduced variable from input variableid=ivn=",ivn
+                #print "dbg   computing reduced variable from input variableid=ivn=",ivn
                 rv = reduced_variable( variableid=ivn, filetable=filetable, season=season,
                                        reduction_function=reduction_function )
-                #print "jfp adding reduced variable rv=",rv
+                #print "dbg   adding reduced variable rv=",rv
                 rvs.append(rv)
-        #print "jfp1 rvs ids=",[rv.id() for rv in rvs]
+
+            #print "dbg",varnom,"is not directly computable"
+            pass
+        available = rvs + dvs
+        availdict = { v.id()[1]:v for v in available }
+        inputs = [ availdict[v].id() for v in svd._inputs if v in availdict]
+        #print "dbg1 rvs ids=",[rv.id() for rv in rvs]
         if not computable and recurse==True:
-            #print "jfp second round"
             # Maybe the input variables are themselves computed.  We'll only do this one
             # level of recursion before giving up.  This is enough to do a real computation
             # plus some variable renamings via standard_variables.
@@ -349,10 +361,15 @@ class amwg_plot_spec(plot_spec):
                         rvs += irvs
                         dvs += idvs
                 func = svd._func
+                available = rvs + dvs
+                availdict = { v.id()[1]:v for v in available }
+                inputs = [ availdict[v].id() for v in svd._inputs if v in availdict]
                 computable = True
+                #print "dbg in second round, found",varnom,"computable by",func,"from",inputs
                 break
         if len(rvs)<=0:
             print "ERROR, no inputs found for",varnom,"in filetable",filetable.id()
+            print "filetable source files=",filetable._filelist[0:10]
             print "need inputs",svd.inputs()
             #return None,[],[]
             raise DiagError( "ERROR, don't have %s, and don't have sufficient data to compute it!"\
@@ -363,9 +380,11 @@ class amwg_plot_spec(plot_spec):
             print "found inputs",[rv.id() for rv in rvs]+[drv.id() for drv in dvs]
             return None,[],[]
         seasonid = season.seasons[0]
-        vid = dv.dict_id( varnom, '', seasonid, filetable )
-        #print "jfp stdvar is making a new derived_var, vid=",vid,"inputs=",[rv.id() for rv in rvs]
-        newdv = derived_var( vid=vid, inputs=[rv.id() for rv in rvs], func=func )
+        vid = derived_var.dict_id( varnom, '', seasonid, filetable )
+        #print "dbg stdvar is making a new derived_var, vid=",vid,"inputs=",inputs
+        #print "dbg function=",func
+        #jfp was newdv = derived_var( vid=vid, inputs=[rv.id() for rv in rvs], func=func )
+        newdv = derived_var( vid=vid, inputs=inputs, func=func )
         dvs.append(newdv)
         return newdv.id(), rvs, dvs
 
@@ -1054,28 +1073,6 @@ class amwg_plot_set5and6(amwg_plot_spec):
         for dv in dvs:
             self.derived_variables[dv.id()] = dv
 
-        # This is the former code, which was moved to stdvar2var so other classes may use it:
-        #if varnom not in self.standard_variables:
-        #    return None,None
-        #computable = False
-        #for svd in self.standard_variables[varnom]:  # loop over ways to compute varnom
-        #    invarnoms = svd._inputs
-        #    if len( set(invarnoms) - set(filetable.list_variables()) )<=0:
-        #        func = svd._func
-        #        computable = True
-        #        break
-        #if not computable:
-        #    return None,None
-        #rvs = []
-        #for ivn in invarnoms:
-        #    rv = reduced_variable(
-        #        variableid=ivn, filetable=filetable, season=self.season,
-        #        reduction_function=(lambda x,vid: reduce2latlon_seasonal( x, self.season, vid ) ))
-        #    self.reduced_variables[rv.id()] = rv
-        #    rvs.append(rv.id())
-        #varid = dv.dict_id( varnom, '', seasonid, filetable )
-        #self.derived_variables[varid] = derived_var( vid=varid, inputs=rvs, func=func )
-
         return varid, None
 
     def plan_computation_level_surface( self, model, obs, varid, seasonid, aux ):
@@ -1238,14 +1235,6 @@ class amwg_plot_set5(amwg_plot_set5and6):
     normally a world map will be overlaid. """
     name = '5 - Horizontal Contour Plots of Seasonal Means'
     number = '5'
-    
-class amwg_plot_set6old(amwg_plot_set5and6):
-    """represents one plot from AMWG Diagnostics Plot Set 6
-    Each contour plot is a set of three contour plots: one each for model output, observations, and
-    the difference between the two.  A plot's x-axis is longitude and its y-axis is the latitude;
-    normally a world map will be overlaid. """
-    #name = '6old - Horizontal Contour Plots of Seasonal Means'
-    #number = '6old'
     
 class amwg_plot_set6(amwg_plot_spec):
     """represents one plot from AMWG Diagnostics Plot Set 6
