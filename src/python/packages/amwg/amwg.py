@@ -113,6 +113,12 @@ class amwg_plot_spec(plot_spec):
         'EminusP':[derived_var(
                 vid='EminusP', inputs=['QFLX','PRECT'], outputs=['EminusP'],
                 func=aminusb_2ax )],  # assumes that QFLX,PRECT are time-reduced
+        'TMQ':[derived_var(
+                vid='TMQ', inputs=['PREH2O'], outputs=['TMQ'],
+                func=(lambda x:x))],
+        'WV_LIFETIME':[derived_var(
+                vid='WV_LIFETIME', inputs=['TMQ','PRECT'], outputs=['WV_LIFETIME','NEW_PW','NEW_PRECT'],
+                func=wv_lifetime )],
 
         # miscellaneous:
         'PRECT':[derived_var(

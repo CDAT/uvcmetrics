@@ -2091,6 +2091,10 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
             mv2 = 100*mv2
             mv2.units=mv1.units
             return mv1, mv2
+        if mv1.units=='kg/m2' and mv2.units=='mm':
+            mv1.units = 'mm' # [if 1 kg = 10^6 mm^3 as for water]
+        if mv2.units=='kg/m2' and mv1.units=='mm':
+            mv2.units = 'mm' # [if 1 kg = 10^6 mm^3 as for water]
 
         if preferred_units is None:
             # Look for whichever of mv1.units, mv2.units gives numbers more O(1).
