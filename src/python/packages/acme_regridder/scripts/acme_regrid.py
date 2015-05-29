@@ -52,7 +52,11 @@ class WeightFileRegridder:
     sh=input.shape
     #dest_field=numpy.zeros((n,self.n_b,))
     dest_field = metrics.packages.acme_regridder._regrid.apply_weights(input,self.S,self.row,self.col,self.frac_b)
-    print "DEST FIELD",dest_field.shape
+    print "DEST FIELD",input_id,"has shape",dest_field.shape,
+    if sz>1:
+      print "on processor:",rk
+    else:
+      print
     dest_field = dest_field.astype(input.dtype)
     dest_field=numpy.ma.masked_where(self.mask_b,dest_field)
     if self.regular:
@@ -68,6 +72,15 @@ class WeightFileRegridder:
     return dest_field
 
 if __name__=="__main__":
+  try:
+    import mpi4py
+    sz = mpi4py.MPI.COMM_WORLD.Get_size()
+    rk = mpi4py.MPI.COMM_WORLD.Get_rank()
+    cdms2.setNetcdfClassicFlag(0)
+    cdms2.setNetcdf4Flag(1)
+  except Exception,err:
+    sz = 1
+    rk = 0
   value = 0
   cdms2.setNetcdfShuffleFlag(value) ## where value is either 0 or 1
   cdms2.setNetcdfDeflateFlag(value) ## where value is either 0 or 1
@@ -110,26 +123,38 @@ if __name__=="__main__":
     vars=[args.var,]
   else:
     vars= f.variables.keys()
-  for v in vars:
+  for v in vars[rk:len(vars):sz]:
     V=f[v]
     if V.id in ["lat","lon"]:
       print "Skipping no longer needed:",V.id
     elif "ncol" in V.getAxisIds():
-      print "Processing:",V.id
+      print "Processing:",V.id,
+      if sz>1:
+        print "on processor:",rk
+      else:
+        print
       dat2 = cdms2.MV2.array(regdr.regrid(V()))
       for a in V.attributes:
         setattr(dat2,a,getattr(V,a))
       fo.write(dat2,dtype=V.dtype)
       fo.sync()
       if wgts is None:
-        print "trying to get weights"
+        print "trying to get weights",
+        if sz>1:
+          print "on processor:",rk
+        else:
+          print
         wgts = cdms2.MV2.array([ numpy.sin(x[1]*numpy.pi/180.)-numpy.sin(x[0]*numpy.pi/180.) for x in dat2.getLatitude().getBounds()])
         wgts.setAxis(0,dat2.getLatitude())
         wgts.setMissing(1.e20)
         fo.write(wgts,id="wgt")
         fo.sync()
     else:
-      print "Rewriting as is:",V.id
+      print "Rewriting as is:",V.id,
+      if sz>1:
+        print "on processor:",rk
+      else:
+        print
       try:
         fo.write(V())
         fo.sync()
