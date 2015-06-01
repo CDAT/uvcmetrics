@@ -73,13 +73,11 @@ if __name__=="__main__":
   cdms2.setNetcdfDeflateFlag(value) ## where value is either 0 or 1
   cdms2.setNetcdfDeflateLevelFlag(value) ## where value is a integer between 0 and 9 included
 
-  data_pth = os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]),"..","data"))
-  fweights = os.path.join(data_pth,"ne120_to_t85.wgts.nc")
   ## Create the parser for user input
   parser = argparse.ArgumentParser(description='Regrid variables in a file using a weight file')
-  parser.add_argument("--weight-file","-w",dest="weights",help="path to weight file",default=fweights)
-  parser.add_argument("--output","-o",dest="out",help="output file")
   parser.add_argument("--input","-i","-f","--file",dest="file",help="input file to process",required=True)
+  parser.add_argument("--weight-file","-w",dest="weights",help="path to weight file",required=True)
+  parser.add_argument("--output","-o",dest="out",help="output file")
   parser.add_argument("--var","-v",dest="var",help="variable to process (default is all variable with 'ncol' dimension")
 
   args = parser.parse_args(sys.argv[1:])
