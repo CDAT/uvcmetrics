@@ -12,8 +12,13 @@ static PyObject *
   char type;
   void *data_vals;
   double *out;
+  PyObject *Missing;
+  double missingd;
+  float missingf;
+  int missingi;
+  long missingl;
 
-  if (!PyArg_ParseTuple(args,"OOOOO",&data_obj,&S_obj,&row_obj,&col_obj,&fracb_obj))
+  if (!PyArg_ParseTuple(args,"OOOOOO",&data_obj,&S_obj,&row_obj,&col_obj,&fracb_obj,&Missing))
     return NULL;
 
     S =(PyArrayObject *) PyArray_ContiguousFromAny(S_obj,NPY_FLOAT64,1,1);
@@ -23,6 +28,33 @@ static PyObject *
     fracb =(PyArrayObject *) PyArray_ContiguousFromAny(fracb_obj,NPY_FLOAT64,1,1);
 
     type = data->descr->type;
+
+    if ((type=='d') || (type=='f')) {
+      if (PyFloat_Check(Missing) == 1 ) {
+        missingd = PyFloat_AsDouble(Missing);
+        missingf = (float)missingd;
+      }
+      else {
+        return NULL;
+      }
+    }
+    else if ((type=='i') || (type=='l') ) {
+      if (PyInt_Check(Missing) == 1) {
+        missingl = PyInt_AsLong(Missing);
+      }
+      else if (PyLong_Check(Missing) == 1) {
+        missingl = PyLong_AsLong(Missing);
+      }
+      else {
+        return NULL;
+      }
+      missingi = (int) missingl;
+    }
+    else {
+      return NULL;
+    }
+
+
     int nindep=1;
     int i,j;
     for (i=0;i<data->nd-1;i++) {
@@ -51,22 +83,26 @@ static PyObject *
     for (i=0;i<nindep;i++) {
       if (type=='d') {
         for (j=0;j<S->dimensions[0];j++) {
-          out[i*n2+row_vals[j]] = out[i*n2+row_vals[j]] + S_vals[j]*((double *)data_vals)[i*n1+col_vals[j]];
+          if (((double *)data_vals)[i*n1+col_vals[j]] != missingd) 
+            out[i*n2+row_vals[j]] = out[i*n2+row_vals[j]] + S_vals[j]*((double *)data_vals)[i*n1+col_vals[j]];
         }
       }
       else if (type=='f') {
         for (j=0;j<S->dimensions[0];j++) {
-          out[i*n2+row_vals[j]] = out[i*n2+row_vals[j]] + S_vals[j]*((float *)data_vals)[i*n1+col_vals[j]];
+          if (((float *)data_vals)[i*n1+col_vals[j]] != missingf) 
+            out[i*n2+row_vals[j]] = out[i*n2+row_vals[j]] + S_vals[j]*((float *)data_vals)[i*n1+col_vals[j]];
         }
       }
       else if (type=='i') {
         for (j=0;j<S->dimensions[0];j++) {
-          out[i*n2+row_vals[j]] = out[i*n2+row_vals[j]] + S_vals[j]*((int *)data_vals)[i*n1+col_vals[j]];
+          if (((int *)data_vals)[i*n1+col_vals[j]] != missingi) 
+            out[i*n2+row_vals[j]] = out[i*n2+row_vals[j]] + S_vals[j]*((int *)data_vals)[i*n1+col_vals[j]];
         }
       }
       else if (type=='l') {
         for (j=0;j<S->dimensions[0];j++) {
-          out[i*n2+row_vals[j]] = out[i*n2+row_vals[j]] + S_vals[j]*((long *)data_vals)[i*n1+col_vals[j]];
+          if (((long *)data_vals)[i*n1+col_vals[j]] != missingl) 
+            out[i*n2+row_vals[j]] = out[i*n2+row_vals[j]] + S_vals[j]*((long *)data_vals)[i*n1+col_vals[j]];
         }
       }
       else {
