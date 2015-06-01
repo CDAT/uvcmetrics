@@ -2030,8 +2030,10 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
     # First, if there are no units, take a guess.  I'm reluctant to do this because it will surely
     # be wrong sometimes.  But usually it is correct.
     if not hasattr(mv1,'units') or mv1.units == 'none':
+        print "WARNING, variable",getattr(mv1,'id',''),"has no units, will use units=1."
         mv1.units = '1'
     if not hasattr(mv2,'units') or mv2.units == 'none':
+        print "WARNING, variable",getattr(mv2,'id',''),"has no units, will use units=1."
         mv2.units = '1'
 
     # For QFLX and LHFLX variables, call dedicated functions instead.
@@ -2138,6 +2140,11 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
             except Exception as e:
                 # conversion not possible.
                 print "ERROR could not convert from",mv1.units,"to",target_units
+                print "units are from variable mv1=",getattr(mv1,'id','(not known)'),"and"
+                if target_units==preferred_units:
+                    print "preferred units=",preferred_units
+                else:
+                    print "variable mv2=",getattr(mv2,'id','(not known)')
                 raise e
             if hasattr(mv1,'id'):  # yes for TransientVariable, no for udunits
                 mv1id = mv1.id
@@ -2154,6 +2161,11 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
             except Exception as e:
                 #  conversion not possible
                 print "ERROR could not convert from",mv2.units,"to",target_units
+                print "units are from variable mv2=",getattr(mv2,'id','(not known)'),"and"
+                if target_units==preferred_units:
+                    print "preferred units=",preferred_units
+                else:
+                    print "variable mv1=",getattr(mv1,'id','(not known)')
                 raise e
             if hasattr(mv2,'id'):  # yes for TransientVariable, no for udunits
                 mv2id = mv2.id
