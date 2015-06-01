@@ -92,6 +92,7 @@ if __name__=="__main__":
     onm = ".".join(args.file.split(".")[:-1])+"_regrid.nc"
   else:
     onm = args.out
+  print "Output file:",onm
   fo=cdms2.open(onm,"w")
   history = ""
   ## Ok now let's start by copying the attributes back onto the new file
