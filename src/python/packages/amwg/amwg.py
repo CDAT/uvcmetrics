@@ -117,8 +117,8 @@ class amwg_plot_spec(plot_spec):
                 vid='TMQ', inputs=['PREH2O'], outputs=['TMQ'],
                 func=(lambda x:x))],
         'WV_LIFETIME':[derived_var(
-                vid='WV_LIFETIME', inputs=['TMQ','PRECT'], outputs=['WV_LIFETIME','NEW_PW','NEW_PRECT'],
-                func=wv_lifetime )],
+                vid='WV_LIFETIME', inputs=['TMQ','PRECT'], outputs=['WV_LIFETIME'],
+                func=(lambda tmq,prect: wv_lifetime(tmq,prect)[0]) )],
 
         # miscellaneous:
         'PRECT':[derived_var(
@@ -1253,7 +1253,8 @@ class amwg_plot_set6(amwg_plot_spec):
     """
     name = '6 - (Experimental, doesnt work with GUI) Horizontal Vector Plots of Seasonal Means' 
     number = '6'
-    standard_variables = { 'STRESS':[['STRESS_MAG','TAUX','TAUY'],['TAUX','TAUY']] }
+    standard_variables = { 'STRESS':[['STRESS_MAG','TAUX','TAUY'],['TAUX','TAUY']],
+                           'MOISTURE_TRANSPORT':[['TUQ','TVQ']] }
     # ...built-in variables.   The key is the name, as the user specifies it.
     # The value is a lists of lists of the required data variables. If the dict item is, for
     # example, V:[[a,b,c],[d,e]] then V can be computed either as V(a,b,c) or as V(d,e).
@@ -1321,7 +1322,16 @@ class amwg_plot_set6(amwg_plot_spec):
             var_cont = dv.dict_id( 'STRESS_MAG', '', seasonid, filetable )
             vars_vec = ( vars[0], vars[1] )  # for vector plot
             vid_cont = var_cont
+        elif vars==['TUQ','TVQ']:
+            rvars = vars            # variable names which may become reduced variables
+            dvars = ['TQ_MAG']  # variable names which will become derived variables
+            var_cont = dv.dict_id( 'TQ_MAG', '', seasonid, filetable )
+            vars_vec = ( vars[0], vars[1] )  # for vector plot
+            vid_cont = var_cont
         else:
+            print "WARNING, could not find a suitable variable set when setting up for a vector plot!"
+            print "variables found=",vars
+            print "filetable=",filetable
             rvars = []
             dvars = []
             var_cont = ''
@@ -1370,7 +1380,8 @@ class amwg_plot_set6(amwg_plot_spec):
                     reduced_vars.append( reduced_variable(
                             variableid=var, filetable=filetable, season=self.season,
                             reduction_function=(lambda x,vid=None:
-                                                    minusb(reduce2latlon_seasonal( x, self.season, self.region, vid)) ) ))
+                                                    minusb(reduce2latlon_seasonal( x, self.season,
+                                                                                   self.region, vid)) ) ))
             else:
                 # No ocean mask available and it's not a CAM file; just do an ordinary reduction.
                 reduced_vars.append( reduced_variable(
@@ -1388,8 +1399,13 @@ class amwg_plot_set6(amwg_plot_spec):
             vardict[','] = None
             return []
         derived_vars = []
+        if 'TAUX' in vardict.keys():
+            uservar = 'STRESS'
+        elif 'TUQ' in vardict.keys():
+            uservar = 'MOISTURE_TRANSPORT'
         for var in dvars:
             if var in ['TAUX','TAUY']:
+                uservar = 'STRESS'
                 #tau = rv.dict_id(var+'_nomask',seasonid,filetable)
                 tau = rv.dict_id(var,seasonid,filetable)
                 vid = dv.dict_id( var, '', seasonid, filetable )
@@ -1423,15 +1439,21 @@ class amwg_plot_set6(amwg_plot_spec):
             vardict[vecid] = rv.dict_id( vecid, seasonid, filetable )
 
         if tuple(vid_cont) and vid_cont[0]=='dv':  # need to compute STRESS_MAG from TAUX,TAUY
-            if filetable.filefmt.find('CAM')>=0:   # TAUX,TAUY are derived variables
-                    tau_x = dv.dict_id('TAUX','',seasonid,filetable)
-                    tau_y = dv.dict_id('TAUY','',seasonid,filetable)
-            else: #if filetable.filefmt.find('CAM')>=0:   # TAUX,TAUY are reduced variables
-                    tau_x = rv.dict_id('TAUX',seasonid,filetable)
-                    tau_y = rv.dict_id('TAUY',seasonid,filetable)
-            new_derived_var = derived_var( vid=vid_cont, inputs=[tau_x,tau_y], func=abnorm )
+            if uservar=='STRESS':
+                if filetable.filefmt.find('CAM')>=0:   # TAUX,TAUY are derived variables
+                        tau_x = dv.dict_id('TAUX','',seasonid,filetable)
+                        tau_y = dv.dict_id('TAUY','',seasonid,filetable)
+                else: #if filetable.filefmt.find('CAM')>=0:   # TAUX,TAUY are reduced variables
+                        tau_x = rv.dict_id('TAUX',seasonid,filetable)
+                        tau_y = rv.dict_id('TAUY',seasonid,filetable)
+                        new_derived_var = derived_var( vid=vid_cont, inputs=[tau_x,tau_y], func=abnorm )
+                        vardict['STRESS_MAG'] = vid_cont
+            elif uservar=='MOISTURE_TRANSPORT':
+                        tq_x = rv.dict_id('TUQ',seasonid,filetable)
+                        tq_y = rv.dict_id('TVQ',seasonid,filetable)
+                        new_derived_var = derived_var( vid=vid_cont, inputs=[tq_x,tq_y], func=abnorm )
+                        vardict['TQ_MAG'] = vid_cont
             derived_vars.append( new_derived_var )
-            vardict['STRESS_MAG'] = vid_cont
             self.derived_variables[vid_cont] = new_derived_var
 
         return derived_vars
@@ -1444,7 +1466,7 @@ class amwg_plot_set6(amwg_plot_spec):
         vars_vec1 = {}
         vars_vec2 = {}
         try:
-            if varid=='STRESS' or varid=='SURF_STRESS':
+            if varid=='STRESS' or varid=='SURF_STRESS' or varid=='MOISTURE_TRANSPORT':
                 vars1,rvars1,dvars1,var_cont1,vars_vec1,vid_cont1 =\
                     self.STRESS_setup( filetable1, varid, seasonid )
                 vars2,rvars2,dvars2,var_cont2,vars_vec2,vid_cont2 =\
