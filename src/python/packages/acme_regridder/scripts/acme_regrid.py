@@ -7,6 +7,7 @@ import MV2
 import argparse
 import metrics
 import metrics.packages.acme_regridder._regrid
+import cdutil
 
 class WeightFileRegridder:
   def __init__(self,weightFile,toRegularGrid=True):
@@ -29,12 +30,12 @@ class WeightFileRegridder:
       self.lats=cdms2.createAxis(sorted(set(wFile("yc_b").tolist())))
       self.lats.designateLatitude()
       self.lats.units="degrees_north"
-      self.lats.setBounds(numpy.array(sorted(set(wFile("yv_b").ravel().tolist()))))
+      self.lats.setBounds(None)
       self.lats.id="lat"
       self.lons=cdms2.createAxis(sorted(set(wFile("xc_b").tolist())))
       self.lons.designateLongitude()
       self.lons.units="degrees_east"
-      self.lons.setBounds(numpy.array(sorted(set(wFile("xv_b").ravel().tolist()))))
+      self.lons.setBounds(None)
       self.lons.id="lon"
     else:
       self.yc_b=wFile("yc_b")
@@ -78,7 +79,7 @@ if __name__=="__main__":
   parser.add_argument("--input","-i","-f","--file",dest="file",help="input file to process",required=True)
   parser.add_argument("--weight-file","-w",dest="weights",help="path to weight file",required=True)
   parser.add_argument("--output","-o",dest="out",help="output file")
-  parser.add_argument("--var","-v",dest="var",help="variable to process (default is all variable with 'ncol' dimension")
+  parser.add_argument("--var","-v",dest="var",nargs="*",help="variable to process (default is all variable with 'ncol' dimension")
 
   args = parser.parse_args(sys.argv[1:])
 
@@ -106,13 +107,15 @@ if __name__=="__main__":
   
   wgts = None
   if args.var is not None:
-    vars=[args.var,]
+    vars=args.var
   else:
     vars= f.variables.keys()
   for v in vars:
     V=f[v]
-    if V.id in ["lat","lon"]:
-      print "Skipping no longer needed:",V.id
+    if V is None:
+      print "Skipping",V,"as it does NOT appear to be in file"
+    elif V.id in ["lat","lon","area"]:
+      print "Skipping",V.id,"no longer needed or recomputed"
     elif "ncol" in V.getAxisIds():
       print "Processing:",V.id
       dat2 = cdms2.MV2.array(regdr.regrid(V()))
@@ -126,6 +129,14 @@ if __name__=="__main__":
         wgts.setAxis(0,dat2.getLatitude())
         wgts.setMissing(1.e20)
         fo.write(wgts,id="wgt")
+        fo.sync()
+        if dat2.ndim>3:
+            dat2=dat2[0,0]
+        else:
+            dat2=dat2[0]
+        print "Computing area weights"
+        area = cdutil.area_weights(dat2)
+        fo.write(area,id="area")
         fo.sync()
     else:
       print "Rewriting as is:",V.id
