@@ -49,10 +49,11 @@ class WeightFileRegridder:
   def regrid(self, input):
     axes=input.getAxisList()
     input_id=input.id
-    input=input.filled(1.e20)
+    M = input.getMissing()
+    input=input.filled(float(M))
     sh=input.shape
     #dest_field=numpy.zeros((n,self.n_b,))
-    dest_field = metrics.packages.acme_regridder._regrid.apply_weights(input,self.S,self.row,self.col,self.frac_b,1.e20)
+    dest_field = metrics.packages.acme_regridder._regrid.apply_weights(input,self.S,self.row,self.col,self.frac_b,float(M))
     print "DEST FIELD",dest_field.shape
     dest_field = dest_field.astype(input.dtype)
     dest_field=numpy.ma.masked_where(self.mask_b,dest_field)
@@ -66,6 +67,7 @@ class WeightFileRegridder:
       dest_field.setAxis(-2,self.lats)
       for i in range(len(sh2)-2):
         dest_field.setAxis(i,axes[i])
+      dest_field.setMissing(M)
     return dest_field
 
 if __name__=="__main__":

@@ -1,5 +1,6 @@
 #include <Python.h>
 #include "numpy/ndarrayobject.h"
+#include <stdbool.h>
 
 
 static PyObject *
@@ -12,6 +13,7 @@ static PyObject *
   char type;
   void *data_vals;
   double *out;
+  bool *is_missing;
   PyObject *Missing;
   double missingd;
   float missingf;
@@ -49,6 +51,7 @@ static PyObject *
         return NULL;
       }
       missingi = (int) missingl;
+      missingd = (double) missingl;
     }
     else {
       return NULL;
@@ -67,9 +70,11 @@ static PyObject *
     newdims[0]=nindep;
     newdims[1] = n2;
     out=malloc(newdims[0]*newdims[1]*sizeof(double));
+    is_missing=malloc(newdims[0]*newdims[1]*sizeof(bool));
     #pragma omp parallel for
     for (j=0;j<newdims[0]*newdims[1];j++) {
       out[j]=0;
+      is_missing[j] = true;
     }
 
     dest_field = PyArray_SimpleNew(2,newdims,NPY_DOUBLE);
@@ -83,26 +88,34 @@ static PyObject *
     for (i=0;i<nindep;i++) {
       if (type=='d') {
         for (j=0;j<S->dimensions[0];j++) {
-          if (((double *)data_vals)[i*n1+col_vals[j]] != missingd) 
+          if (((double *)data_vals)[i*n1+col_vals[j]] != missingd)  {
             out[i*n2+row_vals[j]] = out[i*n2+row_vals[j]] + S_vals[j]*((double *)data_vals)[i*n1+col_vals[j]];
+            is_missing[i*n2+row_vals[j]] = false;
+          }
         }
       }
       else if (type=='f') {
         for (j=0;j<S->dimensions[0];j++) {
-          if (((float *)data_vals)[i*n1+col_vals[j]] != missingf) 
+          if (((float *)data_vals)[i*n1+col_vals[j]] != missingf)  {
             out[i*n2+row_vals[j]] = out[i*n2+row_vals[j]] + S_vals[j]*((float *)data_vals)[i*n1+col_vals[j]];
+            is_missing[i*n2+row_vals[j]] = false;
+          }
         }
       }
       else if (type=='i') {
         for (j=0;j<S->dimensions[0];j++) {
-          if (((int *)data_vals)[i*n1+col_vals[j]] != missingi) 
+          if (((int *)data_vals)[i*n1+col_vals[j]] != missingi) {
             out[i*n2+row_vals[j]] = out[i*n2+row_vals[j]] + S_vals[j]*((int *)data_vals)[i*n1+col_vals[j]];
+            is_missing[i*n2+row_vals[j]] = false;
+          }
         }
       }
       else if (type=='l') {
         for (j=0;j<S->dimensions[0];j++) {
-          if (((long *)data_vals)[i*n1+col_vals[j]] != missingl) 
+          if (((long *)data_vals)[i*n1+col_vals[j]] != missingl) {
             out[i*n2+row_vals[j]] = out[i*n2+row_vals[j]] + S_vals[j]*((long *)data_vals)[i*n1+col_vals[j]];
+            is_missing[i*n2+row_vals[j]] = false;
+          }
         }
       }
       else {
@@ -112,12 +125,17 @@ static PyObject *
         if (fracb_vals[j]>0.) out[i*n2+j]=out[i*n2+j]/fracb_vals[j];
       }
     }
+    #pragma omp parallel for
+    for (j=0;j<newdims[0]*newdims[1];j++) {
+      if (is_missing[j]) out[j] = missingd;
+    }
     dest_field->data=out;
     Py_DECREF(S);
     Py_DECREF(col);
     Py_DECREF(row);
     Py_DECREF(data);
     Py_DECREF(fracb);
+    free(is_missing);
   return Py_BuildValue("N",dest_field);
 }
 
