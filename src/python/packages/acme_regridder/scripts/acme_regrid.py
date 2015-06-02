@@ -8,6 +8,7 @@ import argparse
 import metrics
 import metrics.packages.acme_regridder._regrid
 import cdutil
+import datetime
 
 class WeightFileRegridder:
   def __init__(self,weightFile,toRegularGrid=True):
@@ -104,7 +105,7 @@ if __name__=="__main__":
       setattr(fo,a,getattr(f,a))
     else:
       history=getattr(f,a)+"\n"
-  history+="weights applied via acme_regrid (git commit: %s)\n%s" % (metrics.git.commit," ".join(sys.argv))
+  history+="%s: weights applied via acme_regrid (git commit: %s), created by %s from path: %s with input command line: %s" % (str(datetime.datetime.utcnow()),metrics.git.commit,os.getlogin(),os.getcwd()," ".join(sys.argv))
   fo.history=history 
   
   wgts = None
