@@ -21,10 +21,15 @@ class WeightFileRegridder:
     self.S=wFile("S").filled()
     self.row=wFile("row").filled()-1
     self.col=wFile("col").filled()-1
-    self.frac_b=wFile("frac_b").filled()
-    self.mask_b=numpy.logical_not(wFile("mask_b").filled())
+    self.mask_b = wFile("mask_b")
+    self.nb = self.mask_b.shape[0]
+    if self.mask_b.min() == 1 and self.mask_b.max()==1:
+      print "No need to maks after"
+      self.mask_b = False
+    else:
+      print "MX MIN:",self.mask_b.max(),self.mask_b.min()
+      self.mask_b=numpy.logical_not(wFile("mask_b").filled())
     self.n_s=self.S.shape[0]
-    self.n_b=self.frac_b.shape[0]
     self.method = wFile.map_method
     self.regular=toRegularGrid
     if toRegularGrid:
@@ -51,13 +56,19 @@ class WeightFileRegridder:
     axes=input.getAxisList()
     input_id=input.id
     M = input.getMissing()
+    if input.mask is numpy.ma.nomask:
+      isMasked = False
+    else:
+      isMasked = True
     input=input.filled(float(M))
     sh=input.shape
-    #dest_field=numpy.zeros((n,self.n_b,))
-    dest_field = metrics.packages.acme_regridder._regrid.apply_weights(input,self.S,self.row,self.col,self.frac_b,float(M))
-    print "DEST FIELD",dest_field.shape
-    dest_field = dest_field.astype(input.dtype)
-    dest_field=numpy.ma.masked_where(self.mask_b,dest_field)
+    if isMasked:
+      dest_field = metrics.packages.acme_regridder._regrid.apply_weights_masked(input,self.S,self.row,self.col,self.nb,float(M))
+    else:
+      dest_field = metrics.packages.acme_regridder._regrid.apply_weights(input,self.S,self.row,self.col,self.nb)
+    if self.mask_b is not False:
+     print "Applying mask_b"
+     dest_field=numpy.ma.masked_where(self.mask_b,dest_field)
     if self.regular:
       sh2=list(sh[:-1])#+[len(self.lats),len(self.lons)]
       sh2.append(len(self.lats))
@@ -113,14 +124,15 @@ if __name__=="__main__":
     vars=args.var
   else:
     vars= f.variables.keys()
-  for v in vars:
+  NVARS = len(vars)
+  for i,v in enumerate(vars):
     V=f[v]
     if V is None:
       print "Skipping",V,"as it does NOT appear to be in file"
     elif V.id in ["lat","lon","area"]:
-      print "Skipping",V.id,"no longer needed or recomputed"
+      print i,NVARS,"Skipping",V.id,"no longer needed or recomputed"
     elif "ncol" in V.getAxisIds():
-      print "Processing:",V.id
+      print i,NVARS,"Processing:",V.id
       dat2 = cdms2.MV2.array(regdr.regrid(V()))
       for a in V.attributes:
         setattr(dat2,a,getattr(V,a))
@@ -142,7 +154,7 @@ if __name__=="__main__":
         fo.write(area,id="area")
         fo.sync()
     else:
-      print "Rewriting as is:",V.id
+      print i,NVARS,"Rewriting as is:",V.id
       try:
         fo.write(V())
         fo.sync()
