@@ -98,6 +98,8 @@ class derived_var(basic_id):
             ft1id = id2str( ft1._id )
         if ft2 is None or ft2=='':
             ft2id = ''
+        elif type(ft2) is str:
+            ft2id = ft2
         else:
             ft2id = id2str( ft2._id )
         if region is None:
