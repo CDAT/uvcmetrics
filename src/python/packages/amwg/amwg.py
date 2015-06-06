@@ -1535,12 +1535,27 @@ class amwg_plot_set6(amwg_plot_spec):
             self.single_plotspecs[self.plot2_id+'c'] = contplot
             self.single_plotspecs[self.plot2_id+'v'] = vecplot
         if vars1 is not None and vars2 is not None:
-            title = ' '.join([varid,seasonid,'(1)-(2)'])
+            # First, we need some more derived variables in order to do the contours as a magnitude
+            # of the difference vector.
+            diff1_vid = dv.dict_id( vid_vec11[1], 'DIFF1', seasonid, filetable1, filetable2 )
+            diff1 = derived_var( vid=diff1_vid, inputs=[vid_vec11,vid_vec21], func=aminusb_2ax )
+            self.derived_variables[diff1_vid] = diff1
+            diff2_vid = dv.dict_id( vid_vec12[1], 'DIFF1', seasonid, filetable1, filetable2 )
+            diff2 = derived_var( vid=diff2_vid, inputs=[vid_vec12,vid_vec22], func=aminusb_2ax )
+            
+            self.derived_variables[diff2_vid] = diff2
+            title = ' '.join([varid,seasonid,'diff,mag.diff'])
             source = ', '.join([ft1src,ft2src])
+
             contplot = plotspec(
-                vid = ps.dict_id(var_cont1,'diff',seasonid,filetable1,filetable2),
-                zvars = [vid_cont1,vid_cont2],  zfunc = aminusb_2ax,  # This is difference of magnitudes; sdb mag of diff!!!
+                vid = ps.dict_id(var_cont1,'mag.of.diff',seasonid,filetable1,filetable2),
+                zvars = [diff1_vid,diff2_vid],  zfunc = abnorm,  # This is magnitude of difference of vectors
                 plottype = plot_type_temp[0], title=title, source=source )
+            #contplot = plotspec(
+            #    vid = ps.dict_id(var_cont1,'diff.of.mags',seasonid,filetable1,filetable2),
+            #    zvars = [vid_cont1,vid_cont2],  zfunc = aminusb_2ax,  # This is difference of magnitudes.
+            #    plottype = plot_type_temp[0], title=title, source=source )
+            # This could be done in terms of diff1,diff2, but I'll leave it alone for now...
             vecplot = plotspec(
                 vid = ps.dict_id(vid_vec2,'diff',seasonid,filetable1,filetable2),
                 zvars = [vid_vec11,vid_vec12,vid_vec21,vid_vec22],
