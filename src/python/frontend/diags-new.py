@@ -166,7 +166,6 @@ def run_diags( opts ):
             print "among",variables
             quit()
 
-
       # AMWG set 1 (the tables) is special cased
       if (sclass.number == '1' and package.upper() == 'AMWG'):
          variables = variables[:1]
@@ -174,9 +173,9 @@ def run_diags( opts ):
          print 'Making tables'
          # pass season info, maybe var list, maybe region list?
 #         continue
-      if (sclass.number == '5' and package.upper() == 'LMWG'):
-         print 'Making tables'
-         # pass season info, maybe var list, maybe region list?
+#      if (sclass.number == '5' and package.upper() == 'LMWG'):
+#         print 'Making tables'
+#         # pass season info, maybe var list, maybe region list?
 #                  if '5' in snum and package.upper() == 'LMWG' and opts['json'] == True:
 #                     plot = sclass( modelfts, obsfts, varid, time, region, vvaropts[aux], jsonflag=True )
 #         continue
@@ -224,11 +223,21 @@ def run_diags( opts ):
                # now, the most inner loop. Looping over sets then seasons then vars then varopts
                for aux in varopts:
                   plot = sclass( modelfts, obsfts, varid, time, region, vvaropts[aux] )
+                  print '************************************ PLOT **********************************'
 
                   # Do the work (reducing variables, etc)
                   res = plot.compute(newgrid=-1) # newgrid=0 for original grid, -1 for coarse
+#                  print '************************************ PLOT DONE **********************************'
+#                  print 'type res: ', type(res)
+#                  if type(res) == str:
+#                     print '------------->Dump this to the file'
+#                     print res
+#                     print '------------->Done Dumping'
 
-                  if res is not None and len(res)>0: # Success, we have some plots to plot
+                  
+
+                  if res is not None and len(res)>0 and type(res) is not str: # Success, we have some plots to plot
+                     print '--------------------------------- res is not none'
                      # Are we running from metadiags? If so, lets keep the name as simple as possible.
                      if basename == '' and postname == '':
                         fname = 'figure-set'+snum+'_'+r_fname+'_'+time+'_'+varid+'_plot'
@@ -258,21 +267,41 @@ def run_diags( opts ):
                         print "wrote plots",resc.title," to",filenames
 
                   elif res is not None:
-                  # but len(res)==0, probably plot set 1
-                     if res.__class__.__name__ is 'amwg_plot_set1':
-                        resc = res
+                     if type(res) is str:
+                        auxstr = aux
+                        if aux != '':
+                           auxstr = '_'+auxstr
                         if basename == '' and postname == '':
-                           where = outdir
-                           fname = ""
+                           name = time+'_'+varid+auxstr+'-table.text'
                         else:
-                           where = ""
-                           name = basename+'_'+time+'_'+r_fname+'-table.text'
-                           fname = os.path.join(outdir,name)
-                        print 'calling write_plot with where: %s, fname: %s' %(where, fname)
+                           name = basename+'_'+time+'_'+varid+auxstr+'-table.text'
+                        fname = os.path.join(outdir, name)
+                        print 'Creating file - ', fname
+                        f = open(fname, 'w')
+                        f.write(res)
+                        f.close()
+                     else:
+                     # but len(res)==0, probably plot tables
+                     # eventually, education could get rid of the second clause here but I suspect not anytime soon.
+                        if opts['output']['table'] == True or res.__class__.__name__ is 'amwg_plot_set1': 
+                           print 'IN TABLES'
+                           resc = res
+                           if basename == '' and postname == '':
+                              where = outdir
+                              fname = ""
+                           else:
+                              where = ""
+                              name = basename+'_'+time+'_'+r_fname+'-table.text'
+                              fname = os.path.join(outdir,name)
+                           print '-------> calling write_plot with where: %s, fname: %s' %(where, fname)
 
-                        filenames = resc.write_plot_data("text", where=where, fname=fname)
-                        number_diagnostic_plots += 1
-                        print "wrote table",resc.title," to",filenames
+                           filenames = resc.write_plot_data("text", where=where, fname=fname)
+                           number_diagnostic_plots += 1
+                           print "-------> wrote table",resc.title," to",filenames
+                        else:
+                           print 'No data to plot for ', varid, ' ', aux
+   vcanvas.close()
+   vcanvas2.close()
    print "total number of (compound) diagnostic plots generated =", number_diagnostic_plots
 
 
@@ -381,7 +410,28 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                vname = vname.replace('/', '_')
                #### TODO - Do we need the old style very verbose names here?
                print 'vname: ', vname
-               if '_diff' in vname:
+               # I *really* hate to do this. Filename should be handled better at a level above diags*.py
+               special = ''
+               if 'RMSE_' in vname:
+                  special='RMSE'
+               if 'Standard_Deviation' in vname:
+                  special='STDDEV'
+               if 'BIAS_' in vname:
+                  special='BIAS'
+               if 'CORR_' in vname:
+                  special='CORR'
+               print '---> vname:', vname
+               if special != '':
+                  print '--> Special: ', special
+                  if ('_1' in vname and '_2' in vname) or '_MAP' in vname.upper():
+                     fname = fnamebase+'-map.png'
+                  elif '_1' in vname and '_2' not in vname:
+                     fname = fnamebase+'-ds1.png'
+                  elif '_2' in vname and '_1' not in vname:
+                     fname = fnamebase+'-ds2.png'
+                  else:
+                     fname = fnamebase+'-unknown.png'
+               elif '_diff' in vname:
                   fname = fnamebase+'-diff.png'
                elif '_obs' in vname:
                   fname = fnamebase+'-model-and-obs.png'

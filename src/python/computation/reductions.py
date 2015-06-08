@@ -678,14 +678,12 @@ def ttest_ab(mv1, mv2, constant = .1):
 
    t, prob = scipy.stats.ttest_ind(v1, v2, axis=tid1, equal_var=False)
    print 'prob:', prob
-   print type(prob)
    print 't: ', t
-   print type(t)
    missing = mv1.missing_value
    probnew = MV2.where(MV2.greater(prob, constant), 1, 0) # get rid of the tiny values that are essentially 0
    tnew = MV2.where(MV2.greater(t, constant), 1, 0)
 
-   print 'This needs some more work probably. Do we return t or prob?'
+   print '*** TODO This needs some more work probably. Do we return t or prob?'
    return tnew
 
 def ttest_time(mv1, mv2, mv3):
@@ -768,9 +766,8 @@ def ttest_time(mv1, mv2, mv3):
 # Step 3b - Add a 't' axis if it's not there. Does this need done? Should this need done?
 # Step 4 - RMSE
 def rmse_time(mv1, mv2):
-   print 'in rmse_time'
-   print mv1.id, 'mv1.shape: ', mv1.shape
-   print mv2.id, 'mv2.shape: ', mv2.shape
+   print mv1.id, '------------> rmse_time - mv1.shape: ', mv1.shape
+   print mv2.id, '------------> rmse_time - mv2.shape: ', mv2.shape
 
    mv1new, mv2new = regrid_without_obs(mv1, mv2)
 #   print mv1new.shape
@@ -786,13 +783,16 @@ def rmse_time(mv1, mv2):
 
 def correlation_time(mv1, mv2):
 
+   print 'min/max passed in: ', mv1.min(), mv2.min(), mv1.max(), mv2.max()
    mv1new, mv2new = regrid_without_obs(mv1, mv2)
    print 'mv1new/2 shapes: ', mv1new.shape, mv2new.shape
+   print 'new min/max: ', mv1new.min(), mv2new.min(), mv1new.max(), mv2new.max()
 
    corr = statistics.correlation(mv1new, mv2new, axis='t')
    print 'min/max:'
    print corr.min()
    print corr.max()
+   print corr.data
    print 'correlation result shape: ', corr.shape
    return corr
 
@@ -916,10 +916,10 @@ def regrid_without_obs(mv1, mv2):
    if axes1 is None or axes2 is None: 
       return None
 
-   print 'axes1:', axes1
-   print 'axes2:', axes2
-   print 'THERES A BUG HERE SOMEWHERE. PRINT AXES LIST TO SEE WHICH ONES ARE T'
-   print 'ALSO NEED TO AT LEAST REDUCE/REGRID TO A SINGLE T DIMENSION (OR SAME T DIMENSION)'
+#   print 'axes1:', axes1
+#   print 'axes2:', axes2
+#   print 'THERES A BUG HERE SOMEWHERE. PRINT AXES LIST TO SEE WHICH ONES ARE T'
+#   print 'ALSO NEED TO AT LEAST REDUCE/REGRID TO A SINGLE T DIMENSION (OR SAME T DIMENSION)'
    mv1new = mv1
    mv2new = mv2
    lat1, idx1 = latAxis2 (mv1)
@@ -1043,6 +1043,54 @@ def regrid_with_obs(mv1, mv2, obs1):
    print 'and done shapes: ', mv1new.shape, mv2new.shape, obsnew.shape
    return mv1new, mv2new, obsnew
 
+# Calculate bias between mv1 and mv2. Regrid as appropriate
+# This is used by land set 9, but might be generally usable
+# Step 1 - Reconcile units
+# Step 2 - Regrid
+# Step 3 - mv1sub = mv1-obs, mv2sub = mv2-obs
+# Step 4 - prob = ttest(mv1sub, mv2sub)
+# Step 5 - 
+def bias_map(mv1, mv2, obs, season, constant=.05, diffmeans=.25): # assumes mv1 is data and mv2 is obs generally.
+   print mv1.id, '----> bias_map - mv1.shape: ', mv1.shape
+   print mv2.id, '----> bias_map - mv2.shape: ', mv2.shape
+   print obs.id, '----> bias_map - obs.shape: ', obs.shape
+   mv1new, mv2new, obsnew = regrid_with_obs(mv1, mv2, obs)
+
+   bias1 = mv1new - obsnew
+   bias2 = mv2new - obsnew
+
+   # extract just the season desired now.
+
+   # NCL math appears to be:
+   # b = t < siglvl and
+   #   (abs(x2-obs) <= abs(x1-obs) ) and
+   #   (abs(x2-x1) >= diffmeans )
+   # g = t < siglvl and
+   #   (abs(x2-obs) >= abs(x1-obs) ) and
+   #   (abs(x2-x1) >= diffmeans )
+
+   absx2x1 = MV2.absolute(mv2new-mv1new)
+   absx2obs = MV2.absolute(mv2new-obsnew)
+   absx1obs = MV2.absolute(mv1new-obsnew)
+
+   sigdiff = MV2.where(MV2.greater_equal(absx2x1, diffmeans), 1, 0)
+   sigle = MV2.where(MV2.less_equal(absx2obs, absx1obs), 1, 0)
+   sigge = MV2.where(MV2.greater_equal(absx2obs, absx1obs), 1, 0)
+   siglediff = MV2.where(MV2.logical_and(sigle, sigdiff), 1, 0)
+   siggediff = MV2.where(MV2.logical_and(sigge, sigdiff), 1, 0)
+
+
+   t = ttest_ab(bias1, bias2, .001) # constant here is just differentiating from 0.000x and 0
+
+   t1 = MV2.where( MV2.less_equal(t, constant), 1, 0)
+   b = MV2.where(MV2.logical_and(t1, siglediff), 1, 0)
+   g = MV2.where(MV2.logical_and(t1, siggediff), 1, 0)
+
+   #g is 2
+   g = MV2.where(MV2.equal(g, 1), 2, g)
+   vmap = b+g
+   return vmap
+
 
 # Takes 2 rmse variables in. Could be required to take 2 normal variables and we might have to calculate rmse?
 # Also, we might want to specify constant somehow.
@@ -1122,10 +1170,6 @@ def stddev_map(mv1, mv2, obs, recalc=True, constant=.1):
    vmap = MV2.where(MV2.equal(vsum, 0), absdiff.missing_value, vsum)
 
    return vmap
-
-def bias_map(mv1, mv2, obs, constant=.1):
-   # eww, this one is more complicated, plus need to implement T-test
-   pass
 
 # This could possibly be moved to lmwg, but it is not specific to land.
 # Does a yearly climatology, then spatial reduction over a subregion, then returns
@@ -1465,6 +1509,8 @@ def reduce2latlon_seasonal( mv, season=seasonsyr, region=None, vid=None, exclude
     """
     # This differs from reduce2lat_seasonal only in the line "axis_names ="....
     # I need to think about how to structure the code so there's less cut-and-paste!
+    print 'mv type: ', type(mv)
+    print '----------->mv shape going in: ', mv.shape
     if vid is None:
         vid = 'reduced_'+mv.id
     # Note that the averager function returns a variable with meaningless id.
@@ -1505,6 +1551,7 @@ def reduce2latlon_seasonal( mv, season=seasonsyr, region=None, vid=None, exclude
     # >>> special ad-hoc code.  The target units should be provided in an argument, not by this if statement>>>>
         if avmv.units=="Pa" or avmv.units.lower()=="pascal" or avmv.units.lower()=="pascals":
             avmv = convert_variable( avmv, "millibar" )
+    print '----------> mv shape going out: ', avmv.shape
     return avmv
 
 def reduce_time_seasonal( mv, seasons=seasonsyr, region=None, vid=None ):
@@ -1840,8 +1887,46 @@ def minusb(mv2):
    mv.id = mv2.id
    return mv
 
+def aminusb_regrid(mv1, mv2):
+# This is similar to aminusb_2ax I think, but simpler in what it does. Could probably be consolidated
+   if mv1 is None or mv2 is None:
+      return None
+
+   mv1, mv2 = reconcile_units(mv1, mv2)
+   mv1new, mv2new = regrid_without_obs(mv1, mv2)
+   mv = mv1new - mv2new
+   if hasattr(mv1, 'units') and hasattr(mv2, 'units'):
+      if mv1.units == mv2.units:
+         mv.units = mv1.units
+   if hasattr(mv, 'long_name'):
+      if mv.long_name == mv1.long_name:
+         mv.long_name = ''
+   print '-------> IN regrid, ids:'
+   if hasattr(mv1, 'id'):
+      print 'mv1.id: ', mv1.id
+   else:
+      print 'no id for mv1'
+   if hasattr(mv2, 'id'):
+      print 'mv2.id:' , mv2.id
+   else:
+      print 'no id for mv2'
+   print "Mv1.id:", mv1.id
+   print 'mv2.id:', mv2.id
+   if hasattr(mv1, 'long_name'):
+      print 'mv1 longname: ', mv1.long_name
+   if hasattr(mv2, 'long_name'):
+      print 'mv2 longname: ', mv2.long_name
+   if hasattr(mv, 'id'):
+      print 'mv returning id: ', mv.id
+   else:
+      print 'mv returning has no id.'
+   print '<------- out regrid ids'
+   return mv
+
+
 def aminusb(mv1, mv2):
    """ returns mv1-mv2; they should be dimensioned alike."""
+#   print 'ENTERING AMINUSB. a shape: ', mv1.shape, 'b shape:', mv2.shape
    if mv1 is None or mv2 is None:
        return None
 
