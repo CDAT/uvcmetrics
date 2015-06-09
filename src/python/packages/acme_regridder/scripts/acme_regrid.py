@@ -58,9 +58,10 @@ class WeightFileRegridder:
     M = input.getMissing()
     if input.mask is numpy.ma.nomask:
       isMasked = False
+      input=input.data
     else:
       isMasked = True
-    input=input.filled(float(M))
+      input=input.filled(float(M))
     sh=input.shape
     if isMasked:
       dest_field = metrics.packages.acme_regridder._regrid.apply_weights_masked(input,self.S,self.row,self.col,self.nb,float(M))
@@ -79,7 +80,8 @@ class WeightFileRegridder:
       dest_field.setAxis(-2,self.lats)
       for i in range(len(sh2)-2):
         dest_field.setAxis(i,axes[i])
-      dest_field.setMissing(M)
+      if isMasked:
+        dest_field.setMissing(M)
     return dest_field
 
 if __name__=="__main__":
@@ -137,14 +139,14 @@ if __name__=="__main__":
       for a in V.attributes:
         setattr(dat2,a,getattr(V,a))
       fo.write(dat2,dtype=V.dtype)
-      fo.sync()
+      #fo.sync()
       if wgts is None:
         print "trying to get weights"
         wgts = cdms2.MV2.array([ numpy.sin(x[1]*numpy.pi/180.)-numpy.sin(x[0]*numpy.pi/180.) for x in dat2.getLatitude().getBounds()])
         wgts.setAxis(0,dat2.getLatitude())
         wgts.setMissing(1.e20)
         fo.write(wgts,id="wgt")
-        fo.sync()
+        #fo.sync()
         if dat2.ndim>3:
             dat2=dat2[0,0]
         else:
@@ -152,12 +154,12 @@ if __name__=="__main__":
         print "Computing area weights"
         area = cdutil.area_weights(dat2)
         fo.write(area,id="area")
-        fo.sync()
+        #fo.sync()
     else:
       print i,NVARS,"Rewriting as is:",V.id
       try:
         fo.write(V())
-        fo.sync()
+        #fo.sync()
       except:
         pass
   fo.close()
