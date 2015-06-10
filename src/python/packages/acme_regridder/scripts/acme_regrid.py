@@ -157,7 +157,7 @@ if __name__=="__main__":
     V=f[v]
     if V is None:
       print "Will skip",V,"as it does NOT appear to be in file"
-    elif V.id in ["lat","lon","area","time_bnds"]:
+    elif V.id in ["lat","lon","area"]:
       print i,NVARS,"Will skip",V.id,"no longer needed or recomputed"
     elif "ncol" in V.getAxisIds():
       print i,NVARS,"Will process:",V.id
@@ -184,7 +184,7 @@ if __name__=="__main__":
     V=f[v]
     if V is None:
       print "Skipping",V,"as it does NOT appear to be in file"
-    elif V.id in ["lat","lon","area","time_bnds"]:
+    elif V.id in ["lat","lon","area"]:
       print i,NVARS,"Skipping",V.id,"no longer needed or recomputed"
     elif "ncol" in V.getAxisIds():
       print i,NVARS,"Processing:",V.id
