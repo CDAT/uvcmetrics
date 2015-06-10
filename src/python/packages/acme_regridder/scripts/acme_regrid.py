@@ -10,6 +10,7 @@ import metrics.packages.acme_regridder._regrid
 import cdutil
 import datetime
 
+
 class WeightFileRegridder:
   def __init__(self,weightFile,toRegularGrid=True):
     if isinstance(weightFile,str):
@@ -84,11 +85,39 @@ class WeightFileRegridder:
         dest_field.setMissing(M)
     return dest_field
 
+def addAxes(f,axisList):
+  axes = []
+  for ax in axisList:
+    if not ax.id in f.listdimension():
+      A = f.createAxis(ax.id,ax[:])
+      for att in ax.attributes:
+        setattr(A,att,getattr(ax,att))
+    else:
+      A = f.getAxis(ax.id)
+    axes.append(A)
+  return axes
+
+def addVariable(f,id,typecode,axes,attributes):
+  axes = addAxes(f,axes)
+  V = f.createVariable(id,typecode,axes)
+  for att in attributes:
+    setattr(V,att,attributes[att])
+
+
 if __name__=="__main__":
-  value = 0
-  cdms2.setNetcdfShuffleFlag(value) ## where value is either 0 or 1
-  cdms2.setNetcdfDeflateFlag(value) ## where value is either 0 or 1
-  cdms2.setNetcdfDeflateLevelFlag(value) ## where value is a integer between 0 and 9 included
+  try:
+    import mpi4py
+    sz = mpi4py.MPI.COMM_WORLD.Get_size()
+    rk = mpi4py.MPI.COMM_WORLD.Get_rank()
+  except:
+    sz = 1
+    rk = 0
+
+  cdms2.setNetcdfClassicFlag(0)
+  cdms2.setNetcdf4Flag(1)
+  cdms2.setNetcdfShuffleFlag(0)
+  cdms2.setNetcdfDeflateFlag(0)
+  cdms2.setNetcdfDeflateLevelFlag(0)
 
   ## Create the parser for user input
   parser = argparse.ArgumentParser(description='Regrid variables in a file using a weight file')
@@ -121,11 +150,15 @@ if __name__=="__main__":
   history+="%s: weights applied via acme_regrid (git commit: %s), created by %s from path: %s with input command line: %s" % (str(datetime.datetime.utcnow()),metrics.git.commit,os.getlogin(),os.getcwd()," ".join(sys.argv))
   fo.history=history 
   
-  wgts = None
+  wgt = None
   if args.var is not None:
     vars=args.var
   else:
     vars= f.variables.keys()
+  axes3d = []
+  axes4d = []
+  wgts = None
+  area = None
   NVARS = len(vars)
   for i,v in enumerate(vars):
     V=f[v]
@@ -135,30 +168,58 @@ if __name__=="__main__":
       print i,NVARS,"Skipping",V.id,"no longer needed or recomputed"
     elif "ncol" in V.getAxisIds():
       print i,NVARS,"Processing:",V.id
+      if V.rank()==2:
+        if axes3d == []:
+          dat2 = cdms2.MV2.array(regdr.regrid(V()))
+          axes3d = dat2.getAxisList()
+        addVariable(fo,V.id,V.typecode(),axes3d,V.attributes)
+      elif V.rank()==3:
+        if axes4d == []:
+          dat2 = cdms2.MV2.array(regdr.regrid(V()))
+          axes4d = dat2.getAxisList()
+        addVariable(fo,V.id,V.typecode(),axes4d,V.attributes)
+      if wgt is None:
+        wgt = True
+        addVariable(fo,"wgt","d",[dat2.getLatitude(),],[])
+        addVariable(fo,"area","f",[dat2.getLatitude(),dat2.getLongitude()],[])
+    else:
+      print "rewriting as is",V.id
+      addVariable(fo,V.id,V.typecode(),V.getAxisList(),V.attributes)
+
+  wgts = None
+  for i,v in enumerate(vars):
+    V=f[v]
+    if V is None:
+      print "Skipping",V,"as it does NOT appear to be in file"
+    elif V.id in ["lat","lon","area"]:
+      print i,NVARS,"Skipping",V.id,"no longer needed or recomputed"
+    elif "ncol" in V.getAxisIds():
+      print i,NVARS,"Processing:",V.id
+      V2=fo[V.id]
       dat2 = cdms2.MV2.array(regdr.regrid(V()))
-      for a in V.attributes:
-        setattr(dat2,a,getattr(V,a))
-      fo.write(dat2,dtype=V.dtype)
+      V2[:]=dat2[:]
       #fo.sync()
       if wgts is None:
         print "trying to get weights"
-        wgts = cdms2.MV2.array([ numpy.sin(x[1]*numpy.pi/180.)-numpy.sin(x[0]*numpy.pi/180.) for x in dat2.getLatitude().getBounds()])
-        wgts.setAxis(0,dat2.getLatitude())
-        wgts.setMissing(1.e20)
-        fo.write(wgts,id="wgt")
+        wgts = [ numpy.sin(x[1]*numpy.pi/180.)-numpy.sin(x[0]*numpy.pi/180.) for x in dat2.getLatitude().getBounds()]
+        #wgts.setMissing(1.e20)
+        V2=fo["wgt"]
+        V2[:]=wgts[:]
         #fo.sync()
         if dat2.ndim>3:
             dat2=dat2[0,0]
         else:
             dat2=dat2[0]
         print "Computing area weights"
-        area = cdutil.area_weights(dat2)
-        fo.write(area,id="area")
+        area = cdutil.area_weights(dat2).astype("f")
+        V2=fo["area"]
+        V2[:]=area[:]
         #fo.sync()
     else:
       print i,NVARS,"Rewriting as is:",V.id
       try:
-        fo.write(V())
+        V2=fo[V.id]
+        V2[:]=V[:]
         #fo.sync()
       except:
         pass
