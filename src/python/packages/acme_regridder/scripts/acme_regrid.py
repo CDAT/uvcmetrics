@@ -105,16 +105,9 @@ def addVariable(f,id,typecode,axes,attributes):
 
 
 if __name__=="__main__":
-  try:
-    import mpi4py
-    sz = mpi4py.MPI.COMM_WORLD.Get_size()
-    rk = mpi4py.MPI.COMM_WORLD.Get_rank()
-  except:
-    sz = 1
-    rk = 0
 
-  cdms2.setNetcdfClassicFlag(0)
-  cdms2.setNetcdf4Flag(1)
+  cdms2.setNetcdfClassicFlag(1)
+  #cdms2.setNetcdf4Flag(0)
   cdms2.setNetcdfShuffleFlag(0)
   cdms2.setNetcdfDeflateFlag(0)
   cdms2.setNetcdfDeflateLevelFlag(0)
@@ -163,11 +156,11 @@ if __name__=="__main__":
   for i,v in enumerate(vars):
     V=f[v]
     if V is None:
-      print "Skipping",V,"as it does NOT appear to be in file"
-    elif V.id in ["lat","lon","area"]:
-      print i,NVARS,"Skipping",V.id,"no longer needed or recomputed"
+      print "Will skip",V,"as it does NOT appear to be in file"
+    elif V.id in ["lat","lon","area","time_bnds"]:
+      print i,NVARS,"Will skip",V.id,"no longer needed or recomputed"
     elif "ncol" in V.getAxisIds():
-      print i,NVARS,"Processing:",V.id
+      print i,NVARS,"Will process:",V.id
       if V.rank()==2:
         if axes3d == []:
           dat2 = cdms2.MV2.array(regdr.regrid(V()))
@@ -183,7 +176,7 @@ if __name__=="__main__":
         addVariable(fo,"wgt","d",[dat2.getLatitude(),],[])
         addVariable(fo,"area","f",[dat2.getLatitude(),dat2.getLongitude()],[])
     else:
-      print "rewriting as is",V.id
+      print "Will rewrite as is",V.id
       addVariable(fo,V.id,V.typecode(),V.getAxisList(),V.attributes)
 
   wgts = None
@@ -191,7 +184,7 @@ if __name__=="__main__":
     V=f[v]
     if V is None:
       print "Skipping",V,"as it does NOT appear to be in file"
-    elif V.id in ["lat","lon","area"]:
+    elif V.id in ["lat","lon","area","time_bnds"]:
       print i,NVARS,"Skipping",V.id,"no longer needed or recomputed"
     elif "ncol" in V.getAxisIds():
       print i,NVARS,"Processing:",V.id
