@@ -249,6 +249,6 @@ if __name__ == "__main__":
             try:
                 V2 = fo[V.id]
                 V2[:] = V[:]
-            except:
-                pass
+            except Exception,err:
+                V2[:] = V[:]
     fo.close()
