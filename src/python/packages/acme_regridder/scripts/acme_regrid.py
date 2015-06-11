@@ -157,8 +157,8 @@ if __name__ == "__main__":
             setattr(fo, a, getattr(f, a))
         else:
             history = getattr(f, a)+"\n"
-    history += "%s: weights applied via acme_regrid (git commit: %s),\
-                created by %s from path: %s with input command line: %s" % (
+    history += ("%s: weights applied via acme_regrid (git commit: %s), "
+                "created by %s from path: %s with input command line: %s") % (
                     str(datetime.datetime.utcnow()), metrics.git.commit,
                     os.getlogin(), os.getcwd(), " ".join(sys.argv)
                     )
@@ -178,6 +178,7 @@ if __name__ == "__main__":
     elif dirnm[0] != os.path.sep:
         dirnm = os.path.join(os.getcwd(), dirnm)
     fo.acme_regrid_weights_file = os.path.join(dirnm, basenm)
+    fo.acme_regrid_version = metrics.git.commit
 
     wgt = None
     if args.var is not None:
