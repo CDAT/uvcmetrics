@@ -163,6 +163,21 @@ if __name__ == "__main__":
                     os.getlogin(), os.getcwd(), " ".join(sys.argv)
                     )
     fo.history = history
+    dirnm = os.path.dirname(args.file)
+    basenm = os.path.basename(args.file)
+    if dirnm == '':  # no dirname using current dir
+        dirnm = os.getcwd()
+    elif dirnm[0] != os.path.sep:
+        dirnm = os.path.join(os.getcwd(), dirnm)
+    fo.acme_regrid_input_file = os.path.join(dirnm, basenm)
+
+    dirnm = os.path.dirname(args.weights)
+    basenm = os.path.basename(args.weights)
+    if dirnm == '':  # no dirname using current dir
+        dirnm = os.getcwd()
+    elif dirnm[0] != os.path.sep:
+        dirnm = os.path.join(os.getcwd(), dirnm)
+    fo.acme_regrid_weights_file = os.path.join(dirnm, basenm)
 
     wgt = None
     if args.var is not None:
