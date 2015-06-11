@@ -11,6 +11,7 @@ import metrics
 import metrics.packages.acme_regridder._regrid
 import cdutil
 import datetime
+import time
 
 
 class WeightFileRegridder:
@@ -248,7 +249,18 @@ if __name__ == "__main__":
             print i, NVARS, "Rewriting as is:", V.id
             try:
                 V2 = fo[V.id]
-                V2[:] = V[:]
+                if V2.rank()==0:
+                    V2[:]=V.getValue()
+                elif V2.id == "time_written":
+                    d = datetime.datetime.utcnow()
+                    time_written = "%.2i:%.2i:%.2i" % (d.hour,d.minute,d.second)
+                    V2[:] = numpy.array([x for x in time_written])
+                elif V2.id == "date_written":
+                    d = datetime.datetime.utcnow()
+                    date_written = "%.2i/%.2i/%s" % (d.month,d.day,str(d.year)[-2:])
+                    V2[:] = numpy.array([x for x in date_written])
+                else:
+                    V2[:] = V[:]
             except Exception,err:
-                V2[:] = V[:]
+                print "Variable %s falied with error: %s" % (V2.id,err) 
     fo.close()
