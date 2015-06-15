@@ -257,7 +257,11 @@ def run_diags( opts ):
                         auxname =''
                         if aux != 'default' and aux != None and aux != ' default': #?? why ' default'?
                            auxname = '_'+aux
-                        name = basename+'_'+time+'_'+varid+auxname+'_'+postname+'_'+r_fname
+                        # don't add an extra underscore unnecessarily
+                        if postname != '':
+                           postname=postname+'_'
+                           
+                        name = basename+'_'+time+'_'+varid+auxname+'_'+postname+r_fname
                         fname = os.path.join(outdir,name)
 
                      

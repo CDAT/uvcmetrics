@@ -169,6 +169,18 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
          print 'Couldnt create output log - %s/DIAGS_OUTPUT.log' % outpath
          quit()
 
+   # Get some paths setup
+   raw0 = model_dict[model_dict.keys()[0]]['raw']
+   climo0 = model_dict[model_dict.keys()[0]]['climos']
+   name0 = model_dict[model_dict.keys()[0]].get('name', 'ft0')
+   if climo0 != None:
+      cf0 = 'yes'
+   else:
+      cf0 = 'no'
+
+   defaultft0 = climo0 if climo0 is not None else raw0
+   modelpath = defaultft0.root_dir()
+
    # Now, loop over collections.
    for collnum in colls:
       print 'Working on collection ', collnum
@@ -249,7 +261,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
 
             if o != 'NA':
                obsfname = diags_obslist[o]['filekey']
-               obsstr = ',filter="f_startswith(\''+obsfname+'\')"'  #note leading comma
+               obsstr = '--obs path='+obspath+',climos=yes,filter="f_startswith(\''+obsfname+'\')"' 
                poststr = '--postfix '+obsfname
             else:
                obsstr = ''
@@ -276,14 +288,15 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
             obs_vlist = obsvars[o]
             simple_vars = []
             for v in obs_vlist:
-               if diags_collection[collnum][v].get('seasons', False) == False and diags_collection[collnum][v].get('regions', False) == False and diags_collection[collnum][v].get('varopts', False) == False:
+               if diags_collection[collnum][v].get('seasons', False) == False and diags_collection[collnum][v].get('regions', False) == False and diags_collection[collnum][v].get('varopts', False) == False and diags_collection[collnum][v].get('options', False) == False:
                   simple_vars.append(v)
 
             complex_vars = list(set(obs_vlist) - set(simple_vars))
             # simple vars first
             if len(simple_vars) != 0:
                varstr = '--vars '+' '.join(simple_vars)
-               cmdline = 'diags-new.py --model path=%s,climos=yes,type=model --obs path=%s,climos=yes,type=obs%s %s %s %s %s %s %s %s %s %s %s' % (modelpath, obspath, obsstr, optionsstr, packagestr, setstr, seasonstr, varstr, outstr, xmlstr, prestr, poststr, regionstr)
+               cmdline = 'diags-new.py --model path=%s,climos=%s,type=model %s %s %s %s %s %s %s %s %s %s %s' % (modelpath, cf0, obsstr, optionsstr, packagestr, setstr, seasonstr, varstr, outstr, xmlstr, prestr, poststr, regionstr)
+                  
                if collnum != 'dontrun':
                   runcmdline(cmdline, outlog)
                else:
@@ -304,7 +317,20 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
                   varopts = '--varopts '+' '.join(diags_collection[collnum][v]['varopts'])
                varstr = '--vars '+v
                # check for varopts.
-               cmdline = 'diags-new.py --model path=%s,climos=yes,type=model --obs path=%s,climos=yes,type=obs%s %s %s %s %s %s %s %s %s %s %s %s' % (modelpath, obspath, obsstr, optionsstr, packagestr, setstr, seasonstr, varstr, outstr, xmlstr, prestr, poststr, regionstr, varopts)
+               raw = False
+               cf0 = 'yes'
+               if diags_collection[collnum][v].get('options', False) != False:
+                  raw = diags_collection[collnum][v]['options'].get('requiresraw', False)
+
+               if raw != False:
+                  if raw0 == None:
+                     print 'No raw dataset provided and this set requires raw data'
+                     quit()
+                  else:
+                     modelpath = raw0.root_dir()
+                     cf0 = 'no'
+
+               cmdline = 'diags-new.py --model path=%s,climos=%s,type=model %s %s %s %s %s %s %s %s %s %s %s %s' % (modelpath, cf0, obsstr, optionsstr, packagestr, setstr, seasonstr, varstr, outstr, xmlstr, prestr, poststr, regionstr, varopts)
                if collnum != 'dontrun':
                   runcmdline(cmdline, outlog)
                else:
