@@ -150,20 +150,25 @@ class albedos_redvar( reduced_variable ):
 # it requires a derived class like this.
 class prec_redvar( reduced_variable ): # only used for set 9
    def __init__(self, filetable, fn, season=None, region=None, flag=None, obs_ft=None, reduced_var_id=None, vid=None):
+      rvid = reduced_var_id
+      if rvid == None:
+         rvid = 'PREC_A'
       duv = derived_var('PREC_A', inputs = ['RAIN', 'SNOW'], func = aplusb)
       if fn == 'BIAS':
          reduced_variable.__init__(
-            self, variableid='PREC_A',
+#            self, variableid='PREC_A',
+            self, variableid=rvid,
             filetable = filetable,
             reduction_function=(lambda x, vid: reduce2latlon_seasonal(x, season=season, vid=vid)),
-            reduced_var_id=reduced_var_id,
+            reduced_var_id=rvid,
          duvs = {'PREC_A':duv})
       if fn == None:
          reduced_variable.__init__(
-            self, variableid='PREC_A',
+#            self, variableid='PREC_A',
+            self, variableid=rvid,
             filetable = filetable,
             reduction_function=(lambda x, vid: dummy(x, vid)),
-            reduced_var_id=reduced_var_id,
+            reduced_var_id=rvid,
          duvs = {'PREC_A':duv})
 
 # A couple only used for one set, so don't need more generalized.
@@ -342,6 +347,7 @@ class lmwg_plot_set1(lmwg_plot_spec):
    _level_vars = ['SOILLIQ', 'SOILICE', 'SOILPSI', 'TSOI']
 
    def __init__(self, model, obs, varid, seasonid=None, region=None, aux=None):
+      print 'SOILLIQ LEVELS QUESTIONABLE?'
       plot_spec.__init__(self,seasonid)
       self.plottype = 'Yxvsx'
 
@@ -352,17 +358,30 @@ class lmwg_plot_set1(lmwg_plot_spec):
 
       self._var_baseid = '_'.join([varid, 'set1'])
 
-      ft1id = model_dict[model_dict.keys()[0]]._strid
+      # This can be mostly all climos.
+      climo0 = None
+      climo1 = None
+      raw0 = None
+      raw1 = None
 
-      if num_models == 2:
-         ft2id = model_dict[model_dict.keys()[1]]._strid
+      # We can set the fts here too since none of the variables are nonlinear in this set.
+      if num_models == 1:
+         raw0 = model_dict[model_dict.keys()[0]]['raw']
+         climo0 = model_dict[model_dict.keys()[0]]['climos']
+         ft0 = (climo0 if climo0 is not None else raw0)
+         ft1id = ft0._strid
+      elif num_models == 2:
+         raw1 = model_dict[model_dict.keys()[1]]['raw']
+         climo1 = model_dict[model_dict.keys()[1]]['climos']
+         ft1 = (climo1 if climo1 is not None else raw1)
+         ft2id = ft1._strid
 
       self.plot1_id = ft1id+'_'+varid
       if num_models == 2:
          self.plot2_id = ft1id+' - '+ft2id+'_'+varid
          self.plotall_id = ft1id+'_'+ft2id+'_'+varid
       else:
-         self.plotall_id = filetable1._strid+'__'+varid # must differ from plot1_id
+         self.plotall_id = ft1id+'__'+varid # must differ from plot1_id
 
       self.seasons = ['ANN']
       if not self.computation_planned:
@@ -393,17 +412,16 @@ class lmwg_plot_set1(lmwg_plot_spec):
       raw1 = None
 
       # We can set the fts here too since none of the variables are nonlinear in this set.
-      if num_models == 1:
-         raw0 = model_dict[model_dict.keys()[0]]['raw']
-         climo0 = model_dict[model_dict.keys()[0]]['climos']
-         ft = (climo0 if climo0 is not None else raw0)
-      elif num_models == 2:
-         raw0 = model_dict[model_dict.keys()[0]]['raw']
-         climo0 = model_dict[model_dict.keys()[0]]['climos']
+      raw0 = model_dict[model_dict.keys()[0]]['raw']
+      climo0 = model_dict[model_dict.keys()[0]]['climos']
+      ft = (climo0 if climo0 is not None else raw0)
+      lw0 = land_weights(ft, region=region).reduce()
+
+      if num_models == 2:
          raw1 = model_dict[model_dict.keys()[1]]['raw']
          climo1 = model_dict[model_dict.keys()[1]]['climos']
-         ft = (climo0 if climo0 is not None else raw0)
          ft2 = (climo1 if climo1 is not None else raw1)
+         lw1 = land_weights(ft2, region=region).reduce()
 
       self.reduced_variables = {}
       self.derived_variables = {}
@@ -420,7 +438,7 @@ class lmwg_plot_set1(lmwg_plot_spec):
             ln = 'Layer '+str(i+1)
             self.reduced_variables[vn] = reduced_variable(
                variableid = vbase, filetable=ft, reduced_var_id=vn,
-               reduction_function=(lambda x, vid, i=i: reduceAnnTrendRegionLevel(x, region, i, vid))) 
+               reduction_function=(lambda x, vid, i=i: reduceAnnTrendRegionLevel(x, region, i, weights=lw0, vid=vid))) 
             self.single_plotspecs[self.plot1_id] = plotspec(vid=vn,
                zvars = [vn], zfunc=(lambda z:z),
                # z2, # z3,
@@ -432,7 +450,7 @@ class lmwg_plot_set1(lmwg_plot_spec):
                ln = 'Layer '+str(i+1)
                self.reduced_variables[vn+'_ft2'] = reduced_variable(
                   variableid = vbase, filetable=ft2, reduced_var_id=vn+'_ft2',
-                  reduction_function=(lambda x, vid, i=i: reduceAnnTrendRegionLevel(x, region, i, vid)))
+                  reduction_function=(lambda x, vid, i=i: reduceAnnTrendRegionLevel(x, region, i, weights=lw1, vid=vid)))
                self.single_plotspec[self.plot1_id].z2vars = [vn+'_ft2']
                self.single_plotspec[self.plot1_id].z2func = (lambda z:z)
 
@@ -448,12 +466,12 @@ class lmwg_plot_set1(lmwg_plot_spec):
          if varid not in lmwg_plot_set1._derived_varnames and varid not in lmwg_plot_set1._level_vars:
             self.reduced_variables[varid+'_ft1'] = reduced_variable(variableid = varid,
                filetable=ft, reduced_var_id = varid+'_ft1',
-               reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid)))
+               reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, weights=lw0, vid=vid)))
    
             if num_models == 2:
                self.reduced_variables[varid+'_ft2'] = reduced_variable(variableid = varid,
                   filetable=ft2, reduced_var_id = varid+'_ft2',
-                  reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid)))
+                  reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, weights=lw1, vid=vid)))
 
          # Now some derived variables.
          if varid == 'PREC' or varid == 'TOTRUNOFF':
@@ -469,7 +487,7 @@ class lmwg_plot_set1(lmwg_plot_spec):
             for v in red_vars:
                self.reduced_variables[v+'_ft1'] = reduced_variable(
                   variableid = v, filetable=ft, reduced_var_id = v+'_ft1',
-                  reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid)))
+                  reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, weights=lw0, vid=vid)))
             self.derived_variables[varid+'_ft1'] = derived_var(
                vid=varid+'_ft1', inputs=in1, func=myfunc)
 
@@ -477,7 +495,7 @@ class lmwg_plot_set1(lmwg_plot_spec):
                for v in red_vars:
                   self.reduced_variables[v+'_ft2'] = reduced_variable(
                      variableid = v, filetable=ft2, reduced_var_id = v+'_ft2',
-                     reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, vid)))
+                     reduction_function=(lambda x, vid: reduceAnnTrendRegion(x, region, weights=lw1, vid=vid)))
                self.derived_variables[varid+'_ft2'] = derived_var(
                   vid=varid+'_ft2', inputs=in2, func=myfunc)
 
@@ -491,12 +509,12 @@ class lmwg_plot_set1(lmwg_plot_spec):
                vname = 'SOILLIQ'
             self.reduced_variables[varid+'_ft1'] = reduced_variable(
                variableid = vname, filetable=ft, reduced_var_id=varid+'_ft1',
-               reduction_function=(lambda x, vid: reduceAnnTrendRegionSumLevels(x, region, 1, 10, vid)))
+               reduction_function=(lambda x, vid: reduceAnnTrendRegionSumLevels(x, region, 1, 10, weights=lw0, vid=vid)))
 
             if num_models == 2:
                self.reduced_variables[varid+'_ft2'] = reduced_variable(
                   variableid = vname, filetable=ft2, reduced_var_id=varid+'_ft2',
-                  reduction_function=(lambda x, vid: reduceAnnTrendRegionSumLevels(x, region, 1, 10, vid)))
+                  reduction_function=(lambda x, vid: reduceAnnTrendRegionSumLevels(x, region, 1, 10, weights=lw1, vid=vid)))
 
          # set up the plots
          self.single_plotspecs = {
@@ -1667,8 +1685,9 @@ class lmwg_plot_set3(lmwg_plot_spec):
          ft = (climo0 if climo0 is not None else raw0)
          ft2 = (climo1 if climo1 is not None else raw1)
          print '******* NEED MONTHLY FILES, USING RAW FOR NOW *********'
-         print '******* CALCULATE LAND WEIGHTS *******'
-         XXX
+         lw0 = land_weights(ft0, region=region).reduce()
+         if ft1 != None:
+            lw1 = land_weights(ft1, region=region).reduce()
          ft = raw0
          ft2 = raw1
          red_varlist = ['SNOWDP', 'FSNO', 'H2OSNO']
@@ -1677,20 +1696,21 @@ class lmwg_plot_set3(lmwg_plot_spec):
          for v in red_varlist:
             self.reduced_variables[v+'_ft1'] = reduced_variable(
                variableid = v, filetable=ft, reduced_var_id=v+'_ft1',
-               reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid)))
+               reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, weights=lw0, vid=vid)))
             self.single_plotspecs[v] = plotspec(vid=v+'_ft1', 
                zvars = [v+'_ft1'], zfunc=(lambda z:z),
                plottype = self.plottype, title=varinfo[v]['desc'])
             if num_models == 2:
                self.reduced_variables[v+'_ft2'] = reduced_variable(
                   variableid = v, filetable=ft2, reduced_var_id=v+'_ft2',
-                  reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid)))
+                  reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, weights=lw1, vid=vid)))
                self.single_plotspecs[v].z2vars = [v+'_ft2']
                self.single_plotspecs[v].z2func = (lambda z:z)
             self.composite_plotspecs[pspec_name].append(v)
 
          # Process any/all observation sets now
          weights = []
+         print '******* CALCULATE LAND WEIGHTS FOR OBS PROPERLY *******'
          num_snowd = 0
          num_fsno = 0
          num_swe = 0
@@ -1782,20 +1802,22 @@ class lmwg_plot_set3(lmwg_plot_spec):
          self.composite_plotspecs[pspec_name] = []
          ft = (climo0 if climo0 is not None else raw0)
          ft2 = (climo1 if climo1 is not None else raw1)
+         lw0 = land_weights(ft0, region=region).reduce()
+         if ft1 != None:
+            lw1 = land_weights(ft1, region=region).reduce()
          print '******* NEED MON CLIMOS *******'
          print '***** CALC LAND WEIGHTS *****'
-         XXXX
          ft = raw0
          ft2 = raw1
 
          for v in red_varlist:
             self.reduced_variables[v+'_ft1'] = reduced_variable(
                variableid = v, filetable=ft, reduced_var_id=v+'_ft1',
-               reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid)))
+               reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, weights=lw0, vid=vid)))
             if num_models == 2:
                self.reduced_variables[v+'_ft2'] = reduced_variable(
                   variableid = v, filetable=ft2, reduced_var_id=v+'_ft2',
-                  reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, vid)))
+                  reduction_function=(lambda x, vid: reduceMonthlyTrendRegion(x, region, weights=lw1, vid=vid)))
             self.single_plotspecs[v] = plotspec(vid=v+'_ft1', 
                zvars = [v+'_ft1'], zfunc=(lambda z:z),
                plottype = self.plottype, title=varinfo[v]['desc'])
@@ -2761,8 +2783,8 @@ class lmwg_plot_set9(lmwg_plot_spec):
 #               self.reduced_variables[name2+'_raw'] = reduced_variable(variableid = aux+'_raw', filetable = ft2, reduced_var_id = name2+'_raw', reduction_function = (lambda x, vid: dummy(x, vid)))
 #                self.reduced_variables[obs+'_raw'] = reduced_variable(variableid = vname, filetable=obs0, reduced_var_id = obs+'_raw', reduction_function = (lambda x, vid: dummy(x, vid))) 
          elif aux == 'PREC':
-            self.reduced_variables[var1] = prec_redvar(ft, func, season=self.season, reduced_var_id=var1)
-            self.reduced_variables[var2] = prec_redvar(ft2, func, season=self.season, reduced_var_id=var2)
+            self.reduced_variables[var1] = prec_redvar(ft, func, season=self.season, reduced_var_id=aux+'_1')
+            self.reduced_variables[var2] = prec_redvar(ft2, func, season=self.season, reduced_var_id=aux+'_2')
             
             # See if we can find an observation variable
             if aux in obs0.list_variables():
