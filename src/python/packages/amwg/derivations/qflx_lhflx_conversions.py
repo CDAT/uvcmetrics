@@ -9,6 +9,8 @@
 #          - density (water)
 
 from metrics.common.utilities import *
+from unidata import udunits
+import numpy
 
 def reconcile_energyflux_precip(mv1, mv2, preferred_units=None):
     # To compare LHFLX and QFLX, need to unify these to a common variables
@@ -65,11 +67,19 @@ def convert_energyflux_precip(mv, preferred_units):
         mvid = mv.id
 
     # syntax correction (just in case)
+    mv.units = mv.units.replace(' m-2','/m^2')
+    mv.units = mv.units.replace(' s-1','/s')
     if  mv.units=='W/m2':
         mv.units='W/m^2'
+    if mv.units=='mm/d':
+        mv.units = 'mm/day'
+
+    if mv.units==preferred_units:
+        return mv
 
     # convert precip between kg/m2/s and mm/day
-    if mv.units=="kg/m2/s" and preferred_units=="mm/day":
+    if ( mv.units=="kg/m2/s" or mv.units=="kg/m^2/s" or mv.units=="kg/s/m2" or\
+             mv.units=="kg/s/m^2") and preferred_units=="mm/day":
         mv = mv * secondsperday # convert to kg/m2/s [= mm/s]
         mv.units="mm/day"         # [if 1 kg = 10^6 mm^3 as for water]
 
@@ -92,12 +102,26 @@ def convert_energyflux_precip(mv, preferred_units):
         mv.units = 'mm/day'
 
     else:
+        tmp = udunits(1.0,mv.units)
+        try:
+            s,i = tmp.how(preferred_units)
+        except Exception as e:
+            # conversion not possible.
+            print "ERROR could not convert from",mv.units,"to",preferred_units
+            raise e
+        if not ( numpy.allclose(s,1.0) and numpy.allclose(i,0.0) ):
+            mv = s*mv + i
+        mv.units = preferred_units
+    mv.id = mvid # reset variable id
+
+    return mv
+
+"""
+    else:
         print "ERROR: unknown / invalid units in arguments to reconcile_energyflux_precip."
         print "mv.units = ", mv.units
         print "preferred_units = ", preferred_units
         raise DiagError("unknown / invalid units in arguments to reconcile_energyflux_precip.")
         exit
+"""
 
-    mv.id = mvid # reset variable id
-
-    return mv

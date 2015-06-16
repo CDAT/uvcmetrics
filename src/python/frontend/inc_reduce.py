@@ -109,7 +109,7 @@ def next_tbounds_prescribed_step( red_time_bnds, data_time_bnds, dt ):
     t1t2 = numpy.array([[t0+dt, t1+dt]],dtype=numpy.int32)
     return numpy.concatenate( ( red_time_bnds, t1t2 ), axis=0 )
 
-def initialize_redfile( filen, axisdict, varnames, fill_value ):
+def initialize_redfile( filen, axisdict, varnames ):
     """Initializes the file containing reduced data.  Input is the filename, axes
     variables representing bounds on axes, and names of variables to be initialized.
     Axes are represented as a dictionary, with items like varname:[timeaxis, lataxis, lonaxis].
@@ -119,12 +119,13 @@ def initialize_redfile( filen, axisdict, varnames, fill_value ):
     g = cdms2.open( filen, 'w' )
     for varn in varnames:
         axes = axisdict[varn]
-        var = cdms2.createVariable( numpy.zeros([len(ax) for ax in axes]), fill_value=fill_value,
+        var = cdms2.createVariable( numpy.zeros([len(ax) for ax in axes]), fill_value=1.0e20,
                                      axes=axes, copyaxes=False )
         var.id = varn
         g.write(var)
     timeax = axisdict['time']
-    time_wts = cdms2.createVariable( numpy.zeros(len(timeax)), axes=[timeax], copyaxes=False )
+    time_wts = cdms2.createVariable( numpy.zeros(len(timeax)), axes=[timeax], fill_value=1.0e20,
+                                     copyaxes=False )
     time_wts.id = 'time_weights'
     g.write( time_wts )
     g.close()
@@ -152,11 +153,13 @@ def initialize_redfile_from_datafile( redfilename, varnames, datafilen, dt=-1, i
         red_time = [ 0.5*(tb[0]+tb[1]) for tb in red_time_bnds ]
         timeaxis = cdms2.createAxis( red_time, red_time_bnds, 'time' )
         axisdict['time'] = timeaxis
-    fill_value = None
+    out_varnames = []
     for varn in varnames:
+        if f[varn].dtype.name.find('string')==0:
+            # We can't handle string variables.
+            continue
+        out_varnames.append(varn)
         dataaxes = f[varn].getAxisList()
-        if fill_value is None:
-            fill_value = f[varn].getMissing()
         axes = []
         for ax in dataaxes:
             if dt>=0 and ax.isTime():
@@ -167,8 +170,9 @@ def initialize_redfile_from_datafile( redfilename, varnames, datafilen, dt=-1, i
         axisdict[varn] = axes
     for ax in boundless_axes:
         print "WARNING, axis",ax.id,"has no bounds"
-    initialize_redfile( redfilename, axisdict, varnames, fill_value )
+    initialize_redfile( redfilename, axisdict, out_varnames )
     f.close()
+    return out_varnames
 
 def adjust_time_for_climatology( newtime, redtime ):
     """Changes the time axis newtime for use in a climatology calculation.  That is, the values of
@@ -220,25 +224,32 @@ def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds, 
     # This is almost universal, but in the future I should generalize this code.  That would make
     # slicing more verbose, e.g. if time were changed from the first index to second then
     # v[j] would become v[:,j,:] (for a 2-D variable v).
-    try:
-        assert( newvars[0].getDomain()[0][0].isTime() )
-    except Exception as e:
-        print "newvars=",newvars
-        print "newvars[0]=",newvars[0]
-        print "newvars[0].getDomain()=",newvars[0].getDomain()
-        raise e
-    try:
-        assert( redvars[0].getDomain()[0][0].isTime() )
-    except Exception as e:
-        print "redvars=",redvars
-        print "redvars[0]=",redvars[0]
-        print "redvars[0].getDomain()=",redvars[0].getDomain()
-        raise e
-        
 
-    redtime = redvars[0].getTime()  # the partially-reduced time axis
+    for var in redvars:
+        redtime = var.getTime()  # partially-reduced time axis
+        if redtime is not None:  # some variables have no time axis
+            try:
+                assert( var.getDomain()[0][0].isTime() )
+            except Exception as e:
+                print "redvars=",redvars
+                print "var=",var
+                print "var.getDomain()=",var.getDomain()
+                raise e
+            break
+    assert( redtime is not None )
     redtime_len = redtime.shape[0]
-    newtime = newvars[0].getTime()  # original time axis, from the new variable
+    for var in newvars:
+        newtime = var.getTime()  # original time axis, from the new variable
+        if newtime is not None:
+            try:
+                assert( var.getDomain()[0][0].isTime() )
+            except Exception as e:
+                print "newvars=",newvars
+                print "var=",var
+                print "var.getDomain()=",var.getDomain()
+                raise e
+            break
+    assert( newtime is not None ) # The input data should have a time axis!
     if dt==0:
         newtime = adjust_time_for_climatology( newtime, redtime )
     newtime_bnds = newtime.getBounds()
@@ -298,11 +309,40 @@ def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds, 
             i = int( newtime_rti[j][k] )
             if i<0: continue
             for iv in range(nvars):
-                if newtime_wts[j,k]>0:
-                    #print "jfp redvars[",iv,"][",i,"]=",redvars[iv][i]
-                    redvars[iv][i] =\
-                        ( redvars[iv][i]*redtime_wts[i] + newvars[iv][j]*newtime_wts[j,k] ) /\
-                        ( redtime_wts[i] + newtime_wts[j,k] )
+                redvar = redvars[iv]
+                newvar = newvars[iv]
+                if redvar.getTime() is None:
+                    if newtime_wts[j,k]>0:
+                        # Maybe the assignValue call will work for other shapes.  To do: try it,
+                        # this code will simplify if it works
+                        if len(redvar.shape)==0:
+                            redvar.assignValue(
+                                ( redvar.subSlice()*redtime_wts[i] + newvar*newtime_wts[j,k] ) /\
+                                    ( redtime_wts[i] + newtime_wts[j,k] ) )
+                        elif len(redvar.shape)==1:
+                            redvar[:] =\
+                                ( redvar[:]*redtime_wts[i] + newvar[:]*newtime_wts[j,k] ) /\
+                                ( redtime_wts[i] + newtime_wts[j,k] )
+                        elif len(redvar.shape)==2:
+                            redvar[:,:] =\
+                                ( redvar[:,:]*redtime_wts[i] + newvar[:,:]*newtime_wts[j,k] ) /\
+                                ( redtime_wts[i] + newtime_wts[j,k] )
+                        elif len(redvar.shape)==3:
+                            redvar[:,:,:] =\
+                                ( redvar[:,:,:]*redtime_wts[i] + newvar[:,:,:]*newtime_wts[j,k] ) /\
+                                ( redtime_wts[i] + newtime_wts[j,k] )
+                        else:
+                            #won't work because redvar is a FileVariable
+                            print "WARNING, probably miscomputing average of",redvar.id
+                            redvar =\
+                                ( redvar*redtime_wts[i] + newvar*newtime_wts[j,k] ) /\
+                                ( redtime_wts[i] + newtime_wts[j,k] )
+                else:
+                    if newtime_wts[j,k]>0:
+                        #print "jfp redvars[",iv,"][",i,"]=",redvar[i]
+                        redvar[i] =\
+                            ( redvar[i]*redtime_wts[i] + newvar[j]*newtime_wts[j,k] ) /\
+                            ( redtime_wts[i] + newtime_wts[j,k] )
             redtime_wts[i] += newtime_wts[j,k]
 
     #print "next_tbounds= ",next_tbounds
@@ -344,6 +384,10 @@ def update_time_avg_from_files( redvars0, redtime_bnds, redtime_wts, filenames,
                 testarray = numpy.array([0],newvar.dtype)
                 if isinstance( testarray[0], Number):
                     varids.append( varid )
+                    if newvar.__class__.__name__.find('Variable')<0:
+                        # newvar should be a TransientVariable.  But cdms2 doesn't work very well
+                        # for scalar variables.  It reads them as numpy numbers.
+                        newvar = cdms2.createVariable(newvar,id=varid)
                     newvard[varid] = newvar
                     redvard[varid] = redvar
                 else:

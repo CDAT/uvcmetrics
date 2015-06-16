@@ -97,7 +97,34 @@ class amwg_plot_spec(plot_spec):
     # list is the preferred method.  Of course, if the variable be already available as data,
     # then that is preferred over any computation.
     standard_variables = {
+        # water cycle, Chris Terai:
+        'QFLX_LND':[derived_var(
+                vid='QFLX_LND', inputs=['QFLX','OCNFRAC'], outputs=['QFLX_LND'],
+                func=WC_diag_amwg.surface_maskvariable ),
+                    derived_var(
+                vid='QFLX_LND', inputs=['QFLX'], outputs=['QFLX_LND'],
+                func=(lambda x: x) ) ],  # assumes that QFLX is from a land-only dataset
+        'QFLX_OCN':[derived_var(
+                vid='QFLX_OCN', inputs=['QFLX','LANDFRAC'], outputs=['QFLX_OCN'],
+                func=WC_diag_amwg.surface_maskvariable ),
+                    derived_var(
+                vid='QFLX_OCN', inputs=['QFLX'], outputs=['QFLX_OCN'],
+                func=(lambda x: x) ) ],  # assumes that QFLX is from an ocean-only dataset
+        'EminusP':[derived_var(
+                vid='EminusP', inputs=['QFLX','PRECT'], outputs=['EminusP'],
+                func=aminusb_2ax )],  # assumes that QFLX,PRECT are time-reduced
+        'TMQ':[derived_var(
+                vid='TMQ', inputs=['PREH2O'], outputs=['TMQ'],
+                func=(lambda x:x))],
+        'WV_LIFETIME':[derived_var(
+                vid='WV_LIFETIME', inputs=['TMQ','PRECT'], outputs=['WV_LIFETIME'],
+                func=(lambda tmq,prect: wv_lifetime(tmq,prect)[0]) )],
+
+        # miscellaneous:
         'PRECT':[derived_var(
+                vid='PRECT', inputs=['pr'], outputs=['PRECT'],
+                func=(lambda x:x)),
+                 derived_var(
                 vid='PRECT', inputs=['PRECC','PRECL'], outputs=['PRECT'],
                 func=(lambda a,b,units="mm/day": aplusb(a,b,units) ))],
         'AODVIS':[derived_var(
@@ -110,6 +137,8 @@ class amwg_plot_spec(plot_spec):
         'RESTOM':[derived_var(
                 vid='RESTOM', inputs=['FSNT','FLNT'], outputs=['RESTOM'],
                 func=aminusb )],   # RESTOM = net radiative flux
+
+        # clouds, Yuying Zhang:
         'CLISCCP':[
             derived_var(
                 # old style vid='CLISCCP', inputs=['FISCCP1_COSP','cosp_prs','cosp_tau'], outputs=['CLISCCP'],
@@ -247,6 +276,8 @@ class amwg_plot_spec(plot_spec):
         'TGCLDLWP':[derived_var(
                 vid='TGCLDLWP', inputs=['TGCLDLWP_OCEAN'], outputs=['TGCLDLWP'],
                 func=(lambda x: x) ) ],
+        #...end of clouds, Yuying Zhang
+
         # To compare LHFLX and QFLX, need to unify these to a common variable
         # e.g. LHFLX (latent heat flux in W/m^2) vs. QFLX (evaporation in mm/day).
         # The conversion functions are defined in qflx_lhflx_conversions.py.
@@ -287,28 +318,34 @@ class amwg_plot_spec(plot_spec):
         #if varnom not in amwg_plot_spec.standard_variables:
         if varnom not in cls.standard_variables:
             return None,[],[]
-        #print "jfp varnom=",varnom
         computable = False
         rvs = []
         dvs = []
+        #print "dbg in stdvar2var to compute varnom=",varnom,"from filetable=",filetable
         for svd in cls.standard_variables[varnom]:  # loop over ways to compute varnom
             invarnoms = svd.inputs()
-            #print "jfp first round, invarnoms=",invarnoms
-            #print "jfp filetable variables=",filetable.list_variables()
+            #print "dbg first round, invarnoms=",invarnoms
+            #print "dbg filetable variables=",filetable.list_variables()
             if len( set(invarnoms) - set(filetable.list_variables_incl_axes()) )<=0:
                 func = svd._func
                 computable = True
                 break
         if computable:
+            #print "dbg",varnom,"is computable by",func,"from..."
             for ivn in invarnoms:
-                #print "jfp computing reduced variable from input variableid=ivn=",ivn
+                #print "dbg   computing reduced variable from input variableid=ivn=",ivn
                 rv = reduced_variable( variableid=ivn, filetable=filetable, season=season,
                                        reduction_function=reduction_function )
-                #print "jfp adding reduced variable rv=",rv
+                #print "dbg   adding reduced variable rv=",rv
                 rvs.append(rv)
-        #print "jfp1 rvs ids=",[rv.id() for rv in rvs]
+
+            #print "dbg",varnom,"is not directly computable"
+            pass
+        available = rvs + dvs
+        availdict = { v.id()[1]:v for v in available }
+        inputs = [ availdict[v].id() for v in svd._inputs if v in availdict]
+        #print "dbg1 rvs ids=",[rv.id() for rv in rvs]
         if not computable and recurse==True:
-            #print "jfp second round"
             # Maybe the input variables are themselves computed.  We'll only do this one
             # level of recursion before giving up.  This is enough to do a real computation
             # plus some variable renamings via standard_variables.
@@ -330,10 +367,15 @@ class amwg_plot_spec(plot_spec):
                         rvs += irvs
                         dvs += idvs
                 func = svd._func
+                available = rvs + dvs
+                availdict = { v.id()[1]:v for v in available }
+                inputs = [ availdict[v].id() for v in svd._inputs if v in availdict]
                 computable = True
+                #print "dbg in second round, found",varnom,"computable by",func,"from",inputs
                 break
         if len(rvs)<=0:
             print "ERROR, no inputs found for",varnom,"in filetable",filetable.id()
+            print "filetable source files=",filetable._filelist[0:10]
             print "need inputs",svd.inputs()
             #return None,[],[]
             raise DiagError( "ERROR, don't have %s, and don't have sufficient data to compute it!"\
@@ -344,9 +386,11 @@ class amwg_plot_spec(plot_spec):
             print "found inputs",[rv.id() for rv in rvs]+[drv.id() for drv in dvs]
             return None,[],[]
         seasonid = season.seasons[0]
-        vid = dv.dict_id( varnom, '', seasonid, filetable )
-        #print "jfp stdvar is making a new derived_var, vid=",vid,"inputs=",[rv.id() for rv in rvs]
-        newdv = derived_var( vid=vid, inputs=[rv.id() for rv in rvs], func=func )
+        vid = derived_var.dict_id( varnom, '', seasonid, filetable )
+        #print "dbg stdvar is making a new derived_var, vid=",vid,"inputs=",inputs
+        #print "dbg function=",func
+        #jfp was newdv = derived_var( vid=vid, inputs=[rv.id() for rv in rvs], func=func )
+        newdv = derived_var( vid=vid, inputs=inputs, func=func )
         dvs.append(newdv)
         return newdv.id(), rvs, dvs
 
@@ -1035,28 +1079,6 @@ class amwg_plot_set5and6(amwg_plot_spec):
         for dv in dvs:
             self.derived_variables[dv.id()] = dv
 
-        # This is the former code, which was moved to stdvar2var so other classes may use it:
-        #if varnom not in self.standard_variables:
-        #    return None,None
-        #computable = False
-        #for svd in self.standard_variables[varnom]:  # loop over ways to compute varnom
-        #    invarnoms = svd._inputs
-        #    if len( set(invarnoms) - set(filetable.list_variables()) )<=0:
-        #        func = svd._func
-        #        computable = True
-        #        break
-        #if not computable:
-        #    return None,None
-        #rvs = []
-        #for ivn in invarnoms:
-        #    rv = reduced_variable(
-        #        variableid=ivn, filetable=filetable, season=self.season,
-        #        reduction_function=(lambda x,vid: reduce2latlon_seasonal( x, self.season, vid ) ))
-        #    self.reduced_variables[rv.id()] = rv
-        #    rvs.append(rv.id())
-        #varid = dv.dict_id( varnom, '', seasonid, filetable )
-        #self.derived_variables[varid] = derived_var( vid=varid, inputs=rvs, func=func )
-
         return varid, None
 
     def plan_computation_level_surface( self, model, obs, varid, seasonid, aux ):
@@ -1220,14 +1242,6 @@ class amwg_plot_set5(amwg_plot_set5and6):
     name = '5 - Horizontal Contour Plots of Seasonal Means'
     number = '5'
     
-class amwg_plot_set6old(amwg_plot_set5and6):
-    """represents one plot from AMWG Diagnostics Plot Set 6
-    Each contour plot is a set of three contour plots: one each for model output, observations, and
-    the difference between the two.  A plot's x-axis is longitude and its y-axis is the latitude;
-    normally a world map will be overlaid. """
-    #name = '6old - Horizontal Contour Plots of Seasonal Means'
-    #number = '6old'
-    
 class amwg_plot_set6(amwg_plot_spec):
     """represents one plot from AMWG Diagnostics Plot Set 6
     This is a vector+contour plot - the contour plot shows magnitudes and the vector plot shows both
@@ -1239,7 +1253,8 @@ class amwg_plot_set6(amwg_plot_spec):
     """
     name = '6 - (Experimental, doesnt work with GUI) Horizontal Vector Plots of Seasonal Means' 
     number = '6'
-    standard_variables = { 'STRESS':[['STRESS_MAG','TAUX','TAUY'],['TAUX','TAUY']] }
+    standard_variables = { 'STRESS':[['STRESS_MAG','TAUX','TAUY'],['TAUX','TAUY']],
+                           'MOISTURE_TRANSPORT':[['TUQ','TVQ']] }
     # ...built-in variables.   The key is the name, as the user specifies it.
     # The value is a lists of lists of the required data variables. If the dict item is, for
     # example, V:[[a,b,c],[d,e]] then V can be computed either as V(a,b,c) or as V(d,e).
@@ -1307,7 +1322,16 @@ class amwg_plot_set6(amwg_plot_spec):
             var_cont = dv.dict_id( 'STRESS_MAG', '', seasonid, filetable )
             vars_vec = ( vars[0], vars[1] )  # for vector plot
             vid_cont = var_cont
+        elif vars==['TUQ','TVQ']:
+            rvars = vars            # variable names which may become reduced variables
+            dvars = ['TQ_MAG']  # variable names which will become derived variables
+            var_cont = dv.dict_id( 'TQ_MAG', '', seasonid, filetable )
+            vars_vec = ( vars[0], vars[1] )  # for vector plot
+            vid_cont = var_cont
         else:
+            print "WARNING, could not find a suitable variable set when setting up for a vector plot!"
+            print "variables found=",vars
+            print "filetable=",filetable
             rvars = []
             dvars = []
             var_cont = ''
@@ -1356,7 +1380,8 @@ class amwg_plot_set6(amwg_plot_spec):
                     reduced_vars.append( reduced_variable(
                             variableid=var, filetable=filetable, season=self.season,
                             reduction_function=(lambda x,vid=None:
-                                                    minusb(reduce2latlon_seasonal( x, self.season, self.region, vid)) ) ))
+                                                    minusb(reduce2latlon_seasonal( x, self.season,
+                                                                                   self.region, vid)) ) ))
             else:
                 # No ocean mask available and it's not a CAM file; just do an ordinary reduction.
                 reduced_vars.append( reduced_variable(
@@ -1374,8 +1399,13 @@ class amwg_plot_set6(amwg_plot_spec):
             vardict[','] = None
             return []
         derived_vars = []
+        if 'TAUX' in vardict.keys():
+            uservar = 'STRESS'
+        elif 'TUQ' in vardict.keys():
+            uservar = 'MOISTURE_TRANSPORT'
         for var in dvars:
             if var in ['TAUX','TAUY']:
+                uservar = 'STRESS'
                 #tau = rv.dict_id(var+'_nomask',seasonid,filetable)
                 tau = rv.dict_id(var,seasonid,filetable)
                 vid = dv.dict_id( var, '', seasonid, filetable )
@@ -1409,15 +1439,21 @@ class amwg_plot_set6(amwg_plot_spec):
             vardict[vecid] = rv.dict_id( vecid, seasonid, filetable )
 
         if tuple(vid_cont) and vid_cont[0]=='dv':  # need to compute STRESS_MAG from TAUX,TAUY
-            if filetable.filefmt.find('CAM')>=0:   # TAUX,TAUY are derived variables
-                    tau_x = dv.dict_id('TAUX','',seasonid,filetable)
-                    tau_y = dv.dict_id('TAUY','',seasonid,filetable)
-            else: #if filetable.filefmt.find('CAM')>=0:   # TAUX,TAUY are reduced variables
-                    tau_x = rv.dict_id('TAUX',seasonid,filetable)
-                    tau_y = rv.dict_id('TAUY',seasonid,filetable)
-            new_derived_var = derived_var( vid=vid_cont, inputs=[tau_x,tau_y], func=abnorm )
+            if uservar=='STRESS':
+                if filetable.filefmt.find('CAM')>=0:   # TAUX,TAUY are derived variables
+                        tau_x = dv.dict_id('TAUX','',seasonid,filetable)
+                        tau_y = dv.dict_id('TAUY','',seasonid,filetable)
+                else: #if filetable.filefmt.find('CAM')>=0:   # TAUX,TAUY are reduced variables
+                        tau_x = rv.dict_id('TAUX',seasonid,filetable)
+                        tau_y = rv.dict_id('TAUY',seasonid,filetable)
+                        new_derived_var = derived_var( vid=vid_cont, inputs=[tau_x,tau_y], func=abnorm )
+                        vardict['STRESS_MAG'] = vid_cont
+            elif uservar=='MOISTURE_TRANSPORT':
+                        tq_x = rv.dict_id('TUQ',seasonid,filetable)
+                        tq_y = rv.dict_id('TVQ',seasonid,filetable)
+                        new_derived_var = derived_var( vid=vid_cont, inputs=[tq_x,tq_y], func=abnorm )
+                        vardict['TQ_MAG'] = vid_cont
             derived_vars.append( new_derived_var )
-            vardict['STRESS_MAG'] = vid_cont
             self.derived_variables[vid_cont] = new_derived_var
 
         return derived_vars
@@ -1430,7 +1466,7 @@ class amwg_plot_set6(amwg_plot_spec):
         vars_vec1 = {}
         vars_vec2 = {}
         try:
-            if varid=='STRESS' or varid=='SURF_STRESS':
+            if varid=='STRESS' or varid=='SURF_STRESS' or varid=='MOISTURE_TRANSPORT':
                 vars1,rvars1,dvars1,var_cont1,vars_vec1,vid_cont1 =\
                     self.STRESS_setup( filetable1, varid, seasonid )
                 vars2,rvars2,dvars2,var_cont2,vars_vec2,vid_cont2 =\
@@ -1499,12 +1535,27 @@ class amwg_plot_set6(amwg_plot_spec):
             self.single_plotspecs[self.plot2_id+'c'] = contplot
             self.single_plotspecs[self.plot2_id+'v'] = vecplot
         if vars1 is not None and vars2 is not None:
-            title = ' '.join([varid,seasonid,'(1)-(2)'])
+            # First, we need some more derived variables in order to do the contours as a magnitude
+            # of the difference vector.
+            diff1_vid = dv.dict_id( vid_vec11[1], 'DIFF1', seasonid, filetable1, filetable2 )
+            diff1 = derived_var( vid=diff1_vid, inputs=[vid_vec11,vid_vec21], func=aminusb_2ax )
+            self.derived_variables[diff1_vid] = diff1
+            diff2_vid = dv.dict_id( vid_vec12[1], 'DIFF1', seasonid, filetable1, filetable2 )
+            diff2 = derived_var( vid=diff2_vid, inputs=[vid_vec12,vid_vec22], func=aminusb_2ax )
+            
+            self.derived_variables[diff2_vid] = diff2
+            title = ' '.join([varid,seasonid,'diff,mag.diff'])
             source = ', '.join([ft1src,ft2src])
+
             contplot = plotspec(
-                vid = ps.dict_id(var_cont1,'diff',seasonid,filetable1,filetable2),
-                zvars = [vid_cont1,vid_cont2],  zfunc = aminusb_2ax,  # This is difference of magnitudes; sdb mag of diff!!!
+                vid = ps.dict_id(var_cont1,'mag.of.diff',seasonid,filetable1,filetable2),
+                zvars = [diff1_vid,diff2_vid],  zfunc = abnorm,  # This is magnitude of difference of vectors
                 plottype = plot_type_temp[0], title=title, source=source )
+            #contplot = plotspec(
+            #    vid = ps.dict_id(var_cont1,'diff.of.mags',seasonid,filetable1,filetable2),
+            #    zvars = [vid_cont1,vid_cont2],  zfunc = aminusb_2ax,  # This is difference of magnitudes.
+            #    plottype = plot_type_temp[0], title=title, source=source )
+            # This could be done in terms of diff1,diff2, but I'll leave it alone for now...
             vecplot = plotspec(
                 vid = ps.dict_id(vid_vec2,'diff',seasonid,filetable1,filetable2),
                 zvars = [vid_vec11,vid_vec12,vid_vec21,vid_vec22],

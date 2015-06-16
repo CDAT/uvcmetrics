@@ -285,13 +285,15 @@ class dirtree_datafiles( basic_datafiles ):
         root = [ os.path.expanduser(r) for r in root ]
         root = [ r if r[0:5]=='http:' else os.path.abspath(r) for r in root ]
         filt = obj['filter']
-        print 'root: ', root
-        print 'filt: ', filt
+        #print 'root: ', root, type(root)
+        #print 'filt: ', filt, type(filt)
 
         if filt is None or filt=="": 
            filt=basic_filter()
         elif type(filt) is str:
            filt = eval(str(filt))
+           if type(filt) is str:
+               filt = eval(str(filt))
 
         # The GUI is not well-behaved for these things, so do this for now.
         if obj.get('type', False) != False:

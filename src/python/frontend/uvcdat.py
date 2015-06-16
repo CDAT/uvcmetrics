@@ -166,6 +166,7 @@ class uvc_composite_plotspec():
         for p in self.plots:
             if type(p) is tuple:
                 print "ERROR cannot write_plot_data on tuple<<<<<<<<<<<<<<<<<"
+                print p
                 continue
             filenames += p.write_plot_data( contents_format, where )
 
@@ -550,11 +551,19 @@ class uvc_simple_plotspec():
                 self.presentation.datawc_y2 = axmax[axy]
 
                 vec = self.presentation
+
                 vec.scale = min(vcsx.bgX,vcsx.bgY)/10.
+                # Former scale factor, didn't work on more than one variable.
+                #   That is, 100 workrf for moisture transport, 10 for wind stress:
+                # vec.scale = min(vcsx.bgX,vcsx.bgY)/ 100.
+
                 if hasattr(self.vars[0],'__getitem__') and not hasattr( self.vars[0], '__cdms_internals__'):
                     # generally a tuple of variables - we need 2 variables to describe a vector
                     v = self.vars[0][0]
                     w = self.vars[0][1]
+                    vm = max(abs(v.min()),abs(v.max()))
+                    wm = max(abs(w.min()),abs(w.max()))
+                    vec.scale = 100 / math.sqrt( math.sqrt( vm**2 + wm**2 ))
                 else:   # We shouldn't get here, but may as well try to make it work if possible:
                     print "WARNING trying to make a vector plot without tuples!  Variables involved are:"
                     v = self.vars[0]
@@ -563,8 +572,9 @@ class uvc_simple_plotspec():
                     print "variable",v.id
                 nlats = latAxis(v).shape[0]
                 nlons = lonAxis(w).shape[0]
-                nlatvs = vcsx.bgY/16   # how many vectors we want in lat direction
-                nlonvs = vcsx.bgX/16
+                # vector density factor of 32 works for moisture transport, 16 for wind stress
+                nlatvs = vcsx.bgY/32   # how many vectors we want in lat direction
+                nlonvs = vcsx.bgX/32
                 #self.strideX = int( 0.9* vcsx.bgX/nlons )
                 #self.strideY = int( 0.6* vcsx.bgY/nlats )
                 self.strideX = max(1, int( nlons/nlonvs )) # stride values must be at least 1
@@ -1134,16 +1144,18 @@ class plot_spec(object):
                 linetcolors = [ps.z2linecolor]
                             
             # The following line is getting specific to UV-CDAT, although not any GUI...
-            # >>>> jfp a bad hack for temporary use - I MUST MUST MUST get plot_type out of something else!!!>>>>
             #pdb.set_trace()
             #new kludge added to handle scatter plots, 10/14/14, JMcE
             if self.plottype == 'Vector':
                 if type(vars[0])==tuple:
                     plot_type_temp = 'Vector'
-                elif vars[0].id.find('STRESS_MAG')>=0:
+                elif vars[0].id.find('STRESS_MAG')>=0:   # maybe not needed
+                    # If this is needed, we need to change code so that this isn't.
                     plot_type_temp = 'Isofill'
                 else:
-                    plot_type_temp = self.plottype
+                    #jfp not tested yet on wind stress, wrong for moisture transport:
+                    #jfp plot_type_temp = self.plottype
+                    plot_type_temp = 'Isofill' #jfp works for moisture transport
             else:
                 plot_type_temp = ps.plottype
             self.plotspec_values[p] = uvc_simple_plotspec( vars, plot_type_temp, labels, title, ps.source, ranges, overplotline, linetypes, linecolors )
@@ -1181,12 +1193,8 @@ class plot_spec(object):
         """Inputs: a plotspec object, a list zvars of precursor variables, and a function zfunc.
         This method computes the variable z to be plotted as zfunc(zvars), and returns it.
         It also returns zrv for use in building a label."""
-        print 'inside compute plot var value'
-#        print zvars
         vvals = self.variable_values
         zrv = [ vvals[k] for k in zvars ]
-#        print vvals
-#        print zrv
 
         if any([a is None for a in zrv]):
             print "WARNING - cannot compute plot results from zvars=",ps.zvars
@@ -1194,7 +1202,6 @@ class plot_spec(object):
             return None, None
         z = apply( zfunc, zrv )
         if hasattr(z,'mask') and z.mask.all():
-#            print type(z)
             print 'in uvcdat.py' # this next line is printed from two different possible places.
             print "ERROR, all values of",z.id,"are missing!"
             return None,None

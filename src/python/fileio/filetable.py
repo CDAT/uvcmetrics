@@ -447,7 +447,7 @@ class NCAR_filefmt(basic_filefmt):
                 lo = self._dfile[time_bnds_name][0][0]
                 hi = self._dfile[time_bnds_name][-1][1]
             except Exception as e:
-                print "jfp exception getting time bounds from self._dfile[",time_bnds_name,"]=",\
+                print "exception getting time bounds from self._dfile[",time_bnds_name,"]=",\
                     self._dfile[time_bnds_name]
                 raise e
          else:

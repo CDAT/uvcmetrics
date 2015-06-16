@@ -13,7 +13,6 @@ from numpy import sin, ma
 import dateparser
 from datetime import datetime as datetime
 from unidata import udunits
-from cdutil import averager
 from metrics.packages.amwg.derivations import press2alt
 from metrics.packages.amwg.derivations import qflx_lhflx_conversions as flxconv
 from metrics.fileio.filetable import *
@@ -27,6 +26,8 @@ from metrics.computation.region_functions import *
 regridded_vars = {}  # experimental
 
 seasonsyr=cdutil.times.Seasons('JFMAMJJASOND')
+
+# -------- Axis Utilities ---------
 
 # >>>> TO DO: accomodate more names for the level axis.  Much of this can be
 # >>>> done simply by adding more names in levAxis().  Search on 'lev' for the rest.
@@ -127,6 +128,10 @@ def tllAxes( mv ):
         if ax.id=='time': time_axis = ax
     return time_axis,lat_axis,lon_axis
 
+# -------- end of Axis Utilities ---------
+
+# -------- Miscellaneous  Utilities ---------
+
 def fix_time_units( timeunits ):
     """Sometimes we get time units which aren't compatible with cdtime.
     This function will (try to) fix them.  The input argument is a string, e.g.
@@ -182,6 +187,41 @@ def compose( rf1, rf2 ):
         mv2 = rf2( mv1, vid )
         return mv2
     return rf12    
+
+def set_spatial_avg_method( var ):
+    """Determines how to compute spatial averages of a variable var.
+    Sets the attribute var.spavgmeth to a string specifying how to compute spatial averages.
+    At present the default is area weighting (the averager() default), and the only other
+    possibility is mass weighting."""
+    if hasattr( var, 'spavgmeth' ): return var
+    var.spavgmeth = 'area weights'  # default
+    if not hasattr( var, 'units' ): return var
+    su = var.units.split('/')
+    if len(su)>=3:  return var
+    if len(su)==1:
+        if su in\
+                ['degC', 'degF', 'degK', 'deg_C', 'deg_F', 'deg_K', 'deg_c', 'deg_f', 'deg_k',
+                 'degreeC', 'degreeF', 'degreeK', 'degree_C', 'degree_Celsius', 'degree_F',
+                 'degree_Fahrenheit', 'degree_K', 'degree_Kelvin', 'degree_c', 'degree_centigrade',
+                 'degree_f', 'degree_k']:   # temperature
+                var.spavgmeth = 'mass weights'
+        if su in ['ppt', 'ppb', 'ppm', 'pptv', 'ppbv', 'ppmv']:  # parts per (something)
+                var.spavgmeth = 'mass weights'
+    elif len(su)==2 and su[0]==su[1]:
+        if su[0] in ['mol','mole']:  # mol/mol
+                var.spavgmeth = 'mass weights'
+        if su[0] in ['kg', 'g']:     # mass/mass (just the most common mass units)
+                var.spavgmeth = 'mass weights'
+        if su[0] in ['Pa', 'hPa', 'mbar']:  # pressure/pressure (just the most common mass units):
+                var.spavgmeth = 'mass weights'
+    return var
+
+# Dictionary which matches a variable's :spavgmeth attribute to a function which computes
+# weights for its spatial average.
+# >>>> This dict is subject to change, and the function it names does't exist. <<<<<
+# >>>> spavfuns = { 'area weights':None, 'mass weights':get_mass_weights() }
+
+# -------- end of Miscellaneous  Utilities ---------
 
 def reduce2scalar_zonal( mv, latmin=-90, latmax=90, vid=None, gw=None ):
     """returns the mean of the variable over the supplied latitude range.
@@ -1433,6 +1473,7 @@ def reduce2latlon_seasonal( mv, season=seasonsyr, region=None, vid=None, exclude
     else:
         mvr = select_region(mv, region)
     mvseas = calculate_seasonal_climatology(mvr, season)
+    set_spatial_avg_method( mvseas )
 
     axes = allAxes( mv )
     #axis_names = [ a.id for a in axes if a.id!='lat' and a.id!='lon' and a.id!='time' and\
@@ -1445,6 +1486,13 @@ def reduce2latlon_seasonal( mv, season=seasonsyr, region=None, vid=None, exclude
             if axis.getBounds() is None:
                 axis._bounds_ = axis.genGenericBounds()
         avmv = averager( mvseas, axis=axes_string )
+        # WORK IN PROGRESS...
+        #if mvseas.spavmeth=='area weights':
+        #    avmv = averager( mvseas, axis=axes_string )
+        #elif mvseas.spavmeth=='mass weights':
+        #    avmv = averager( mvseas, axis=axes_string )
+        #else:
+        #    raise DiagError("ERROR: cannot recognize spavmeth (spatial average method) attribute")
     else:
         avmv = mvseas
     if avmv is None: return avmv
@@ -2030,8 +2078,10 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
     # First, if there are no units, take a guess.  I'm reluctant to do this because it will surely
     # be wrong sometimes.  But usually it is correct.
     if not hasattr(mv1,'units') or mv1.units == 'none':
+        print "WARNING, variable",getattr(mv1,'id',''),"has no units, will use units=1."
         mv1.units = '1'
     if not hasattr(mv2,'units') or mv2.units == 'none':
+        print "WARNING, variable",getattr(mv2,'id',''),"has no units, will use units=1."
         mv2.units = '1'
 
     # For QFLX and LHFLX variables, call dedicated functions instead.
@@ -2091,6 +2141,10 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
             mv2 = 100*mv2
             mv2.units=mv1.units
             return mv1, mv2
+        if mv1.units=='kg/m2' and mv2.units=='mm':
+            mv1.units = 'mm' # [if 1 kg = 10^6 mm^3 as for water]
+        if mv2.units=='kg/m2' and mv1.units=='mm':
+            mv2.units = 'mm' # [if 1 kg = 10^6 mm^3 as for water]
 
         if preferred_units is None:
             # Look for whichever of mv1.units, mv2.units gives numbers more O(1).
@@ -2134,6 +2188,11 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
             except Exception as e:
                 # conversion not possible.
                 print "ERROR could not convert from",mv1.units,"to",target_units
+                print "units are from variable mv1=",getattr(mv1,'id','(not known)'),"and"
+                if target_units==preferred_units:
+                    print "preferred units=",preferred_units
+                else:
+                    print "variable mv2=",getattr(mv2,'id','(not known)')
                 raise e
             if hasattr(mv1,'id'):  # yes for TransientVariable, no for udunits
                 mv1id = mv1.id
@@ -2150,6 +2209,11 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
             except Exception as e:
                 #  conversion not possible
                 print "ERROR could not convert from",mv2.units,"to",target_units
+                print "units are from variable mv2=",getattr(mv2,'id','(not known)'),"and"
+                if target_units==preferred_units:
+                    print "preferred units=",preferred_units
+                else:
+                    print "variable mv1=",getattr(mv1,'id','(not known)')
                 raise e
             if hasattr(mv2,'id'):  # yes for TransientVariable, no for udunits
                 mv2id = mv2.id
@@ -2189,7 +2253,9 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
         axes1 = allAxes(mv1)
     if axes2 is None:
         axes2 = allAxes(mv2)
-    if axes1 is None or axes2 is None: return None
+    if axes1 is None or axes2 is None:
+        print "WARNING, In aminusb_2ax, both axes are None, returning None."
+        return None
 
     # Forget about a trivial extra axis; for now only if it's the first axis:
     new_axes1 = axes1
@@ -2209,8 +2275,10 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
         print "WARNING, In aminusb_2ax, mv2=",mv2.id,"doesn't have enough axes.  It has",axes2
         raise Exception("In aminusb_2ax, mv1 doesn't have enough axes")
 
-    if len(axes1)!=2: print "ERROR @1, wrong number of axes for aminusb_2ax",axes1
-    if len(axes2)!=2: print "ERROR @2, wrong number of axes for aminusb_2ax",axes2
+    if len(axes1)!=2: print "ERROR @1, wrong number of axes for aminusb_2ax",len(axes1),\
+            [ax.id for ax in axes1]
+    if len(axes2)!=2: print "ERROR @2, wrong number of axes for aminusb_2ax",len(axes2),\
+            [ax.id for ax in axes2]
     if len(axes1[0])==len(axes2[0]):
         # Only axis2 differs, there's a better way...
         return aminusb_ax2( mv1, mv2 )
@@ -2674,6 +2742,8 @@ class reduced_variable(ftrow,basic_id):
         """varid, seasonid are strings identifying a variable name (usually of a model output
         variable) and season, ft is a filetable.  ff is an optional filefilter.
         This method constructs and returns an id for the corresponding reduced_variable object."""
+        if seasonid=='JFMAMJJASOND':
+            seasonid = 'ANN'
         if ft is None:
             return None
         if ff is None:

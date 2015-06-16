@@ -5,7 +5,7 @@
 
 import cdms2, os
 import metrics.packages as packages
-import argparse
+import argparse, re
 from metrics.frontend.defines import *
 
 ### 2 types of "options" - global options that affect program execution, etc
@@ -155,6 +155,8 @@ class Options():
             self._opts[dictkey][i][d] = None
          self._opts[dictkey][i]['type'] = dictkey # ensure this one is at least set.
          kvs = data[i].split(',')
+         PATTERN = re.compile(r'''((?:[^,"']|"[^"]*"|'[^']*')+)''')
+         kvs = PATTERN.split(data[i])[1::2]
          for k in kvs:
             if '=' not in k:
                print 'All options need specified as {option}={value}. No equal sign in option - ', k

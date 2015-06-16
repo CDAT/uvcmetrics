@@ -65,7 +65,13 @@ class derived_var(basic_id):
             print "cannot yet derive",self._id,"because missing inputs",nonevals
             print "what's available is",inpdict.keys()
             return None
-        output = apply( self._func, [ inpdict[inp] for inp in self._inputs ] )
+        try:
+            output = apply( self._func, [ inpdict[inp] for inp in self._inputs ] )
+        except TypeError as e:
+            print "In derived_var.derive, _inputs=",self._inputs
+            print "WARNING, derivation function failed.  Probably not enough valid inputs." 
+            print e
+            return None
         if type(output) is tuple or type(output) is list:
             for o in output:
                 if o is None: return None
@@ -84,12 +90,16 @@ class derived_var(basic_id):
         """varid, varmod, seasonid are strings identifying a variable name, a name modifier
         (often '' is a good value) and season, ft is a filetable, or a string id for the filetable.
         This method constructs and returns an id for the corresponding derived_var object."""
+        if seasonid=='JFMAMJJASOND':
+            seasonid = 'ANN'
         if type(ft1) is str:  # can happen if id has already been computed, and is used as input here.
             ft1id = ft1
         else:
             ft1id = id2str( ft1._id )
         if ft2 is None or ft2=='':
             ft2id = ''
+        elif type(ft2) is str:
+            ft2id = ft2
         else:
             ft2id = id2str( ft2._id )
         if region is None:

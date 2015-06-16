@@ -12,15 +12,22 @@ Each file is expected to cover a different, and disjoint, time range, and the ti
 increasing.  That is, for any times tn, tm in files filen, filem, if n>m then tn>tm.
 """
 
+# TO DO:
+# >>>> look at DJF file.  Too big?  times?  values????? <<<<<<<<<
+# --seasons ALL for all 17 seasons, and default to this if seasons are not specified.
+#   In that case, investigate whether it would save any time to compute only months, and
+#   then other seasons from the months (probably slower on Rhea, but maybe not).
+
 from metrics.frontend.inc_reduce import *
 import os
 import argparse
 
 def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason=[] ):
     assert( len(datafilenames)>0 )
-    assert( len(varnames)>0 )
     f = cdms2.open(datafilenames[0])
     # to do: get the time axis even if the name isn't 'time'
+    if len(varnames)==0 or varnames is None or 'ALL' in varnames:
+        varnames = f.variables.keys()
     data_time = f.getAxis('time') # a FileAxis.
     calendar = getattr( data_time, 'calendar', None )
     # to do: support arbitrary time units, arbitrary calendar.
@@ -46,8 +53,8 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
         # ... assumes noleap calendar, returns time in days.
         init_red_tbounds = numpy.array( season, dtype=numpy.int32 )
         fileout = fileout_template.replace('XXX',seasonname)
-        initialize_redfile_from_datafile( fileout, varnames, datafilenames[0], dt,
-                                          init_red_tbounds )
+        out_varnames = initialize_redfile_from_datafile( fileout, varnames, datafilenames[0], dt,
+                                                         init_red_tbounds )
         g = cdms2.open( fileout, 'r+' )
         redfilenames.append(fileout)
         redfiles[fileout] = g
@@ -56,7 +63,7 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
         redtime.calendar = calendar
         redtime_wts = g['time_weights']
         redtime_bnds = g[ g.getAxis('time').bounds ]
-        redvars = [ g[varn] for varn in varnames ]
+        redvars = [ g[varn] for varn in out_varnames ]
 
     update_time_avg_from_files( redvars, redtime_bnds, redtime_wts, datafilenames,
                                 fun_next_tbounds = (lambda rtb,dtb,dt=dt: rtb),
@@ -74,16 +81,28 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
             newbnd0 = redtime_bnds[0][0]-365
             newbnds = numpy.array([[newbnd0, redtime_bnds[1][1]]], dtype=numpy.int32)
             newwt = redtime_wts[0]+redtime_wts[1]
-            axes = [dom[0] for dom in redvars[0].getDomain()]
-            if axes[0].isTime():
-                axes[0] = cdms2.createAxis( [newtime], id='time', bounds=newbnds )
-                axes[0].units = redtime.units
-            else:
-                raise Exception("haven't coded this case yet, sorry")
+            for var in redvars:
+                redtime = var.getTime()  # partially-reduced time axis
+                if redtime is not None:  # some variables have no time axis
+                    break
+            assert( redtime is not None )
+            timeax =  cdms2.createAxis( [newtime], id='time', bounds=newbnds )
+            timeax.units = redtime.units
             for iv,var in enumerate(redvars):
-                newvd = (var[0:1]*redtime_wts[0] + var[1:2]*redtime_wts[1])/(redtime_wts[0]+redtime_wts[1])
-                newvar = cdms2.createVariable( newvd, id=var.id, axes=axes )
-                if hasattr(var,'units'): newvar.units = var.units
+                axes = [ dom[0] for dom in var.getDomain() ]
+                if var.getTime() is None:
+                    if hasattr( var, 'axes' ):
+                        newvar = cdms2.createVariable( var, id=var.id, axes=var.axes )
+                    else:
+                        # If we don't call subSlice(), then TransientVariable.__init__() will, and
+                        # it will assume that the result is a TransientVariable with a domain.
+                        newvar = cdms2.createVariable( var.subSlice(), id=var.id )
+                else:
+                    assert( axes[0].isTime() ) # haven't coded for the alternatives
+                    axes[0] = timeax
+                    newvd = (var[0:1]*redtime_wts[0] + var[1:2]*redtime_wts[1])/(redtime_wts[0]+redtime_wts[1])
+                    newvar = cdms2.createVariable( newvd, id=var.id, axes=axes )
+                    if hasattr(var,'units'): newvar.units = var.units
                 h.write( newvar )
             h.write( cdms2.createVariable( [newwt], id='time_weights' ) )
             h.close()
@@ -106,8 +125,8 @@ if __name__ == '__main__':
                    required=True )
     p.add_argument("--seasons", dest="seasons", help="Seasons, each 3 characters (mandatory)", nargs='+',
                    required=True )
-    p.add_argument("--variables", dest="variables", help="Variable names (mandatory)", nargs='+',
-                   required=True )
+    p.add_argument("--variables", dest="variables", help="Variable names (ALL or omit for all)", nargs='+',
+                   required=False, default=['ALL'] )
     p.add_argument("--omitBySeason", dest="omitBySeason", help=
                "Omit files for just the specified season.  For multiple seasons, provide this"+
                    "argument multiple times. E.g. --omitBySeason DJF lastDECfile.nc\"",
