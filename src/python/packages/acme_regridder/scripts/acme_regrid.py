@@ -211,7 +211,7 @@ if __name__ == "__main__":
                 addVariable(fo, V.id, V.typecode(), axes4d, V.attributes)
             if wgt is None:
                 wgt = True
-                addVariable(fo, "wgt", "d", [dat2.getLatitude(), ], [])
+                addVariable(fo, "gw", "d", [dat2.getLatitude(), ], [])
                 addVariable(fo, "area", "f",
                             [dat2.getLatitude(), dat2.getLongitude()], [])
         else:
@@ -235,7 +235,7 @@ if __name__ == "__main__":
                 wgts = [numpy.sin(x[1]*numpy.pi/180.) -
                         numpy.sin(x[0]*numpy.pi/180.)
                         for x in dat2.getLatitude().getBounds()]
-                V2 = fo["wgt"]
+                V2 = fo["gw"]
                 V2[:] = wgts[:]
                 if dat2.ndim > 3:
                     dat2 = dat2[0, 0]
