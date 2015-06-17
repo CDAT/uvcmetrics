@@ -82,8 +82,8 @@ setup (name = "metrics",
                library_dirs = [],
                libraries = [],
                define_macros = [],
-               #extra_compile_args = ["-fopenmp",],
-               #extra_link_args = ["-lgomp"],
+               extra_compile_args = ["-fopenmp",],
+               extra_link_args = ["-lgomp"],
                ),
                     ]
        )

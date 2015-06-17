@@ -115,6 +115,7 @@ def addVariable(f, id, typecode, axes, attributes):
 if __name__ == "__main__":
     cdms2.setNetcdfClassicFlag(0)
     cdms2.setNetcdf4Flag(1)
+    cdms2.setNetcdfUseNCSwitchModeFlag(0)
     cdms2.setNetcdfShuffleFlag(0)
     cdms2.setNetcdfDeflateFlag(0)
     cdms2.setNetcdfDeflateLevelFlag(0)
