@@ -46,7 +46,10 @@ def makeTables(modelpath, obspath, outpath, pname, outlog):
    if pname.upper() == 'AMWG':
       seasons = diags_collection['1'].get('seasons', ['ANN'])
       regions = diags_collection['1'].get('regions', ['Global'])
-      seasonstr = '--seasons '+' '.join(seasons)
+      if 'NA' in seasons:
+         seasonstr = ''
+      else:
+         seasonstr = '--seasons '+' '.join(seasons)
       regionstr = '--regions '+' '.join(regions)
       cmdline = 'diags-new.py --model path=%s,climos=yes,type=model --obs path=%s,climos=yes,type=obs --set 1 --prefix set1 --package AMWG %s %s --outputdir %s' % (modelpath, obspath, seasonstr, regionstr, outpath)
       runcmdline(cmdline, outlog)
@@ -166,7 +169,10 @@ def generatePlots(modelpath, obspath, outpath, pname, xmlflag, colls=None):
 
             # set up season str (and later overwrite it if needed)
             g_season = diags_collection[collnum].get('seasons', ['ANN'])
-            seasonstr = '--seasons '+' '.join(g_season)
+            if 'NA' in g_season:
+               seasonstr = ''
+            else:
+               seasonstr = '--seasons '+' '.join(g_season)
                
             # set up region str (and later overwrite it if needed)
             g_region = diags_collection[collnum].get('regions', ['Global'])
@@ -196,8 +202,12 @@ def generatePlots(modelpath, obspath, outpath, pname, xmlflag, colls=None):
             # run these individually basically.
                g_region = diags_collection[collnum][v].get('regions', ['Global'])
                g_season = diags_collection[collnum][v].get('seasons', ['ANN'])
+               if 'NA' in g_season:
+                  seasonstr = ''
+               else:
+                  seasonstr = '--seasons '+' '.join(g_season)
+                  
                regionstr = '--regions '+' '.join(g_region)
-               seasonstr = '--seasons '+' '.join(g_season)
                varopts = ''
                if diags_collection[collnum][v].get('varopts', False) != False:
                   varopts = '--varopts '+' '.join(diags_collection[collnum][v]['varopts'])

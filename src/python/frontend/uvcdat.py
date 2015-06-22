@@ -551,9 +551,12 @@ class uvc_simple_plotspec():
                 self.presentation.datawc_y2 = axmax[axy]
 
                 vec = self.presentation
+
+                vec.scale = min(vcsx.bgX,vcsx.bgY)/10.
                 # Former scale factor, didn't work on more than one variable.
                 #   That is, 100 workrf for moisture transport, 10 for wind stress:
                 # vec.scale = min(vcsx.bgX,vcsx.bgY)/ 100.
+
                 if hasattr(self.vars[0],'__getitem__') and not hasattr( self.vars[0], '__cdms_internals__'):
                     # generally a tuple of variables - we need 2 variables to describe a vector
                     v = self.vars[0][0]
