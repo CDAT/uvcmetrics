@@ -36,6 +36,7 @@ packages = {'metrics': 'src/python',
               'metrics.packages.amwg.derivations': 'src/python/packages/amwg/derivations',
               'metrics.packages.lmwg': 'src/python/packages/lmwg',
               'metrics.packages.acme_regridder': 'src/python/packages/acme_regridder',
+              'metrics.packages.acme_regridder.scripts': 'src/python/packages/acme_regridder/scripts',
             }
 for d in packages.itervalues():
     shutil.copy("git.py",os.path.join(d,"git.py"))
@@ -50,6 +51,7 @@ setup (name = "metrics",
                    'metrics.common',
                    'metrics.packages.wgne',
                    'metrics.packages.acme_regridder',
+                   'metrics.packages.acme_regridder.scripts',
                    'metrics.packages.amwg',
                    'metrics.packages.amwg.derivations',
                    'metrics.packages.lmwg',
