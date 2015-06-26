@@ -752,7 +752,7 @@ class amwg_plot_set4and41(amwg_plot_spec):
     reduction_functions = { '4':[reduce2lat_seasonal, reduce2levlat_seasonal], 
                            '41':[reduce2lon_seasonal, reduce2levlon_seasonal]}
     rf_ids = { '4': 'levlat', '41': 'levlon'}
-    def __init__( self, model, obs, varid, seasonid=None, regionid=None, aux=None ):
+    def __init__( self, model, obs, varid, seasonid=None, regionid=None, aux=None, levels=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'.
         At the moment we assume that data from filetable1 has CAM hybrid levels,
@@ -773,7 +773,7 @@ class amwg_plot_set4and41(amwg_plot_spec):
         self.plot3_id = '_'.join([ft1id+'-'+ft2id,varid,seasonid,'contour'])
         self.plotall_id = '_'.join([ft1id,ft2id,varid,seasonid])
         if not self.computation_planned:
-            self.plan_computation( model, obs, varid, seasonid )
+            self.plan_computation( model, obs, varid, seasonid, levels )
     @staticmethod
     def _list_variables( model, obs ):
         allvars = amwg_plot_set4._all_variables( model, obs )
@@ -792,7 +792,7 @@ class amwg_plot_set4and41(amwg_plot_spec):
         return reduced_variables_press_lev( filetable, varid, seasonid, region=self.region,  RF1=RF1, RF2=RF2 )
     def reduced_variables_hybrid_lev( self, filetable, varid, seasonid, ftno=None,  RF1=None, RF2=None):
         return reduced_variables_hybrid_lev( filetable, varid, seasonid, region=self.region,  RF1=RF1, RF2=RF2 )
-    def plan_computation( self, model, obs, varid, seasonid ):
+    def plan_computation( self, model, obs, varid, seasonid, levels = None ):
         filetable1, filetable2 = self.getfts(model, obs)
         ft1_hyam = filetable1.find_files('hyam')
         if filetable2 is None:
@@ -852,17 +852,20 @@ class amwg_plot_set4and41(amwg_plot_spec):
                 vid = ps.dict_idid(vid1), zvars=[vid1], zfunc=(lambda z: z),
                 plottype = self.plottype,
                 title = ' '.join([varid,seasonid,'(1)']),
-                source = ft1src ),
+                source = ft1src,
+                levels = levels ),
             self.plot2_id: plotspec(
                 vid = ps.dict_idid(vid2), zvars=[vid2], zfunc=(lambda z: z),
                 plottype = self.plottype,
                 title = ' '.join([varid,seasonid,'(2)']),
-                source = ft2src ),
+                source = ft2src,
+                levels = levels ),
             self.plot3_id: plotspec(
                 vid = ps.dict_id(varid,'diff',seasonid,filetable1,filetable2), zvars=[vid1,vid2],
                 zfunc=aminusb_2ax, plottype = self.plottype,
                 title = ' '.join([varid,seasonid,'(1)-(2)']),
-                source = ', '.join([ft1src,ft2src]) )
+                source = ', '.join([ft1src,ft2src]),
+                levels = None )
             }
         self.composite_plotspecs = {
             self.plotall_id: [self.plot1_id, self.plot2_id, self.plot3_id ]
@@ -915,7 +918,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
     the difference between the two.  A plot's x-axis is longitude and its y-axis is the latitude;
     normally a world map will be overlaid.
     """
-    def __init__( self, model, obs,  varid, seasonid=None, regionid=None, aux=None ):
+    def __init__( self, model, obs,  varid, seasonid=None, regionid=None, aux=None, levels=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the variable to be plotted, e.g. 'TREFHT'.
         seasonid is a string such as 'DJF'."""
@@ -941,7 +944,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
         self.plotall_id = ft1id+'_'+ft2id+'_'+varid+'_'+seasonid
 
         if not self.computation_planned:
-            self.plan_computation( model, obs, varid, seasonid, aux )
+            self.plan_computation( model, obs, varid, seasonid, aux, levels )
     @staticmethod
     def _list_variables( model, obs ):
         """returns a list of variable names"""
@@ -967,12 +970,12 @@ class amwg_plot_set5and6(amwg_plot_spec):
             for varname in amwg_plot_spec.standard_variables.keys():
                 allvars[varname] = basic_plot_variable
         return allvars
-    def plan_computation( self, model, obs, varid, seasonid, aux=None ):
+    def plan_computation( self, model, obs, varid, seasonid, aux=None, levels=None ):
         if isinstance(aux,Number):
-            return self.plan_computation_level_surface( model, obs, varid, seasonid, aux )
+            return self.plan_computation_level_surface( model, obs, varid, seasonid, aux, levels )
         else:
-            return self.plan_computation_normal_contours( model, obs, varid, seasonid, aux )
-    def plan_computation_normal_contours( self, model, obs, varnom, seasonid, aux=None ):
+            return self.plan_computation_normal_contours( model, obs, varid, seasonid, aux, levels )
+    def plan_computation_normal_contours( self, model, obs, varnom, seasonid, aux=None, levels=None ):
         filetable1, filetable2 = self.getfts(model, obs)
         """Set up for a lat-lon contour plot, as in plot set 5.  Data is averaged over all other
         axes."""
@@ -1008,7 +1011,8 @@ class amwg_plot_set5and6(amwg_plot_spec):
                     plottype = self.plottype,
                     #title = ' '.join([varnom,seasonid,filetable1._strid]) )
                     title = ' '.join([varnom,seasonid,'(1)']),
-                    source = ft1src )
+                    source = ft1src,
+                    levels = levels )
                 all_plotnames.append(self.plot1_id)
             if vid1var is not None:
                 self.single_plotspecs[self.plot1var_id] = plotspec(
@@ -1017,7 +1021,8 @@ class amwg_plot_set5and6(amwg_plot_spec):
                     plottype = self.plottype,
                     #title = ' '.join([varnom,seasonid,filetable1._strid,'variance']) )
                     title = ' '.join([varnom,seasonid,'1 variance']),
-                    source = ft1src )
+                    source = ft1src,
+                    levels = None )
                 all_plotnames.append(self.plot1var_id)
         if filetable2 is not None and vid2 is not None:
             self.single_plotspecs[self.plot2_id] = plotspec(
@@ -1026,7 +1031,8 @@ class amwg_plot_set5and6(amwg_plot_spec):
                 plottype = self.plottype,
                 #title = ' '.join([varnom,seasonid,filetable2._strid]) )
                 title = ' '.join([varnom,seasonid,'(2)']),
-                source = ft2src )
+                source = ft2src,
+                levels = levels)
             all_plotnames.append(self.plot2_id)
         if filetable1 is not None and filetable2 is not None and vid1 is not None and vid2 is not None:
             self.single_plotspecs[self.plot3_id] = plotspec(
@@ -1035,7 +1041,8 @@ class amwg_plot_set5and6(amwg_plot_spec):
                 plottype = self.plottype,
                 #title = ' '.join([varnom,seasonid,filetable1._strid,'-',filetable2._strid]) )
                 title = ' '.join([varnom,seasonid,'(1)-(2)']),
-                source = ', '.join([ft1src,ft2src]) )
+                source = ', '.join([ft1src,ft2src]),
+                levels = None )
             all_plotnames.append(self.plot3_id)
         if len(all_plotnames)>0:
             self.composite_plotspecs = {
@@ -1081,7 +1088,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
 
         return varid, None
 
-    def plan_computation_level_surface( self, model, obs, varid, seasonid, aux ):
+    def plan_computation_level_surface( self, model, obs, varid, seasonid, aux, levels ):
         filetable1, filetable2 = self.getfts(model, obs)
         """Set up for a lat-lon contour plot, averaged in other directions - except that if the
         variable to be plotted depend on level, it is not averaged over level.  Instead, the value
@@ -1141,7 +1148,8 @@ class amwg_plot_set5and6(amwg_plot_spec):
                 plottype = self.plottype,
                 #title = ' '.join([varid,seasonid,filetable1._strid,'at',str(pselect)]) ) }
                 title = ' '.join([varid,seasonid,'at',str(pselect),'(1)']),
-                source = ft1src ) }
+                source = ft1src,
+                levels = levels ) }
            
         if filetable2 is None:
             self.reduced_variables = { v.id():v for v in reduced_varlis }
@@ -1203,7 +1211,8 @@ class amwg_plot_set5and6(amwg_plot_spec):
                 plottype = self.plottype,
                 #title = ' '.join([varid,seasonid,filetable2._strid,'at',str(pselect)]) )
                 title = ' '.join([varid,seasonid,'at',str(pselect),'(2)']),
-                source = ft2src )
+                source = ft2src,
+                levels = levels )
         self.single_plotspecs[self.plot3_id] = plotspec(
                 #was vid = varid+'_diff',
                 vid = ps.dict_id(varid,'diff',seasonid,filetable1,filetable2),
@@ -1211,8 +1220,8 @@ class amwg_plot_set5and6(amwg_plot_spec):
                 plottype = self.plottype,
                 #title = ' '.join([varid,seasonid,filetable1._strid,'-',filetable2._strid,'at',str(pselect)]) )
                 title = ' '.join([varid,seasonid,'at',str(pselect),'(1)-(2)']),
-                source = ', '.join([ft1src,ft2src])
-                )
+                source = ', '.join([ft1src,ft2src]),
+                levels = None )
 #                zerocontour=-1 )
         self.composite_plotspecs = {
             self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id ]
@@ -1609,7 +1618,7 @@ class amwg_plot_set7(amwg_plot_spec):
     """
     name = '7 - Polar Contour and Vector Plots of Seasonal Means'
     number = '7'
-    def __init__( self, model, obs, varid, seasonid=None, region=None, aux=slice(0,None) ):
+    def __init__( self, model, obs, varid, seasonid=None, region=None, aux=slice(0,None), levels=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the variable to be plotted, e.g. 'TREFHT'.
         seasonid is a string such as 'DJF'."""
@@ -1627,7 +1636,7 @@ class amwg_plot_set7(amwg_plot_spec):
         self.plotall_id = ft1id+'_'+ft2id+'_'+varid+'_'+seasonid
 
         if not self.computation_planned:
-            self.plan_computation( model, obs, varid, seasonid, region, aux )
+            self.plan_computation( model, obs, varid, seasonid, region, aux, levels=levels )
     @staticmethod
     def _list_variables( model, obs ):
         allvars = amwg_plot_set5and6._all_variables( model, obs )
@@ -1641,7 +1650,7 @@ class amwg_plot_set7(amwg_plot_spec):
             model, obs, "amwg_plot_spec" ):
             allvars[varname] = basic_pole_variable
         return allvars
-    def plan_computation( self, model, obs, varid, seasonid, region=None, aux=slice(0,None) ):
+    def plan_computation( self, model, obs, varid, seasonid, region=None, aux=slice(0,None), levels=None ):
        """Set up for a lat-lon polar contour plot.  Data is averaged over all other axes.
        """
        filetable1, filetable2 = self.getfts(model, obs)
@@ -1662,15 +1671,18 @@ class amwg_plot_set7(amwg_plot_spec):
             self.plot1_id: plotspec(
                 vid = ps.dict_idid(vid1),
                 zvars = [vid1],  zfunc = (lambda z: z),
-                plottype = self.plottype ),
+                plottype = self.plottype,
+                levels = levels ),
             self.plot2_id: plotspec(
                 vid = ps.dict_idid(vid2),
                 zvars = [vid2],  zfunc = (lambda z: z),
-                plottype = self.plottype ),
+                plottype = self.plottype,
+                levels = levels ),
             self.plot3_id: plotspec(
                 vid = ps.dict_id(varid,'diff',seasonid,filetable1,filetable2),
                 zvars = [vid1,vid2],  zfunc = aminusb_2ax,
-                plottype = self.plottype )         
+                plottype = self.plottype,
+                levels = None )         
             }
        self.composite_plotspecs = {
             self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id]
@@ -1712,7 +1724,7 @@ class amwg_plot_set8(amwg_plot_spec):
     name = '8 - Annual Cycle Contour Plots of Zonal Means '
     number = '8'
 
-    def __init__( self, model, obs, varid, seasonid='ANN', region='global', aux=None ):
+    def __init__( self, model, obs, varid, seasonid='ANN', region='global', aux=None, levels=None ):
         """filetable1, should be a directory filetable for each model.
         varid is a string, e.g. 'TREFHT'.  The zonal mean is computed for each month. """
         filetable1, filetable2 = self.getfts(model, obs)
@@ -1747,9 +1759,9 @@ class amwg_plot_set8(amwg_plot_spec):
             self.plot3_id = '_'.join([ft1id+'-'+ft2id, varid, seasonid, 'contour'])
         self.plotall_id = '_'.join([ft1id,ft2id, varid, seasonid])
         if not self.computation_planned:
-            self.plan_computation( model, obs, varid, seasonid )
+            self.plan_computation( model, obs, varid, seasonid, levels=levels )
 
-    def plan_computation( self, model, obs, varid, seasonid ):
+    def plan_computation( self, model, obs, varid, seasonid, levels=None ):
         filetable1, filetable2 = self.getfts(model, obs)
 
         self.computation_planned = False
@@ -1799,18 +1811,21 @@ class amwg_plot_set8(amwg_plot_spec):
             self.plot1_id: plotspec(vid = ps.dict_idid(vidModel), 
                                     zvars = [vidModel],
                                     zfunc = (lambda x: MV2.transpose(x)),
-                                    plottype = self.plottype )}
+                                    plottype = self.plottype,
+                                    levels = levels )}
         if self.FT2:
             self.single_plotspecs[self.plot2_id] = \
                                plotspec(vid = ps.dict_idid(vidObs), 
                                         zvars=[vidObs],   
                                         zfunc = (lambda x: MV2.transpose(x)),                                
-                                        plottype = self.plottype )
+                                        plottype = self.plottype,
+                                         levels = levels )
             self.single_plotspecs[self.plot3_id] = \
                                plotspec(vid = ps.dict_idid(vidDiff), 
                                         zvars = [vidDiff],
                                         zfunc = (lambda x: MV2.transpose(x)),
-                                        plottype = self.plottype )
+                                        plottype = self.plottype,
+                                        levels = None )
             
         self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
         self.computation_planned = True
@@ -1850,7 +1865,7 @@ class amwg_plot_set9(amwg_plot_spec):
     # Here, the plotspec contains the variables themselves.
     name = '9 - Horizontal Contour Plots of DJF-JJA Differences'
     number = '9'
-    def __init__( self, model, obs, varid, seasonid='DJF-JJA', regionid=None, aux=None ):
+    def __init__( self, model, obs, varid, seasonid='DJF-JJA', regionid=None, aux=None, levels=None ):
         filetable1, filetable2 = self.getfts(model, obs)
         """filetable1, filetable2 should be filetables for each model.
         varid is a string, e.g. 'TREFHT'.  The seasonal difference is Seasonid
@@ -1884,8 +1899,8 @@ class amwg_plot_set9(amwg_plot_spec):
         self.plot3_id = '_'.join([ft1id+'-'+ft2id, varid, seasonid, 'contour'])
         self.plotall_id = '_'.join([ft1id,ft2id, varid, seasonid])
         if not self.computation_planned:
-            self.plan_computation( model, obs, varid, seasonid )
-    def plan_computation( self, model, obs, varid, seasonid ):
+            self.plan_computation( model, obs, varid, seasonid, levels=levels )
+    def plan_computation( self, model, obs, varid, seasonid, levels=None ):
         filetable1, filetable2 = self.getfts(model, obs)
         self.computation_planned = False
         #check if there is data to process
@@ -1932,17 +1947,20 @@ class amwg_plot_set9(amwg_plot_spec):
                 vid = ps.dict_idid(vid1), 
                 zvars=[vid1], 
                 zfunc = (lambda z: z),
-                plottype = self.plottype ),
+                plottype = self.plottype,
+                levels = levels ),
             self.plot2_id: plotspec(
                 vid = ps.dict_idid(vid2), 
                 zvars=[vid2], 
                 zfunc = (lambda z: z),
-                plottype = self.plottype ),
+                plottype = self.plottype,
+                levels = levels ),
             self.plot3_id: plotspec(
                 vid = ps.dict_idid(vid3), 
                 zvars = [vid3],
                 zfunc = (lambda x: x), 
-                plottype = self.plottype )
+                plottype = self.plottype,
+                levels = None )
             }
 
         self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
@@ -3080,7 +3098,7 @@ class amwg_plot_set15(amwg_plot_spec):
     name = '15 - ARM Sites Annual Cycle Contour Plots'
     number = '15'
 
-    def __init__( self, model, obs, varid, seasonid='ANN', region=None, aux=None ):
+    def __init__( self, model, obs, varid, seasonid='ANN', region=None, aux=None, levels=None ):
         """filetable1, should be a directory filetable for each model.
         varid is a string, e.g. 'TREFHT'.  The zonal mean is computed for each month. """
         filetable1, filetable2 = self.getfts(model, obs)
@@ -3111,9 +3129,9 @@ class amwg_plot_set15(amwg_plot_spec):
             self.plot3_id = '_'.join([ft1id+'-'+ft2id, varid, seasonid, 'contour'])
         self.plotall_id = '_'.join([ft1id,ft2id, varid, seasonid])
         if not self.computation_planned:
-            self.plan_computation( model, obs, varid, seasonid )
+            self.plan_computation( model, obs, varid, seasonid, levels=levels )
 
-    def plan_computation( self, model, obs, varid, seasonid ):
+    def plan_computation( self, model, obs, varid, seasonid, levels=None ):
         filetable1, filetable2 = self.getfts(model, obs)
 
         self.computation_planned = False
@@ -3171,7 +3189,8 @@ class amwg_plot_set15(amwg_plot_spec):
                                     zfunc = (lambda x: MV2.transpose(x) ),
                                     zrangevars={'yrange':[1000., 0.]},
                                     plottype = self.plottype,
-                                    title = 'model' )}
+                                    title = 'model',
+                                    levels = levels )}
         if self.FT2:
             self.single_plotspecs[self.plot2_id] = \
                                plotspec(vid = self.plot2_id, 
@@ -3179,14 +3198,16 @@ class amwg_plot_set15(amwg_plot_spec):
                                         zfunc = (lambda x: MV2.transpose(x) ),       
                                         zrangevars={'yrange':[1000., 0.]},                         
                                         plottype = self.plottype,
-                                        title='obs' )
+                                        title = 'obs',
+                                        levels = levels )
             self.single_plotspecs[self.plot3_id] = \
                                plotspec(vid = self.plot3_id, 
                                         zvars = [vidDiff],
                                         zfunc = (lambda x: MV2.transpose(x) ),
                                         zrangevars={'yrange':[1000., 0.]},
                                         plottype = self.plottype,
-                                        title='difference: model-obs' )
+                                        title = 'difference: model-obs',
+                                        levels = None )
         
         self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
         self.computation_planned = True

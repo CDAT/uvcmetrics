@@ -200,7 +200,7 @@ class uvc_simple_plotspec():
     # re presentation (plottype): Yxvsx is a line plot, for Y=Y(X).  It can have one or several lines.
     # Isofill is a contour plot.  To make it polar, set projection=polar.  I'll
     # probably communicate that by passing a name "Isofill_polar".
-    def __init__( self, pvars, presentation, labels=[], title='', source='', ranges=None, overplotline=False, linetypes=['solid'], linecolors=[241]):
+    def __init__( self, pvars, presentation, labels=[], title='', source='', ranges=None, overplotline=False, linetypes=['solid'], linecolors=[241], levels=None):
 
         pvars = [v for v in pvars if v is not None]
         # ... Maybe something else is broken to let None get into pvars.
@@ -250,7 +250,8 @@ class uvc_simple_plotspec():
         self.overplotline = overplotline
         self.linetypes = linetypes
         self.linecolors = linecolors
-
+        self.levels = levels
+        
         # Initial ranges - may later be changed to coordinate with related plots:
         # For each variable named 'v', the i-th member of self.vars, (most often there is just one),
         # varmax[v] is the maximum value of v, varmin[v] is the minimum value of v,
@@ -482,35 +483,39 @@ class uvc_simple_plotspec():
                 # you have to give it all the contour levels.  So...
                 if vcs.isboxfill(self.presentation):
                     self.presentation.boxfill_type = 'custom'  # without this, can't set levels
-                nlevels = 16
-
-                try:
-                    levels = [float(v) for v in vcs.mkscale( varmin, varmax, nlevels )]
-                    # Exceptions occur because mkscale doesn't always work.  E.g. vcs.mkscale(0,1.e35,16)
-                except RuntimeWarning:
-                    levels = []
-                if levels==[]:
-                    ## Here's how to do it with percentiles (clip out large values first).
-                    #pc05 = numpy.percentile(self.vars[0],0.05)
-                    #pc95 = numpy.percentile(self.vars[0],0.95)
-                    #levels = [float(v) for v in vcs.mkscale( pc05, pc95, nlevels-2 )]
-                    #levels = [varmin]+levels+[varmax]
-                    # Evenly distributed levels, after clipping out large values:
-                    # This cannot be expected to work always, but it's better than doing nothing.
-                    amed = numpy.median(self.vars[0]._data)
-                    vclip = amed * 1.0e6
-                    print "WARNING graphics problems, clipping some data at",vclip
-                    self.vars[0]._data[ self.vars[0]._data > vclip ] = vclip
-                    a = numpy.sort(self.vars[0]._data.flatten())
-                    asp = numpy.array_split(a,nlevels)
-                    afirsts = [c[0] for c in asp]+[asp[-1][-1]]
-                    alasts = [asp[0][0]]+[c[-1] for c in asp]
-                    levels = [0.5*(afirsts[i]+alasts[i]) for i in range(len(afirsts))]
-                    levf = levels[0]
-                    levl = levels[-1]
-                    levels = [ round(lv,2) for lv in levels ]
-                    levels[0] = round(1.1*levels[0]-0.1*levels[1],2)
-                    levels[-1] = round(1.1*levels[-1]-0.1*levels[-2],2)
+                
+                if self.levels:
+                    levels = self.levels
+                else:
+                    nlevels = 16
+    
+                    try:
+                        levels = [float(v) for v in vcs.mkscale( varmin, varmax, nlevels )]
+                        # Exceptions occur because mkscale doesn't always work.  E.g. vcs.mkscale(0,1.e35,16)
+                    except RuntimeWarning:
+                        levels = []
+                    if levels==[]:
+                        ## Here's how to do it with percentiles (clip out large values first).
+                        #pc05 = numpy.percentile(self.vars[0],0.05)
+                        #pc95 = numpy.percentile(self.vars[0],0.95)
+                        #levels = [float(v) for v in vcs.mkscale( pc05, pc95, nlevels-2 )]
+                        #levels = [varmin]+levels+[varmax]
+                        # Evenly distributed levels, after clipping out large values:
+                        # This cannot be expected to work always, but it's better than doing nothing.
+                        amed = numpy.median(self.vars[0]._data)
+                        vclip = amed * 1.0e6
+                        print "WARNING graphics problems, clipping some data at",vclip
+                        self.vars[0]._data[ self.vars[0]._data > vclip ] = vclip
+                        a = numpy.sort(self.vars[0]._data.flatten())
+                        asp = numpy.array_split(a,nlevels)
+                        afirsts = [c[0] for c in asp]+[asp[-1][-1]]
+                        alasts = [asp[0][0]]+[c[-1] for c in asp]
+                        levels = [0.5*(afirsts[i]+alasts[i]) for i in range(len(afirsts))]
+                        levf = levels[0]
+                        levl = levels[-1]
+                        levels = [ round(lv,2) for lv in levels ]
+                        levels[0] = round(1.1*levels[0]-0.1*levels[1],2)
+                        levels[-1] = round(1.1*levels[-1]-0.1*levels[-2],2)
 
                 # ... mkscale returns numpy.float64, which behaves unexpectedly in _setlevels when
                 # passed a tuple value
@@ -1141,8 +1146,11 @@ class plot_spec(object):
             #get the line color for each curve
             linecolors = [ps.zlinecolor]
             if z2ax is not None:
-                linetcolors = [ps.z2linecolor]
-                            
+                line2colors = [ps.z2linecolor]
+
+            #get the levels
+            levels = ps.levels       
+                    
             # The following line is getting specific to UV-CDAT, although not any GUI...
             #pdb.set_trace()
             #new kludge added to handle scatter plots, 10/14/14, JMcE
@@ -1158,7 +1166,7 @@ class plot_spec(object):
                     plot_type_temp = 'Isofill' #jfp works for moisture transport
             else:
                 plot_type_temp = ps.plottype
-            self.plotspec_values[p] = uvc_simple_plotspec( vars, plot_type_temp, labels, title, ps.source, ranges, overplotline, linetypes, linecolors )
+            self.plotspec_values[p] = uvc_simple_plotspec( vars, plot_type_temp, labels, title, ps.source, ranges, overplotline, linetypes, linecolors, levels )
             #print p
             #print self.plotspec_values[p]
         #pdb.set_trace()
