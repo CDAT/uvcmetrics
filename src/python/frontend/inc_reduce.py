@@ -118,7 +118,7 @@ def initialize_redfile( filen, axisdict, typedict, attdict, varnames ):
     Note that cdms2 will automatically write the bounds variable if it writes an axis which has bounds.
     """
     g = cdms2.open( filen, 'w' )
-    if time_bnds not in varnames:
+    if 'time_bnds' not in varnames:
         addVariable( g, 'time_bnds', typedict['time_bnds'], axisdict['time_bnds'], attdict['time_bnds'] )
     for varn in varnames:
         addVariable( g, varn, typedict[varn], axisdict[varn], attdict[varn] )
