@@ -19,13 +19,49 @@ increasing.  That is, for any times tn, tm in files filen, filem, if n>m then tn
 #   then other seasons from the months (probably slower on Rhea, but maybe not).
 
 from metrics.frontend.inc_reduce import *
-import os
+import os, re
 import argparse
+from pprint import pprint
+
+seamons = {  'ANN': [ '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12' ],
+             'DJF': [ '01', '02', '12' ],
+             'MAM': [ '03', '04', '05' ],
+             'JJA': [ '06', '07', '08' ],
+             'SON': [ '09', '10', '11' ],
+             'JAN': [ '01' ], 'FEB': [ '02' ], 'MAR': [ '03' ], 'APR': [ '04' ], 'MAY': [ '05' ],
+             'JUN': [ '06' ], 'JUL': [ '07' ], 'AUG': [ '08' ], 'SEP': [ '09' ], 'OCT': [ '10' ],
+             'NOV': [ '11' ], 'DEC': [ '12' ],
+             '01':['01'], '02':['02'], '03':['03'], '04':['04'], '05':['05'], '06':['06'], '07':['07'],
+             '08':['08'], '09':['09'], '10':['10'], '11':['11'], '12':['12'] }
+
+def restrict_to_season( datafilenames, seasonname ):
+    """Returns a sorted subset of the input list of data (model output) filenames -
+    only files which are thought to correspond to the input season name.
+    Thus datafilenames is a list of strings, and seasonname a string.
+    This function assumes that the filenames are of a format I have seen in ACME output:
+    ".*\.dddd-dd\.nc" where the 4+2 digits represent the year and month respectively.
+    The season name my be the standard 3-letter season, or a string with two decimal digits.
+    If any filename does not meet the expected format, then no filenames will be rejected.
+    """
+    newfns = []
+    for fn in datafilenames:
+        MO = re.match( "^.*\.\d\d\d\d-\d\d\.nc$", fn )
+        if MO is None:
+            print "jfp WARNING filename",fn,"did not match!"
+            newfns = datafilenames
+            break
+        mon = fn[-5:-3]
+        if mon in seamons[seasonname]:
+            newfns.append(fn)
+    newfns.sort()
+    pprint( newfns ) #jfp testing
+    return newfns
 
 def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason=[] ):
 
     # NetCDF library settings for speed:
-    cdms2.setNetcdf4Flag(1)
+    if 'setNetcdf4Flag' in dir(cdms2):  # backwards compatible with old versions of UV-CDAT
+        cdms2.setNetcdf4Flag(1)
     # doesn't work with FileVariable writes cdms2.setNetcdfUseNCSwitchModeFlag(0)
     cdms2.setNetcdfShuffleFlag(0)
     cdms2.setNetcdfDeflateFlag(0)
@@ -74,12 +110,16 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
     for seasonname in seasonnames:
         sredfiles = {}  # season reduced files
         datafilenames = [fn for fn in datafilenames if fn not in omit_files[seasonname]]
+        datafilenames2 = restrict_to_season( datafilenames, seasonname )
+        if len(datafilenames2)<=0:
+            print "WARNING, no input data, skipping season",seasonname
+            continue
         season = daybounds(seasonname)
         # ... assumes noleap calendar, returns time in days.
         init_red_tbounds = numpy.array( season, dtype=numpy.int32 )
         fileout = fileout_template.replace('XXX',seasonname)
-        g, out_varnames = initialize_redfile_from_datafile( fileout, varnames, datafilenames[0], dt,
-                                                         init_red_tbounds )
+        g, out_varnames = initialize_redfile_from_datafile( fileout, varnames, datafilenames2[0],
+                                                            dt, init_red_tbounds )
         # g is the (newly created) climatology file
         g.season = seasonname
         redfilenames.append(fileout)
@@ -92,7 +132,7 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
         redtime_bnds = g[ g.getAxis('time').bounds ]
         redvars = [ g[varn] for varn in out_varnames ]
 
-        update_time_avg_from_files( redvars, redtime_bnds, redtime_wts, datafilenames,
+        update_time_avg_from_files( redvars, redtime_bnds, redtime_wts, datafilenames2,
                                     fun_next_tbounds = (lambda rtb,dtb,dt=dt: rtb),
                                     redfiles=sredfiles.values(), dt=dt )
         if len(redtime)==2:
