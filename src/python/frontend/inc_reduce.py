@@ -118,7 +118,8 @@ def initialize_redfile( filen, axisdict, typedict, attdict, varnames ):
     Note that cdms2 will automatically write the bounds variable if it writes an axis which has bounds.
     """
     g = cdms2.open( filen, 'w' )
-    addVariable( g, 'time_bnds', typedict['time_bnds'], axisdict['time_bnds'], attdict['time_bnds'] )
+    if time_bnds not in varnames:
+        addVariable( g, 'time_bnds', typedict['time_bnds'], axisdict['time_bnds'], attdict['time_bnds'] )
     for varn in varnames:
         addVariable( g, varn, typedict[varn], axisdict[varn], attdict[varn] )
     addVariable( g, 'time_weights', typedict['time'], [axisdict['time']], [] )
@@ -128,6 +129,8 @@ def initialize_redfile( filen, axisdict, typedict, attdict, varnames ):
 def initialize_redfile_from_datafile( redfilename, varnames, datafilen, dt=-1, init_red_tbounds=None ):
     """Initializes a file containing the partially-time-reduced average data, given the names
     of the variables to reduce and the name of a data file containing those variables with axes.
+    The file is created and returned in an open state.  Closing the file is up to the calling function.
+    Also returned is a list of names of variables which have been initialized in the file.
     If provided, dt is a fixed time interval for defining the time axis.
     dt=0 is special in that it creates a climatology file.
     If provided, init_red_tbounds is the first interval for time_bnds.
@@ -156,6 +159,9 @@ def initialize_redfile_from_datafile( redfilename, varnames, datafilen, dt=-1, i
         attdict['time'] = { 'bounds':'time_bnds' }
     out_varnames = []
     for varn in varnames:
+        if f[varn] is None:
+            print "WARNING,",varn,"was not found in",datafilen
+            continue
         if f[varn].dtype.name.find('string')==0:
             # We can't handle string variables.
             continue
@@ -187,8 +193,7 @@ def initialize_redfile_from_datafile( redfilename, varnames, datafilen, dt=-1, i
         g['time_weights'][:] = numpy.zeros(len(timeaxis))
         g['time_weights'].initialized = 'yes'
     f.close()
-    g.close()
-    return out_varnames
+    return g, out_varnames
 
 def adjust_time_for_climatology( newtime, redtime ):
     """Changes the time axis newtime for use in a climatology calculation.  That is, the values of

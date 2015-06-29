@@ -23,11 +23,35 @@ import os
 import argparse
 
 def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason=[] ):
+
+    # NetCDF library settings for speed:
+    cdms2.setNetcdf4Flag(1)
+    # doesn't work with FileVariable writes cdms2.setNetcdfUseNCSwitchModeFlag(0)
+    cdms2.setNetcdfShuffleFlag(0)
+    cdms2.setNetcdfDeflateFlag(0)
+    cdms2.setNetcdfDeflateLevelFlag(0) 
+
     assert( len(datafilenames)>0 )
     f = cdms2.open(datafilenames[0])
     # to do: get the time axis even if the name isn't 'time'
+
     if len(varnames)==0 or varnames is None or 'ALL' in varnames:
         varnames = f.variables.keys()
+    if varnames==['AMWG']:
+        # backwards compatibility, do just a few variables:
+        varnames = [ 'ANRAIN', 'ANSNOW', 'AODDUST1', 'AODDUST3', 'AODVIS', 'AQRAIN', 'AQSNOW',
+                     'AREI', 'AREL', 'AWNC', 'AWNI', 'CCN3', 'CDNUMC', 'CLDHGH', 'CLDICE', 'CLDLIQ',
+                     'CLDLOW', 'CLDMED', 'CLDTOT', 'CLOUD', 'DCQ', 'DTCOND', 'DTV', 'FICE', 'FLDS',
+                     'FLNS', 'FLNSC', 'FLNT', 'FLNTC', 'FLUT', 'FLUTC', 'FREQI', 'FREQL', 'FREQR',
+                     'FREQS', 'FSDS', 'FSDSC', 'FSNS', 'FSNSC', 'FSNT', 'FSNTC', 'FSNTOA', 'FSNTOAC',
+                     'ICEFRAC', 'ICIMR', 'ICWMR', 'IWC', 'LANDFRAC', 'LHFLX', 'LWCF', 'NUMICE',
+                     'NUMLIQ', 'OCNFRAC', 'OMEGA', 'OMEGAT', 'PBLH', 'PRECC', 'PRECL', 'PRECSC',
+                     'PRECSL', 'PS', 'PSL', 'Q', 'QFLX', 'QRL', 'QRS', 'RELHUM', 'SHFLX',
+                     'SNOWHICE', 'SNOWHLND', 'SOLIN', 'SWCF', 'T', 'TAUX', 'TAUY', 'TGCLDIWP',
+                     'TGCLDLWP', 'TMQ', 'TREFHT', 'TS', 'U', 'U10', 'UU', 'V', 'VD01', 'VQ', 'VT',
+                     'VU', 'VV', 'WSUB', 'Z3', 'P0', 'time_bnds', 'area', 'hyai', 'hyam', 'hybi',
+                     'hybm', 'lat', 'lon' ]
+
     data_time = f.getAxis('time') # a FileAxis.
     calendar = getattr( data_time, 'calendar', None )
     # to do: support arbitrary time units, arbitrary calendar.
@@ -54,9 +78,9 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
         # ... assumes noleap calendar, returns time in days.
         init_red_tbounds = numpy.array( season, dtype=numpy.int32 )
         fileout = fileout_template.replace('XXX',seasonname)
-        out_varnames = initialize_redfile_from_datafile( fileout, varnames, datafilenames[0], dt,
+        g, out_varnames = initialize_redfile_from_datafile( fileout, varnames, datafilenames[0], dt,
                                                          init_red_tbounds )
-        g = cdms2.open( fileout, 'r+' )
+        # g is the (newly created) climatology file
         g.season = seasonname
         redfilenames.append(fileout)
         redfiles[fileout] = g
@@ -108,7 +132,8 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
                     if var.getTime() is None:
                         if hasattr( var, 'axes' ):
                             #newvar = cdms2.createVariable( var, id=var.id, axes=var.axes )
-                            addVariable( h, var.id, var.typecode(), var.axes, {} )
+                            if var.id not in h.variables:
+                                addVariable( h, var.id, var.typecode(), var.axes, {} )
                         else:
                             ### If we don't call subSlice(), then TransientVariable.__init__() will, and
                             ### it will assume that the result is a TransientVariable with a domain.
@@ -120,13 +145,15 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
                                                                         dtype=numpy.float_))
                                 axis.id = "axis_" + var.id + str(i)
                                 varaxes.append(axis)
-                            addVariable( h, var.id, var.typecode(), varaxes, {} )
+                            if var.id not in h.variables:
+                                addVariable( h, var.id, var.typecode(), varaxes, {} )
                         # h[var.id][:] = var[:] # doesn't work for scalar-valued variables
                         h[var.id].assignValue(var)
                     else:    # time-dependent variable, average the time values for, e.g., D and JF
                         assert( axes[0].isTime() ) # haven't coded for the alternatives
                         axes[0] = timeax
-                        addVariable( h, var.id, var.typecode(), axes, {} )
+                        if var.id not in h.variables:
+                            addVariable( h, var.id, var.typecode(), axes, {} )
                         if var.dtype.kind=='i' or var.dtype.kind=='S' :
                             # integer, any length, or string.
                             # Time average makes no sense, any the existing value sdb ok.
@@ -157,15 +184,11 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
                 h['time_bnds'].assignValue([[g00,g11]])
                 addVariable( h, 'time_weights', 'd', [timeax], {} )
                 h['time_weights'][:] = newwt
+                h.season = seasonname
                 h.close()
                 g.close()
                 os.rename( fileout, 'climo2_old.nc' )
                 os.rename( 'climo2_temp.nc', fileout )
-                g = cdms2.open( fileout, 'r+' )
-                g.season = seasonname
-                redfiles[fileout] = g
-                sredfiles[fileout] = g
-                g.close()
 
 if __name__ == '__main__':
     p = argparse.ArgumentParser(description="Climatology")
