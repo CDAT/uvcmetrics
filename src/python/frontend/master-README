@@ -19,6 +19,8 @@ options - A dictionary of options specific to the collection. These are passed a
           The current primary one is:
           'logo':'no' - does not draw the UVCDAT logo on output plots.
           'requirestwosets':'yes' - this set requires 2+ datasets to be enabled.
+executeable - A string containing an alternative executable name (i.e. instead of running diags.py, run {script})
+          This requires extra work in metadiags.py to support but there are examples there.
 Collection-level Flags:
           combined:True - indicates this collection produces combined single image plots which are model, 
              then obs, then model-obs. This helps classic viewer. 
