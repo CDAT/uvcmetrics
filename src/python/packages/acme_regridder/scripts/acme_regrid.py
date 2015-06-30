@@ -213,8 +213,13 @@ if __name__ == "__main__":
             if wgt is None:
                 wgt = True
                 addVariable(fo, "gw", "d", [dat2.getLatitude(), ], [])
-                addVariable(fo, "area", "f",
-                            [dat2.getLatitude(), dat2.getLongitude()], [])
+                addVariable(fo, "area", "d",
+                            [dat2.getLatitude(), dat2.getLongitude()],
+                            {"units": "steradian",
+                             "long_name": "solid angle subtended by grid cell",
+                             "standard_name": "cell_area",
+                             "cell_methods": "lat, lon: sum"}
+                            )
         else:
             print "Will rewrite as is", V.id
             addVariable(fo, V.id, V.typecode(), V.getAxisList(), V.attributes)
@@ -243,25 +248,30 @@ if __name__ == "__main__":
                 else:
                     dat2 = dat2[0]
                 print "Computing area weights"
-                area = cdutil.area_weights(dat2).astype("f")
+                fw = cdms2.open(args.weights)
+                area = fw("area_b")
+                fw.close()
+                area = MV2.reshape(area, dat2.shape[-2:])
                 V2 = fo["area"]
                 V2[:] = area[:]
         else:
             print i, NVARS, "Rewriting as is:", V.id
             try:
                 V2 = fo[V.id]
-                if V2.rank()==0:
-                    V2[:]=V.getValue()
+                if V2.rank() == 0:
+                    V2[:] = V.getValue()
                 elif V2.id == "time_written":
                     d = datetime.datetime.utcnow()
-                    time_written = "%.2i:%.2i:%.2i" % (d.hour,d.minute,d.second)
+                    time_written = "%.2i:%.2i:%.2i" % \
+                                   (d.hour, d.minute, d.second)
                     V2[:] = numpy.array([x for x in time_written])
                 elif V2.id == "date_written":
                     d = datetime.datetime.utcnow()
-                    date_written = "%.2i/%.2i/%s" % (d.month,d.day,str(d.year)[-2:])
+                    date_written = "%.2i/%.2i/%s" % \
+                                   (d.month, d.day, str(d.year)[-2:])
                     V2[:] = numpy.array([x for x in date_written])
                 else:
                     V2[:] = V[:]
-            except Exception,err:
-                print "Variable %s falied with error: %s" % (V2.id,err) 
+            except Exception, err:
+                print "Variable %s falied with error: %s" % (V2.id, err)
     fo.close()
