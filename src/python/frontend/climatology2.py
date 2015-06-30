@@ -120,7 +120,7 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
         fileout = fileout_template.replace('XXX',seasonname)
         g, out_varnames = initialize_redfile_from_datafile( fileout, varnames, datafilenames2[0],
                                                             dt, init_red_tbounds )
-        # g is the (newly created) climatology file
+        # g is the (newly created) climatology file.  It's open in 'w' mode.
         g.season = seasonname
         redfilenames.append(fileout)
         redfiles[fileout] = g
@@ -141,7 +141,10 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
             # This is possible (with sensible time bounds) only if a 1-year shift can join the
             # intervals.
             # I can't find a way to shrink a FileVariable, so we need to make a new file:
-            h = cdms2.open('climo2_temp.nc','w')
+            outdir = os.path.dirname( os.path.abspath( os.path.expanduser( os.path.expandvars(
+                            fileout_template ) ) ) )
+            hname = os.path.join(outdir, 'climo2_temp.nc')
+            h = cdms2.open(hname, 'w')
             if redtime_bnds[0][1]-365 == redtime_bnds[1][0]:
                 newtime = ( (redtime[0]-365)*redtime_wts[0] + redtime[1]*redtime_wts[1] ) /\
                     ( redtime_wts[0] + redtime_wts[1] )
@@ -227,8 +230,8 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
                 h.season = seasonname
                 h.close()
                 g.close()
-                os.rename( fileout, 'climo2_old.nc' )
-                os.rename( 'climo2_temp.nc', fileout )
+                os.rename( fileout, os.path.join(outdir, 'climo2_old.nc') )
+                os.rename( hname, fileout )
 
 if __name__ == '__main__':
     p = argparse.ArgumentParser(description="Climatology")
