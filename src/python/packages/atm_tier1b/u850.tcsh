@@ -18,6 +18,8 @@ else
 endif
 set wd=`cd $rootdir && pwd`
 
+
+set figname = ''
 echo "TODO make 3 separate gsn_open_wks plots so we can control filenames"
 while ( $#argv != 0)
    switch ($argv[1])
@@ -38,6 +40,9 @@ while ( $#argv != 0)
          breaksw
       case '--casename': # this is --dsname argument to metadiags. This propogates to filenames
          set casename=$2;
+         breaksw
+      case '--figurebase': # this is a special argument created by metadiags, typically setXXXX
+         set figname=$2;
          breaksw
    endsw
    shift
@@ -70,4 +75,4 @@ endif
 echo "Generating plots..."
 #ncl command to generate the diagnostic
 echo "Looking for ncl script at $wd/u850.ncl"
-ncl diagname=\"$diagname\" path=\"$output\" obsfilter=\"$obsfilter\" obspath=\"$obspath\" casename=\"$casename\" output=\"$output\" $wd/u850.ncl
+ncl diagname=\"$diagname\" path=\"$output\" obsfilter=\"$obsfilter\" obspath=\"$obspath\" casename=\"$casename\" output=\"$output\" figname=\"$figname\" $wd/u850.ncl

@@ -31,6 +31,7 @@
 ; anywhere) so we need to just use casename for output files. casename becomes the
 ; "dataset name" in classic viewer's selection pane. 
    outputfile = output+"/"+casename
+   figfile = output+"/"+figbase
 
    filelist = addfile(path+"/"+diagname+"-condensed.nc", "r") 
    print(filelist)
@@ -122,7 +123,14 @@
 
 
    ;create plot environment
-   wks          = gsn_open_wks("png",outputfile)
+   figfile1 = figfile+"maxwind"
+   figfile2 = figfile+"maxwind-lat"
+   figfile3 = figfile+"freq-dist"
+   wks1 = gsn_open_wks("png", figfile1)
+   wks2 = gsn_open_wks("png", figfile2)
+   wks3 = gsn_open_wks("png", figfile3)
+
+   ;wks          = gsn_open_wks("png",outputfile)
    res          = True
 
    ;set up variables for plot labels
@@ -138,11 +146,11 @@
    res@tiXAxisString            = "Time (days)"
 
    ; Plot 1: maximum wind speed over time
-   plot = gsn_csm_xy(wks,time,jetmax,res); create plot
+   plot = gsn_csm_xy(wks1,time,jetmax,res); create plot
 
    ; Plot 2: latitude of maximum wind speed over time
    res@tiYAxisString            = "Jet Latitude Index at 850 mb"
-   plot2 = gsn_csm_xy(wks,time,jetlatindex,res)
+   plot2 = gsn_csm_xy(wks2,time,jetlatindex,res)
 
    ; Plots 3 & 4: frequency distribution of jet speed and latitude
    plot3    = new ( 2, "graphic")
@@ -159,7 +167,7 @@
    res@tiYAxisString        = "Frequency"
    res@tiXAxisString        = "Jet Maximum Latitude at 850 mb"
 
-   plot3(0) = gsn_csm_xy (wks, jetlatfreq@bin_center, (/jetlatfreq,ojetlatfreq/), res)
+   plot3(0) = gsn_csm_xy (wks3, jetlatfreq@bin_center, (/jetlatfreq,ojetlatfreq/), res)
    res@tiXAxisString            = "Jet Maximum Speed at 850 mb"
-   plot3(1) = gsn_csm_xy (wks, jetmaxfreq@bin_center, (/jetmaxfreq,ojetmaxfreq/), res)
-   gsn_panel(wks,plot3,(/1,2/),False)
+   plot3(1) = gsn_csm_xy (wks3, jetmaxfreq@bin_center, (/jetmaxfreq,ojetmaxfreq/), res)
+   gsn_panel(wks3,plot3,(/1,2/),False)

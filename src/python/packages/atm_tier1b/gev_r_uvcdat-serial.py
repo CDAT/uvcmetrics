@@ -21,7 +21,7 @@ if __name__ == "__main__":
    diagname = ''
 
    try:
-      opts, args = getopt.getopt(sys.argv[1:], "hf:d:c:o:",["fieldname=","casename=","case_dir=","output="])
+      opts, args = getopt.getopt(sys.argv[1:], "hb:f:d:c:o:",["fieldname=","casename=","case_dir=","output=","figbase="])
    except getopt.GetoptError:
       print 'Usage:'
       print '--fieldname fieldname --casename casename --case_dir /path/to/case --output /path/to/stuff'
@@ -35,6 +35,8 @@ if __name__ == "__main__":
          case_dir = arg
       elif opt in ['-o', '--output']:
          output = arg
+      elif opt in ['-b', '--figbase']:
+         figbase = arg
       # This will require the metascript to copy outfile-1 to inflie
 #      robjects.r('''
 #         gevfit_r <- function(r){
@@ -277,7 +279,7 @@ if __name__ == "__main__":
        v.plot(mu_var, p, bg=1, title='MU', units='')
 
        # Drop casename from the filename 
-       pngfile = output + '/gevfit.daily.'+fieldname+'.png'
+       pngfile = output + '/' + figbase + '-gevfit.daily.'+fieldname+'.png'
        v.png(pngfile)
        v.close()
        print 'wrote ',pngfile

@@ -10,6 +10,7 @@
 ### Casename is the --dsname argument. It is meant as a unique identifier to be referred to later.
 ### Diagname is the filename prefix. Unfortuantely, that information cannot propogate to classic viewer,
 ###  so we drop it.
+set figname = ''
 while ( $#argv != 0)
    switch ($argv[1])
       case '--casename':
@@ -28,6 +29,9 @@ while ( $#argv != 0)
       # it is the part between {path}/[here]*.h1.*.nc
       # unfortunately, this info is NOT available to classic viewer, so it cannot be part of the output filenames
          set diagname=$2;
+         breaksw
+      case '--figurebase':
+         set $figname = $2
          breaksw
    endsw
    shift
@@ -73,13 +77,13 @@ else
 
    echo "Computing max_blocks for $fieldname"
    # Ok, compute max_blocks. $condname is set to where we made or foudn the input file.
-   ./compute_block_max-serial.py --fieldname=$fieldname --casename=$casename --case_dir=$conddir --output=$output
+   compute_block_max-serial.py --fieldname=$fieldname --casename=$casename --case_dir=$conddir --output=$output
    set blockmaxdir = $output
 endif
 
 # $blockmaxdir is out "input" in this case.
 # generates {stuff}-mu-{stuff}.png
 echo "Generating plots for $fieldname..."
-./gev_r_uvcdat-serial.py --fieldname=$fieldname --casename=$casename --case_dir=$blockmaxdir --output=$output
+gev_r_uvcdat-serial.py --fieldname=$fieldname --casename=$casename --case_dir=$blockmaxdir --output=$output --figbase=$figname
 echo "Done"
 

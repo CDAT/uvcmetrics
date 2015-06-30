@@ -9,6 +9,8 @@ from metrics.fileio.filetable import *
 from metrics.fileio.findfiles import *
 from metrics.packages.diagnostic_groups import *
 
+# If not specified on an individual variable, this is the default.
+def_executable = 'diags-new.py'
 
 # The user specified a package; see what collections are available.
 def getCollections(pname):
@@ -74,7 +76,10 @@ def makeTables(collnum, model_dict, obspath, outpath, pname, outlog):
 
    print 'NEED TO SEE IF --REGIONS ARG TO LAND SET 5 REGIONAL CARES'
    # This assumes no per-variable regions/seasons. .... See if land set 5 cares
-   seasonstr = '--seasons '+' '.join(seasons)
+   if 'NA' in seasons:
+      seasonstr = ''
+   else:
+      seasonstr = '--seasons '+' '.join(seasons)
    regionstr = '--regions '+' '.join(regions)
 
    obsstr = ''
@@ -147,6 +152,7 @@ def makeTables(collnum, model_dict, obspath, outpath, pname, outlog):
             runcmdline(cmdline, outlog)
          
 def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
+   import os
    # Did the user specify a single collection? If not find out what collections we have
    if colls == None:
       colls = getCollections(pname) #find out which colls are available
@@ -172,6 +178,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
    # Get some paths setup
    raw0 = model_dict[model_dict.keys()[0]]['raw']
    climo0 = model_dict[model_dict.keys()[0]]['climos']
+   name0 = None
    name0 = model_dict[model_dict.keys()[0]].get('name', 'ft0')
    if climo0 != None:
       cf0 = 'yes'
@@ -288,7 +295,11 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
             obs_vlist = obsvars[o]
             simple_vars = []
             for v in obs_vlist:
-               if diags_collection[collnum][v].get('seasons', False) == False and diags_collection[collnum][v].get('regions', False) == False and diags_collection[collnum][v].get('varopts', False) == False and diags_collection[collnum][v].get('options', False) == False:
+               if diags_collection[collnum][v].get('seasons', False) == False and \
+                   diags_collection[collnum][v].get('regions', False) == False and \
+                   diags_collection[collnum][v].get('varopts', False) == False and \
+                   diags_collection[collnum][v].get('options', False) == False and \
+                   diags_collection[collnum][v].get('executable', False) == False: 
                   simple_vars.append(v)
 
             complex_vars = list(set(obs_vlist) - set(simple_vars))
@@ -306,36 +317,75 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
             # run these individually basically.
                g_region = diags_collection[collnum][v].get('regions', ['Global'])
                g_season = diags_collection[collnum][v].get('seasons', ['ANN'])
+               g_exec = diags_collection[collnum][v].get('executable', def_executable)
+
+               regionstr = '--regions '+' '.join(g_region)
                if 'NA' in g_season:
                   seasonstr = ''
                else:
                   seasonstr = '--seasons '+' '.join(g_season)
-                  
-               regionstr = '--regions '+' '.join(g_region)
+
                varopts = ''
                if diags_collection[collnum][v].get('varopts', False) != False:
                   varopts = '--varopts '+' '.join(diags_collection[collnum][v]['varopts'])
                varstr = '--vars '+v
-               # check for varopts.
-               raw = False
-               cf0 = 'yes'
-               if diags_collection[collnum][v].get('options', False) != False:
-                  raw = diags_collection[collnum][v]['options'].get('requiresraw', False)
 
-               if raw != False:
-                  if raw0 == None:
-                     print 'No raw dataset provided and this set requires raw data'
-                     quit()
+               if g_exec == def_executable:
+                  # check for options.
+                  raw = False
+                  cf0 = 'yes'
+                  if diags_collection[collnum][v].get('options', False) != False:
+                     raw = diags_collection[collnum][v]['options'].get('requiresraw', False)
+
+                  if raw != False:
+                     if raw0 == None:
+                        print 'No raw dataset provided and this set requires raw data'
+                        quit()
+                     else:
+                        modelpath = raw0.root_dir()
+                        cf0 = 'no'
+
+                  cmdline = 'diags-new.py --model path=%s,climos=%s,type=model %s %s %s %s %s %s %s %s %s %s %s %s' % (modelpath, cf0, obsstr, optionsstr, packagestr, setstr, seasonstr, varstr, outstr, xmlstr, prestr, poststr, regionstr, varopts)
+                  if collnum != 'dontrun':
+                     runcmdline(cmdline, outlog)
                   else:
-                     modelpath = raw0.root_dir()
-                     cf0 = 'no'
+                     print 'DONTRUN: ', cmdline
+            else: # different executable; just pass all option key:values as command line options.
+               # Look for a cmdline list in the options for this variable.
+               execstr = g_exec
+               cmdlineOpts = diags_collection[num][v].get('cmdline', FALSE)
+               fnamebase = 'set'+collnum
+               if cmdlineOpts != False:
+                  if 'datadir' in cmdlineOpts:
+                     execstr = execstr+' --datadir ', modelpath
+                  if 'obsfilter' in cmdlineOpts:
+                     execstr = execstr+' ==obsfilter ', obsfname
+                  if 'obspath' in cmdlineOpts:
+                     execstr = execstr+' --obspath ', obspath
+                  if 'outdir' in cmdlineOpts:
+                     execstr = execstr+' --output ', outpath
+                  if 'fieldname' in cmdlineOpts:
+                     execstr = execstr+' --fieldname ', v
+                  if 'diagname' in cmdlineOpts:
+                     if name0 == None:
+                        execstr = execstr+' --diagname ', dsname
+                     else:
+                        execstr = execstr+' --diagname ', name0
+                  if 'casename' in cmdlineOpts:
+                     execstr = execstr+' --casename ', dsname
+                  if 'figurebase' in cmdlineOpts:
+                     execstr = execstr+' --figurebase ', fnamebase
 
-               cmdline = 'diags-new.py --model path=%s,climos=%s,type=model %s %s %s %s %s %s %s %s %s %s %s %s' % (modelpath, cf0, obsstr, optionsstr, packagestr, setstr, seasonstr, varstr, outstr, xmlstr, prestr, poststr, regionstr, varopts)
-               if collnum != 'dontrun':
-                  runcmdline(cmdline, outlog)
-               else:
-                  print 'DONTRUN: ', cmdline
+               #if diags_collection[collnum][v].get('options', False) != False:
+               #   for x in diags_collection[collnum][v]['options'].keys():
+               #      cmdline += '--%s %s' % (x, diags_collection[collnum][v][options][x])
+               print 'About to execute: ', execstr
+               #runcmdline(execstr, outlog)
 
+
+                  
+
+   quit()
    outlog.close()
 
 def runcmdline(cmdline, outlog):

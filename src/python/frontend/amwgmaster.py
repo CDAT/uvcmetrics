@@ -9,6 +9,25 @@ from metrics.frontend.defines import *
 # Make sure no actual variables have these names, but that shouldn't be a problem.
 collection_special_vars = ['desc', 'preamble', 'regions', 'seasons', 'package', 'options', 'combined', 'imagesonly', 'tables']
 
+diags_collection['tier1b'] = {}
+diags_collection['tier1b']['desc'] = 'Tier1b External Diagnostics'
+diags_collection['tier1b']['package'] = 'AMWG'
+diags_collection['tier1b']['options'] = {'logo':'no'}
+diags_collection['tier1b']['seasons'] = ['NA']
+# special executables are passed the "cmdline" list of arguments. There is code in metadiags to convert internal options to these.
+# some better mechanism would be nice, but this shouldn't be too complicated.
+# Current hard coded support:
+# casename - this is a --dsname argument to metadiags
+# datadir - this is a --model path={path} argument
+# outdir - this is --outputdir
+# diagname - this is --model ...,name={name} if present; otherwise dsname
+# fieldname - this is --var
+# obsfilter - this is --obs ...,filter={filter}, primarily the filekey
+# obspath - this is --obs path={path}
+diags_collection['tier1b']['U850'] = {'plottype':'NA', 'cmdline':['obsfilter', 'obspath', 'casename', 'figurebase', 'datadir', 'outdir', 'diagname'], 'desc':'Abbys diagnostic script', 'executable':'u850.tcsh', 'obs':['uwind']}
+diags_collection['tier1b']['PRECT'] = {'plottype':'NA', 'cmdline':['casename', 'datadir', 'fieldname', 'outdir', 'figurebase', 'diagname'], 'desc':'Salils diagnostic script -GEV', 'executable':'gev.tcsh', 'obs':['NA_1']}
+
+
 # *** Collection 11 ***
 diags_collection['11'] = {}
 diags_collection['11']['desc'] = 'Pacific annual cycle, Scatter plot plots'
@@ -446,6 +465,7 @@ diags_varlist['Q'] = {'desc': 'Specific Humidity'}
 diags_varlist['H'] = {'desc': 'Moist Static Energy'}
 diags_varlist['FSDS'] = {'desc': 'Surf SW downwelling flux (Northern)'}
 diags_varlist['U'] = {'desc': 'Zonal Wind'}
+diags_varlist['U850'] = {'desc': 'Zonal Wind - 850mb'}
 diags_varlist['Ocean_Heat'] = {'desc': 'Ocean Heat', 'filekey':'OCN_HEAT'}
 diags_varlist['Surface_Heat'] = {'desc': 'Surface Heat', 'filekey':'SRF_HEAT'}
 diags_varlist['LWCFSRF'] = {'desc': 'Surf LW Cloud Forcing'}
@@ -493,6 +513,7 @@ diags_obslist['NVAP_1'] = {'filekey': 'NVAP', 'desc': 'NVAP 1988-1999'}
 diags_obslist['SHEBA_1'] = {'filekey': 'SHEBA', 'desc': 'Surface Heat Budget of the Arctic Ocean (SHEBA)'}
 diags_obslist['LARYEA_1'] = {'filekey': 'LARYEA', 'desc': 'Large-Yeager 1984-2004'}
 diags_obslist['NA_1'] = {'filekey': 'N/A', 'desc': 'NA'}
+diags_obslist['uwind'] = {'filekey':'uwind850', 'desc': 'U (850mb)'}
 diags_obslist['MODIS_1'] = {'filekey': 'MODIS', 'desc': 'MODIS Mar2000-Aug2004'}
 diags_obslist['ISCCP_1'] = {'filekey': 'ISCCP', 'desc': 'ISCCP D1 Daytime Jul1983-Sep2001'}
 diags_obslist['HADISST_1'] = {'filekey': 'HADISST', 'desc': 'HadISST/OI.v2 (Climatology) 1982-2001'}
