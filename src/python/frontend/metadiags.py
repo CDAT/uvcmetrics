@@ -353,39 +353,40 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
             else: # different executable; just pass all option key:values as command line options.
                # Look for a cmdline list in the options for this variable.
                execstr = g_exec
-               cmdlineOpts = diags_collection[num][v].get('cmdline', FALSE)
+               cmdlineOpts = diags_collection[collnum][v].get('cmdline', False)
                fnamebase = 'set'+collnum
                if cmdlineOpts != False:
                   if 'datadir' in cmdlineOpts:
-                     execstr = execstr+' --datadir ', modelpath
+                     execstr = execstr+' --datadir '+ modelpath
                   if 'obsfilter' in cmdlineOpts:
-                     execstr = execstr+' ==obsfilter ', obsfname
+                     print 'obsfname: ', obsfname
+                     execstr = execstr+' --obsfilter '+ obsfname
                   if 'obspath' in cmdlineOpts:
-                     execstr = execstr+' --obspath ', obspath
+                     execstr = execstr+' --obspath '+ obspath
                   if 'outdir' in cmdlineOpts:
-                     execstr = execstr+' --output ', outpath
+                     execstr = execstr+' --output '+ outpath
                   if 'fieldname' in cmdlineOpts:
-                     execstr = execstr+' --fieldname ', v
+                     execstr = execstr+' --fieldname '+ v
                   if 'diagname' in cmdlineOpts:
                      if name0 == None:
-                        execstr = execstr+' --diagname ', dsname
+                        execstr = execstr+' --diagname '+ dsname
                      else:
-                        execstr = execstr+' --diagname ', name0
+                        execstr = execstr+' --diagname '+ name0
                   if 'casename' in cmdlineOpts:
-                     execstr = execstr+' --casename ', dsname
+                     execstr = execstr+' --casename '+ dsname
                   if 'figurebase' in cmdlineOpts:
-                     execstr = execstr+' --figurebase ', fnamebase
+                     execstr = execstr+' --figurebase '+ fnamebase
 
                #if diags_collection[collnum][v].get('options', False) != False:
                #   for x in diags_collection[collnum][v]['options'].keys():
                #      cmdline += '--%s %s' % (x, diags_collection[collnum][v][options][x])
                print 'About to execute: ', execstr
-               #runcmdline(execstr, outlog)
+               runcmdline(execstr, outlog)
+               print 'EXECUTED'
 
 
                   
 
-   quit()
    outlog.close()
 
 def runcmdline(cmdline, outlog):

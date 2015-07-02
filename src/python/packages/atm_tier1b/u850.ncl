@@ -31,7 +31,7 @@
 ; anywhere) so we need to just use casename for output files. casename becomes the
 ; "dataset name" in classic viewer's selection pane. 
    outputfile = output+"/"+casename
-   figfile = output+"/"+figbase
+   figfile = output+"/"+figurebase
 
    filelist = addfile(path+"/"+diagname+"-condensed.nc", "r") 
    print(filelist)

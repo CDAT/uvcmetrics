@@ -31,7 +31,7 @@ while ( $#argv != 0)
          set diagname=$2;
          breaksw
       case '--figurebase':
-         set $figname = $2
+         set figname = $2
          breaksw
    endsw
    shift
@@ -84,6 +84,6 @@ endif
 # $blockmaxdir is out "input" in this case.
 # generates {stuff}-mu-{stuff}.png
 echo "Generating plots for $fieldname..."
-gev_r_uvcdat-serial.py --fieldname=$fieldname --casename=$casename --case_dir=$blockmaxdir --output=$output --figbase=$figname
+gev_r_uvcdat-serial.py --fieldname=$fieldname --casename=$casename --case_dir=$blockmaxdir --output=$output --figurebase=$figname
 echo "Done"
 

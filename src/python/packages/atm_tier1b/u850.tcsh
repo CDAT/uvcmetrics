@@ -75,4 +75,4 @@ endif
 echo "Generating plots..."
 #ncl command to generate the diagnostic
 echo "Looking for ncl script at $wd/u850.ncl"
-ncl diagname=\"$diagname\" path=\"$output\" obsfilter=\"$obsfilter\" obspath=\"$obspath\" casename=\"$casename\" output=\"$output\" figname=\"$figname\" $wd/u850.ncl
+ncl diagname=\"$diagname\" path=\"$output\" obsfilter=\"$obsfilter\" obspath=\"$obspath\" casename=\"$casename\" output=\"$output\" figurebase=\"$figname\" $wd/u850.ncl

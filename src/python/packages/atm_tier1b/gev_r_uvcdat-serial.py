@@ -21,7 +21,7 @@ if __name__ == "__main__":
    diagname = ''
 
    try:
-      opts, args = getopt.getopt(sys.argv[1:], "hb:f:d:c:o:",["fieldname=","casename=","case_dir=","output=","figbase="])
+      opts, args = getopt.getopt(sys.argv[1:], "hb:f:d:c:o:",["fieldname=","casename=","case_dir=","output=","figurebase="])
    except getopt.GetoptError:
       print 'Usage:'
       print '--fieldname fieldname --casename casename --case_dir /path/to/case --output /path/to/stuff'
@@ -35,7 +35,7 @@ if __name__ == "__main__":
          case_dir = arg
       elif opt in ['-o', '--output']:
          output = arg
-      elif opt in ['-b', '--figbase']:
+      elif opt in ['-b', '--figurebase']:
          figbase = arg
       # This will require the metascript to copy outfile-1 to inflie
 #      robjects.r('''
