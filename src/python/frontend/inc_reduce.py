@@ -40,6 +40,7 @@
 
 import numpy, cdms2, sys, os, math
 from numbers import Number
+from metrics.packages.acme_regridder.scripts.acme_regrid import addVariable
 
 # Silence annoying messages about setting the NetCDF file type.  Also, these three lines will
 # ensure that we get NetCDF-3 files.  Expansion of a FileAxis may not work on NetCDF-4 files.
@@ -109,7 +110,7 @@ def next_tbounds_prescribed_step( red_time_bnds, data_time_bnds, dt ):
     t1t2 = numpy.array([[t0+dt, t1+dt]],dtype=numpy.int32)
     return numpy.concatenate( ( red_time_bnds, t1t2 ), axis=0 )
 
-def initialize_redfile( filen, axisdict, varnames ):
+def initialize_redfile( filen, axisdict, typedict, attdict, varnames ):
     """Initializes the file containing reduced data.  Input is the filename, axes
     variables representing bounds on axes, and names of variables to be initialized.
     Axes are represented as a dictionary, with items like varname:[timeaxis, lataxis, lonaxis].
@@ -117,22 +118,19 @@ def initialize_redfile( filen, axisdict, varnames ):
     Note that cdms2 will automatically write the bounds variable if it writes an axis which has bounds.
     """
     g = cdms2.open( filen, 'w' )
+    if 'time_bnds' not in varnames:
+        addVariable( g, 'time_bnds', typedict['time_bnds'], axisdict['time_bnds'], attdict['time_bnds'] )
     for varn in varnames:
-        axes = axisdict[varn]
-        var = cdms2.createVariable( numpy.zeros([len(ax) for ax in axes]), fill_value=1.0e20,
-                                     axes=axes, copyaxes=False )
-        var.id = varn
-        g.write(var)
-    timeax = axisdict['time']
-    time_wts = cdms2.createVariable( numpy.zeros(len(timeax)), axes=[timeax], fill_value=1.0e20,
-                                     copyaxes=False )
-    time_wts.id = 'time_weights'
-    g.write( time_wts )
-    g.close()
+        addVariable( g, varn, typedict[varn], axisdict[varn], attdict[varn] )
+    addVariable( g, 'time_weights', typedict['time'], [axisdict['time']], [] )
+    g['time_weights'].initialized = 'no'
+    return g;
 
 def initialize_redfile_from_datafile( redfilename, varnames, datafilen, dt=-1, init_red_tbounds=None ):
     """Initializes a file containing the partially-time-reduced average data, given the names
     of the variables to reduce and the name of a data file containing those variables with axes.
+    The file is created and returned in an open state.  Closing the file is up to the calling function.
+    Also returned is a list of names of variables which have been initialized in the file.
     If provided, dt is a fixed time interval for defining the time axis.
     dt=0 is special in that it creates a climatology file.
     If provided, init_red_tbounds is the first interval for time_bnds.
@@ -143,6 +141,9 @@ def initialize_redfile_from_datafile( redfilename, varnames, datafilen, dt=-1, i
     boundless_axes = set([])
     f = cdms2.open( datafilen )
     axisdict = {}
+    typedict = {}
+    attdict = {}
+    timeaxis = None
     if dt>=0:   # time axis should have fixed intervals, size dt
         if init_red_tbounds is None or init_red_tbounds==[] or init_red_tbounds==[[]]:
             init_red_tbounds=[]
@@ -152,9 +153,15 @@ def initialize_redfile_from_datafile( redfilename, varnames, datafilen, dt=-1, i
             red_time_bnds = init_red_tbounds
         red_time = [ 0.5*(tb[0]+tb[1]) for tb in red_time_bnds ]
         timeaxis = cdms2.createAxis( red_time, red_time_bnds, 'time' )
+        timeaxis.bounds = 'time_bnds'
         axisdict['time'] = timeaxis
+        typedict['time'] = f['time'].typecode()
+        attdict['time'] = { 'bounds':'time_bnds' }
     out_varnames = []
     for varn in varnames:
+        if f[varn] is None:
+            print "WARNING,",varn,"was not found in",datafilen
+            continue
         if f[varn].dtype.name.find('string')==0:
             # We can't handle string variables.
             continue
@@ -168,11 +175,25 @@ def initialize_redfile_from_datafile( redfilename, varnames, datafilen, dt=-1, i
                 axes.append( ax )
             if not hasattr( ax,'bounds' ): boundless_axes.add(ax)
         axisdict[varn] = axes
+        typedict[varn] = f[varn].typecode()
+        attdict[varn] = {'initialized':'no'}
     for ax in boundless_axes:
         print "WARNING, axis",ax.id,"has no bounds"
-    initialize_redfile( redfilename, axisdict, out_varnames )
+    if timeaxis is not None:
+        tbndaxis = cdms2.createAxis( [0,1], None, 'tbnd' )
+        axisdict['time_bnds'] = [timeaxis,tbndaxis]
+        typedict['time_bnds'] = timeaxis.typecode()
+        attdict['time_bnds'] = {'initialized':'no'}
+
+    g = initialize_redfile( redfilename, axisdict, typedict, attdict, out_varnames )
+
+    if timeaxis is not None:
+        g['time_bnds'][:] = red_time_bnds
+        g['time_bnds'].initialized = 'yes'
+        g['time_weights'][:] = numpy.zeros(len(timeaxis))
+        g['time_weights'].initialized = 'yes'
     f.close()
-    return out_varnames
+    return g, out_varnames
 
 def adjust_time_for_climatology( newtime, redtime ):
     """Changes the time axis newtime for use in a climatology calculation.  That is, the values of
@@ -302,16 +323,34 @@ def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds, 
                 newtime_rti[j][k] = i
         #  This much simpler expression works if there is no overlap:
         #newtime_wts[j] = newtime_bnds[j][1] - newtime_bnds[j][0]
-        assert( k<maxolaps ) # If k be unlimited, coding is more complicated.
+        kmax = k
+        assert( kmax<maxolaps ) # If k be unlimited, coding is more complicated.
+        # This is the first point at which we decide whether the input file covers any times of interest,
+        # e.g. for climatology of DJF, here is where we decide whether the file is a D,J,or F file.
+        # Here kmax<0 if the file has no interesting time.
 
     for j,nt in enumerate(newtime):
-        for k in range(maxolaps):
+        for k in range(kmax+1):
             i = int( newtime_rti[j][k] )
+            # This is the second point at which we decide whether the input file covers any times of interest,
+            # e.g. for climatology of DJF, here is where we decide whether the file is a D,J,or F file.
+            # Here i<0 if the file has no interesting time.
             if i<0: continue
             for iv in range(nvars):
                 redvar = redvars[iv]
                 newvar = newvars[iv]
-                if redvar.getTime() is None:
+                if redvar.id=='time_bnds' or redvar.id=='time_weights':
+                    continue
+                if redvar.dtype.kind=='i' and newvar.dtype.kind=='i' or\
+                        redvar.dtype.kind=='S' and newvar.dtype.kind=='S' :
+                    # integer, any length, or string.  Time average makes no sense.
+                    data = newvar
+                    if redvar.shape==newvar.shape:
+                        redvar.assignValue(newvar)
+                    else:
+                        redvar[i] = newvar[j]
+                    continue
+                if redvar.getTime() is None and redvar.initialized=='yes':
                     if newtime_wts[j,k]>0:
                         # Maybe the assignValue call will work for other shapes.  To do: try it,
                         # this code will simplify if it works
@@ -337,13 +376,27 @@ def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds, 
                             redvar =\
                                 ( redvar*redtime_wts[i] + newvar*newtime_wts[j,k] ) /\
                                 ( redtime_wts[i] + newtime_wts[j,k] )
-                else:
+                elif redvar.getTime() is None and redvar.initialized=='no':
+                    data = ( ( newvar*newtime_wts[j,k] ) /                  #jfp testing only
+                             ( redtime_wts[i] + newtime_wts[j,k] ) ) #jfp testing only
+                    redvar.assignValue(data)
+                elif redvar.initialized=='yes':
                     if newtime_wts[j,k]>0:
-                        #print "jfp redvars[",iv,"][",i,"]=",redvar[i]
                         redvar[i] =\
                             ( redvar[i]*redtime_wts[i] + newvar[j]*newtime_wts[j,k] ) /\
                             ( redtime_wts[i] + newtime_wts[j,k] )
-            redtime_wts[i] += newtime_wts[j,k]
+                else:  # For averaging, unitialized is same as value=0
+                    if newtime_wts[j,k]>0:
+                        redvar[i] =\
+                            (                             newvar[j]*newtime_wts[j,k] ) /\
+                            ( redtime_wts[i] + newtime_wts[j,k] )
+            if redtime_wts.initialized=='yes':
+                redtime_wts[i] += newtime_wts[j,k]
+            else:      # uninitialized is same as value=0
+                redtime_wts[i]  = newtime_wts[j,k]
+    for iv in range(nvars):
+        redvars[iv].initialized = 'yes'
+    redtime_wts.initialized = 'yes'
 
     #print "next_tbounds= ",next_tbounds
     #print "redtime_bnds=",redtime_bnds[:][:]

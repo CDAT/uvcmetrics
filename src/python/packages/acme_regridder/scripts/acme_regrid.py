@@ -67,6 +67,25 @@ class WeightFileRegridder:
         dest_field.setAxis(i,axes[i])
     return dest_field
 
+def addAxes(f, axisList):
+    axes = []
+    for ax in axisList:
+        if ax.id not in f.listdimension():
+            A = f.createAxis(ax.id, ax[:])
+            for att in ax.attributes:
+                setattr(A, att, getattr(ax, att))
+        else:
+            A = f.getAxis(ax.id)
+        axes.append(A)
+    return axes
+
+
+def addVariable(f, id, typecode, axes, attributes):
+    axes = addAxes(f, axes)
+    V = f.createVariable(id, typecode, axes)
+    for att in attributes:
+        setattr(V, att, attributes[att])
+
 if __name__=="__main__":
   value = 0
   cdms2.setNetcdfShuffleFlag(value) ## where value is either 0 or 1

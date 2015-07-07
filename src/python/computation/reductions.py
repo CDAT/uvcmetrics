@@ -218,8 +218,9 @@ def set_spatial_avg_method( var ):
 
 # Dictionary which matches a variable's :spavgmeth attribute to a function which computes
 # weights for its spatial average.
+# >>>> WORK IN PROGRESS <<<<<
 # >>>> This dict is subject to change, and the function it names does't exist. <<<<<
-# >>>> spavfuns = { 'area weights':None, 'mass weights':get_mass_weights() }
+spavfuns = { 'area weights':None, 'mass weights':get_mass_weights() }
 
 # -------- end of Miscellaneous  Utilities ---------
 
@@ -1485,14 +1486,14 @@ def reduce2latlon_seasonal( mv, season=seasonsyr, region=None, vid=None, exclude
         for axis in mvseas.getAxisList():
             if axis.getBounds() is None:
                 axis._bounds_ = axis.genGenericBounds()
-        avmv = averager( mvseas, axis=axes_string )
-        # WORK IN PROGRESS...
-        #if mvseas.spavmeth=='area weights':
+        avmv = averager( mvseas, axis=axes_string )  #original
+        #WORK IN PROGRESS: I'm not actually setting the weights yet!....<<<<<<<<<<<<>>>>>>>>>>>
+        #if mvseas.spavgmeth=='area weights':
         #    avmv = averager( mvseas, axis=axes_string )
-        #elif mvseas.spavmeth=='mass weights':
+        #elif mvseas.spavgmeth=='mass weights':
         #    avmv = averager( mvseas, axis=axes_string )
         #else:
-        #    raise DiagError("ERROR: cannot recognize spavmeth (spatial average method) attribute")
+        #    raise DiagError("ERROR: cannot recognize spavgmeth (spatial average method) attribute")
     else:
         avmv = mvseas
     if avmv is None: return avmv
