@@ -459,6 +459,10 @@ if __name__ == '__main__':
    opts = Options()
    opts.processCmdLine()
    opts.verifyOptions()
+
+   if opts['package'] == None or opts['package'] == '':
+      print "Please specify a package when running metadiags."
+      quit()
       
    package = opts['package'].upper()
    if package == 'AMWG':

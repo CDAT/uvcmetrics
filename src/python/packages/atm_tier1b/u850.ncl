@@ -123,9 +123,9 @@
 
 
    ;create plot environment
-   figfile1 = figfile+"maxwind"
-   figfile2 = figfile+"maxwind-lat"
-   figfile3 = figfile+"freq-dist"
+   figfile1 = figfile+"maxwind-U850"
+   figfile2 = figfile+"maxwind-lat-U850"
+   figfile3 = figfile+"freq-dist-U850"
    wks1 = gsn_open_wks("png", figfile1)
    wks2 = gsn_open_wks("png", figfile2)
    wks3 = gsn_open_wks("png", figfile3)

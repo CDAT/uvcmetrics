@@ -279,7 +279,7 @@ if __name__ == "__main__":
        v.plot(mu_var, p, bg=1, title='MU', units='')
 
        # Drop casename from the filename 
-       pngfile = output + '/' + figbase + '-gevfit.daily.'+fieldname+'.png'
+       pngfile = output + '/' + figbase + 'gevfit-daily-'+fieldname+'.png'
        v.png(pngfile)
        v.close()
        print 'wrote ',pngfile
