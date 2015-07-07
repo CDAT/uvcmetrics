@@ -410,7 +410,7 @@ class amwg_plot_set2(amwg_plot_spec):
     """
     name = '2 - Line Plots of Annual Implied Northward Transport'
     number = '2'
-    def __init__( self, model, obs, varid, seasonid=None, region=None, aux=None ):
+    def __init__( self, model, obs, varid, seasonid=None, region=None, aux=None, levels=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the derived variable to be plotted, e.g. 'Ocean_Heat'.
         The seasonid argument will be ignored."""
@@ -608,7 +608,7 @@ class amwg_plot_set3(amwg_plot_spec,basic_id):
     # Here, the plotspec contains the variables themselves.
     name = '3 - Line Plots of  Zonal Means'
     number = '3'
-    def __init__( self, model, obs, varnom, seasonid=None, regionid=None, aux=None ):
+    def __init__( self, model, obs, varnom, seasonid=None, regionid=None, aux=None, levels=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varnom is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'."""
         basic_id.__init__(self,varnom,seasonid)
@@ -1270,7 +1270,7 @@ class amwg_plot_set6(amwg_plot_spec):
     # The first in the list (e.g. [a,b,c]) is to be preferred.
     #... If this works, I'll make it universal, defaulting to {}.  For plot set 6, the first
     # data variable will be used for the contour plot, and the other two for the vector plot.
-    def __init__( self, model, obs, varid, seasonid=None, regionid=None, aux=None ):
+    def __init__( self, model, obs, varid, seasonid=None, regionid=None, aux=None, levels=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the variable to be plotted, e.g. 'STRESS'.
         seasonid is a string such as 'DJF'."""
@@ -1997,7 +1997,7 @@ class amwg_plot_set10(amwg_plot_spec, basic_id):
     name = '10 - Annual Line Plots of  Global Means'
     number = '10'
  
-    def __init__( self, model, obs, varid, seasonid='ANN', region=None, aux=None ):
+    def __init__( self, model, obs, varid, seasonid='ANN', region=None, aux=None, levels=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'."""
         filetable1, filetable2 = self.getfts(model, obs)
@@ -2085,7 +2085,7 @@ class amwg_plot_set11(amwg_plot_spec):
     --outputdir $HOME/Documents/Climatology/ClimateData/diagout/ --package AMWG --sets 11 --seasons JAN --plots yes  --vars LWCF """
     name = '11 - Pacific annual cycle, Scatter plots'
     number = '11'
-    def __init__( self, model, obs, varid, seasonid='ANN', region=None, aux=None ):
+    def __init__( self, model, obs, varid, seasonid='ANN', region=None, aux=None, levels=None ):
         filetable1, filetable2 = self.getfts(model, obs)
         """filetable1, filetable2 should be filetables for each model.
         varid is a string, e.g. 'TREFHT'.  The seasonal difference is Seasonid
@@ -2291,7 +2291,7 @@ class amwg_plot_set12(amwg_plot_spec):
     name = '12 - Vertical Profiles at 17 selected raobs stations'
     number = '12'
 
-    def __init__( self, model, obs, varid, seasonid='ANN', region=None, aux=None ):
+    def __init__( self, model, obs, varid, seasonid='ANN', region=None, aux=None, levels=None ):
 
         """filetable1, filetable2 should be filetables for each model.
         varid is a string, e.g. 'TREFHT'.  The seasonal difference is Seasonid
@@ -2623,7 +2623,7 @@ class amwg_plot_set13(amwg_plot_spec):
                 func=uncompress_fisccp1 )]
         }
 
-    def __init__( self, model, obs, varnom, seasonid=None, region=None, aux=None ):
+    def __init__( self, model, obs, varnom, seasonid=None, region=None, aux=None, levels=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varnom is a string.  The variable described may depend on time,lat,lon and will be averaged
         in those dimensions.  But it also should have two other axes which will be used for the

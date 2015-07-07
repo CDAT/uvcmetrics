@@ -361,10 +361,6 @@ class uvc_simple_plotspec():
             self.presentation.linewidth = 0
             self.presentation.markercolor = 1
             self.presentation.markersize = 10
-            #add overplotline is a total kludge
-            self.presentation.overplotline = self.overplotline
-            if flip_y:
-                self.presentation.flip = True
             #self.presentation.list()   
             #pdb.set_trace()
     
@@ -375,8 +371,6 @@ class uvc_simple_plotspec():
                 self.presentation.__class__.__name__=="G1d" or\
                 self.presentation.__class__.__name__=="Gv":
             #pdb.set_trace()
-            if flip_y:
-                self.presentation.flip = True
             var = self.vars[0]
             axmax = self.axmax[seqgetattr(var,'id','')]
             axmin = self.axmin[seqgetattr(var,'id','')]
@@ -561,7 +555,7 @@ class uvc_simple_plotspec():
                 # Former scale factor, didn't work on more than one variable.
                 #   That is, 100 workrf for moisture transport, 10 for wind stress:
                 # vec.scale = min(vcsx.bgX,vcsx.bgY)/ 100.
-
+                #pdb.set_trace()
                 if hasattr(self.vars[0],'__getitem__') and not hasattr( self.vars[0], '__cdms_internals__'):
                     # generally a tuple of variables - we need 2 variables to describe a vector
                     v = self.vars[0][0]
