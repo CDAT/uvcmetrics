@@ -220,7 +220,7 @@ def set_spatial_avg_method( var ):
 # weights for its spatial average.
 # >>>> WORK IN PROGRESS <<<<<
 # >>>> This dict is subject to change, and the function it names does't exist. <<<<<
-spavfuns = { 'area weights':None, 'mass weights':get_mass_weights() }
+#spavfuns = { 'area weights':None, 'mass weights':get_mass_weights() }
 
 # -------- end of Miscellaneous  Utilities ---------
 
