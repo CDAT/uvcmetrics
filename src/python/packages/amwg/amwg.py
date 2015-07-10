@@ -2360,9 +2360,9 @@ class amwg_plot_set12(amwg_plot_spec):
         self.reduced_variables = {}
         VIDs = {}     
         #setup the model reduced variables
-        for month in self.months:
+        for monthIndex, month in enumerate(self.months):
             VID = rv.dict_id(varid, month, filetable1)
-            RF = (lambda x, month=VID[2], lat=self.lat, lon=self.lon, vid=VID: getSection(x, month=month, lat=lat, lon=lon, vid=vid) )
+            RF = (lambda x, monthIndex=monthIndex, lat=self.lat, lon=self.lon, vid=VID: getSection(x, monthIndex=monthIndex, lat=lat, lon=lon, vid=vid) )
             RV = reduced_variable( variableid=varid, 
                                    filetable=filetable1, 
                                    season=cdutil.times.Seasons(month), 
@@ -2378,7 +2378,6 @@ class amwg_plot_set12(amwg_plot_spec):
             sd = self.StationData.getData(varid, station, monthi)
             if not self.IDsandUnits:
                 self.saveIds(sd)
-            #pdb.set_trace()
             
             VIDobs = rv.dict_id(varid, month, filetable2)
             RF = (lambda x, stationdata=sd, vid=VID: stationdata )
@@ -2398,7 +2397,6 @@ class amwg_plot_set12(amwg_plot_spec):
             month = plot_id
             VIDmodel = VIDs['model', month]
             VIDobs   = VIDs['obs', month]
-            #print VIDmodel
             self.plot_id_model = plot_id+'_model'
             self.single_plotspecs[plot_id+'_model'] = plotspec(vid = plot_id+'_model', 
                                                                zvars = [VIDmodel],                                                   
@@ -2409,14 +2407,12 @@ class amwg_plot_set12(amwg_plot_spec):
                                                                title = month)
 
             VIDobs= VIDs['obs', month]
-            #print VIDobs
-            #self.plot_id_obs = plot_id+'_obs'
             self.single_plotspecs[plot_id+'_obs'] = plotspec(vid = plot_id+'_obs', 
                                                              zvars  = [VIDobs],
                                                              zfunc = (lambda z: z),
                                                              zrangevars={'xrange':[1000., 0.]}, 
                                                              zlinetype='dot',
-                                                             plottype="Yxvsx", title="")#'Scatter', title="")
+                                                             plottype="Yxvsx", title="")
         self.composite_plotspecs = {}
         plotall_id = []
         for plot_id in self.plot_ids:
@@ -2517,7 +2513,8 @@ class amwg_plot_set12(amwg_plot_spec):
         th=cnvs2.createtextorientation(None, tm2.ylabel1.textorientation)
         th.height=10
         tm2.ylabel1.textorientation = th
-                
+        
+        #pdb.set_trace()        
         tm2.comment1.priority = 1
         tm2.comment1.x = tm2.data.x1 - .075
         tm2.comment1.y = tm2.data.y1 + .1

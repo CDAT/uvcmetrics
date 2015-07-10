@@ -220,7 +220,7 @@ def set_spatial_avg_method( var ):
 # weights for its spatial average.
 # >>>> WORK IN PROGRESS <<<<<
 # >>>> This dict is subject to change, and the function it names does't exist. <<<<<
-spavfuns = { 'area weights':None, 'mass weights':get_mass_weights() }
+#spavfuns = { 'area weights':None, 'mass weights':get_mass_weights() }
 
 # -------- end of Miscellaneous  Utilities ---------
 
@@ -2629,12 +2629,9 @@ def join_1d_data(*args ):
     M.setAxis(0, T)
     #M.info()
     return M
-def getSection(x, month=None, lat=None, lon=None, vid=None):
+def getSection(x, monthIndex=0, lat=None, lon=None, vid=None):
     """return the data associated with a specific time, lat & lon."""
-    if type(month) == type(1):
-        monthIndex = month
-    if type(month) == type(''):
-        monthIndex = cdutil.times.getMonthIndex(month)[0]
+
     value = x( time=slice(monthIndex, monthIndex+1),
                latitude=(lat, lat, 'cob'),
                longitude=(lon, lon, 'cob'),
