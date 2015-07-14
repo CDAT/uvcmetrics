@@ -2882,9 +2882,124 @@ class lmwg_plot_set9(lmwg_plot_spec):
 class lmwg_plot_set7(lmwg_plot_spec):
 #   name = '7 - Line plots, tables, and maps of RTM river flow and discharge to oceans'
    number = '7'
-   pass
+   def __init__(self, model, obs, varid, seasonid=None, region=None, aux=None):
 
-###############################################################################
+      plot_spec.__init__(self, seasonid)
+      # This needs all months and annual.
+
+      self._var_baseid = '_'.join([varid, 'set7'])
+
+      self.seasons = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC', 'ANN']
+
+      self.region = 'Global'
+
+      if not self.computation_planned:
+         self.plan_computation(model, obs, varid, seasonid, region, aux)
+
+   @staticmethod
+   def _list_variables(model, obs):
+      varlist = ['Tables', 'Scatter_Plots', 'Line_Plots', 'Maps']
+      return varlist
+   @staticmethod
+   def _all_variables(model, obs):
+      vlist = {}
+      vlist = {vn:basic_plot_variable for vn in lmwg_plot_set7._list_variables( model, obs ) }
+      return vlist
+
+   def plan_computation(self, model, obs, varid, seasonid, region, aux=None):
+      print 'FINISH IMPLEMENTING'
+
+      num_obs = len(obs)
+      if num_obs == 0:
+         print 'Set 7 requires observation data for definig rivers'
+         return
+
+      num_models = len(model_dict.keys())
+
+      num_fts = num_obs + num_models
+
+      # get the river_data (e.g. locations, flows, etc)
+      river_data, rtm_data = parse_rivers(obs)
+
+      obs0 = None
+      obs1 = None
+      raw0 = None
+      raw1 = None
+      climo0 = None
+      climo1 = None
+
+      if num_fts < 2 or num_obs == 0:
+         print 'This requires at least one model and one obs set'
+         return
+
+      raw0 = model_dict[model_dict.keys()[0]]['raw']
+      climo0 = model_dict[model_dict.keys()[0]]['climos']
+      raw1 = model_dict[model_dict.keys()[1]]['raw']
+      climo1 = model_dict[model_dict.keys()[1]]['climos']
+
+      if 'TABLES' in varid.upper():
+         obs0 = obs[0]
+         ft = (climo0 if climo0 is not None else raw0)
+         ft2 = (climo1 if climo1 is not None else raw1)
+         # values at explicit lat/lon need extracted
+
+         self.reduced_variables['QCHANR_ft0'] = reduced_variable(variableid = 'QCHANR', reduced_var_id = 'QCHANR_ft0', filetable = ft, reduction_function = (lambda x, vid: dummy(x, vid)))
+         self.reduced_variables['QCHOCNR_ft0'] = reduced_variables(variableid = 'QCHOCNR', reduced_var_id = 'QCHOCNR_ft0', filetable = ft, reducetion_function=(lambda x, vid: dummy(x, vid)))
+
+
+      
+
+   def parse_river_data(self, obs):
+      import re
+      river_data = []
+      river_data.append({'rnum':'0'})
+
+      # assume we can get a path.
+      path = '.'
+      if len(obs) != 0:
+         path = obs[0].root_dir()
+
+      river_file = path+'/dai_and_trenberth_table2.asc'
+      rtm_file = path+'/rdirc.05'
+      for line in open(river_file):
+         rd = {}
+         if re.match(p, line) != None:
+            rd['rnum'] = line[0:3].strip()
+            rd['rname'] = line[4:19].strip()
+            rd['obs_vol_at_stn'] = line[20:24].strip()
+            rd['obs_sd_vol_at_stn'] = line[25:28].strip()
+            rd['fekete_rtm_vol_at_stn'] = line[29:33].strip()
+            rd['da_at_stn'] = line[34:38].strip()
+            rd['stn_lon'] = line[39:46].strip()
+            rd['stn_lat'] = line[47:53].strip()
+            rd['rtm_fekete_stn_lon'] = line[54:61].strip()
+            rd['rtm_fekete_stn_lat'] = line[62:68].strip()
+            rd['obs_ntr_stn'] = line[69:72].strip()
+            rd['stn_name'] = line[73:100].strip()
+            rd['obs_vol_at_riv_mou'] = line[101:105].strip()
+            rd['da_at_riv_mou'] = line[106:110].strip()
+            rd['rtm_fekete_mou_lon'] = line[111:118].strip()
+            rd['rtm_fekete_mou_lat'] = line[119:125].strip()
+            river_data.append(rd)
+
+      rtm_data = []
+      rtm_data.append({'rname':'NA'})
+
+      p = re.compile('^s\*[-\d]')
+      for line in open(rtm_file):
+         rtm = {}
+         if re.match(p, line) != None:
+            pass
+         else:
+            rtm['rname'] = line[0:17].strip()
+            rtm['stn_lon'] = line[18:24].strip()
+            rtm['stn_lat'] = line[25:31].strip()
+            rtm['stn_name'] = line[32:60].strip()
+            rtm_data.append(rtm)
+      return river_data, rtm_data
+            
+
+####t##########################################################################
 ###############################################################################
 ### These are marked inactive and won't be implemented                      ###
 ###############################################################################
