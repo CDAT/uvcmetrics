@@ -24,6 +24,9 @@ diags_collection['tier1b']['seasons'] = ['NA']
 # fieldname - this is --var
 # obsfilter - this is --obs ...,filter={filter}, primarily the filekey
 # obspath - this is --obs path={path}
+# postfixes is part of the filename to help classic viewer. a cleaner mechanism for this would be nice
+# but hopefully this is mostly a stop-gap until people get comfortable writing diags in cdat.
+# They could probably be varopts instead, though the scripst would get called up to 3 times (for u850) if that were the case.
 diags_collection['tier1b']['U850'] = {'plottype':'NA', 'cmdline':['obsfilter', 'obspath', 'casename', 'figurebase', 'datadir', 'outdir', 'diagname'], 'desc':'Abbys diagnostic script', 'executable':'u850.tcsh', 'obs':['uwind'], 'postfixes':['maxwind', 'maxwind-lat', 'freq-dist']}
 diags_collection['tier1b']['PRECT'] = {'plottype':'NA', 'cmdline':['casename', 'datadir', 'fieldname', 'outdir', 'figurebase', 'diagname'], 'desc':'Salils diagnostic script -GEV', 'executable':'gev.tcsh', 'obs':['NA_1'], 'postfixes':['gevfit-daily']}
 
