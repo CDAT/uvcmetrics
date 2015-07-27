@@ -2648,6 +2648,7 @@ class lmwg_plot_set6(lmwg_plot_spec):
 class lmwg_plot_set9(lmwg_plot_spec):
    name = '9 - Contour plots and statistics for precipitation and temperature. Statistics include DJF, JJA, and ANN biases, and RMSE, correlation and standard deviation of the annual cycle relative to observations'
    number = '9'
+   print 'set 9 preinit'
    def __init__(self, model, obs, varid, seasonid=None, region=None, aux=None, levels=None):
 
       plot_spec.__init__(self, seasonid)
@@ -2880,18 +2881,23 @@ class lmwg_plot_set9(lmwg_plot_spec):
 ###############################################################################
 ###############################################################################
 class lmwg_plot_set7(lmwg_plot_spec):
-#   name = '7 - Line plots, tables, and maps of RTM river flow and discharge to oceans'
+   name = '7 - Line plots, tables, and maps of RTM river flow and discharge to oceans'
    number = '7'
-   def __init__(self, model, obs, varid, seasonid=None, region=None, aux=None):
+   print '--------> SET 7'
+   def __init__(self, model, obs, varid, seasonid=None, region=None, aux=None, levels=None):
+      print 'SET 7 INIT'
 
+      self.tables = False
       plot_spec.__init__(self, seasonid)
       # This needs all months and annual.
 
       self._var_baseid = '_'.join([varid, 'set7'])
 
       self.seasons = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC', 'ANN']
+      self.ann = cdutil.times.Seasons('JFMAMJJASOND')
 
       self.region = 'Global'
+      print 'planned: ', self.computation_planned
 
       if not self.computation_planned:
          self.plan_computation(model, obs, varid, seasonid, region, aux)
@@ -2907,19 +2913,21 @@ class lmwg_plot_set7(lmwg_plot_spec):
       return vlist
 
    def plan_computation(self, model, obs, varid, seasonid, region, aux=None):
-      print 'FINISH IMPLEMENTING'
+      print '----------> FINISH IMPLEMENTING'
 
       num_obs = len(obs)
       if num_obs == 0:
-         print 'Set 7 requires observation data for definig rivers'
+         print 'Set 7 requires observation data that defines river locations'
          return
+
+      model_dict = make_ft_dict(model)
 
       num_models = len(model_dict.keys())
 
       num_fts = num_obs + num_models
 
       # get the river_data (e.g. locations, flows, etc)
-      river_data, rtm_data = parse_rivers(obs)
+      self.river_data, self.rtm_data = self.parse_river_data(obs)
 
       obs0 = None
       obs1 = None
@@ -2934,25 +2942,130 @@ class lmwg_plot_set7(lmwg_plot_spec):
 
       raw0 = model_dict[model_dict.keys()[0]]['raw']
       climo0 = model_dict[model_dict.keys()[0]]['climos']
-      raw1 = model_dict[model_dict.keys()[1]]['raw']
-      climo1 = model_dict[model_dict.keys()[1]]['climos']
+      if num_models == 2:
+         raw1 = model_dict[model_dict.keys()[1]]['raw']
+         climo1 = model_dict[model_dict.keys()[1]]['climos']
+
+      # There is no reduction done on these, so use smallest files if available.
+      ft = (climo0 if climo0 is not None else raw0)
+      ft2 = (climo1 if climo1 is not None else raw1)
+
+      # construct the river_data array.
+      # This mostly is done to mirror the ncl code
+      self.riv_data = []
+      obs0 = obs[0]
+      for r in range(len(self.river_data)):
+         rd = {}
+         rd['no'] = r
+         rd['stn_lon'] = float(self.river_data[r]['stn_lon'])
+         rd['stn_lat'] = float(self.river_data[r]['stn_lat'])
+         rd['rtm_stn_lon'] = float(self.rtm_data[r]['stn_lon']) 
+         rd['rtm_stn_lat'] = float(self.rtm_data[r]['stn_lat'])
+         rd['name'] = self.river_data[r]['rname']
+         rd['station'] = self.river_data[r]['stn_name']
+         rd['obs_vol_at_stn'] = float(self.river_data[r]['obs_vol_at_stn'])
+         rd['obs_vol_stn'] = rd['obs_vol_at_stn']*1.e9/(86400.*365.) # km3/yr->m3/s
+         rd['fekete_rtm_vol_at_stn'] = float(self.river_data[r]['fekete_rtm_vol_at_stn'])
+         self.riv_data.append(rd)
 
       if 'TABLES' in varid.upper():
-         obs0 = obs[0]
-         ft = (climo0 if climo0 is not None else raw0)
-         ft2 = (climo1 if climo1 is not None else raw1)
+         self.tables = True
+         self.reduced_variables['QCHANR_ft0'] = reduced_variable(variableid = 'QCHANR', reduced_var_id = 'QCHANR_ft0', filetable = ft, reduction_function = (lambda x, vid: dummy(x, vid=vid)))
+         self.reduced_variables['QCHOCNR_ft0'] = reduced_variable(variableid = 'QCHOCNR', reduced_var_id = 'QCHOCNR_ft0', filetable = ft, reduction_function=(lambda x, vid: dummy(x, vid=vid)))
+         if num_models == 2:
+            self.reduced_variables['QCHANR_ft1'] = reduced_variable(variableid = 'QCHANR', reduced_var_id = 'QCHANR_ft1', filetable = ft2, reduction_function = (lambda x, vid: dummy(x, vid=vid)))
+            self.reduced_variables['QCHOCNR_ft1'] = reduced_variable(variableid = 'QCHOCNR', reduced_var_id = 'QCHOCNR_ft1', filetable = ft2, reduction_function=(lambda x, vid: dummy(x, vid=vid)))
          # values at explicit lat/lon need extracted
 
-         self.reduced_variables['QCHANR_ft0'] = reduced_variable(variableid = 'QCHANR', reduced_var_id = 'QCHANR_ft0', filetable = ft, reduction_function = (lambda x, vid: dummy(x, vid)))
-         self.reduced_variables['QCHOCNR_ft0'] = reduced_variables(variableid = 'QCHOCNR', reduced_var_id = 'QCHOCNR_ft0', filetable = ft, reducetion_function=(lambda x, vid: dummy(x, vid)))
+      if 'SCATTER_PLOTS' in varid.upper():
+         self.plot1_id = 'RiverFlow_ft0'
+         self.plotall_id = 'RiverFlow'
+         self.plottype = 'Scatter'
+         self.reduced_variables['QCHANR_ft0'] = reduced_variable(variableid = 'QCHANR', reduced_var_id = 'QCHANR_ft0', filetable = ft, reduction_function = (lambda x, vid: self.scatter_rivers(x, self.river_data, vid=vid)))
+         self.reduced_variables['QCHOCNR_ft0'] = reduced_variable(variableid = 'QCHOCNR', reduced_var_id = 'QCHOCNR_ft0', filetable = ft, reduction_function=(lambda x, vid: self.scatter_rivers(x, self.river_data, vid=vid)))
+         if num_models == 2:
+            self.reduced_variables['QCHANR_ft1'] = reduced_variable(variableid = 'QCHANR', reduced_var_id = 'QCHANR_ft1', filetable = ft2, reduction_function = (lambda x, vid: self.scatter_rivers(x, self.river_data, vid=vid)))
+            self.reduced_variables['QCHOCNR_ft1'] = reduced_variable(variableid = 'QCHOCNR', reduced_var_id = 'QCHOCNR_ft1', filetable = ft2, reduction_function=(lambda x, vid: self.scatter_rivers(x, self.river_data, vid=vid)))
+            
+         # plot of riv_data column 1 vs riv_data column 3, rows 2:49
+         # column 1 - obs_vol_at_stn
+         # column 3 - rtm_vol_at_stn_A
+         self.single_plotspecs[self.plot1_id] = plotspec( vid = 'QCHANR_ft0', zfunc = (lambda z:z), zvars = ['QCHANR_ft0'], plottype='Scatter')
+         self.composite_plotspecs[self.plotall_id] = [self.plot1_id]
+#         rtm_array = []
+#         for r in range(len(self.river_data)):
+#            rtm_array.append(self.riv_data[r]['rtm_vol_at_stn_A'])
 
 
-      
+
+      if 'LINE_PLOTS' in varid.upper():
+         print 'line plots'
+
+      if 'MAPS' in varid.upper():
+         print 'Maps'
+
+      self.computation_planned = True
+
+   def scatter_rivers(self, mv, river_data, vid=None):
+      # we need an array of the mv at the station locations basically.
+      model_array = []
+      for r in range(len(river_data)):
+         tmp = mv(latitude=(river_data[r]['rtm_stn_lat'], river_data[r]['rtm_stn_lat'], "cob"), longitude=(river_data[r]['rtm_stn_lon'], river_data[r]['rtm_stn_lon'], "cob")).data[0][0]
+         model_array.append(tmp/1.e9*86400.*365.)
+      print 'RETURNING MODEL_ARRAY'
+      return model_array
+#      rtm_array = []
+#      model_array = []
+#      for r in range(len(river_data)):
+#         rtm_array.append(river_data[r]['obs_vol_at_stn'])
+#         tmp = model_data(latitude=(riv_data[r]['rtm_stn_lat'], riv_data[r]['rtm_stn_lat'], "cob"), longitude=(riv_data[r]['rtm_stn_lon'], riv_data[r]['rtm_stn_lon'], "cob")).data[0][0]
+#         model_array.append(tmp/1.e9*86400.*365.)
+#      return model_array
+         
+   def _results(self, newgrid = 0):
+      print 'TREAT THE SCATTER DATA SIMILAR TO constructed LINE PLOT DATA'
+      if self.tables == True:
+         import StringIO
+         strbuf = StringIO.StringIO()
+         # "reduce" the variables
+         for v in self.reduced_variables.keys():
+            print 'trying to reduce ', v
+            value = self.reduced_variables[v].reduce(None)
+            self.variable_values[v] = value
+
+         # populate a few more fields.
+         for r in range(len(self.river_data)):
+            self.riv_data[r]['rtm_vol_at_stn_0'] = self.variable_values['QCHANR_ft0'](latitude=(self.riv_data[r]['rtm_stn_lat'], self.riv_data[r]['rtm_stn_lat'], "cob"), longitude=(self.riv_data[r]['rtm_stn_lon'], self.riv_data[r]['rtm_stn_lon'], "cob")).data[0][0]
+            self.riv_data[r]['rtm_vol_at_stn_A'] = self.riv_data[r]['rtm_vol_at_stn_0']/1.e9*86400.*365. # m3/s->km3/yr
+            self.riv_data[r]['rtm_vol_at_stn_1'] = -999
+            self.riv_data[r]['rtm_vol_at_stn_B'] = -999
+            if self.variable_values.get('QCHANR_ft1', False) != False:
+               self.riv_data[r]['rtm_vol_at_stn_1'] = self.variable_values['QCHANR_ft1'](latitude=(self.riv_data[r]['rtm_stn_lat'], self.riv_data[r]['rtm_stn_lat'], "cob"), longitude=(self.riv_data[r]['rtm_stn_lon'], self.riv_data[r]['rtm_stn_lon'], "cob")).data[0][0]
+               self.riv_data[r]['rtm_vol_at_stn_B'] = self.riv_data[r]['rtm_vol_at_stn_1']/1.e9*86400.*365.
+
+         print >>strbuf, '%s\t%16s\t%11s\t%11s\t%11s\t%11s\t%11s\t%11s\t%11s\t%11s\t%s' % ('No.', 'River Name', 'Obs Vol', 'RTM Vol', 'RTM Vol', 'RTM Vol', 'Stn Lon', 'Stn Lat', 'RTM Stn Lon', 'RTM Stn Lat', 'Station, Country')
+#         print '%s\t%16s\t%11s\t%11s\t%11s\t%11s\t%11s\t%11s\t%11s\t%11s\t%s' % ('No.', 'River Name', 'Obs Vol', 'RTM Vol', 'RTM Vol', 'RTM Vol', 'Stn Lon', 'Stn Lat', 'RTM Stn Lon', 'RTM Stn Lat', 'Station, Country')
+         print >>strbuf, '%s\t%16s\t%11s\t%11s\t%11s\t%11s\t%11s\t%11s\t%11s\t%11s\t%s' % ('', '', '', 'Grdc', 'Test Case', 'Ref Case', '', '', '', '', '')
+#         print '%s\t%16s\t%11s\t%11s\t%11s\t%11s\t%11s\t%11s\t%11s\t%11s\t%s' % ('', '', '', 'Grdc', 'Test Case', 'Ref Case', '', '', '', '', '')
+         for r in range(len(self.river_data)):
+            # no., name, obs vol, rtm vol grdc, rtm vol test case, rtm vol ref case (if avail), stn lon, stn lat, rtm stn lon, rtm stn lat, station/country
+            print >>strbuf, '%s\t%-16s\t%8.3f\t%8.3f\t%8.3f\t%8.3f\t%8.3f\t%8.3f\t%8.3f\t%8.3f\t%-30s' % (r+1, self.riv_data[r]['name'], self.riv_data[r]['obs_vol_at_stn'], self.riv_data[r]['fekete_rtm_vol_at_stn'], 
+               self.riv_data[r]['rtm_vol_at_stn_A'], self.riv_data[r]['rtm_vol_at_stn_B'], self.riv_data[r]['stn_lon'], self.riv_data[r]['stn_lat'], 
+               self.riv_data[r]['rtm_stn_lon'], self.riv_data[r]['rtm_stn_lat'], self.riv_data[r]['station'])
+            
+         return str(strbuf.getvalue())
+      else:
+         results = plot_spec._results(self, newgrid)
+         if results is None:
+            print 'No results'
+            return None
+         return self.plotspec_values[self.plotall_id]
+
 
    def parse_river_data(self, obs):
       import re
       river_data = []
-      river_data.append({'rnum':'0'})
+      print 'Parsing river data'
 
       # assume we can get a path.
       path = '.'
@@ -2961,7 +3074,14 @@ class lmwg_plot_set7(lmwg_plot_spec):
 
       river_file = path+'/dai_and_trenberth_table2.asc'
       rtm_file = path+'/rdirc.05'
-      for line in open(river_file):
+      try:
+         fp = open(river_file)
+      except:
+         print 'Opening ', river_file, 'failed.'
+         quit()
+
+      p = re.compile('^\s*\d')
+      for line in fp:
          rd = {}
          if re.match(p, line) != None:
             rd['rnum'] = line[0:3].strip()
@@ -2982,20 +3102,34 @@ class lmwg_plot_set7(lmwg_plot_spec):
             rd['rtm_fekete_mou_lat'] = line[119:125].strip()
             river_data.append(rd)
 
-      rtm_data = []
-      rtm_data.append({'rname':'NA'})
+      fp.close()
 
-      p = re.compile('^s\*[-\d]')
-      for line in open(rtm_file):
+      try:
+         fp = open(rtm_file)
+      except:
+         print 'Opening ', rtm_file, ' failed.'
+         quit()
+
+      rtm_data = []
+      p = re.compile('^\s*[-\d]')
+      for line in fp:
          rtm = {}
          if re.match(p, line) != None:
             pass
          else:
-            rtm['rname'] = line[0:17].strip()
-            rtm['stn_lon'] = line[18:24].strip()
-            rtm['stn_lat'] = line[25:31].strip()
-            rtm['stn_name'] = line[32:60].strip()
+            name = line[0:16].strip()
+            for r in range(len(river_data)):
+               if river_data[r]['rname'] == name:
+                  river_data[r]['rtm_stn_lon'] = float(line[17:24].strip())
+                  river_data[r]['rtm_stn_lat'] = float(line[25:32].strip())
+                  river_data[r]['rtm_stn_name'] = line[33:60].strip()
+
+            rtm['rname'] = line[0:16].strip()
+            rtm['stn_lon'] = line[17:24].strip()
+            rtm['stn_lat'] = line[25:32].strip()
+            rtm['stn_name'] = line[33:60].strip()
             rtm_data.append(rtm)
+      fp.close()
       return river_data, rtm_data
             
 
