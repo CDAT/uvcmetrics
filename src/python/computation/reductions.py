@@ -3010,7 +3010,7 @@ class reduced_variable(ftrow,basic_id):
                 print "It did find variables",f.variables.keys()
                 print "and axes",f.axes.keys()
                 raise Exception
-            if reduced_data is not None:
+            if reduced_data is not None and type(reduced_data) is not list:
                 reduced_data._vid = vid
             f.close()
         if hasattr(reduced_data,'mask') and reduced_data.mask.all():
