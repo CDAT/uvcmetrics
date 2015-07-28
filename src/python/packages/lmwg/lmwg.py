@@ -3037,6 +3037,7 @@ class lmwg_plot_set7(lmwg_plot_spec):
          tmp = mv(latitude=(river_data[r]['rtm_stn_lat'], river_data[r]['rtm_stn_lat'], "cob"), longitude=(river_data[r]['rtm_stn_lon'], river_data[r]['rtm_stn_lon'], "cob")).data[0][0]
          model_array.append(tmp/1.e9*86400.*365.)
       print 'RETURNING MODEL_ARRAY'
+      print 'TREAT THE SCATTER DATA SIMILAR TO constructed LINE PLOT DATA'
       return model_array
 #      rtm_array = []
 #      model_array = []
@@ -3047,7 +3048,6 @@ class lmwg_plot_set7(lmwg_plot_spec):
 #      return model_array
          
    def _results(self, newgrid = 0):
-      print 'TREAT THE SCATTER DATA SIMILAR TO constructed LINE PLOT DATA'
       if self.tables == True:
          import StringIO
          strbuf = StringIO.StringIO()
