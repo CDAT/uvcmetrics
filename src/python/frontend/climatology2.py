@@ -47,9 +47,8 @@ def restrict_to_season( datafilenames, seasonname ):
     for fn in datafilenames:
         MO = re.match( "^.*\.\d\d\d\d-\d\d\.nc$", fn )
         if MO is None:
-            print "jfp WARNING filename",fn,"did not match!"
-            newfns = datafilenames
-            break
+            print "WARNING filename",fn,"did not match, will be ignored."
+            continue
         mon = fn[-5:-3]
         if mon in seamons[seasonname]:
             newfns.append(fn)
@@ -108,6 +107,7 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
     redfilenames = []
     redfiles = {}  # reduced files
     for seasonname in seasonnames:
+        print "doing season",seasonname
         sredfiles = {}  # season reduced files
         datafilenames = [fn for fn in datafilenames if fn not in omit_files[seasonname]]
         datafilenames2 = restrict_to_season( datafilenames, seasonname )
@@ -249,7 +249,8 @@ if __name__ == '__main__':
                    "argument multiple times. E.g. --omitBySeason DJF lastDECfile.nc\"",
                    nargs='+', action='append', default=[] )
     args = p.parse_args(sys.argv[1:])
-    print "input args=",args
+    print "input args="
+    pprint(args)
 
     climos( args.outfile[0], args.seasons, args.variables, args.infiles, args.omitBySeason )
 
