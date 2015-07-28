@@ -193,8 +193,14 @@ def set_spatial_avg_method( var ):
     Sets the attribute var.spavgmeth to a string specifying how to compute spatial averages.
     At present the default is area weighting (the averager() default), and the only other
     possibility is mass weighting."""
+    # Don't change the spatial average method if it has already been set.
+    # Then set it to the default, and then check to see whether there's anything about the variable
+    # which calls for a non-default method.
     if hasattr( var, 'spavgmeth' ): return var
     var.spavgmeth = 'area weights'  # default
+
+    # Certain units would imply that the variable needs mass weighting.
+    # Otherwise, stick with the default.
     if not hasattr( var, 'units' ): return var
     su = var.units.split('/')
     if len(su)>=3:  return var
@@ -212,15 +218,23 @@ def set_spatial_avg_method( var ):
                 var.spavgmeth = 'mass weights'
         if su[0] in ['kg', 'g']:     # mass/mass (just the most common mass units)
                 var.spavgmeth = 'mass weights'
-        if su[0] in ['Pa', 'hPa', 'mbar']:  # pressure/pressure (just the most common mass units):
+        if su[0] in ['Pa', 'hPa', 'mbar']:  # pressure/pressure (just the most common such units):
                 var.spavgmeth = 'mass weights'
     return var
 
+def get_mass_weights( mv ):
+    """Returns mass weights, in a variable of th same shape as the input mv."""
+    # >>>> WORK IN PROGRESS <<<<
+    pass
+
 # Dictionary which matches a variable's :spavgmeth attribute to a function which computes
-# weights for its spatial average.
+# weights for its spatial average.  The function should have arguments:
+# - mv, the variable which will be averaged
+# The function should return:
+# - wt, an array of weights; wt.shape==mv.shape.
 # >>>> WORK IN PROGRESS <<<<<
 # >>>> This dict is subject to change, and the function it names does't exist. <<<<<
-spavfuns = { 'area weights':None, 'mass weights':get_mass_weights() }
+spavgfuns = { 'area weights':None, 'mass weights':get_mass_weights }
 
 # -------- end of Miscellaneous  Utilities ---------
 
@@ -1487,11 +1501,11 @@ def reduce2latlon_seasonal( mv, season=seasonsyr, region=None, vid=None, exclude
             if axis.getBounds() is None:
                 axis._bounds_ = axis.genGenericBounds()
         avmv = averager( mvseas, axis=axes_string )  #original
-        #WORK IN PROGRESS: I'm not actually setting the weights yet!....<<<<<<<<<<<<>>>>>>>>>>>
+        #WORK IN PROGRESS: This can't work because the mass weight-setting function doesn't exist yet!....<<<<<<<<<<<<>>>>>>>>>>>
         #if mvseas.spavgmeth=='area weights':
         #    avmv = averager( mvseas, axis=axes_string )
         #elif mvseas.spavgmeth=='mass weights':
-        #    avmv = averager( mvseas, axis=axes_string )
+        #    avmv = averager( mvseas, axis=axes_string, weights=spavgfuns[mvseas.spavgmeth](mvseas) )
         #else:
         #    raise DiagError("ERROR: cannot recognize spavgmeth (spatial average method) attribute")
     else:
