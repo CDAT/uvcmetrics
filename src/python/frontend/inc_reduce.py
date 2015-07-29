@@ -216,6 +216,87 @@ def adjust_time_for_climatology( newtime, redtime ):
     newtime.setBounds( newtime.getBounds() - N*365 ) # >>>> assumes noleap calendar, day time units!
     return newtime
 
+def two_pt_avg( mv1, mv2, a1, a2, sw1, sw2 ):
+    """Input:
+    FileVariables mv1,mv2;  numpy arrays a1,a2 which are subsetted from the data of mv1,mv2
+    by fixing a point on the first, time, axis;   scalar weights sw1,sw2.
+    Output:   weighted average a of a1 and a2.
+    The weights will be scalar weights unless an array weight must be used because either:
+    an array wright is already an attribute of mv1 or mv2; or
+    v1 and v2 do not have the same mask.
+    If an array weight is used, it will become an attribute of the first variable mv1.
+
+    >>>> should supply a slice spec, not data a1,a2.  Use it both for extracting the data and weights
+    """
+    w1 = sw1
+    w2 = sw2
+
+    # If array weights already exist for mv1 _or_ mv2, use them, and create array weights
+    # for whatever doesn't have them.  If mv1,mv2 have different masks, then we need array
+    # weights now and henceforth; create them.  The shape attribute is a convenient way
+    # to detect whether w1 or w2 is scalar or array.
+    if hasattr( mv1, 'vwgts' ):
+        f1 = mv1.parent # the (open) file corresponding to the FileVariable mv1
+        w1 = f1(mv1.vwgts)
+    if hasattr( mv2, 'vwgts' ):
+        f2 = mv2.parent # the (open) file corresponding to the FileVariable mv2
+        w2 = f2(mv2.vwgts)
+    if (not hasattr(w1,'shape') or len(w1.shape)==0) and hasattr(w2,'shape') and len(w2.shape)>0:
+        w1 = numpy.full( a1.shape, w1 )
+    if (not hasattr(w2,'shape') or len(w2.shape)==0) and hasattr(w1,'shape') and len(w1.shape)>0:
+        w2 = numpy.full( a2.shape, w2 )
+    if (not hasattr(w1,'shape') or len(w1.shape)==0) and\
+            (not hasattr(w2,'shape') or len(w2.shape)==0):
+        mask1 = False
+        mask2 = False
+        if hasattr(mv1,'_mask'):
+            mask1 = mv1.mask
+        else:
+            valu = mv1.getValue()
+            if hasattr( valu, '_mask' ):
+                mask1 = valu._mask
+        if hasattr(mv2,'_mask'):
+            mask2 = mv2.mask
+        else:
+            valu = mv2.getValue()
+            if hasattr( valu, '_mask' ):
+                mask2 = mv2.getValue()._mask
+        if not numpy.all(mask1==mask2):
+            # Note that this test requires reading all the data.  That has to be done anyway to compute
+            # the average.  Let's hope that the system caches well enough so that there won't be any
+            # file access cost to this.
+            w1 = numpy.full( a1.shape, w1 )
+            w2 = numpy.full( a2.shape, w2 )
+
+    if hasattr(w1,'shape') and len(w1.shape)>0 and hasattr(w2,'shape') and len(w2.shape)>0:
+        # Here's what I think the numpy.ma averager does about weights and missing values:
+        # The output weight w(i)=sw1+sw2 if there be no missing value for mv1(i) and mv2(i) (maybe
+        # also if both be missing, because the weight doesn't matter then).
+        # But if i be missing for mv1, drop sw1, thus w(i)=sw2.  If i be missing for mv2, drop sw2.
+        a,w = numpy.ma.average( numpy.ma.array((a1,a2)), axis=0,
+                                weights=numpy.ma.array((w1,w2)), returned=True )
+        # Avoid the occasional surprise about float32/float64 data types:
+        a = a.astype( a1.dtype )
+        w = w.astype( a.dtype )
+
+        f1 = mv1.parent # the (open) file corresponding to the FileVariable mv1
+        w1id = mv1.id+'_vwgts'
+        if not hasattr(mv1,'vwgts'):
+            w1axes = mv1.getAxisList()[1:]
+            w1attributes = {}
+            addVariable( f1, w1id, 'd', w1axes, w1attributes )
+        f1w = f1[w1id]
+        f1w[:] = w
+        # TypeError: 'CdmsFile' object does not support item assignment    f1[w1id] = w
+        mv1.vwgts = w1id
+    else:
+        # This is what happens most of the time.  It's a simple average (of two compatible numpy
+        # arrays), weighted by scalars.  These scalars are the length of time represented by
+        # by mv1, mv2.
+        a = ( a1*sw1 + a2*sw2 ) / (sw1+sw2)
+        a = a.astype( a1.dtype )
+    return a
+
 def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds, dt=None ):
     """Updates the time-reduced data for a list of variables.  The reduced-time and averaged
     variables are listed in redvars.  Its weights (for time averaging) are another variable,
@@ -351,6 +432,8 @@ def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds, 
                         redvar[i] = newvar[j]
                     continue
                 if redvar.getTime() is None and redvar.initialized=='yes':
+                    # Although there's no time axis (hence index i is irrelevant), values may
+                    # differ from one file to the next, so we still have to do a time average.
                     if newtime_wts[j,k]>0:
                         # Maybe the assignValue call will work for other shapes.  To do: try it,
                         # this code will simplify if it works
@@ -377,19 +460,57 @@ def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds, 
                                 ( redvar*redtime_wts[i] + newvar*newtime_wts[j,k] ) /\
                                 ( redtime_wts[i] + newtime_wts[j,k] )
                 elif redvar.getTime() is None and redvar.initialized=='no':
-                    data = ( ( newvar*newtime_wts[j,k] ) /                  #jfp testing only
-                             ( redtime_wts[i] + newtime_wts[j,k] ) ) #jfp testing only
-                    redvar.assignValue(data)
+                    redvar.assignValue(newvar)
                 elif redvar.initialized=='yes':
                     if newtime_wts[j,k]>0:
-                        redvar[i] =\
-                            ( redvar[i]*redtime_wts[i] + newvar[j]*newtime_wts[j,k] ) /\
-                            ( redtime_wts[i] + newtime_wts[j,k] )
-                else:  # For averaging, unitialized is same as value=0
-                    if newtime_wts[j,k]>0:
-                        redvar[i] =\
-                            (                             newvar[j]*newtime_wts[j,k] ) /\
-                            ( redtime_wts[i] + newtime_wts[j,k] )
+                        if False:  # development code
+                            #  Experimental method using numpy average function, properly treats
+                            # missing data but requires and produces big weight arrays:
+                            w1 = numpy.full( redvar[i].shape, redtime_wts[i] )
+                            w2 = numpy.full( newvar[i].shape, newtime_wts[j,k] )
+                            a,w = numpy.ma.average( numpy.ma.array((redvar[i],newvar[j])), axis=0,
+                                                    weights=numpy.ma.array((w1,w2)), returned=True )
+                        if False:  # debugging, development code
+                            # redvari is the average from the old code - correct when there's no mask
+                            redvari =\
+                                ( redvar[i]*redtime_wts[i] + newvar[j]*newtime_wts[j,k] ) /\
+                                ( redtime_wts[i] + newtime_wts[j,k] )
+                            redvari = redvari.astype( redvar.dtype )
+
+                        # Don't miss this line, it's where the average is computed:
+                        redvar[i] = two_pt_avg( redvar, newvar, redvar[i], newvar[j],
+                                                redtime_wts[i], newtime_wts[j,k] )
+
+                        if False and not numpy.ma.allclose( redvari, redvar[i] ):  # debugging, development code
+                            # This is for debugging.  When masks are involved, redvari and redvar[i]
+                            # *should* be different; the average() function probably will be called in
+                            # two_pt_avg and it essentially ignores masked data; but the arithmetic
+                            # computation propagates a mask whenever it is True in one of the inputs.
+                            print "debug Averages aren't close for",redvar[i].id
+                            mrdx = 0
+                            mrdn = 0
+                            mrix = -1
+                            mrin = -1
+                            for ri in range( redvari.shape[0] ):
+                                if not numpy.ma.allclose( redvari[ri,:], redvar[i][ri,:] ):
+                                    mrdxi = (redvari[ri,:]-redvar[i][ri,:]).max()
+                                    mrdni = (redvari[ri,:]-redvar[i][ri,:]).min()
+                                    if mrdxi>mrdx:
+                                        mrdx = mrdxi
+                                        mrix = ri
+                                    if mrdni>mrdn:
+                                        mrdn = mrdni
+                                        mrin = ri
+                            #print "debug mrin,mrdn=",mrin,mrdn
+                            #print "debug mrix,mrdx=",mrix,mrdx
+                            #print "jfp redvari-redvar[i][",mrix,":]=",redvari[mrix,:]-redvar[i][mrix,:]
+                            #print "debug redvari  =",redvari,redvari.shape,redvari.dtype
+                            #print "debug redvar[i]=",redvar[i],redvar[i].shape,redvar[i].dtype
+                            #print "debug redvari mask  =",redvari.mask
+                            #print "debug redvar[i] mask=",redvari.mask
+                else:
+                    # For averaging, unitialized is same as value=0 because redtime_wts is initialized to 0
+                    redvar[i] = newvar[j]
             if redtime_wts.initialized=='yes':
                 redtime_wts[i] += newtime_wts[j,k]
             else:      # uninitialized is same as value=0
@@ -446,7 +567,7 @@ def update_time_avg_from_files( redvars0, redtime_bnds, redtime_wts, filenames,
                 else:
                     print "skipping",redvar.id
             except Exception as e:
-                print "skipping",redvar.id,"due to exception"
+                print "skipping",redvar.id,"due to exception:",
                 print e
                 pass
         if len(varids)==0:

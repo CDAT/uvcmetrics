@@ -53,7 +53,6 @@ def restrict_to_season( datafilenames, seasonname ):
         if mon in seamons[seasonname]:
             newfns.append(fn)
     newfns.sort()
-    pprint( newfns ) #jfp testing
     return newfns
 
 def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason=[] ):
