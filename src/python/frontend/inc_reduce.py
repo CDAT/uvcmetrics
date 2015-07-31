@@ -294,7 +294,13 @@ def two_pt_avg( mv1, mv2, a1, a2, sw1, sw2 ):
         # arrays), weighted by scalars.  These scalars are the length of time represented by
         # by mv1, mv2.
         a = ( a1*sw1 + a2*sw2 ) / (sw1+sw2)
-        a = a.astype( a1.dtype )
+        try:
+            a = a.astype( a1.dtype )
+        except Exception as e:
+            # happens if a1 isn't a numpy array, e.g. a float.  Then it's ok to just go on.
+            #print "In arithmetic average of",mv1.id,"in two_pt_avg, encountered exception:",e
+            #print "a1=",a1,type(a1),a1.dtype if hasattr(a1,'dtype') else None
+            pass
     return a
 
 def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds, dt=None ):
