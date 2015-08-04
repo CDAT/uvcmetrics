@@ -138,6 +138,8 @@ def initialize_redfile_from_datafile( redfilename, varnames, datafilen, dt=-1, i
     init_red_tbounds=[[150,240]] would set up the partially-time-reduced averages for annual
     trends of values averaged over the JJA season.
     """
+    # Note: some of the attributes are set appropriately for climatologies, but maybe not for
+    # other time reductions.  In particular, c.f. time long_name and varn cell_methods.
     boundless_axes = set([])
     f = cdms2.open( datafilen )
     axisdict = {}
@@ -154,9 +156,12 @@ def initialize_redfile_from_datafile( redfilename, varnames, datafilen, dt=-1, i
         red_time = [ 0.5*(tb[0]+tb[1]) for tb in red_time_bnds ]
         timeaxis = cdms2.createAxis( red_time, red_time_bnds, 'time' )
         timeaxis.bounds = 'time_bnds'
+        timeaxis.climatology = 'time_climo'
         axisdict['time'] = timeaxis
         typedict['time'] = f['time'].typecode()
-        attdict['time'] = { 'bounds':'time_bnds' }
+        attdict['time'] = { 'bounds':'time_bnds', 'long_name':'climatological_time' }
+        if dt==0:
+            attdict['time']['climatology'] = 'time_climo'
     out_varnames = []
     for varn in varnames:
         if f[varn] is None:
@@ -176,14 +181,21 @@ def initialize_redfile_from_datafile( redfilename, varnames, datafilen, dt=-1, i
             if not hasattr( ax,'bounds' ): boundless_axes.add(ax)
         axisdict[varn] = axes
         typedict[varn] = f[varn].typecode()
-        attdict[varn] = {'initialized':'no'}
+        attdict[varn] = {'initialized':'no', 'cell_methods':'time: mean'}
     for ax in boundless_axes:
         print "WARNING, axis",ax.id,"has no bounds"
     if timeaxis is not None:
         tbndaxis = cdms2.createAxis( [0,1], None, 'tbnd' )
+
         axisdict['time_bnds'] = [timeaxis,tbndaxis]
         typedict['time_bnds'] = timeaxis.typecode()
         attdict['time_bnds'] = {'initialized':'no'}
+
+        if dt==0:
+            out_varnames.append('time_climo')
+            axisdict['time_climo'] = [timeaxis,tbndaxis]
+            typedict['time_climo'] = timeaxis.typecode()
+            attdict['time_climo'] = {'initialized':'no'}
 
     g = initialize_redfile( redfilename, axisdict, typedict, attdict, out_varnames )
 
@@ -192,8 +204,15 @@ def initialize_redfile_from_datafile( redfilename, varnames, datafilen, dt=-1, i
         g['time_bnds'].initialized = 'yes'
         g['time_weights'][:] = numpy.zeros(len(timeaxis))
         g['time_weights'].initialized = 'yes'
+    tb = f.getAxis('time').getBounds()
+    if tb is None:
+        tmin = f.getAxis('time')[0]
+        tmax = f.getAxis('time')[-1]
+    else:
+        tmin = tb[0][0]
+        tmax = tb[-1][-1]
     f.close()
-    return g, out_varnames
+    return g, out_varnames, tmin, tmax
 
 def adjust_time_for_climatology( newtime, redtime ):
     """Changes the time axis newtime for use in a climatology calculation.  That is, the values of
@@ -204,7 +223,7 @@ def adjust_time_for_climatology( newtime, redtime ):
     assert( newtime.calendar=='noleap' )
     # btw, newtime.getCalendar()==4113 means newtime.calendar=="noleap"
     
-    # We need to adjust the time to be in the year 0, the year we use for climatology.
+    # We need to adjust the time to be in the year 0, the year we use for climatology calculations.
     # It would be natural to compute the adjustment from newtime[0].  But sometimes it's equal to
     # one of its bounds, on the border between two years!  So it's better to use the midpoint
     # between two bounds.
@@ -551,9 +570,13 @@ def update_time_avg_from_files( redvars0, redtime_bnds, redtime_wts, filenames,
     redfiles is a list of reduced-time files for output.  They should already be open as 'r+'.
     The last argument dt is used only in that dt=0 means that we are computing climatologies.
     """
+    tmin = 1.0e10
+    tmax = -1.0e10
     for filen in filenames:
         f = cdms2.open(filen)
         data_tbounds = f.getAxis('time').getBounds()
+        tmin = min( tmin, data_tbounds[0][0] )
+        tmax = max( tmax, data_tbounds[-1][-1] )
         newvard = {}
         redvard = {}
         varids = []
@@ -573,8 +596,9 @@ def update_time_avg_from_files( redvars0, redtime_bnds, redtime_wts, filenames,
                 else:
                     print "skipping",redvar.id
             except Exception as e:
-                print "skipping",redvar.id,"due to exception:",
-                print e
+                if varid!='time_climo':  # I know about this one.
+                    print "skipping",redvar.id,"due to exception:",
+                    print e
                 pass
         if len(varids)==0:
             continue
@@ -593,6 +617,7 @@ def update_time_avg_from_files( redvars0, redtime_bnds, redtime_wts, filenames,
                 tbnds = apply( fun_next_tbounds, ( redtime_bnds, data_tbounds ) )
                 update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, tbnds[-1], dt )
         f.close()
+    return tmin, tmax
 
 def test_time_avg( redfilename, varnames, datafilenames ):
     #dt = None   # if None, the "reduced" time bounds are exactly the same as in the input data
