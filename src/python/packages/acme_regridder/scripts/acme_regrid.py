@@ -15,7 +15,7 @@ import time
 
 
 class WeightFileRegridder:
-    def __init__(self, weightFile, toRegularGrid=True):
+    def __init__(self, weightFile, toRegularGrid=True, fix_bounds=False):
         if isinstance(weightFile, str):
             if not os.path.exists(weightFile):
                 raise Exception("WeightFile %s does not exists" % weightFile)
@@ -40,12 +40,17 @@ class WeightFileRegridder:
             self.lats = cdms2.createAxis(sorted(set(wFile("yc_b").tolist())))
             self.lats.designateLatitude()
             self.lats.units = "degrees_north"
-            self.lats.setBounds(None)
+            bnds = numpy.array(sorted(set(wFile("yv_b").ravel().tolist())))
+            self.lats.setBounds(bnds)
             self.lats.id = "lat"
             self.lons = cdms2.createAxis(sorted(set(wFile("xc_b").tolist())))
+            bnds = numpy.array(sorted(set(wFile("xv_b").ravel().tolist())))
             self.lons.designateLongitude()
             self.lons.units = "degrees_east"
-            self.lons.setBounds(None)
+            if fix_bounds:
+              self.lons.setBounds(None)
+            else:
+              self.lons.setBounds(bnds)
             self.lons.id = "lon"
         else:
             self.yc_b = wFile("yc_b")
@@ -97,8 +102,13 @@ def addAxes(f, axisList):
     for ax in axisList:
         if ax.id not in f.listdimension():
             A = f.createAxis(ax.id, ax[:])
-            for att in ax.attributes:
-                setattr(A, att, getattr(ax, att))
+            atts = ax.attributes
+            if ax.isLatitude():
+              atts["bounds"]="latitude_bounds"
+            elif ax.isLongitude():
+              atts["bounds"]="longitude_bounds"
+            for att in atts:
+                setattr(A, att, atts[att])
         else:
             A = f.getAxis(ax.id)
         axes.append(A)
@@ -138,11 +148,13 @@ if __name__ == "__main__":
                         nargs="*",
                         help="variable to process\
                             (default is all variable with 'ncol' dimension")
+    parser.add_argument("--store-bounds",dest="store_bounds",action="store_true",default=False,help="store lat/lon bounds information")
+    parser.add_argument("--fix-esmf-bounds",dest="fix_bounds",action="store_true",default=False,help="fix esmf first and last longitudes being half width")
 
     args = parser.parse_args(sys.argv[1:])
 
     # Read the weights file
-    regdr = WeightFileRegridder(args.weights)
+    regdr = WeightFileRegridder(args.weights,True,fix_bounds=args.fix_bounds)
 
     f = cdms2.open(args.file)
 
@@ -192,6 +204,7 @@ if __name__ == "__main__":
     wgts = None
     area = None
     NVARS = len(vars)
+    tim_bnds = None
     for i, v in enumerate(vars):
         V = f[v]
         if V is None:
@@ -223,6 +236,13 @@ if __name__ == "__main__":
         else:
             print "Will rewrite as is", V.id
             addVariable(fo, V.id, V.typecode(), V.getAxisList(), V.attributes)
+            if V.id == "time_bnds":
+              tim_bnds = V.getAxisList()[-1]
+
+    # latitude and longitude bounds
+    if args.store_bounds:
+      addVariable(fo, "latitude_bounds", "d", [regdr.lats, tim_bnds], {})
+      addVariable(fo, "longitude_bounds", "d", [regdr.lons, tim_bnds], {})
 
     wgts = None
     for i, v in enumerate(vars):
@@ -274,4 +294,8 @@ if __name__ == "__main__":
                     V2[:] = V[:]
             except Exception, err:
                 print "Variable %s falied with error: %s" % (V2.id, err)
+    # latitude and longitude bounds
+    if args.store_bounds:
+      fo["latitude_bounds"][:]=regdr.lats.getBounds()
+      fo["longitude_bounds"][:]=regdr.lons.getBounds()
     fo.close()
