@@ -121,7 +121,6 @@ def addVariable(f, id, typecode, axes, attributes, store_bounds=False):
     for att in attributes:
         setattr(V, att, attributes[att])
 
-
 if __name__ == "__main__":
     cdms2.setNetcdfClassicFlag(0)
     cdms2.setNetcdf4Flag(1)

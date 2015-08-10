@@ -13,7 +13,6 @@ from numpy import sin, ma
 import dateparser
 from datetime import datetime as datetime
 from unidata import udunits
-from cdutil import averager
 from metrics.packages.amwg.derivations import press2alt
 from metrics.packages.amwg.derivations import qflx_lhflx_conversions as flxconv
 from metrics.fileio.filetable import *
@@ -27,6 +26,8 @@ from metrics.computation.region_functions import *
 regridded_vars = {}  # experimental
 
 seasonsyr=cdutil.times.Seasons('JFMAMJJASOND')
+
+# -------- Axis Utilities ---------
 
 # >>>> TO DO: accomodate more names for the level axis.  Much of this can be
 # >>>> done simply by adding more names in levAxis().  Search on 'lev' for the rest.
@@ -127,6 +128,10 @@ def tllAxes( mv ):
         if ax.id=='time': time_axis = ax
     return time_axis,lat_axis,lon_axis
 
+# -------- end of Axis Utilities ---------
+
+# -------- Miscellaneous  Utilities ---------
+
 def fix_time_units( timeunits ):
     """Sometimes we get time units which aren't compatible with cdtime.
     This function will (try to) fix them.  The input argument is a string, e.g.
@@ -182,6 +187,56 @@ def compose( rf1, rf2 ):
         mv2 = rf2( mv1, vid )
         return mv2
     return rf12    
+
+def set_spatial_avg_method( var ):
+    """Determines how to compute spatial averages of a variable var.
+    Sets the attribute var.spavgmeth to a string specifying how to compute spatial averages.
+    At present the default is area weighting (the averager() default), and the only other
+    possibility is mass weighting."""
+    # Don't change the spatial average method if it has already been set.
+    # Then set it to the default, and then check to see whether there's anything about the variable
+    # which calls for a non-default method.
+    if hasattr( var, 'spavgmeth' ): return var
+    var.spavgmeth = 'area weights'  # default
+
+    # Certain units would imply that the variable needs mass weighting.
+    # Otherwise, stick with the default.
+    if not hasattr( var, 'units' ): return var
+    su = var.units.split('/')
+    if len(su)>=3:  return var
+    if len(su)==1:
+        if su in\
+                ['degC', 'degF', 'degK', 'deg_C', 'deg_F', 'deg_K', 'deg_c', 'deg_f', 'deg_k',
+                 'degreeC', 'degreeF', 'degreeK', 'degree_C', 'degree_Celsius', 'degree_F',
+                 'degree_Fahrenheit', 'degree_K', 'degree_Kelvin', 'degree_c', 'degree_centigrade',
+                 'degree_f', 'degree_k']:   # temperature
+                var.spavgmeth = 'mass weights'
+        if su in ['ppt', 'ppb', 'ppm', 'pptv', 'ppbv', 'ppmv']:  # parts per (something)
+                var.spavgmeth = 'mass weights'
+    elif len(su)==2 and su[0]==su[1]:
+        if su[0] in ['mol','mole']:  # mol/mol
+                var.spavgmeth = 'mass weights'
+        if su[0] in ['kg', 'g']:     # mass/mass (just the most common mass units)
+                var.spavgmeth = 'mass weights'
+        if su[0] in ['Pa', 'hPa', 'mbar']:  # pressure/pressure (just the most common such units):
+                var.spavgmeth = 'mass weights'
+    return var
+
+def get_mass_weights( mv ):
+    """Returns mass weights, in a variable of th same shape as the input mv."""
+    # >>>> WORK IN PROGRESS <<<<
+    pass
+
+# Dictionary which matches a variable's :spavgmeth attribute to a function which computes
+# weights for its spatial average.  The function should have arguments:
+# - mv, the variable which will be averaged
+# The function should return:
+# - wt, an array of weights; wt.shape==mv.shape.
+# >>>> WORK IN PROGRESS <<<<<
+# >>>> This dict is subject to change, and the function it names does't exist. <<<<<
+spavgfuns = { 'area weights':None, 'mass weights':get_mass_weights }
+
+# -------- end of Miscellaneous  Utilities ---------
 
 def reduce2scalar_zonal( mv, latmin=-90, latmax=90, vid=None, gw=None ):
     """returns the mean of the variable over the supplied latitude range.
@@ -1433,6 +1488,7 @@ def reduce2latlon_seasonal( mv, season=seasonsyr, region=None, vid=None, exclude
     else:
         mvr = select_region(mv, region)
     mvseas = calculate_seasonal_climatology(mvr, season)
+    set_spatial_avg_method( mvseas )
 
     axes = allAxes( mv )
     #axis_names = [ a.id for a in axes if a.id!='lat' and a.id!='lon' and a.id!='time' and\
@@ -1444,7 +1500,14 @@ def reduce2latlon_seasonal( mv, season=seasonsyr, region=None, vid=None, exclude
         for axis in mvseas.getAxisList():
             if axis.getBounds() is None:
                 axis._bounds_ = axis.genGenericBounds()
-        avmv = averager( mvseas, axis=axes_string )
+        avmv = averager( mvseas, axis=axes_string )  #original
+        #WORK IN PROGRESS: This can't work because the mass weight-setting function doesn't exist yet!....<<<<<<<<<<<<>>>>>>>>>>>
+        #if mvseas.spavgmeth=='area weights':
+        #    avmv = averager( mvseas, axis=axes_string )
+        #elif mvseas.spavgmeth=='mass weights':
+        #    avmv = averager( mvseas, axis=axes_string, weights=spavgfuns[mvseas.spavgmeth](mvseas) )
+        #else:
+        #    raise DiagError("ERROR: cannot recognize spavgmeth (spatial average method) attribute")
     else:
         avmv = mvseas
     if avmv is None: return avmv
@@ -2030,8 +2093,10 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
     # First, if there are no units, take a guess.  I'm reluctant to do this because it will surely
     # be wrong sometimes.  But usually it is correct.
     if not hasattr(mv1,'units') or mv1.units == 'none':
+        print "WARNING, variable",getattr(mv1,'id',''),"has no units, will use units=1."
         mv1.units = '1'
     if not hasattr(mv2,'units') or mv2.units == 'none':
+        print "WARNING, variable",getattr(mv2,'id',''),"has no units, will use units=1."
         mv2.units = '1'
 
     # For QFLX and LHFLX variables, call dedicated functions instead.
@@ -2138,6 +2203,11 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
             except Exception as e:
                 # conversion not possible.
                 print "ERROR could not convert from",mv1.units,"to",target_units
+                print "units are from variable mv1=",getattr(mv1,'id','(not known)'),"and"
+                if target_units==preferred_units:
+                    print "preferred units=",preferred_units
+                else:
+                    print "variable mv2=",getattr(mv2,'id','(not known)')
                 raise e
             if hasattr(mv1,'id'):  # yes for TransientVariable, no for udunits
                 mv1id = mv1.id
@@ -2154,6 +2224,11 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
             except Exception as e:
                 #  conversion not possible
                 print "ERROR could not convert from",mv2.units,"to",target_units
+                print "units are from variable mv2=",getattr(mv2,'id','(not known)'),"and"
+                if target_units==preferred_units:
+                    print "preferred units=",preferred_units
+                else:
+                    print "variable mv1=",getattr(mv1,'id','(not known)')
                 raise e
             if hasattr(mv2,'id'):  # yes for TransientVariable, no for udunits
                 mv2id = mv2.id
@@ -2568,12 +2643,9 @@ def join_1d_data(*args ):
     M.setAxis(0, T)
     #M.info()
     return M
-def getSection(x, month=None, lat=None, lon=None, vid=None):
+def getSection(x, monthIndex=0, lat=None, lon=None, vid=None):
     """return the data associated with a specific time, lat & lon."""
-    if type(month) == type(1):
-        monthIndex = month
-    if type(month) == type(''):
-        monthIndex = cdutil.times.getMonthIndex(month)[0]
+
     value = x( time=slice(monthIndex, monthIndex+1),
                latitude=(lat, lat, 'cob'),
                longitude=(lon, lon, 'cob'),

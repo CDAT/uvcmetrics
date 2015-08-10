@@ -59,6 +59,7 @@ import cProfile
 from metrics.frontend.it import *
 from metrics.computation.region import *
 from metrics.frontend.amwg_plotting import *
+import pdb
 
 def mysort( lis ):
     lis.sort()
@@ -234,8 +235,9 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                               #this is a total kludge so that the list of variables is passed in for processing
                               plot = sclass( modelfts, obsfts, variables, seasonid, region, vvaropts[aux] )
                            else:
-                              plot = sclass( modelfts, obsfts, varid, seasonid, region, vvaropts[aux] )
+                              plot = sclass( modelfts, obsfts, varid, seasonid, region, vvaropts[aux], levels=opts['levels'] )
                         res = plot.compute(newgrid=-1) # newgrid=0 for original grid, -1 for coarse
+                        
                         if res is not None and len(res)>0:
                             if opts['output']['plots'] == True:
                             #    vcanvas = vcs.init()
@@ -499,7 +501,6 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                                               # fjim.close()
                                                
                                            else:
-                                               #pdb.set_trace()
                                                if hasattr(plot, 'customizeTemplates'):
                                                    tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)] )
                                                #vcanvas.plot(var, rsr.presentation, tm, bg=1, title=title,
@@ -519,7 +520,6 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                                                        plotcv2 = True
                                                except vcs.error.vcsError as e:
                                                    print "ERROR making summary plot:",e
-                                               #pdb.set_trace()
                                            if var_id_save is not None:
                                                if type(var_id_save) is str:
                                                    var.id = var_id_save

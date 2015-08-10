@@ -8,7 +8,7 @@
 ###     (Idealy, just specify the exact, complete filename)
 ### Look for speed improvements
 
-import hashlib, os, pickle, sys, os, time, re
+import hashlib, os, pickle, sys, os, time, re, pdb
 from metrics import *
 from metrics.fileio.filetable import *
 from metrics.fileio.findfiles import *
@@ -223,7 +223,19 @@ def run_diags( opts ):
 
                # now, the most inner loop. Looping over sets then seasons then vars then varopts
                for aux in varopts:
-                  plot = sclass( modelfts, obsfts, varid, time, region, vvaropts[aux] )
+                  #plot = sclass( modelfts, obsfts, varid, time, region, vvaropts[aux] )
+                  
+                  # Since Options is a 2nd class (at best) citizen, we have to do something icky like this.
+                  # hoping to change that in a future release. Also, I can see this being useful for amwg set 1.
+                  # (Basically, if we output pre-defined json for the tables they can be trivially sorted)                            
+                  if '5' in snum and package.upper() == 'LMWG' and opts['json'] == True:
+                      plot = sclass( modelfts, obsfts, varid, time, region, vvaropts[aux], jsonflag=True )
+                  else:
+                      if snum == '14': #Taylor diagrams
+                          #this is a total kludge so that the list of variables is passed in for processing
+                          plot = sclass( modelfts, obsfts, variables, time, region, vvaropts[aux] )
+                      else:
+                          plot = sclass( modelfts, obsfts, varid, time, region, vvaropts[aux], levels=opts['levels'] )
 
                   # Do the work (reducing variables, etc)
                   res = plot.compute(newgrid=-1) # newgrid=0 for original grid, -1 for coarse
@@ -369,9 +381,9 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                   var_id_save = seqgetattr(var,'id','')
                   seqsetattr( var,'id','' )
                else:
-                  print 'in the else clause.'
-                  print var
-                  print type(var)
+                  #print 'in the else clause.'
+                  #print var
+                  #print type(var)
 
                   vname = var.id.replace(' ', '_')
                   var_id_save = var.id
@@ -408,9 +420,10 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
 
                print "png file name: ",fname
 
-            if vcs.isscatter(rsr.presentation) or (plot.number in ['11', '12'] and package.upper == 'AMWG'):
+            if vcs.isscatter(rsr.presentation) or (plot.number in ['11', '12'] and package.upper() == 'AMWG'):
+               #pdb.set_trace()
                if hasattr(plot, 'customizeTemplates'):
-                  if hasattr(plot, 'replaceIDs'):
+                  if hasattr(plot, 'replaceIds'):
                      var = plot.replaceIds(var)
                   tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)] )
                if len(rsr.vars) == 1:

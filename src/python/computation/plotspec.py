@@ -98,6 +98,8 @@ class derived_var(basic_id):
             ft1id = id2str( ft1._id )
         if ft2 is None or ft2=='':
             ft2id = ''
+        elif type(ft2) is str:
+            ft2id = ft2
         else:
             ft2id = id2str( ft2._id )
         if region is None:
@@ -120,7 +122,8 @@ class plotspec(basic_id):
         plottype='table',
         title = None,
         source = '',
-        overplotline = False
+        overplotline = False,
+        levels = None
         ):
         """Initialize a plotspec (plot specification).  Inputs are an id and plot type,
         and lists of x,y,z variables (as keys in the plotvars dictionary), functions to
@@ -201,6 +204,7 @@ class plotspec(basic_id):
             self.title = title
         self.source = source
         self.overplotline = overplotline
+        self.levels = levels
 
     @classmethod
     def dict_id( cls, varid, varmod, seasonid, ft1, ft2=None, region='' ):

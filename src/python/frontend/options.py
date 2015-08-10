@@ -64,6 +64,7 @@ class Options():
       self._opts['cachepath'] = '/tmp'
       self._opts['translate'] = True
       self._opts['translations'] = {}
+      self._opts['levels'] = None
 
       self._opts['output']['compress'] = True
       self._opts['output']['json'] = False
@@ -174,6 +175,36 @@ class Options():
                print 'Unknown option ', k
          print 'Added set: ', self._opts[dictkey][i]
 
+   def processLevels(self, levels):
+       def checkTypes(x):
+           "allow only ints and floats"
+           ok = True
+           for y in x:
+               ok = ok and (type(y) in [int, float])
+           return ok
+
+       try:
+           #check if levels is a file containing the actual levels
+           f=open(levels, 'r')
+           levels = f.read()
+           f.close()
+       except:
+           pass
+       
+       try:
+           #check if levels is a tuple of numbers
+           levels = eval(levels)
+           if type(levels) is tuple:
+               if checkTypes(levels):
+                   self._opts['levels'] = levels
+                   return
+       except:
+           pass
+       
+       print levels, 'Levels are not specified correctly.'
+       print 'They must be a comma delimited (no spaces) list of numbers or a file name that contains the list.'
+       quit()
+       
    def listSeasons(self):
       return all_seasons;
 
@@ -425,7 +456,10 @@ class Options():
 
       parser.add_argument('--translate', nargs='?', default='y',
          help="Enable translation for obs sets to datasets. Optional provide a colon separated input to output list e.g. DSVAR1:OBSVAR1")
-
+      
+      #levels for isofill plots
+      parser.add_argument('--levels', help="Specify a file name containing a list of levels or the comma delimited levels directly")
+      
       args = parser.parse_args()
 
       # First, check for the --list option so we don't have to do as much work if it was passed.
@@ -645,7 +679,9 @@ class Options():
             slist = [x for x in all_seasons if x in args.seasons]
             self._opts['times'] = self._opts['times']+slist
 
-
+      if(args.levels):
+          self.processLevels(args.levels)
+          
 def make_ft_dict(models):
    model_dict = {}
    index = 0
@@ -688,6 +724,7 @@ def make_ft_dict(models):
 
 
 if __name__ == '__main__':
+
    o = Options()
    o.processCmdLine()
    from metrics.fileio.findfiles import *

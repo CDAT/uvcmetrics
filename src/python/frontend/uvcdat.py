@@ -166,6 +166,7 @@ class uvc_composite_plotspec():
         for p in self.plots:
             if type(p) is tuple:
                 print "ERROR cannot write_plot_data on tuple<<<<<<<<<<<<<<<<<"
+                print p
                 continue
             filenames += p.write_plot_data( contents_format, where )
 
@@ -199,7 +200,7 @@ class uvc_simple_plotspec():
     # re presentation (plottype): Yxvsx is a line plot, for Y=Y(X).  It can have one or several lines.
     # Isofill is a contour plot.  To make it polar, set projection=polar.  I'll
     # probably communicate that by passing a name "Isofill_polar".
-    def __init__( self, pvars, presentation, labels=[], title='', source='', ranges=None, overplotline=False, linetypes=['solid'], linecolors=[241]):
+    def __init__( self, pvars, presentation, labels=[], title='', source='', ranges=None, overplotline=False, linetypes=['solid'], linecolors=[241], levels=None):
 
         pvars = [v for v in pvars if v is not None]
         # ... Maybe something else is broken to let None get into pvars.
@@ -249,7 +250,8 @@ class uvc_simple_plotspec():
         self.overplotline = overplotline
         self.linetypes = linetypes
         self.linecolors = linecolors
-
+        self.levels = levels
+        
         # Initial ranges - may later be changed to coordinate with related plots:
         # For each variable named 'v', the i-th member of self.vars, (most often there is just one),
         # varmax[v] is the maximum value of v, varmin[v] is the minimum value of v,
@@ -359,10 +361,6 @@ class uvc_simple_plotspec():
             self.presentation.linewidth = 0
             self.presentation.markercolor = 1
             self.presentation.markersize = 10
-            #add overplotline is a total kludge
-            self.presentation.overplotline = self.overplotline
-            if flip_y:
-                self.presentation.flip = True
             #self.presentation.list()   
             #pdb.set_trace()
     
@@ -373,8 +371,6 @@ class uvc_simple_plotspec():
                 self.presentation.__class__.__name__=="G1d" or\
                 self.presentation.__class__.__name__=="Gv":
             #pdb.set_trace()
-            if flip_y:
-                self.presentation.flip = True
             var = self.vars[0]
             axmax = self.axmax[seqgetattr(var,'id','')]
             axmin = self.axmin[seqgetattr(var,'id','')]
@@ -481,35 +477,39 @@ class uvc_simple_plotspec():
                 # you have to give it all the contour levels.  So...
                 if vcs.isboxfill(self.presentation):
                     self.presentation.boxfill_type = 'custom'  # without this, can't set levels
-                nlevels = 16
-
-                try:
-                    levels = [float(v) for v in vcs.mkscale( varmin, varmax, nlevels )]
-                    # Exceptions occur because mkscale doesn't always work.  E.g. vcs.mkscale(0,1.e35,16)
-                except RuntimeWarning:
-                    levels = []
-                if levels==[]:
-                    ## Here's how to do it with percentiles (clip out large values first).
-                    #pc05 = numpy.percentile(self.vars[0],0.05)
-                    #pc95 = numpy.percentile(self.vars[0],0.95)
-                    #levels = [float(v) for v in vcs.mkscale( pc05, pc95, nlevels-2 )]
-                    #levels = [varmin]+levels+[varmax]
-                    # Evenly distributed levels, after clipping out large values:
-                    # This cannot be expected to work always, but it's better than doing nothing.
-                    amed = numpy.median(self.vars[0]._data)
-                    vclip = amed * 1.0e6
-                    print "WARNING graphics problems, clipping some data at",vclip
-                    self.vars[0]._data[ self.vars[0]._data > vclip ] = vclip
-                    a = numpy.sort(self.vars[0]._data.flatten())
-                    asp = numpy.array_split(a,nlevels)
-                    afirsts = [c[0] for c in asp]+[asp[-1][-1]]
-                    alasts = [asp[0][0]]+[c[-1] for c in asp]
-                    levels = [0.5*(afirsts[i]+alasts[i]) for i in range(len(afirsts))]
-                    levf = levels[0]
-                    levl = levels[-1]
-                    levels = [ round(lv,2) for lv in levels ]
-                    levels[0] = round(1.1*levels[0]-0.1*levels[1],2)
-                    levels[-1] = round(1.1*levels[-1]-0.1*levels[-2],2)
+                
+                if self.levels:
+                    levels = self.levels
+                else:
+                    nlevels = 16
+    
+                    try:
+                        levels = [float(v) for v in vcs.mkscale( varmin, varmax, nlevels )]
+                        # Exceptions occur because mkscale doesn't always work.  E.g. vcs.mkscale(0,1.e35,16)
+                    except RuntimeWarning:
+                        levels = []
+                    if levels==[]:
+                        ## Here's how to do it with percentiles (clip out large values first).
+                        #pc05 = numpy.percentile(self.vars[0],0.05)
+                        #pc95 = numpy.percentile(self.vars[0],0.95)
+                        #levels = [float(v) for v in vcs.mkscale( pc05, pc95, nlevels-2 )]
+                        #levels = [varmin]+levels+[varmax]
+                        # Evenly distributed levels, after clipping out large values:
+                        # This cannot be expected to work always, but it's better than doing nothing.
+                        amed = numpy.median(self.vars[0]._data)
+                        vclip = amed * 1.0e6
+                        print "WARNING graphics problems, clipping some data at",vclip
+                        self.vars[0]._data[ self.vars[0]._data > vclip ] = vclip
+                        a = numpy.sort(self.vars[0]._data.flatten())
+                        asp = numpy.array_split(a,nlevels)
+                        afirsts = [c[0] for c in asp]+[asp[-1][-1]]
+                        alasts = [asp[0][0]]+[c[-1] for c in asp]
+                        levels = [0.5*(afirsts[i]+alasts[i]) for i in range(len(afirsts))]
+                        levf = levels[0]
+                        levl = levels[-1]
+                        levels = [ round(lv,2) for lv in levels ]
+                        levels[0] = round(1.1*levels[0]-0.1*levels[1],2)
+                        levels[-1] = round(1.1*levels[-1]-0.1*levels[-2],2)
 
                 # ... mkscale returns numpy.float64, which behaves unexpectedly in _setlevels when
                 # passed a tuple value
@@ -550,11 +550,19 @@ class uvc_simple_plotspec():
                 self.presentation.datawc_y2 = axmax[axy]
 
                 vec = self.presentation
-                vec.scale = min(vcsx.bgX,vcsx.bgY)/ 10.
+
+                vec.scale = min(vcsx.bgX,vcsx.bgY)/10.
+                # Former scale factor, didn't work on more than one variable.
+                #   That is, 100 workrf for moisture transport, 10 for wind stress:
+                # vec.scale = min(vcsx.bgX,vcsx.bgY)/ 100.
+                #pdb.set_trace()
                 if hasattr(self.vars[0],'__getitem__') and not hasattr( self.vars[0], '__cdms_internals__'):
                     # generally a tuple of variables - we need 2 variables to describe a vector
                     v = self.vars[0][0]
                     w = self.vars[0][1]
+                    vm = max(abs(v.min()),abs(v.max()))
+                    wm = max(abs(w.min()),abs(w.max()))
+                    vec.scale = 100 / math.sqrt( math.sqrt( vm**2 + wm**2 ))
                 else:   # We shouldn't get here, but may as well try to make it work if possible:
                     print "WARNING trying to make a vector plot without tuples!  Variables involved are:"
                     v = self.vars[0]
@@ -563,8 +571,9 @@ class uvc_simple_plotspec():
                     print "variable",v.id
                 nlats = latAxis(v).shape[0]
                 nlons = lonAxis(w).shape[0]
-                nlatvs = vcsx.bgY/16   # how many vectors we want in lat direction
-                nlonvs = vcsx.bgX/16
+                # vector density factor of 32 works for moisture transport, 16 for wind stress
+                nlatvs = vcsx.bgY/32   # how many vectors we want in lat direction
+                nlonvs = vcsx.bgX/32
                 #self.strideX = int( 0.9* vcsx.bgX/nlons )
                 #self.strideY = int( 0.6* vcsx.bgY/nlats )
                 self.strideX = max(1, int( nlons/nlonvs )) # stride values must be at least 1
@@ -1131,22 +1140,27 @@ class plot_spec(object):
             #get the line color for each curve
             linecolors = [ps.zlinecolor]
             if z2ax is not None:
-                linetcolors = [ps.z2linecolor]
-                            
+                line2colors = [ps.z2linecolor]
+
+            #get the levels
+            levels = ps.levels       
+                    
             # The following line is getting specific to UV-CDAT, although not any GUI...
-            # >>>> jfp a bad hack for temporary use - I MUST MUST MUST get plot_type out of something else!!!>>>>
             #pdb.set_trace()
             #new kludge added to handle scatter plots, 10/14/14, JMcE
             if self.plottype == 'Vector':
                 if type(vars[0])==tuple:
                     plot_type_temp = 'Vector'
-                elif vars[0].id.find('STRESS_MAG')>=0:
+                elif vars[0].id.find('STRESS_MAG')>=0:   # maybe not needed
+                    # If this is needed, we need to change code so that this isn't.
                     plot_type_temp = 'Isofill'
                 else:
-                    plot_type_temp = self.plottype
+                    #jfp not tested yet on wind stress, wrong for moisture transport:
+                    #jfp plot_type_temp = self.plottype
+                    plot_type_temp = 'Isofill' #jfp works for moisture transport
             else:
                 plot_type_temp = ps.plottype
-            self.plotspec_values[p] = uvc_simple_plotspec( vars, plot_type_temp, labels, title, ps.source, ranges, overplotline, linetypes, linecolors )
+            self.plotspec_values[p] = uvc_simple_plotspec( vars, plot_type_temp, labels, title, ps.source, ranges, overplotline, linetypes, linecolors, levels )
             #print p
             #print self.plotspec_values[p]
         #pdb.set_trace()
