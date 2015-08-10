@@ -97,15 +97,15 @@ class WeightFileRegridder:
         return dest_field
 
 
-def addAxes(f, axisList):
+def addAxes(f, axisList, store_bounds = False):
     axes = []
     for ax in axisList:
         if ax.id not in f.listdimension():
             A = f.createAxis(ax.id, ax[:])
             atts = ax.attributes
-            if ax.isLatitude():
+            if store_bounds and ax.isLatitude():
               atts["bounds"]="latitude_bounds"
-            elif ax.isLongitude():
+            elif store_bounds and ax.isLongitude():
               atts["bounds"]="longitude_bounds"
             for att in atts:
                 setattr(A, att, atts[att])
@@ -115,8 +115,8 @@ def addAxes(f, axisList):
     return axes
 
 
-def addVariable(f, id, typecode, axes, attributes):
-    axes = addAxes(f, axes)
+def addVariable(f, id, typecode, axes, attributes, store_bounds=False):
+    axes = addAxes(f, axes, store_bounds)
     V = f.createVariable(id, typecode, axes)
     for att in attributes:
         setattr(V, att, attributes[att])
@@ -217,12 +217,12 @@ if __name__ == "__main__":
                 if axes3d == []:
                     dat2 = cdms2.MV2.array(regdr.regrid(V()))
                     axes3d = dat2.getAxisList()
-                addVariable(fo, V.id, V.typecode(), axes3d, V.attributes)
+                addVariable(fo, V.id, V.typecode(), axes3d, V.attributes, store_bounds=args.store_bounds)
             elif V.rank() == 3:
                 if axes4d == []:
                     dat2 = cdms2.MV2.array(regdr.regrid(V()))
                     axes4d = dat2.getAxisList()
-                addVariable(fo, V.id, V.typecode(), axes4d, V.attributes)
+                addVariable(fo, V.id, V.typecode(), axes4d, V.attributes, store_bounds=args.store_bounds)
             if wgt is None:
                 wgt = True
                 addVariable(fo, "gw", "d", [dat2.getLatitude(), ], [])
@@ -235,14 +235,14 @@ if __name__ == "__main__":
                             )
         else:
             print "Will rewrite as is", V.id
-            addVariable(fo, V.id, V.typecode(), V.getAxisList(), V.attributes)
+            addVariable(fo, V.id, V.typecode(), V.getAxisList(), V.attributes, store_bounds=args.store_bounds)
             if V.id == "time_bnds":
               tim_bnds = V.getAxisList()[-1]
 
     # latitude and longitude bounds
     if args.store_bounds:
-      addVariable(fo, "latitude_bounds", "d", [regdr.lats, tim_bnds], {})
-      addVariable(fo, "longitude_bounds", "d", [regdr.lons, tim_bnds], {})
+      addVariable(fo, "latitude_bounds", "d", [regdr.lats, tim_bnds], {}, store_bounds=args.store_bounds)
+      addVariable(fo, "longitude_bounds", "d", [regdr.lons, tim_bnds], {}, store_bounds=args.store_bounds)
 
     wgts = None
     for i, v in enumerate(vars):
