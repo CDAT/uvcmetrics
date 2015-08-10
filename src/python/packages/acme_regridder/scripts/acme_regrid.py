@@ -254,7 +254,7 @@ if __name__ == "__main__":
             print i, NVARS, "Processing:", V.id
             V2 = fo[V.id]
             dat2 = cdms2.MV2.array(regdr.regrid(V()))
-            V2[:] = dat2[:]
+            V2[:] = dat2[:].astype(V.typecode())
             if wgts is None:
                 print "trying to get weights"
                 wgts = [numpy.sin(x[1]*numpy.pi/180.) -

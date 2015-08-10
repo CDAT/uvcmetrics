@@ -11,7 +11,7 @@ static PyObject *
   int *row_vals,*col_vals;
   char type;
   void *data_vals;
-  float *out;
+  double *out;
   bool *is_missing;
   PyObject *Missing;
   double missingd;
@@ -67,7 +67,7 @@ static PyObject *
     npy_intp newdims[2];
     newdims[0]=nindep;
     newdims[1] = n2;
-    out=malloc(newdims[0]*newdims[1]*sizeof(float));
+    out=malloc(newdims[0]*newdims[1]*sizeof(double));
     is_missing=malloc(newdims[0]*newdims[1]*sizeof(bool));
     #pragma omp parallel for
     for (j=0;j<newdims[0]*newdims[1];j++) {
@@ -75,7 +75,7 @@ static PyObject *
       is_missing[j] = true;
     }
 
-    dest_field = PyArray_SimpleNew(2,newdims,NPY_FLOAT32);
+    dest_field = PyArray_SimpleNew(2,newdims,NPY_FLOAT64);
 
     S_vals = (double *)S->data;
     row_vals = (int *) row->data;
@@ -85,7 +85,7 @@ static PyObject *
     for (i=0;i<nindep;i++) {
         for (j=0;j<S->dimensions[0];j++) {
           if (((float *)data_vals)[i*n1+col_vals[j]] != missingf)  {
-            out[i*n2+row_vals[j]] = out[i*n2+row_vals[j]] + (float)S_vals[j]*((float *)data_vals)[i*n1+col_vals[j]];
+            out[i*n2+row_vals[j]] = out[i*n2+row_vals[j]] + (double)S_vals[j]*((float *)data_vals)[i*n1+col_vals[j]];
             is_missing[i*n2+row_vals[j]] = false;
           }
         }
@@ -116,7 +116,7 @@ static PyObject *
   int *row_vals,*col_vals;
   char type;
   void *data_vals;
-  float *out;
+  double *out;
   int n2;
 
   if (!PyArg_ParseTuple(args,"OOOOi",&data_obj,&S_obj,&row_obj,&col_obj,&n2))
@@ -139,13 +139,13 @@ static PyObject *
     npy_intp newdims[2];
     newdims[0]=nindep;
     newdims[1] = n2;
-    out=malloc(newdims[0]*newdims[1]*sizeof(float));
+    out=malloc(newdims[0]*newdims[1]*sizeof(double));
     #pragma omp parallel for
     for (j=0;j<newdims[0]*newdims[1];j++) {
       out[j]=0;
     }
 
-    dest_field = PyArray_SimpleNew(2,newdims,NPY_FLOAT32);
+    dest_field = PyArray_SimpleNew(2,newdims,NPY_FLOAT64);
 
     S_vals = (double *)S->data;
     row_vals = (int *) row->data;
@@ -154,7 +154,7 @@ static PyObject *
     #pragma omp parallel for private(j) schedule(guided) if (nindep > 5)
     for (i=0;i<nindep;i++) {
         for (j=0;j<S->dimensions[0];j++) {
-            out[i*n2+row_vals[j]] = out[i*n2+row_vals[j]] + (float)S_vals[j]*((float *)data_vals)[i*n1+col_vals[j]];
+            out[i*n2+row_vals[j]] = out[i*n2+row_vals[j]] + (double)S_vals[j]*((float *)data_vals)[i*n1+col_vals[j]];
         }
       /*
       for (j=0;j<n2;j++) {
