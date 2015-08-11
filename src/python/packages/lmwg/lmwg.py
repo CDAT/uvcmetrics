@@ -22,13 +22,25 @@ from metrics.packages.lmwg.defines import *
 
 
 # This needs to be here for some unknown reason.
-class lmwg_set9_variable(basic_plot_variable):
+class lmwg_set9_variables(basic_plot_variable):
    @staticmethod
    def varoptions():
       opts={'TSA':'TSA', 'PREC':'PREC','ASA':'ASA'}
       return opts
 
-class lwmg_set5_variable(basic_plot_variable):
+class lmwg_set7_map_variables(basic_plot_variable):
+   @staticmethod
+   def varoptions():
+      opts={'Station_Locations':'Station_Locations', 'Ocean_Basins':'Ocean_Basins', 'River_Flow':'River_Flow'} 
+      return opts
+
+class lmwg_set7_line_variables(basic_plot_variable):
+   @staticmethod
+   def varoptions():
+      opts={'mean_river_flow':'mean_river_flow', 'Global':'Global', 'Atlantic':'Atlantic', 'Indian':'Indian', 'Pacific':'Pacific', 'mean_discharge':'mean_discharge'}
+      return opts
+
+class lwmg_set5_variables(basic_plot_variable):
    @staticmethod
    def varoptions():
       opts={'default':'', 'difference':'difference'}
@@ -1908,7 +1920,7 @@ class lmwg_plot_set5(lmwg_plot_spec):
       vlist = {}
       varlist = ['Regional_Hydrologic_Cycle', 'Global_Biogeophysics', 'Global_Carbon_Nitrogen']
       for v in varlist:
-         vlist[v] = lwmg_set5_variable
+         vlist[v] = lwmg_set5_variables
       return vlist
 
    def plan_computation( self, model, obs, varid, seasonid, region=None, aux=None):
@@ -2681,7 +2693,7 @@ class lmwg_plot_set9(lmwg_plot_spec):
       for v in varlist:
          if v == 'Tables':
             continue
-         vlist[v] = lmwg_set9_variable
+         vlist[v] = lmwg_set9_variables
       vlist['Tables'] = basic_plot_variable
       return vlist
 
@@ -2909,8 +2921,12 @@ class lmwg_plot_set7(lmwg_plot_spec):
    @staticmethod
    def _all_variables(model, obs):
       vlist = {}
-      vlist = {vn:basic_plot_variable for vn in lmwg_plot_set7._list_variables( model, obs ) }
+      vlist['Tables'] = basic_plot_variable
+      vlist['Scatter_Plots'] = basic_plot_variable
+      vlist['Maps'] = lmwg_set7_map_variables
+      vlist['Line_Plots'] = lmwg_set7_line_variables
       return vlist
+
 
    def plan_computation(self, model, obs, varid, seasonid, region, aux=None):
       print '----------> FINISH IMPLEMENTING'
@@ -2999,10 +3015,18 @@ class lmwg_plot_set7(lmwg_plot_spec):
 
 
       if 'LINE_PLOTS' in varid.upper():
-         print 'line plots'
+         # Get monthly averages
+         self.reduced_variables['QCHANR_ft0'] = reduced_variable(variableid = 'QCHANR', reduced_var_id = 'QCHANR_ft0', filetable = ft, reduction_function = (lambda x, vid: reduceMonthlyTrendRegion(x, region=None, weights=None, vid=vid)))
+         self.reduced_variables['QCHOCNR_ft0'] = reduced_variable(variableid = 'QCHOCNR', reduced_var_id = 'QCHOCNR_ft0', filetable = ft, reduction_function = (lambda x, vid: reduceMonthlyTrendRegion(x, region=None, weights=None, vid=vid)))
+         if num_models == 2:
+            self.reduced_variables['QCHANR_ft1'] = reduced_variable(variableid = 'QCHANR', reduced_var_id = 'QCHANR_ft1', filetable = ft2, reduction_function = (lambda x, vid: reduceMonthlyTrendRegion(x, region=None, weights=None, vid=vid)))
+            self.reduced_variables['QCHOCNR_ft1'] = reduced_variable(variableid = 'QCHOCNR', reduced_var_id = 'QCHOCNR_ft1', filetable = ft2, reduction_function = (lambda x, vid: reduceMonthlyTrendRegion(x, region=None, weights=None, vid=vid)))
+         print 'aux: ', aux
+
 
       if 'MAPS' in varid.upper():
          print 'Maps'
+         print 'aux: ', aux
 
       self.computation_planned = True
 
@@ -3063,8 +3087,19 @@ class lmwg_plot_set7(lmwg_plot_spec):
 
 
    def parse_river_data(self, obs):
+      def tryfile(fname):
+         try:
+            fp = open(fname)
+         except:
+            print 'Opening ', fname, 'failed.'
+            quit()
+         return fp
+
+
       import re
       river_data = []
+      rtm_data = []
+
       print 'Parsing river data'
 
       # assume we can get a path.
@@ -3072,14 +3107,16 @@ class lmwg_plot_set7(lmwg_plot_spec):
       if len(obs) != 0:
          path = obs[0].root_dir()
 
-      river_file = path+'/dai_and_trenberth_table2.asc'
-      rtm_file = path+'/rdirc.05'
-      try:
-         fp = open(river_file)
-      except:
-         print 'Opening ', river_file, 'failed.'
-         quit()
+      ptr_rivflow = path+'/dai_and_trenberth_table2.asc' 
+      ptr_rtm_station_locations = path+'/rdirc.05'
+      ptr_top10riv_mon_stn_disch = path+'/dai_and_trenberth_top10riv_mon_stn_disch.asc'
+      ptr_921riv_disch = path+'/dai_and_trenberth_921riv_ann_disch.asc'
+      ptr_921riv_acc_disch = path+'/dai_and_trenberth_921riv_acc_disch.asc'
+      ptr_ocean_basin_index = path+'/DIAG_OCEAN_BASIN_INDEX.nc'
+      ptr_921riv_mon_disch = path+'/dai_and_trenberth_921riv_mon_disch.asc'
 
+      # Parse river flows
+      fp = tryfile(ptr_rivflow)
       p = re.compile('^\s*\d')
       for line in fp:
          rd = {}
@@ -3104,13 +3141,8 @@ class lmwg_plot_set7(lmwg_plot_spec):
 
       fp.close()
 
-      try:
-         fp = open(rtm_file)
-      except:
-         print 'Opening ', rtm_file, ' failed.'
-         quit()
-
-      rtm_data = []
+      # Parse RTM station info
+      fp = tryfile(ptr_rtm_station_locations)
       p = re.compile('^\s*[-\d]')
       for line in fp:
          rtm = {}
@@ -3118,6 +3150,7 @@ class lmwg_plot_set7(lmwg_plot_spec):
             pass
          else:
             name = line[0:16].strip()
+            # This data ends up in river_data{} for convenience, as well as rtm_data
             for r in range(len(river_data)):
                if river_data[r]['rname'] == name:
                   river_data[r]['rtm_stn_lon'] = float(line[17:24].strip())
@@ -3130,6 +3163,17 @@ class lmwg_plot_set7(lmwg_plot_spec):
             rtm['stn_name'] = line[33:60].strip()
             rtm_data.append(rtm)
       fp.close()
+
+      fp = tryfile(ptr_top10riv_mon_stn_disch)
+      # I love how all of this is totally aribtrary / undocumented
+      top10riv_index = [0, 5, 1, 6, 2, 7, 3, 8, 4, 9]
+      fp.close()
+
+
+
+
+
+
       return river_data, rtm_data
             
 
