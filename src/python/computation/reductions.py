@@ -1438,12 +1438,18 @@ def reduceMonthlyTrendRegion(mv, region, weights=None, vid=None):
    else:
       mvtrend = mv
 
+   if region == None:
+      mvtrend.id = vid
+      if hasattr(mv, 'units'): mvtrend.units = mv.units
+      return mvtrend
+
    # This is gross. But, how do I make cdutil.averager (T, X, Y) use land weights (X, Y) to get a (T) array?
    import genutil
    weightsub = select_region(weights, region)
    mvtrend, weights12 = genutil.grower(mvtrend, weightsub)
 
    mvvals = cdutil.averager(mvtrend, axis='xy', weights=weights12)
+   print 'mvvals leaving shape: ', mvvals.shape
 
    mvvals.id = vid
    if hasattr(mv, 'units'): mvvals.units = mv.units # probably needs some help
