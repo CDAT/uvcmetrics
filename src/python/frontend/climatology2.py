@@ -260,6 +260,7 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
         redtime_bnds.units = redtime.units
         g['time_climo'][:] = [ season_tmin, season_tmax ]
         g['time_climo'].initialized = 'yes'
+        g['time_climo'].units = g['time'].units
         g.close()
 
 if __name__ == '__main__':
