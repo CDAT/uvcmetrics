@@ -198,6 +198,13 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
         print "ERROR. So far climos() has only been implemented for time in days.  Sorry!"
         raise Exception("So far climos() has not been implemented for time in units %s."%
                         getattr( data_time, 'units', '' ) )
+    fattr = f.attributes
+    input_global_attributes = {a:fattr[a] for a in fattr if a not in ['Conventions']}
+    climo_history = "climatologies computed by climatology2.py"
+    if 'history' in input_global_attributes:
+        input_global_attributes['history'] = input_global_attributes[history] + climo_history
+    else:
+        input_global_attributes['history'] = climo_history
 
     omit_files = {seasonname:[] for seasonname in seasonnames}
     for omits in omitBySeason:
@@ -223,7 +230,14 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
         season_tmin = tmin
         season_tmax = tmax
         # g is the (newly created) climatology file.  It's open in 'w' mode.
+        for a in input_global_attributes:
+            setattr( g,a, input_global_attributes[a] )
+        if 'source' in input_global_attributes:
+            g.source += ", climatologies from "+str(datafilenames)
+        else:
+            g.source = str(datafilenames)
         g.season = seasonname
+        g.Conventions = 'CF-1.7'
         redfilenames.append(fileout)
         redfiles[fileout] = g
         sredfiles[fileout] = g
@@ -261,6 +275,16 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
         g['time_climo'][:] = [ season_tmin, season_tmax ]
         g['time_climo'].initialized = 'yes'
         g['time_climo'].units = g['time'].units
+        #print "jfp g['AODVIS']._FillValue=",getattr(g['AODVIS'],'_FillValue','UNDEFINED')
+        #if hasattr( g['AODVIS'],'_FillValue'):
+        #    # copied from fvariable.py, __setattr__, which won't do an attribute beginning with '_'
+        #    fv = g['AODVIS']
+        #    try:
+        #        setattr(fv._obj_, '_FillValue', fv._FillValue)
+        #    except CdunifError:
+        #        raise CDMSError, "In climo(), error setting %s.%s=%s"%(self.id,name,`value`)
+        #    fv.attributes['_FillValue']=fv._FillValue
+        #    fv.__dict__['_FillValue'] = fv._FillValue
         g.close()
 
 if __name__ == '__main__':
