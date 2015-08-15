@@ -40,6 +40,7 @@
 
 import numpy, cdms2, sys, os, math
 from numbers import Number
+from pprint import pprint
 from metrics.packages.acme_regridder.scripts.acme_regrid import addVariable
 
 # Silence annoying messages about setting the NetCDF file type.  Also, these three lines will
@@ -181,7 +182,20 @@ def initialize_redfile_from_datafile( redfilename, varnames, datafilen, dt=-1, i
             if not hasattr( ax,'bounds' ): boundless_axes.add(ax)
         axisdict[varn] = axes
         typedict[varn] = f[varn].typecode()
-        attdict[varn] = {'initialized':'no', 'cell_methods':'time: mean'}
+
+        # attributes:
+        vdict = f[varn].__dict__
+        attdict[varn] = {a:vdict[a] for a in vdict if (a=='_FillValue' or a[0]!='_')
+                         and a!='parent' and a!='autoApiInfo' and a!='domain'}
+        # ...It would be worth reconstructing the domain attribute with the new axes.
+        if 'cell_methods' not in attdict[varn]:
+            attdict[varn]['cell_methods'] = 'time: mean'
+        elif 'time: mean' not in attdict[varn]['cell_methods']:
+            attdict[varn]['cell_methods'] += ', time: mean'
+        if 'missing_value' in attdict[varn] and '_FillValue' not in attdict[varn]:
+            attdict[varn]['_FillValue'] = attdict[varn]['missing_value']
+        attdict[varn]['initialized'] = 'no'
+
     for ax in boundless_axes:
         print "WARNING, axis",ax.id,"has no bounds"
     if timeaxis is not None:
