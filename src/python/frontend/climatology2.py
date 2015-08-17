@@ -80,6 +80,10 @@ def reduce_twotimes2one( seasonname, fileout_template, fileout, g, redtime, redt
         timeax =  cdms2.createAxis( [newtime], id='time', bounds=newbnds )
         timeax.bounds = 'time_bnds'
         timeax.units = redtime.units
+        for att,val in redtime.__dict__.items() :
+                if (att=='_FillValue' or att[0]!='_')\
+                        and att!='parent' and att!='autoApiInfo' and att!='domain' and att!='attributes':
+                    setattr( timeax, att, val )
         axes = [ timeax, g['time_bnds'].getDomain()[1][0] ]  # time, bnds shapes 1, 2.
         addVariable( h, 'time_bnds', 'd', axes, {} )
 
@@ -94,11 +98,19 @@ def reduce_twotimes2one( seasonname, fileout_template, fileout, g, redtime, redt
                     jfpaxes = [ dom[0] for dom in var.getDomain() ]
                     axes = [ dom[0] for dom in var.getDomain() ]
                 #raise e
+            # Get attributes of var from g for h...
+            attdict = {}
+            for att,val in g[var.id].__dict__.items() :
+                #if att[0]!='_'\
+                if (att=='_FillValue' or att[0]!='_')\
+                        and att!='parent' and att!='autoApiInfo' and att!='domain':
+                    attdict[att] = val
+
             if var.getTime() is None:
                 if hasattr( var, 'axes' ):
                     #newvar = cdms2.createVariable( var, id=var.id, axes=var.axes )
                     if var.id not in h.variables:
-                        addVariable( h, var.id, var.typecode(), var.axes, {} )
+                        addVariable( h, var.id, var.typecode(), var.axes, attdict )
                 else:
                     ### If we don't call subSlice(), then TransientVariable.__init__() will, and
                     ### it will assume that the result is a TransientVariable with a domain.
@@ -111,14 +123,14 @@ def reduce_twotimes2one( seasonname, fileout_template, fileout, g, redtime, redt
                         axis.id = "axis_" + var.id + str(i)
                         varaxes.append(axis)
                     if var.id not in h.variables:
-                        addVariable( h, var.id, var.typecode(), varaxes, {} )
+                        addVariable( h, var.id, var.typecode(), varaxes, attdict )
                 # h[var.id][:] = var[:] # doesn't work for scalar-valued variables
                 h[var.id].assignValue(var)
             else:    # time-dependent variable, average the time values for, e.g., D and JF
                 assert( axes[0].isTime() ) # haven't coded for the alternatives
                 axes[0] = timeax
                 if var.id not in h.variables:
-                    addVariable( h, var.id, var.typecode(), axes, {} )
+                    addVariable( h, var.id, var.typecode(), axes, attdict )
                 if var.dtype.kind=='i' or var.dtype.kind=='S' :
                     # integer, any length, or string.
                     # Time average makes no sense, any the existing value sdb ok.
@@ -129,8 +141,6 @@ def reduce_twotimes2one( seasonname, fileout_template, fileout, g, redtime, redt
                     #newvar = cdms2.createVariable( newvd, id=var.id, axes=axes )
                     # h[var.id][:] = newvd[:] # doesn't work for scalar-valued variables
                     h[var.id].assignValue(newvd)
-                #if hasattr(var,'units'): newvar.units = var.units
-            #h.write( newvar )
         #h.write( cdms2.createVariable( [newwt], id='time_weights' ) )
         assert( g['time_bnds'].shape == (2,2) )
         g00 = g['time_bnds'][0][0]
@@ -227,17 +237,9 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
         fileout = fileout_template.replace('XXX',seasonname)
         g, out_varnames, tmin, tmax = initialize_redfile_from_datafile(
             fileout, varnames, datafilenames2[0], dt, init_red_tbounds )
+        # g is the (newly created) climatology file.  It's open in 'w' mode.
         season_tmin = tmin
         season_tmax = tmax
-        # g is the (newly created) climatology file.  It's open in 'w' mode.
-        for a in input_global_attributes:
-            setattr( g,a, input_global_attributes[a] )
-        if 'source' in input_global_attributes:
-            g.source += ", climatologies from "+str(datafilenames)
-        else:
-            g.source = str(datafilenames)
-        g.season = seasonname
-        g.Conventions = 'CF-1.7'
         redfilenames.append(fileout)
         redfiles[fileout] = g
         sredfiles[fileout] = g
@@ -261,6 +263,15 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
                                      redtime_bnds, redtime_wts, redvars )
             redtime = g.getAxis('time')
             redtime_bnds = g[ g.getAxis('time').bounds ]
+
+        for a in input_global_attributes:
+            setattr( g,a, input_global_attributes[a] )
+        if 'source' in input_global_attributes:
+            g.source += ", climatologies from "+str(datafilenames)
+        else:
+            g.source = str(datafilenames)
+        g.season = seasonname
+        g.Conventions = 'CF-1.7'
 
         # At this point, for each season the time axis should have long name "climatological time"
         # with units "days since 0", a value in the range [0,365] and in the midpoint of its bounds.
