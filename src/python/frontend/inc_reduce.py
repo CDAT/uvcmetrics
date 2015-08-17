@@ -192,8 +192,6 @@ def initialize_redfile_from_datafile( redfilename, varnames, datafilen, dt=-1, i
             attdict[varn]['cell_methods'] = 'time: mean'
         elif 'time: mean' not in attdict[varn]['cell_methods']:
             attdict[varn]['cell_methods'] += ', time: mean'
-        if 'missing_value' in attdict[varn] and '_FillValue' not in attdict[varn]:
-            attdict[varn]['_FillValue'] = attdict[varn]['missing_value']
         attdict[varn]['initialized'] = 'no'
 
     for ax in boundless_axes:

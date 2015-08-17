@@ -275,16 +275,6 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
         g['time_climo'][:] = [ season_tmin, season_tmax ]
         g['time_climo'].initialized = 'yes'
         g['time_climo'].units = g['time'].units
-        #print "jfp g['AODVIS']._FillValue=",getattr(g['AODVIS'],'_FillValue','UNDEFINED')
-        #if hasattr( g['AODVIS'],'_FillValue'):
-        #    # copied from fvariable.py, __setattr__, which won't do an attribute beginning with '_'
-        #    fv = g['AODVIS']
-        #    try:
-        #        setattr(fv._obj_, '_FillValue', fv._FillValue)
-        #    except CdunifError:
-        #        raise CDMSError, "In climo(), error setting %s.%s=%s"%(self.id,name,`value`)
-        #    fv.attributes['_FillValue']=fv._FillValue
-        #    fv.__dict__['_FillValue'] = fv._FillValue
         g.close()
 
 if __name__ == '__main__':
