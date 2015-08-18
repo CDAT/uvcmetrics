@@ -13,7 +13,6 @@ increasing.  That is, for any times tn, tm in files filen, filem, if n>m then tn
 """
 
 # TO DO:
-# >>>> look at DJF file.  Too big?  times?  values????? <<<<<<<<<
 # --seasons ALL for all 17 seasons, and default to this if seasons are not specified.
 #   In that case, investigate whether it would save any time to compute only months, and
 #   then other seasons from the months (probably slower on Rhea, but maybe not).
@@ -23,36 +22,54 @@ import os, re
 import argparse
 from pprint import pprint
 
-seamons = {  'ANN': [ '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12' ],
-             'DJF': [ '01', '02', '12' ],
-             'MAM': [ '03', '04', '05' ],
-             'JJA': [ '06', '07', '08' ],
-             'SON': [ '09', '10', '11' ],
-             'JAN': [ '01' ], 'FEB': [ '02' ], 'MAR': [ '03' ], 'APR': [ '04' ], 'MAY': [ '05' ],
-             'JUN': [ '06' ], 'JUL': [ '07' ], 'AUG': [ '08' ], 'SEP': [ '09' ], 'OCT': [ '10' ],
-             'NOV': [ '11' ], 'DEC': [ '12' ],
-             '01':['01'], '02':['02'], '03':['03'], '04':['04'], '05':['05'], '06':['06'], '07':['07'],
-             '08':['08'], '09':['09'], '10':['10'], '11':['11'], '12':['12'] }
+season2nummonth = {
+    'ANN': [ '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12' ],
+    'DJF': [ '01', '02', '12' ],
+    'MAM': [ '03', '04', '05' ],
+    'JJA': [ '06', '07', '08' ],
+    'SON': [ '09', '10', '11' ],
+    'JAN': [ '01' ], 'FEB': [ '02' ], 'MAR': [ '03' ], 'APR': [ '04' ], 'MAY': [ '05' ],
+    'JUN': [ '06' ], 'JUL': [ '07' ], 'AUG': [ '08' ], 'SEP': [ '09' ], 'OCT': [ '10' ],
+    'NOV': [ '11' ], 'DEC': [ '12' ],
+    '01':['01'], '02':['02'], '03':['03'], '04':['04'], '05':['05'], '06':['06'], '07':['07'],
+    '08':['08'], '09':['09'], '10':['10'], '11':['11'], '12':['12'] }
+season2almonth = {
+    'ANN': ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'],
+    'DJF': ['JAN', 'FEB', 'DEC'],
+    'MAM': ['MAR', 'APR', 'MAY'],
+    'JJA': ['JUN', 'JUL', 'AUG'],
+    'SON': ['SEP', 'OCT', 'NOV'] }
 
 def restrict_to_season( datafilenames, seasonname ):
     """Returns a sorted subset of the input list of data (model output) filenames -
     only files which are thought to correspond to the input season name.
     Thus datafilenames is a list of strings, and seasonname a string.
-    This function assumes that the filenames are of a format I have seen in ACME output:
+    Normally this function assumes that the filenames are of a format I have seen in ACME output:
     ".*\.dddd-dd\.nc" where the 4+2 digits represent the year and month respectively.
+    However single-month climatology files with 3-letter month(season) names are accepted but not sorted.
     The season name my be the standard 3-letter season, or a string with two decimal digits.
     If any filename does not meet the expected format, then no filenames will be rejected.
     """
     newfns = []
-    for fn in datafilenames:
-        MO = re.match( "^.*\.\d\d\d\d-\d\d\.nc$", fn )
-        if MO is None:
-            print "WARNING filename",fn,"did not match, will be ignored."
-            continue
-        mon = fn[-5:-3]
-        if mon in seamons[seasonname]:
-            newfns.append(fn)
-    newfns.sort()
+    if datafilenames[0][-8:]=='climo.nc':
+        # climatology file, should be for a one-month season as input for a multi-month season
+        if seasonname not in season2almonth:
+            return newfns
+        for fn in datafilenames:
+            for mo in season2almonth[seasonname]:
+                if fn.find('_'+mo+'_')>0:
+                    newfns.append(fn)
+    else:
+        # This should be CESMM output files, e.g. B1850C5e1_ne30.cam.h0.0080-01.nc
+        for fn in datafilenames:
+            MO = re.match( "^.*\.\d\d\d\d-\d\d\.nc$", fn )
+            if MO is None:
+                print "WARNING filename",fn,"did not match, will be ignored."
+                continue
+            mon = fn[-5:-3]
+            if mon in season2nummonth[seasonname]:
+                newfns.append(fn)
+            newfns.sort()
     return newfns
 
 def reduce_twotimes2one( seasonname, fileout_template, fileout, g, redtime, redtime_bnds,
@@ -212,7 +229,7 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
     input_global_attributes = {a:fattr[a] for a in fattr if a not in ['Conventions']}
     climo_history = "climatologies computed by climatology2.py"
     if 'history' in input_global_attributes:
-        input_global_attributes['history'] = input_global_attributes[history] + climo_history
+        input_global_attributes['history'] = input_global_attributes['history'] + climo_history
     else:
         input_global_attributes['history'] = climo_history
 
@@ -224,69 +241,79 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
     redfilenames = []
     redfiles = {}  # reduced files
     for seasonname in seasonnames:
-        print "doing season",seasonname
-        sredfiles = {}  # season reduced files
-        datafilenames = [fn for fn in datafilenames if fn not in omit_files[seasonname]]
-        datafilenames2 = restrict_to_season( datafilenames, seasonname )
-        if len(datafilenames2)<=0:
-            print "WARNING, no input data, skipping season",seasonname
-            continue
-        season = daybounds(seasonname)
-        # ... assumes noleap calendar, returns time in days.
-        init_red_tbounds = numpy.array( season, dtype=numpy.int32 )
-        fileout = fileout_template.replace('XXX',seasonname)
-        g, out_varnames, tmin, tmax = initialize_redfile_from_datafile(
-            fileout, varnames, datafilenames2[0], dt, init_red_tbounds )
-        # g is the (newly created) climatology file.  It's open in 'w' mode.
-        season_tmin = tmin
-        season_tmax = tmax
-        redfilenames.append(fileout)
-        redfiles[fileout] = g
-        sredfiles[fileout] = g
+        redfilenames, redfiles =\
+            climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_template,
+                              data_time, calendar, dt, redfilenames, redfiles,
+                              input_global_attributes )
+
+def climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_template,
+                      data_time, calendar, dt, redfilenames, redfiles,
+                      input_global_attributes ):
+    print "doing season",seasonname
+    sredfiles = {}  # season reduced files
+    datafilenames = [fn for fn in datafilenames if fn not in omit_files[seasonname]]
+    datafilenames2 = restrict_to_season( datafilenames, seasonname )
+    if len(datafilenames2)<=0:
+        print "WARNING, no input data, skipping season",seasonname
+        return redfilenames, redfiles
+    season = daybounds(seasonname)
+    # ... assumes noleap calendar, returns time in days.
+    init_red_tbounds = numpy.array( season, dtype=numpy.int32 )
+    fileout = fileout_template.replace('XXX',seasonname)
+    g, out_varnames, tmin, tmax = initialize_redfile_from_datafile(
+        fileout, varnames, datafilenames2[0], dt, init_red_tbounds )
+    # g is the (newly created) climatology file.  It's open in 'w' mode.
+    season_tmin = tmin
+    season_tmax = tmax
+    redfilenames.append(fileout)
+    redfiles[fileout] = g
+    sredfiles[fileout] = g
+    redtime = g.getAxis('time')
+    redtime.units = 'days since 0'
+    redtime.long_name = 'climatological time'
+    redtime.calendar = calendar
+    redtime_wts = g['time_weights']
+    redtime_bnds = g[ g.getAxis('time').bounds ]
+    redvars = [ g[varn] for varn in out_varnames ]
+
+    tmin, tmax = update_time_avg_from_files( redvars, redtime_bnds, redtime_wts, datafilenames2,
+                                fun_next_tbounds = (lambda rtb,dtb,dt=dt: rtb),
+                                redfiles=sredfiles.values(), dt=dt )
+    season_tmin = min( tmin, season_tmin )
+    season_tmax = max( tmax, season_tmax )
+
+    if len(redtime)==2:
+        # reduce_twotimes2one() will close the supplied g, and return a g opened in 'r+' mode...
+        g = reduce_twotimes2one( seasonname, fileout_template, fileout, g, redtime,
+                                 redtime_bnds, redtime_wts, redvars )
         redtime = g.getAxis('time')
-        redtime.units = 'days since 0'
-        redtime.long_name = 'climatological time'
-        redtime.calendar = calendar
-        redtime_wts = g['time_weights']
         redtime_bnds = g[ g.getAxis('time').bounds ]
-        redvars = [ g[varn] for varn in out_varnames ]
 
-        tmin, tmax = update_time_avg_from_files( redvars, redtime_bnds, redtime_wts, datafilenames2,
-                                    fun_next_tbounds = (lambda rtb,dtb,dt=dt: rtb),
-                                    redfiles=sredfiles.values(), dt=dt )
-        season_tmin = min( tmin, season_tmin )
-        season_tmax = max( tmax, season_tmax )
+    for a in input_global_attributes:
+        setattr( g,a, input_global_attributes[a] )
+    if 'source' in input_global_attributes:
+        g.source += ", climatologies from "+str(datafilenames)
+    else:
+        g.source = str(datafilenames)
+    g.season = seasonname
+    g.Conventions = 'CF-1.7'
 
-        if len(redtime)==2:
-            # reduce_twotimes2one() will close the supplied g, and return a g opened in 'r+' mode...
-            g = reduce_twotimes2one( seasonname, fileout_template, fileout, g, redtime,
-                                     redtime_bnds, redtime_wts, redvars )
-            redtime = g.getAxis('time')
-            redtime_bnds = g[ g.getAxis('time').bounds ]
-
-        for a in input_global_attributes:
-            setattr( g,a, input_global_attributes[a] )
-        if 'source' in input_global_attributes:
-            g.source += ", climatologies from "+str(datafilenames)
-        else:
-            g.source = str(datafilenames)
-        g.season = seasonname
-        g.Conventions = 'CF-1.7'
-
-        # At this point, for each season the time axis should have long name "climatological time"
-        # with units "days since 0", a value in the range [0,365] and in the midpoint of its bounds.
-        # But the CF Conventions, section 7.4 "Climatological Statistics" call for the time units
-        # and value to correspond to the original data.  Fix it up here
-        # For the time correction, use the lowest time in the data units, and the lowest time in "years since 0" units.
-        deltat = season_tmin - redtime_bnds[0][0]
-        redtime[:] += deltat
-        redtime_bnds[:] += deltat
-        redtime.units = data_time.units
-        redtime_bnds.units = redtime.units
-        g['time_climo'][:] = [ season_tmin, season_tmax ]
-        g['time_climo'].initialized = 'yes'
-        g['time_climo'].units = g['time'].units
-        g.close()
+    # At this point, for each season the time axis should have long name "climatological time"
+    # with units "days since 0", a value in the range [0,365] and in the midpoint of its bounds.
+    # But the CF Conventions, section 7.4 "Climatological Statistics" call for the time units
+    # and value to correspond to the original data.  Fix it up here
+    # For the time correction, use the lowest time in the data units, and the lowest time in "years since 0" units.
+    deltat = season_tmin - redtime_bnds[0][0]
+    redtime[:] += deltat
+    redtime_bnds[:] += deltat
+    redtime.units = data_time.units
+    redtime_bnds.units = redtime.units
+    g['time_climo'][:] = [ season_tmin, season_tmax ]
+    g['time_climo'].initialized = 'yes'
+    g['time_climo'].units = g['time'].units
+    print "jfp time_climo=",g['time_climo'][:]
+    g.close()
+    return redfilenames, redfiles
 
 if __name__ == '__main__':
     p = argparse.ArgumentParser(description="Climatology")
