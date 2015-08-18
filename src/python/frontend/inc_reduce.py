@@ -586,9 +586,18 @@ def update_time_avg_from_files( redvars0, redtime_bnds, redtime_wts, filenames,
     tmax = -1.0e10
     for filen in filenames:
         f = cdms2.open(filen)
-        data_tbounds = f.getAxis('time').getBounds()
-        tmin = min( tmin, data_tbounds[0][0] )
-        tmax = max( tmax, data_tbounds[-1][-1] )
+        ftime = f.getAxis('time')
+        data_tbounds = ftime.getBounds()
+        # Compute tmin, tmax which represent the range of times for the data we computed with.
+        # For regular model output files, these should come from the time bounds.
+        # For a climatology file, they should come from the climatology attribute of time.
+        if hasattr( ftime,'climatology' ):
+            time_climo = f[ftime.climatology]
+            tmin = min( tmin, time_climo[0][0] )
+            tmax = max( tmax, time_climo[-1][-1] )
+        else:
+            tmin = min( tmin, data_tbounds[0][0] )
+            tmax = max( tmax, data_tbounds[-1][-1] )
         newvard = {}
         redvard = {}
         varids = []
