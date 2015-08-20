@@ -20,7 +20,6 @@ set wd=`cd $rootdir && pwd`
 
 
 set figname = ''
-echo "TODO make 3 separate gsn_open_wks plots so we can control filenames"
 while ( $#argv != 0)
    switch ($argv[1])
       case '--diagname': # this is a --model ...name={name} argument passed in
