@@ -19,6 +19,10 @@ from unidata import udunits
 import cdutil.times, numpy
 from numbers import Number
 from pprint import pprint
+try:
+    from mpi4py import MPI
+except:
+    pass
 
 seasonsyr=cdutil.times.Seasons('JFMAMJJASOND')
 
@@ -1761,6 +1765,44 @@ class amwg_plot_set8(amwg_plot_spec):
         if not self.computation_planned:
             self.plan_computation( model, obs, varid, seasonid, levels=levels )
 
+        nReducedVariables = len(self.reduced_variables)
+        self.MPI_imported = 'mpi4py.MPI' in sys.modules.keys()
+        
+        if self.MPI_imported:
+            self.comm = MPI.COMM_WORLD
+            self.size = self.comm.size
+            self.rank = self.comm.rank
+        else:
+            self.comm = MPI.COMM_WORLD
+            self.size = 1
+            self.rank = 0
+               
+        self.master = 0
+        
+        if self.rank is self.master:
+            start = 0
+            length = max(2,nReducedVariables/self.size)
+            slice_index = 0
+            allSLICES = []
+            for j in range(self.size):
+                SLICES = []
+                for k in range(length):
+                    SLICES += [slice(slice_index, slice_index+1, None)]
+                    slice_index += 1
+                #if slice_index < nReducedVariables:
+                #    SLICES += [slice(slice_index, slice_index+1, None)]
+                allSLICES +=  [SLICES]
+                
+            print 'slices = ', allSLICES
+            #pdb.set_trace()
+            #if self.rank is self.master:
+            #self.SLICE = self.comm.scatter(allSLICES, root=self.master)
+            #print 'rank=', self.rank, 'slice=', self.SLICE
+        else:
+            allSLICES = None
+
+        self.SLICE = self.comm.scatter(allSLICES, root=self.master)
+        print 'rank=', self.rank, 'slice=', self.SLICE
     def plan_computation( self, model, obs, varid, seasonid, levels=None ):
         filetable1, filetable2 = self.getfts(model, obs)
 
@@ -1787,7 +1829,7 @@ class amwg_plot_set8(amwg_plot_spec):
                 self.reduced_variables[RV.id()] = RV
                 VIDs += [VID]
             vidAll[FT] = VIDs               
-        #print self.reduced_variables.keys()
+        print self.reduced_variables.keys()
         vidModel = dv.dict_id(varid, 'ZonalMean model', self._seasonid, filetable1)
         if self.FT2:
             vidObs  = dv.dict_id(varid, 'ZonalMean obs', self._seasonid, filetable2)
