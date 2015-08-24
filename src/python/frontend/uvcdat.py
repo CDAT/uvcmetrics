@@ -1004,10 +1004,20 @@ class plot_spec(object):
         that means a coarser grid, typically from regridding model data to the obs grid.
         In the future regrid>0 will mean regrid everything to the finest grid and regrid<0
         will mean regrid everything to the coarsest grid."""
-
-        for v in self.reduced_variables.keys():
-            #print v
+        #print 'slices'
+        #print self.rank, len(self.SLICE)
+        #print self.SLICE
+        #print 'variable keys', self.rank, len(self.reduced_variables.keys()), 'seasonid' in self.reduced_variables.keys()
+        #print self.reduced_variables.keys()
+        print 'the compute loop rank = ',self.rank, len(self.SLICE), 'seasonid' in self.variable_values.keys()
+        local_variable_values = {}
+        for SLICE in self.SLICE:
+            #print SLICE
+        #for v in self.reduced_variables[self.SLICE].keys():
+            [v] = self.reduced_variables.keys()[SLICE]
+            #print self.rank, v, SLICE
             value = self.reduced_variables[v].reduce(None)
+            #print 'check seasonid ', self.rank, 'seasonid' in self.variable_values.keys(), len(self.variable_values.keys())
             try:
                 if  len(value.data)<=0:
                     print "ERROR no data for",v
@@ -1017,11 +1027,39 @@ class plot_spec(object):
                         print "ERROR no data for",v
                 except: # value.size may not exist
                     pass
-            self.variable_values[v] = value  # could be None
+            #self.variable_values[v] = value  # could be None
+            local_variable_values[v] = value
             #print value.id, value.shape
+        print 'after compute loop check seasonid ', self.rank, len(local_variable_values.keys())
+        print local_variable_values.keys()
+        for key in local_variable_values.keys():
+            print self.rank, key, type(local_variable_values[key])
+        if self.MPI_imported:
+            print 'collect data on rank', self.rank, 'length of variables is ', len(local_variable_values)
+            #print self.rank, self.variable_values.keys()
+            #pdb.set_trace()
+            local_variable_values = self.comm.gather(local_variable_values.keys(), root=self.master)
+            sys.stdout.flush()
+            
+            print 'after gather ', self.rank, len(local_variable_values)
+            print ' '
+            print local_variable_values[0]
+            print ' '
+            print local_variable_values[1]
+            self.comm.barrier()
+            if self.rank is self.master:
+                for lvv in local_variable_values:
+                    print self.rank, type(lvv)
+                    self.variable_values.update(lvv)
+            print self.variable_values.keys()
+            
+            #if self.rank != 0:
+            #    sys.exit()
             #pdb.set_trace()
         postponed = []   # derived variables we won't do right away
-
+        
+        #if self.rank is not self.master:
+        #    return None
         #print 'derived var'
         for v in self.derived_variables.keys():
             #pdb.set_trace()
