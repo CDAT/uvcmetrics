@@ -18,7 +18,7 @@ increasing.  That is, for any times tn, tm in files filen, filem, if n>m then tn
 #   then other seasons from the months (probably slower on Rhea, but maybe not).
 
 from metrics.frontend.inc_reduce import *
-import os, re
+import os, re, time
 import argparse
 from pprint import pprint
 
@@ -233,6 +233,12 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
     else:
         input_global_attributes['history'] = climo_history
 
+    if 'ALL' in seasonnames:
+        allseasons = True
+        seasonnames = [ 'ANN', 'DJF', 'MAM', 'JJA', 'SON', 'JAN', 'FEB', 'MAR', 'APR', 'MAY',
+                        'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC' ]
+    else:
+        allseasons = False
     omit_files = {seasonname:[] for seasonname in seasonnames}
     for omits in omitBySeason:
         omit_files[omits[0]] = omits[1:]
@@ -240,11 +246,99 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
     dt = 0      # specifies climatology file
     redfilenames = []
     redfiles = {}  # reduced files
+
     for seasonname in seasonnames:
+        if allseasons: t1=time.time()
         redfilenames, redfiles =\
             climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_template,
                               data_time, calendar, dt, redfilenames, redfiles,
                               input_global_attributes )
+        if allseasons:
+            t2=time.time()
+            print "original, season",seasonname,"time is",t2-t1
+
+    if allseasons:
+        # Experimental alternative computation, use monthly climatologies to compute the others.
+        # Output is to "test_*" files, in addition to what was requested for specific seasons.
+        ft_bn = 'test_' + os.path.basename( fileout_template )
+        ft_dn = os.path.dirname( fileout_template )
+        fileout_template = os.path.join( ft_dn, ft_bn )
+        seasons_1mon =\
+            [ 'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC' ]
+        seasons_mmon = [ 'ANN', 'DJF', 'MAM', 'JJA', 'SON' ]
+        for seasonname in seasons_1mon:
+            t1=time.time()
+            redfilenames, redfiles =\
+                climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_template,
+                                  data_time, calendar, dt, redfilenames, redfiles,
+                                  input_global_attributes )
+            t2=time.time()
+            print "allseasons, season",seasonname,"time is",t2-t1
+        omit_files = {seasonname:[] for seasonname in seasonnames}
+        # <<<< TO DO <<<<< Use the omitBySeason correctly.  This code is potentially WRONG <<<<
+        # >>>> Actually, using omitBySeason correctly requires un-dong an average, which is possible
+        # >>>> but requires re-reading the files to be omitted (there will be 1-3 such files)
+        # >>>> It also requires the climatology-based weights to be compatible with the model-data-
+        # >>>> based weights.
+
+        # For each multi-month season, change datafilenames to the 1-month climatology files
+        seasonname = 'ANN'
+        datafilenames = []
+        t1=time.time()
+        for sn in seasons_1mon:
+            datafilenames.append( fileout_template.replace('XXX',sn) )
+        redfilenames, redfiles =\
+            climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_template,
+                              data_time, calendar, dt, redfilenames, redfiles,
+                              input_global_attributes )
+        t2=time.time()
+        print "allseasons, season ANN, time is",t2-t1
+        t1=time.time()
+        seasonname = 'DJF'
+        datafilenames = []
+        for sn in ['JAN','FEB','DEC']:
+            datafilenames.append( fileout_template.replace('XXX',sn) )
+        redfilenames, redfiles =\
+            climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_template,
+                              data_time, calendar, dt, redfilenames, redfiles,
+                              input_global_attributes )
+        t2=time.time()
+        print "allseasons, season DJF, time is",t2-t1
+        t1=time.time()
+        seasonname = 'MAM'
+        datafilenames = []
+        for sn in ['MAR','APR','MAY']:
+            datafilenames.append( fileout_template.replace('XXX',sn) )
+        redfilenames, redfiles =\
+            climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_template,
+                              data_time, calendar, dt, redfilenames, redfiles,
+                              input_global_attributes )
+        t2=time.time()
+        print "allseasons, season MAM, time is",t2-t1
+        t1=time.time()
+        seasonname = 'JJA'
+        datafilenames = []
+        for sn in ['JUN','JUL','AUG']:
+            datafilenames.append( fileout_template.replace('XXX',sn) )
+        redfilenames, redfiles =\
+            climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_template,
+                              data_time, calendar, dt, redfilenames, redfiles,
+                              input_global_attributes )
+        t2=time.time()
+        print "allseasons, season JJA, time is",t2-t1
+        t1=time.time()
+        seasonname = 'SON'
+        datafilenames = []
+        for sn in ['SEP','OCT','NOV']:
+            datafilenames.append( fileout_template.replace('XXX',sn) )
+        redfilenames, redfiles =\
+            climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_template,
+                              data_time, calendar, dt, redfilenames, redfiles,
+                              input_global_attributes )
+        t2=time.time()
+        print "allseasons, season SON, time is",t2-t1
+
+
 
 def climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_template,
                       data_time, calendar, dt, redfilenames, redfiles,
@@ -311,7 +405,6 @@ def climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_t
     g['time_climo'][:] = [ season_tmin, season_tmax ]
     g['time_climo'].initialized = 'yes'
     g['time_climo'].units = g['time'].units
-    print "jfp time_climo=",g['time_climo'][:]
     g.close()
     return redfilenames, redfiles
 

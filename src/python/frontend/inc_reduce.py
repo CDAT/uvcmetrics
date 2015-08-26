@@ -247,18 +247,20 @@ def adjust_time_for_climatology( newtime, redtime ):
     newtime.setBounds( newtime.getBounds() - N*365 ) # >>>> assumes noleap calendar, day time units!
     return newtime
 
-def two_pt_avg( mv1, mv2, a1, a2, sw1, sw2 ):
+def two_pt_avg( mv1, mv2, i, a2, sw1, sw2 ):
     """Input:
-    FileVariables mv1,mv2;  numpy arrays a1,a2 which are subsetted from the data of mv1,mv2
-    by fixing a point on the first, time, axis;   scalar weights sw1,sw2.
+    FileVariables mv1,mv2;  i, (time) index to subset mv1 as a1=mv1[i], a
+    corresponding array a2 from mv2, also formed by fixing a point on the first, time, axis;
+    scalar weights sw1,sw2.
     Output:   weighted average a of a1 and a2.
     The weights will be scalar weights unless an array weight must be used because either:
-    an array wright is already an attribute of mv1 or mv2; or
+    an array weight is already an attribute of mv1 or mv2; or
     v1 and v2 do not have the same mask.
-    If an array weight is used, it will become an attribute of the first variable mv1.
-
-    >>>> should supply a slice spec, not data a1,a2.  Use it both for extracting the data and weights
+    If an array weight is used, it will become an attribute of the first variable mv1,
+    and take its shape.  Normally mv1 is going to be where averages get accumulated,
+    so if there is more than one time, it will appear in mv1 but not the input data mv2.
     """
+    a1 = mv1[i]
     w1 = sw1
     w2 = sw2
 
@@ -273,9 +275,15 @@ def two_pt_avg( mv1, mv2, a1, a2, sw1, sw2 ):
         f2 = mv2.parent # the (open) file corresponding to the FileVariable mv2
         w2 = f2(mv2.vwgts)
     if (not hasattr(w1,'shape') or len(w1.shape)==0) and hasattr(w2,'shape') and len(w2.shape)>0:
-        w1 = numpy.full( a1.shape, w1 )
+        #jfp was w1 = numpy.full( a1.shape, w1 )
+        w1 = numpy.full( mv1.shape, -1 )
+        w1[i] = sw1
+        w1 = numpy.ma.masked_less(w1,0)
     if (not hasattr(w2,'shape') or len(w2.shape)==0) and hasattr(w1,'shape') and len(w1.shape)>0:
-        w2 = numpy.full( a2.shape, w2 )
+        #jfp was w2 = numpy.full( a2.shape, w2 )
+        w2 = numpy.full( mv1.shape, -1 )   # assumes mv1 time axis is >= mv2 time axis
+        w2[i] = sw2
+        w2 = numpy.ma.masked_less(w2,0)
     if (not hasattr(w1,'shape') or len(w1.shape)==0) and\
             (not hasattr(w2,'shape') or len(w2.shape)==0):
         mask1 = False
@@ -296,16 +304,26 @@ def two_pt_avg( mv1, mv2, a1, a2, sw1, sw2 ):
             # Note that this test requires reading all the data.  That has to be done anyway to compute
             # the average.  Let's hope that the system caches well enough so that there won't be any
             # file access cost to this.
-            w1 = numpy.full( a1.shape, w1 )
-            w2 = numpy.full( a2.shape, w2 )
+            #jfp was w1 = numpy.full( a1.shape, w1 )
+            #jfp was w2 = numpy.full( a2.shape, w2 )
+            w1 = numpy.full( mv1.shape, -1 )
+            w1[i] = sw1
+            w1 = numpy.ma.masked_less(w1,0)
+            w2 = numpy.full( mv1.shape, -1 )
+            w2[i] = sw2
+            w2 = numpy.ma.masked_less(w2,0)
 
     if hasattr(w1,'shape') and len(w1.shape)>0 and hasattr(w2,'shape') and len(w2.shape)>0:
+        if w1[i].mask.all():   # if w1[i] is all missing values:
+            w1[i] = sw1
+        if w2[i].mask.all():   # if w1[i] is all missing values:
+            w2[i] = sw2
         # Here's what I think the numpy.ma averager does about weights and missing values:
         # The output weight w(i)=sw1+sw2 if there be no missing value for mv1(i) and mv2(i) (maybe
         # also if both be missing, because the weight doesn't matter then).
         # But if i be missing for mv1, drop sw1, thus w(i)=sw2.  If i be missing for mv2, drop sw2.
         a,w = numpy.ma.average( numpy.ma.array((a1,a2)), axis=0,
-                                weights=numpy.ma.array((w1,w2)), returned=True )
+                                weights=numpy.ma.array((w1[i],w2[i])), returned=True )
         # Avoid the occasional surprise about float32/float64 data types:
         a = a.astype( a1.dtype )
         w = w.astype( a.dtype )
@@ -313,11 +331,14 @@ def two_pt_avg( mv1, mv2, a1, a2, sw1, sw2 ):
         f1 = mv1.parent # the (open) file corresponding to the FileVariable mv1
         w1id = mv1.id+'_vwgts'
         if not hasattr(mv1,'vwgts'):
-            w1axes = mv1.getAxisList()[1:]
+            #jfp was w1axes = mv1.getAxisList()[1:]
+            w1axes = mv1.getAxisList()
             w1attributes = {}
             addVariable( f1, w1id, 'd', w1axes, w1attributes )
         f1w = f1[w1id]
-        f1w[:] = w
+        f1w[:] = w1
+        #jfp was f1w[:] = w
+        f1w[i] = w
         # TypeError: 'CdmsFile' object does not support item assignment    f1[w1id] = w
         mv1.vwgts = w1id
     else:
@@ -498,7 +519,9 @@ def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds, 
                                 ( redtime_wts[i] + newtime_wts[j,k] )
                 elif redvar.getTime() is None and redvar.initialized=='no':
                     redvar.assignValue(newvar)
-                elif redvar.initialized=='yes':
+                #jfp was elif redvar.initialized=='yes':
+                elif not redvar[i].mask.all():   # i.e., redvar[i] is not entirely missing data
+                                                 # i.e., redvar[i] has been initialized
                     if newtime_wts[j,k]>0:
                         if False:  # development code
                             #  Experimental method using numpy average function, properly treats
@@ -515,7 +538,7 @@ def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds, 
                             redvari = redvari.astype( redvar.dtype )
 
                         # Don't miss this line, it's where the average is computed:
-                        redvar[i] = two_pt_avg( redvar, newvar, redvar[i], newvar[j],
+                        redvar[i] = two_pt_avg( redvar, newvar, i, newvar[j],
                                                 redtime_wts[i], newtime_wts[j,k] )
 
                         if False and not numpy.ma.allclose( redvari, redvar[i] ):  # debugging, development code
