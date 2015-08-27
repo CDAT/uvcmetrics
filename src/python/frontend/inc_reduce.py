@@ -520,7 +520,8 @@ def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds, 
                 elif redvar.getTime() is None and redvar.initialized=='no':
                     redvar.assignValue(newvar)
                 #jfp was elif redvar.initialized=='yes':
-                elif not redvar[i].mask.all():   # i.e., redvar[i] is not entirely missing data
+                elif (not hasattr(redvar[i],'mask') and redvar.initialized=='yes') or\
+                        (hasattr(redvar[i],'mask') and not redvar[i].mask.all()):   # i.e., redvar[i] is not entirely missing data
                                                  # i.e., redvar[i] has been initialized
                     if newtime_wts[j,k]>0:
                         if False:  # development code
