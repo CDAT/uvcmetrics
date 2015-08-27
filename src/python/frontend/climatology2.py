@@ -51,8 +51,9 @@ def restrict_to_season( datafilenames, seasonname ):
     If any filename does not meet the expected format, then no filenames will be rejected.
     """
     newfns = []
-    if datafilenames[0][-8:]=='climo.nc':
+    if datafilenames[0][-8:]=='climo.nc' or datafilenames[0][-13:]=='climo-cdat.nc':
         # climatology file, should be for a one-month season as input for a multi-month season
+        # The climo-cdat.nc is specifically for Peter Caldwell's test script.
         if seasonname not in season2almonth:
             return newfns
         for fn in datafilenames:
