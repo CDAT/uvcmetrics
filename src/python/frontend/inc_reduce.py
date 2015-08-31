@@ -103,6 +103,8 @@ def next_tbounds_prescribed_step( red_time_bnds, data_time_bnds, dt ):
     This uses data_time_bnds only to use its lowest bound in initialization of red_time_bnds.
     This is intended to be called from another function, e.g. a lambda expression which includes
     a fixed step size."""
+    # Normally the numbers in the return value are an integers between 0 and 365,
+    # representing a time in days
     if len(red_time_bnds)==0:
         t0 = data_time_bnds[0][0]
         return numpy.array([[t0,t0+dt]])
@@ -127,7 +129,8 @@ def initialize_redfile( filen, axisdict, typedict, attdict, varnames ):
     g['time_weights'].initialized = 'no'
     return g;
 
-def initialize_redfile_from_datafile( redfilename, varnames, datafilen, dt=-1, init_red_tbounds=None ):
+def initialize_redfile_from_datafile( redfilename, varnames, datafilen, dt=-1, init_red_tbounds=None,
+                                      force_double=True ):
     """Initializes a file containing the partially-time-reduced average data, given the names
     of the variables to reduce and the name of a data file containing those variables with axes.
     The file is created and returned in an open state.  Closing the file is up to the calling function.
@@ -155,6 +158,7 @@ def initialize_redfile_from_datafile( redfilename, varnames, datafilen, dt=-1, i
         else:
             red_time_bnds = init_red_tbounds
         red_time = [ 0.5*(tb[0]+tb[1]) for tb in red_time_bnds ]
+        # tb[?] can be expected to be an integer,  red_time 64-bit float.
         timeaxis = cdms2.createAxis( red_time, red_time_bnds, 'time' )
         timeaxis.bounds = 'time_bnds'
         timeaxis.climatology = 'time_climo'
@@ -163,6 +167,16 @@ def initialize_redfile_from_datafile( redfilename, varnames, datafilen, dt=-1, i
         attdict['time'] = { 'bounds':'time_bnds', 'long_name':'climatological_time' }
         if dt==0:
             attdict['time']['climatology'] = 'time_climo'
+        if force_double and typedict['time']=='f':
+            # I think that time is always double, but let's make sure:
+            typedict['time']='d'
+            new_dtype = numpy.float64
+            if '_FillValue' in attdict['time']:
+                attdict['time']['_FillValue'] = attdict['time']['_FillValue'].astype( new_dtype )
+                if 'missing_value' in attdict['time']:
+                    attdict['time']['missing_value'] =\
+                        attdict['time']['missing_value'].astype( new_dtype )
+
     out_varnames = []
     for varn in varnames:
         if f[varn] is None:
@@ -194,19 +208,28 @@ def initialize_redfile_from_datafile( redfilename, varnames, datafilen, dt=-1, i
             attdict[varn]['cell_methods'] += ', time: mean'
         attdict[varn]['initialized'] = 'no'
 
+        if force_double and typedict[varn]=='f':
+            typedict[varn]='d'
+            new_dtype = numpy.float64
+            if '_FillValue' in attdict[varn]:
+                attdict[varn]['_FillValue'] = attdict[varn]['_FillValue'].astype( new_dtype )
+                if 'missing_value' in attdict[varn]:
+                    attdict[varn]['missing_value'] =\
+                        attdict[varn]['missing_value'].astype( new_dtype )
+
     for ax in boundless_axes:
         print "WARNING, axis",ax.id,"has no bounds"
     if timeaxis is not None:
         tbndaxis = cdms2.createAxis( [0,1], None, 'tbnd' )
 
         axisdict['time_bnds'] = [timeaxis,tbndaxis]
-        typedict['time_bnds'] = timeaxis.typecode()
+        typedict['time_bnds'] = timeaxis.typecode() # always 'd'
         attdict['time_bnds'] = {'initialized':'no'}
 
         if dt==0:
             out_varnames.append('time_climo')
             axisdict['time_climo'] = [timeaxis,tbndaxis]
-            typedict['time_climo'] = timeaxis.typecode()
+            typedict['time_climo'] = timeaxis.typecode() # always 'd'
             attdict['time_climo'] = {'initialized':'no'}
 
     g = initialize_redfile( redfilename, axisdict, typedict, attdict, out_varnames )
