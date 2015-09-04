@@ -153,18 +153,10 @@ def reduce_twotimes2one( seasonname, fileout_template, fileout, g, redtime, redt
                     # Time average makes no sense, any the existing value sdb ok.
                     h[var.id].assignValue(var[0:1])
                 else:
-                    #if var.id=='AODVIS_vwgts':
-                    #    print "jfp computing DJF",var.id,"from"
-                    #    print "jfp",var[0:1],"and"
-                    #    print "jfp",var[1:2]
-                    #print "jfp computing newvd from",var.id,var[0]
                     #newvd = (var[0:1]*redtime_wts[0] +
                     #         var[1:2]*redtime_wts[1])/(redtime_wts[0]+redtime_wts[1])
                     if hasattr( var, 'vwgts' ):
                         varw = g[ var.vwgts ]
-                        print "jfp"
-                        print "jfp varw at 233,0=",varw[0:2,233,0]
-                        print "jfp varw[1] shape=",varw[1].shape
                         newvd = two_pt_avg( var, var, 0, var[1], redtime_wts[0], redtime_wts[1],
                                             numpy.ma.array([varw[1]]) )
                     else:
