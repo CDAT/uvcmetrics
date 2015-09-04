@@ -681,9 +681,10 @@ def update_time_avg_from_files( redvars0, redtime_bnds, redtime_wts, filenames,
             try:
                 varid = redvar.id
                 newvar = f(varid)
-                # newvar is a TransientVariable, hence doesn't have the file as :parent.
-                # We need the file to get associated variables, so:
-                newvar.from_file = f
+                if hasattr(newvar,'id'):  # excludes an ordinary number
+                    # Usually newvar is a TransientVariable, hence doesn't have the file as :parent.
+                    # We need the file to get associated variables, so:
+                    newvar.from_file = f
                 testarray = numpy.array([0],newvar.dtype)
                 if isinstance( testarray[0], Number):
                     varids.append( varid )
