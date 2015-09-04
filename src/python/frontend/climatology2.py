@@ -34,7 +34,8 @@ season2nummonth = {
     '01':['01'], '02':['02'], '03':['03'], '04':['04'], '05':['05'], '06':['06'], '07':['07'],
     '08':['08'], '09':['09'], '10':['10'], '11':['11'], '12':['12'] }
 season2almonth = {
-    'ANN': ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'],
+    'ANN': ['DJF', 'MAM', 'JJA', 'SON',
+            'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'],
     'DJF': ['JAN', 'FEB', 'DEC'],
     'MAM': ['MAR', 'APR', 'MAY'],
     'JJA': ['JUN', 'JUL', 'AUG'],
@@ -105,17 +106,15 @@ def reduce_twotimes2one( seasonname, fileout_template, fileout, g, redtime, redt
         axes = [ timeax, g['time_bnds'].getDomain()[1][0] ]  # time, bnds shapes 1, 2.
         addVariable( h, 'time_bnds', 'd', axes, {} )
 
+        #for var in redvars:
+        #    # Include the variable's associated weight variable, if any...
+        #    if hasattr(var,'vwgts'):
+        #        redvars.append( g[var.vwgts] )
         for iv,var in enumerate(redvars):
-            try: #jfp
-                if len(var.getDomain())>0:
-                    axes = [ dom[0] for dom in var.getDomain() ]
-                else:
-                    axes = []
-            except ValueError as e: #jfp
-                if len(var.getDomain())>0:
-                    jfpaxes = [ dom[0] for dom in var.getDomain() ]
-                    axes = [ dom[0] for dom in var.getDomain() ]
-                #raise e
+            if len(var.getDomain())>0:
+                axes = [ dom[0] for dom in var.getDomain() ]
+            else:
+                axes = []
             # Get attributes of var from g for h...
             attdict = {}
             for att,val in g[var.id].__dict__.items() :
@@ -154,11 +153,32 @@ def reduce_twotimes2one( seasonname, fileout_template, fileout, g, redtime, redt
                     # Time average makes no sense, any the existing value sdb ok.
                     h[var.id].assignValue(var[0:1])
                 else:
-                    newvd = (var[0:1]*redtime_wts[0] +
-                             var[1:2]*redtime_wts[1])/(redtime_wts[0]+redtime_wts[1])
+                    #if var.id=='AODVIS_vwgts':
+                    #    print "jfp computing DJF",var.id,"from"
+                    #    print "jfp",var[0:1],"and"
+                    #    print "jfp",var[1:2]
+                    #print "jfp computing newvd from",var.id,var[0]
+                    #newvd = (var[0:1]*redtime_wts[0] +
+                    #         var[1:2]*redtime_wts[1])/(redtime_wts[0]+redtime_wts[1])
+                    if hasattr( var, 'vwgts' ):
+                        varw = g[ var.vwgts ]
+                        print "jfp"
+                        print "jfp varw at 233,0=",varw[0:2,233,0]
+                        print "jfp varw[1] shape=",varw[1].shape
+                        newvd = two_pt_avg( var, var, 0, var[1], redtime_wts[0], redtime_wts[1],
+                                            numpy.ma.array([varw[1]]) )
+                    else:
+                        newvd = two_pt_avg( var, var, 0, var[1], redtime_wts[0], redtime_wts[1] )
                     #newvar = cdms2.createVariable( newvd, id=var.id, axes=axes )
                     # h[var.id][:] = newvd[:] # doesn't work for scalar-valued variables
                     h[var.id].assignValue(newvd)
+                    if hasattr( var, 'vwgts' ):
+                        varwid = var.vwgts
+                        if varwid not in h.variables:
+                            addVariable( h, varwid, 'd', axes, {} )
+                        # Note that two_pt_avg sticks the new weights where weights
+                        # were for mv1, i.e. var in this case...
+                        h[varwid].assignValue( g(varwid)[0:1] )
         #h.write( cdms2.createVariable( [newwt], id='time_weights' ) )
         assert( g['time_bnds'].shape == (2,2) )
         g00 = g['time_bnds'][0][0]
@@ -248,25 +268,17 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
     redfilenames = []
     redfiles = {}  # reduced files
 
-    for seasonname in seasonnames:
-        if allseasons: t1=time.time()
-        redfilenames, redfiles =\
-            climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_template,
-                              data_time, calendar, dt, redfilenames, redfiles,
-                              input_global_attributes )
-        if allseasons:
-            t2=time.time()
-            print "original, season",seasonname,"time is",t2-t1
+    if allseasons and len(omitBySeason)==0:
+        # This block computes multi-month seasons from sngle-month climatology files.
+        # I've only implemented it for "all" seasons.  And I haven't implemented it for when
+        # anything is in omitBySeason.
 
-    if allseasons:
-        # Experimental alternative computation, use monthly climatologies to compute the others.
         # Output is to "test_*" files, in addition to what was requested for specific seasons.
         ft_bn = 'test_' + os.path.basename( fileout_template )
         ft_dn = os.path.dirname( fileout_template )
         fileout_template = os.path.join( ft_dn, ft_bn )
         seasons_1mon =\
             [ 'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC' ]
-        seasons_mmon = [ 'ANN', 'DJF', 'MAM', 'JJA', 'SON' ]
         for seasonname in seasons_1mon:
             t1=time.time()
             redfilenames, redfiles =\
@@ -276,24 +288,17 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
             t2=time.time()
             print "allseasons, season",seasonname,"time is",t2-t1
         omit_files = {seasonname:[] for seasonname in seasonnames}
-        # <<<< TO DO <<<<< Use the omitBySeason correctly.  This code is potentially WRONG <<<<
-        # >>>> Actually, using omitBySeason correctly requires un-dong an average, which is possible
-        # >>>> but requires re-reading the files to be omitted (there will be 1-3 such files)
-        # >>>> It also requires the climatology-based weights to be compatible with the model-data-
-        # >>>> based weights.
 
-        # For each multi-month season, change datafilenames to the 1-month climatology files
-        seasonname = 'ANN'
-        datafilenames = []
-        t1=time.time()
-        for sn in seasons_1mon:
-            datafilenames.append( fileout_template.replace('XXX',sn) )
-        redfilenames, redfiles =\
-            climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_template,
-                              data_time, calendar, dt, redfilenames, redfiles,
-                              input_global_attributes )
-        t2=time.time()
-        print "allseasons, season ANN, time is",t2-t1
+        # How would I use omitBySeason here?  It's possible, but some trouble to do.
+        # What you would do is to use some of the raw data, of the files to be omitted,
+        # to partially un-do an average to, e.g., DJF, or to supplement it - as needed
+        # Thus 1-3 raw (model output) files, typically, will have to be re-read.
+        # If I do this, I also will have to take some care about weights because right now
+        # the climatology-based weights are scaled differently from the model-data-
+        # based weights.
+        
+        # For each multi-month season, change datafilenames to the 1-month climatology files,
+        # or 3-month for ANN.
         t1=time.time()
         seasonname = 'DJF'
         datafilenames = []
@@ -338,7 +343,30 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
                               input_global_attributes )
         t2=time.time()
         print "allseasons, season SON, time is",t2-t1
+        t1=time.time()
+        seasonname = 'ANN'
+        datafilenames = []
+        for sn in ['DJF', 'MAM', 'JJA', 'SON']:
+            datafilenames.append( fileout_template.replace('XXX',sn) )
+        redfilenames, redfiles =\
+            climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_template,
+                              data_time, calendar, dt, redfilenames, redfiles,
+                              input_global_attributes )
+        t2=time.time()
+        print "allseasons, season ANN, time is",t2-t1
 
+    else:
+        # This is the simplest and most flexible way to compute climatologies - directly
+        # from the input model data.
+        for seasonname in seasonnames:
+            if allseasons: t1=time.time()
+            redfilenames, redfiles =\
+                climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_template,
+                                  data_time, calendar, dt, redfilenames, redfiles,
+                                  input_global_attributes )
+            if allseasons:
+                t2=time.time()
+                print "original, season",seasonname,"time is",t2-t1
 
 
 def climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_template,

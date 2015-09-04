@@ -42,6 +42,7 @@ import numpy, cdms2, sys, os, math
 from numbers import Number
 from pprint import pprint
 from metrics.packages.acme_regridder.scripts.acme_regrid import addVariable
+import debug
 
 # Silence annoying messages about setting the NetCDF file type.  Also, these three lines will
 # ensure that we get NetCDF-3 files.  Expansion of a FileAxis may not work on NetCDF-4 files.
@@ -200,7 +201,7 @@ def initialize_redfile_from_datafile( redfilename, varnames, datafilen, dt=-1, i
         # attributes:
         vdict = f[varn].__dict__
         attdict[varn] = {a:vdict[a] for a in vdict if (a=='_FillValue' or a[0]!='_')
-                         and a!='parent' and a!='autoApiInfo' and a!='domain'}
+                         and a!='parent' and a!='autoApiInfo' and a!='domain' and a!='vwgts'}
         # ...It would be worth reconstructing the domain attribute with the new axes.
         if 'cell_methods' not in attdict[varn]:
             attdict[varn]['cell_methods'] = 'time: mean'
@@ -270,7 +271,7 @@ def adjust_time_for_climatology( newtime, redtime ):
     newtime.setBounds( newtime.getBounds() - N*365 ) # >>>> assumes noleap calendar, day time units!
     return newtime
 
-def two_pt_avg( mv1, mv2, i, a2, sw1, sw2 ):
+def two_pt_avg( mv1, mv2, i, a2, sw1, sw2, aw2=None ):
     """Input:
     FileVariables mv1,mv2;  i, (time) index to subset mv1 as a1=mv1[i], a
     corresponding array a2 from mv2, also formed by fixing a point on the first, time, axis;
@@ -282,10 +283,16 @@ def two_pt_avg( mv1, mv2, i, a2, sw1, sw2 ):
     If an array weight is used, it will become an attribute of the first variable mv1,
     and take its shape.  Normally mv1 is going to be where averages get accumulated,
     so if there is more than one time, it will appear in mv1 but not the input data mv2.
+    The optional argument aw2 is meant to support array weights in the case where we are
+    averaging different parts of the same variable, i.e. mv1=mv2 but a1==mv1[i]!=a2.
+    If aw2 be supplied, it will be used as the array weight for mv2,a2.
     """
     a1 = mv1[i]
     w1 = sw1
-    w2 = sw2
+    if aw2 is not None:
+        w2 = aw2
+    else:
+        w2 = sw2
 
     # If array weights already exist for mv1 _or_ mv2, use them, and create array weights
     # for whatever doesn't have them.  If mv1,mv2 have different masks, then we need array
@@ -294,16 +301,16 @@ def two_pt_avg( mv1, mv2, i, a2, sw1, sw2 ):
     if hasattr( mv1, 'vwgts' ):
         f1 = mv1.parent # the (open) file corresponding to the FileVariable mv1
         w1 = f1(mv1.vwgts)
-    if hasattr( mv2, 'vwgts' ):
+    if hasattr( mv2, 'vwgts' ) and aw2 is None:
         f2 = mv2.parent # the (open) file corresponding to the FileVariable mv2
+        if f2 is None:
+            f2 = mv2.from_file # the (open) file corresponding to the TransientVariable mv2
         w2 = f2(mv2.vwgts)
     if (not hasattr(w1,'shape') or len(w1.shape)==0) and hasattr(w2,'shape') and len(w2.shape)>0:
-        #jfp was w1 = numpy.full( a1.shape, w1 )
         w1 = numpy.full( mv1.shape, -1 )
         w1[i] = sw1
         w1 = numpy.ma.masked_less(w1,0)
     if (not hasattr(w2,'shape') or len(w2.shape)==0) and hasattr(w1,'shape') and len(w1.shape)>0:
-        #jfp was w2 = numpy.full( a2.shape, w2 )
         w2 = numpy.full( mv1.shape, -1 )   # assumes mv1 time axis is >= mv2 time axis
         w2[i] = sw2
         w2 = numpy.ma.masked_less(w2,0)
@@ -339,7 +346,7 @@ def two_pt_avg( mv1, mv2, i, a2, sw1, sw2 ):
     if hasattr(w1,'shape') and len(w1.shape)>0 and hasattr(w2,'shape') and len(w2.shape)>0:
         if w1[i].mask.all():   # if w1[i] is all missing values:
             w1[i] = sw1
-        if w2[i].mask.all():   # if w1[i] is all missing values:
+        if w2[i].mask.all():   # if w2[i] is all missing values:
             w2[i] = sw2
         # Here's what I think the numpy.ma averager does about weights and missing values:
         # The output weight w(i)=sw1+sw2 if there be no missing value for mv1(i) and mv2(i) (maybe
@@ -354,13 +361,11 @@ def two_pt_avg( mv1, mv2, i, a2, sw1, sw2 ):
         f1 = mv1.parent # the (open) file corresponding to the FileVariable mv1
         w1id = mv1.id+'_vwgts'
         if not hasattr(mv1,'vwgts'):
-            #jfp was w1axes = mv1.getAxisList()[1:]
             w1axes = mv1.getAxisList()
             w1attributes = {}
             addVariable( f1, w1id, 'd', w1axes, w1attributes )
         f1w = f1[w1id]
         f1w[:] = w1
-        #jfp was f1w[:] = w
         f1w[i] = w
         # TypeError: 'CdmsFile' object does not support item assignment    f1[w1id] = w
         mv1.vwgts = w1id
@@ -378,7 +383,8 @@ def two_pt_avg( mv1, mv2, i, a2, sw1, sw2 ):
             pass
     return a
 
-def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds, dt=None ):
+def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds, dt=None,
+                     new_time_weights=None ):
     """Updates the time-reduced data for a list of variables.  The reduced-time and averaged
     variables are listed in redvars.  Its weights (for time averaging) are another variable,
     redtime_wts.
@@ -393,8 +399,11 @@ def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds, 
     next_tbounds is the next time interval, used if newvar is defined on a time beyond redvar's
     present time axis.  If next_tbounds==[], newvar will be ignored on such times.  Normally
     next_tbounds will be set to [] when updating a climatology file which has been initialized.
-    The last argument dt is used only in that dt=0 means that we are computing climatologies - hence
+    The penultimate argument dt is used only in that dt=0 means that we are computing climatologies - hence
     the new data's time axis must be adjusted before averaging the data into redvars.
+    The last argument is the time_weights global attribute of the data file, if any; it corresponds
+    to newvars.  This is expected to occur iff the data file is a climatology file written by
+    an earlier use of this module.
     """
 
     # >>>> TO DO <<<< Ensure that each redvar, redtime_wts, newvar have consistent units
@@ -436,7 +445,7 @@ def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds, 
     if dt==0:
         newtime = adjust_time_for_climatology( newtime, redtime )
     newtime_bnds = newtime.getBounds()
-    # newtime_wts[j][i] is the weight applied to the data at time newtime[j] in computing
+    # newtime_wts[j,i] is the weight applied to the data at time newtime[j] in computing
     # an average, reduced time for time newtime[ newtime_rti[i] ], 0<=i<2.
     # If newtime_rti[i]<0, that means the weight is 0.
     maxolaps = 3  # Maximum number of data time intervals which could overlap with a single
@@ -481,8 +490,8 @@ def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds, 
                 continue
             else:
                 k += 1
-                newtime_wts[j][k] = weight
-                newtime_rti[j][k] = i
+                newtime_wts[j,k] = weight
+                newtime_rti[j,k] = i
         #  This much simpler expression works if there is no overlap:
         #newtime_wts[j] = newtime_bnds[j][1] - newtime_bnds[j][0]
         kmax = k
@@ -491,6 +500,13 @@ def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds, 
         # e.g. for climatology of DJF, here is where we decide whether the file is a D,J,or F file.
         # Here kmax<0 if the file has no interesting time.
 
+    if new_time_weights is not None:
+        # The weights from a climatology file make sense only when time is simply structured.
+        # Otherwise, we don't know what to do.
+        for j,nt in enumerate(newtime):
+            for k in range(kmax+1)[1:]:
+                assert( newtime_wts[j,k] ==0 )
+        newtime_wts = numpy.array([new_time_weights.data])
     for j,nt in enumerate(newtime):
         for k in range(kmax+1):
             i = int( newtime_rti[j][k] )
@@ -587,14 +603,23 @@ def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds, 
                                         mrin = ri
                             #print "debug mrin,mrdn=",mrin,mrdn
                             #print "debug mrix,mrdx=",mrix,mrdx
-                            #print "jfp redvari-redvar[i][",mrix,":]=",redvari[mrix,:]-redvar[i][mrix,:]
                             #print "debug redvari  =",redvari,redvari.shape,redvari.dtype
                             #print "debug redvar[i]=",redvar[i],redvar[i].shape,redvar[i].dtype
                             #print "debug redvari mask  =",redvari.mask
                             #print "debug redvar[i] mask=",redvari.mask
                 else:
-                    # For averaging, unitialized is same as value=0 because redtime_wts is initialized to 0
+                    # For averaging, unitialized is same as value=0 because redtime_wts is
+                    # initialized to 0
                     redvar[i] = newvar[j]
+                    if hasattr( newvar, 'vwgts' ):
+                        redvar.vwgts = newvar.vwgts
+                        wid = redvar.vwgts
+                        frv = redvar.parent
+                        if wid not in frv.variables:
+                            waxes = redvar.getAxisList()
+                            addVariable( frv, wid, 'd', waxes, {} )
+                            frvw = frv[wid]
+                            frvw[:] = newvar.from_file( wid )[:]
             if redtime_wts.initialized=='yes':
                 redtime_wts[i] += newtime_wts[j,k]
             else:      # uninitialized is same as value=0
@@ -648,10 +673,17 @@ def update_time_avg_from_files( redvars0, redtime_bnds, redtime_wts, filenames,
         newvard = {}
         redvard = {}
         varids = []
+        if 'time_weights' in f.variables:
+            new_time_weights=f('time_weights')
+        else:
+            new_time_weights=None
         for redvar in redvars0:
             try:
                 varid = redvar.id
                 newvar = f(varid)
+                # newvar is a TransientVariable, hence doesn't have the file as :parent.
+                # We need the file to get associated variables, so:
+                newvar.from_file = f
                 testarray = numpy.array([0],newvar.dtype)
                 if isinstance( testarray[0], Number):
                     varids.append( varid )
@@ -675,7 +707,8 @@ def update_time_avg_from_files( redvars0, redtime_bnds, redtime_wts, filenames,
         if len(redfiles)==0:
             #redvars = redvars0
             tbnds = apply( fun_next_tbounds, ( redtime_bnds, data_tbounds ) )
-            update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, tbnds[-1], dt )
+            update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, tbnds[-1], dt=dt,
+                             new_time_weights=new_time_weights )
         else:
             for g in redfiles:
                 redtime = g.getAxis('time')
@@ -683,7 +716,8 @@ def update_time_avg_from_files( redvars0, redtime_bnds, redtime_wts, filenames,
                 redtime_bnds = g[ g.getAxis('time').bounds ]
                 redvars = [ g[varn] for varn in varids ]
                 tbnds = apply( fun_next_tbounds, ( redtime_bnds, data_tbounds ) )
-                update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, tbnds[-1], dt )
+                update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, tbnds[-1], dt=dt,
+                                 new_time_weights=new_time_weights )
         f.close()
     return tmin, tmax
 
