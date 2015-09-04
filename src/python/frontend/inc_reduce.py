@@ -42,7 +42,7 @@ import numpy, cdms2, sys, os, math
 from numbers import Number
 from pprint import pprint
 from metrics.packages.acme_regridder.scripts.acme_regrid import addVariable
-import debug
+#import debug
 
 # Silence annoying messages about setting the NetCDF file type.  Also, these three lines will
 # ensure that we get NetCDF-3 files.  Expansion of a FileAxis may not work on NetCDF-4 files.
