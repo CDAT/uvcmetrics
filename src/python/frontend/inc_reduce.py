@@ -681,6 +681,8 @@ def update_time_avg_from_files( redvars0, redtime_bnds, redtime_wts, filenames,
             try:
                 varid = redvar.id
                 newvar = f(varid)
+                if hasattr(newvar,'dtype') and newvar.dtype=='float32':
+                    newvar = newvar.astype('float64')
                 if hasattr(newvar,'id'):  # excludes an ordinary number
                     # Usually newvar is a TransientVariable, hence doesn't have the file as :parent.
                     # We need the file to get associated variables, so:
