@@ -131,7 +131,7 @@ def initialize_redfile( filen, axisdict, typedict, attdict, varnames ):
     return g;
 
 def initialize_redfile_from_datafile( redfilename, varnames, datafilen, dt=-1, init_red_tbounds=None,
-                                      force_double=True ):
+                                      force_double=False ):
     """Initializes a file containing the partially-time-reduced average data, given the names
     of the variables to reduce and the name of a data file containing those variables with axes.
     The file is created and returned in an open state.  Closing the file is up to the calling function.
