@@ -42,7 +42,7 @@ import numpy, cdms2, sys, os, math
 from numbers import Number
 from pprint import pprint
 from metrics.packages.acme_regridder.scripts.acme_regrid import addVariable
-import debug
+#import debug
 
 # Silence annoying messages about setting the NetCDF file type.  Also, these three lines will
 # ensure that we get NetCDF-3 files.  Expansion of a FileAxis may not work on NetCDF-4 files.
@@ -681,9 +681,12 @@ def update_time_avg_from_files( redvars0, redtime_bnds, redtime_wts, filenames,
             try:
                 varid = redvar.id
                 newvar = f(varid)
-                # newvar is a TransientVariable, hence doesn't have the file as :parent.
-                # We need the file to get associated variables, so:
-                newvar.from_file = f
+                if hasattr(newvar,'dtype') and newvar.dtype=='float32':
+                    newvar = newvar.astype('float64')
+                if hasattr(newvar,'id'):  # excludes an ordinary number
+                    # Usually newvar is a TransientVariable, hence doesn't have the file as :parent.
+                    # We need the file to get associated variables, so:
+                    newvar.from_file = f
                 testarray = numpy.array([0],newvar.dtype)
                 if isinstance( testarray[0], Number):
                     varids.append( varid )
