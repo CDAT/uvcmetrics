@@ -22,6 +22,7 @@ import os, re, time
 import argparse
 from pprint import pprint
 
+force_scalar_avg=False  # for testing
 season2nummonth = {
     'ANN': [ '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12' ],
     'DJF': [ '01', '02', '12' ],
@@ -265,8 +266,7 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
         # I've only implemented it for "all" seasons.  And I haven't implemented it for when
         # anything is in omitBySeason.
 
-        # Output is to "test_*" files, in addition to what was requested for specific seasons.
-        ft_bn = 'test_' + os.path.basename( fileout_template )
+        ft_bn = os.path.basename( fileout_template )
         ft_dn = os.path.dirname( fileout_template )
         fileout_template = os.path.join( ft_dn, ft_bn )
         seasons_1mon =\
@@ -364,6 +364,7 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
 def climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_template,
                       data_time, calendar, dt, redfilenames, redfiles,
                       input_global_attributes ):
+    global force_scalar_avg  # saves typing!
     print "doing season",seasonname
     sredfiles = {}  # season reduced files
     datafilenames = [fn for fn in datafilenames if fn not in omit_files[seasonname]]
@@ -393,7 +394,8 @@ def climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_t
 
     tmin, tmax = update_time_avg_from_files( redvars, redtime_bnds, redtime_wts, datafilenames2,
                                 fun_next_tbounds = (lambda rtb,dtb,dt=dt: rtb),
-                                redfiles=sredfiles.values(), dt=dt )
+                                redfiles=sredfiles.values(), dt=dt,
+                                force_scalar_avg=force_scalar_avg )
     season_tmin = min( tmin, season_tmin )
     season_tmax = max( tmax, season_tmax )
 
@@ -444,10 +446,13 @@ if __name__ == '__main__':
                "Omit files for just the specified season.  For multiple seasons, provide this"+
                    "argument multiple times. E.g. --omitBySeason DJF lastDECfile.nc\"",
                    nargs='+', action='append', default=[] )
+    p.add_argument("--forceScalarAvg", dest="forceScalarAvg", default=False, help=
+                   "For testing, forces use of a simple scalar average, ignoring missing values" )
     args = p.parse_args(sys.argv[1:])
     print "input args="
     pprint(args)
 
+    force_scalar_avg = args.forceScalarAvg
     climos( args.outfile[0], args.seasons, args.variables, args.infiles, args.omitBySeason )
 
     if False:
