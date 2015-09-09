@@ -131,7 +131,7 @@ def initialize_redfile( filen, axisdict, typedict, attdict, varnames ):
     return g;
 
 def initialize_redfile_from_datafile( redfilename, varnames, datafilen, dt=-1, init_red_tbounds=None,
-                                      force_double=True ):
+                                      force_double=False ):
     """Initializes a file containing the partially-time-reduced average data, given the names
     of the variables to reduce and the name of a data file containing those variables with axes.
     The file is created and returned in an open state.  Closing the file is up to the calling function.
@@ -271,7 +271,7 @@ def adjust_time_for_climatology( newtime, redtime ):
     newtime.setBounds( newtime.getBounds() - N*365 ) # >>>> assumes noleap calendar, day time units!
     return newtime
 
-def two_pt_avg( mv1, mv2, i, a2, sw1, sw2, aw2=None ):
+def two_pt_avg( mv1, mv2, i, a2, sw1, sw2, aw2=None, force_scalar_avg=False ):
     """Input:
     FileVariables mv1,mv2;  i, (time) index to subset mv1 as a1=mv1[i], a
     corresponding array a2 from mv2, also formed by fixing a point on the first, time, axis;
@@ -286,64 +286,69 @@ def two_pt_avg( mv1, mv2, i, a2, sw1, sw2, aw2=None ):
     The optional argument aw2 is meant to support array weights in the case where we are
     averaging different parts of the same variable, i.e. mv1=mv2 but a1==mv1[i]!=a2.
     If aw2 be supplied, it will be used as the array weight for mv2,a2.
+    The optional argument force_scalar_avg argument is for testing.  If set to True,
+    all computations involving array weights will be bypassed and simple scalar
+    weights used instead.
     """
     a1 = mv1[i]
-    w1 = sw1
-    if aw2 is not None:
-        w2 = aw2
-    else:
-        w2 = sw2
+    if not force_scalar_avg:
+        w1 = sw1
+        if aw2 is not None:
+            w2 = aw2
+        else:
+            w2 = sw2
 
-    # If array weights already exist for mv1 _or_ mv2, use them, and create array weights
-    # for whatever doesn't have them.  If mv1,mv2 have different masks, then we need array
-    # weights now and henceforth; create them.  The shape attribute is a convenient way
-    # to detect whether w1 or w2 is scalar or array.
-    if hasattr( mv1, 'vwgts' ):
-        f1 = mv1.parent # the (open) file corresponding to the FileVariable mv1
-        w1 = f1(mv1.vwgts)
-    if hasattr( mv2, 'vwgts' ) and aw2 is None:
-        f2 = mv2.parent # the (open) file corresponding to the FileVariable mv2
-        if f2 is None:
-            f2 = mv2.from_file # the (open) file corresponding to the TransientVariable mv2
-        w2 = f2(mv2.vwgts)
-    if (not hasattr(w1,'shape') or len(w1.shape)==0) and hasattr(w2,'shape') and len(w2.shape)>0:
-        w1 = numpy.full( mv1.shape, -1 )
-        w1[i] = sw1
-        w1 = numpy.ma.masked_less(w1,0)
-    if (not hasattr(w2,'shape') or len(w2.shape)==0) and hasattr(w1,'shape') and len(w1.shape)>0:
-        w2 = numpy.full( mv1.shape, -1 )   # assumes mv1 time axis is >= mv2 time axis
-        w2[i] = sw2
-        w2 = numpy.ma.masked_less(w2,0)
-    if (not hasattr(w1,'shape') or len(w1.shape)==0) and\
-            (not hasattr(w2,'shape') or len(w2.shape)==0):
-        mask1 = False
-        mask2 = False
-        if hasattr(mv1,'_mask'):
-            mask1 = mv1.mask
-        else:
-            valu = mv1.getValue()
-            if hasattr( valu, '_mask' ):
-                mask1 = valu._mask
-        if hasattr(mv2,'_mask'):
-            mask2 = mv2.mask
-        else:
-            valu = mv2.getValue()
-            if hasattr( valu, '_mask' ):
-                mask2 = mv2.getValue()._mask
-        if not numpy.all(mask1==mask2):
-            # Note that this test requires reading all the data.  That has to be done anyway to compute
-            # the average.  Let's hope that the system caches well enough so that there won't be any
-            # file access cost to this.
-            #jfp was w1 = numpy.full( a1.shape, w1 )
-            #jfp was w2 = numpy.full( a2.shape, w2 )
+        # If array weights already exist for mv1 _or_ mv2, use them, and create array weights
+        # for whatever doesn't have them.  If mv1,mv2 have different masks, then we need array
+        # weights now and henceforth; create them.  The shape attribute is a convenient way
+        # to detect whether w1 or w2 is scalar or array.
+        if hasattr( mv1, 'vwgts' ):
+            f1 = mv1.parent # the (open) file corresponding to the FileVariable mv1
+            w1 = f1(mv1.vwgts)
+        if hasattr( mv2, 'vwgts' ) and aw2 is None:
+            f2 = mv2.parent # the (open) file corresponding to the FileVariable mv2
+            if f2 is None:
+                f2 = mv2.from_file # the (open) file corresponding to the TransientVariable mv2
+            w2 = f2(mv2.vwgts)
+        if (not hasattr(w1,'shape') or len(w1.shape)==0) and hasattr(w2,'shape') and len(w2.shape)>0:
             w1 = numpy.full( mv1.shape, -1 )
             w1[i] = sw1
             w1 = numpy.ma.masked_less(w1,0)
-            w2 = numpy.full( mv1.shape, -1 )
+        if (not hasattr(w2,'shape') or len(w2.shape)==0) and hasattr(w1,'shape') and len(w1.shape)>0:
+            w2 = numpy.full( mv1.shape, -1 )   # assumes mv1 time axis is >= mv2 time axis
             w2[i] = sw2
             w2 = numpy.ma.masked_less(w2,0)
+        if (not hasattr(w1,'shape') or len(w1.shape)==0) and\
+                (not hasattr(w2,'shape') or len(w2.shape)==0):
+            mask1 = False
+            mask2 = False
+            if hasattr(mv1,'_mask'):
+                mask1 = mv1.mask
+            else:
+                valu = mv1.getValue()
+                if hasattr( valu, '_mask' ):
+                    mask1 = valu._mask
+            if hasattr(mv2,'_mask'):
+                mask2 = mv2.mask
+            else:
+                valu = mv2.getValue()
+                if hasattr( valu, '_mask' ):
+                    mask2 = mv2.getValue()._mask
+            if not numpy.all(mask1==mask2):
+                # Note that this test requires reading all the data.  That has to be done anyway to compute
+                # the average.  Let's hope that the system caches well enough so that there won't be any
+                # file access cost to this.
+                #jfp was w1 = numpy.full( a1.shape, w1 )
+                #jfp was w2 = numpy.full( a2.shape, w2 )
+                w1 = numpy.full( mv1.shape, -1 )
+                w1[i] = sw1
+                w1 = numpy.ma.masked_less(w1,0)
+                w2 = numpy.full( mv1.shape, -1 )
+                w2[i] = sw2
+                w2 = numpy.ma.masked_less(w2,0)
 
-    if hasattr(w1,'shape') and len(w1.shape)>0 and hasattr(w2,'shape') and len(w2.shape)>0:
+    if not force_scalar_avg and\
+            hasattr(w1,'shape') and len(w1.shape)>0 and hasattr(w2,'shape') and len(w2.shape)>0:
         if w1[i].mask.all():   # if w1[i] is all missing values:
             w1[i] = sw1
         if w2[i].mask.all():   # if w2[i] is all missing values:
@@ -384,7 +389,7 @@ def two_pt_avg( mv1, mv2, i, a2, sw1, sw2, aw2=None ):
     return a
 
 def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds, dt=None,
-                     new_time_weights=None ):
+                     new_time_weights=None, force_scalar_avg=False ):
     """Updates the time-reduced data for a list of variables.  The reduced-time and averaged
     variables are listed in redvars.  Its weights (for time averaging) are another variable,
     redtime_wts.
@@ -404,6 +409,7 @@ def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds, 
     The last argument is the time_weights global attribute of the data file, if any; it corresponds
     to newvars.  This is expected to occur iff the data file is a climatology file written by
     an earlier use of this module.
+    The optional argument force_scalar_avg argument is for testing and is passed on to two_pt_avg.
     """
 
     # >>>> TO DO <<<< Ensure that each redvar, redtime_wts, newvar have consistent units
@@ -579,7 +585,8 @@ def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds, 
 
                         # Don't miss this line, it's where the average is computed:
                         redvar[i] = two_pt_avg( redvar, newvar, i, newvar[j],
-                                                redtime_wts[i], newtime_wts[j,k] )
+                                                redtime_wts[i], newtime_wts[j,k],
+                                                force_scalar_avg=force_scalar_avg )
 
                         if False and not numpy.ma.allclose( redvari, redvar[i] ):  # debugging, development code
                             # This is for debugging.  When masks are involved, redvari and redvar[i]
@@ -610,7 +617,7 @@ def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds, 
                 else:
                     # For averaging, unitialized is same as value=0 because redtime_wts is
                     # initialized to 0
-                    redvar[i] = newvar[j]
+                    redvar[i] = redvar.dtype.type( newvar[j] )
                     if hasattr( newvar, 'vwgts' ):
                         redvar.vwgts = newvar.vwgts
                         wid = redvar.vwgts
@@ -639,7 +646,7 @@ def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds, 
 
 def update_time_avg_from_files( redvars0, redtime_bnds, redtime_wts, filenames,
                                 fun_next_tbounds=next_tbounds_copyfrom_data,
-                                redfiles=[], dt=None ):
+                                redfiles=[], dt=None, force_scalar_avg=False ):
     """Updates the time-reduced data for a several variables.  The reduced-time and averaged
     variables are the list redvars.  Its weights (for time averaging) are another variable, redtime_wts.
     (Each variable redvar of redvars has the same time axis, and it normally has an attribute wgts
@@ -652,7 +659,8 @@ def update_time_avg_from_files( redvars0, redtime_bnds, redtime_wts, filenames,
     update_time_avg, i.e. the next time interval (if any) to be appended to the bounds of the time
     axis of redvars.
     redfiles is a list of reduced-time files for output.  They should already be open as 'r+'.
-    The last argument dt is used only in that dt=0 means that we are computing climatologies.
+    The optional argument dt is used only in that dt=0 means that we are computing climatologies.
+    The optional argument force_scalar_avg argument is for testing and is passed on to two_pt_avg.
     """
     tmin = 1.0e10
     tmax = -1.0e10
@@ -711,7 +719,7 @@ def update_time_avg_from_files( redvars0, redtime_bnds, redtime_wts, filenames,
             #redvars = redvars0
             tbnds = apply( fun_next_tbounds, ( redtime_bnds, data_tbounds ) )
             update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, tbnds[-1], dt=dt,
-                             new_time_weights=new_time_weights )
+                             new_time_weights=new_time_weights, force_scalar_avg=force_scalar_avg )
         else:
             for g in redfiles:
                 redtime = g.getAxis('time')
@@ -720,7 +728,8 @@ def update_time_avg_from_files( redvars0, redtime_bnds, redtime_wts, filenames,
                 redvars = [ g[varn] for varn in varids ]
                 tbnds = apply( fun_next_tbounds, ( redtime_bnds, data_tbounds ) )
                 update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, tbnds[-1], dt=dt,
-                                 new_time_weights=new_time_weights )
+                                 new_time_weights=new_time_weights,
+                                 force_scalar_avg=force_scalar_avg )
         f.close()
     return tmin, tmax
 
