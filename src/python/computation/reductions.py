@@ -2515,13 +2515,14 @@ def convert_axis( mv, axisold, axisindnew ):
 
 
 
-def run_cdscan( fam, famfiles, cache_path=None ):
+def run_cdscan( fam, famfiles, cache_path=None, COMM=None ):
     """If necessary, runs cdscan on the provided files, all in one "family", fam.
     Leave the output in an xml file in the cache_path.
     Thereafter, re-use this xml file rather than run cdscan again."""
     # Which cdscan will be run?  Popen inherits its environment from its caller, so the cdscan
     # will be whatever is in the user's path.  Normally that's right, but it would be better
     # to ensure that it belongs to the same UV-CDAT instance as the one we're running.
+    
     famfiles.sort()   # improves consistency between runs
     file_list = '-'.join(
         [ f+'size'+str(os.path.getsize(f))+'mtime'+str(os.path.getmtime(f))\
@@ -2546,7 +2547,8 @@ def run_cdscan( fam, famfiles, cache_path=None ):
     # could be made to work.
 
     # I know of no exception to the rule that all files in the file family keep their
-    # units in the same place; so find where they are by checking the first file.
+    # units in the same place; so find where they are by checking the first file
+    pdb.set_trace()
     f = cdms2.open( famfiles[0] )
     if f['time'] is None:
             cdscan_line = 'cdscan -q '+'-x '+xml_name+' '+' '.join(famfiles)
@@ -2582,6 +2584,7 @@ def run_cdscan( fam, famfiles, cache_path=None ):
     print "cdscan_line=",cdscan_line
     proc = subprocess.Popen([cdscan_line],shell=True)
     proc_status = proc.wait()
+    #COMM.Spawn(cdscan_line,shell=True)
     if proc_status!=0: 
         print "ERROR: cdscan terminated with",proc_status
         print 'This is usually fatal. Frequent causes are an extra XML file in the dataset directory'
@@ -2732,6 +2735,7 @@ class reduced_variable(ftrow,basic_id):
         self._file_attributes = {}
         self._duvs = duvs
         self._rvs = rvs
+        self._filename = None #included because of mpi issues with cdscan
     def __repr__(self):
         return self._strid
 
@@ -2775,9 +2779,10 @@ class reduced_variable(ftrow,basic_id):
         else:
             return filename
 
-    def get_variable_file( self, variableid ):
+    def get_variable_file( self, variableid, COMM=None ):
         """returns the name of a file containing data for a variable specified by name.
         If there are several such files, cdscan is run and the resulting xml file is returned."""
+
         rows = self._filetable.find_files( variableid, time_range=self.timerange,
                                            lat_range=self.latrange, lon_range=self.lonrange,
                                            level_range=self.levelrange,
@@ -2812,7 +2817,7 @@ class reduced_variable(ftrow,basic_id):
             famfiles = [f for f in files if famdict[f]==fam]
 
             cache_path = self._filetable.cache_path()
-            xml_name = run_cdscan( fam, famfiles, cache_path )
+            xml_name = run_cdscan( fam, famfiles, cache_path, COMM=COMM )
             filename = xml_name
         else:
             # the easy case, just one file has all the data on this variable
@@ -2843,7 +2848,12 @@ class reduced_variable(ftrow,basic_id):
             #vid = self._vid      # self._vid is deprecated
             vid = self._strid
 
-        filename = self.get_variable_file( self.variableid )
+        #avoid multiple calls to cdscan during compute loop
+        if self._filename is not None:
+            filename = self._filename
+        else:
+            filename = self.get_variable_file( self.variableid )
+            
         if filename is None:
             if self.variableid not in self._duvs:
                 # this belongs in a log file:

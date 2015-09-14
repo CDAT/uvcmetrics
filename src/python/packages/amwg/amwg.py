@@ -1794,13 +1794,20 @@ class amwg_plot_set8(amwg_plot_spec):
                 allSLICES +=  [SLICES]
                 
             print 'slices = ', allSLICES
+            
+            #avoid multiple calls to cdscan during compute loop
+            for ID, RV in self.reduced_variables.iteritems():
+                #print ID, RV.variableid
+                RV._filename = RV.get_variable_file( RV.variableid, COMM=self.comm )
+                #print RV._filename
             #pdb.set_trace()
             #if self.rank is self.master:
             #self.SLICE = self.comm.scatter(allSLICES, root=self.master)
             #print 'rank=', self.rank, 'slice=', self.SLICE
         else:
             allSLICES = None
-
+        
+        self.comm.barrier()
         self.SLICE = self.comm.scatter(allSLICES, root=self.master)
         print 'rank=', self.rank, 'slice=', self.SLICE
     def plan_computation( self, model, obs, varid, seasonid, levels=None ):
@@ -1828,8 +1835,11 @@ class amwg_plot_set8(amwg_plot_spec):
 
                 self.reduced_variables[RV.id()] = RV
                 VIDs += [VID]
-            vidAll[FT] = VIDs               
-        print self.reduced_variables.keys()
+            vidAll[FT] = VIDs    
+        
+            
+        #print self.reduced_variables
+            
         vidModel = dv.dict_id(varid, 'ZonalMean model', self._seasonid, filetable1)
         if self.FT2:
             vidObs  = dv.dict_id(varid, 'ZonalMean obs', self._seasonid, filetable2)

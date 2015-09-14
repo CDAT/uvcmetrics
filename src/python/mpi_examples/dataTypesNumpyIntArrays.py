@@ -11,12 +11,12 @@ rank = comm.Get_rank()
 
 #define memory allocation parameters
 nstr = 8
-nfloat = 2
+nint = 2
 
 #define custom numpy data type
-npdt = np.dtype([('name', np.str_, nstr), ('grades', np.float, (nfloat,))])
+npdt = np.dtype([('name', np.str_, nstr), ('grades', np.int_, (nint,))])
 print rank, npdt
-x = np.array([('Sarah12345', (8.0, 7.0)), ('John', (6.0, 5.0))], dtype=npdt)
+x = np.array([('Sarah12345', (8, 7)), ('John', (6, 5))], dtype=npdt)
 print x
 #print x['name']
 #print x['grades']
@@ -25,9 +25,9 @@ comm.barrier()
 
 #define mpi struct that matches the numpy type
 struct = MPI.Datatype.Create_struct( # MPI user-defined datatype
-    [nstr, nfloat], # block lengths
+    [nstr, nint], # block lengths
     [0, nstr], # displacements in bytes
-    [MPI.CHAR,  MPI.DOUBLE], # MPI datatypes
+    [MPI.CHAR,  MPI.INTEGER8], # MPI datatypes
 )
 mpidt = struct.Commit() # don't forget to call Commit() after creation !!!
 print rank, mpidt
