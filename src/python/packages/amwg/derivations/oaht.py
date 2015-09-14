@@ -25,6 +25,11 @@ infilename2    = None
 # MODEL 1 
 def get_variables_for_atmospheric_heat_transport( infilename1, outfilename1, compare ):
     infile1 = cdms2.open(infilename1)
+    value=0
+    cdms2.setNetcdfShuffleFlag(value) ## where value is either 0 or 1
+    cdms2.setNetcdfDeflateFlag(value) ## where value is either 0 or 1
+    cdms2.setNetcdfDeflateLevelFlag(value) ## where value is a integer between 0 and 9 included
+
     outfile1 = cdms2.open(outfilename1,"w")
     case1 = infile1.case     # e.g. "b30.009"
     if 'lat' in infile1.variables.keys() and infile1['lat'].isLatitude():

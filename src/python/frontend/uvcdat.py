@@ -166,6 +166,7 @@ class uvc_composite_plotspec():
         for p in self.plots:
             if type(p) is tuple:
                 print "ERROR cannot write_plot_data on tuple<<<<<<<<<<<<<<<<<"
+                print p
                 continue
             filenames += p.write_plot_data( contents_format, where )
 
@@ -199,7 +200,8 @@ class uvc_simple_plotspec():
     # re presentation (plottype): Yxvsx is a line plot, for Y=Y(X).  It can have one or several lines.
     # Isofill is a contour plot.  To make it polar, set projection=polar.  I'll
     # probably communicate that by passing a name "Isofill_polar".
-    def __init__( self, pvars, presentation, labels=[], title='', source='', ranges=None, overplotline=False):
+    def __init__( self, pvars, presentation, labels=[], title='', source='', ranges=None, overplotline=False, linetypes=['solid'], linecolors=[241], levels=None):
+
         pvars = [v for v in pvars if v is not None]
         # ... Maybe something else is broken to let None get into pvars.
         if len(pvars)<=0:
@@ -229,7 +231,7 @@ class uvc_simple_plotspec():
                 self.presentation = vcsx.createisoline()
             elif presentation == "Scatter":
                 self.presentation = vcsx.createscatter()
-            elif presentation == "Taylor":
+            elif presentation == "Taylordiagram":
                 self.presentation = vcsx.createtaylordiagram()
             else:
                 print "ERROR, uvc_plotspec doesn't recognize presentation",presentation
@@ -237,7 +239,7 @@ class uvc_simple_plotspec():
         else:
             self.presentation = presentation
         ## elif presentation == "":
-        ##     self.resentation = vcsx.create
+        ##     self.presentation = vcsx.create
         self.vars = pvars # vars[i] is either a cdms2 variable or a tuple of variables
         self.labels = labels
         self.title = title
@@ -246,6 +248,10 @@ class uvc_simple_plotspec():
         self.ptype = ptype
         self.ranges = ranges
         self.overplotline = overplotline
+        self.linetypes = linetypes
+        self.linecolors = linecolors
+        self.levels = levels
+        
         # Initial ranges - may later be changed to coordinate with related plots:
         # For each variable named 'v', the i-th member of self.vars, (most often there is just one),
         # varmax[v] is the maximum value of v, varmin[v] is the minimum value of v,
@@ -273,18 +279,19 @@ class uvc_simple_plotspec():
                 # prime meridian in a lat-lon plot.  You get all the data, but ax.bounds[0][0] is a better
                 # lower bound than ax[0], and ax.bounds[-1][1] than ax[-1] (for example).  But also that's
                 # more complicated and buys you little, so it can be done later.
-                self.varmax[seqgetattr(var,'id','')] = var.max()
-                self.varmin[seqgetattr(var,'id','')] = var.min()
-                self.axmax[seqgetattr(var,'id','')]  = { ax[0].id:max(ax[0][:]) for ax in var.getDomain()[:]
-                                        if ax is not None }
-                self.axmin[seqgetattr(var,'id','')]  = { ax[0].id:min(ax[0][:]) for ax in var.getDomain()[:]
-                                        if ax is not None}
-                # The 'axis' attribute of an axis is typically X or Y and tells you where the axis
-                # goes in a plot.  It it's not there, we'll decide later.
-                self.axax[seqgetattr(var,'id','')]  = {
-                    ax[0].id:(ax[0].axis if hasattr(ax[0],'axis')\
-                                  else ax[0].id)
-                    for ax in var.getDomain()[:] if ax is not None
+                if len(var)>0:
+                    self.varmax[seqgetattr(var,'id','')] = var.max()
+                    self.varmin[seqgetattr(var,'id','')] = var.min()
+                    self.axmax[seqgetattr(var,'id','')]  = { ax[0].id:max(ax[0][:]) for ax in var.getDomain()[:]
+                                            if ax is not None }
+                    self.axmin[seqgetattr(var,'id','')]  = { ax[0].id:min(ax[0][:]) for ax in var.getDomain()[:]
+                                            if ax is not None}
+                    # The 'axis' attribute of an axis is typically X or Y and tells you where the axis
+                    # goes in a plot.  It it's not there, we'll decide later.
+                    self.axax[seqgetattr(var,'id','')]  = {
+                        ax[0].id:(ax[0].axis if hasattr(ax[0],'axis')\
+                                      else ax[0].id)
+                        for ax in var.getDomain()[:] if ax is not None
                     }
         self.finalized = False
     def make_ranges(self, var):
@@ -311,7 +318,10 @@ class uvc_simple_plotspec():
                     VAR = var
             except:
                 VAR = var
-            yrange = [ VAR.min(), VAR.max()]
+            if len(VAR)>0:
+                yrange = [ VAR.min(), VAR.max()]
+            else:
+                yrange = [ None, None ]
         return xrange, yrange    
         
     def finalize( self, flip_x=False, flip_y=False ):
@@ -325,9 +335,9 @@ class uvc_simple_plotspec():
         #        self.presentation.__class__.__name__=="Gfi":
         # interim test here and below.  Once all the is* functions work, I should
         # drop the tests on self.presentation.__class__.__name__ :
+        #pdb.set_trace()
         if vcs.isscatter(self.presentation):
-            ylabel, xlabel = string.split(self.title, ' vs ')
-            #pdb.set_trace()
+            #ylabel, xlabel = string.split(self.title, ' vs ')
             #in the case of scatter plots there are 2 variables packed together
             var = self.vars[0]
             [xMIN, xMAX], [yMIN, yMAX] = self.make_ranges(var)
@@ -338,7 +348,7 @@ class uvc_simple_plotspec():
             self.presentation.xticlabels1 = vcs.mklabels(vcs.mkscale(xMIN, xMAX))
             self.presentation.datawc_x1 = xMIN
             self.presentation.datawc_x2 = xMAX
-            self.presentation.xticlabels2 = {(xMIN+xMAX)/2.: xlabel}
+            #self.presentation.xticlabels2 = {(xMIN+xMAX)/2.: xlabel}
             if flip_y:
                 self.presentation.datawc_y2 = yMIN
                 self.presentation.datawc_y1 = yMAX
@@ -347,15 +357,13 @@ class uvc_simple_plotspec():
                 self.presentation.datawc_y1 = yMIN
                 self.presentation.datawc_y2 = yMAX   
             self.presentation.yticlabels1 = vcs.mklabels(vcs.mkscale(yMIN, yMAX))
-            self.presentation.yticlabels2 = {(yMIN+yMAX)/2.: ylabel}
+            #self.presentation.yticlabels2 = {(yMIN+yMAX)/2.: ylabel}
             self.presentation.linewidth = 0
             self.presentation.markercolor = 1
-            self.presentation.markersize = 5
-            #add overplotline is a total kludge
-            self.presentation.overplotline = self.overplotline
-            if flip_y:
-                self.presentation.flip = True
-            #self.presentation.list()              
+            self.presentation.markersize = 10
+            #self.presentation.list()   
+            #pdb.set_trace()
+    
         elif vcs.isyxvsx(self.presentation) or\
                 vcs.isisofill(self.presentation) or\
                 vcs.isboxfill(self.presentation) or\
@@ -363,8 +371,6 @@ class uvc_simple_plotspec():
                 self.presentation.__class__.__name__=="G1d" or\
                 self.presentation.__class__.__name__=="Gv":
             #pdb.set_trace()
-            if flip_y:
-                self.presentation.flip = True
             var = self.vars[0]
             axmax = self.axmax[seqgetattr(var,'id','')]
             axmin = self.axmin[seqgetattr(var,'id','')]
@@ -401,7 +407,7 @@ class uvc_simple_plotspec():
             if vcs.isisofill(self.presentation) or self.presentation.__class__.__name__=="Gfi"\
                     or vcs.isboxfill(self.presentation):
                 # VCS Isofill or Boxfill
-
+                #pdb.set_trace()
                 # First we have to identify which axes will be plotted as X and Y.
                 # If the axes each had an 'axis' attribute, axaxi will look something like
                 # {'X':'axis1id', 'Y':'axis2id'}.  If one misses the attribute, 'axis0id':'axis0id'.
@@ -413,9 +419,12 @@ class uvc_simple_plotspec():
                     axx = axaxi['Y']
                     axy = axaxi['Z']
                 #added case of time vs variable
-                elif 'T' in axaxi.keys() and 'Y' in axaxi.keys():
+                elif 'T' in axaxi.keys() and ('Y' in axaxi.keys() or 'Z' in axaxi.keys()):
                     axx = axaxi['T']
-                    axy = axaxi['Y']
+                    if 'Y' in axaxi.keys():
+                        axy = axaxi['Y']
+                    else:
+                        axy = axaxi['Z']
                     if axx == 'time':
                         t=var.getTime()
                         if 'units' in dir(t) and t.units == "months since 1800":
@@ -426,6 +435,7 @@ class uvc_simple_plotspec():
                                 time_lables[v] = months_names[tc[i].month-1]
                             self.presentation.xticlabels1 = time_lables
                             self.presentation.datawc_timeunits = t.units
+                            #pdb.set_trace()
                             #self.presentation.list()
                 elif len(axaxi.keys())==2:
                     # It's not clear what should be the X variable and what the Y variable,
@@ -434,7 +444,7 @@ class uvc_simple_plotspec():
                     axy = None
                     for axetc in var.getDomain()[:]:
                         ax = axetc[0]
-                        if getattr(ax,'units',None)=='mbar':
+                        if getattr(ax,'units',None) in ['mbar', 'millibars']:
                             # probably pressure levels, a vertical axis
                             axy = ax.id
                         else:
@@ -467,40 +477,47 @@ class uvc_simple_plotspec():
                 # you have to give it all the contour levels.  So...
                 if vcs.isboxfill(self.presentation):
                     self.presentation.boxfill_type = 'custom'  # without this, can't set levels
-                nlevels = 16
-                try:
-                    levels = [float(v) for v in vcs.mkscale( varmin, varmax, nlevels )]
-                    # Exceptions occur because mkscale doesn't always work.  E.g. vcs.mkscale(0,1.e35,16)
-                except RuntimeWarning:
-                    levels = []
-                if levels==[]:
-                    ## Here's how to do it with percentiles (clip out large values first).
-                    #pc05 = numpy.percentile(self.vars[0],0.05)
-                    #pc95 = numpy.percentile(self.vars[0],0.95)
-                    #levels = [float(v) for v in vcs.mkscale( pc05, pc95, nlevels-2 )]
-                    #levels = [varmin]+levels+[varmax]
-                    # Evenly distributed levels, after clipping out large values:
-                    # This cannot be expected to work always, but it's better than doing nothing.
-                    amed = numpy.median(self.vars[0]._data)
-                    vclip = amed * 1.0e6
-                    print "WARNING graphics problems, clipping some data at",vclip
-                    self.vars[0]._data[ self.vars[0]._data > vclip ] = vclip
-                    a = numpy.sort(self.vars[0]._data.flatten())
-                    asp = numpy.array_split(a,nlevels)
-                    afirsts = [c[0] for c in asp]+[asp[-1][-1]]
-                    alasts = [asp[0][0]]+[c[-1] for c in asp]
-                    levels = [0.5*(afirsts[i]+alasts[i]) for i in range(len(afirsts))]
-                    levf = levels[0]
-                    levl = levels[-1]
-                    levels = [ round(lv,2) for lv in levels ]
-                    levels[0] = round(1.1*levels[0]-0.1*levels[1],2)
-                    levels[-1] = round(1.1*levels[-1]-0.1*levels[-2],2)
+                
+                if self.levels:
+                    levels = self.levels
+                else:
+                    nlevels = 16
+    
+                    try:
+                        levels = [float(v) for v in vcs.mkscale( varmin, varmax, nlevels )]
+                        # Exceptions occur because mkscale doesn't always work.  E.g. vcs.mkscale(0,1.e35,16)
+                    except RuntimeWarning:
+                        levels = []
+                    if levels==[]:
+                        ## Here's how to do it with percentiles (clip out large values first).
+                        #pc05 = numpy.percentile(self.vars[0],0.05)
+                        #pc95 = numpy.percentile(self.vars[0],0.95)
+                        #levels = [float(v) for v in vcs.mkscale( pc05, pc95, nlevels-2 )]
+                        #levels = [varmin]+levels+[varmax]
+                        # Evenly distributed levels, after clipping out large values:
+                        # This cannot be expected to work always, but it's better than doing nothing.
+                        amed = numpy.median(self.vars[0]._data)
+                        vclip = amed * 1.0e6
+                        print "WARNING graphics problems, clipping some data at",vclip
+                        self.vars[0]._data[ self.vars[0]._data > vclip ] = vclip
+                        a = numpy.sort(self.vars[0]._data.flatten())
+                        asp = numpy.array_split(a,nlevels)
+                        afirsts = [c[0] for c in asp]+[asp[-1][-1]]
+                        alasts = [asp[0][0]]+[c[-1] for c in asp]
+                        levels = [0.5*(afirsts[i]+alasts[i]) for i in range(len(afirsts))]
+                        levf = levels[0]
+                        levl = levels[-1]
+                        levels = [ round(lv,2) for lv in levels ]
+                        levels[0] = round(1.1*levels[0]-0.1*levels[1],2)
+                        levels[-1] = round(1.1*levels[-1]-0.1*levels[-2],2)
 
                 # ... mkscale returns numpy.float64, which behaves unexpectedly in _setlevels when
                 # passed a tuple value
                 if levels is not None and len(levels)>0:
                     self.presentation.levels = levels
                 #nlevels = max(1, len(levels) - 1)
+                #self.presentation.list()
+ 
                 #nlrange = range(nlevels+1)
                 #nlrange.reverse()
                 #self.presentation.legend = vcs.mklabels( self.presentation.levels )
@@ -533,11 +550,19 @@ class uvc_simple_plotspec():
                 self.presentation.datawc_y2 = axmax[axy]
 
                 vec = self.presentation
-                vec.scale = min(vcsx.bgX,vcsx.bgY)/ 10.
+
+                vec.scale = min(vcsx.bgX,vcsx.bgY)/10.
+                # Former scale factor, didn't work on more than one variable.
+                #   That is, 100 workrf for moisture transport, 10 for wind stress:
+                # vec.scale = min(vcsx.bgX,vcsx.bgY)/ 100.
+                #pdb.set_trace()
                 if hasattr(self.vars[0],'__getitem__') and not hasattr( self.vars[0], '__cdms_internals__'):
                     # generally a tuple of variables - we need 2 variables to describe a vector
                     v = self.vars[0][0]
                     w = self.vars[0][1]
+                    vm = max(abs(v.min()),abs(v.max()))
+                    wm = max(abs(w.min()),abs(w.max()))
+                    vec.scale = 100 / math.sqrt( math.sqrt( vm**2 + wm**2 ))
                 else:   # We shouldn't get here, but may as well try to make it work if possible:
                     print "WARNING trying to make a vector plot without tuples!  Variables involved are:"
                     v = self.vars[0]
@@ -546,12 +571,81 @@ class uvc_simple_plotspec():
                     print "variable",v.id
                 nlats = latAxis(v).shape[0]
                 nlons = lonAxis(w).shape[0]
-                nlatvs = vcsx.bgY/16   # how many vectors we want in lat direction
-                nlonvs = vcsx.bgX/16
+                # vector density factor of 32 works for moisture transport, 16 for wind stress
+                nlatvs = vcsx.bgY/32   # how many vectors we want in lat direction
+                nlonvs = vcsx.bgX/32
                 #self.strideX = int( 0.9* vcsx.bgX/nlons )
                 #self.strideY = int( 0.6* vcsx.bgY/nlats )
                 self.strideX = max(1, int( nlons/nlonvs )) # stride values must be at least 1
                 self.strideY = max(1, int( nlats/nlatvs ))
+        elif vcs.istaylordiagram(self.presentation):
+            #pdb.set_trace()
+            data = self.vars[0]
+            
+            #intercept the bias to be used as markersize
+            markersizes = data.bias
+            markerids   = data.IDs
+            self.vars[0].__delattr__('IDs')
+            self.vars[0].__delattr__('bias')
+            #print markersizes
+            #print self.vars
+            
+            #determine the identifier for the legend
+            IDs = []
+            for ID in markerids:
+                s = ID.split('___')
+                #print s
+                mid = s[1]+'_'
+                for e in s[5:]:
+                    mid += e + '_'
+                IDs += [mid]
+            #this is a total hack! I have no other way of getting this info
+            #out to the plot
+            self.legendTitles = IDs
+            
+            #self.presentation.Marker.size = dotsizes          
+            #self.presentation.Marker.color = dotcolors 
+            #self.presentation.IDs = IDs
+            #self.presentation.Marker.id = index
+            #pdb.set_trace()
+            
+            #create list of offsets
+            XOFF = data[:,0]
+            YOFF = data[:,1]
+            if type(XOFF) is float:
+                XOFF = [XOFF]
+                YOFF = [YOFF]
+            else:
+                XOFF = XOFF.tolist()
+                YOFF = YOFF.tolist()
+            #self.presentation.Marker.xoffset = XOFF
+            #self.presentation.Marker.yoffset = YOFF
+            #self.presentation.Marker.id_size = len(markersizes)*[20]
+            for i in range(len(markersizes)):
+                if markersizes[i]>1.01:
+                  mtype = "triangle_up"
+                elif markersizes[i]<.99:
+                  mtype = "triangle_down"
+                else:
+                  mtype = "circle"
+                b = abs(1.-markersizes[i])
+                if b<5:
+                  size = 12
+                elif b<10:
+                  size = 16
+                elif b<20:
+                  size = 20
+                else:
+                  size = 25
+
+                self.presentation.Marker.addMarker(size=size,
+                    id=str(i),id_size=20,
+                    symbol = mtype,
+                    xoffset=XOFF[i],yoffset=YOFF[i])
+            self.presentation.Marker.equalize()
+
+            #self.presentation.list()
+            
         else:
             print "ERROR cannot identify graphics method",self.presentation.__class__.__name__
 
@@ -684,7 +778,7 @@ class uvc_simple_plotspec():
     def outfile( self, format="", where="" ):
         """returns a filename for writing out this plot"""
         if len(self.title)<=0:
-            fname = 'foo'
+            fname = 'foo.nc'
         else:
             fname = '_'.join([self.title.strip(),self.source]).replace(' ','_').replace('/','_') + '.nc'
         filename = os.path.join(where,fname)
@@ -705,6 +799,11 @@ class uvc_simple_plotspec():
         filename = self.outfile( format, where )
 
         if format=="NetCDF file":
+            value=0
+            cdms2.setNetcdfShuffleFlag(value) ## where value is either 0 or 1
+            cdms2.setNetcdfDeflateFlag(value) ## where value is either 0 or 1
+            cdms2.setNetcdfDeflateLevelFlag(value) ## where value is a integer between 0 and 9 included
+
             writer = cdms2.open( filename, 'w' )    # later, choose a better name and a path!
         elif format=="JSON file":
             print "ERROR: JSON file not implemented yet"
@@ -714,6 +813,7 @@ class uvc_simple_plotspec():
         writer.source = "UV-CDAT Diagnostics"
         writer.presentation = self.ptype
         plot_these = []
+
         for zax in self.vars:
             writer.write( zax )
             plot_these.append( str(seqgetattr(zax,'id','')) )
@@ -826,6 +926,71 @@ class plot_spec(object):
         return self.results(newgrid)
     def results(self,newgrid=0):
         return self._results(newgrid)
+
+    def uniquefts(self, ftlist):
+        names = []
+        for i in range(len(ftlist)):
+            names.append(ftlist[i]._name)
+        names = list(set(names))
+        return names
+
+    def getfts(self, model, obs):
+        if len(model) == 2:
+#           print 'Two models'
+           filetable1 = model[0]
+           filetable2 = model[1]
+        if len(model) == 1 and len(obs) == 1:
+#           print 'Model and Obs'
+            filetable1 = model[0]
+            filetable2 = obs[0]
+        if len(obs) == 2: # seems unlikely but whatever
+#           print 'Two obs'
+           filetable1 = obs[0]
+           filetable2 = obs[1]
+        if len(model) == 1 and (obs != None and len(obs) == 0):
+#           print 'Model only'
+           filetable1 = model[0]
+           filetable2 = None
+        if len(obs) == 1 and (model != None and len(model) == 0): #also unlikely
+#           print 'Obs only'
+           filetable1 = obs[0]
+           filetable2 = None
+        return filetable1, filetable2
+
+    # This takes the list of filetables and returns 3 lists:
+    # 1) the indexes for the duplicatly named fts (the ones that are raw+climos)
+    # 2) the indexes for the purely climo fts
+    # 3) the indexes for the purely raw fts
+    def parse_fts(self, fts):
+    # First, find duplicates.
+    # eg, if ft[0] = foo, ft[1] = bar, ft[2] = foo, ft[3] = blah, ft[4] = bar it would return
+    # [ [0, 2], [1, 4]]
+        raw = []
+        climo = []
+        names = []
+        dups = []
+        for i in range(len(fts)):
+           if fts[i]._climos == 'yes':
+               climo.append(i)
+           else:
+               raw.append(i)
+           names.append(fts[i]._name)
+        newnames = list(set(names))
+        if len(newnames) != len(names):
+           dup_list = []
+           for i in range(len(fts)):
+              dup_list.append([])
+              for j in range(len(fts)):
+                 if i == j:
+                    pass
+                 if fts[i]._name == fts[j]._name:
+                    dup_list[i].append(j)
+           for elem in dup_list:
+              if elem not in dups and len(elem) == 2:
+                 dups.append(elem)
+        return dups, climo, raw 
+
+
 # To profile, replace (by name changes) the above results() with the following one:
     def profiled_results(self,newgrid=0):
         if newgrid!=0:
@@ -839,29 +1004,55 @@ class plot_spec(object):
         that means a coarser grid, typically from regridding model data to the obs grid.
         In the future regrid>0 will mean regrid everything to the finest grid and regrid<0
         will mean regrid everything to the coarsest grid."""
+
         for v in self.reduced_variables.keys():
+            #print v
             value = self.reduced_variables[v].reduce(None)
+            try:
+                if  len(value.data)<=0:
+                    print "ERROR no data for",v
+            except: # value.data may not exist, or may not accept len()
+                try:
+                    if value.size<=0:
+                        print "ERROR no data for",v
+                except: # value.size may not exist
+                    pass
             self.variable_values[v] = value  # could be None
+            #print value.id, value.shape
+            #pdb.set_trace()
         postponed = []   # derived variables we won't do right away
+
+        #print 'derived var'
         for v in self.derived_variables.keys():
+            #pdb.set_trace()
+            #print v
             value = self.derived_variables[v].derive(self.variable_values)
+            #print value.id, value.shape
             if value is None:
                 # couldn't compute v - probably it depends on another derived variables which
                 # hasn't been computed yet
                 postponed.append(v)
             else:
                 self.variable_values[v] = value
+        
+        #print 'postponed', postponed
         for v in postponed:   # Finish up with derived variables
+            #print v
             value = self.derived_variables[v].derive(self.variable_values)
+            #print value.id, value.shape
             self.variable_values[v] = value  # could be None
         varvals = self.variable_values
-        #pdb.set_trace()
+        
         for p,ps in self.single_plotspecs.iteritems():
             print "uvcdat preparing data for",ps._strid, ps.plottype
+            #pdb.set_trace()
             try:
                 zax,zrv  = self.compute_plot_var_value( ps, ps.zvars, ps.zfunc )
                 z2ax,z2rv = self.compute_plot_var_value( ps, ps.z2vars, ps.z2func )
-                if zax is None and z2ax is None:
+                z3ax,z3rv = self.compute_plot_var_value( ps, ps.z3vars, ps.z3func )
+                z4ax,z4rv = self.compute_plot_var_value( ps, ps.z4vars, ps.z4func )
+
+                if zax is None and z2ax is None and z3ax is None and z4ax is None:
                     continue
             except Exception as e:
                 if ps._id != plotspec.dict_id( None, None, None, None, None ):
@@ -873,7 +1064,9 @@ class plot_spec(object):
             vars = []
             zlab=""
             z2lab=""
-            if zax is not None:
+            z3lab =""
+            z3lab = ""
+            if zax is not None and len(getattr(zax,'data',[None]))>0:  # a tuple always passes
                 if hasattr(zax,'regridded') and newgrid!=0:
                     vars.append( regridded_vars[zax.regridded] )
                 else:
@@ -890,6 +1083,23 @@ class plot_spec(object):
                 new_id = self._build_label( z2rv, p )
                 z2ax.id = new_id
                 z2lab += ' '+z2ax.id
+            if z3ax is not None:
+               if hasattr(z3ax,'regridded') and newgrid != 0:
+                  vars.append( regridded_vars[z3ax.regridded] )
+               else:
+                  vars.append( z3ax)
+               new_id = self._build_label( z3rv, p )
+               z3ax.id = new_id
+               z3lab += ' '+z3ax.id
+            if z4ax is not None:
+               if hasattr(z4ax,'regridded') and newgrid != 0:
+                  vars.append( regridded_vars[z4ax.regridded] )
+               else:
+                  vars.append( z4ax)
+               new_id = self._build_label( z4rv, p )
+               z4ax.id = new_id
+               z4lab += ' '+z4ax.id
+
             if vars==[]:
                 self.plotspec_values[p] = None
                 continue
@@ -903,48 +1113,82 @@ class plot_spec(object):
             #process the ranges if present
             zrange = ps.zrangevars
             z2range = ps.z2rangevars
+            z3range = ps.z3rangevars
+            z4range = ps.z4rangevars
             ranges = {}
-            if zrange != None and z2range != None:
+            if zrange != None and z2range != None and z3range != None and z4range != None:
                 ranges.update(ps.zrangevars)
                 if ps.z2rangevars:
-                    ranges.update(ps.z2rangevars)
+                   ranges.update(ps.z2rangevars)
+                if ps.z3rangevars:
+                   ranges.update(ps.z3rangevars)
+                if ps.z4rangevars:
+                   ranges.upadte(ps.z4rangevars)
             else:
                 ranges = None
-            
+
             #over plot line flag
             overplotline = False
             if  hasattr(ps, 'overplotline'):
                 overplotline = ps.overplotline
             
+            #get line types for each curve (solid, dot, ...)
+            linetypes = [ps.zlinetype]
+            if z2ax is not None:
+                linetypes += [ps.z2linetype]
+
+            #get the line color for each curve
+            linecolors = [ps.zlinecolor]
+            if z2ax is not None:
+                line2colors = [ps.z2linecolor]
+
+            #get the levels
+            levels = ps.levels       
+                    
             # The following line is getting specific to UV-CDAT, although not any GUI...
-            # >>>> jfp a bad hack for temporary use - I MUST MUST MUST get plot_type out of something else!!!>>>>
             #pdb.set_trace()
             #new kludge added to handle scatter plots, 10/14/14, JMcE
             if self.plottype == 'Vector':
                 if type(vars[0])==tuple:
                     plot_type_temp = 'Vector'
-                elif vars[0].id.find('STRESS_MAG')>=0:
+                elif vars[0].id.find('STRESS_MAG')>=0:   # maybe not needed
+                    # If this is needed, we need to change code so that this isn't.
                     plot_type_temp = 'Isofill'
                 else:
-                    plot_type_temp = self.plottype
+                    #jfp not tested yet on wind stress, wrong for moisture transport:
+                    #jfp plot_type_temp = self.plottype
+                    plot_type_temp = 'Isofill' #jfp works for moisture transport
             else:
                 plot_type_temp = ps.plottype
-            self.plotspec_values[p] = uvc_simple_plotspec( vars, plot_type_temp, labels, title, ps.source, ranges, overplotline )
-            
+            self.plotspec_values[p] = uvc_simple_plotspec( vars, plot_type_temp, labels, title, ps.source, ranges, overplotline, linetypes, linecolors, levels )
+            #print p
+            #print self.plotspec_values[p]
+        #pdb.set_trace()
+        print 'now composite plot'
         for p,ps in self.composite_plotspecs.iteritems():
             self.plotspec_values[p] = [ self.plotspec_values[sp] for sp in ps if sp in self.plotspec_values ]
             # Normally ps is a list of names of a plots, we'll remember its value as a list of their values.
             if type( ps ) is tuple:
                 # ps is a tuple of names of simple plots which should be overlapped
                 self.plotspec_values[p] = tuple( self.plotspec_values[p] )
+            #print p
+            #print self.plotspec_values[p]
+        #This next loop is a duplicate of the previous loop.  It can be viewed as a cleenup. The reason it's 
+        #needed is that there is no guaranteed order of execution with a dictionary.  So if a composite plot
+        #is a composite of others then there may be an incomplete plot if the individual plots are defined
+        #later.  Plot set 11 is an example of this.
         for p,ps in self.composite_plotspecs.iteritems():
             self.plotspec_values[p] = [ self.plotspec_values[sp] for sp in ps if sp in self.plotspec_values ]
             # Normally ps is a list of names of a plots, we'll remember its value as a list of their values.
             if type( ps ) is tuple:
                 # ps is a tuple of names of simple plots which should be overlapped
                 self.plotspec_values[p] = tuple( self.plotspec_values[p] )
+            #print p
+            #print self.plotspec_values[p]
         # note: we may have to += other lists into the same ...[p]
         # note: if we have a composite of composites we can deal with it by building a second time
+        #print 'leaving _results'
+        #print self.plotspec_values.keys()
         return self
 
     def compute_plot_var_value( self, ps, zvars, zfunc ):
@@ -953,12 +1197,14 @@ class plot_spec(object):
         It also returns zrv for use in building a label."""
         vvals = self.variable_values
         zrv = [ vvals[k] for k in zvars ]
+
         if any([a is None for a in zrv]):
             print "WARNING - cannot compute plot results from zvars=",ps.zvars
             print "because missing results for",[k for k in ps.zvars if vvals[k] is None]
             return None, None
         z = apply( zfunc, zrv )
         if hasattr(z,'mask') and z.mask.all():
+            print 'in uvcdat.py' # this next line is printed from two different possible places.
             print "ERROR, all values of",z.id,"are missing!"
             return None,None
         return z, zrv

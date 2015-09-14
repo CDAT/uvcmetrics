@@ -21,7 +21,9 @@ from metrics.packages.amwg.plot_data import derived_var, plotspec
 from cdutil.times import Seasons
 from pprint import pprint
 from metrics.frontend.options import *
-import cProfile
+# For psutil, see https://github.com/giampaolo/psutil ...
+# import psutil # used only for memory profiling
+import cProfile, time, resource
 
 class climatology_variable( reduced_variable ):
     def __init__(self,varname,filetable,seasonname='ANN'):
@@ -80,7 +82,7 @@ class climatology_variance( reduced_variable ):
                 reduction_function=(lambda x,vid=None: reduce_time_seasonal(x,season)),
                 duvs={ varname+'_var':duv }, rvs=rvs )
 
-def compute_and_write_climatologies( varkeys, reduced_variables, season, case='', variant='', path='' ):
+def compute_and_write_climatologies_keepvars( varkeys, reduced_variables, season, case='', variant='', path='' ):
     """Computes climatologies and writes them to a file.
     Inputs: varkeys, names of variables whose climatologies are to be computed
             reduced_variables, dict (key:rv) where key is a variable name and rv an instance
@@ -106,9 +108,17 @@ def compute_and_write_climatologies( varkeys, reduced_variables, season, case=''
     print "writing climatology file for",case,variant,season
     if variant!='':
         variant = variant+'_'
+    print 'case: ',case
+    print 'variant: ', variant
+    print 'season: ', season
     filename = case + variant + season + "_climo.nc"
     # ...actually we want to write this to a full directory structure like
     #    root/institute/model/realm/run_name/season/
+    value=0
+    cdms2.setNetcdfShuffleFlag(value) ## where value is either 0 or 1
+    cdms2.setNetcdfDeflateFlag(value) ## where value is either 0 or 1
+    cdms2.setNetcdfDeflateLevelFlag(value) ## where value is a integer between 0 and 9 included
+
     g = cdms2.open( os.path.join(path,filename), 'w' )    # later, choose a better name and a path!
     for key in varkeys:
         if key in reduced_variables:
@@ -126,11 +136,78 @@ def compute_and_write_climatologies( varkeys, reduced_variables, season, case=''
     g.close()
     return varvals,case
 
+def compute_and_write_climatologies( varkeys, reduced_variables, season, case='', variant='', path='' ):
+    """Computes climatologies and writes them to a file.
+    Inputs: varkeys, names of variables whose climatologies are to be computed
+            reduced_variables, dict (key:rv) where key is a variable name and rv an instance
+               of the class reduced_variable
+            season: the season on which the climatologies will be computed
+            variant: a string to be inserted in the filename"""
+    # Compute the value of every variable we need.
+    # This function does not return the variable values, or even keep them.
+
+    # First compute all the reduced variables
+    # Probably this loop consumes most of the running time.  It's what has to read in all the data.
+    firsttime = True
+    for key in varkeys:
+        if key in reduced_variables:
+            time0 = time.time()
+            #print "jfp",time.ctime()
+            varval = reduced_variables[key].reduce()
+            #print "jfp",time.ctime(),"reduced",key,"in time",time.time()-time0
+            pmemusg = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss # "maximum resident set size"
+            pmemusg = pmemusg / 1024./1024.  # On Linux, should be 1024 for MB
+            #print "jfp   peak memory",pmemusg,"MB (GB on Linux)"
+            #requires psutil process = psutil.Process(os.getpid())
+            #requires psutil mem = process.get_memory_info()[0] / float(2**20)
+            #print "jfp   process memory",mem,"MB"
+        else:
+            continue
+        if varval is None:
+            continue
+
+        var = reduced_variables[key]
+        if firsttime:
+            firsttime = False
+            if case=='':
+                case = getattr( var, 'case', '' )
+                if case!='':
+                    case = var._file_attributes['case']+'_'
+            if case=='':
+                case = 'nocase_'
+            if variant!='':
+                variant = variant+'_'
+            filename = case + variant + season + "_climo.nc"
+            value=0
+            cdms2.setNetcdfShuffleFlag(value) ## where value is either 0 or 1
+            cdms2.setNetcdfDeflateFlag(value) ## where value is either 0 or 1
+            cdms2.setNetcdfDeflateLevelFlag(value) ## where value is a integer between 0 and 9 included
+
+            g = cdms2.open( os.path.join(path,filename), 'w' )    # later, choose a better name and a path!
+            # ...actually we want to write this to a full directory structure like
+            #    root/institute/model/realm/run_name/season/
+
+        print "writing",key,"in climatology file",filename
+        varval.id = var.variableid
+        varval.reduced_variable=varval.id
+        if hasattr(var,'units'):
+            varval.units = var.units+'*'+var.units
+        g.write(varval)
+        for attr,val in var._file_attributes.items():
+            if not hasattr( g, attr ):
+                setattr( g, attr, val )
+    if firsttime:
+        print "ERROR, no variables found.  Did you specify the right input data?"
+    else:
+        g.season = season
+        g.close()
+    return case
+
 def climo_driver(opts):
     """ Test driver for setting up data for plots"""
     # This script should just generate climos 
-    opts['plots'] = False
-    datafiles1 = dirtree_datafiles(opts, pathid = 0)
+    opts['output']['plots'] = False
+    datafiles1 = dirtree_datafiles(opts, modelid = 0)
     filetable1 = basic_filetable(datafiles1, opts)
 
     myvars = opts['vars']
@@ -147,6 +224,7 @@ def climo_driver(opts):
        print 'Defaulting to all seasons'
        cseasons = ['ANN','DJF','MAM','JJA','SON',
                    'JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC']
+    
 
     #cseasons = ['ANN', 'DJF', 'JJA' ] 
     #cseasons = ['JAN']
@@ -175,21 +253,24 @@ def climo_driver(opts):
         #varkeys = varkeys[0:2]  # quick version for testing
 
         casename = ''
-        if opts['dsnames'] != []:
-           casename = opts['dsnames'][0]
+        if opts['model'][0]['name'] != None:
+           casename = opts['model'][0]['name']
            print 'Using ', casename,' as dataset name'
-        if opts['outputdir'] is not None and opts['outputdir']!='':
-            outdir = opts['outputdir']
+        if opts['output']['outputdir'] is not None and opts['output']['outputdir']!='':
+            outdir = opts['output']['outputdir']
         else:
             outdir = ''
         outdir = os.path.join(outdir, 'climos')
+        print 'casename: ', casename
         if not os.path.isdir(outdir):
             try:
                os.mkdir(outdir) # processOptions() verifies up to the /climos part, so make /climos now
             except:
                print 'Could not create outputdir - %s' %outdir
                quit()
-        rvs,case = compute_and_write_climatologies( varkeys, reduced_variables1, season, casename,
+        #rvs,case = compute_and_write_climatologies_keepvars( varkeys, reduced_variables1, season, casename,
+        #                                            path=outdir )
+        case = compute_and_write_climatologies( varkeys, reduced_variables1, season, casename,
                                                     path=outdir )
 
         # Repeat for variance, climatology of (var-climo(var))**2/(N-1)

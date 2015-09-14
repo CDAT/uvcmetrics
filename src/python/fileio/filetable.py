@@ -157,6 +157,9 @@ class basic_filetable(basic_id):
         self.lataxes = []  # list of latitude axis names (usually just one)
         self.lonaxes = []  # list of longitude axis names (usually just one)
         self.levaxes = []  # list of level axis names (sometimes a few of them)
+        self._type = None
+        self._climos = None
+        self._name = None
 
         #print "filelist=",filelist,type(filelist)
         self._filelist = filelist # just used for __repr__ and root_dir
@@ -440,8 +443,13 @@ class NCAR_filefmt(basic_filefmt):
       if hasattr( timeax, 'bounds' ):
          time_bnds_name = timeax.bounds
          if self._dfile[time_bnds_name] is not None:
-            lo = self._dfile[time_bnds_name][0][0]
-            hi = self._dfile[time_bnds_name][-1][1]
+            try:
+                lo = self._dfile[time_bnds_name][0][0]
+                hi = self._dfile[time_bnds_name][-1][1]
+            except Exception as e:
+                print "exception getting time bounds from self._dfile[",time_bnds_name,"]=",\
+                    self._dfile[time_bnds_name]
+                raise e
          else:
             lo = timeax[0]
             hi = timeax[-1]
@@ -737,7 +745,7 @@ if __name__ == '__main__':
    o = Options()
    o.ProcessCmdLine()
    from findfiles import *
-   datafiles = dirtree_datafiles(o, pathid=0)
+   datafiles = dirtree_datafiles(o, modelid=0)
    filetable = basic_filetable( datafiles, o)
    print "filetable=", filetable.sort()
 

@@ -5,10 +5,11 @@ from metrics.common import *
 from metrics.common.id import *
 from metrics.packages.diagnostic_groups import *
 from metrics.computation.reductions import *
+from metrics.frontend import *
 import sys, traceback
 
 class derived_var(basic_id):
-    def __init__( self, vid, inputs=[], outputs=['output'], func=(lambda: None), special_value=None ):
+    def __init__( self, vid, inputs=[], outputs=['output'], func=(lambda: None), special_values=None ):
         """Arguments:
         vid, an id for this dervied variable;
         func=function to compute values of this variable;
@@ -27,13 +28,13 @@ class derived_var(basic_id):
         self._file_attributes = {}
         # This is primarily used for 2-phase derived variables where we need to pass in a
         # special value that wouldn't be part of the input dictionary. The current example is
-        # passing in a region for land set 5 when we compute reduced/derived variables, then
+        # passing in a region and weights for land set 5 when we compute reduced/derived variables, then
         # construct new variables based on those which all require a 'region' argument.
         # I could see this being used for passing in seasons perhaps as well, and perhaps
         # any other arbitary sort of argument. Perhaps there is a better way of doing this,
         # but this is what worked for me in land.
         #   -BES
-        self._special = special_value
+        self._special = special_values
     def inputs( self ):
         return self._inputs
     def derive( self, inpdict ):
@@ -47,16 +48,30 @@ class derived_var(basic_id):
         object)."""
         # error from checking this way!... if None in [ vardict[inp] for inp in self._inputs ]:
         if self._special != None:
-           # First, we have to add to inpdict to make sure the special_value isn't thrown away.
-           inpdict[self._special] = self._special
+           # First, we have to add to inpdict to make sure the special_values isn't thrown away.
+#           print 'inpdict: ', inpdict
+#           print 'inpdict type:' ,type(inpdict)
+#           print 'special: ', type(self._special)
+           for k in self._special:
+            inpdict[k] = k
+#           inpdict[self._special] = self._special
+#           print 'inpdict after'
+#           print type(self._inputs)
            # Then we need to add it to inputs
-           self._inputs.append(self._special)
+           self._inputs.extend(self._special)
         dictvals = [ inpdict.get(inp,None) for inp in self._inputs ]
         nonevals = [ inp for inp in self._inputs if inpdict.get(inp,None) is None ]
         if len(nonevals)>0:
             print "cannot yet derive",self._id,"because missing inputs",nonevals
+            print "what's available is",inpdict.keys()
             return None
-        output = apply( self._func, [ inpdict[inp] for inp in self._inputs ] )
+        try:
+            output = apply( self._func, [ inpdict[inp] for inp in self._inputs ] )
+        except TypeError as e:
+            print "In derived_var.derive, _inputs=",self._inputs
+            print "WARNING, derivation function failed.  Probably not enough valid inputs." 
+            print e
+            return None
         if type(output) is tuple or type(output) is list:
             for o in output:
                 if o is None: return None
@@ -75,12 +90,16 @@ class derived_var(basic_id):
         """varid, varmod, seasonid are strings identifying a variable name, a name modifier
         (often '' is a good value) and season, ft is a filetable, or a string id for the filetable.
         This method constructs and returns an id for the corresponding derived_var object."""
+        if seasonid=='JFMAMJJASOND':
+            seasonid = 'ANN'
         if type(ft1) is str:  # can happen if id has already been computed, and is used as input here.
             ft1id = ft1
         else:
             ft1id = id2str( ft1._id )
         if ft2 is None or ft2=='':
             ft2id = ''
+        elif type(ft2) is str:
+            ft2id = ft2
         else:
             ft2id = id2str( ft2._id )
         if region is None:
@@ -96,14 +115,15 @@ class dv(derived_var):
 class plotspec(basic_id):
     def __init__(
         self, vid,
-        zvars=[], zfunc=None, zrangevars=[], zrangefunc=None,
-        z2vars=[], z2func=None, z2rangevars=[], z2rangefunc=None,
-        z3vars=[], z3func=None, z3rangevars=[], z3rangefunc=None,
-        z4vars=[], z4func=None, z4rangevars=[], z4rangefunc=None,
+        zvars=[], zfunc=None, zrangevars=[], zrangefunc=None, zlinetype='solid', zlinecolor=241,
+        z2vars=[], z2func=None, z2rangevars=[], z2rangefunc=None, z2linetype='solid', z2linecolor=241,
+        z3vars=[], z3func=None, z3rangevars=[], z3rangefunc=None, z3linetype='solid', z3linecolor=241,
+        z4vars=[], z4func=None, z4rangevars=[], z4rangefunc=None, z4linetype='solid', z4linecolor=241,
         plottype='table',
         title = None,
         source = '',
-        overplotline = False
+        overplotline = False,
+        levels = None
         ):
         """Initialize a plotspec (plot specification).  Inputs are an id and plot type,
         and lists of x,y,z variables (as keys in the plotvars dictionary), functions to
@@ -118,6 +138,7 @@ class plotspec(basic_id):
             basic_id.__init__(self,*vid)
         else:
             basic_id.__init__(self,vid)
+
         if zfunc==None:
             if len(zvars)==0:
                 zfunc = (lambda: None)
@@ -125,6 +146,7 @@ class plotspec(basic_id):
                 zfunc = (lambda z: z)
         if zrangefunc==None:
             zrangefunc = (lambda: None)
+
         if z2func==None:
             if len(z2vars)==0:
                 z2func = (lambda: None)
@@ -132,31 +154,57 @@ class plotspec(basic_id):
                 z2func = (lambda z2: z2)
         if z2rangefunc==None:
             z2rangefunc = (lambda: None)
+        
+        if z3func==None:
+            if len(z3vars) == 0:
+               z3func = (lambda: None)
+            else:
+               z3func = (lambda z3 :z3)
+        if z3rangefunc == None:
+            z3rangefunc = (lambda: None)
+
+        if z4func==None:
+            if len(z4vars) == 0:
+               z4func = (lambda: None)
+            else:
+               z4func = (lambda z4 :z4)
+        if z4rangefunc == None:
+            z4rangefunc = (lambda: None)
+
         self.zfunc = zfunc
         self.zvars = zvars
         self.zrangevars = zrangevars
         self.zrangefunc = zrangefunc
+        self.zlinetype = zlinetype
+        self.zlinecolor = zlinecolor
         
         self.z2func = z2func
         self.z2vars = z2vars
         self.z2rangevars = z2rangevars
         self.z2rangefunc = z2rangefunc
+        self.z2linetype = z2linetype
+        self.z2linecolor = z2linecolor
         
         self.z3func = z3func
         self.z3vars = z3vars
         self.z3rangevars = z3rangevars
         self.z3rangefunc = z3rangefunc
+        self.z3linetype = z3linetype
+        self.z3linecolor = z3linecolor
         
         self.z4func = z4func
         self.z4vars = z4vars
         self.z4rangevars = z4rangevars
         self.z4rangefunc = z4rangefunc
+        self.z4linetype = z4linetype
+        self.z4linecolor = z4linecolor
         
         self.plottype = plottype
         if title is not None:
             self.title = title
         self.source = source
         self.overplotline = overplotline
+        self.levels = levels
 
     @classmethod
     def dict_id( cls, varid, varmod, seasonid, ft1, ft2=None, region='' ):
@@ -359,10 +407,32 @@ class level_variable_for_amwg_set5(basic_level_variable):
             }
         return opts
 
+#class lmwg_set9_variable(basic_plot_variable):
+#   """ i see no reaason why these stubs live in here instead of in amwg*.py or lmwg.py. So I moved the one for land to lmwg.
+#   @staticmethod
+#   def varoptions():
+#      opts={'TSA':'TSA', 'PREC':'PREC','ASA':'ASA'}
+#      return opts
+
 class basic_pole_variable(basic_plot_variable):
     """represents a typical variable that reduces the latitude axis."""
     @staticmethod
     def varoptions():
         """returns the hemisphere specific to this variable. """
         opts ={" Northern Hemisphere":(90, 0.), " Southern Hemisphere":(-90.,0) }
+        opts['default'] = (90, 0.)
+        return opts
+class station_id_variable(basic_plot_variable):
+    """provides an index into a data array for a specific station."""
+    @staticmethod
+    def varoptions():
+        """returns the station index specific to this variable. """
+        #copied from profiles.ncl in amwg diagnostics
+
+        opts ={}
+        data_index = 0
+        for station in defines.station_names:
+            opts[station] = data_index
+            data_index += 1
+        opts['default'] = 26  # San Francisco (actually Hayward)
         return opts

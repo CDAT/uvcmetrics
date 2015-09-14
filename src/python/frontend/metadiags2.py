@@ -7,7 +7,7 @@ from metrics.frontend.options import Options
 from metrics.fileio.filetable import *
 from metrics.fileio.findfiles import *
 from metrics.packages.diagnostic_groups import *
-from metrics.frontend.amwgmaster import *
+from metrics.frontend.amwgmaster2 import *
 
 
 # The user specified a package; see what collections are available.
@@ -44,15 +44,12 @@ def getCollections(pname):
 
 def makeTables(modelpath, obspath, outpath, pname, outlog):
    if pname.upper() == 'AMWG':
-      seasons = diags_collection['1'].get('seasons', ['ANN'])
-      regions = diags_collection['1'].get('regions', ['Global'])
-      if 'NA' in seasons:
-         seasonstr = ''
-      else:
-         seasonstr = '--seasons '+' '.join(seasons)
-      regionstr = '--regions '+' '.join(regions)
-      cmdline = 'diags-new.py --model path=%s,climos=yes,type=model --obs path=%s,climos=yes,type=obs --set 1 --prefix set1 --package AMWG %s %s --outputdir %s' % (modelpath, obspath, seasonstr, regionstr, outpath)
-      runcmdline(cmdline, outlog)
+      # loop over 3 seasons. Each one generates 4 tables
+      regions = ['Global', 'Tropics', '\'Northern_Extratropics\'', '\'Southern_Extratropics\'']
+      seasons = '--seasons DJF JJA ANN'
+      for reg in regions:
+         cmdline = 'diags2.py --model path=%s,climos=yes,type=model --obs path=%s,climos=yes,type=obs --set 1 --package AMWG %s --outputdir %s --region %s' % (modelpath, obspath, seasons, outpath, reg)
+         runcmdline(cmdline, outlog)
          
 def generatePlots(modelpath, obspath, outpath, pname, xmlflag, colls=None):
    # Did the user specify a single collection? If not find out what collections we have
@@ -92,7 +89,7 @@ def generatePlots(modelpath, obspath, outpath, pname, xmlflag, colls=None):
       optionsstr = ''
       if diags_collection[collnum].get('options', False) != False:
          # we have a few options
-         print 'Additional command line options to pass to diags.py - ', diags_collection[collnum]['options']
+         print diags_collection[collnum]['options']
          for k in diags_collection[collnum]['options'].keys():
             optionsstr = optionsstr + '--%s %s ' % (k, diags_collection[collnum]['options'][k])
 
@@ -131,6 +128,7 @@ def generatePlots(modelpath, obspath, outpath, pname, xmlflag, colls=None):
 
       # At this point, we have a list of obs for this collection, a list of variables, and a list of plots
       # We need to organize them so that we can loop over obs sets with a fixed plottype and list of variables.
+
       # Let's build a dictionary for that.
       for p in plotlist:
          obsvars = {}
@@ -159,7 +157,7 @@ def generatePlots(modelpath, obspath, outpath, pname, xmlflag, colls=None):
             if o != 'NA':
                obsfname = diags_obslist[o]['filekey']
                obsstr = ',filter="f_startswith(\''+obsfname+'\')"'  #note leading comma
-               poststr = '--postfix '+obsfname
+               poststr = '--postfix _'+obsfname
             else:
                obsstr = ''
                poststr = ' --postfix \'\''
@@ -168,56 +166,66 @@ def generatePlots(modelpath, obspath, outpath, pname, xmlflag, colls=None):
             prestr = ' --prefix set'+collnum
 
             # set up season str (and later overwrite it if needed)
-            g_season = diags_collection[collnum].get('seasons', ['ANN'])
-            if 'NA' in g_season:
-               seasonstr = ''
-            else:
-               seasonstr = '--seasons '+' '.join(g_season)
-               
-            # set up region str (and later overwrite it if needed)
-            g_region = diags_collection[collnum].get('regions', ['Global'])
-            if g_region == ['Global']:
-               regionstr = ''
-            else:
-               regionstr = '--regions '+' '.join(g_region)
-
-            # Now, check each variable for a season/region/varopts argument. Any that do NOT have them can be dealt with first.
-            obs_vlist = obsvars[o]
-            simple_vars = []
-            for v in obs_vlist:
-               if diags_collection[collnum][v].get('seasons', False) == False and diags_collection[collnum][v].get('regions', False) == False and diags_collection[collnum][v].get('varopts', False) == False:
-                  simple_vars.append(v)
-
-            complex_vars = list(set(obs_vlist) - set(simple_vars))
-            # simple vars first
-            if len(simple_vars) != 0:
-               varstr = '--vars '+' '.join(simple_vars)
-               cmdline = 'diags-new.py --model path=%s,climos=yes,type=model --obs path=%s,climos=yes,type=obs%s %s %s %s %s %s %s %s %s %s %s' % (modelpath, obspath, obsstr, optionsstr, packagestr, setstr, seasonstr, varstr, outstr, xmlstr, prestr, poststr, regionstr)
-               if collnum != 'dontrun':
-                  runcmdline(cmdline, outlog)
-               else:
-                  print 'DONTRUN: ', cmdline
-
-            for v in complex_vars:
-            # run these individually basically.
-               g_region = diags_collection[collnum][v].get('regions', ['Global'])
-               g_season = diags_collection[collnum][v].get('seasons', ['ANN'])
-               if 'NA' in g_season:
+            if diags_collection[collnum].get('mixed_seasons', False) == False:
+               if diags_collection[collnum].get('seasons', False) == False:
                   seasonstr = ''
                else:
-                  seasonstr = '--seasons '+' '.join(g_season)
-                  
-               regionstr = '--regions '+' '.join(g_region)
-               varopts = ''
-               if diags_collection[collnum][v].get('varopts', False) != False:
-                  varopts = '--varopts '+' '.join(diags_collection[collnum][v]['varopts'])
-               varstr = '--vars '+v
-               # check for varopts.
-               cmdline = 'diags-new.py --model path=%s,climos=yes,type=model --obs path=%s,climos=yes,type=obs%s %s %s %s %s %s %s %s %s %s %s %s' % (modelpath, obspath, obsstr, optionsstr, packagestr, setstr, seasonstr, varstr, outstr, xmlstr, prestr, poststr, regionstr, varopts)
+                  seasonstr = '--seasons '+' '.join(diags_collection[collnum]['seasons'])
+
+            # set up region str (and later overwrite it if needed)
+            if diags_collection[collnum].get('mixed_regions', False) == False:
+               if diags_collection[collnum].get('regions', False) == False:
+                  regionstr = ''
+               else:
+                  regionstr = '--regions '+' '.join(diags_collection[collnum]['regions'])
+
+            # If we don't have any variable-level seasons/regions we can run now.
+            if diags_collection[collnum].get('mixed_seasons', False) == False and diags_collection[collnum].get('mixed_regions', False) == False:
+               # do we have a collection-level region defined?
+               regs = diags_collection[collnum].get('regions', '')
+               if regs == '':
+                  regionstr = ''
+               else:
+                  regionstr = '--regions '+' '.join(regs)
+
+               varstr = ' --vars '+' '.join(obsvars[o])
+               cmdline = 'diags2.py --model path=%s,climos=yes,type=model --obs path=%s,climos=yes,type=obs%s %s %s %s %s %s %s %s %s %s %s' % (modelpath, obspath, obsstr, optionsstr, packagestr, setstr, seasonstr, varstr, outstr, xmlstr, prestr, poststr, regionstr)
                if collnum != 'dontrun':
                   runcmdline(cmdline, outlog)
                else:
-                  print 'DONTRUN: ', cmdline
+                  print 'Testing - ', cmdline
+
+            else: # more complicated. Basically, run this 1 at a time. Either we have mixed seasons or mixed regions (or both).
+               # We should have already dealt with collection-wide season/regions, so we just need to reset individual strings
+               # Unfortuantely, passing "seasons" as an array 
+               regs = diags_collection[collnum].get('regions', '')
+
+               if diags_collection[collnum].get('seasons', False) != False: # a default season was specified
+                  seasonstr = '--seasons '+' '.join(diags_collection[collnum]['seasons'])
+               else:
+                  seasonstr = ''
+               if regs == '':
+                  regionstr = ''
+               else:
+                  regionstr = '--regions '+' '.join(regs)
+               for v in obsvars[o]:
+                  # set to the collection-level default (if there was one)
+                  vregionstr = regionstr
+                  vseasonstr = seasonstr
+                  if diags_collection[collnum][v].get('seasons', False) != False and diags_collection[collnum][v].get('regions', False) != False:
+                     vseasonstr = ' --seasons '+' '.join(diags_collection[collnum][v]['seasons'])
+                     vregionstr = ' --regions '+' '.join(diags_collection[collnum][v]['regions'])
+                  if diags_collection[collnum][v].get('seasons', False) != False: # we have a specific season list for this var
+                     vseasonstr = '--seasons '+' '.join(diags_collection[collnum][v]['seasons'])
+                  if diags_collection[collnum][v].get('regions', False) != False: # we have a specific region/s for this var
+                     vregionstr = '--regions '+' '.join(diags_collection[collnum][v]['regions'])
+                  varstr = '--vars '+v
+               # run this command now
+                  cmdline = 'diags2.py --model path=%s,climos=yes,type=model --obs path=%s,climos=yes,type=obs%s %s %s %s %s %s %s %s %s %s %s' % (modelpath, obspath, obsstr, optionsstr, packagestr, setstr, vseasonstr, varstr, outstr, xmlstr, prestr, poststr, vregionstr)
+                  if collnum != 'dontrun':
+                     runcmdline(cmdline, outlog)
+                  else:
+                     print 'Testing - ', cmdline
 
    outlog.close()
 

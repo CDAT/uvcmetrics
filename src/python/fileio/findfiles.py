@@ -175,6 +175,7 @@ class basic_datafiles:
         cache_path = self.opts['cachepath']
         cache_path = os.path.expanduser(cache_path)
         cache_path = os.path.abspath(cache_path)
+        print "cache_path=",cache_path
         datafile_ls = [ f+'size'+(str(os.path.getsize(f)) if os.path.isfile(f) else '0')+\
                             'mtime'+(str(os.path.getmtime(f)) if os.path.isfile(f) else '0')\
                             for f in self.files ]
@@ -197,6 +198,7 @@ class basic_datafiles:
             f = open(cachefile,'rb')
             try:
                 filetable = pickle.load(f)
+                self.initialize_idnumber() # otherwise we could get 2 filetables with the same id.
                 cached=True
             except:
                 cached=False
@@ -219,75 +221,87 @@ class basic_datafiles:
         if os.path.isfile(cachefile):
             os.remove(cachefile)
 
-def path2filetable( opts, pathid=None, obsid=None, path=None, filter=None ):
-    """Convenient way to make a filetable.  Inputs: opts is an Options object, containing a 'cachepath' and
-    maybe a 'dsname' option.  path is the path to the root of the directory tree containing the files to be
-    indexed (or path can be a list of such paths).  filter is a filter inheriting from basic_filter, or None,
-    or a string which can be evaluated to such a filter."""
-    datafiles = dirtree_datafiles( opts, pathid=pathid, obsid=obsid, path=path, filter=filter )
+def path2filetable( opts, modelid=None, obsid=None):
+    """Convenient way to make a filetable. Inputs: opts is an Options object, containing at least:
+       'cachepath', and one or more 'model' or 'obs' objects. modelid and obsid are indeces into the
+       model/obs object arrays.
+    """
+    datafiles = dirtree_datafiles( opts, modelid=modelid, obsid=obsid)
     filetable = datafiles.setup_filetable()
-    if path is not None and pathid is not None:
-        opts['path'][pathid] = path
-    elif path is not None and obsid is not None:
-        opts['path'][obsid] = path
+    if modelid != None:
+         ftype = 'model'
+         fid = modelid
+    else:
+         ftype = 'obs'
+         fid = obsid
+    filetable._type = ftype 
+    filetable._climos = opts[ftype][fid]['climos']
+    filetable._name = opts[ftype][fid]['name']
     return filetable
 
 class dirtree_datafiles( basic_datafiles ):
-    def __init__( self, options, pathid=None, obsid=None, path=None, filter=None ):
+    def __init__( self, options, pathid=None, modelid=None, obsid=None ):
         """Finds all the data files in the directory tree specified one of two ways:
-        (1) (deprecated) inside the options structure, as specified by a path or obs ID. 
+        (1) inside the options structure, as specified by a path or obs ID. 
         An optional filter, of type basic_filter can be passed to options as well.
-        pathid and obsid are numbers, usually 0 or 1, for looking up paths in the Options object.
-        (2) explicitly set the path through the keyword argument (It can be a string; or a list of strings
+        modelid and obsid are numbers, usually 0 or 1, for looking up paths in the Options object.
+        (2) (to be re-implemented.  This class really just needs a path, filter, and cache path)
+        explicitly set the path through the keyword argument (It can be a string; or a list of strings
         to specify multiple paths).  In this case the filter, if any,
         also must be specified through the keyword argument.  The Options object will still
         be used for the cache path."""
 
         self.opts = options
         self._root = None
+        self._type = None
         filt = None
+        obj = {}
 
-        if path is None:
-            if self.opts['filter']=='None' or self.opts['filter']=='':
-                filt = None
-            elif self.opts['filter'] != None:
-               filt = self.opts['filter']
-            if((self.opts['path'] == None and pathid != None) or (self.opts['obspath'] == None and obsid != None)):
-               self._root = None
-               self._filt = None
-               self.files = []
-               return None
+        if modelid is None and obsid is None and pathid is None:
+            self._root = None
+            self._filt = None
+            self.files = []
+            return None
+        if obsid is not None:
+            obj = self.opts['obs'][obsid]
+            self._index = obsid
+        elif modelid is not None:
+            obj = self.opts['model'][modelid]
+            self._index = modelid
+        if pathid is not None and pathid in self.opts['path']:
+            obj['path'] = self.opts['path'][pathid]
+        if obj['path'] is None: # However, the object desired has no path information.
+            self._root = None
+            self._filt = None
+            self.files = []
+            return None
+        root = obj['path']
+        if obj.get('filter', False) == False:
+            obj['filter'] = None
 
-            if pathid != None:
-               root = [ self.opts['path'][pathid] ]
-            elif obsid != None:
-               root = [ self.opts['obspath'][obsid] ]
-            else:
-               print "don't understand root directory ",self._root 
-               quit()
-            if root is None or (type(root) is list and None in root):
-               self._root = None
-               self._filt = None
-               self.files = []
-               return None
-        else:
-            if type(path) is str:
-                root = [path]
-            else:
-                root = path
-            filt = filter
+        if type(root) is str:
+            root = [root]
 
         root = [ os.path.expanduser(r) for r in root ]
         root = [ r if r[0:5]=='http:' else os.path.abspath(r) for r in root ]
+        filt = obj['filter']
+        #print 'root: ', root, type(root)
+        #print 'filt: ', filt, type(filt)
 
         if filt is None or filt=="": 
            filt=basic_filter()
-        elif path is None:
-           filt = eval(str(self.opts['filter']))
         elif type(filt) is str:
-            filt = eval(str(filter))
-        else:
-            filt = filter
+           filt = eval(str(filt))
+           if type(filt) is str:
+               filt = eval(str(filt))
+
+        # The GUI is not well-behaved for these things, so do this for now.
+        if obj.get('type', False) != False:
+           self._type = obj['type']
+        if obj.get('climos', False) != False:
+           self._climos = obj['climos']
+        if obj.get('name', False) != False:
+           self._name = obj['name']
 
         self._root = root
         self._filt = filt
@@ -315,10 +329,14 @@ class dirtree_datafiles( basic_datafiles ):
         return self.files
 
     def short_name(self):
-        if self.opts.get('dsname',None) != None and pathid != None:
-            return self.opts['dsname'][pathid]
-        elif len(self._filt.mystr())>0:
-            return ','.join(['_'.join([os.path.basename(str(r)),self._filt.mystr()])
+        if self._type == None or self._index == None or not hasattr(self,'_index'):
+            return ','.join([os.path.basename(str(r))
+                             for r in self._root])   # <base directory> <filter name>
+        if len(self.opts[self._type]) > self._index:
+            if self.opts[self._type][self._index].get('name', False) != False:
+               return self.opts[self._type][self._index]['name'] 
+            if self.opts[self._type][self._index].get('filter', False) != False:
+               return ','.join(['_'.join([os.path.basename(str(r)),self._filt.mystr()])
                              for r in self._root])   # <base directory> <filter name>
         else:
             return ','.join([os.path.basename(str(r))
@@ -396,7 +414,7 @@ def extract_filefamilyname( filename ):
 if __name__ == '__main__':
    o = Options()
    o.processCmdLine()
-   # pathid 0 is the minimum required to get this far in processCmdLine()
-   datafiles = dirtree_datafiles(o, pathid=0)
+   # modelid 0 is the minimum required to get this far in processCmdLine()
+   datafiles = dirtree_datafiles(o, modelid=0)
 
 

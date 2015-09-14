@@ -8,3 +8,6 @@ from vertical import *
 from masks import *
 from set13 import *
 from clouds import *
+from WC_diag_amwg import *
+import WC_diag_amwg
+

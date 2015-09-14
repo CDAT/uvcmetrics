@@ -46,10 +46,7 @@ def makeTables(modelpath, obspath, outpath, pname, outlog):
    if pname.upper() == 'AMWG':
       seasons = diags_collection['1'].get('seasons', ['ANN'])
       regions = diags_collection['1'].get('regions', ['Global'])
-      if 'NA' in seasons:
-         seasonstr = ''
-      else:
-         seasonstr = '--seasons '+' '.join(seasons)
+      seasonstr = '--seasons '+' '.join(seasons)
       regionstr = '--regions '+' '.join(regions)
       cmdline = 'diags-new.py --model path=%s,climos=yes,type=model --obs path=%s,climos=yes,type=obs --set 1 --prefix set1 --package AMWG %s %s --outputdir %s' % (modelpath, obspath, seasonstr, regionstr, outpath)
       runcmdline(cmdline, outlog)
@@ -169,10 +166,7 @@ def generatePlots(modelpath, obspath, outpath, pname, xmlflag, colls=None):
 
             # set up season str (and later overwrite it if needed)
             g_season = diags_collection[collnum].get('seasons', ['ANN'])
-            if 'NA' in g_season:
-               seasonstr = ''
-            else:
-               seasonstr = '--seasons '+' '.join(g_season)
+            seasonstr = '--seasons '+' '.join(g_season)
                
             # set up region str (and later overwrite it if needed)
             g_region = diags_collection[collnum].get('regions', ['Global'])
@@ -181,17 +175,17 @@ def generatePlots(modelpath, obspath, outpath, pname, xmlflag, colls=None):
             else:
                regionstr = '--regions '+' '.join(g_region)
 
-            # Now, check each variable for a season/region/varopts argument. Any that do NOT have them can be dealt with first.
+            # Now, check each variable for a season/region argument. Any that do NOT have them can be dealt with first.
             obs_vlist = obsvars[o]
             simple_vars = []
             for v in obs_vlist:
-               if diags_collection[collnum][v].get('seasons', False) == False and diags_collection[collnum][v].get('regions', False) == False and diags_collection[collnum][v].get('varopts', False) == False:
+               if diags_collection[collnum][v].get('seasons', False) == False and diags_collection[collnum][v].get('regions', False) == False:
                   simple_vars.append(v)
 
             complex_vars = list(set(obs_vlist) - set(simple_vars))
             # simple vars first
             if len(simple_vars) != 0:
-               varstr = '--vars '+' '.join(simple_vars)
+               varstr = ' --vars '+' '.join(simple_vars)
                cmdline = 'diags-new.py --model path=%s,climos=yes,type=model --obs path=%s,climos=yes,type=obs%s %s %s %s %s %s %s %s %s %s %s' % (modelpath, obspath, obsstr, optionsstr, packagestr, setstr, seasonstr, varstr, outstr, xmlstr, prestr, poststr, regionstr)
                if collnum != 'dontrun':
                   runcmdline(cmdline, outlog)
@@ -202,18 +196,10 @@ def generatePlots(modelpath, obspath, outpath, pname, xmlflag, colls=None):
             # run these individually basically.
                g_region = diags_collection[collnum][v].get('regions', ['Global'])
                g_season = diags_collection[collnum][v].get('seasons', ['ANN'])
-               if 'NA' in g_season:
-                  seasonstr = ''
-               else:
-                  seasonstr = '--seasons '+' '.join(g_season)
-                  
                regionstr = '--regions '+' '.join(g_region)
-               varopts = ''
-               if diags_collection[collnum][v].get('varopts', False) != False:
-                  varopts = '--varopts '+' '.join(diags_collection[collnum][v]['varopts'])
+               seasonstr = '--seasons '+' '.join(g_season)
                varstr = '--vars '+v
-               # check for varopts.
-               cmdline = 'diags-new.py --model path=%s,climos=yes,type=model --obs path=%s,climos=yes,type=obs%s %s %s %s %s %s %s %s %s %s %s %s' % (modelpath, obspath, obsstr, optionsstr, packagestr, setstr, seasonstr, varstr, outstr, xmlstr, prestr, poststr, regionstr, varopts)
+               cmdline = 'diags-new.py --model path=%s,climos=yes,type=model --obs path=%s,climos=yes,type=obs%s %s %s %s %s %s %s %s %s %s %s' % (modelpath, obspath, obsstr, optionsstr, packagestr, setstr, seasonstr, varstr, outstr, xmlstr, prestr, poststr, regionstr)
                if collnum != 'dontrun':
                   runcmdline(cmdline, outlog)
                else:
