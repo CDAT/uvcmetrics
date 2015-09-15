@@ -284,6 +284,9 @@ if __name__ == "__main__":
                 fw = cdms2.open(args.weights)
                 area = fw("area_b")
                 fw.close()
+                if numpy.allclose(area,0.):
+                  print "area is all zeroes computing it for you"
+                  area = cdutil.area_weights(dat2)*numpy.pi*4.
                 area = MV2.reshape(area, dat2.shape[-2:])
                 V2 = fo["area"]
                 V2[:] = area[:]
