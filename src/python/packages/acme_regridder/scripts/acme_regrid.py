@@ -12,7 +12,17 @@ import metrics.packages.acme_regridder._regrid
 import cdutil
 import datetime
 import time
+import hashlib
+import cdat_info
 
+def hashfile(filename):
+    sha1 = hashlib.sha1()
+    f=open(filename,'rb')
+    try:
+      sha1.update(f.read())
+    finally:
+      f.close()
+    return sha1.hexdigest()
 
 class WeightFileRegridder:
     def __init__(self, weightFile, toRegularGrid=True, fix_bounds=False):
@@ -182,7 +192,7 @@ if __name__ == "__main__":
         dirnm = os.getcwd()
     elif dirnm[0] != os.path.sep:
         dirnm = os.path.join(os.getcwd(), dirnm)
-    fo.acme_regrid_input_file = os.path.join(dirnm, basenm)
+    fo.input_file = os.path.join(dirnm, basenm)
 
     dirnm = os.path.dirname(args.weights)
     basenm = os.path.basename(args.weights)
@@ -190,8 +200,12 @@ if __name__ == "__main__":
         dirnm = os.getcwd()
     elif dirnm[0] != os.path.sep:
         dirnm = os.path.join(os.getcwd(), dirnm)
-    fo.acme_regrid_weights_file = os.path.join(dirnm, basenm)
-    fo.acme_regrid_version = metrics.git.commit
+    fo.map_file = os.path.join(dirnm, basenm)
+    fo.version = metrics.git.commit
+    fo.UVCDAT = "UV-CDAT: %s METRICS: %s SHA1: %s" % (
+        '.'.join([str(x) for x in cdat_info.version()]),
+        metrics.git.commit,
+        hashfile(__file__))
 
     wgt = None
     if args.var is not None:
@@ -270,6 +284,9 @@ if __name__ == "__main__":
                 fw = cdms2.open(args.weights)
                 area = fw("area_b")
                 fw.close()
+                if numpy.allclose(area,0.):
+                  print "area is all zeroes computing it for you"
+                  area = cdutil.area_weights(dat2)*numpy.pi*4.
                 area = MV2.reshape(area, dat2.shape[-2:])
                 V2 = fo["area"]
                 V2[:] = area[:]
