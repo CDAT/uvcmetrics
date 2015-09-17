@@ -15,10 +15,11 @@ cdms2.setNetcdfUseParallelFlag(0)
 #size = comm.size
 #rank = comm.rank
 
-if rk is 0:
+if rk == 0:
     #pdb.set_trace()
     f = cdms2.open( '/Users/mcenerney1/uvcmetrics_test_data/obs_data/NCEP_01_climo.nc', 'r' )
 #comm.barrier()
-    print rk, f.variables
+    print rk, f.variables, '\n'
 else:
-    print rk, 'nothing to do'
+    f = cdms2.open( '/Users/mcenerney1/uvcmetrics_test_data/obs_data/NCEP_02_climo.nc', 'r' )
+    print rk, f.variables, '\n' #'nothing to do'

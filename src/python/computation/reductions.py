@@ -2548,7 +2548,7 @@ def run_cdscan( fam, famfiles, cache_path=None, COMM=None ):
 
     # I know of no exception to the rule that all files in the file family keep their
     # units in the same place; so find where they are by checking the first file
-    pdb.set_trace()
+    #pdb.set_trace()
     f = cdms2.open( famfiles[0] )
     if f['time'] is None:
             cdscan_line = 'cdscan -q '+'-x '+xml_name+' '+' '.join(famfiles)

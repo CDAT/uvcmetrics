@@ -1011,11 +1011,11 @@ class plot_spec(object):
         #print self.reduced_variables.keys()
         print 'the compute loop rank = ',self.rank, len(self.SLICE), 'seasonid' in self.variable_values.keys()
         local_variable_values = []
-        for SLICE in self.SLICE:
+        for key in self.local_keys:
             #print SLICE
         #for v in self.reduced_variables[self.SLICE].keys():
-            [v] = self.reduced_variables.keys()[SLICE]
-            print self.rank, v, SLICE
+            v = self.reduced_variables[key]
+            print self.rank, v, key
             value = self.reduced_variables[v].reduce(None)
             #print 'check seasonid ', self.rank, 'seasonid' in self.variable_values.keys(), len(self.variable_values.keys())
             try:
