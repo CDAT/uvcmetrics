@@ -165,7 +165,7 @@ def run_diags( opts ):
          if len(variables)==0 and len(opts.get('vars',[]))>0:
             print "WARNING: Couldn't find any of the requested variables:",opts['vars']
             print "among",variables
-            quit()
+            sys.exit(1)
 
       # AMWG set 1 (the tables) is special cased
       if (sclass.number == '1' and package.upper() == 'AMWG'):
