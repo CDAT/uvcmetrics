@@ -165,6 +165,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
          os.makedirs(outpath)
       except:
          print 'Failed to create directory ', outpath
+
    try:
       outlog = open(os.path.join(outpath,'DIAGS_OUTPUT.log'), 'w')
    except:
@@ -504,7 +505,7 @@ if __name__ == '__main__':
    dbflag = True
    dbonly = False
    xmlflag = True #default to generating xml/netcdf files
-   hostname = 'acme-dev-2.ornl.gov'
+   hostname = 'acme-ea.ornl.gov'
 
    if opts['dbopts'] == 'no':
       dbflag = False
