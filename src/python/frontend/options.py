@@ -324,6 +324,7 @@ class Options():
       import metrics.fileio.filetable as ft
       import metrics.fileio.findfiles as fi
       import metrics.packages.diagnostic_groups 
+      import os
       if len(self._opts['model']) == 0 and len(self._opts['obs']) == 0:
          print 'At least one model or obs set needs describted'
          quit()
@@ -332,14 +333,28 @@ class Options():
             if self._opts['model'][i]['path'] == None or self._opts['model'][i]['path'] == '':
                print 'Each dataset must have a path provided'
                quit()
+            # check if the path exists
+            if not os.path.exists(self._opts['model'][i]['path']):
+               print 'Path - %s - does not exist' % self._opts['model'][i]['path']
+               quit()
       if len(self._opts['obs']) != 0:
          for i in range(len(self._opts['obs'])):
             if self._opts['obs'][i]['path'] == None or self._opts['obs'][i]['path'] == '':
                print 'Each dataset must have a path provided'
                quit()
+            if not os.path.exists(self._opts['obs'][i]['path']):
+               print 'Obs Path - %s - does not exist' % self._opts['obs'][i]['path']
+               quit()
 #      if(self._opts['package'] == None):
 #         print 'Please specify a package e.g. AMWG, LMWG, etc'
 #         quit()
+
+      # A path is guaranteed, even if it is just /tmp. So check for it
+      # We shouldn't get here anyway. This is primarily in case something gets postpended to the user-specified outputdir
+      # in options(). Currently that happens elsewhere, but seems like a raesonable check to keep here anyway.
+      if not os.path.exists(self._opts['output']['outputdir']):
+         print 'output directory %s does not exist' % self._opts['output']['outputdir']
+         quit()
 
       if(self._opts['package'] != None):
          if self._opts['package'].upper() in self.all_packages.keys() or self._opts['package'] in self.all_packages.keys():
@@ -634,6 +649,7 @@ class Options():
             self._opts['output']['prefix'] = args.prefix
          if(args.postfix != None):
             self._opts['output']['postfix'] = args.postfix
+      # If an output directory was specified but doesn't exist already, we can throw an error now.
       if(args.outputdir != None):
          if not os.path.isdir(args.outputdir):
             print "ERROR, output directory",args.outputdir,"does not exist!"
