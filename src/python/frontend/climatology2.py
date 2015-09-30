@@ -22,6 +22,7 @@ import os, re, time
 import argparse
 from pprint import pprint
 from mpi4py import MPI
+import cProfile
 
 comm = MPI.COMM_WORLD
 force_scalar_avg=False  # for testing
@@ -219,23 +220,6 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
     for omits in omitBySeason:
         omit_files[omits[0]] = omits[1:]
 
-    if len(varnames)==0 or varnames is None or 'ALL' in varnames:
-        varnames = f.variables.keys()
-    if varnames==['AMWG']:
-        # backwards compatibility, do just a few variables:
-        varnames = [ 'ANRAIN', 'ANSNOW', 'AODDUST1', 'AODDUST3', 'AODVIS', 'AQRAIN', 'AQSNOW',
-                     'AREI', 'AREL', 'AWNC', 'AWNI', 'CCN3', 'CDNUMC', 'CLDHGH', 'CLDICE', 'CLDLIQ',
-                     'CLDLOW', 'CLDMED', 'CLDTOT', 'CLOUD', 'DCQ', 'DTCOND', 'DTV', 'FICE', 'FLDS',
-                     'FLNS', 'FLNSC', 'FLNT', 'FLNTC', 'FLUT', 'FLUTC', 'FREQI', 'FREQL', 'FREQR',
-                     'FREQS', 'FSDS', 'FSDSC', 'FSNS', 'FSNSC', 'FSNT', 'FSNTC', 'FSNTOA', 'FSNTOAC',
-                     'ICEFRAC', 'ICIMR', 'ICWMR', 'IWC', 'LANDFRAC', 'LHFLX', 'LWCF', 'NUMICE',
-                     'NUMLIQ', 'OCNFRAC', 'OMEGA', 'OMEGAT', 'PBLH', 'PRECC', 'PRECL', 'PRECSC',
-                     'PRECSL', 'PS', 'PSL', 'Q', 'QFLX', 'QRL', 'QRS', 'RELHUM', 'SHFLX',
-                     'SNOWHICE', 'SNOWHLND', 'SOLIN', 'SWCF', 'T', 'TAUX', 'TAUY', 'TGCLDIWP',
-                     'TGCLDLWP', 'TMQ', 'TREFHT', 'TS', 'U', 'U10', 'UU', 'V', 'VD01', 'VQ', 'VT',
-                     'VU', 'VV', 'WSUB', 'Z3', 'P0', 'time_bnds', 'area', 'hyai', 'hyam', 'hybi',
-                     'hybm', 'lat', 'lon' ]
-
     if comm.rank==0:
         # Get time axis and global attributes from a sample file - only for rank 0 because
         # we don't want several processors to be opening it simultaneously.
@@ -254,6 +238,7 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
             print "ERROR. So far climos() has only been implemented for time in days.  Sorry!"
             raise Exception("So far climos() has not been implemented for time in units %s."%
                             time_units )
+        fvarnames = f.variables.keys()
         fattr = f.attributes
         input_global_attributes = {a:fattr[a] for a in fattr if a not in ['Conventions']}
         climo_history = "climatologies computed by climatology2.py"
@@ -262,7 +247,7 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
         else:
             input_global_attributes['history'] = climo_history
         f.close()
-        foutp = [ time_units, calendar, input_global_attributes ]  # all the output from this block
+        foutp = [ time_units, calendar, input_global_attributes, fvarnames ]  # all the output from this block
     else:
         foutp = []
     local_foutp = comm.bcast( foutp, root=0 )
@@ -270,6 +255,24 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
         time_units = local_foutp[0]
         calendar   = local_foutp[1]
         input_global_attributes = local_foutp[2]
+        fvarnames = local_foutp[3]
+
+    if len(varnames)==0 or varnames is None or 'ALL' in varnames:
+        varnames = fvarnames
+    if varnames==['AMWG']:
+        # backwards compatibility, do just a few variables:
+        varnames = [ 'ANRAIN', 'ANSNOW', 'AODDUST1', 'AODDUST3', 'AODVIS', 'AQRAIN', 'AQSNOW',
+                     'AREI', 'AREL', 'AWNC', 'AWNI', 'CCN3', 'CDNUMC', 'CLDHGH', 'CLDICE', 'CLDLIQ',
+                     'CLDLOW', 'CLDMED', 'CLDTOT', 'CLOUD', 'DCQ', 'DTCOND', 'DTV', 'FICE', 'FLDS',
+                     'FLNS', 'FLNSC', 'FLNT', 'FLNTC', 'FLUT', 'FLUTC', 'FREQI', 'FREQL', 'FREQR',
+                     'FREQS', 'FSDS', 'FSDSC', 'FSNS', 'FSNSC', 'FSNT', 'FSNTC', 'FSNTOA', 'FSNTOAC',
+                     'ICEFRAC', 'ICIMR', 'ICWMR', 'IWC', 'LANDFRAC', 'LHFLX', 'LWCF', 'NUMICE',
+                     'NUMLIQ', 'OCNFRAC', 'OMEGA', 'OMEGAT', 'PBLH', 'PRECC', 'PRECL', 'PRECSC',
+                     'PRECSL', 'PS', 'PSL', 'Q', 'QFLX', 'QRL', 'QRS', 'RELHUM', 'SHFLX',
+                     'SNOWHICE', 'SNOWHLND', 'SOLIN', 'SWCF', 'T', 'TAUX', 'TAUY', 'TGCLDIWP',
+                     'TGCLDLWP', 'TMQ', 'TREFHT', 'TS', 'U', 'U10', 'UU', 'V', 'VD01', 'VQ', 'VT',
+                     'VU', 'VV', 'WSUB', 'Z3', 'P0', 'time_bnds', 'area', 'hyai', 'hyam', 'hybi',
+                     'hybm', 'lat', 'lon' ]
 
     dt = 0      # specifies climatology file
     redfilenames = []
@@ -279,6 +282,12 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
         # This block computes multi-month seasons from sngle-month climatology files.
         # I've only implemented it for "all" seasons.  And I haven't implemented it for when
         # anything is in omitBySeason.
+
+        filerank = {}
+        filetag = {}
+        seasons_3mon = { 'DJF':['JAN','FEB','DEC'], 'MAM':['MAR','APR','MAY'],
+                         'JJA':['JUN','JUL','AUG'], 'SON':['SEP','OCT','NOV'] }
+        seasons_ann = { 'ANN':[ 'MAM', 'JJA', 'SON', 'DJF' ] }
 
         ft_bn = os.path.basename( fileout_template )
         ft_dn = os.path.dirname( fileout_template )
@@ -294,11 +303,20 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
                 climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_template,
                                   time_units, calendar, dt, redfilenames, redfiles,
                                   input_global_attributes )
+            for ifn,fn in enumerate(redfilenames):
+                filerank[fn] = comm.rank
+                filetag[fn] = ifn
+                for i3,seas3 in enumerate(seasons_3mon):
+                    i3rank = i3%comm.size
+                    if seasonname in seasons_3mon[seas3]:
+                        comm.isend( 0, i3rank, ifn )
             t2=time.time()
             print "allseasons, season",seasonname,"time is",t2-t1
         t2all=time.time()
         print "For all 1-month seasons on",comm.rank,", time is",t2all-t1all
-        comm.barrier()  # crude, wdb better to check that 1-mon climo files exist before using them
+        #t1=time.time()
+        #comm.barrier()  # crude, wdb better to check that 1-mon climo files exist before using them
+        #print "first barrier on",comm.rank,"time is",time.time()-t1
         omit_files = {seasonname:[] for seasonname in seasonnames}
 
         # How would I use omitBySeason here?  It's possible, but some trouble to do.
@@ -312,8 +330,6 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
         # For each multi-month season, change datafilenames to the 1-month climatology files,
         # or 3-month for ANN.
 
-        seasons_3mon = { 'DJF':['JAN','FEB','DEC'], 'MAM':['MAR','APR','MAY'],
-                         'JJA':['JUN','JUL','AUG'], 'SON':['SEP','OCT','NOV'] }
         myseasons = [ seasons_3mon.keys()[i] for i in range(len(seasons_3mon))
                       if i%comm.size==comm.rank ]
         t1all=time.time()
@@ -322,26 +338,37 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
             datafilenames = []
             for sn in seasons_3mon[seasonname]:   # e.g. sn='JAN','FEB','DEC' for seasonname='DJF'
                 datafilenames.append( fileout_template.replace('XXX',sn) )
+            print "jfp rank",comm.rank,"computing",seasonname,"from",datafilenames
             redfilenames, redfiles =\
                 climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_template,
                                   time_units, calendar, dt, redfilenames, redfiles,
-                                  input_global_attributes )
+                                  input_global_attributes, filerank=filerank, filetag=filetag )
+            for ifn,fn in enumerate(redfilenames):
+                filerank[fn] = comm.rank
+                filetag[fn] = ifn
+                for ia,seasa in enumerate(seasons_ann):
+                    iarank = 0
+                    if seasonname in seasons_ann[seasa]:
+                        comm.isend( 0, iarank, ifn )
             t2=time.time()
             print "allseasons, season",seasonname,"time is",t2-t1
         t2all=time.time()
         print "For all 3-month seasons on",comm.rank,", time is",t2all-t1all
-        comm.barrier()  # Everything has to be finished before ANN is begun.
+        #t1=time.time()
+        #comm.barrier()  # Everything has to be finished before ANN is begun.
+        #print "second barrier on",comm.rank,"time is",time.time()-t1
 
         if comm.rank==0:
             t1=time.time()
             seasonname = 'ANN'
             datafilenames = []
-            for sn in ['DJF', 'MAM', 'JJA', 'SON']:
+            for sn in seasons_ann[seasonname]:
                 datafilenames.append( fileout_template.replace('XXX',sn) )
             redfilenames, redfiles =\
                 climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_template,
                                   time_units, calendar, dt, redfilenames, redfiles,
-                                  input_global_attributes )
+                                  input_global_attributes, filerank=filerank,
+                                  filetag=filetag )
             t2=time.time()
             print "allseasons, season ANN, time is",t2-t1
 
@@ -351,19 +378,18 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
         if comm.rank>0:
             return
         for seasonname in seasonnames:
-            if allseasons: t1=time.time()
+            t1=time.time()
             redfilenames, redfiles =\
                 climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_template,
                                   time_units, calendar, dt, redfilenames, redfiles,
-                                  input_global_attributes )
-            if allseasons:
-                t2=time.time()
-                print "original, season",seasonname,"time is",t2-t1
+                                  input_global_attributes, filerank=filerank, filetag=filetag )
+            t2=time.time()
+            print "season",seasonname,"time is",t2-t1
 
 
 def climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_template,
                       time_units, calendar, dt, redfilenames, redfiles,
-                      input_global_attributes ):
+                      input_global_attributes, filerank={}, filetag={} ):
     global force_scalar_avg  # saves typing!
     print "doing season",seasonname
     sredfiles = {}  # season reduced files
@@ -395,7 +421,8 @@ def climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_t
     tmin, tmax = update_time_avg_from_files( redvars, redtime_bnds, redtime_wts, datafilenames2,
                                 fun_next_tbounds = (lambda rtb,dtb,dt=dt: rtb),
                                 redfiles=sredfiles.values(), dt=dt,
-                                force_scalar_avg=force_scalar_avg )
+                                force_scalar_avg=force_scalar_avg, comm=comm,
+                                filerank=filerank, filetag=filetag )
     season_tmin = min( tmin, season_tmin )
     season_tmax = max( tmax, season_tmax )
 
@@ -454,7 +481,14 @@ if __name__ == '__main__':
         pprint(args)
 
     force_scalar_avg = args.forceScalarAvg
-    climos( args.outfile[0], args.seasons, args.variables, args.infiles, args.omitBySeason )
+    profileme = False
+    if profileme is True:
+        prof = cProfile.Profile()
+        prof.runcall( climos, args.outfile[0], args.seasons, args.variables,
+                      args.infiles, args.omitBySeason )
+        prof.dump_stats('results_stats')
+    else:
+        climos( args.outfile[0], args.seasons, args.variables, args.infiles, args.omitBySeason )
 
     if False:
         # For testing, print results...
