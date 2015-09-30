@@ -1004,20 +1004,33 @@ class plot_spec(object):
         that means a coarser grid, typically from regridding model data to the obs grid.
         In the future regrid>0 will mean regrid everything to the finest grid and regrid<0
         will mean regrid everything to the coarsest grid."""
+        def buildVariables(keyList, dataList, axesList, attrList):
+            def buildVariable(data, axes, attr):
+                x=cdms2.createVariable(data)
+                x.setAxisList(axes)
+                for key, value in attr.iteritems():
+                    if key != 'name':
+                        x.setattribute(key, value)
+                return x
+            variables = {}
+            for KEYS, DATA, AXES, ATTR in zip(keyList, dataList, axesList, attrList):
+                for key, data, axes, attr in zip(KEYS, DATA, AXES, ATTR):
+                    variables[key] = buildVariable(data, axes, attr)
+            return variables
         #print 'slices'
         #print self.rank, len(self.SLICE)
         #print self.SLICE
         #print 'variable keys', self.rank, len(self.reduced_variables.keys()), 'seasonid' in self.reduced_variables.keys()
         #print self.reduced_variables.keys()
-        print 'the compute loop rank = ',self.rank, len(self.SLICE), 'seasonid' in self.variable_values.keys()
-        local_variable_values = []
+        print 'the compute loop rank = ',self.rank, len(self.local_keys)
+        local_data = []
+        local_axes = []
+        local_attr = []
         for key in self.local_keys:
-            #print SLICE
         #for v in self.reduced_variables[self.SLICE].keys():
             v = self.reduced_variables[key]
-            print self.rank, v, key
-            value = self.reduced_variables[v].reduce(None)
-            #print 'check seasonid ', self.rank, 'seasonid' in self.variable_values.keys(), len(self.variable_values.keys())
+            #value = self.reduced_variables[v].reduce(None)
+            value = v.reduce(None)
             try:
                 if  len(value.data)<=0:
                     print "ERROR no data for",v
@@ -1028,35 +1041,22 @@ class plot_spec(object):
                 except: # value.size may not exist
                     pass
             #self.variable_values[v] = value  # could be None
-            local_variable_values += [value]
-            print value.id, value.shape
-        print 'after compute loop check seasonid ', self.rank, len(local_variable_values)
-        #for VALUE in local_variable_values:
-        #    print self.rank, VALUE.shape, type(VALUE)
+
+            local_data += [value.asma()]
+            local_axes += [value.getAxisList()]
+            local_attr += [value.attributes]
+            #print value.id, value.shape
+        
+        print 'after compute loop rank = ', self.rank, len(local_data)
         if self.MPI_imported:
-            print 'collect data on rank', self.rank, 'length of variables is ', len(local_variable_values)
-            #print self.rank, local_variable_values[0]
-            sys.stdout.flush()
-            if self.rank is self.master:
-                pass #pdb.set_trace()
-            collected_values = self.comm.gather(local_variable_values, root=self.master)
+
+            collected_data = self.comm.gather(local_data, root=self.master)
+            collected_axes = self.comm.gather(local_axes, root=self.master)
+            collected_attr = self.comm.gather(local_attr, root=self.master)
             
             if self.rank is self.master:
-                print 'after gather ', self.rank, collected_values[0]
-            #print ' '
-            #print local_variable_values[0]
-            #print ' '
-            #print local_variable_values[1]
-            self.comm.barrier()
-            if self.rank is self.master:
-                for lvv in local_variable_values:
-                    print self.rank, type(lvv)
-                    self.variable_values.update(lvv)
-            print self.variable_values.keys()
+                self.variable_values = buildVariables(self.all_keys, collected_data, collected_axes, collected_attr)
             
-            #if self.rank != 0:
-            #    sys.exit()
-            #pdb.set_trace()
         postponed = []   # derived variables we won't do right away
         
         #if self.rank is not self.master:

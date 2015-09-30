@@ -1777,50 +1777,41 @@ class amwg_plot_set8(amwg_plot_spec):
             self.rank = 0
                
         self.master = 0
-        
-        nReducedVariables = len(self.reduced_variables)
+        def splitList(keys, size):
+            subLists = []
+            for i in xrange(0, len(keys), size):
+                subLists += [keys[i:i+size]]
+            return subLists        
+        #nReducedVariables = len(self.reduced_variables)
         if self.rank is self.master:
-            start = 0
-            length = 12#max(2,nReducedVariables/self.size)
-            print nReducedVariables, length, self.size
-            key_index = 0
-            all_keys = self.reduced_variables.keys()
-            all_keys = [all_keys[0:12], all_keys[12:]]
-            print len(all_keys)
-            #all_keys = numpy.array( all_keys )
-        
-            #all_keys.shape = (length, self.size) 
-            #all_keys = all_keys.tolist()
-            
-            #for j in range(self.size):
-            #    keys = []
-            #    for k in range(length):
-            #        SLICES += [slice(slice_index, slice_index+1, None)]
-            #        slice_index += 1
-                #if slice_index < nReducedVariables:
-                #    SLICES += [slice(slice_index, slice_index+1, None)]
-            #    all_keys +=  [SLICES]
-                
-            #print self.rank, 'keys = ', all_keys
-            
-            #pdb.set_trace()
-            #if self.rank is self.master:
-            #self.SLICE = self.comm.scatter(allSLICES, root=self.master)
-            #print 'rank=', self.rank, 'slice=', self.SLICE
+            sublistSize = len(self.reduced_variables.keys())/self.size
+            self.all_keys = splitList(self.reduced_variables.keys(), sublistSize)
         else:
-            all_keys = None
+            self.all_keys = None
         
         self.comm.barrier()
-        self.local_keys = self.comm.scatter(all_keys, root=self.master)
+        self.local_keys = self.comm.scatter(self.all_keys, root=self.master)
         print 'rank=', self.rank, 'keys =', self.local_keys
 
-        #avoid multiple calls to cdscan during compute loop
+        #avoid multiple calls to cdscan
+         
+        for key in self.local_keys:
+            print 'rank=', self.rank, key
+            RV = self.reduced_variables[key]
+            #print 'rank=', self.rank, key, RV.variableid
+            self.reduced_variables[key]._filename = \
+                RV.get_variable_file( RV.variableid, COMM=self.comm )
+            #this barrier is required to throttle how many jobs are run under 
+            #the hood it is an effective wait for spawned jobs to complete
+            self.comm.barrier()
+            print 'in init rank=', self.rank, RV._filename
+
+        cnt = 0
         for key in self.local_keys:
             RV = self.reduced_variables[key]
-            print 'rank=', self.rank, key, RV.variableid
-            RV._filename = RV.get_variable_file( RV.variableid, COMM=self.comm )
-            print 'rank=', self.rank, RV._filename
-                    
+            if RV._filename is not None:
+                cnt += 1
+        print 'count in init = ', self.rank, cnt
     def plan_computation( self, model, obs, varid, seasonid, levels=None ):
         filetable1, filetable2 = self.getfts(model, obs)
 

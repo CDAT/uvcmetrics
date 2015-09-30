@@ -1,4 +1,5 @@
-import sys, subprocess, cdms2, pdb
+import sys, subprocess, pdb
+import cdms2
 #from mpi4py import MPI
 import mpi4py
 
