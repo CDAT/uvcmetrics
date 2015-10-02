@@ -640,8 +640,6 @@ def update_time_avg_from_files( redvars0, redtime_bnds, redtime_wts, filenames,
     tmin = 1.0e10
     tmax = -1.0e10
     for filen in filenames:
-        if comm is not None and filen in filerank and filerank[filen]>=0:
-            comm.recv( source=filerank[filen], tag=filetag[filen] )
         f = cdms2.open(filen)
         ftime = f.getAxis('time').clone()  # clone saves it in memory - faster
         data_tbounds = ftime.getBounds()
