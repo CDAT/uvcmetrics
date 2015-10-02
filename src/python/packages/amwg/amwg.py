@@ -1731,6 +1731,11 @@ class amwg_plot_set8(amwg_plot_spec):
     def __init__( self, model, obs, varid, seasonid='ANN', region='global', aux=None, levels=None ):
         """filetable1, should be a directory filetable for each model.
         varid is a string, e.g. 'TREFHT'.  The zonal mean is computed for each month. """
+        cdms2.setNetcdfClassicFlag(0)
+        cdms2.setNetcdfShuffleFlag(0)
+        cdms2.setNetcdfDeflateFlag(0)
+        cdms2.setNetcdfDeflateLevelFlag(0)
+        cdms2.setNetcdfUseParallelFlag(0)
         filetable1, filetable2 = self.getfts(model, obs)
         
         self.season = seasonid          
@@ -1789,21 +1794,20 @@ class amwg_plot_set8(amwg_plot_spec):
         else:
             self.all_keys = None
         
-        self.comm.barrier()
         self.local_keys = self.comm.scatter(self.all_keys, root=self.master)
         print 'rank=', self.rank, 'keys =', self.local_keys
 
         #avoid multiple calls to cdscan
          
-        for key in self.local_keys:
-            print 'rank=', self.rank, key
+        for i, key in enumerate(self.local_keys):
             RV = self.reduced_variables[key]
-            #print 'rank=', self.rank, key, RV.variableid
-            self.reduced_variables[key]._filename = \
-                RV.get_variable_file( RV.variableid, COMM=self.comm )
+            print 'rank=', self.rank, key, RV.variableid
+            #if i == 0:
+            xml_file = RV.get_variable_file( RV.variableid, COMM=self.comm )
+            self.reduced_variables[key]._filename = xml_file
             #this barrier is required to throttle how many jobs are run under 
             #the hood it is an effective wait for spawned jobs to complete
-            self.comm.barrier()
+            #self.comm.barrier()
             print 'in init rank=', self.rank, RV._filename
 
         cnt = 0
