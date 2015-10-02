@@ -1041,13 +1041,15 @@ class plot_spec(object):
                 except: # value.size may not exist
                     pass
             #self.variable_values[v] = value  # could be None
-
+            if self.rank in [1,3]:
+                print ' reduced ', self.rank, key, v.variableid
             local_data += [value.asma()]
             local_axes += [value.getAxisList()]
             local_attr += [value.attributes]
             #print value.id, value.shape
         
         print 'after compute loop rank = ', self.rank, len(local_data)
+        #self.comm.barrier()
         if self.MPI_imported:
 
             collected_data = self.comm.gather(local_data, root=self.master)

@@ -2529,6 +2529,9 @@ def run_cdscan( fam, famfiles, cache_path=None, COMM=None ):
               for f in famfiles ] )
     csum = hashlib.md5(file_list).hexdigest()
     xml_name = fam+'_cs'+csum+'.xml'
+    #pdb.set_trace()
+    print 'in run_cdscan', COMM.rank, xml_name, os.path.isfile( xml_name )
+    print 'in run_cdscan', COMM.rank, os.path.join( cache_path, os.path.basename(xml_name) )
     if os.path.isfile( xml_name ):
         #print "using cached cdscan output",xml_name," (in data directory)"
         return xml_name
@@ -2549,14 +2552,15 @@ def run_cdscan( fam, famfiles, cache_path=None, COMM=None ):
     # I know of no exception to the rule that all files in the file family keep their
     # units in the same place; so find where they are by checking the first file
     
-    print 'open file on ', COMM.rank
+    print 'open file on ', COMM.rank, famfiles[0]
     #from mpi4py import MPI
     #f = MPI.File.Open(MPI.COMM_WORLD, famfiles[0], amode=MPI.MODE_RDONLY)
-    f = cdms2.open( famfiles[0] )
+    f = cdms2.open( famfiles[0], mode='r' )
     print 'opened ', COMM.rank
     #pdb.set_trace()
     if f['time'] is None:
             cdscan_line = 'cdscan -q '+'-x '+xml_name+' '+' '.join(famfiles)
+            f.close()
     else:
         time_units = f['time'].units
         if type(time_units) is str and len(time_units)>3:
@@ -2592,7 +2596,8 @@ def run_cdscan( fam, famfiles, cache_path=None, COMM=None ):
     #print COMM.rank, 'popen'
     #proc = subprocess.Popen([cdscan_line],shell=True)
     #proc_status = proc.wait()
-    
+    f.close()
+    print 'file closed', COMM.rank, famfiles[0]
     import shlex
     cdscan_line = '%s/bin/'%(sys.prefix) + cdscan_line
     cdscan_line = shlex.split(cdscan_line)
@@ -2601,12 +2606,12 @@ def run_cdscan( fam, famfiles, cache_path=None, COMM=None ):
     comm1 = MPI.COMM_SELF.Spawn(        
         sys.executable,
         args=cdscan_line,
-        maxprocs=COMM.size)
+        maxprocs=1)
+    #wait until cdscan is done
     message = comm1.recv(source = MPI.ANY_SOURCE)
-    print 'after Spawn ', COMM.rank, comm1.rank, message
+    print 'after Spawn ', COMM.rank, comm1.rank, message, MPI.ANY_SOURCE
     proc_status = MPI.Status().Get_error()
 
-    #proc_status = 0
     if proc_status!=0: 
         print "ERROR: cdscan terminated with",proc_status
         print 'This is usually fatal. Frequent causes are an extra XML file in the dataset directory'
@@ -2840,7 +2845,7 @@ class reduced_variable(ftrow,basic_id):
             famfiles = [f for f in files if famdict[f]==fam]
 
             cache_path = self._filetable.cache_path()
-            #fam += '_'+str(COMM.rank)
+            fam += '_'+str(COMM.rank)
             print 'in get_variable fam =', COMM.rank, fam
             if self._filename is not None:
                 xml_name = self._filename
@@ -2878,7 +2883,6 @@ class reduced_variable(ftrow,basic_id):
             vid = self._strid
 
         #avoid multiple calls to cdscan during compute loop
-        print 'reduce',   self._filename
         if self._filename is not None:
             filename = self._filename
         else:
@@ -2934,7 +2938,6 @@ class reduced_variable(ftrow,basic_id):
                 duv_value = duv.derive( duv_inputs )
                 reduced_data = self._reduction_function( duv_value, vid=vid )
         else:
-            print 'reduce',  filename
             f = cdms2.open( filename )
             print 'reduce after open', filename
             self._file_attributes.update(f.attributes)
