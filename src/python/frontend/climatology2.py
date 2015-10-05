@@ -21,11 +21,12 @@ from metrics.frontend.inc_reduce import *
 import os, re, time
 import argparse
 from pprint import pprint
-from mpi4py import MPI
+#from mpi4py import MPI
 from multiprocessing import Process, Queue
 import cProfile
 
-comm = MPI.COMM_WORLD
+#comm = MPI.COMM_WORLD
+comm = None
 queue = None
 force_scalar_avg=False  # for testing
 season2nummonth = {
@@ -325,7 +326,7 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
             sfilen = fileout_template.replace('XXX',sn)
             redfilenames.append( sfilen )
             for i in range(commsize):  # assign seasons to processors as e.g. 1,2,3,1,2,3,...
-                if isn%comm.size==i:
+                if isn%commsize==i:
                     filerank[sfilen] = i
                     if comm is None or i==comm.rank:  myseasonsa.append(sn)
             filetag[sfilen] = isn + len(seasons_1mon) + len(seasons_3mon)
@@ -349,25 +350,30 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
         else:
             proc = {}
             for seasonname in myseasons:
-                t1=time.time()
                 proc[seasonname] =\
                     p_climo_one_season( seasonname, datafilenames, omit_files, varnames,
                                         fileout_template, time_units, calendar, dt,
                                         redfilenames, input_global_attributes, filerank, filetag,
                                         outseasons=seasons_3mon, queue1=queue )
-                t2=time.time()
-                print "allseasons, season",seasonname,"time is",t2-t1
             for seasonname in myseasons:
                 # This is a local (to the node) barrier.  It would be better to just go on, have the
                 # forked process send a signal and disappear, and then the when next phase needs the
                 # data, it waits for the signal.  That's similar to what I do for MPI, but I haven't
                 # yet figured it out for local multiprocessing.
+                print "jfp waiting to join",proc[seasonname],"for season",seasonname
                 proc[seasonname].join()  # wait for process to terminate
-                wrotefile = queue.get()
+                print "jfp joined",proc[seasonname],"for season",seasonname
+            print "jfp for 1-mon seasons, queue size=",queue.qsize()
+            for seasonname in myseasons:
+                print "jfp for season",seasonname,"getting from queue"
+                wrotefile = queue.get()  # <<<< error, don't know we're getting the right data
+                print "jfp For season",seasonname,"wrotefile=",wrotefile
                 climo_file_done_mpi( wrotefile, redfilenames, fileout_template, seasonname,
                                      seasons_3mon, filerank, filetag )
         t2all=time.time()
-        print "For all 1-month seasons on",comm.rank,", time is",t2all-t1all
+        if comm is None:  comm_rank = 0
+        else: comm_rank = comm.rank
+        print "For all 1-month seasons on",comm_rank,", time is",t2all-t1all
         omit_files = {seasonname:[] for seasonname in seasonnames}
 
         # How would I use omitBySeason here?  It's possible, but some trouble to do.
@@ -403,25 +409,30 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
         else:
             proc = {}
             for seasonname in myseasons:
-                t1=time.time()
                 proc[seasonname] =\
                     p_climo_one_season( seasonname, datafilenames, omit_files, varnames,
                                         fileout_template, time_units, calendar, dt,
                                         redfilenames, input_global_attributes, filerank=filerank, filetag=filetag,
                                         outseasons=seasons_ann, queue1=queue )
-                t2=time.time()
-                print "allseasons, season",seasonname,"time is",t2-t1
             for seasonname in myseasons:
                 # This is a local (to the node) barrier.  It would be better to just go on, have the
                 # forked process send a signal and disappear, and then the when next phase needs the
                 # data, it waits for the signal.  That's similar to what I do for MPI, but I haven't
                 # yet figured it out for local multiprocessing.
+                print "jfp joining",proc[seasonname],"for season",seasonname
                 proc[seasonname].join()  # wait for process to terminate
+                print "jfp joined",proc[seasonname],"for season",seasonname
+            print "jfp for 3-mon seasons, queue size=",queue.qsize()
+            for seasonname in myseasons:
+                print "jfp for season",seasonname,"getting from queue"
                 wrotefile = queue.get()
+                print "jfp for season",seasonname,"wrotefile=",wrotefile
                 climo_file_done_mpi( wrotefile, redfilenames, fileout_template, seasonname,
                                      seasons_ann, filerank, filetag )
         t2all=time.time()
-        print "For all 3-month seasons on",comm.rank,", time is",t2all-t1all
+        if comm is None:  comm_rank = 0
+        else: comm_rank = comm.rank
+        print "For all 3-month seasons on",comm_rank,", time is",t2all-t1all
 
         if comm is None or comm.rank==0:
             t1=time.time()
@@ -502,6 +513,7 @@ def climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_t
             return False
         else:
             queue1.put( False )
+            return
     season = daybounds(seasonname)
     # ... assumes noleap calendar, returns time in days.
 
@@ -511,12 +523,15 @@ def climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_t
     if comm is not None and comm.size>1 and filein in filerank and filerank[filein]>=0:
         print "jfp receiving from",filerank[filein],"to",comm.rank,"tag",filetag[filein],"for",filein
         comm.recv( source=filerank[filein], tag=filetag[filein] )
+    print "jfp about to call initialize_redfile_from_datafile for",seasonname
     g, out_varnames, tmin, tmax = initialize_redfile_from_datafile(
         fileout, varnames, filein, dt, init_red_tbounds )
     # g is the (newly created) climatology file.  It's open in 'w' mode.
     season_tmin = tmin
     season_tmax = tmax
+    print "jfp assertion next for",seasonname
     assert( fileout in redfilenames )
+    print "jfp assertion ok for",seasonname
     #redfilenames.append(fileout)
     redtime = g.getAxis('time')
     redtime.units = 'days since 0'
@@ -526,6 +541,7 @@ def climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_t
     redtime_bnds = g[ g.getAxis('time').bounds ]
     redvars = [ g[varn] for varn in out_varnames ]
 
+    print "jfp about to call update_time_avg_from_files for",seasonname
     tmin, tmax = update_time_avg_from_files( redvars, redtime_bnds, redtime_wts, datafilenames2,
                                 fun_next_tbounds = (lambda rtb,dtb,dt=dt: rtb),
                                 redfiles=[g], dt=dt,
@@ -569,8 +585,11 @@ def climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_t
     if queue1 is None:
         return True
     else:
+        print "jfp returning from climo_one_season, season=",seasonname,"queue size before put=",\
+            queue.qsize()
         queue1.put( True )
-
+        print "jfp season",seasonname,"queue size after put=",queue.qsize()
+        return
 
 if __name__ == '__main__':
     p = argparse.ArgumentParser(description="Climatology")
