@@ -341,10 +341,11 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
                 wrotefile =\
                     climo_one_season( seasonname, datafilenames, omit_files, varnames,
                                       fileout_template, time_units, calendar, dt,
-                                      redfilenames, input_global_attributes, filerank, filetag,
-                                      outseasons=seasons_3mon, queue1=None )
+                                      redfilenames, force_scalar_avg,
+                                      input_global_attributes, filerank, filetag,
+                                      outseasons=seasons_3mon, queue1=None, comm1=comm )
                 climo_file_done_mpi( wrotefile, redfilenames, fileout_template, seasonname,
-                                     seasons_3mon, filerank, filetag )
+                                     seasons_3mon, filerank, filetag, comm )
                 t2=time.time()
                 print "allseasons, season",seasonname,"time is",t2-t1
         else:
@@ -353,8 +354,9 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
                 proc[seasonname] =\
                     p_climo_one_season( seasonname, datafilenames, omit_files, varnames,
                                         fileout_template, time_units, calendar, dt,
-                                        redfilenames, input_global_attributes, filerank, filetag,
-                                        outseasons=seasons_3mon, queue1=queue )
+                                        redfilenames, force_scalar_avg, input_global_attributes,
+                                        filerank, filetag,
+                                        outseasons=seasons_3mon, queue1=queue, comm1=comm )
             for seasonname in myseasons:
                 # This is a local (to the node) barrier.  It would be better to just go on, have the
                 # forked process send a signal and disappear, and then the when next phase needs the
@@ -369,7 +371,7 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
                 wrotefile = queue.get()  # <<<< error, don't know we're getting the right data
                 print "jfp For season",seasonname,"wrotefile=",wrotefile
                 climo_file_done_mpi( wrotefile, redfilenames, fileout_template, seasonname,
-                                     seasons_3mon, filerank, filetag )
+                                     seasons_3mon, filerank, filetag, comm )
         t2all=time.time()
         if comm is None:  comm_rank = 0
         else: comm_rank = comm.rank
@@ -400,10 +402,11 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
                 wrotefile =\
                     climo_one_season( seasonname, datafilenames, omit_files, varnames,
                                       fileout_template, time_units, calendar, dt,
-                                      redfilenames, input_global_attributes, filerank=filerank, filetag=filetag,
-                                      outseasons=seasons_ann, queue1=None )
+                                      redfilenames, force_scalar_avg, input_global_attributes,
+                                      filerank=filerank, filetag=filetag,
+                                      outseasons=seasons_ann, queue1=None, comm1=comm )
                 climo_file_done_mpi( wrotefile, redfilenames, fileout_template, seasonname,
-                                     seasons_ann, filerank, filetag )
+                                     seasons_ann, filerank, filetag, comm )
                 t2=time.time()
                 print "allseasons, season",seasonname,"time is",t2-t1
         else:
@@ -412,8 +415,9 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
                 proc[seasonname] =\
                     p_climo_one_season( seasonname, datafilenames, omit_files, varnames,
                                         fileout_template, time_units, calendar, dt,
-                                        redfilenames, input_global_attributes, filerank=filerank, filetag=filetag,
-                                        outseasons=seasons_ann, queue1=queue )
+                                        redfilenames, force_scalar_avg, input_global_attributes,
+                                        filerank=filerank, filetag=filetag,
+                                        outseasons=seasons_ann, queue1=queue, comm1=comm )
             for seasonname in myseasons:
                 # This is a local (to the node) barrier.  It would be better to just go on, have the
                 # forked process send a signal and disappear, and then the when next phase needs the
@@ -428,7 +432,7 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
                 wrotefile = queue.get()
                 print "jfp for season",seasonname,"wrotefile=",wrotefile
                 climo_file_done_mpi( wrotefile, redfilenames, fileout_template, seasonname,
-                                     seasons_ann, filerank, filetag )
+                                     seasons_ann, filerank, filetag, comm )
         t2all=time.time()
         if comm is None:  comm_rank = 0
         else: comm_rank = comm.rank
@@ -442,11 +446,11 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
                 datafilenames.append( fileout_template.replace('XXX',sn) )
             wrotefile =\
                 climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_template,
-                                  time_units, calendar, dt, redfilenames,
+                                  time_units, calendar, dt, redfilenames, force_scalar_avg,
                                   input_global_attributes, filerank=filerank,
-                                  filetag=filetag, outseasons=None, queue1=None )
+                                  filetag=filetag, outseasons=None, queue1=None, comm1=comm )
             climo_file_done_mpi( wrotefile, redfilenames, fileout_template, seasonname,
-                                 None, filerank, filetag )
+                                 None, filerank, filetag, comm )
             t2=time.time()
             print "allseasons, season ANN, time is",t2-t1
         return
@@ -458,34 +462,35 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
         for seasonname in seasonnames:
             t1=time.time()
             climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_template,
-                              time_units, calendar, dt, redfilenames,
+                              time_units, calendar, dt, redfilenames, force_scalar_avg,
                               input_global_attributes, filerank={}, filetag={},
-                              outseasons=None, queue1=None)
+                              outseasons=None, queue1=None, comm1=comm )
             t2=time.time()
             print "season",seasonname,"time is",t2-t1
         return
 
 def p_climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_template,
-                      time_units, calendar, dt, redfilenames,
+                      time_units, calendar, dt, redfilenames, force_scalar_avg1,
                       input_global_attributes, filerank={}, filetag={},
-                        outseasons=None, queue1=None ):
+                        outseasons=None, queue1=None, comm1=None ):
     """climo_one_season but run as a separate process.  returns the process, the caller should
     join it and get the return value from the queue."""
     # p.join()
     # queue.get()
 
     argtuple = ( seasonname, datafilenames, omit_files, varnames, fileout_template,
-                              time_units, calendar, dt, redfilenames,
-                              input_global_attributes, filerank, filetag, outseasons, queue1 )
+                 time_units, calendar, dt, redfilenames, force_scalar_avg1,
+                 input_global_attributes, filerank, filetag, outseasons, queue1, comm1 )
     p = Process( target=climo_one_season, args=argtuple )
     p.start()
     return p
 
-def climo_file_done_mpi( redfile, redfilenames, fileout_template, seasonname, outseasons, filerank, filetag ):
+def climo_file_done_mpi( redfile, redfilenames, fileout_template, seasonname, outseasons,
+                         filerank, filetag, comm1 ):
     # When a file redfile, computed for season seasonname, has been written and closed, this
     # function is called to inform the appropriate MPI node.  Note that if another process is
     # waiting for the file, the process could wait forever - correct because the file isn't there.
-    if comm is None or comm.size<=1:   # MPI isn't running.
+    if comm1 is None or comm1.size<=1:   # MPI isn't running.
         return
     if redfile is True:
         redfile = fileout_template.replace('XXX',seasonname)
@@ -494,14 +499,13 @@ def climo_file_done_mpi( redfile, redfilenames, fileout_template, seasonname, ou
     for ise,seass in enumerate(outseasons):
         if seasonname in outseasons[seass]:
             outfile = fileout_template.replace('XXX',seass)
-            print "jfp sending from",comm.rank,"to",filerank[outfile],"tag",filetag[redfile],"for",redfile
-            comm.isend( 0, filerank[outfile], filetag[redfile] )
+            print "jfp sending from",comm1.rank,"to",filerank[outfile],"tag",filetag[redfile],"for",redfile
+            comm1.isend( 0, filerank[outfile], filetag[redfile] )
 
 def climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_template,
-                      time_units, calendar, dt, redfilenames,
+                      time_units, calendar, dt, redfilenames, force_scalar_avg1,
                       input_global_attributes, filerank={}, filetag={},
-                      outseasons=None, queue1=None ):
-    global force_scalar_avg  # saves typing!
+                      outseasons=None, queue1=None, comm1=None ):
     print "doing season",seasonname
     sredfiles = {}  # season reduced files
     datafilenames = [fn for fn in datafilenames if fn not in omit_files[seasonname]]
@@ -520,10 +524,9 @@ def climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_t
     init_red_tbounds = numpy.array( season, dtype=numpy.int32 )
     fileout = fileout_template.replace('XXX',seasonname)
     filein = datafilenames2[0]
-    if comm is not None and comm.size>1 and filein in filerank and filerank[filein]>=0:
-        print "jfp receiving from",filerank[filein],"to",comm.rank,"tag",filetag[filein],"for",filein
-        comm.recv( source=filerank[filein], tag=filetag[filein] )
-    print "jfp about to call initialize_redfile_from_datafile for",seasonname
+    if comm1 is not None and comm1.size>1 and filein in filerank and filerank[filein]>=0:
+        print "jfp receiving from",filerank[filein],"to",comm1.rank,"tag",filetag[filein],"for",filein
+        comm1.recv( source=filerank[filein], tag=filetag[filein] )
     g, out_varnames, tmin, tmax = initialize_redfile_from_datafile(
         fileout, varnames, filein, dt, init_red_tbounds )
     # g is the (newly created) climatology file.  It's open in 'w' mode.
@@ -545,7 +548,7 @@ def climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_t
     tmin, tmax = update_time_avg_from_files( redvars, redtime_bnds, redtime_wts, datafilenames2,
                                 fun_next_tbounds = (lambda rtb,dtb,dt=dt: rtb),
                                 redfiles=[g], dt=dt,
-                                force_scalar_avg=force_scalar_avg, comm=comm,
+                                force_scalar_avg=force_scalar_avg1, comm=comm1,
                                 filerank=filerank, filetag=filetag )
     season_tmin = min( tmin, season_tmin )
     season_tmax = max( tmax, season_tmax )
