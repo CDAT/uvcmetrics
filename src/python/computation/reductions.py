@@ -684,8 +684,9 @@ def ttest_ab(mv1, mv2, constant = .1):
    print 'shapes:'
    print mv1new.shape
    print mv2new.shape
-   print dir(v1)
-
+   print 'IDs:'
+   print mv1.id
+   print mv2.id
    
    import scipy.stats
    prob = mv1new # maybe retain some metadata
@@ -2053,6 +2054,23 @@ def evapfrac_special(mv1, mv2, mv3, mv4):
    var.setattribute('name','evapfrac')
    var.units=''
    return var
+
+def pminuse(mv1, mv2, mv3, mv4, mv5):
+   """ returns precept minus evap transp """
+   print 'mv1 units--------------> ', mv1.units
+   print 'mv3 units--------------> ', mv3.units
+   prec = mv1+mv2
+#   prec = convert_units(prec, 'mm')
+   et = mv3+mv4+mv5
+#   et = convert_units(et, 'mm')
+   pme = prec-et
+
+   pme.id = 'p-e'
+   pme.setattribute('long_name', 'prec-et')
+   pme.setattribute('name','p-e')
+   return pme
+
+   
 
 
 def atimesb(mv1, mv2):
