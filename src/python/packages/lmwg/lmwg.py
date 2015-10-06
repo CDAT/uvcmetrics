@@ -53,65 +53,91 @@ class lwmg_set5_variables(basic_plot_variable):
 # Probably could pass the reduction_function for all of these instead of a flag, but this puts
 # all of the reduction functions in the same place in case they need to change or something.
 class level_var_redvar( reduced_variable ):
-   def __init__(self, filetable, varid, season, level):
-      duv = derived_var(varid+str(level)+'_A', inputs=[varid], func=(lambda x:x))
-      reduced_variable.__init__(
-         self, variableid=varid+str(level)+'_A',
-         filetable=filetable,
-         reduction_function=(lambda x, vid=None: reduce2latlon_seasonal_level(x, season, level, vid=vid)),
-         duvs={varid+str(level)+'_A':duv})
+   def __init__(self, filetable, fn, varid, season, level, suffix=None):
+      if suffix == None:
+         suffix = ''
+      duv = derived_var(varid+str(level)+'_A'+suffix, inputs=[varid], func=(lambda x:x))
+      if fn == 'SEASONAL':
+         reduced_variable.__init__(
+            self, variableid=varid+str(level)+'_A'+suffix,
+            filetable=filetable,
+            reduction_function=(lambda x, vid=None: reduce2latlon_seasonal_level(x, season, level, vid=vid)),
+            duvs={varid+str(level)+'_A'+suffix:duv})
+      if fn == None:
+         reduced_variable.__init__(
+            self, variableid=varid+str(level)+'_A'+suffix,
+            filetable=filetable,
+            reduction_function=(lambda x, vid=None: dummy(x, vid)),
+            duvs={varid+str(level)+'_A'+suffix:duv})
 
 class evapfrac_redvar ( reduced_variable ):
-   def __init__(self, filetable, fn, season=None, region=None, flag=None, weights=None):
-      duv = derived_var('EVAPFRAC_A', inputs=['FCTR', 'FCEV', 'FGEV', 'FSH'], func=evapfrac_special)
+   def __init__(self, filetable, fn, season=None, region=None, flag=None, suffix=None, weights=None):
+      if suffix == None:
+         suffix = ''
+      duv = derived_var('EVAPFRAC_A'+suffix, inputs=['FCTR', 'FCEV', 'FGEV', 'FSH'], func=evapfrac_special)
       if fn == 'SEASONAL':
          reduced_variable.__init__(
-            self, variableid='EVAPFRAC_A',
+            self, variableid='EVAPFRAC_A'+suffix,
             filetable=filetable,
             reduction_function=(lambda x, vid=None: reduce2latlon_seasonal(x, season=season, region=None, vid=vid)),
-            duvs={'EVAPFRAC_A':duv})
+            duvs={'EVAPFRAC_A'+suffix:duv})
       if fn == 'TREND':
          if flag == 'MONTHLY':
             reduced_variable.__init__(
-               self, variableid='EVAPFRAC_A', 
+               self, variableid='EVAPFRAC_A'+suffix, 
                filetable=filetable, 
                reduction_function=(lambda x, vid=None: reduceMonthlyTrendRegion(x, region, weights=weights, vid=vid)),
-               duvs={'EVAPFRAC_A':duv})
+               duvs={'EVAPFRAC_A'+suffix:duv})
          else:
             reduced_variable.__init__(
-               self, variableid='EVAPFRAC_A', 
+               self, variableid='EVAPFRAC_A'+suffix, 
                filetable=filetable, 
                reduction_function=(lambda x, vid=None: reduceAnnTrendRegion(x, region, weights=weights, vid=vid)),
-               duvs={'EVAPFRAC_A':duv})
+               duvs={'EVAPFRAC_A'+suffix:duv})
+      if fn == None:
+            reduced_variable.__init__(
+               self, variableid='EVAPFRAC_A'+suffix, 
+               filetable=filetable, 
+               reduction_function=(lambda x, vid=None: dummy(x, vid)),
+               duvs={'EVAPFRAC_A'+suffix:duv})
          
 class rnet_redvar( reduced_variable ):
-   def __init__(self, filetable, fn, season=None, region=None, flag=None, weights=None):
-      duv = derived_var('RNET_A', inputs=['FSA', 'FIRA'], func=aminusb)
+   def __init__(self, filetable, fn, season=None, region=None, flag=None, weights=None, suffix=None):
+      if suffix == None:
+         suffix = ''
+      duv = derived_var('RNET_A'+suffix, inputs=['FSA', 'FIRA'], func=aminusb)
       if fn == 'SEASONAL':
          reduced_variable.__init__(
-            self, variableid='RNET_A',
+            self, variableid='RNET_A'+suffix,
             filetable=filetable,
             reduction_function=(lambda x, vid=None: reduce2latlon_seasonal(x, season=season, region=None, vid=vid)),
-            duvs={'RNET_A': duv})
+            duvs={'RNET_A'+suffix: duv})
       if fn == 'TREND':
          if flag == 'MONTHLY':
             reduced_variable.__init__(
-               self, variableid='RNET_A',
+               self, variableid='RNET_A'+suffix,
                filetable=filetable,
                reduction_function=(lambda x, vid=None: reduceMonthlyTrendRegion(x, region, weights=weights, vid=vid)),
-               duvs={'RNET_A':duv})
+               duvs={'RNET_A'+suffix:duv})
          else:
             reduced_variable.__init__(
-               self, variableid='RNET_A',
+               self, variableid='RNET_A'+suffix,
                filetable=filetable,
                reduction_function=(lambda x, vid=None: reduceAnnTrendRegion(x, region, weights=weights, vid=vid)),
-               duvs={'RNET_A':duv})
+               duvs={'RNET_A'+suffix:duv})
       if fn == 'SINGLE':
          reduced_variable.__init__(
-            self, variableid='RNET_A',
+            self, variableid='RNET_A'+suffix,
             filetable=filetable,
             reduction_function=(lambda x, vid=None: reduceAnnTrendRegion(x, region, weights=weights, single=True, vid=vid)),
-            duvs={'RNET_A':duv})
+            duvs={'RNET_A'+suffix:duv})
+      if fn == None:
+         reduced_variable.__init__(
+            self, variableid='RNET_A'+suffix,
+            filetable=filetable,
+            reduction_function=(lambda x, vid=None: dummy(x, vid)),
+            duvs={'RNET_A'+suffix:duv})
+
 
 class albedos_redvar( reduced_variable ):
    def __init__(self, filetable, fn, varlist, season=None, region=None, flag=None, obs_ft=None, weights=None):
@@ -184,14 +210,21 @@ class prec_redvar( reduced_variable ): # only used for set 9
          duvs = {'PREC_A':duv})
 
 # A couple only used for one set, so don't need more generalized.
-class pminuse_seasonal( reduced_variable ):
-   def __init__(self, filetable, season):
+class pminuse_redvar( reduced_variable ):
+   def __init__(self, filetable, fn, season):
       duv = derived_var('P-E_A', inputs=['RAIN', 'SNOW', 'QSOIL', 'QVEGE', 'QVEGT'], func=pminuse)
-      reduced_variable.__init__(
-         self, variableid='P-E_A',
-         filetable=filetable,
-         reduction_function=(lambda x, vid=None: reduce2latlon_seasonal(x, season=season, region=None, vid=vid)),
-         duvs={'P-E_A':duv})
+      if fn == 'SEASONAL':
+         reduced_variable.__init__(
+            self, variableid='P-E_A',
+            filetable=filetable,
+            reduction_function=(lambda x, vid=None: reduce2latlon_seasonal(x, season=season, region=None, vid=vid)),
+            duvs={'P-E_A':duv})
+      if fn == None:
+         reduced_variable.__init__(
+            self, variableid='P-E_A',
+            filetable=filetable,
+            reduction_function=(lambda x, vid=None: dummy(x, vid)),
+            duvs={'P-E_A':duv})
 
 class canopyevapTrend( reduced_variable ):
 # Canopy evap = qvege/(rain+snow)
@@ -604,18 +637,35 @@ class lmwg_plot_set2(lmwg_plot_spec):
    def _all_variables( model, obs ):
       allvars = lmwg_plot_spec.package._all_variables( model, obs, "lmwg_plot_spec" )
 
+      if type(obs) is list and len(obs) >= 1 and type(model) is list and len(model) >= 1:
+         if 'SCF' in obs[0].list_variables() and 'FSNO' not in allvars and 'FSNO' in model[0].list_variables():
+            print 'Adding FSNO to var list for comparison with SCF in obs list'
+            allvars['FSNO'] = basic_plot_variable
+
       ### TODO: Fix variable list based on filetable2 after adding derived/level vars
+      flag = 0
       for dv in lmwg_plot_set2._derived_varnames:
          allvars[dv] = basic_plot_variable
          if len(obs) == 1:
             if dv not in obs[0].list_variables():
-               del allvars[dv]
+               if flag == 0:
+                  print '----> Your list of variables includes obs variables which may or may not be in the model dataset and vice versa'
+                  print 'We used to remove those extra variables but it makes it hard to have a derived variable (e.g. TOTRUNOFF) which'
+                  print 'is compared to a different varaiable name (e.g. RUNOFF) in the obs sets'
+                  flag = 1
+#               del allvars[dv]
 
+      flag = 0
       for dv in lmwg_plot_set2._level_varnames+lmwg_plot_set2._level_vars:
          allvars[dv] = basic_plot_variable
          if len(obs) == 1:
             if dv not in obs[0].list_variables():
-               del allvars[dv]
+               if flag == 0:
+                  print '----> Your list of variables includes obs variables which may or may not be in the model dataset and vice versa'
+                  print 'We used to remove those extra variables but it makes it hard to have a derived variable (e.g. TOTRUNOFF) which'
+                  print 'is compared to a different varaiable name (e.g. RUNOFF) in the obs sets'
+                  flag = 1
+#               del allvars[dv]
 
       """
       # Only the 1/5/10 levels are in the varlist, so remove the levelvars
@@ -635,6 +685,10 @@ class lmwg_plot_set2(lmwg_plot_spec):
 
       # Now, determine how many unique fts we have.
       num_obs = len(obs)
+      print 'OBS: '
+      print obs
+      print 'DONE OBS'
+
 
       num_models = len(model_dict.keys())
 
@@ -654,7 +708,8 @@ class lmwg_plot_set2(lmwg_plot_spec):
       # 3) Two datasets+obs -> a, b, c, a-b, a-c, a-b, ttest1, ttest2 plots
 
       # For convenience.
-      obs = None
+      obs0 = None
+      obs1 = None
       raw0 = None
       raw1 = None
       climo0 = None
@@ -668,27 +723,32 @@ class lmwg_plot_set2(lmwg_plot_spec):
          raw1 = model_dict[model_dict.keys()[1]]['raw']
          climo1 = model_dict[model_dict.keys()[1]]['climos']
 
-      if num_obs == 1:
-         obs = obs[0] # a filetable.
-      if num_obs == 2:
+      # We only supoprt 1 obs set, so if we have any, the first one is the winner.
+      if num_obs >= 2:
          print 'Currently only supporting 1 obs set'
+      if num_obs >= 1:
+         obs0 = obs[0] # a filetable.
+      if num_obs == 2:
+         obs0 = obs[0]
+         obs1 = obs[1]
 
       if num_models == 0: # we only have observations to plot
-         self.plot1_id = '_'.join([obs[0]._strid, varid, seasonid])
+         self.plot1_id = '_'.join([obs0._strid, varid, seasonid])
          self.plot_ids.append(self.plot1_id)
-         self.plotall_id = obs[0]._strid+'_'+varid
+         self.plotall_id = obs0._strid+'_'+varid
       elif num_models == 1: # we only have one model to plot
          model0id = (climo0._strid if climo0 is not None else raw0._strid)
          self.plot1_id = '_'.join([model0id, varid, seasonid])
          self.plot_ids.append(self.plot1_id)
          self.plotall_id = model0id+'_'+varid
 
+         # This only supports a single obs set, so we can drop the array notation.
          if num_obs >= 1: # we have a single model plus an obs... 3 plots total
-            self.plot2_id = '_'.join([obs[0]._strid, varid, seasonid])
-            self.plot3_id = model0id+' - '+obs[0]._strid+'_'+varid+'_'+seasonid
+            self.plot2_id = '_'.join([obs0._strid, varid, seasonid])
+            self.plot3_id = model0id+' - '+obs0._strid+'_'+varid+'_'+seasonid
             self.plot_ids.append(self.plot2_id)
             self.plot_ids.append(self.plot3_id)
-            self.plotall_id = model0id+'_'+obs[0]._strid+'_'+varid
+            self.plotall_id = model0id+'_'+obs0._strid+'_'+varid
       elif num_models == 2: # 4 plots miniminum  - model0, model1, diff, T-test
          model0id = (climo0._strid if climo0 is not None else raw0._strid)
          model1id = (climo1._strid if climo1 is not None else raw1._strid)
@@ -703,14 +763,14 @@ class lmwg_plot_set2(lmwg_plot_spec):
          self.plot7_id = 'T-test'
 
          if num_obs >= 1: # plus 1 obs. 8 plots now.
-            self.plot4_id = '_'.join([obs[0]._strid, varid, seasonid])
-            self.plot5_id = model0id+' - '+obs[0]._strid+'_'+varid+'_'+seasonid
-            self.plot6_id = model1id+' - '+obs[0]._strid+'_'+varid+'_'+seasonid
+            self.plot4_id = '_'.join([obs0._strid, varid, seasonid])
+            self.plot5_id = model0id+' - '+obs0._strid+'_'+varid+'_'+seasonid
+            self.plot6_id = model1id+' - '+obs0._strid+'_'+varid+'_'+seasonid
             self.plot8_id = 'T-test - Model Relative to Obs'
             self.plot_ids.append(self.plot4_id)
             self.plot_ids.append(self.plot5_id)
             self.plot_ids.append(self.plot6_id)
-            self.plotall_id = model0id+'_'+model1id+'_'+obs[0]._strid+'_'+varid
+            self.plotall_id = model0id+'_'+model1id+'_'+obs0._strid+'_'+varid
 
          self.plot_ids.append(self.plot7_id)
          if num_obs >= 1:
@@ -721,8 +781,8 @@ class lmwg_plot_set2(lmwg_plot_spec):
 
       self.reduced_variables = {}
       self.derived_variables = {}
-      self.single_plotspecs = None
-      self.composite_plotspecs = None
+      self.single_plotspecs = {}
+      self.composite_plotspecs = {}
 
       # Start setting up our variables.
       ### Check for the simple variables first.
@@ -736,6 +796,7 @@ class lmwg_plot_set2(lmwg_plot_spec):
 
       # Ok, one filetable and a simple variable. The easy case.
       if simple_flag and num_fts == 1:
+         v = varid
          if num_models == 1:
             ft = (climo0 if climo0 is not None else raw0)
             if raw0 is not None:
@@ -746,17 +807,28 @@ class lmwg_plot_set2(lmwg_plot_spec):
             if varid not in lmwg_plot_set2._obs_vars: 
                print 'Varid %s is not in obsvars list and only observation sets specified. Returning' % varid
                return
-         self.reduced_variables[varid+'_ft1'] = reduced_variable(variableid = varid, 
+            # These are not simple_flag vars so this code should never get hit....
+            if varid == 'PREC' and 'PRECIP_LAND' in obs0.list_variables():
+               v = 'PRECIP_LAND'
+            if varid == 'TOTRUNOFF' and 'RUNOFF' in obs0.list_variables():
+               v = 'RUNOFF'
+            if varid == 'FSNO' and 'SCF' in obs0.list_variables():
+               v = 'SCF'
+
+         self.reduced_variables[varid+'_ft1'] = reduced_variable(variableid = v, 
             filetable=ft,
             reduced_var_id=varid+'_ft1',
             reduction_function=(lambda x, vid: reduce2latlon_seasonal(x, season=self.season, region=None, vid=vid)))
          if ft_raw != None:
-            self.reduced_variables[varid+'_ft1_ttest'] = reduced_variable(variableid = varid,
+            self.reduced_variables[varid+'_ft1_ttest'] = reduced_variable(variableid = v,
                filetable = ft_raw,
                reduced_var_id = varid+'_ft1_ttest',
                reduction_function = (lambda x,vid : x) ) 
+
       # Starting to get more complicated. Simple variables but 2 filetables
       elif simple_flag and num_fts == 2:
+         v1 = varid
+         v2 = varid
          if num_models == 1: # implies num obs == 1
             ft = (climo0 if climo0 is not None else raw0)
             if raw0 is not None:
@@ -765,6 +837,13 @@ class lmwg_plot_set2(lmwg_plot_spec):
             if varid not in lmwg_plot_set2._obs_vars:
                print 'Varid %s is not in obsvars list and observation sets specified. Ignoring' % varid
                ft2 = None
+            if varid == 'PREC' and 'PRECIP_LAND' in obs0.list_variables():
+               v2 = 'PRECIP_LAND'
+            if varid == 'TOTRUNOFF' and 'RUNOFF' in obs0.list_variables():
+               v2 = 'RUNOFF'
+            if varid == 'FSNO' and 'SCF' in obs0.list_variables():
+               v = 'SCF'
+
          elif num_models == 2:
             ft = (climo0 if climo0 is not None else raw0)
             ft2 = (climo1 if climo1 is not None else raw1)
@@ -773,13 +852,25 @@ class lmwg_plot_set2(lmwg_plot_spec):
             if raw1 is not None:
                ft2_raw = raw1
          else: # num_obs == 2
+            ft = obs0
+            ft2 = obs1
             if varid not in lmwg_plot_set2._obs_vars:
                print 'Varid %s is not in obsvars list and only observation sets specified. Returning' % varid
                return
-            ft = obs0
-            ft2 = obs1
+            if varid == 'PREC' and 'PRECIP_LAND' in obs0.list_variables():
+               v1 = 'PRECIP_LAND'
+            if varid == 'TOTRUNOFF' and 'RUNOFF' in obs0.list_variables():
+               v1 = 'RUNOFF'
+            if varid == 'FSNO' and 'SCF' in obs0.list_variables():
+               v1 = 'SCF'
+            if varid == 'PREC' and 'PRECIP_LAND' in obs1.list_variables():
+               v2 = 'PRECIP_LAND'
+            if varid == 'TOTRUNOFF' and 'RUNOFF' in obs1.list_variables():
+               v2 = 'RUNOFF'
+            if varid == 'FSNO' and 'SCF' in obs1.list_variables():
+               v2 = 'SCF'
          print 'IN SIMPLEFLAG - self.season:', self.season
-         self.reduced_variables[varid+'_ft1'] = reduced_variable(variableid = varid, 
+         self.reduced_variables[varid+'_ft1'] = reduced_variable(variableid = v1, 
             filetable=ft,
             reduced_var_id=varid+'_ft1',
             reduction_function=(lambda x, vid: reduce2latlon_seasonal(x, season=self.season, region=None, vid=vid)))
@@ -789,7 +880,7 @@ class lmwg_plot_set2(lmwg_plot_spec):
                reduced_var_id = varid+'_ft1_ttest',
                reduction_function = (lambda x, vid:dummy(x, vid) ) )
          if ft2 != None:
-            self.reduced_variables[varid+'_ft2'] = reduced_variable(variableid = varid, 
+            self.reduced_variables[varid+'_ft2'] = reduced_variable(variableid = v2, 
                filetable=ft2,
                reduced_var_id=varid+'_ft2',
                reduction_function=(lambda x, vid: reduce2latlon_seasonal(x, season=self.season, region=None, vid=vid)))
@@ -801,6 +892,9 @@ class lmwg_plot_set2(lmwg_plot_spec):
 
       # And the most complicated with a simple variable...
       elif simple_flag and num_fts >= 3:
+         v1 = varid
+         v2 = varid
+         v3 = varid
          if num_models == 1: 
             ft = (climo0 if climo0 is not None else raw0)
             ft2 = obs0
@@ -809,6 +903,18 @@ class lmwg_plot_set2(lmwg_plot_spec):
                print 'Varid %s is not in obsvars list and observation sets specified. Ignoring' % varid
                ft2 = None
                ft3 = None
+            if varid == 'PREC' and 'PRECIP_LAND' in obs0.list_variables():
+               v2 = 'PRECIP_LAND'
+            if varid == 'PREC' and 'PRECIP_LAND' in obs1.list_variables():
+               v3 = 'PRECIP_LAND'
+            if varid == 'TOTRUNOFF' and 'RUNOFF' in obs0.list_variables():
+               v2 = 'RUNOFF'
+            if varid == 'TOTRUNOFF' and 'RUNOFF' in obs1.list_variables():
+               v3 = 'RUNOFF'
+            if varid == 'FSNO' and 'SCF' in obs0.list_variables():
+               v2 = 'SCF'
+            if varid == 'FSNO' and 'SCF' in obs1.list_variables():
+               v3 = 'SCF'
                
          if num_models == 2: 
             ft = (climo0 if climo0 is not None else raw0)
@@ -816,28 +922,32 @@ class lmwg_plot_set2(lmwg_plot_spec):
             ft3 = obs0
             if varid not in lmwg_plot_set2._obs_vars:
                print 'Varid %s is not in obsvars list and observation sets specified. Ignoring' % varid
-               ft2 = None
+               ft3 = None
+            if varid == 'PREC' and 'PRECIP_LAND' in obs0.list_variables():
+               v3 = 'PRECIP_LAND'
+            if varid == 'TOTRUNOFF' and 'RUNOFF' in obs0.list_variables():
+               v3 = 'RUNOFF'
+            if varid == 'FSNO' and 'SCF' in obs0.list_variables():
+               v3 = 'SCF'
 
-         self.reduced_variables[varid+'_ft1'] = reduced_variable(variableid = varid, 
+         self.reduced_variables[varid+'_ft1'] = reduced_variable(variableid = v1, 
             filetable=ft,
             reduced_var_id=varid+'_ft1',
             reduction_function=(lambda x, vid: reduce2latlon_seasonal(x, season=self.season, region=None, vid=vid)))
          if ft2 != None:
-            self.reduced_variables[varid+'_ft2'] = reduced_variable(variableid = varid, 
+            self.reduced_variables[varid+'_ft2'] = reduced_variable(variableid = v2, 
                filetable=ft2,
                reduced_var_id=varid+'_ft2',
                reduction_function=(lambda x, vid: reduce2latlon_seasonal(x, season=self.season, region=None, vid=vid)))
          if ft3 != None:
-            self.reduced_variables[varid+'_ft3'] = reduced_variable(variableid = varid, 
+            self.reduced_variables[varid+'_obs'] = reduced_variable(variableid = v3, 
                filetable=ft3,
-               reduced_var_id=varid+'_ft3',
+               reduced_var_id=varid+'_obs',
                reduction_function=(lambda x, vid: reduce2latlon_seasonal(x, season=self.season, region=None, vid=vid)))
 
 
       ### The next most complicated variables. Linear derived variables.
       elif varid == 'PREC' or varid == 'TOTRUNOFF' or varid == 'LHEAT':
-         self.composite_plotspecs = {}
-         self.single_plotspecs = {}
          if varid == 'PREC':
             red_vars = ['RAIN', 'SNOW']
             myfunc = aplusb
@@ -849,163 +959,217 @@ class lmwg_plot_set2(lmwg_plot_spec):
             red_vars = ['FCTR', 'FCEV', 'FGEV']
             myfunc = sum3
 
+         # First step, reduced their constituents
          in1 = [x+'_ft1' for x in red_vars]
+         in1_ttest = [x+'_ttest1' for x in red_vars]
          in2 = [x+'_ft2' for x in red_vars]
+         in2_ttest = [x+'_ttest2' for x in red_vars]
+         in3 = [x+'_obs' for x in red_vars]
+         in3_ttest = [x+'_ttest3' for x in red_vars]
          for v in red_vars:
             if num_fts == 1 and num_models == 1:
                ft = (climo0 if climo0 is not None else raw0)
-               # These can use climatology files if present. They are just linear sums.
+               if raw0 is not None:
+                  ft_raw = raw0
+               ft2 = None
+               ft3 = None
+            if num_fts == 2 and num_models == 2:
+               ft = (climo0 if climo0 is not None else raw0)
+               ft2 = (climo1 if climo1 is not None else raw1)
+               if raw0 is not None:
+                  ft_raw = raw0
+               if raw1 is not None:
+                  ft2_raw = raw1
+               ft3 = None
+
+            if num_fts == 2 and num_models == 1: # one is obs
+               ft = (climo0 if climo0 is not None else raw0)
+               if raw0 is not None:
+                  ft_raw = raw0
+               ft2 = obs0
+               ft3 = None
+
+            if num_fts == 3 and num_models == 2: # one is obs
+               ft = (climo0 if climo0 is not None else raw0)
+               ft2 = (climo1 if climo1 is not None else raw1)
+               if raw0 is not None:
+                  ft_raw = raw0
+               if raw1 is not None:
+                  ft2_raw = raw1
+               ft3 = obs0
+
+            if num_fts == 3 and num_models == 1: # two are obs
+               ft = (climo0 if climo0 is not None else raw0)
+               if raw0 is not None:
+                  ft_raw = raw0
+               ft2 = obs0
+               ft3 = obs1
+
+
+            if ft != None and v in ft.list_variables():
                self.reduced_variables[v+'_ft1'] = reduced_variable(
                   variableid = v, filetable=ft, reduced_var_id = v+'_ft1',
                   reduction_function=(lambda x, vid: reduce2latlon_seasonal(x, season=self.season, region=None, vid=vid)))
-            elif num_fts == 1:
-               obs = obs0
-               if varid == 'PREC':
-                  if 'PRECIP_LAND' in obs.list_variables():
-                     v = 'PRECIP_LAND'
-                  elif 'PREC' in obs.list_variables():
-                     v = 'PREC'
-                  else:
-                     print 'Couldnt find %s in obs sets and only obs specified. Returning.' % varid
-                     return
-                  self.reduced_variables[v+'_ft1'] = reduced_variable(
-                     variableid = v, filetable=obs, reduced_var_id = v+'_ft1',
-                     reduction_function=(lambda x, vid: reduce2latlon_seasonal(x, season=self.season, region=None, vid=vid)))
-            elif num_fts == 2:
-               if num_models == 1: 
-                  ft = (climo0 if climo0 is not None else raw0)
-                  v0 = varid
-                  v1 = varid
-                  # There is no LHEAT in obs sets.
-                  if varid == 'PREC' and 'PRECIP_LAND' in obs0.list_variables():
-                     v1 = 'PRECIP_LAND'
-                     ft2 = obs0
-                  if varid == 'TOTRUNOFF' and 'RUNOFF' in obs0.list_variables():
-                     v1 = 'RUNOFF'
-                     ft2 = obs0
-               else:
-                  ft = (climo0 if climo0 is not None else raw0)
-                  ft2 = (climo1 if climo1 is not None else raw1)
-                  v0 = varid
-                  v1 = varid
-               self.reduced_variables[v0+'_ft1'] = reduced_variable(
-                  variableid = v0, filetable=ft, reduced_var_id = v0+'_ft1',
+            if ft_raw != None and v in ft.list_variables(): # t-test raw, don't reduce, but need to sum it later.
+               self.reduced_variables[v+'_ttest1'] = reduced_variable(
+                  variableid = v, filetable=ft, reduced_var_id = v+'_ttest1',
+                  reduction_function=(lambda x, vid: dummy(x, vid)))
+            if ft2 != None and v in ft2.list_variables():
+               self.reduced_variables[v+'_ft2'] = reduced_variable(
+                  variableid = v, filetable=ft2, reduced_var_id = v+'_ft2',
                   reduction_function=(lambda x, vid: reduce2latlon_seasonal(x, season=self.season, region=None, vid=vid)))
-               if ft2 != None:
-                  self.reduced_variables[v1+'_ft1'] = reduced_variable(
-                     variableid = v1, filetable=ft2, reduced_var_id = v1+'_ft1',
-                     reduction_function=(lambda x, vid: reduce2latlon_seasonal(x, season=self.season, region=None, vid=vid)))
-            elif num_fts == 3:
-               if num_models == 2:
-                  ft = (climo0 if climo0 is not None else raw0)
-                  ft2 = (climo1 if climo1 is not None else raw1)
-                  ft3 = None
-                  v0 = varid
-                  v1 = varid
-                  if varid == 'PREC' and 'PRECIP_LAND' in obs0.list_variables():
-                     v2 = 'PRECIP_LAND'
-                     ft3 = obs0
-                  if varid == 'TOTRUNOFF' and 'RUNOFF' in obs0.list_variables():
-                     v2 = 'RUNOFF'
-                     ft3 = obs0
-                  if varid == 'PREC' and 'PREC' in obs0.list_variables():
-                     v2 = 'PREC'
-                     ft3 = obs0
-               elif num_models == 1:
-                  ft = (climo0 if climo0 is not None else raw0)
-                  v0 = varid
-                  v1 = varid
-                  v2 = varid
-                  ft2 = None
-                  ft3 = None
-                  if varid == 'PREC' and 'PRECIP_LAND' in obs0.list_variables():
-                     v1 = 'PRECIP_LAND'
-                     ft2 = obs0
-                  if varid == 'TOTRUNOFF' and 'RUNOFF' in obs0.list_variables():
-                     v1 = 'RUNOFF'
-                     ft2 = obs0
-                  if varid == 'PREC' and 'PREC' in obs0.list_variables():
-                     v1 = 'PREC'
-                     ft2 = obs0
-                  if varid == 'PREC' and 'PRECIP_LAND' in obs1.list_variables():
-                     v2 = 'PRECIP_LAND'
-                     ft3 = obs1
-                  if varid == 'TOTRUNOFF' and 'RUNOFF' in obs1.list_variables():
-                     v2 = 'RUNOFF'
-                     ft3 = obs1
-                  if varid == 'PREC' and 'PREC' in obs1.list_variables():
-                     v2 = 'PREC'
-                     ft3 = obs1
+            if ft2_raw != None and v in ft2.list_variables(): # t-test raw, don't reduce, but need to sum it later.
+               self.reduced_variables[v+'_ttest2'] = reduced_variable(
+                  variableid = v, filetable=ft2, reduced_var_id = v+'_ttest2',
+                  reduction_function=(lambda x, vid: dummy(x, vid)))
+            if ft3 != None and v in ft3.list_variables(): # this has to be obs.
+               self.reduced_variables[v+'_obs'] = reduced_variable(
+                  variableid = v, filetable=ft3, reduced_var_id = v+'_obs',
+                  reduction_function=(lambda x, vid: reduce2latlon_seasonal(x, season=self.season, region=None, vid=vid)))
+               self.reduced_variables[v+'_ttest3'] = reduced_variable(
+                  variableid = v, filetable=ft3, reduced_var_id = v+'_ttest3',
+                  reduction_function=(lambda x, vid: dummy(x,vid)))
 
-               self.reduced_variables[v0+'_ft1'] = reduced_variable(
-                  variableid = v0, filetable=ft, reduced_var_id = v0+'_ft1',
-                  reduction_function=(lambda x, vid: reduce2latlon_seasonal(x, season=self.season, region=None, vid=vid)))
-               if ft2 != None:
-                  self.reduced_variables[v1+'_ft2'] = reduced_variable(
-                     variableid = v1, filetable=ft2, reduced_var_id = v1+'_ft2',
-                     reduction_function=(lambda x, vid: reduce2latlon_seasonal(x, season=self.season, region=None, vid=vid)))
-               if ft3 != None:
-                  self.reduced_variables[v2+'_ft3'] = reduced_variable(
-                     variableid = v2, filetable=ft3, reduced_var_id = v2+'_ft3',
-                     reduction_function=(lambda x, vid: reduce2latlon_seasonal(x, season=self.season, region=None, vid=vid)))
+            # Ok, any constituent variables are done, and if the obs set had constitutent variables they'll get reduced too.
+         # check for obs to varid translations
+         v1 = varid
+         v2 = varid
+         v3 = varid
+         if ft != None and varid == 'PREC' and 'PRECIP_LAND' in ft.list_variables():
+            v1 = 'PRECIP_LAND'
+         if ft != None and varid == 'TOTRUNOFF' and 'RUNOFF' in ft.list_variables():
+            v1 = 'RUNOFF'
+         if ft2 != None and varid == 'PREC' and 'PRECIP_LAND' in ft2.list_variables():
+            v2 = 'PRECIP_LAND'
+         if ft2 != None and varid == 'TOTRUNOFF' and 'RUNOFF' in ft2.list_variables():
+            v2 = 'RUNOFF'
+         if ft3 != None and varid == 'PREC' and 'PRECIP_LAND' in ft3.list_variables():
+            v3 = 'PRECIP_LAND'
+         if ft3 != None and varid == 'TOTRUNOFF' and 'RUNOFF' in ft3.list_variables():
+            v3 = 'RUNOFF'
+
+         if v1 == varid: # it's derived
+            self.derived_variables[varid+'_ft1'] = derived_var(vid=varid+'_ft1', inputs=in1, func=myfunc)
+            if ft_raw != None:
+               self.derived_variables[varid+'_ttest1'] = derived_var(vid=varid+'_ttest1', inputs=in1_ttest, func=myfunc)
+         else: #its in the obs set and has a different name.
+            self.reduced_variables[varid+'_ft1'] = reduced_variable(
+               variableid = v1, filetable = ft, reduced_var_id = varid+'_ft1',
+               reduction_function = (lambda x, vid: reduce2latlon_seasonal(x, season=self.season, region=None, vid=vid)))
+            self.reduced_variables[varid+'_ttest1'] = reduced_variable(
+               variableid = v1, filetable = ft, reduced_var_id = varid+'_ttest1',
+               reduction_function = (lambda x, vid: dummy(x, vid)))
+
+         if v2 == varid and ft2 != None:
+            self.derived_variables[varid+'_ft2'] = derived_var(vid=varid+'_ft2', inputs=in2, func=myfunc)
+            if ft2_raw != None:
+               self.derived_variables[varid+'_ttest2'] = derived_var(vid=varid+'_ttest2', inputs=in2_ttest, func=myfunc)
+         else:
+            self.reduced_variables[varid+'_ft2'] = reduced_variable(
+               variableid = v2, filetable = ft2, reduced_var_id = varid+'_ft2',
+               reduction_function = (lambda x, vid: reduce2latlon_seasonal(x, season=self.season, region=None, vid=vid)))
+            self.reduced_variables[varid+'_ttest2'] = reduced_variable(
+               variableid = v2, filetable = ft2, reduced_var_id = varid+'_ttest2',
+               reduction_function = (lambda x, vid: dummy(x, vid)))
+
+         if v3 == varid and ft3 != None:
+            self.derived_variables[varid+'_obs'] = derived_var(vid=varid+'_obs', inputs=in3, func=myfunc)
+         else:
+            self.reduced_variables[varid+'_obs'] = reduced_variable(
+               variableid = v3, filetable = ft3, reduced_var_id = varid+'_obs',
+               reduction_function = (lambda x, vid: reduce2latlon_seasonal(x, season=self.season, region=None, vid=vid)))
+            self.reduced_variables[varid+'_ttest3'] = reduced_variable(
+               variableid = v3, filetable = ft3, reduced_var_id=varid+'_ttest3',
+               reduction_function = (lambda x, vid: dummy(x, vid)))
 
          print 'Going to add plotspec %s.' % '_'.join([ft._strid, varid, seasonid])
-         self.single_plotspecs[self.plot1_id] = plotspec(
-            vid=varid+'_ft1',
-            zvars = [varid+'_ft1'], zfunc = (lambda z:z),
-            plottype = self.plottype)
-         self.composite_plotspecs[self.plotall_id] = [self.plot1_id]
 
-         if ft2 != None:
-            print 'Going to add second plotspec %s.' % '_'.join([ft2._strid, varid, seasonid])
-            self.single_plotspecs[self.plot2_id] = plotspec(
-               vid = varid+'_ft2',
-               zvars = [varid+'_ft2'], zfunc = (lambda z: z),
+         if ft == None:
+            print 'ft is none. Thats probably bad.'
+            exit(1)
+
+         # Trivial case; a single plot.
+         if ft != None:
+            self.single_plotspecs[self.plot1_id] = plotspec(
+               vid=varid+'_ft1',
+               zvars = [varid+'_ft1'], zfunc = (lambda z:z),
                plottype = self.plottype)
+            self.composite_plotspecs[self.plotall_id] = [self.plot1_id]
+
+         # Next most complicated sets. 2+ filetables
+         if ft2 != None: # we for sure have ft1, ft2, and ft1-ft2 plots.
+            self.single_plotspecs[self.plot2_id] = plotspec(
+               vid=varid+'_ft2',
+               zvars = [varid+'_ft2'], zfunc = (lambda z:z),
+               plottype = self.plottype)
+            self.composite_plotspecs[self.plotall_id].append(self.plot2_id)
+
             self.single_plotspecs[self.plot3_id] = plotspec(
-               vid=varid+'_ft1-ft2',
+               vid=varid+'_ft1-ft2', 
                zvars = [varid+'_ft1', varid+'_ft2'], zfunc = aminusb,
                plottype = self.plottype)
-            if ft_raw != None and ft2_raw != None:
-               self.single_plotspecs[self.plot7_id] = plotspec(
-                  vid=varid+'_models_ttest',
-                  zvars = [varid+'_ft1_ttest', varid+'_ft2_ttest'], zfunc = ttest_ab,
-                  plottype = 'Boxfill')
-#                  plottype = self.plottype)
-               self.composite_plotspecs[self.plotall_id].append(self.plot7_id)
-
-            self.composite_plotspecs[self.plotall_id].append(self.plot2_id)
             self.composite_plotspecs[self.plotall_id].append(self.plot3_id)
-         if ft3 != None:
-            print 'Going to add 3rd dataset procspecs %s' % '_'.join([ft3._strid, varid, seasonid])
-            self.single_plotspecs[self.plot4_id] = plotspec(
-               vid = varid+'_ft3',
-               zvars = [varid+'_ft3'], zfunc = (lambda z: z),
+
+            # If ft2 was a 2nd model, we need a t-test
+            if num_models == 2 and ft_raw != None and ft_raw2 != None:
+               self.single_plotspecs[self.plot7_id] = plotspec(
+                  vid = varid+'_models_ttest',
+                  zvars = [varid+'_ttest1', varid+'_ttest2'], zfunc = ttest_ab,
+                  plottype = 'Boxfill')
+               self.composite_plotspecs[self.plotall_id].append(self.plot7_id)
+            # We also need the difference of ft1-ft2 plot (typically model-obs if we haven't got 2 models)
+            self.single_plotspecs[self.plot3_id] = plotspec(
+               vid = varid+'_ft1-ft2',
+               zvars = [varid+'_ft1', varid+'_ft2'], zfunc = aminusb,
                plottype = self.plottype)
-            self.single_plotspecs[self.plot5_id] = plotspec(
-               vid = varid+'_model1-obs',
-               zvars = [varid+'_ft1', varid+'_ft3'], zfunc = aminusb,
-               plottype = self.plottype)
-            self.single_plotspecs[self.plot6_id] = plotspec(
-               vid = varid+'_model2-obs',
-               zvars = [varid+'_ft2', varid+'_ft3'], zfunc = aminusb,
-               plottype = self.plottype)
-            # set up 7 and 8
-            print 'PLOTS 7 and 8 NEED IMPLEMENTED'
+            self.composite_plotspecs[self.plotall_id].append(self.plot3_id)
+         if ft3 != None: # so we have 2 models and obs, or 1 model and 2 obs.
+            if num_models == 2:
+               # so we need model1-obs, model2-obs added, then model vs model ttest, plus the 3rd ft
+               self.single_plotspecs[self.plot4_id] = plotspec(
+                  vid = varid+'_obs',
+                  zvars = [varid+'_obs'], zfunc = (lambda z:z),
+                  plottype = self.plottype)
+               self.single_plotspecs[self.plot5_id] = plotspec(
+                  vid = varid+'_ft1-ft3',
+                  zvars = [varid+'_ft1', varid+'_obs'], zfunc = aminusb,
+                  plottype = self.plottype)
+               self.single_plotspecs[self.plot6_id] = plotspec(
+                  vid = varid+'_ft2-ft3',
+                  zvars = [varid+'_ft2', varid+'_obs'], zfunc = aminusb,
+                  plottype = self.plottype)
+               self.single_plotspecs[self.plot8_id] = plotspec(
+                  vid = varid+'_ttest_models_vs_obs',
+                  zvars = [varid+'_ttest1', varid+'_ttest2', varid+'_ttest3'],
+                  zfunc = ttest_time,
+                  plottype = 'Boxfill')
+               self.composite_plotspecs[self.plotall_id].append(self.plot4_id)
+               self.composite_plotspecs[self.plotall_id].append(self.plot5_id)
+               self.composite_plotspecs[self.plotall_id].append(self.plot6_id)
+               self.composite_plotspecs[self.plotall_id].append(self.plot8_id)
          plots_defined = True
 
 
+      # nonlinear albedos. next most complicated, though fairly similar to prec/totrunoff/lheat
       elif varid == 'VBSA' or varid == 'NBSA' or varid == 'VWSA' or varid == 'NWSA' or varid == 'ASA':
          if raw0 == None and raw1 == None:
             print 'Nonlinear derived variable %s specified but no raw datasets available. Returning.' % varid
             return
          if raw0 != None:
             self.reduced_variables[varid+'_ft1'] = albedos_redvar(raw0, 'SEASONAL', self.albedos[varid], season=self.season)
+            ft_raw = raw0
+            # Create them but keep them unreduced for ttests.
          if raw1 != None:
             self.reduced_variables[varid+'_ft2'] = albedos_redvar(raw1, 'SEASONAL', self.albedos[varid], season=self.season)
-         if obs != None:
-            if varid in obs.list_variables():
+            self.reduced_variables[varid+'_ttest1'] = albedos_redvar(raw0, None, self.albedos[varid], season=self.season)
+            self.reduced_variables[varid+'_ttest2'] = albedos_redvar(raw1, None, self.albedos[varid], season=self.season)
+            ft2 = raw1
+            ft2_raw = raw1
+         if obs0 != None:
+            if varid in obs0.list_variables():
+               ft3 = obs0
                self.reduced_variables[varid+'_obs'] = albedos_redvar(obs, 'SEASONAL', self.albedos[varid], season=self.season)
+               self.reduced_variables[varid+'_ttest3'] = albedos_redvar(obs, None, self.albedos[varid], season=self.season)
 
       # These 3 only exist as model vs model (no model vs obs) comparisons, so ft2 is not special cased
       elif varid == 'RNET':
@@ -1014,26 +1178,42 @@ class lmwg_plot_set2(lmwg_plot_spec):
             return
          if raw0 != None:
             self.reduced_variables['RNET_ft1'] = rnet_redvar(raw0, 'SEASONAL', season=self.season)
+            ft_raw = raw0
          if raw1 != None:
             self.reduced_variables['RNET_ft2'] = rnet_redvar(raw1, 'SEASONAL', season=self.season)
+            self.reduced_variables['RNET_ttest1'] = rnet_redvar(raw0, None, season=self.season)
+            self.reduced_variables['RNET_ttest2'] = rnet_redvar(raw1, None, season=self.season)
+            ft2 = raw1
+            ft2_raw = raw1
 
       elif varid == 'EVAPFRAC':
          if raw0 == None and raw1 == None:
             print 'Nonlinear derived variable %s specified but no raw datasets available. Returning' % varid
             return
          if raw0 != None:
-            self.reduced_variables['EVAPFRAC_ft1'] = evapfrac_redvar(raw0, 'SEASONAL', season=self.season)
+            self.reduced_variables['EVAPFRAC_ft1'] = evapfrac_redvar(raw0, 'SEASONAL', suffix='1', season=self.season)
+            ft_raw = raw0
          if raw1 != None:
-            self.reduced_variables['EVAPFRAC_ft2'] = evapfrac_redvar(raw1, 'SEASONAL', season=self.season)
+            self.reduced_variables['EVAPFRAC_ft2'] = evapfrac_redvar(raw1, 'SEASONAL', suffix='2', season=self.season)
+            self.reduced_variables['EVAPFRAC_ttest1'] = evapfrac_redvar(raw0, None, suffix='1', season=self.season)
+            self.reduced_variables['EVAPFRAC_ttest2'] = evapfrac_redvar(raw1, None, suffix='2', season=self.season)
+            ft2 = raw1
+            ft2_raw = raw1
 
       elif varid == 'P-E':
+         print 'WORKING ON P-E'
          if raw0 == None and raw1 == None:
             print 'Nonlinear derived variable %s specified but no raw datasets available. Returning' % varid
             return
          if raw0 != None:
-            self.reduced_variables['P-E_ft1'] = pminuse_seasonal(raw0, self.season)
+            self.reduced_variables['P-E_ft1'] = pminuse_redvar(raw0, 'SEASONAL', self.season)
+            ft_raw = raw0
          if raw1 != None:
-            self.reduced_variables['P-E_ft2'] = pminuse_seasonal(raw1, self.season)
+            self.reduced_variables['P-E_ft2'] = pminuse_redvar(raw1, 'SEASONAL', self.season)
+            self.reduced_variables['P-E_ttest1'] = pminuse_redvar(raw0, None, self.season)
+            self.reduced_variables['P-E_ttest2'] = pminuse_redvar(raw1, None, self.season)
+            ft2 = raw1
+            ft2_raw = raw1
 
       # If just "TLAKE" was specified for example, generate all 3 levels.
       elif varid in lmwg_plot_set2._level_varnames or varid in lmwg_plot_set2._level_vars:
@@ -1053,11 +1233,13 @@ class lmwg_plot_set2(lmwg_plot_spec):
             # TODO Offer a level drop down in the GUI/command line
 
             ft = (climo0 if climo0 is not None else raw0)
-            self.reduced_variables[varid+str(level)+'_ft1'] = level_var_redvar(ft, vbase, self.season, level)
+            self.reduced_variables[varid+str(level)+'_ft1'] = level_var_redvar(ft, 'SEASONAL', vbase, self.season, level)
 
             if num_models == 2:
-               ft = (climo1 if climo1 is not None else raw1)
-               self.reduced_variables[varid+str(level)+'_ft2'] = level_var_redvar(ft, vbase, self.season, level)
+               ft2 = (climo1 if climo1 is not None else raw1)
+               self.reduced_variables[varid+str(level)+'_ft2'] = level_var_redvar(ft2, 'SEASONAL', vbase, self.season, level)
+               self.reduced_variables[varid+str(level)+'_ttest1'] = level_var_redvar(ft, None, vbase, self.season, level)
+               self.reduced_variables[varid+str(level)+'_ttest2'] = level_var_redvar(ft2, None, vbase, self.season, level)
 
             self.composite_plotspecs = {}
             self.single_plotspecs={}
@@ -1077,13 +1259,19 @@ class lmwg_plot_set2(lmwg_plot_spec):
                   vid=vbase+str(level)+'_3',
                   zvars = [vbase+str(level)+'_ft1', vbase+str(level)+'_ft2'], zfunc = (lambda z:z),
                   plottype = self.plottype)
+               print '>>>>>>>>>>>>>>>>>>>>> ADDING PLOT 7   <<<<<<<<<<<<<<<<<<<<<<<<<<'
+               self.single_plotspecs[self.plot7_id] = plotspec(
+                  vid=vbase+str(level)+'_ttest',
+                  zvars = [vbase+str(level)+'_ttest1', vbase+str(level)+'_ttest2'], zfunc = ttest_ab,
+                  plottype = self.plottype)
                self.composite_plotspecs[self.plotall_id].append(self.plot2_id)
                self.composite_plotspecs[self.plotall_id].append(self.plot3_id)
+               self.composite_plotspecs[self.plotall_id].append(self.plot7_id)
          plots_defined = True
 
       # level_varnames already did their plots
       if plots_defined == False:
-         print 'Plots not yet defined. Defining...'
+         print '--------> Plots not yet defined. Defining...'
          self.single_plotspecs = {}
          self.composite_plotspecs = {}
          self.single_plotspecs[self.plot1_id] = plotspec(
@@ -1102,49 +1290,47 @@ class lmwg_plot_set2(lmwg_plot_spec):
                vid = varid+'_model-obs',
                zvars = [varid+'_ft1', varid+'_ft2'], zfunc = aminusb,
                plottype = self.plottype)
-            print 'appending 2', self.plot2_id
-            print 'appending 3', self.plot3_id
             self.composite_plotspecs[self.plotall_id].append(self.plot2_id)
             self.composite_plotspecs[self.plotall_id].append(self.plot3_id)
+
+            # Do we have a ttest model vs model plot?
+            if num_models == 2 and ft_raw != None and ft2_raw != None:
+               self.single_plotspecs[self.plot7_id] = plotspec(
+                  vid = varid+'_models_ttest',
+                  zvars = [varid+'_ttest1', varid+'_ttest2'], zfunc = ttest_ab,
+                  plottype = 'Boxfill')
+               self.composite_plotspecs[self.plotall_id].append(self.plot7_id)
+
          if ft3 != None:
             self.single_plotspecs[self.plot4_id] = plotspec(
-               vid = varid+'_ft3',
-               zvars = [varid+'_ft3'], zfunc = (lambda z: z),
+               vid = varid+'_obs',
+               zvars = [varid+'_obs'], zfunc = (lambda z: z),
                plottype = self.plottype)
             self.single_plotspecs[self.plot5_id] = plotspec(
                vid = varid+'_model1-obs',
-               zvars = [varid+'_ft1', varid+'_ft3'], zfunc = aminusb,
+               zvars = [varid+'_ft1', varid+'_obs'], zfunc = aminusb,
                plottype = self.plottype)
             self.single_plotspecs[self.plot6_id] = plotspec(
                vid = varid+'_model2-obs',
-               zvars = [varid+'_ft2', varid+'_ft3'], zfunc = aminusb,
+               zvars = [varid+'_ft2', varid+'_obs'], zfunc = aminusb,
                plottype = self.plottype)
-            print 'appending 4', self.plot4_id
             self.composite_plotspecs[self.plotall_id].append(self.plot4_id)
-            print 'appending 5', self.plot5_id
             self.composite_plotspecs[self.plotall_id].append(self.plot5_id)
-            print 'appending 6', self.plot6_id
             self.composite_plotspecs[self.plotall_id].append(self.plot6_id)
-            print 'Need to implement plots 7 and 8'
-         if ft2 != None and ft3 == None:
-            if ft_raw != None and ft2_raw != None:
-               self.single_plotspecs[self.plot7_id] = plotspec(
-                  vid = varid+'_ttest',
-                  zvars = [varid+'_ft1_ttest', varid+'_ft2_ttest'], zfunc = ttest_ab,
-#                  plottype = self.plottype)
-                  plottype = 'Boxfill')
-               print 'appending 7', self.plot7_id
-               self.composite_plotspecs[self.plotall_id].append(self.plot7_id)
-            else:
-               print 'NO RAW DATASETS TO MAKE TTEST WITH'
+            print 'NO SUPPORT FOR ADDITIONAL PLOTS IN TEMPLATES - COMPLAIN TO SOMEONE TO FIX'
+            # this needs an 8-plot template
+            self.single_plotspecs[self.plot8_id] = plotspec(
+               vid = varid+'_models_obs_ttest',
+               zvars = [varid+'_ttest1', varid+'_ttest2', varid+'_ttest3'], zfunc = ttest_time,
+               plottype = 'Boxfill')
+            self.composite_plotspecs[self.plotall_id].append(self.plot8_id)
 
       self.computation_planned = True
 
    def _results(self,newgrid=0):
       print 'In set 2 results'
       results = plot_spec._results(self,newgrid)
-      print 'plotall_id:', self.plotall_id
-      print 'plotspec_values:', self.plotspec_values
+      print 'reduced vars available now: ', self.reduced_variables
       print 'results: ', results
       if results is None: return None
       return self.plotspec_values[self.plotall_id]
@@ -1484,9 +1670,10 @@ class lmwg_plot_set3(lmwg_plot_spec):
             self.single_plotspecs['NetRadiation'] = plotspec(vid='RNET_ft1',
                zvars=['RNET_ft1'], zfunc=(lambda z:z),
                plottype = self.plottype, title=varinfo['RNET']['desc'])
-         if filetable2 != None:
-            self.single_plotspecs['NetRadiation'].z2vars = ['RNET_ft2']
-            self.single_plotspecs['NetRadiation'].z2func = (lambda z:z)
+         if ft2 != None:
+            if raw1 != None:
+               self.single_plotspecs['NetRadiation'].z2vars = ['RNET_ft2']
+               self.single_plotspecs['NetRadiation'].z2func = (lambda z:z)
             if raw0 != None and raw1 != None:
                self.single_plotspecs['LatentHeat'].z2vars = ['LHEAT_ft2']
                self.single_plotspecs['LatentHeat'].z2func = (lambda z:z)
@@ -2051,7 +2238,7 @@ class lmwg_plot_set5(lmwg_plot_spec):
          for v in self.albedos.keys():
             if raw0 == None:
                print 'Nonclimo dataset required for albedos. Removing them from the display'
-               self.display_vars = list(set(self.display_vars) - set(self.albedos.keys()))
+               self.display_varslist(set(self.display_vars) - set(self.albedos.keys()))
             else:
                self.reduced_variables[v+'_ft1'] = albedos_redvar(raw0, 'SINGLE', self.albedos[v], region=region, weights=global_lw0)
                if num_models == 2 and raw1 != None:
@@ -2916,12 +3103,12 @@ class lmwg_plot_set7(lmwg_plot_spec):
 
    @staticmethod
    def _list_variables(model, obs):
-      varlist = ['Tables', 'Scatter_Plots', 'Line_Plots', 'Maps']
+      varlist = ['RTM_Table', 'Scatter_Plots', 'Line_Plots', 'Maps']
       return varlist
    @staticmethod
    def _all_variables(model, obs):
       vlist = {}
-      vlist['Tables'] = basic_plot_variable
+      vlist['RTM_Table'] = basic_plot_variable
       vlist['Scatter_Plots'] = basic_plot_variable
       vlist['Maps'] = lmwg_set7_map_variables
       vlist['Line_Plots'] = lmwg_set7_line_variables
@@ -2984,7 +3171,7 @@ class lmwg_plot_set7(lmwg_plot_spec):
          rd['fekete_rtm_vol_at_stn'] = float(self.river_data[r]['fekete_rtm_vol_at_stn'])
          self.riv_data.append(rd)
 
-      if 'TABLES' in varid.upper():
+      if 'RTM_Table' in varid.upper():
          self.tables = True
          self.reduced_variables['QCHANR_ft0'] = reduced_variable(variableid = 'QCHANR', reduced_var_id = 'QCHANR_ft0', filetable = ft, reduction_function = (lambda x, vid: dummy(x, vid=vid)))
          self.reduced_variables['QCHOCNR_ft0'] = reduced_variable(variableid = 'QCHOCNR', reduced_var_id = 'QCHOCNR_ft0', filetable = ft, reduction_function=(lambda x, vid: dummy(x, vid=vid)))

@@ -156,6 +156,7 @@ def run_diags( opts ):
       use_times = list( set(times) & set(pclass.list_seasons()) )
 
       # Get this list of variables for this set (given these obs/model inputs)
+      print 'opts vars:', opts.get('vars',[])
       variables = pclass.list_variables( modelfts, obsfts, sname )
       print 'var list from pclass: ', variables
       # Get the reduced list of variables possibly specified by the user
@@ -194,8 +195,11 @@ def run_diags( opts ):
             print 'Region filename: ', r_fname
 
             # loop over variables now
+            vcount = len(variables)
+            counter = 0
             for ivarid, varid in enumerate(variables):
-               print "Processing variable",varid," in season",time, " in plotset ",sname
+               print "Processing variable",varid," in season",time, " in plotset ",sname, " - variable ", counter, "of ", vcount
+               counter = counter+1
                vard = pclass.all_variables( modelfts, obsfts, sname )
                plotvar = vard[varid]
 
@@ -260,9 +264,11 @@ def run_diags( opts ):
                            auxname = '_'+aux
                         # don't add an extra underscore unnecessarily
                         if postname != '':
-                           postname=postname+'_'
+                           pname = postname+'_'
+                        else:
+                           pname = ''
                            
-                        name = basename+'_'+time+'_'+varid+auxname+'_'+postname+r_fname
+                        name = basename+'_'+time+'_'+varid+auxname+'_'+pname+r_fname
                         fname = os.path.join(outdir,name)
 
                      
@@ -295,7 +301,7 @@ def run_diags( opts ):
                         else:
                            name = basename+'_'+time+'_'+varid+auxstr+'-table.text'
                         fname = os.path.join(outdir, name)
-                        print 'Creating file - ', fname
+                        print 'Creating file -----------------> ', fname
                         f = open(fname, 'w')
                         f.write(res)
                         f.close()
@@ -440,6 +446,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                if 'CORR_' in vname:
                   special='CORR'
                print '---> vname:', vname
+               print '---> fnamebase: ', fnamebase
                if special != '':
                   print '--> Special: ', special
                   if ('_1' in vname and '_2' in vname) or '_MAP' in vname.upper():
