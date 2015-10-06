@@ -177,17 +177,36 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
          quit()
 
    # Get some paths setup
+   num_models = len(model_dict.keys())
    raw0 = model_dict[model_dict.keys()[0]]['raw']
    climo0 = model_dict[model_dict.keys()[0]]['climos']
    name0 = None
    name0 = model_dict[model_dict.keys()[0]].get('name', 'ft0')
+   defaultft0 = climo0 if climo0 is not None else raw0
+   modelpath = defaultft0.root_dir()
+
+   if num_models == 2:
+      raw1 = model_dict[model_dict.keys()[1]]['raw']
+      climo1 = model_dict[model_dict.keys()[1]]['climos']
+      name1 = None
+      name1 = model_dict[model_dict.keys()[1]].get('name', 'ft1')
+      defaultft1 = climo1 if climo1 is not None else raw1
+      modelpath1 = defaultft1.root_dir()
+   else:
+      modelpath1 = None
+      defaultft1 = None
+      raw1 = None
+      climo1 = None
+
    if climo0 != None:
       cf0 = 'yes'
    else:
       cf0 = 'no'
+   if climo1 != None:
+      cf1 = 'yes'
+   else:
+      cf1 = 'no'
 
-   defaultft0 = climo0 if climo0 is not None else raw0
-   modelpath = defaultft0.root_dir()
 
    # Now, loop over collections.
    for collnum in colls:
@@ -303,11 +322,18 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
                    diags_collection[collnum][v].get('executable', False) == False: 
                   simple_vars.append(v)
 
+            # I believe all of the lower level plot sets (e.g. in amwg.py or lmwg.py) will ignore a second dataset, IF one is supplied
+            # unnecessarily, so pass all available datasets here.
             complex_vars = list(set(obs_vlist) - set(simple_vars))
             # simple vars first
             if len(simple_vars) != 0:
                varstr = '--vars '+' '.join(simple_vars)
-               cmdline = 'diags-new.py --model path=%s,climos=%s,type=model %s %s %s %s %s %s %s %s %s %s %s' % (modelpath, cf0, obsstr, optionsstr, packagestr, setstr, seasonstr, varstr, outstr, xmlstr, prestr, poststr, regionstr)
+               pstr1 = '--model path=%s,climos=%s,type=model' % (modelpath, cf0)
+               if modelpath1 != None:
+                  pstr2 = '--model path=%s,climos=%s,type=model' % (modelpath1, cf1)
+               else:
+                  pstr2 = ''
+               cmdline = 'diags-new.py %s %s %s %s %s %s %s %s %s %s %s %s %s' % (pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, seasonstr, varstr, outstr, xmlstr, prestr, poststr, regionstr)
                   
                if collnum != 'dontrun':
                   runcmdline(cmdline, outlog)
@@ -335,6 +361,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
                   # check for options.
                   raw = False
                   cf0 = 'yes'
+                  cf1 = 'yes'
                   if diags_collection[collnum][v].get('options', False) != False:
                      raw = diags_collection[collnum][v]['options'].get('requiresraw', False)
 
@@ -345,8 +372,20 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
                      else:
                         modelpath = raw0.root_dir()
                         cf0 = 'no'
+                     if raw1 == None and num_models == 2:
+                        print 'Only one raw dataset provided and this set requires raw data'
+                        quit()
+                     else:
+                        modelpath1 = raw1.root_dir()
+                        cf1 = 'no'
 
-                  cmdline = 'diags-new.py --model path=%s,climos=%s,type=model %s %s %s %s %s %s %s %s %s %s %s %s' % (modelpath, cf0, obsstr, optionsstr, packagestr, setstr, seasonstr, varstr, outstr, xmlstr, prestr, poststr, regionstr, varopts)
+                  pstr1 = '--model path=%s,climos=%s,type=model' % (modelpath, cf0)
+                  if modelpath1 != None:
+                     pstr2 = '--model path=%s,climos=%s,type=model' % (modelpath1, cf1)
+                  else:
+                     pstr2 = ''
+
+                  cmdline = 'diags-new.py %s %s %s %s %s %s %s %s %s %s %s %s %s %s' % (pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, seasonstr, varstr, outstr, xmlstr, prestr, poststr, regionstr, varopts)
                   if collnum != 'dontrun':
                      runcmdline(cmdline, outlog)
                   else:
