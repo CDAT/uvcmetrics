@@ -410,12 +410,12 @@ class lmwg_plot_set1(lmwg_plot_spec):
       raw1 = None
 
       # We can set the fts here too since none of the variables are nonlinear in this set.
-      if num_models == 1:
+      if num_models >= 1:
          raw0 = model_dict[model_dict.keys()[0]]['raw']
          climo0 = model_dict[model_dict.keys()[0]]['climos']
          ft0 = (climo0 if climo0 is not None else raw0)
          ft1id = ft0._strid
-      elif num_models == 2:
+      if num_models == 2:
          raw1 = model_dict[model_dict.keys()[1]]['raw']
          climo1 = model_dict[model_dict.keys()[1]]['climos']
          ft1 = (climo1 if climo1 is not None else raw1)
@@ -496,11 +496,11 @@ class lmwg_plot_set1(lmwg_plot_spec):
                self.reduced_variables[vn+'_ft2'] = reduced_variable(
                   variableid = vbase, filetable=ft2, reduced_var_id=vn+'_ft2',
                   reduction_function=(lambda x, vid, i=i: reduceAnnTrendRegionLevel(x, region, i, weights=lw1, vid=vid)))
-               self.single_plotspec[self.plot1_id].z2vars = [vn+'_ft2']
-               self.single_plotspec[self.plot1_id].z2func = (lambda z:z)
+               self.single_plotspecs[self.plot1_id].z2vars = [vn+'_ft2']
+               self.single_plotspecs[self.plot1_id].z2func = (lambda z:z)
 
                # Combine the difference plot for now. Otherwise we could handle this via a varopts perhaps?
-               self.single_plotspec[self.plot2_id] = plotspec(
+               self.single_plotspecs[self.plot2_id] = plotspec(
                   vid=vn+'_diff', zvars = [vn+'_ft1', vn+'_ft2'],
                   zfunc=aminusb,
                   plottype = self.plottype, title=ln)
