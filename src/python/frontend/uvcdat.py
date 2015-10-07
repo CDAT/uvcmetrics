@@ -149,7 +149,8 @@ class uvc_composite_plotspec():
         else:
             # the title join ends up with two spaces between fields. check for that first, then replace single spaces after.
             fname = (self.title.strip()+'.xml').replace('  ','_').replace(' ','_').replace('/','_')[:115]  # 115 is to constrain file size
-            fname = fname+'.xml'
+            if '.xml' not in fname:
+               fname = fname+'.xml'
         filename = os.path.join(where,fname)
         #print "output to",filename
         return filename
