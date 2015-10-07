@@ -371,8 +371,13 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
       print "tmpl gms=",gms
       print "tmpl len(res)=",len(res),"ovly=",ovly,"onPage=",onPage
       print "tmpl gmobs=",gmobs
-      print "tmpl tmobs=",[tm.name for tm in tmobs]
-      print "tmpl tmmobs=",[tm.name for tm in tmmobs]
+      print 'TMOBS/TMMOBS:'
+      print tmobs
+      print tmmobs
+#      if tmobs != None:
+#         print "tmpl tmobs=",[tm.name for tm in tmobs]
+#      if tmmobs != None:
+#         print "tmpl tmmobs=",[tm.name for tm in tmmobs]
       print '*************************************************'
 
    # gmmobs provides the correct graphics methods to go with the templates.
