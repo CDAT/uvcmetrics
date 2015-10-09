@@ -1,5 +1,5 @@
 import mpi4py
-import cdms2
+import cdms2, sys
 
 sz = mpi4py.MPI.COMM_WORLD.Get_size()
 rk = mpi4py.MPI.COMM_WORLD.Get_rank()
@@ -19,3 +19,7 @@ if rk == 0:
     fn = '/Users/mcenerney1/uvcmetrics_test_data/obs_data/NCEP_03_climo.nc'
     f=cdms2.open(fn)
     f.close
+else:
+    sys.exit(0)
+
+print 'done'

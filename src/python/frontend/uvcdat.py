@@ -1052,6 +1052,9 @@ class plot_spec(object):
             
             if self.rank is self.master:
                 self.variable_values = buildVariables(self.all_keys, collected_data, collected_axes, collected_attr)
+            else:
+                #other precesses can stop
+                sys.exit(0)
         else:
             #sequential calculations
             for v in self.reduced_variables.keys():
