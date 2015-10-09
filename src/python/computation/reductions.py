@@ -2609,7 +2609,7 @@ def run_cdscan( fam, famfiles, cache_path=None, COMM=None ):
         maxprocs=1)
     #wait until cdscan is done
     message = comm1.recv(source = MPI.ANY_SOURCE)
-    print 'after Spawn ', COMM.rank, comm1.rank, message, MPI.ANY_SOURCE
+    print 'after Spawn ', COMM.rank, comm1.rank, message, xml_name
     proc_status = MPI.Status().Get_error()
 
     if proc_status!=0: 
@@ -2856,10 +2856,11 @@ class reduced_variable(ftrow,basic_id):
         else:
             # the easy case, just one file has all the data on this variable
             filename = files[0]
+            print "single file on ", COMM.rank, filename
         #fcf = get_datafile_filefmt(f)
         return filename
 
-    def reduce( self, vid=None ):
+    def reduce( self, vid=None, COMM=None ):
         """Finds and opens the files containing data required for the variable,
         Applies the reduction function to the data, and returns an MV.
         When completed, this will treat missing data as such.
@@ -2887,7 +2888,8 @@ class reduced_variable(ftrow,basic_id):
             filename = self._filename
         else:
             filename = self.get_variable_file( self.variableid )
-        print 'reduce',  filename   
+        #if COMM.rank is 1:
+        #    print '    reduce',  COMM.rank, filename   
         if filename is None:
             if self.variableid not in self._duvs:
                 # this belongs in a log file:
@@ -2938,14 +2940,27 @@ class reduced_variable(ftrow,basic_id):
                 duv_value = duv.derive( duv_inputs )
                 reduced_data = self._reduction_function( duv_value, vid=vid )
         else:
+            #if COMM.rank is 1:
+            #    print "    open ", COMM.rank, filename
             f = cdms2.open( filename )
-            print 'reduce after open', filename
+            #if COMM.rank is 1:
+            #    print '    reduce after open', COMM.rank, filename, self.variableid, self.variableid in f.variables.keys()
             self._file_attributes.update(f.attributes)
+            #if COMM.rank is 1:
+            #    print '    update attr ', COMM.rank
             if self.variableid in f.variables.keys():
+                #if COMM.rank is 1:
+                #    print '    retrieve var', COMM.rank, vid
+                #    if vid == 'rv_T_APRIL_ft1_None':
+                #        pass #pdb.set_trace()
                 var = f(self.variableid)
                 if os.path.basename(filename)[0:5]=='CERES':
                     var = special_case_fixed_variable( 'CERES', var )
+                #if COMM.rank is 1:
+                #    print '    before reduction ', COMM.rank, var.id
                 reduced_data = self._reduction_function( var, vid=vid )
+                #if COMM.rank is 1:
+                #    print '    after reduction ', COMM.rank, reduced_data.shape
             elif self.variableid in f.axes.keys():
                 taxis = cdms2.createAxis(f[self.variableid])   # converts the FileAxis to a TransientAxis.
                 taxis.id = f[self.variableid].id
@@ -2960,6 +2975,7 @@ class reduced_variable(ftrow,basic_id):
             f.close()
         if hasattr(reduced_data,'mask') and reduced_data.mask.all():
             reduced_data = None
+        #print 'rv shape =', COMM.rank, reduced_data.shape
         return reduced_data
 
 class rv(reduced_variable):

@@ -1026,11 +1026,15 @@ class plot_spec(object):
         local_data = []
         local_axes = []
         local_attr = []
+
         for key in self.local_keys:
         #for v in self.reduced_variables[self.SLICE].keys():
             v = self.reduced_variables[key]
             #value = self.reduced_variables[v].reduce(None)
-            value = v.reduce(None)
+            #print ' try reducing ', self.rank, key, v.variableid
+            cdms2.setNetcdfUseParallelFlag(0)
+            value = v.reduce(None, COMM=self.comm)
+
             try:
                 if  len(value.data)<=0:
                     print "ERROR no data for",v
@@ -1041,15 +1045,15 @@ class plot_spec(object):
                 except: # value.size may not exist
                     pass
             #self.variable_values[v] = value  # could be None
-            if self.rank in [1,3]:
-                print ' reduced ', self.rank, key, v.variableid
+            #if self.rank in [1,3]:
+            #    print ' reduced ', self.rank, key, v.variableid
             local_data += [value.asma()]
             local_axes += [value.getAxisList()]
             local_attr += [value.attributes]
             #print value.id, value.shape
         
         print 'after compute loop rank = ', self.rank, len(local_data)
-        #self.comm.barrier()
+        
         if self.MPI_imported:
 
             collected_data = self.comm.gather(local_data, root=self.master)

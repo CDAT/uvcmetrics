@@ -1797,8 +1797,7 @@ class amwg_plot_set8(amwg_plot_spec):
         self.local_keys = self.comm.scatter(self.all_keys, root=self.master)
         print 'rank=', self.rank, 'keys =', self.local_keys
 
-        #avoid multiple calls to cdscan
-         
+        #avoid multiple calls to cdscan         
         for i, key in enumerate(self.local_keys):
             RV = self.reduced_variables[key]
             print 'rank=', self.rank, key, RV.variableid
