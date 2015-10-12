@@ -263,7 +263,7 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
     if len(varnames)==0 or varnames is None or 'ALL' in varnames:
         varnames = fvarnames
     if varnames==['AMWG']:
-        # backwards compatibility, do just a few variables:
+        # backwards compatibility, do just 100 variables (ALL variables is over 600):
         varnames = [ 'ANRAIN', 'ANSNOW', 'AODDUST1', 'AODDUST3', 'AODVIS', 'AQRAIN', 'AQSNOW',
                      'AREI', 'AREL', 'AWNC', 'AWNI', 'CCN3', 'CDNUMC', 'CLDHGH', 'CLDICE', 'CLDLIQ',
                      'CLDLOW', 'CLDMED', 'CLDTOT', 'CLOUD', 'DCQ', 'DTCOND', 'DTV', 'FICE', 'FLDS',
@@ -528,8 +528,7 @@ def climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_t
     tmin, tmax = update_time_avg_from_files( redvars, redtime_bnds, redtime_wts, datafilenames2,
                                 fun_next_tbounds = (lambda rtb,dtb,dt=dt: rtb),
                                 redfiles=[g], dt=dt,
-                                force_scalar_avg=force_scalar_avg1, comm=comm1,
-                                filerank=filerank, filetag=filetag )
+                                force_scalar_avg=force_scalar_avg1 )
     season_tmin = min( tmin, season_tmin )
     season_tmax = max( tmax, season_tmax )
 
@@ -574,7 +573,7 @@ def climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_t
 if __name__ == '__main__':
     p = argparse.ArgumentParser(description="Climatology")
     # TO DO: test with various paths.  Does this work naturally? <<<<<<<<<<<<
-    p.add_argument("--outfile", dest="outfile", help="Name of output file, XXX for season (mandatory)", nargs=1,
+    p.add_argument(["--outfile","--o"], dest="outfile", help="Name of output file, XXX for season (mandatory)", nargs=1,
                    required=True )
     p.add_argument("--infiles", dest="infiles", help="Names of input files (mandatory)", nargs='+',
                    required=True )
@@ -582,7 +581,7 @@ if __name__ == '__main__':
                    required=True )
     p.add_argument("--variables", dest="variables", help="Variable names (ALL or omit for all)", nargs='+',
                    required=False, default=['ALL'] )
-    p.add_argument("--omitBySeason", dest="omitBySeason", help=
+    p.add_argument(["--omitBySeason","--m"], dest="omitBySeason", help=
                "Omit files for just the specified season.  For multiple seasons, provide this"+
                    "argument multiple times. E.g. --omitBySeason DJF lastDECfile.nc\"",
                    nargs='+', action='append', default=[] )

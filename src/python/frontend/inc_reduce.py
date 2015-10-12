@@ -613,8 +613,7 @@ def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds, 
 
 def update_time_avg_from_files( redvars0, redtime_bnds, redtime_wts, filenames,
                                 fun_next_tbounds=next_tbounds_copyfrom_data,
-                                redfiles=[], dt=None, force_scalar_avg=False,
-                                comm=None, filerank=[], filetag=[] ):
+                                redfiles=[], dt=None, force_scalar_avg=False ):
     """Updates the time-reduced data for a several variables.  The reduced-time and averaged
     variables are the list redvars.  Its weights (for time averaging) are another variable, redtime_wts.
     (Each variable redvar of redvars has the same time axis, and it normally has an attribute wgts
@@ -629,11 +628,6 @@ def update_time_avg_from_files( redvars0, redtime_bnds, redtime_wts, filenames,
     redfiles is a list of reduced-time files for output.  They should already be open as 'r+'.
     The optional argument dt is used only in that dt=0 means that we are computing climatologies.
     The optional argument force_scalar_avg argument is for testing and is passed on to two_pt_avg.
-    The optional argument comm is an MPI communicator.  If provided, it will be used to test
-    whether a file (needed here but generated on another processor) is available.
-    When comm is provided, two dictionaries should also be provided, providing data for each member
-    of filenames.  filerank has the ranks of the processors which generated the input files (or -1
-    if the file existed before this code was invoked).  filetag has tags identifying files.
     """
     tnewvar = 0
     ttotal = time.time()
