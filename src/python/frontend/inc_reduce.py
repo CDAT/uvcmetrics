@@ -34,7 +34,6 @@
 # "monthly" intervals are unequal except in a 360-day calendar.
 # A keyword + calendar + units will be sufficient if it's one of the likely requests.
 
-# >>>> WORK IN PROGRESS <<<<   And this will take some time to finish!
 # >>>> TO DO:
 # Create a suitable time axis when reading climo data without one.
 
@@ -115,14 +114,20 @@ def next_tbounds_prescribed_step( red_time_bnds, data_time_bnds, dt ):
     t1t2 = numpy.array([[t0+dt, t1+dt]],dtype=numpy.int32)
     return numpy.concatenate( ( red_time_bnds, t1t2 ), axis=0 )
 
-def initialize_redfile( filen, axisdict, typedict, attdict, varnames ):
+def initialize_redfile( filen, axisdict, typedict, attdict, varnames, lock=None ):
     """Initializes the file containing reduced data.  Input is the filename, axes
     variables representing bounds on axes, and names of variables to be initialized.
     Axes are represented as a dictionary, with items like varname:[timeaxis, lataxis, lonaxis].
     Time should always be present as the first axis.
     Note that cdms2 will automatically write the bounds variable if it writes an axis which has bounds.
     """
+    #print "jfp1 about to open",filen
+    if lock is not None:  lock.acquire()
+    #t1 = time.time()
     g = cdms2.open( filen, 'w' )
+    #t2 = time.time()
+    if lock is not None:  lock.release()
+    #print "jfp1 opened",filen,"in",t2-t1,"sec"
     if 'time_bnds' not in varnames:
         addVariable( g, 'time_bnds', typedict['time_bnds'], axisdict['time_bnds'], attdict['time_bnds'] )
     for varn in varnames:
@@ -132,7 +137,7 @@ def initialize_redfile( filen, axisdict, typedict, attdict, varnames ):
     return g;
 
 def initialize_redfile_from_datafile( redfilename, varnames, datafilen, dt=-1, init_red_tbounds=None,
-                                      force_double=False ):
+                                      force_double=False, lock=None ):
     """Initializes a file containing the partially-time-reduced average data, given the names
     of the variables to reduce and the name of a data file containing those variables with axes.
     The file is created and returned in an open state.  Closing the file is up to the calling function.
@@ -147,7 +152,13 @@ def initialize_redfile_from_datafile( redfilename, varnames, datafilen, dt=-1, i
     # Note: some of the attributes are set appropriately for climatologies, but maybe not for
     # other time reductions.  In particular, c.f. time long_name and varn cell_methods.
     boundless_axes = set([])
+    #print "jfp2 about to open",datafilen
+    if lock is not None:  lock.acquire()
+    #t1 = time.time()
     f = cdms2.open( datafilen )
+    #t2 = time.time()
+    if lock is not None:  lock.release()
+    #print "jfp2 opened",datafilen,"in",t2-t1,"sec"
     axisdict = {}
     typedict = {}
     attdict = {}
@@ -186,6 +197,7 @@ def initialize_redfile_from_datafile( redfilename, varnames, datafilen, dt=-1, i
             continue
         if f[varn].dtype.name.find('string')==0:
             # We can't handle string variables.
+            print "jfp WARNING, ignoring string variable",varn
             continue
         out_varnames.append(varn)
         dataaxes = f[varn].getAxisList()
@@ -234,7 +246,7 @@ def initialize_redfile_from_datafile( redfilename, varnames, datafilen, dt=-1, i
             typedict['time_climo'] = timeaxis.typecode() # always 'd'
             attdict['time_climo'] = {'initialized':'no'}
 
-    g = initialize_redfile( redfilename, axisdict, typedict, attdict, out_varnames )
+    g = initialize_redfile( redfilename, axisdict, typedict, attdict, out_varnames, lock=lock )
 
     if timeaxis is not None:
         g['time_bnds'][:] = red_time_bnds
@@ -248,7 +260,11 @@ def initialize_redfile_from_datafile( redfilename, varnames, datafilen, dt=-1, i
     else:
         tmin = tb[0][0]
         tmax = tb[-1][-1]
+    #print "jfp about to close",f.id
+    if lock is not None:  lock.acquire()
     f.close()
+    if lock is not None:  lock.release()
+    #print "jfp closed",f.id
     return g, out_varnames, tmin, tmax
 
 def adjust_time_for_climatology( newtime, redtime ):
@@ -613,8 +629,7 @@ def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds, 
 
 def update_time_avg_from_files( redvars0, redtime_bnds, redtime_wts, filenames,
                                 fun_next_tbounds=next_tbounds_copyfrom_data,
-                                redfiles=[], dt=None, force_scalar_avg=False,
-                                comm=None, filerank=[], filetag=[] ):
+                                redfiles=[], dt=None, force_scalar_avg=False, lock=None ):
     """Updates the time-reduced data for a several variables.  The reduced-time and averaged
     variables are the list redvars.  Its weights (for time averaging) are another variable, redtime_wts.
     (Each variable redvar of redvars has the same time axis, and it normally has an attribute wgts
@@ -629,18 +644,19 @@ def update_time_avg_from_files( redvars0, redtime_bnds, redtime_wts, filenames,
     redfiles is a list of reduced-time files for output.  They should already be open as 'r+'.
     The optional argument dt is used only in that dt=0 means that we are computing climatologies.
     The optional argument force_scalar_avg argument is for testing and is passed on to two_pt_avg.
-    The optional argument comm is an MPI communicator.  If provided, it will be used to test
-    whether a file (needed here but generated on another processor) is available.
-    When comm is provided, two dictionaries should also be provided, providing data for each member
-    of filenames.  filerank has the ranks of the processors which generated the input files (or -1
-    if the file existed before this code was invoked).  filetag has tags identifying files.
     """
     tnewvar = 0
     ttotal = time.time()
     tmin = 1.0e10
     tmax = -1.0e10
     for filen in filenames:
+        #print "jfp3 about to open",filen
+        if lock is not None:  lock.acquire()
+        #t1 = time.time()
         f = cdms2.open(filen)
+        #t2 = time.time()
+        if lock is not None:  lock.release()
+        #print "jfp3 opened",filen,"in",t2-t1,"sec"
         ftime = f.getAxis('time').clone()  # clone saves it in memory - faster
         data_tbounds = ftime.getBounds()
         # Compute tmin, tmax which represent the range of times for the data we computed with.
@@ -663,6 +679,7 @@ def update_time_avg_from_files( redvars0, redtime_bnds, redtime_wts, filenames,
         for redvar in redvars0:
             try:
                 varid = redvar.id
+                if varid not in f.variables.keys(): continue #jfp testing
                 t1=time.time()
                 newvar = f(varid)
                 tnewvar += time.time()-t1
@@ -708,9 +725,13 @@ def update_time_avg_from_files( redvars0, redtime_bnds, redtime_wts, filenames,
                 update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, tbnds[-1], dt=dt,
                                  new_time_weights=new_time_weights,
                                  force_scalar_avg=force_scalar_avg )
+        #print "jfp about to close",f.id
+        if lock is not None:  lock.acquire()
         f.close()
+        if lock is not None:  lock.release()
+        #print "jfp closed",f.id
     ttotal = time.time() - ttotal
-    print "jfp leaving update_time_avg_from_files, ttotal=",ttotal,"tnewvar=",tnewvar
+    #print "jfp leaving update_time_avg_from_files, ttotal=",ttotal,"tnewvar=",tnewvar
     return tmin, tmax
 
 def test_time_avg( redfilename, varnames, datafilenames ):
