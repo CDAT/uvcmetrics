@@ -378,9 +378,9 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
                 # forked process send a signal and disappear, and then the when next phase needs the
                 # data, it waits for the signal.  That's similar to what I do for MPI, but I haven't
                 # yet figured it out for local multiprocessing.
-                print "jfp waiting to join",proc[seasonname],"for season",seasonname
+                #print "jfp waiting to join",proc[seasonname],"for season",seasonname
                 proc[seasonname].join()  # wait for process to terminate
-                print "jfp joined",proc[seasonname],"for season",seasonname
+                #print "jfp joined",proc[seasonname],"for season",seasonname
             for seasonname in myseasons:
                 wrotefile = True #testing
                 climo_file_done_mpi( wrotefile, fileout_template, seasonname,
@@ -439,9 +439,9 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
                 # forked process send a signal and disappear, and then the when next phase needs the
                 # data, it waits for the signal.  That's similar to what I do for MPI, but I haven't
                 # yet figured it out for local multiprocessing.
-                print "jfp joining",proc[seasonname],"for season",seasonname
+                #print "jfp joining",proc[seasonname],"for season",seasonname
                 proc[seasonname].join()  # wait for process to terminate
-                print "jfp joined",proc[seasonname],"for season",seasonname
+                #print "jfp joined",proc[seasonname],"for season",seasonname
             for seasonname in myseasons:
                 wrotefile = True # testing
                 climo_file_done_mpi( wrotefile, fileout_template, seasonname,
@@ -513,7 +513,7 @@ def climo_file_done_mpi( redfile, fileout_template, seasonname, outseasons,
     for ise,seass in enumerate(outseasons):
         if seasonname in outseasons[seass]:
             outfile = fileout_template.replace('XXX',seass)
-            print "jfp sending from",comm1.rank,"to",filerank[outfile],"tag",filetag[redfile],"for",redfile
+            #print "jfp sending from",comm1.rank,"to",filerank[outfile],"tag",filetag[redfile],"for",redfile
             comm1.isend( 0, filerank[outfile], filetag[redfile] )
 
 def climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_template,
@@ -533,7 +533,7 @@ def climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_t
     fileout = fileout_template.replace('XXX',seasonname)
     filein = datafilenames2[0]
     if comm1 is not None and comm1.size>1 and filein in filerank and filerank[filein]>=0:
-        print "jfp receiving from",filerank[filein],"to",comm1.rank,"tag",filetag[filein],"for",filein
+        #print "jfp receiving from",filerank[filein],"to",comm1.rank,"tag",filetag[filein],"for",filein
         comm1.recv( source=filerank[filein], tag=filetag[filein] )
 
     g, out_varnames, tmin, tmax = initialize_redfile_from_datafile(
