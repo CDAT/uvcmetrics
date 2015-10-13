@@ -2587,9 +2587,13 @@ def run_cdscan( fam, famfiles, cache_path=None, COMM=None ):
                     ' '.join(famfiles)
 
     f.close()
-
-    #parallel mode    
-    if COMM is not None:
+    
+    if COMM is None:
+        #serial mode
+        proc = subprocess.Popen([cdscan_line],shell=True)
+        proc_status = proc.wait()
+    else:
+        #parallel mode
         import shlex
         cdscan_line = '%s/bin/'%(sys.prefix) + cdscan_line
         cdscan_line = shlex.split(cdscan_line)
@@ -2601,10 +2605,7 @@ def run_cdscan( fam, famfiles, cache_path=None, COMM=None ):
         #wait until cdscan is done
         message = comm1.recv(source = MPI.ANY_SOURCE)
         proc_status = MPI.Status().Get_error()
-    else:
-        proc = subprocess.Popen([cdscan_line],shell=True)
-        proc_status = proc.wait()
-        
+     
     if proc_status!=0: 
         print "ERROR: cdscan terminated with",proc_status
         print 'This is usually fatal. Frequent causes are an extra XML file in the dataset directory'

@@ -577,9 +577,12 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
 
 if __name__ == '__main__':
    print "UV-CDAT Diagnostics, command-line version"
-   import pdb
+   import pdb, time
    #pdb.set_trace()
    o = Options()
    o.processCmdLine()
    o.verifyOptions()
+   start = time.time()
    run_diagnostics_from_options(o)
+   end = time.time()
+   print 'time = ', end-start

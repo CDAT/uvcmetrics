@@ -1025,6 +1025,7 @@ class plot_spec(object):
         #print self.reduced_variables.keys()
 
         if self.MPI_ENABLED:
+            #parallel mode
             local_data = []
             local_axes = []
             local_attr = []
@@ -1056,7 +1057,7 @@ class plot_spec(object):
                 #other precesses can stop
                 sys.exit(0)
         else:
-            #sequential calculations
+            #serial mode
             for v in self.reduced_variables.keys():
                 value = self.reduced_variables[v].reduce(None)    
                 try:

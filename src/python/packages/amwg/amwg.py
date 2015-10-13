@@ -21,8 +21,9 @@ from numbers import Number
 from pprint import pprint
 try:
     from mpi4py import MPI
+    MPI_ENABLED = True
 except:
-    pass
+    MPI_ENABLED = False
 
 seasonsyr=cdutil.times.Seasons('JFMAMJJASOND')
 
@@ -1766,7 +1767,8 @@ class amwg_plot_set8(amwg_plot_spec):
         if not self.computation_planned:
             self.plan_computation( model, obs, varid, seasonid, levels=levels )
 
-        self.MPI_ENABLED = 'mpi4py.MPI' in sys.modules.keys()
+        self.MPI_ENABLED = MPI_ENABLED
+
         if self.MPI_ENABLED:
             self.mpi_init()
             
