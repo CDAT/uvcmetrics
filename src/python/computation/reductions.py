@@ -2529,9 +2529,7 @@ def run_cdscan( fam, famfiles, cache_path=None, COMM=None ):
               for f in famfiles ] )
     csum = hashlib.md5(file_list).hexdigest()
     xml_name = fam+'_cs'+csum+'.xml'
-    #pdb.set_trace()
-    print 'in run_cdscan', COMM.rank, xml_name, os.path.isfile( xml_name )
-    print 'in run_cdscan', COMM.rank, os.path.join( cache_path, os.path.basename(xml_name) )
+
     if os.path.isfile( xml_name ):
         #print "using cached cdscan output",xml_name," (in data directory)"
         return xml_name
@@ -2552,12 +2550,9 @@ def run_cdscan( fam, famfiles, cache_path=None, COMM=None ):
     # I know of no exception to the rule that all files in the file family keep their
     # units in the same place; so find where they are by checking the first file
     
-    print 'open file on ', COMM.rank, famfiles[0]
-    #from mpi4py import MPI
-    #f = MPI.File.Open(MPI.COMM_WORLD, famfiles[0], amode=MPI.MODE_RDONLY)
+
     f = cdms2.open( famfiles[0], mode='r' )
-    print 'opened ', COMM.rank
-    #pdb.set_trace()
+
     if f['time'] is None:
             cdscan_line = 'cdscan -q '+'-x '+xml_name+' '+' '.join(famfiles)
             f.close()
@@ -2590,28 +2585,27 @@ def run_cdscan( fam, famfiles, cache_path=None, COMM=None ):
                 print "WARNING, cannot find time units; will try to continue",famfiles[0]
                 cdscan_line = 'cdscan -q '+'-x '+xml_name+' -e time.units="'+time_units+'" '+\
                     ' '.join(famfiles)
-    #print COMM.rank, " cdscan_line=",cdscan_line
-    #if COMM.rank is not 0:
-    #    return xml_name
-    #print COMM.rank, 'popen'
-    #proc = subprocess.Popen([cdscan_line],shell=True)
-    #proc_status = proc.wait()
-    f.close()
-    print 'file closed', COMM.rank, famfiles[0]
-    import shlex
-    cdscan_line = '%s/bin/'%(sys.prefix) + cdscan_line
-    cdscan_line = shlex.split(cdscan_line)
-    from mpi4py import MPI
-    print 'in run_cdscan ', COMM.rank, xml_name, cdscan_line
-    comm1 = MPI.COMM_SELF.Spawn(        
-        sys.executable,
-        args=cdscan_line,
-        maxprocs=1)
-    #wait until cdscan is done
-    message = comm1.recv(source = MPI.ANY_SOURCE)
-    print 'after Spawn ', COMM.rank, comm1.rank, message, MPI.ANY_SOURCE
-    proc_status = MPI.Status().Get_error()
 
+    f.close()
+    
+    if COMM is None:
+        #serial mode
+        proc = subprocess.Popen([cdscan_line],shell=True)
+        proc_status = proc.wait()
+    else:
+        #parallel mode
+        import shlex
+        cdscan_line = '%s/bin/'%(sys.prefix) + cdscan_line
+        cdscan_line = shlex.split(cdscan_line)
+        from mpi4py import MPI
+        comm1 = MPI.COMM_SELF.Spawn(        
+            sys.executable,
+            args=cdscan_line,
+            maxprocs=1)
+        #wait until cdscan is done
+        message = comm1.recv(source = MPI.ANY_SOURCE)
+        proc_status = MPI.Status().Get_error()
+     
     if proc_status!=0: 
         print "ERROR: cdscan terminated with",proc_status
         print 'This is usually fatal. Frequent causes are an extra XML file in the dataset directory'
@@ -2845,13 +2839,14 @@ class reduced_variable(ftrow,basic_id):
             famfiles = [f for f in files if famdict[f]==fam]
 
             cache_path = self._filetable.cache_path()
-            fam += '_'+str(COMM.rank)
-            print 'in get_variable fam =', COMM.rank, fam
+            if COMM is not None:
+                fam += '_'+str(COMM.rank)
+
             if self._filename is not None:
                 xml_name = self._filename
             else:
                 xml_name = run_cdscan( fam, famfiles, cache_path, COMM=COMM )
-            print 'after cdscan', COMM.rank, xml_name
+
             filename = xml_name
         else:
             # the easy case, just one file has all the data on this variable
@@ -2859,7 +2854,7 @@ class reduced_variable(ftrow,basic_id):
         #fcf = get_datafile_filefmt(f)
         return filename
 
-    def reduce( self, vid=None ):
+    def reduce( self, vid=None, COMM=None ):
         """Finds and opens the files containing data required for the variable,
         Applies the reduction function to the data, and returns an MV.
         When completed, this will treat missing data as such.
@@ -2887,7 +2882,7 @@ class reduced_variable(ftrow,basic_id):
             filename = self._filename
         else:
             filename = self.get_variable_file( self.variableid )
-        print 'reduce',  filename   
+
         if filename is None:
             if self.variableid not in self._duvs:
                 # this belongs in a log file:
@@ -2938,14 +2933,17 @@ class reduced_variable(ftrow,basic_id):
                 duv_value = duv.derive( duv_inputs )
                 reduced_data = self._reduction_function( duv_value, vid=vid )
         else:
+
             f = cdms2.open( filename )
-            print 'reduce after open', filename
             self._file_attributes.update(f.attributes)
+
             if self.variableid in f.variables.keys():
                 var = f(self.variableid)
                 if os.path.basename(filename)[0:5]=='CERES':
                     var = special_case_fixed_variable( 'CERES', var )
+
                 reduced_data = self._reduction_function( var, vid=vid )
+                
             elif self.variableid in f.axes.keys():
                 taxis = cdms2.createAxis(f[self.variableid])   # converts the FileAxis to a TransientAxis.
                 taxis.id = f[self.variableid].id
@@ -2960,6 +2958,7 @@ class reduced_variable(ftrow,basic_id):
             f.close()
         if hasattr(reduced_data,'mask') and reduced_data.mask.all():
             reduced_data = None
+            
         return reduced_data
 
 class rv(reduced_variable):

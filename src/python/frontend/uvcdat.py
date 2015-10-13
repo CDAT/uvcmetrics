@@ -18,6 +18,7 @@ import cProfile
 import logging
 import json
 import vcs
+
 vcsx=vcs.init()   # This belongs in one of the GUI files, e.g.diagnosticsDockWidget.py
                   # The GUI probably will have already called vcs.init().
                   # Then, here,  'from foo.bar import vcsx'
@@ -1022,53 +1023,61 @@ class plot_spec(object):
         #print self.SLICE
         #print 'variable keys', self.rank, len(self.reduced_variables.keys()), 'seasonid' in self.reduced_variables.keys()
         #print self.reduced_variables.keys()
-        print 'the compute loop rank = ',self.rank, len(self.local_keys)
-        local_data = []
-        local_axes = []
-        local_attr = []
-        for key in self.local_keys:
-        #for v in self.reduced_variables[self.SLICE].keys():
-            v = self.reduced_variables[key]
-            #value = self.reduced_variables[v].reduce(None)
-            value = v.reduce(None)
-            try:
-                if  len(value.data)<=0:
-                    print "ERROR no data for",v
-            except: # value.data may not exist, or may not accept len()
-                try:
-                    if value.size<=0:
-                        print "ERROR no data for",v
-                except: # value.size may not exist
-                    pass
-            #self.variable_values[v] = value  # could be None
-            if self.rank in [1,3]:
-                print ' reduced ', self.rank, key, v.variableid
-            local_data += [value.asma()]
-            local_axes += [value.getAxisList()]
-            local_attr += [value.attributes]
-            #print value.id, value.shape
-        
-        print 'after compute loop rank = ', self.rank, len(local_data)
-        #self.comm.barrier()
-        if self.MPI_imported:
 
+        if self.MPI_ENABLED:
+            #parallel mode
+            local_data = []
+            local_axes = []
+            local_attr = []
+
+            for key in self.local_keys:
+                v = self.reduced_variables[key]   
+                value = v.reduce(None, COMM=self.comm)
+    
+                try:
+                    if  len(value.data)<=0:
+                        print "ERROR no data for",v
+                except: # value.data may not exist, or may not accept len()
+                    try:
+                        if value.size<=0:
+                            print "ERROR no data for",v
+                    except: # value.size may not exist
+                        pass
+    
+                local_data += [value.asma()]
+                local_axes += [value.getAxisList()]
+                local_attr += [value.attributes]
             collected_data = self.comm.gather(local_data, root=self.master)
             collected_axes = self.comm.gather(local_axes, root=self.master)
             collected_attr = self.comm.gather(local_attr, root=self.master)
             
             if self.rank is self.master:
                 self.variable_values = buildVariables(self.all_keys, collected_data, collected_axes, collected_attr)
-            
+            else:
+                #other precesses can stop
+                sys.exit(0)
+        else:
+            #serial mode
+            for v in self.reduced_variables.keys():
+                value = self.reduced_variables[v].reduce(None)    
+                try:
+                    if  len(value.data)<=0:
+                        print "ERROR no data for",v
+                except: # value.data may not exist, or may not accept len()
+                    try:
+                        if value.size<=0:
+                            print "ERROR no data for",v
+                    except: # value.size may not exist
+                        pass
+                self.variable_values[v] = value  # could be None
+    
         postponed = []   # derived variables we won't do right away
         
         #if self.rank is not self.master:
         #    return None
         #print 'derived var'
         for v in self.derived_variables.keys():
-            #pdb.set_trace()
-            #print v
             value = self.derived_variables[v].derive(self.variable_values)
-            #print value.id, value.shape
             if value is None:
                 # couldn't compute v - probably it depends on another derived variables which
                 # hasn't been computed yet
@@ -1078,9 +1087,7 @@ class plot_spec(object):
         
         #print 'postponed', postponed
         for v in postponed:   # Finish up with derived variables
-            #print v
             value = self.derived_variables[v].derive(self.variable_values)
-            #print value.id, value.shape
             self.variable_values[v] = value  # could be None
         varvals = self.variable_values
         
