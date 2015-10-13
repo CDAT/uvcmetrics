@@ -1365,7 +1365,7 @@ class lmwg_plot_set3(lmwg_plot_spec):
       # conceivably these could be the same names as the composite plot IDs but this is not a problem now.
       # see _results() for what I'm getting at
       varlist = ['Total_Precip_Runoff_SnowDepth', 'Radiative_Fluxes', 'Turbulent_Fluxes', 'Carbon_Nitrogen_Fluxes',
-                 'Fire_Fluxes', 'Energy_Moist_Control_of_Evap', 'Snow_vs_Obs', 'Albedo_vs_Obs', 'Hydrology']
+                 'Fire_Fluxes', 'Energy_Moisture_Control_of_Evap', 'Snow_vs_Obs', 'Albedo_vs_Obs', 'Hydrology']
       return varlist
 
    @staticmethod
