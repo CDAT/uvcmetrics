@@ -60,6 +60,7 @@ from metrics.frontend.it import *
 from metrics.computation.region import *
 from metrics.frontend.amwg_plotting import *
 import pdb
+import debug
 
 def mysort( lis ):
     lis.sort()
@@ -227,7 +228,7 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                     for aux in varopts:
                         # Since Options is a 2nd class (at best) citizen, we have to do something icky like this.
                         # hoping to change that in a future release. Also, I can see this being useful for amwg set 1.
-                        # (Basically, if we output pre-defined json for the tables they can be trivially sorted)                            
+                        # (Basically, if we output pre-defined json for the tables they can be trivially sorted)  
                         if '5' in snum and pname.upper() == 'LMWG' and opts['json'] == True:
                            plot = sclass( modelfts, obsfts, varid, seasonid, region, vvaropts[aux], jsonflag=True )
                         else:
