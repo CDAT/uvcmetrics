@@ -374,12 +374,12 @@ class amwg_plot_spec(plot_spec):
                 #print "dbg in second round, found",varnom,"computable by",func,"from",inputs
                 break
         if len(rvs)<=0:
-            print "ERROR, no inputs found for",varnom,"in filetable",filetable.id()
+            print "WARNING, no inputs found for",varnom,"in filetable",filetable.id()
             print "filetable source files=",filetable._filelist[0:10]
             print "need inputs",svd.inputs()
-            #return None,[],[]
-            raise DiagError( "ERROR, don't have %s, and don't have sufficient data to compute it!"\
-                                 % varnom )
+            return None,[],[]
+            #raise DiagError( "ERROR, don't have %s, and don't have sufficient data to compute it!"\
+            #                     % varnom )
         if not computable:
             print "DEBUG: standard variable",varnom,"is not computable"
             print "need inputs",svd.inputs()
