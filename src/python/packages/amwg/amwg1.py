@@ -362,7 +362,7 @@ class amwg_plot_set1(amwg_plot_spec):
             output = [str(self.values[0])]+[self.fpfmt(v) for v in self.values[1:]]
             return '\t'.join(output)
 
-    def __init__( self, model, obssets, varid='ignored', seasonid='ANN', region='Global', aux='ignored' ):
+    def __init__( self, model, obssets, varid='ignored', seasonid='ANN', region='Global', aux='ignored', levels='ignored' ):
         filetable1, filetable2 = self.getfts(model, obssets)
         # Inputs: filetable1 is the filetable for the test case (model) data.
         # filetable2 is a file table for all obs data.
