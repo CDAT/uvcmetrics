@@ -194,6 +194,8 @@ class basic_datafiles:
         For example, this may appear in names of variables to be plotted.
         This function will cache the file table and use it if possible.
         If the cache be stale, call clear_filetable()."""
+        if ftid is None:
+            ftid = self.short_name()
         cachefile,ftid = self._cachefile( ftid )
         self._ftid = ftid
         if os.path.isfile(cachefile):
@@ -335,7 +337,7 @@ class dirtree_datafiles( basic_datafiles ):
             return ','.join([os.path.basename(str(r))
                              for r in self._root])   # <base directory> <filter name>
         if len(self.opts[self._type]) > self._index:
-            if self.opts[self._type][self._index].get('name', False) != False:
+            if self.opts[self._type][self._index].get('name', False) not in [False,None]:
                return self.opts[self._type][self._index]['name'] 
             if self.opts[self._type][self._index].get('filter', False) != False:
                return ','.join(['_'.join([os.path.basename(str(r)),self._filt.mystr()])
