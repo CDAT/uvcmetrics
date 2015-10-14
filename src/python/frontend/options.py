@@ -535,6 +535,10 @@ class Options():
          metaopts.add_argument('--dsname', 
             help="A unique identifier for the dataset(s). Used by classic viewer to display the data.")
 
+      if 'mpidiags' in progname or 'mpidiags.py' in progname:
+         paropts = parser.add_argument_group('Parallel-specific')
+         paropts.add_argument('--taskspernode',
+            help="Specify the maximum number of tasks usable on a given node. Typically this would be set to numcores/node unless memory is an issue")
 
 
       ### Do the work
@@ -716,8 +720,10 @@ class Options():
                print "Please specify just one of --seasonally or --seasons"
                print 'Defaulting to using all seasons'
             else:
-               slist = [x for x in just_seasons if x in args.seasons]
+               slist = [x for x in all_seasons if x in args.seasons]
                self._opts['times'] = self._opts['times']+slist
+            print 'seasons: ', self._opts['times']
+            quit()
 
    def listOpts(self, args):
       print 'LIST - ', args.list
@@ -729,7 +735,7 @@ class Options():
          print "Available geographical regions: ", all_regions.keys()
 
       if 'seasons' in args.list or 'season' in args.list:
-         print "Available seasons: ", just_seasons
+         print "Available seasons: ", all_seasons
 
       if 'package' in args.list or 'packages' in args.list:
          print "Listing available packages:"
