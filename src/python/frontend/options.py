@@ -722,7 +722,7 @@ class Options():
                print "Please specify just one of --seasonally or --seasons"
                print 'Defaulting to using all seasons'
             else:
-               slist = [x for x in just_seasons if x in args.seasons]
+               slist = [x for x in all_seasons if x in args.seasons]
                self._opts['times'] = self._opts['times']+slist
 
    def listOpts(self, args):
@@ -735,7 +735,7 @@ class Options():
          print "Available geographical regions: ", all_regions.keys()
 
       if 'seasons' in args.list or 'season' in args.list:
-         print "Available seasons: ", just_seasons
+         print "Available seasons: ", all_seasons
 
       if 'package' in args.list or 'packages' in args.list:
          print "Listing available packages:"
