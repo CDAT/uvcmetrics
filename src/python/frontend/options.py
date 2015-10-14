@@ -84,7 +84,6 @@ class Options():
       self._opts['dbhost'] = None
       self._opts['dbopts'] = None
       self._opts['dsname'] = None
-      self._opts['seasons'] = ['JUN']
 
    # Some short cut getter/setters
    def __getitem__(self, opt):
