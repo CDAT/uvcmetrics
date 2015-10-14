@@ -538,6 +538,10 @@ class Options():
          metaopts.add_argument('--dsname', 
             help="A unique identifier for the dataset(s). Used by classic viewer to display the data.")
 
+      if 'mpidiags' in progname or 'mpidiags.py' in progname:
+         paropts = parser.add_argument_group('Parallel-specific')
+         paropts.add_argument('--taskspernode',
+            help="Specify the maximum number of tasks usable on a given node. Typically this would be set to numcores/node unless memory is an issue")
 
 
       ### Do the work
@@ -723,6 +727,8 @@ class Options():
             else:
                slist = [x for x in all_seasons if x in args.seasons]
                self._opts['times'] = self._opts['times']+slist
+            print 'seasons: ', self._opts['times']
+            quit()
 
    def listOpts(self, args):
       print 'LIST - ', args.list
