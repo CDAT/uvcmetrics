@@ -27,6 +27,7 @@ from metrics.frontend.defines import *
 ###   xml - output xml files?
 ###   netcdf - output netcdf files?
 ###   plots - output png files?
+###   antialiasing - tun antialiasing off (for test suites really)
 ###   json - output json files
 ###  sets - which sets to plot
 ###  translate - optional list of {set 1} to {set N} variable name mapping translations, e.g. TSA->TREFHT
@@ -72,6 +73,7 @@ class Options():
       self._opts['output']['xml'] = True
       self._opts['output']['netcdf'] = True
       self._opts['output']['plots'] = True
+      self._opts['output']['antialiasing'] = True
       self._opts['output']['climos'] = True
       self._opts['output']['outputdir'] = '/tmp'
       self._opts['output']['prefix'] = ''
@@ -82,6 +84,7 @@ class Options():
       self._opts['dbhost'] = None
       self._opts['dbopts'] = None
       self._opts['dsname'] = None
+      self._opts['seasons'] = ['JUN']
 
    # Some short cut getter/setters
    def __getitem__(self, opt):
@@ -513,6 +516,7 @@ class Options():
          outopts.add_argument('--xml', '-x', choices=['no', 'yes'],
             help="Produce XML output files as part of climatology/diags generation")
          outopts.add_argument('--logo', choices=['no', 'yes']) # intentionally undocumented; meant to be passed via metadiags
+         outopts.add_argument('--no-antialiasing', action="store_true",default = False) # intentionally undocumented; meant to be passed via metadiags
          outopts.add_argument('--table', action='store_true') # intentionally undocumented; meant to be passed via metadiags
 
       intopts = parser.add_argument_group('Internal-use primarily')
@@ -601,6 +605,8 @@ class Options():
 
 
       # Disable the UVCDAT logo in plots for users (typically metadiags) that know about this option
+      if args.no_antialiasing is True:
+         self._opts['output']['antialiasing'] = False
       if 'climatology' not in progname and 'climatology.py' not in progname:
          if args.logo != None:
             if args.logo.lower() == 'no' or args.logo == 0:
