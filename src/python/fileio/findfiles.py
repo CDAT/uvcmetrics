@@ -6,6 +6,7 @@
 import hashlib, pickle, operator, os, functools, sys, re
 import pprint
 from metrics.common.version import version
+from metrics.common.utilities import *
 from metrics.frontend.options import Options
 from metrics.fileio.filetable import *
 
@@ -163,6 +164,8 @@ class basic_datafiles:
         return ''
     def long_name(self):
         return self.__class__.__name__
+    def __getitem__(self, slicelist):
+        return self.files.__getitem__(slicelist)
     def check_filesepc(self):
         """the basic_datafiles version of this method does nothing.  See the dirtree_datafiles
         version to see what it is supposed to do."""
@@ -192,6 +195,8 @@ class basic_datafiles:
         For example, this may appear in names of variables to be plotted.
         This function will cache the file table and use it if possible.
         If the cache be stale, call clear_filetable()."""
+        if ftid is None:
+            ftid = self.short_name()
         cachefile,ftid = self._cachefile( ftid )
         self._ftid = ftid
         if os.path.isfile(cachefile):
@@ -313,7 +318,7 @@ class dirtree_datafiles( basic_datafiles ):
 
     def _getdatafiles( self, root, filt ):
         """returns all data files under a single root directory"""
-        #print "jfp getting datafiles from ",root," with filter",filt
+        #print "debug getting datafiles from ",root," with filter",filt
         if os.path.isfile(root):
             self.files += [root]
         elif os.path.isdir(root):
@@ -330,17 +335,18 @@ class dirtree_datafiles( basic_datafiles ):
 
     def short_name(self):
         if self._type == None or self._index == None or not hasattr(self,'_index'):
-            return ','.join([os.path.basename(str(r))
+            shortname = ','.join([os.path.basename(str(r))
                              for r in self._root])   # <base directory> <filter name>
         if len(self.opts[self._type]) > self._index:
-            if self.opts[self._type][self._index].get('name', False) != False:
-               return self.opts[self._type][self._index]['name'] 
+            if self.opts[self._type][self._index].get('name', False) not in [False,None]:
+               shortname = self.opts[self._type][self._index]['name'] 
             if self.opts[self._type][self._index].get('filter', False) != False:
-               return ','.join(['_'.join([os.path.basename(str(r)),self._filt.mystr()])
-                             for r in self._root])   # <base directory> <filter name>
+               shortname = ','.join([ underscore_join( [os.path.basename(str(r)),self._filt.mystr()] )
+                                      for r in self._root ])   # <base directory> <filter name>
         else:
-            return ','.join([os.path.basename(str(r))
-                             for r in self._root])   # <base directory> <filter name>
+            shortname = ','.join([os.path.basename(str(r))
+                                  for r in self._root])   # <base directory> <filter name>
+        return shortname
 
     def long_name(self):
         return ' '.join( [ self.__class__.__name__,

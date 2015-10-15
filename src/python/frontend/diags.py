@@ -59,7 +59,6 @@ import cProfile
 from metrics.frontend.it import *
 from metrics.computation.region import *
 from metrics.frontend.amwg_plotting import *
-import pdb
 
 def mysort( lis ):
     lis.sort()
@@ -139,11 +138,15 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
 
     if opts['output']['plots'] == True:
         vcanvas = vcs.init()
+        if opts['output']['antialiasing'] is False:
+            vcanvas.setantialiasing(0)
         vcsx = vcanvas   # ensures that uvcdat.py works on the same canvas
         vcanvas.setcolormap('bl_to_darkred') #Set the colormap to the NCAR colors
         if opts['output']['logo'] == False:
             vcanvas.drawlogooff()
         vcanvas2 = vcs.init()
+        if opts['output']['antialiasing'] is False:
+            vcanvas2.setantialiasing(0)
         vcanvas2.portrait()
         vcanvas2.setcolormap('bl_to_darkred') #Set the colormap to the NCAR colors
         if opts['output']['logo'] == False:
@@ -227,7 +230,7 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                     for aux in varopts:
                         # Since Options is a 2nd class (at best) citizen, we have to do something icky like this.
                         # hoping to change that in a future release. Also, I can see this being useful for amwg set 1.
-                        # (Basically, if we output pre-defined json for the tables they can be trivially sorted)                            
+                        # (Basically, if we output pre-defined json for the tables they can be trivially sorted)  
                         if '5' in snum and pname.upper() == 'LMWG' and opts['json'] == True:
                            plot = sclass( modelfts, obsfts, varid, seasonid, region, vvaropts[aux], jsonflag=True )
                         else:
@@ -577,7 +580,7 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
 
 if __name__ == '__main__':
    print "UV-CDAT Diagnostics, command-line version"
-   import pdb
+   #import pdb
    #pdb.set_trace()
    o = Options()
    o.processCmdLine()

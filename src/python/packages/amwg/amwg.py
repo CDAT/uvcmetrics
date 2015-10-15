@@ -374,12 +374,12 @@ class amwg_plot_spec(plot_spec):
                 #print "dbg in second round, found",varnom,"computable by",func,"from",inputs
                 break
         if len(rvs)<=0:
-            print "ERROR, no inputs found for",varnom,"in filetable",filetable.id()
+            print "WARNING, no inputs found for",varnom,"in filetable",filetable.id()
             print "filetable source files=",filetable._filelist[0:10]
             print "need inputs",svd.inputs()
-            #return None,[],[]
-            raise DiagError( "ERROR, don't have %s, and don't have sufficient data to compute it!"\
-                                 % varnom )
+            return None,[],[]
+            #raise DiagError( "ERROR, don't have %s, and don't have sufficient data to compute it!"\
+            #                     % varnom )
         if not computable:
             print "DEBUG: standard variable",varnom,"is not computable"
             print "need inputs",svd.inputs()
@@ -1827,7 +1827,10 @@ class amwg_plot_set8(amwg_plot_spec):
                                         plottype = self.plottype,
                                         levels = None )
             
-        self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
+        self.composite_plotspecs = {
+            self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id ]
+            }
+        #... was self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
         self.computation_planned = True
     def _results(self, newgrid=0):
         #pdb.set_trace()
@@ -1963,7 +1966,10 @@ class amwg_plot_set9(amwg_plot_spec):
                 levels = None )
             }
 
-        self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
+        self.composite_plotspecs = {
+            self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id ]
+            }
+        # ...was self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
         self.computation_planned = True
     def _results(self, newgrid=0):
         #pdb.set_trace()
@@ -3206,7 +3212,10 @@ class amwg_plot_set15(amwg_plot_spec):
                                         title = 'difference: model-obs',
                                         levels = None )
         
-        self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
+        self.composite_plotspecs = {
+            self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id ]
+            }
+        # ... was self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
         self.computation_planned = True
         #pdb.set_trace()
     def customizeTemplates(self, templates):

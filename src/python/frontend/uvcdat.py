@@ -780,7 +780,7 @@ class uvc_simple_plotspec():
         if len(self.title)<=0:
             fname = 'foo.nc'
         else:
-            fname = '_'.join([self.title.strip(),self.source]).replace(' ','_').replace('/','_') + '.nc'
+            fname = underscore_join([self.title.strip(),self.source]).replace(' ','_').replace('/','_') + '.nc'
         filename = os.path.join(where,fname)
         return filename
     def write_plot_data( self, format="", where="" ):
@@ -919,7 +919,7 @@ class plot_spec(object):
                     yl = getattr(y,'_vid',None)  # deprecated attribute
             if yl is not None:
                 yls.append( yl )
-        new_id = '_'.join(yls)
+        new_id = underscore_join(yls)
         if new_id is None or new_id.strip()=="": new_id = p+'_2'
         return new_id
     def compute(self,newgrid=0):

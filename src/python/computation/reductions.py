@@ -268,15 +268,21 @@ def reduce2scalar_seasonal_zonal( mv, seasons=seasonsyr, latmin=-90, latmax=90, 
     The input mv is a cdms2 variable too.
     This function uses UV-CDAT's genutil.avarager() function to handle weights and do averages.
     Time is restriced to the specified season.
-    Latitude weights may be provided as 'gw'.  The averager's default is reasonable, however.
+    Latitude weights may be provided as 'gw' which must depend (solely) on the latitude axis.  The
+    averager's default is reasonable, however.
     """
     if vid is None:
         vid = 'reduced_'+mv.id
     # reduce size of lat axis to (latmin,latmax)
     mv2 = mv(latitude=(latmin, latmax))
     # reduce size of gw to (latmin,latmax)
+    gw2 = None
     if gw is not None:
-        gw2 = gw(latitude=(latmin, latmax))
+        if len(gw.getDomain())==1 and gw.getDomain()[0][0].isLatitude():
+            gw2 = gw(latitude=(latmin, latmax))
+        else:
+            #print "debug For mv",mv.id,"gw rejected, domain is",gw.getDomain()
+            pass
 
     mvseas = calculate_seasonal_climatology(mv2, seasons)
     if mvseas is None:
@@ -294,7 +300,7 @@ def reduce2scalar_seasonal_zonal( mv, seasons=seasonsyr, latmin=-90, latmax=90, 
     axis_names = [ a.id for a in axes ]
     axes_string = '('+')('.join(axis_names)+')'
     if len(axes_string)>2:
-        if gw is None:
+        if gw2 is None:
             avmv = averager( mvseas, axis=axes_string )
         else:
             weights = [ gw2 if a.isLatitude() else 'weighted' for a in axes ]
