@@ -457,7 +457,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                   elif '_0' in vname and '_1' not in vname:
                      fname = fnamebase+'-ds0.png'
                   else:
-                     fname = fnamebase+'-unknown.png'
+                     fname = fnamebase+'.png'
                elif '_diff' in vname:
                   fname = fnamebase+'-diff.png'
                elif '_obs' in vname:
@@ -482,7 +482,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                   elif '_fts' in vname: # a special variable; typically like lmwg set3/6 or amwg set 2
                      fname = fnamebase+'_'+vname.replace('_fts','')+'.png'
                   else:
-                     fname = fnamebase+'-unknown.png'
+                     fname = fnamebase+'.png'
 
 
                print "png file name: ",fname
