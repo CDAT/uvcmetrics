@@ -476,7 +476,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                   elif '_ft2' in vname and '_ft1' not in vname:
                      fname = fnamebase+'-model2.png'
                   elif '_ft0' in vname and '_ft1' not in vname:
-                     fname = fnamebase+'-model2.png'
+                     fname = fnamebase+'-model0.png'
                   elif '_ft1' in vname and '_ft2' in vname:
                      fname = fnamebase+'-model-model2.png'
                   elif '_fts' in vname: # a special variable; typically like lmwg set3/6 or amwg set 2
