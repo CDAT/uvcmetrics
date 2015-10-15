@@ -428,6 +428,12 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
 
                vname = vname.replace('/', '_')
                #### TODO - Do we need the old style very verbose names here?
+               #### jfp, my answer: The right way to do it is that all the verbose information
+               #### useful for file names should be constructed elsewhere, perhaps in a named tuple.
+               #### The verbose names are formed, basically, by concatenating everything in that
+               #### tuple.  What we should do here is to form file names by concatenating the
+               #### most interesting parts of that tuple, whatever they are.  But it's important
+               #### to use enough so that different plots will almost surely have different names.
                print 'vname: ', vname
                # I *really* hate to do this. Filename should be handled better at a level above diags*.py
                special = ''
@@ -448,6 +454,8 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                      fname = fnamebase+'-ds1.png'
                   elif '_2' in vname and '_1' not in vname:
                      fname = fnamebase+'-ds2.png'
+                  elif '_0' in vname and '_1' not in vname:
+                     fname = fnamebase+'-ds0.png'
                   else:
                      fname = fnamebase+'-unknown.png'
                elif '_diff' in vname:
@@ -466,6 +474,8 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                      fname = fnamebase+'-model.png'  
                      # if we had switched to model1 it would affect classic view, etc.
                   elif '_ft2' in vname and '_ft1' not in vname:
+                     fname = fnamebase+'-model2.png'
+                  elif '_ft0' in vname and '_ft1' not in vname:
                      fname = fnamebase+'-model2.png'
                   elif '_ft1' in vname and '_ft2' in vname:
                      fname = fnamebase+'-model-model2.png'
