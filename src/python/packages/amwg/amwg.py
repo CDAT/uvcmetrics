@@ -526,7 +526,7 @@ class amwg_plot_set2(amwg_plot_spec):
                 z2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2'],
                 z2func=(lambda z: z[1][3]),
                 plottype = self.plottype,
-                title = 'CAM & NCEP HEAT_TRANSPORT GLOBAL',
+                title = 'CAM and NCEP HEAT_TRANSPORT GLOBAL',
                 source = ft1src ),
             'CAM_NCEP_HEAT_TRANSPORT_PACIFIC': plotspec(
                 vid='CAM_NCEP_HEAT_TRANSPORT_PACIFIC',
@@ -541,7 +541,7 @@ class amwg_plot_set2(amwg_plot_spec):
                 z2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2' ],
                 z2func=(lambda y: y[1][0]),
                 plottype = self.plottype,
-                title = 'CAM & NCEP HEAT_TRANSPORT PACIFIC',
+                title = 'CAM and NCEP HEAT_TRANSPORT PACIFIC',
                 source = ft1src ),
             'CAM_NCEP_HEAT_TRANSPORT_ATLANTIC': plotspec(
                 vid='CAM_NCEP_HEAT_TRANSPORT_ATLANTIC',
@@ -556,7 +556,7 @@ class amwg_plot_set2(amwg_plot_spec):
                 z2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2' ],
                 z2func=(lambda y: y[1][1]),
                 plottype = self.plottype ,
-                title = 'CAM & NCEP HEAT_TRANSPORT ATLANTIC',
+                title = 'CAM and NCEP HEAT_TRANSPORT ATLANTIC',
                 source = ft1src ),
             'CAM_NCEP_HEAT_TRANSPORT_INDIAN': plotspec(
                 vid='CAM_NCEP_HEAT_TRANSPORT_INDIAN',
@@ -571,7 +571,7 @@ class amwg_plot_set2(amwg_plot_spec):
                 z2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2' ],
                 z2func=(lambda y: y[1][2]),
                 plottype = self.plottype,
-                title = 'CAM & NCEP HEAT_TRANSPORT INDIAN',
+                title = 'CAM and NCEP HEAT_TRANSPORT INDIAN',
                 source = ft1src ),
             }
         self.composite_plotspecs = {
