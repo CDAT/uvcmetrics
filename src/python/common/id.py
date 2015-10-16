@@ -1,5 +1,6 @@
 
 from metrics.common.utilities import *
+from collections import namedtuple
 
 def id2str( id ):
     """computes a string id from a tuple id and returns it.
@@ -55,7 +56,6 @@ class basic_id():
             self._id = self.__class__.dict_id( *args )
         if type(self._id) is tuple: assert( len(self._id)<=self._idmx )
         self._strid = id2str(self._id)
-        #print "debug basic_id,",self.__class__.__name__,", just made self._strid=",self._strid,"from args",args
     def __str__(self):
         return self._strid
     @classmethod
@@ -70,7 +70,12 @@ class basic_id():
     @staticmethod
     def _dict_id( cls, *args ):
         classid = basic_id.abbrev(cls.__name__)
-        return tuple([classid]+[ getattr(a,'_strid',str(a)) for a in args ])
+        if hasattr( cls, 'IDtuple' ):
+            return apply(cls.IDtuple, [classid]+[ getattr(a,'_strid',str(a)) for a in args ])
+        else:
+            if classid not in ['rg','ft','rv','plot']:
+                print "debug.  Class",classid,"needs an IDtuple member"
+            return tuple([classid]+[ getattr(a,'_strid',str(a)) for a in args ])
     @classmethod
     def str_id( cls, *args ):
         return id2str( cls.dict_id( *args ) )
