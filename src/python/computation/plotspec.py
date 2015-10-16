@@ -9,6 +9,8 @@ from metrics.frontend import *
 import sys, traceback
 
 class derived_var(basic_id):
+    IDtuple = namedtuple( "derived_var_ID", "classid var varmod season ft1 ft2 region" )
+
     def __init__( self, vid, inputs=[], outputs=['output'], func=(lambda: None), special_values=None ):
         """Arguments:
         vid, an id for this dervied variable;
@@ -17,7 +19,7 @@ class derived_var(basic_id):
         outputs=list of ids of variables which are outputs of func (default is a single output
            quantity named 'output');
         """
-        if type(vid) is tuple:
+        if type(vid) is tuple or type(vid) is self.IDtuple:
             basic_id.__init__(self,*vid)
         else:  # probably vid is a string
             basic_id.__init__(self,vid)
@@ -72,7 +74,9 @@ class derived_var(basic_id):
             print "WARNING, derivation function failed.  Probably not enough valid inputs." 
             print e
             return None
-        if type(output) is tuple or type(output) is list:
+        if type(output) is tuple or type(output) is list or\
+                str(type(output)).find('_ID')>0:
+            #   If output be a named tuple  used for ID, it will contain the string _ID
             for o in output:
                 if o is None: return None
                 #o._vid  = self._vid      # self._vid is deprecated
@@ -106,7 +110,9 @@ class derived_var(basic_id):
             regs = ''
         else:
             regs = str(region)
-        return basic_id._dict_id( cls, varid, varmod, seasonid, ft1id, ft2id, regs )
+        new_dict_id = basic_id._dict_id( cls, varid, varmod, seasonid, ft1id, ft2id, regs )
+        print "jfp In derived_var dict_id, returning",new_dict_id
+        return new_dict_id
 
 class dv(derived_var):
     """same as derived_var, but short name saves on typing"""
@@ -133,7 +139,7 @@ class plotspec(basic_id):
         axes may be specified - e.g. ya to substitute for y in a plot, or ya1 as an addition
         to y in the plot.
         """
-        if type(vid) is tuple:
+        if type(vid) is tuple:  # for when this class gets an IDtuple: or type(vid) is self.IDtuple:
             # probably this is an id tuple with the first element stripped off
             basic_id.__init__(self,*vid)
         else:
@@ -232,7 +238,8 @@ class plotspec(basic_id):
         of another object, a reduced or derived variable."""
         # I'd rather name this dict_id, but Python (unlike Common Lisp or C++) doesn't automatically
         # dispatch to one of several function definitions.  Doing it by hand with *args is messier.
-        if type(otherid) is not tuple:
+        if type(otherid) is not tuple and str(type(otherid)).find('_ID')<0:
+            #   If output be a named tuple  used for ID, it will contain the string _ID
             if otherid is None:
                 return cls.dict_id( None, None, None, None, None )
             else:
