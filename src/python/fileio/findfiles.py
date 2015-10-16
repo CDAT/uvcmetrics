@@ -6,6 +6,7 @@
 import hashlib, pickle, operator, os, functools, sys, re
 import pprint
 from metrics.common.version import version
+from metrics.common.utilities import *
 from metrics.frontend.options import Options
 from metrics.fileio.filetable import *
 
@@ -317,7 +318,7 @@ class dirtree_datafiles( basic_datafiles ):
 
     def _getdatafiles( self, root, filt ):
         """returns all data files under a single root directory"""
-        #print "jfp getting datafiles from ",root," with filter",filt
+        #print "debug getting datafiles from ",root," with filter",filt
         if os.path.isfile(root):
             self.files += [root]
         elif os.path.isdir(root):
@@ -334,17 +335,18 @@ class dirtree_datafiles( basic_datafiles ):
 
     def short_name(self):
         if self._type == None or self._index == None or not hasattr(self,'_index'):
-            return ','.join([os.path.basename(str(r))
+            shortname = ','.join([os.path.basename(str(r))
                              for r in self._root])   # <base directory> <filter name>
         if len(self.opts[self._type]) > self._index:
             if self.opts[self._type][self._index].get('name', False) not in [False,None]:
-               return self.opts[self._type][self._index]['name'] 
+               shortname = self.opts[self._type][self._index]['name'] 
             if self.opts[self._type][self._index].get('filter', False) != False:
-               return ','.join(['_'.join([os.path.basename(str(r)),self._filt.mystr()])
-                             for r in self._root])   # <base directory> <filter name>
+               shortname = ','.join([ underscore_join( [os.path.basename(str(r)),self._filt.mystr()] )
+                                      for r in self._root ])   # <base directory> <filter name>
         else:
-            return ','.join([os.path.basename(str(r))
-                             for r in self._root])   # <base directory> <filter name>
+            shortname = ','.join([os.path.basename(str(r))
+                                  for r in self._root])   # <base directory> <filter name>
+        return shortname
 
     def long_name(self):
         return ' '.join( [ self.__class__.__name__,

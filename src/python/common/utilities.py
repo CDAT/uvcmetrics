@@ -71,6 +71,10 @@ def round2(x,n=0,sigs4n=1):
         return 10.**(int(floor(log10(abs(x)))))
     return round(x,int(n)-1-int(floor(log10(abs(x)))))
 
+def underscore_join( strlis ):
+    """Uses an underscore to join a list of strings into a long string."""
+    return '_'.join( [s for s in strlis if len(s)>0] )
+
 class DiagError (Exception):
     """Error object for diagnostics"""
     def __init__ ( self, args="Unspecified error from diagnostics" ):

@@ -1827,7 +1827,10 @@ class amwg_plot_set8(amwg_plot_spec):
                                         plottype = self.plottype,
                                         levels = None )
             
-        self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
+        self.composite_plotspecs = {
+            self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id ]
+            }
+        #... was self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
         self.computation_planned = True
     def _results(self, newgrid=0):
         #pdb.set_trace()
@@ -1963,7 +1966,10 @@ class amwg_plot_set9(amwg_plot_spec):
                 levels = None )
             }
 
-        self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
+        self.composite_plotspecs = {
+            self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id ]
+            }
+        # ...was self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
         self.computation_planned = True
     def _results(self, newgrid=0):
         #pdb.set_trace()
@@ -3206,7 +3212,10 @@ class amwg_plot_set15(amwg_plot_spec):
                                         title = 'difference: model-obs',
                                         levels = None )
         
-        self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
+        self.composite_plotspecs = {
+            self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id ]
+            }
+        # ... was self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
         self.computation_planned = True
         #pdb.set_trace()
     def customizeTemplates(self, templates):

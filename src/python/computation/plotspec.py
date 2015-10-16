@@ -83,10 +83,10 @@ class derived_var(basic_id):
             self.adopt( output )  # output gets ids of self
             self._file_attributes.update( getattr(output,'_file_attributes',{}) )
         if hasattr(output,'__cdms_internals__'):  # probably a mv
-            output.id = '_'.join(output._id)
+            output.id = underscore_join(output._id)
         return output
     @classmethod
-    def dict_id( cls, varid, varmod, seasonid, ft1, ft2=None, region=None ):
+    def dict_id( cls, varid, varmod, seasonid, ft1, ft2=None, region='' ):
         """varid, varmod, seasonid are strings identifying a variable name, a name modifier
         (often '' is a good value) and season, ft is a filetable, or a string id for the filetable.
         This method constructs and returns an id for the corresponding derived_var object."""
@@ -106,7 +106,7 @@ class derived_var(basic_id):
             regs = ''
         else:
             regs = str(region)
-        return basic_id._dict_id( cls, varid, varmod, seasonid, ft1id, ft2id, str(region) )
+        return basic_id._dict_id( cls, varid, varmod, seasonid, ft1id, ft2id, regs )
 
 class dv(derived_var):
     """same as derived_var, but short name saves on typing"""
