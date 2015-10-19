@@ -728,7 +728,6 @@ class Options():
                slist = [x for x in all_seasons if x in args.seasons]
                self._opts['times'] = self._opts['times']+slist
             print 'seasons: ', self._opts['times']
-            quit()
 
    def listOpts(self, args):
       print 'LIST - ', args.list
