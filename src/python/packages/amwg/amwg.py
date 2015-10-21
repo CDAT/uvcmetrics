@@ -97,6 +97,8 @@ class amwg_plot_spec(plot_spec):
     # list is the preferred method.  Of course, if the variable be already available as data,
     # then that is preferred over any computation.
     standard_variables = {
+        # mass weighting, Jeff Painter based on communications from Susannah Burrows.
+
         # water cycle, Chris Terai:
         'QFLX_LND':[derived_var(
                 vid='QFLX_LND', inputs=['QFLX','OCNFRAC'], outputs=['QFLX_LND'],
