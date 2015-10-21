@@ -445,6 +445,11 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                #### tuple.  What we should do here is to form file names by concatenating the
                #### most interesting parts of that tuple, whatever they are.  But it's important
                #### to use enough so that different plots will almost surely have different names.
+               #### bes - it is also a requirement that filenames be reconstructable after-the-fact
+               #### with only the dataset name (the dsname parameter probably) and the combination of
+               #### seasons/vars/setnames/varopts/etc used to create the plot. Otherwise, there is no
+               #### way for classic viewer to know the filename without lots more special casing. 
+
                print 'vname: ', vname
                # I *really* hate to do this. Filename should be handled better at a level above diags*.py
                special = ''
@@ -469,6 +474,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                   elif '_0' in vname and '_1' not in vname:
                      fname = fnamebase+'-ds0.png'
                   else:
+                     print 'Couldnt determine filename; defaulting to just .png. vname:', vname, 'fnamebase:', fnamebase
                      fname = fnamebase+'.png'
                elif '_diff' in vname or ('_ft0_' in vname and '_ft1_' in vname) or\
                        ('_ft1_' in vname and '_ft2_' in vname):
@@ -495,6 +501,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                   elif '_fts' in vname: # a special variable; typically like lmwg set3/6 or amwg set 2
                      fname = fnamebase+'_'+vname.replace('_fts','')+'.png'
                   else:
+                     print 'Second spot - Couldnt determine filename; defaulting to just .png. vname:', vname, 'fnamebase:', fnamebase
                      fname = fnamebase+'.png'
 
 
