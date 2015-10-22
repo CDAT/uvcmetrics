@@ -1872,8 +1872,8 @@ class lmwg_plot_set5(lmwg_plot_spec):
    name = '5 - Tables of annual means'
    number = '5'
 
-   print '***** NEED PROPER UNIT CONVERSIONS FOR A FEW MORE UNITS ******'
-   print '(Probably what is wrong with regional. carbon needs some more conversions too though)'
+#   print '***** NEED PROPER UNIT CONVERSIONS FOR A FEW MORE UNITS ******'
+#   print '(Probably what is wrong with regional. carbon needs some more conversions too though)'
    # This jsonflag is gross, but Options has always been a 2nd class part of the design. Maybe I'll get to
    # change that for the next release.
    def __init__( self, model, obs, varid, seasonid=None, region=None, aux=None, jsonflag=False, levels=None):
@@ -2660,7 +2660,7 @@ class lmwg_plot_set6(lmwg_plot_spec):
 class lmwg_plot_set9(lmwg_plot_spec):
    name = '9 - Contour plots and statistics for precipitation and temperature. Statistics include DJF, JJA, and ANN biases, and RMSE, correlation and standard deviation of the annual cycle relative to observations'
    number = '9'
-   print 'set 9 preinit'
+#   print 'set 9 preinit'
    def __init__(self, model, obs, varid, seasonid=None, region=None, aux=None, levels=None):
 
       plot_spec.__init__(self, seasonid)
@@ -2895,9 +2895,7 @@ class lmwg_plot_set9(lmwg_plot_spec):
 class lmwg_plot_set7(lmwg_plot_spec):
    name = '7 - Line plots, tables, and maps of RTM river flow and discharge to oceans'
    number = '7'
-   print '--------> SET 7'
    def __init__(self, model, obs, varid, seasonid=None, region=None, aux=None, levels=None):
-      print 'SET 7 INIT'
 
       self.tables = False
       plot_spec.__init__(self, seasonid)
