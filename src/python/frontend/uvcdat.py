@@ -1004,7 +1004,6 @@ class plot_spec(object):
         that means a coarser grid, typically from regridding model data to the obs grid.
         In the future regrid>0 will mean regrid everything to the finest grid and regrid<0
         will mean regrid everything to the coarsest grid."""
-
         for v in self.reduced_variables.keys():
             #print v
             value = self.reduced_variables[v].reduce(None)
