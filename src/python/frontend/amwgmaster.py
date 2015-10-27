@@ -1,65 +1,118 @@
+### See master-README for description of this file.
 diags_varlist = {}
 diags_collection = {}
 diags_obslist = {}
 from metrics.frontend.defines import *
+# special executables are passed the "cmdline" list of arguments. There is code in metadiags to convert internal options to these.
+# some better mechanism would be nice, but this shouldn't be too complicated.
+# Current hard coded support:
+# casename - this is a --dsname argument to metadiags
+# datadir - this is a --model path={path} argument
+# outdir - this is --outputdir
+# diagname - this is --model ...,name={name} if present; otherwise dsname
+# fieldname - this is --var
+# obsfilter - this is --obs ...,filter={filter}, primarily the filekey
+# obspath - this is --obs path={path}
+# postfixes is part of the filename to help classic viewer. a cleaner mechanism for this would be nice
+# but hopefully this is mostly a stop-gap until people get comfortable writing diags in cdat.
+# They could probably be varopts instead, though the scripst would get called up to 3 times (for u850) if that were the case.
 
 # These are special "variables" that we need to skip over when iterating over real variables. 
 # They are usually flags or parameters for the entire collection.
 # Make sure no actual variables have these names, but that shouldn't be a problem.
-collection_special_vars = ['desc', 'preamble', 'regions', 'seasons', 'package', 'options', 'combined']
+collection_special_vars = ['desc', 'preamble', 'regions', 'seasons', 'package', 'options', 'combined', 'imagesonly', 'tables']
+
+#### NEW TIER1B Additions ####
+
+#### NEEDS Better name/description
+diags_collection['tier1b_wind'] = {}
+diags_collection['tier1b_wind']['desc'] = 'Tier1b External Diagnostics - Wind'
+diags_collection['tier1b_wind']['package'] = 'AMWG'
+diags_collection['tier1b_wind']['options'] = {'logo':'no'}
+diags_collection['tier1b_wind']['seasons'] = ['NA']
+diags_collection['tier1b_wind']['U850'] = {'plottype':'NA', 'cmdline':['obsfilter', 'obspath', 'casename', 'figurebase', 'datadir', 'outdir', 'diagname'], 'desc':'Abbys diagnostic script', 'executable':'u850.tcsh', 'obs':['uwind'], 'postfixes':['maxwind', 'maxwind-lat', 'freq-dist']}
+
+#### NEEDS Better name/description
+diags_collection['tier1b_prect'] = {}
+diags_collection['tier1b_prect']['desc'] = 'Tier1b External Diagnostics - Precipitation'
+diags_collection['tier1b_prect']['package'] = 'AMWG'
+diags_collection['tier1b_prect']['options'] = {'logo':'no'}
+diags_collection['tier1b_prect']['seasons'] = ['NA']
+diags_collection['tier1b_prect']['PRECT'] = {'plottype':'NA', 'cmdline':['casename', 'datadir', 'fieldname', 'outdir', 'figurebase', 'diagname'], 'desc':'Salils diagnostic script -GEV', 'executable':'gev.tcsh', 'obs':['NA_1'], 'postfixes':['gevfit-daily']}
+
+# *** Collection so (southern ocean) (part of Tier 1B) ***
+diags_collection['tier1b_so'] = {}
+diags_collection['tier1b_so']['desc'] = 'Tier 1B Diagnostics (Southern Ocean)'
+diags_collection['tier1b_so']['package'] = 'AMWG'
+diags_collection['tier1b_so']['preamble'] = 'Diagnostic plot collection aimed at model evaluation in the Southern Ocean region.  See ACME Confluence page: https://acme-climate.atlassian.net/wiki/display/ATM/Tier+1b+metrics%3A+Southern+Ocean+and+Antarctica'
+diags_collection['tier1b_so']['combined'] = True
+diags_collection['tier1b_so']['options'] = {'logo':'no'}
+diags_collection['tier1b_so']['regions'] = ['Southern_Extratropics']
+diags_collection['tier1b_so']['SHFLX'] = {'plottype': '3', 'obs': ['LARYEA_1'] }
+diags_collection['tier1b_so']['QFLX'] = {'plottype': '5', 'obs':['LARYEA_1'] }
+diags_collection['tier1b_so']['FSNS'] = {'plottype': '7', 'obs':['LARYEA_1'] }
+diags_collection['tier1b_so']['FLDS'] = {'plottype': '3', 'obs':['ISCCP_1']}
+diags_collection['tier1b_so']['OMEGA'] = {'plottype': '4', 'obs':['ERAI_1'] } 
+diags_collection['tier1b_so']['T'] = {'plottype': '4', 'obs':['ERAI_1'] }
+diags_collection['tier1b_so']['LHFLX'] = {'plottype': '4', 'obs':['WHOI_1'] }
+diags_collection['tier1b_so']['SWCF'] = {'plottype': '5', 'obs':['CERES-EBAF_1'] }
+diags_collection['tier1b_so']['PRECT'] = {'plottype': '5', 'obs':['GPCP_1'] }
+diags_collection['tier1b_so']['TREFHT'] = {'plottype': '5', 'obs':['WILLMOTT_1'] }
+diags_collection['tier1b_so']['LWCF'] = {'plottype': '5', 'obs':['CERES-EBAF_1'] }
+diags_collection['tier1b_so']['AODVIS'] = {'plottype': '5', 'obs':['AOD_550_1'] }
+diags_collection['tier1b_so']['SURF_WIND'] = {'plottype': '6', 'obs':['NCEP_1'] }
+diags_collection['tier1b_so']['STRESS'] = {'plottype': '6', 'obs':['ERS_1'] }
+diags_collection['tier1b_so']['CLDTOT'] = {'plottype': '9', 'obs':['CLOUDSAT_1'] }
+# Tier 1b cloud diagnostics
+diags_collection['tier1b_clouds'] = {}
+diags_collection['tier1b_clouds']['desc'] = 'Tier 1B COSP Cloud Diagnostics (Global)'
+diags_collection['tier1b_clouds']['package'] = 'AMWG'
+diags_collection['tier1b_clouds']['preamble'] = 'Diagnostic plot collection aimed at model evaluation of global cloud simulations.  See ACME Confluence page: https://acme-climate.atlassian.net/wiki/display/ATM/Tier+1b+metrics%3A+Clouds'
+diags_collection['tier1b_clouds']['combined'] = True
+diags_collection['tier1b_clouds']['options'] = {'logo':'no'}
+diags_collection['tier1b_clouds']['seasons'] = ['DJF', 'JJA', 'ANN']
+diags_collection['tier1b_clouds']['regions'] = ['Global']
+diags_collection['tier1b_clouds']['CLDTOT_TAU1.3_ISCCP'] = {'plottype': '5', 'obs': ['ISCCP_1'] }
+diags_collection['tier1b_clouds']['CLDTOT_TAU1.3-9.4_ISCCP'] = {'plottype': '5', 'obs': ['ISCCP_1'] }
+diags_collection['tier1b_clouds']['CLDTOT_TAU9.4_ISCCP'] = {'plottype': '5', 'obs': ['ISCCP_1'] }
+diags_collection['tier1b_clouds']['CLDTOT_TAU1.3_MODIS'] = {'plottype': '5', 'obs': ['MODIS_1'] }
+diags_collection['tier1b_clouds']['CLDTOT_TAU1.3-9.4_MODIS'] = {'plottype': '5', 'obs': ['MODIS_1'] }
+diags_collection['tier1b_clouds']['CLDTOT_TAU9.4_MODIS'] = {'plottype': '5', 'obs': ['MODIS_1'] }
+diags_collection['tier1b_clouds']['CLDHGH_TAU1.3_MODIS'] = {'plottype': '5', 'obs': ['MODIS_1'] }
+diags_collection['tier1b_clouds']['CLDHGH_TAU1.3-9.4_MODIS'] = {'plottype': '5', 'obs': ['MODIS_1'] }
+diags_collection['tier1b_clouds']['CLDHGH_TAU9.4_MODIS'] = {'plottype': '5', 'obs': ['MODIS_1'] }
+diags_collection['tier1b_clouds']['CLDTOT_TAU1.3_MISR'] = {'plottype': '5', 'obs': ['MISR_1'] }
+diags_collection['tier1b_clouds']['CLDTOT_TAU1.3-9.4_MISR'] = {'plottype': '5', 'obs': ['MISR_1'] }
+diags_collection['tier1b_clouds']['CLDTOT_TAU9.4_MISR'] = {'plottype': '5', 'obs': ['MISR_1'] }
+diags_collection['tier1b_clouds']['CLDLOW_TAU1.3_MISR'] = {'plottype': '5', 'obs': ['MISR_1'] }
+diags_collection['tier1b_clouds']['CLDLOW_TAU1.3-9.4_MISR'] = {'plottype': '5', 'obs': ['MISR_1'] }
+diags_collection['tier1b_clouds']['CLDLOW_TAU9.4_MISR'] = {'plottype': '5', 'obs': ['MISR_1'] }
+diags_collection['tier1b_clouds']['CLDTOT_CAL'] = {'plottype': '5', 'obs': ['CALIPSO_1'] }
+diags_collection['tier1b_clouds']['CLDLOW_CAL'] = {'plottype': '5', 'obs': ['CALIPSO_1'] }
+diags_collection['tier1b_clouds']['CLDMED_CAL'] = {'plottype': '5', 'obs': ['CALIPSO_1'] }
+diags_collection['tier1b_clouds']['CLDHGH_CAL'] = {'plottype': '5', 'obs': ['CALIPSO_1'] }
+
+#### TOP TEN aka TIER 1A 
+# *** Collection topten aka Tier 1A***
+diags_collection['topten'] = {}
+diags_collection['topten']['combined'] = True
+diags_collection['topten']['desc'] = 'Tier 1A Diagnostics'
+diags_collection['topten']['package'] = 'AMWG'
+diags_collection['topten']['options'] = {'logo':'no'}
+diags_collection['topten']['PSL'] = {'plottype': '5', 'obs': ['ERAI_1']}
+diags_collection['topten']['STRESS'] = {'plottype': '6', 'obs': ['ERS_1']}
+#diags_collection['topten']['SURF_STRESS'] = {'plottype': '6', 'obs': ['ERS_1']}
+diags_collection['topten']['TREFHT'] = {'plottype': '5', 'obs': ['WILLMOTT_1']}
+diags_collection['topten']['LWCF'] = {'plottype': '5', 'obs': ['CERES-EBAF_1']}
+diags_collection['topten']['PRECT'] = {'plottype': '5', 'obs': ['GPCP_1']}
+diags_collection['topten']['AODVIS'] = {'plottype': '5', 'obs': ['AOD_550_1']}
+diags_collection['topten']['U'] = {'plottype': '5', 'obs': ['ERAI_1']}
+diags_collection['topten']['T'] = {'plottype': '4', 'obs': ['ERAI_1']}
+diags_collection['topten']['SWCF'] = {'plottype': '5', 'obs': ['CERES-EBAF_1']}
+diags_collection['topten']['RELHUM'] = {'plottype': '4', 'obs': ['ERAI_1']}
 
 
-# There are three sections to this file.
-# The first section (diags_collection) is used to define the diagnostics collections.
-# Each collection starts with an empty dictionary, then has a few basic parameters -
-# 1) desc - a brief (1 or 2 sentences) description of the plot, used to generate an index page
-# 2) preamble - a longer description of the set. used as the introduction before plot links in the classic viewer
-#        preamble is assumed empty if nothing is provided.
-#
-# After that, additional optional arguments that encompass the entire collection can be specified. The additional arguments are:
-# seasons - a collection-level set of seasons. all variables in the collection will iterate over this list of seasons. 
-#           if this is not specified the code will look for seasons in individual variable definitions.
-#           if no seasons are found in individual variable definitions ANN is assumed
-# regions - a collection-level set of regions. all variables in the collection will iterate over this list of regions.
-#           if this is not specified, the code will look for regions in individual variable definitions.
-#           if not regions are found in individual variable definitions, Global is assumed
-# package - a collection-level indicate of what package the plots are from. e.g. AMWG or LMWG
-#           if this is not specified, the code will look for packages in individual variable definitions.
-#           No assumptions are made on package. It must be collection-defined or all variables need to define it
-# options - A dictionary of options specific to the collection. These are passed as command line options to diags.py
-#           The current primary one is:
-#           'logo':'no' - does not draw the UVCDAT logo on output plots.
-# Collection-level Flags:
-#           combined:True - indicates this collection produces combined single image plots which are model, 
-#              then obs, then model-obs. This helps classic viewer. 
-#              Note: This is only for plots that want the 3-pane view. If obs and model data are 
-#              combined on the plot as plot production (e.g. set amwg 10) you don't need to set this.
-# Once any optional additional arguments have been specified, the variables that make up the set are defined.
-# A typical variable entry has the variable name (as found in the obs sets and model output) as a key, then a plottype, 
-# a list of observation sets, and optional paraemeters.
-# Optional parameters include a list of seasons, regions, and variable options, and  specific to a variable
-# All arguments (except plot type) are lists. Here is a complicated example:
-# 
-# diags_collection['example']['Z3'] = {'plottype': '10', 'obs': ['ECMWF_1', 'NCEP_1', 'JRA25_1', 'ERA40_1'], 'varopts':['300', '500'], 'regions':['Global', 'Tropics'], 'seasons':['ANN', 'DJF']}
-# This would create a total of 4*2*2*2 plots (each obs set, each pressure level, each region, and each season).
-# metadiags attempts to group as many of these together as possible for efficient IO
-# A much simpler minimal example would just be:
-# diags_collection['example']['T'] = {'plottype': '5', 'obs':['ECMWF_1']}
- 
-# The second part of the file is a list of variables.
-# A typical entry looks like:
-# diags_varlist['TREFHT'] = {'desc': '2-meter temperature (land) (Northern)'}
-# This is primarily used in web-page creation to have a description for a given variable.
-# Eventually, other metadata about a variable might be included. Note: This section is primarily required
-# because of the lack of consistency in CF-compliance in data sets and observation sets.
-
-# The third part of the file is a list of observatino sets.
-# A typical entry looks like:
-# diags_obslist['HADISST_PD_1'] = {'filekey': 'HADISST_PD', 'desc': 'HadISST/OI.v2 (Present Day) 1999-2008'}
-# This converts the obs set keys specified in the collections sections to a filename key (ie, HADISST_PD* has the data we need)
-# and a description (again for web page generation)
-
-
+#### "Classic" AMWG Diagnostics
 # *** Collection 11 ***
 diags_collection['11'] = {}
 diags_collection['11']['desc'] = 'Pacific annual cycle, Scatter plot plots'
@@ -205,46 +258,7 @@ diags_collection['1']['seasons'] = ['DJF', 'JJA', 'ANN']
 diags_collection['1']['package'] = 'AMWG'
 diags_collection['1']['options'] = {'logo':'no'}
 diags_collection['1']['regions'] = ['Global', 'Tropics', 'Southern_Extratropics', 'Northern_Extratropics']
-# *** Collection so (southern ocean) (part of Tier 1B) ***
-diags_collection['so'] = {}
-diags_collection['so']['desc'] = 'Tier 1B Diagnostics (Southern Ocean)'
-diags_collection['so']['package'] = 'AMWG'
-diags_collection['so']['preamble'] = 'Diagnostic plot collection aimed at model evaluation in the Southern Ocean region.  See ACME Confluence page: https://acme-climate.atlassian.net/wiki/display/ATM/Tier+1b+metrics%3A+Southern+Ocean+and+Antarctica'
-diags_collection['so']['combined'] = True
-diags_collection['so']['options'] = {'logo':'no'}
-diags_collection['so']['regions'] = ['Southern_Extratropics']
-diags_collection['so']['SHFLX'] = {'plottype': '3', 'obs': ['LARYEA_1'] }
-diags_collection['so']['QFLX'] = {'plottype': '5', 'obs':['LARYEA_1'] }
-diags_collection['so']['FSNS'] = {'plottype': '7', 'obs':['LARYEA_1'] }
-diags_collection['so']['FLDS'] = {'plottype': '3', 'obs':['ISCCP_1']}
-diags_collection['so']['OMEGA'] = {'plottype': '4', 'obs':['ERAI_1'] } 
-diags_collection['so']['T'] = {'plottype': '4', 'obs':['ERAI_1'] }
-diags_collection['so']['LHFLX'] = {'plottype': '4', 'obs':['WHOI_1'] }
-diags_collection['so']['SWCF'] = {'plottype': '5', 'obs':['CERES-EBAF_1'] }
-diags_collection['so']['PRECT'] = {'plottype': '5', 'obs':['GPCP_1'] }
-diags_collection['so']['TREFHT'] = {'plottype': '5', 'obs':['WILLMOTT_1'] }
-diags_collection['so']['LWCF'] = {'plottype': '5', 'obs':['CERES-EBAF_1'] }
-diags_collection['so']['AODVIS'] = {'plottype': '5', 'obs':['AOD_550_1'] }
-diags_collection['so']['SURF_WIND'] = {'plottype': '6', 'obs':['NCEP_1'] }
-diags_collection['so']['STRESS'] = {'plottype': '6', 'obs':['ERS_1'] }
-diags_collection['so']['CLDTOT'] = {'plottype': '9', 'obs':['CLOUDSAT_1'] }
-# *** Collection topten aka Tier 1A***
-diags_collection['topten'] = {}
-diags_collection['topten']['combined'] = True
-diags_collection['topten']['desc'] = 'Tier 1A Diagnostics'
-diags_collection['topten']['package'] = 'AMWG'
-diags_collection['topten']['options'] = {'logo':'no'}
-diags_collection['topten']['PSL'] = {'plottype': '5', 'obs': ['ERAI_1']}
-diags_collection['topten']['STRESS'] = {'plottype': '6', 'obs': ['ERS_1']}
-#diags_collection['topten']['SURF_STRESS'] = {'plottype': '6', 'obs': ['ERS_1']}
-diags_collection['topten']['TREFHT'] = {'plottype': '5', 'obs': ['WILLMOTT_1']}
-diags_collection['topten']['LWCF'] = {'plottype': '5', 'obs': ['CERES-EBAF_1']}
-diags_collection['topten']['PRECT'] = {'plottype': '5', 'obs': ['GPCP_1']}
-diags_collection['topten']['AODVIS'] = {'plottype': '5', 'obs': ['AOD_550_1']}
-diags_collection['topten']['U'] = {'plottype': '5', 'obs': ['ERAI_1']}
-diags_collection['topten']['T'] = {'plottype': '4', 'obs': ['ERAI_1']}
-diags_collection['topten']['SWCF'] = {'plottype': '5', 'obs': ['CERES-EBAF_1']}
-diags_collection['topten']['RELHUM'] = {'plottype': '4', 'obs': ['ERAI_1']}
+diags_collection['1']['tables'] = True
 # *** Collection 2 ***
 diags_collection['2'] = {}
 diags_collection['2']['desc'] = 'Line plots of annual implied northward transports.'
@@ -496,6 +510,7 @@ diags_varlist['Q'] = {'desc': 'Specific Humidity'}
 diags_varlist['H'] = {'desc': 'Moist Static Energy'}
 diags_varlist['FSDS'] = {'desc': 'Surf SW downwelling flux (Northern)'}
 diags_varlist['U'] = {'desc': 'Zonal Wind'}
+diags_varlist['U850'] = {'desc': 'Zonal Wind - 850mb'}
 diags_varlist['Ocean_Heat'] = {'desc': 'Ocean Heat', 'filekey':'OCN_HEAT'}
 diags_varlist['Surface_Heat'] = {'desc': 'Surface Heat', 'filekey':'SRF_HEAT'}
 diags_varlist['LWCFSRF'] = {'desc': 'Surf LW Cloud Forcing'}
@@ -509,6 +524,26 @@ diags_varlist['FLNSC'] = {'desc': 'Clearsky Surf Net LW flux (Northern)'}
 diags_varlist['PSL'] = {'desc': 'Sea-level pressure (Northern)'}
 diags_varlist['AODVIS'] = {'desc': 'Aerosol optical depth'}
 diags_varlist['FSNTOAC'] = {'desc': 'TOA clearsky net SW flux (Northern)'}
+diags_varlist['CLDTOT_TAU1.3_ISCCP'] = {'desc': 'Total cloud fraction with tau > 1.3 observed from ISCCP'}
+diags_varlist['CLDTOT_TAU1.3-9.4_ISCCP'] = {'desc': 'Thin cloud fraction with 9.4 > tau > 1.3 observed from ISCCP'}
+diags_varlist['CLDTOT_TAU9.4_ISCCP'] = {'desc': 'Thick cloud fraction with tau > 9.4 observed from ISCCP'}
+diags_varlist['CLDTOT_TAU1.3_MODIS'] = {'desc': 'Total cloud fraction with tau > 1.3 observed from MODIS'}
+diags_varlist['CLDTOT_TAU1.3-9.4_MODIS'] = {'desc': 'Thin cloud fraction with 9.4 > tau > 1.3 observed from MODIS'}
+diags_varlist['CLDTOT_TAU9.4_MODIS'] = {'desc': 'Thick cloud fraction with tau > 9.4 observed from MODIS'}
+diags_varlist['CLDTOT_TAU1.3_MISR'] = {'desc': 'Total cloud fraction with tau > 1.3 observed from MISR'}
+diags_varlist['CLDTOT_TAU1.3-9.4_MISR'] = {'desc': 'Thin cloud fraction with 9.4 > tau > 1.3 observed from MISR'}
+diags_varlist['CLDTOT_TAU9.4_MISR'] = {'desc': 'Thick cloud fraction with tau > 9.4 observed from MISR'}
+diags_varlist['CLDHGH_TAU1.3_MODIS'] = {'desc': 'High-level cloud cover (clouds with cloud-top pressure < 440hPa and tau > 1.3) observed from MODIS'}
+diags_varlist['CLDHGH_TAU1.3-9.4_MODIS'] = {'desc': 'High-level cloud cover from optically thinner clouds (clouds with cloud-top pressure < 440hPa and 9.4 > tau > 1.3) observed from MODIS'}
+diags_varlist['CLDHGH_TAU9.4_MODIS'] = {'desc': 'High-level cloud cover from optically thicker clouds (clouds with cloud-top pressure < 440hPa and tau > 9.4) observed from MODIS'}
+diags_varlist['CLDLOW_TAU1.3_MISR'] = {'desc': 'Low-level cloud cover over oceans (tau > 1.3) observed from MISR'}
+diags_varlist['CLDLOW_TAU1.3-9.4_MISR'] = {'desc': 'Low-level cloud cover over oceans from optically thinner clouds (clouds with 9.4 > tau > 1.3) observed from MISR'}
+diags_varlist['CLDLOW_TAU9.4_MISR'] = {'desc': 'Low-level cloud cover over oceans from optically thicker clouds (clouds with tau > 9.4) observed from MISR'}
+diags_varlist['CLDTOT_CAL'] = {'desc': 'Total cloud cover from CALIPSO (clouds with SR>5)'}
+diags_varlist['CLDLOW_CAL'] = {'desc': 'Low-Level Cloud Cover from CALIPSO (determined from clouds at pressures > 680 hPa with scattering ratios (SR) > 5)'}
+diags_varlist['CLDMED_CAL'] = {'desc': 'Middle-Level Cloud Cover from CALIPSO (determined from clouds at pressures < 680 hPa and > 440 hPa with scattering ratios (SR) > 5)'}
+diags_varlist['CLDHGH_CAL'] = {'desc': 'High-Level Cloud Cover from CALIPSO (determined from clouds at pressures < 440 hPa with scattering ratios (SR) > 5)'}
+
 
 
 # *** Observation sets ***
@@ -519,6 +554,7 @@ diags_obslist['SGP_1'] = {'filekey': 'SGP', 'desc': 'Southern Great Plains (SGP)
 diags_obslist['ERA40_1'] = {'filekey': 'ERA40', 'desc': 'ERA40 Reanalysis 1980-2001'}
 diags_obslist['ERS_1'] = {'filekey': 'ERS', 'desc': 'ERS Scatterometer 1992-2000'}
 diags_obslist['CLOUDSAT_1'] = {'filekey': 'CLOUDSAT', 'desc': 'CLOUDSAT (Radar+Lidar) Sep2006-Nov2008'}
+diags_obslist['CALIPSO_1'] = {'filekey': 'CALIPSO', 'desc': 'CALIPSO GOCCP 2007-2010'}
 diags_obslist['WHOI_1'] = {'filekey': 'WHOI', 'desc': 'Woods Hole OAFLUX 1958-2006'}
 diags_obslist['NCEP_1'] = {'filekey': 'NCEP', 'desc': 'NCEP Reanalysis 1979-98'}
 diags_obslist['AOD_550_1'] = {'filekey': 'sat', 'desc': 'AOD Data'}
@@ -543,8 +579,10 @@ diags_obslist['NVAP_1'] = {'filekey': 'NVAP', 'desc': 'NVAP 1988-1999'}
 diags_obslist['SHEBA_1'] = {'filekey': 'SHEBA', 'desc': 'Surface Heat Budget of the Arctic Ocean (SHEBA)'}
 diags_obslist['LARYEA_1'] = {'filekey': 'LARYEA', 'desc': 'Large-Yeager 1984-2004'}
 diags_obslist['NA_1'] = {'filekey': 'N/A', 'desc': 'NA'}
+diags_obslist['uwind'] = {'filekey':'uwind850', 'desc': 'U (850mb)'}
 diags_obslist['MODIS_1'] = {'filekey': 'MODIS', 'desc': 'MODIS Mar2000-Aug2004'}
 diags_obslist['ISCCP_1'] = {'filekey': 'ISCCP', 'desc': 'ISCCP D1 Daytime Jul1983-Sep2001'}
+diags_obslist['MISR_1'] = {'filekey': 'MISR', 'desc': 'MISR Mar2000-Nov2009'}
 diags_obslist['HADISST_1'] = {'filekey': 'HADISST', 'desc': 'HadISST/OI.v2 (Climatology) 1982-2001'}
 diags_obslist['XA_1'] = {'filekey': 'XA', 'desc': 'CMAP (Xie-Arkin) 1979-98'}
 diags_obslist['SSMI_1'] = {'filekey': 'SSMI', 'desc': 'SSM/I (Wentz) 1987-2000'}

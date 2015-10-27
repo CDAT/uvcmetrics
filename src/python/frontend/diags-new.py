@@ -157,6 +157,7 @@ def run_diags( opts ):
 
       # Get this list of variables for this set (given these obs/model inputs)
       variables = pclass.list_variables( modelfts, obsfts, sname )
+      print 'var list from pclass: ', variables
       # Get the reduced list of variables possibly specified by the user
       if opts.get('vars',['ALL'])!=['ALL']:
          # If the user sepcified variables, use them instead of the complete list
@@ -164,8 +165,7 @@ def run_diags( opts ):
          if len(variables)==0 and len(opts.get('vars',[]))>0:
             print "WARNING: Couldn't find any of the requested variables:",opts['vars']
             print "among",variables
-            quit()
-
+            sys.exit(1)
 
       # AMWG set 1 (the tables) is special cased
       if (sclass.number == '1' and package.upper() == 'AMWG'):
@@ -174,9 +174,9 @@ def run_diags( opts ):
          print 'Making tables'
          # pass season info, maybe var list, maybe region list?
 #         continue
-      if (sclass.number == '5' and package.upper() == 'LMWG'):
-         print 'Making tables'
-         # pass season info, maybe var list, maybe region list?
+#      if (sclass.number == '5' and package.upper() == 'LMWG'):
+#         print 'Making tables'
+#         # pass season info, maybe var list, maybe region list?
 #                  if '5' in snum and package.upper() == 'LMWG' and opts['json'] == True:
 #                     plot = sclass( modelfts, obsfts, varid, time, region, vvaropts[aux], jsonflag=True )
 #         continue
@@ -228,10 +228,10 @@ def run_diags( opts ):
                   # Since Options is a 2nd class (at best) citizen, we have to do something icky like this.
                   # hoping to change that in a future release. Also, I can see this being useful for amwg set 1.
                   # (Basically, if we output pre-defined json for the tables they can be trivially sorted)                            
-                  if '5' in snum and package.upper() == 'LMWG' and opts['json'] == True:
+                  if '5' in snum and package.upper() == 'LMWG' and opts['output']['json'] == True:
                       plot = sclass( modelfts, obsfts, varid, time, region, vvaropts[aux], jsonflag=True )
                   else:
-                      if snum == '14': #Taylor diagrams
+                      if snum == '14' and package.upper() == 'AMWG': #Taylor diagrams
                           #this is a total kludge so that the list of variables is passed in for processing
                           plot = sclass( modelfts, obsfts, variables, time, region, vvaropts[aux] )
                       else:
@@ -239,8 +239,17 @@ def run_diags( opts ):
 
                   # Do the work (reducing variables, etc)
                   res = plot.compute(newgrid=-1) # newgrid=0 for original grid, -1 for coarse
+#                  print '************************************ PLOT DONE **********************************'
+#                  print 'type res: ', type(res)
+#                  if type(res) == str:
+#                     print '------------->Dump this to the file'
+#                     print res
+#                     print '------------->Done Dumping'
 
-                  if res is not None and len(res)>0: # Success, we have some plots to plot
+                  
+
+                  if res is not None and len(res)>0 and type(res) is not str: # Success, we have some plots to plot
+                     print '--------------------------------- res is not none'
                      # Are we running from metadiags? If so, lets keep the name as simple as possible.
                      if basename == '' and postname == '':
                         fname = 'figure-set'+snum+'_'+r_fname+'_'+time+'_'+varid+'_plot'
@@ -249,7 +258,11 @@ def run_diags( opts ):
                         auxname =''
                         if aux != 'default' and aux != None and aux != ' default': #?? why ' default'?
                            auxname = '_'+aux
-                        name = basename+'_'+time+'_'+varid+auxname+'_'+postname+'_'+r_fname
+                        # don't add an extra underscore unnecessarily
+                        if postname != '':
+                           postname=postname+'_'
+                           
+                        name = basename+'_'+time+'_'+varid+auxname+'_'+postname+r_fname
                         fname = os.path.join(outdir,name)
 
                      
@@ -270,21 +283,44 @@ def run_diags( opts ):
                         print "wrote plots",resc.title," to",filenames
 
                   elif res is not None:
-                  # but len(res)==0, probably plot set 1
-                     if res.__class__.__name__ is 'amwg_plot_set1':
-                        resc = res
-                        if basename == '' and postname == '':
-                           where = outdir
-                           fname = ""
+                     if type(res) is str:
+                        if aux == None:
+                           auxstr = ''
                         else:
-                           where = ""
-                           name = basename+'_'+time+'_'+r_fname+'-table.text'
-                           fname = os.path.join(outdir,name)
-                        print 'calling write_plot with where: %s, fname: %s' %(where, fname)
+                           auxstr = aux
+                        if aux != None and aux != '':
+                           auxstr = '_'+auxstr
+                        if basename == '' and postname == '':
+                           name = time+'_'+varid+auxstr+'-table.text'
+                        else:
+                           name = basename+'_'+time+'_'+varid+auxstr+'-table.text'
+                        fname = os.path.join(outdir, name)
+                        print 'Creating file - ', fname
+                        f = open(fname, 'w')
+                        f.write(res)
+                        f.close()
+                     else:
+                     # but len(res)==0, probably plot tables
+                     # eventually, education could get rid of the second clause here but I suspect not anytime soon.
+                        if opts['output']['table'] == True or res.__class__.__name__ is 'amwg_plot_set1': 
+                           print 'IN TABLES'
+                           resc = res
+                           if basename == '' and postname == '':
+                              where = outdir
+                              fname = ""
+                           else:
+                              where = ""
+                              name = basename+'_'+time+'_'+r_fname+'-table.text'
+                              fname = os.path.join(outdir,name)
+                           print '-------> calling write_plot with where: %s, fname: %s' %(where, fname)
 
-                        filenames = resc.write_plot_data("text", where=where, fname=fname)
-                        number_diagnostic_plots += 1
-                        print "wrote table",resc.title," to",filenames
+                           filenames = resc.write_plot_data("text", where=where, fname=fname)
+                           number_diagnostic_plots += 1
+                           print "-------> wrote table",resc.title," to",filenames
+                        else:
+                           print 'No data to plot for ', varid, ' ', aux
+   vcanvas.close()
+   vcanvas2.close()
    print "total number of (compound) diagnostic plots generated =", number_diagnostic_plots
 
 
@@ -392,8 +428,37 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
 
                vname = vname.replace('/', '_')
                #### TODO - Do we need the old style very verbose names here?
+               #### jfp, my answer: The right way to do it is that all the verbose information
+               #### useful for file names should be constructed elsewhere, perhaps in a named tuple.
+               #### The verbose names are formed, basically, by concatenating everything in that
+               #### tuple.  What we should do here is to form file names by concatenating the
+               #### most interesting parts of that tuple, whatever they are.  But it's important
+               #### to use enough so that different plots will almost surely have different names.
                print 'vname: ', vname
-               if '_diff' in vname:
+               # I *really* hate to do this. Filename should be handled better at a level above diags*.py
+               special = ''
+               if 'RMSE_' in vname:
+                  special='RMSE'
+               if 'Standard_Deviation' in vname:
+                  special='STDDEV'
+               if 'BIAS_' in vname:
+                  special='BIAS'
+               if 'CORR_' in vname:
+                  special='CORR'
+               print '---> vname:', vname
+               if special != '':
+                  print '--> Special: ', special
+                  if ('_1' in vname and '_2' in vname) or '_MAP' in vname.upper():
+                     fname = fnamebase+'-map.png'
+                  elif '_1' in vname and '_2' not in vname:
+                     fname = fnamebase+'-ds1.png'
+                  elif '_2' in vname and '_1' not in vname:
+                     fname = fnamebase+'-ds2.png'
+                  elif '_0' in vname and '_1' not in vname:
+                     fname = fnamebase+'-ds0.png'
+                  else:
+                     fname = fnamebase+'.png'
+               elif '_diff' in vname:
                   fname = fnamebase+'-diff.png'
                elif '_obs' in vname:
                   fname = fnamebase+'-model-and-obs.png'
@@ -410,12 +475,14 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                      # if we had switched to model1 it would affect classic view, etc.
                   elif '_ft2' in vname and '_ft1' not in vname:
                      fname = fnamebase+'-model2.png'
+                  elif '_ft0' in vname and '_ft1' not in vname:
+                     fname = fnamebase+'-model0.png'
                   elif '_ft1' in vname and '_ft2' in vname:
                      fname = fnamebase+'-model-model2.png'
                   elif '_fts' in vname: # a special variable; typically like lmwg set3/6 or amwg set 2
                      fname = fnamebase+'_'+vname.replace('_fts','')+'.png'
                   else:
-                     fname = fnamebase+'-unknown.png'
+                     fname = fnamebase+'.png'
 
 
                print "png file name: ",fname

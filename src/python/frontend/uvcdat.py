@@ -781,7 +781,7 @@ class uvc_simple_plotspec():
         if len(self.title)<=0:
             fname = 'foo.nc'
         else:
-            fname = '_'.join([self.title.strip(),self.source]).replace(' ','_').replace('/','_') + '.nc'
+            fname = underscore_join([self.title.strip(),self.source]).replace(' ','_').replace('/','_') + '.nc'
         filename = os.path.join(where,fname)
         return filename
     def write_plot_data( self, format="", where="" ):
@@ -920,7 +920,7 @@ class plot_spec(object):
                     yl = getattr(y,'_vid',None)  # deprecated attribute
             if yl is not None:
                 yls.append( yl )
-        new_id = '_'.join(yls)
+        new_id = underscore_join(yls)
         if new_id is None or new_id.strip()=="": new_id = p+'_2'
         return new_id
     def compute(self,newgrid=0):
@@ -1005,6 +1005,7 @@ class plot_spec(object):
         that means a coarser grid, typically from regridding model data to the obs grid.
         In the future regrid>0 will mean regrid everything to the finest grid and regrid<0
         will mean regrid everything to the coarsest grid."""
+
         def buildVariables(keyList, dataList, axesList, attrList):
             def buildVariable(data, axes, attr):
                 x=cdms2.createVariable(data)
@@ -1114,7 +1115,15 @@ class plot_spec(object):
             z2lab=""
             z3lab =""
             z3lab = ""
-            if zax is not None and len(getattr(zax,'data',[None]))>0:  # a tuple always passes
+            if zax is not None:
+                zaxdata = getattr(zax,'data',[None])
+                try:
+                    lenzaxdata = len(zaxdata)  # >0 for a tuple
+                except TypeError:
+                    lenzaxdata = 0
+                if lenzaxdata<=0:
+                    print "WARNING: no plottable data for",getattr(zax,'id',zax)
+                    continue
                 if hasattr(zax,'regridded') and newgrid!=0:
                     vars.append( regridded_vars[zax.regridded] )
                 else:

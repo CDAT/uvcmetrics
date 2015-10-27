@@ -379,12 +379,12 @@ class amwg_plot_spec(plot_spec):
                 #print "dbg in second round, found",varnom,"computable by",func,"from",inputs
                 break
         if len(rvs)<=0:
-            print "ERROR, no inputs found for",varnom,"in filetable",filetable.id()
+            print "WARNING, no inputs found for",varnom,"in filetable",filetable.id()
             print "filetable source files=",filetable._filelist[0:10]
             print "need inputs",svd.inputs()
-            #return None,[],[]
-            raise DiagError( "ERROR, don't have %s, and don't have sufficient data to compute it!"\
-                                 % varnom )
+            return None,[],[]
+            #raise DiagError( "ERROR, don't have %s, and don't have sufficient data to compute it!"\
+            #                     % varnom )
         if not computable:
             print "DEBUG: standard variable",varnom,"is not computable"
             print "need inputs",svd.inputs()
@@ -531,7 +531,7 @@ class amwg_plot_set2(amwg_plot_spec):
                 z2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2'],
                 z2func=(lambda z: z[1][3]),
                 plottype = self.plottype,
-                title = 'CAM & NCEP HEAT_TRANSPORT GLOBAL',
+                title = 'CAM and NCEP HEAT_TRANSPORT GLOBAL',
                 source = ft1src ),
             'CAM_NCEP_HEAT_TRANSPORT_PACIFIC': plotspec(
                 vid='CAM_NCEP_HEAT_TRANSPORT_PACIFIC',
@@ -546,7 +546,7 @@ class amwg_plot_set2(amwg_plot_spec):
                 z2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2' ],
                 z2func=(lambda y: y[1][0]),
                 plottype = self.plottype,
-                title = 'CAM & NCEP HEAT_TRANSPORT PACIFIC',
+                title = 'CAM and NCEP HEAT_TRANSPORT PACIFIC',
                 source = ft1src ),
             'CAM_NCEP_HEAT_TRANSPORT_ATLANTIC': plotspec(
                 vid='CAM_NCEP_HEAT_TRANSPORT_ATLANTIC',
@@ -561,7 +561,7 @@ class amwg_plot_set2(amwg_plot_spec):
                 z2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2' ],
                 z2func=(lambda y: y[1][1]),
                 plottype = self.plottype ,
-                title = 'CAM & NCEP HEAT_TRANSPORT ATLANTIC',
+                title = 'CAM and NCEP HEAT_TRANSPORT ATLANTIC',
                 source = ft1src ),
             'CAM_NCEP_HEAT_TRANSPORT_INDIAN': plotspec(
                 vid='CAM_NCEP_HEAT_TRANSPORT_INDIAN',
@@ -576,7 +576,7 @@ class amwg_plot_set2(amwg_plot_spec):
                 z2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2' ],
                 z2func=(lambda y: y[1][2]),
                 plottype = self.plottype,
-                title = 'CAM & NCEP HEAT_TRANSPORT INDIAN',
+                title = 'CAM and NCEP HEAT_TRANSPORT INDIAN',
                 source = ft1src ),
             }
         self.composite_plotspecs = {
@@ -1279,6 +1279,7 @@ class amwg_plot_set6(amwg_plot_spec):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the variable to be plotted, e.g. 'STRESS'.
         seasonid is a string such as 'DJF'."""
+
         filetable1, filetable2 = self.getfts(model, obs)
         plot_spec.__init__(self,seasonid)
         # self.plottype = ['Isofill','Vector']  <<<< later we'll add contour plots
@@ -1360,6 +1361,7 @@ class amwg_plot_set6(amwg_plot_spec):
             return [],[]
         reduced_vars = []
         needed_derivedvars = []
+        
         for var in rvars:
             if var in ['TAUX','TAUY'] and filetable.filefmt.find('CAM')>=0:
                 # We'll cheat a bit and change the sign as well as reducing dimensionality.
@@ -1409,6 +1411,7 @@ class amwg_plot_set6(amwg_plot_spec):
         variable computation and orginating from the specified filetable.
         rvars, a list, names the variables needed.
         Also, a list of the new drived variables is returned."""
+
         if filetable is None:
             vardict[','] = None
             return []
@@ -1841,7 +1844,10 @@ class amwg_plot_set8(amwg_plot_spec):
                                         plottype = self.plottype,
                                         levels = None )
             
-        self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
+        self.composite_plotspecs = {
+            self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id ]
+            }
+        #... was self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
         self.computation_planned = True
 
     def mpi_init(self):
@@ -2011,7 +2017,10 @@ class amwg_plot_set9(amwg_plot_spec):
                 levels = None )
             }
 
-        self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
+        self.composite_plotspecs = {
+            self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id ]
+            }
+        # ...was self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
         self.computation_planned = True
     def _results(self, newgrid=0):
         #pdb.set_trace()
@@ -3254,7 +3263,10 @@ class amwg_plot_set15(amwg_plot_spec):
                                         title = 'difference: model-obs',
                                         levels = None )
         
-        self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
+        self.composite_plotspecs = {
+            self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id ]
+            }
+        # ... was self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
         self.computation_planned = True
         #pdb.set_trace()
     def customizeTemplates(self, templates):

@@ -36,7 +36,7 @@ packages = {'metrics': 'src/python',
               'metrics.packages.amwg.derivations': 'src/python/packages/amwg/derivations',
               'metrics.packages.lmwg': 'src/python/packages/lmwg',
               'metrics.packages.acme_regridder': 'src/python/packages/acme_regridder',
-              'metrics.packages.acme_regridder.scripts': 'src/python/packages/acme_regridder/scripts',
+              'metrics.packages.acme_regridder.scripts': 'src/python/packages/acme_regridder/scripts'
             }
 for d in packages.itervalues():
     shutil.copy("git.py",os.path.join(d,"git.py"))
@@ -71,6 +71,11 @@ setup (name = "metrics",
                   "src/python/frontend/climatology2.py",
                   "src/python/frontend/metadiags.py",
                   "src/python/frontend/metadiags",
+                  "src/python/packages/atm_tier1b/u850.ncl",
+                  "src/python/packages/atm_tier1b/u850.tcsh",
+                  "src/python/packages/atm_tier1b/gev.tcsh",
+                  "src/python/packages/atm_tier1b/compute_block_max-serial.py",
+                  "src/python/packages/atm_tier1b/gev_r_uvcdat-serial.py",
                   "src/python/packages/acme_regridder/scripts/acme_put_grid_in_file.py",
                   "src/python/packages/acme_regridder/scripts/acme_put_grid_in_file",
                   "src/python/packages/acme_regridder/scripts/acme_regrid.py",
@@ -84,9 +89,9 @@ setup (name = "metrics",
                library_dirs = [],
                libraries = [],
                define_macros = [],
-               extra_compile_args = ["-fopenmp",],
-               extra_link_args = [],
+               #extra_compile_args = ["-fopenmp",],
+               #extra_link_args = ["-lgomp"],
                ),
-           ]
+                    ]
        )
 
