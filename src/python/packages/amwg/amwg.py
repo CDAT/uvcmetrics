@@ -21,8 +21,9 @@ from numbers import Number
 from pprint import pprint
 try:
     from mpi4py import MPI
+    MPI_ENABLED = True
 except:
-    pass
+    MPI_ENABLED = False
 
 seasonsyr=cdutil.times.Seasons('JFMAMJJASOND')
 
@@ -378,12 +379,12 @@ class amwg_plot_spec(plot_spec):
                 #print "dbg in second round, found",varnom,"computable by",func,"from",inputs
                 break
         if len(rvs)<=0:
-            print "ERROR, no inputs found for",varnom,"in filetable",filetable.id()
+            print "WARNING, no inputs found for",varnom,"in filetable",filetable.id()
             print "filetable source files=",filetable._filelist[0:10]
             print "need inputs",svd.inputs()
-            #return None,[],[]
-            raise DiagError( "ERROR, don't have %s, and don't have sufficient data to compute it!"\
-                                 % varnom )
+            return None,[],[]
+            #raise DiagError( "ERROR, don't have %s, and don't have sufficient data to compute it!"\
+            #                     % varnom )
         if not computable:
             print "DEBUG: standard variable",varnom,"is not computable"
             print "need inputs",svd.inputs()
@@ -530,7 +531,7 @@ class amwg_plot_set2(amwg_plot_spec):
                 z2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2'],
                 z2func=(lambda z: z[1][3]),
                 plottype = self.plottype,
-                title = 'CAM & NCEP HEAT_TRANSPORT GLOBAL',
+                title = 'CAM and NCEP HEAT_TRANSPORT GLOBAL',
                 source = ft1src ),
             'CAM_NCEP_HEAT_TRANSPORT_PACIFIC': plotspec(
                 vid='CAM_NCEP_HEAT_TRANSPORT_PACIFIC',
@@ -545,7 +546,7 @@ class amwg_plot_set2(amwg_plot_spec):
                 z2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2' ],
                 z2func=(lambda y: y[1][0]),
                 plottype = self.plottype,
-                title = 'CAM & NCEP HEAT_TRANSPORT PACIFIC',
+                title = 'CAM and NCEP HEAT_TRANSPORT PACIFIC',
                 source = ft1src ),
             'CAM_NCEP_HEAT_TRANSPORT_ATLANTIC': plotspec(
                 vid='CAM_NCEP_HEAT_TRANSPORT_ATLANTIC',
@@ -560,7 +561,7 @@ class amwg_plot_set2(amwg_plot_spec):
                 z2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2' ],
                 z2func=(lambda y: y[1][1]),
                 plottype = self.plottype ,
-                title = 'CAM & NCEP HEAT_TRANSPORT ATLANTIC',
+                title = 'CAM and NCEP HEAT_TRANSPORT ATLANTIC',
                 source = ft1src ),
             'CAM_NCEP_HEAT_TRANSPORT_INDIAN': plotspec(
                 vid='CAM_NCEP_HEAT_TRANSPORT_INDIAN',
@@ -575,7 +576,7 @@ class amwg_plot_set2(amwg_plot_spec):
                 z2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2' ],
                 z2func=(lambda y: y[1][2]),
                 plottype = self.plottype,
-                title = 'CAM & NCEP HEAT_TRANSPORT INDIAN',
+                title = 'CAM and NCEP HEAT_TRANSPORT INDIAN',
                 source = ft1src ),
             }
         self.composite_plotspecs = {
@@ -1278,6 +1279,7 @@ class amwg_plot_set6(amwg_plot_spec):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the variable to be plotted, e.g. 'STRESS'.
         seasonid is a string such as 'DJF'."""
+
         filetable1, filetable2 = self.getfts(model, obs)
         plot_spec.__init__(self,seasonid)
         # self.plottype = ['Isofill','Vector']  <<<< later we'll add contour plots
@@ -1359,6 +1361,7 @@ class amwg_plot_set6(amwg_plot_spec):
             return [],[]
         reduced_vars = []
         needed_derivedvars = []
+        
         for var in rvars:
             if var in ['TAUX','TAUY'] and filetable.filefmt.find('CAM')>=0:
                 # We'll cheat a bit and change the sign as well as reducing dimensionality.
@@ -1408,6 +1411,7 @@ class amwg_plot_set6(amwg_plot_spec):
         variable computation and orginating from the specified filetable.
         rvars, a list, names the variables needed.
         Also, a list of the new drived variables is returned."""
+
         if filetable is None:
             vardict[','] = None
             return []
@@ -1731,11 +1735,7 @@ class amwg_plot_set8(amwg_plot_spec):
     def __init__( self, model, obs, varid, seasonid='ANN', region='global', aux=None, levels=None ):
         """filetable1, should be a directory filetable for each model.
         varid is a string, e.g. 'TREFHT'.  The zonal mean is computed for each month. """
-        cdms2.setNetcdfClassicFlag(0)
-        cdms2.setNetcdfShuffleFlag(0)
-        cdms2.setNetcdfDeflateFlag(0)
-        cdms2.setNetcdfDeflateLevelFlag(0)
-        cdms2.setNetcdfUseParallelFlag(0)
+
         filetable1, filetable2 = self.getfts(model, obs)
         
         self.season = seasonid          
@@ -1770,52 +1770,11 @@ class amwg_plot_set8(amwg_plot_spec):
         if not self.computation_planned:
             self.plan_computation( model, obs, varid, seasonid, levels=levels )
 
-        self.MPI_imported = 'mpi4py.MPI' in sys.modules.keys()
-        
-        if self.MPI_imported:
-            self.comm = MPI.COMM_WORLD
-            self.size = self.comm.size
-            self.rank = self.comm.rank
-        else:
-            self.comm = MPI.COMM_WORLD
-            self.size = 1
-            self.rank = 0
-               
-        self.master = 0
-        def splitList(keys, size):
-            subLists = []
-            for i in xrange(0, len(keys), size):
-                subLists += [keys[i:i+size]]
-            return subLists        
-        #nReducedVariables = len(self.reduced_variables)
-        if self.rank is self.master:
-            sublistSize = len(self.reduced_variables.keys())/self.size
-            self.all_keys = splitList(self.reduced_variables.keys(), sublistSize)
-        else:
-            self.all_keys = None
-        
-        self.local_keys = self.comm.scatter(self.all_keys, root=self.master)
-        print 'rank=', self.rank, 'keys =', self.local_keys
+        self.MPI_ENABLED = MPI_ENABLED
 
-        #avoid multiple calls to cdscan
-         
-        for i, key in enumerate(self.local_keys):
-            RV = self.reduced_variables[key]
-            print 'rank=', self.rank, key, RV.variableid
-            #if i == 0:
-            xml_file = RV.get_variable_file( RV.variableid, COMM=self.comm )
-            self.reduced_variables[key]._filename = xml_file
-            #this barrier is required to throttle how many jobs are run under 
-            #the hood it is an effective wait for spawned jobs to complete
-            #self.comm.barrier()
-            print 'in init rank=', self.rank, RV._filename
-
-        cnt = 0
-        for key in self.local_keys:
-            RV = self.reduced_variables[key]
-            if RV._filename is not None:
-                cnt += 1
-        print 'count in init = ', self.rank, cnt
+        if self.MPI_ENABLED:
+            self.mpi_init()
+            
     def plan_computation( self, model, obs, varid, seasonid, levels=None ):
         filetable1, filetable2 = self.getfts(model, obs)
 
@@ -1885,8 +1844,45 @@ class amwg_plot_set8(amwg_plot_spec):
                                         plottype = self.plottype,
                                         levels = None )
             
-        self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
+        self.composite_plotspecs = {
+            self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id ]
+            }
+        #... was self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
         self.computation_planned = True
+
+    def mpi_init(self):
+        def splitList(keys, size):
+            subLists = []
+            for i in xrange(0, len(keys), size):
+                subLists += [keys[i:i+size]]
+            return subLists        
+        
+        #turn off parallel IO. this is a requirement for now
+        cdms2.setNetcdfClassicFlag(0)
+        cdms2.setNetcdfShuffleFlag(0)
+        cdms2.setNetcdfDeflateFlag(0)
+        cdms2.setNetcdfDeflateLevelFlag(0)
+        cdms2.setNetcdfUseParallelFlag(0)
+        
+
+        self.comm = MPI.COMM_WORLD
+        self.size = self.comm.size
+        self.rank = self.comm.rank               
+        self.master = 0
+
+        #split the keys of reduced_variables and scatter them        
+        if self.rank is self.master:
+            sublistSize = len(self.reduced_variables.keys())/self.size
+            self.all_keys = splitList(self.reduced_variables.keys(), sublistSize)
+        else:
+            self.all_keys = None        
+        self.local_keys = self.comm.scatter(self.all_keys, root=self.master)
+
+        #create xml files and avoid multiple calls to cdscan         
+        for i, key in enumerate(self.local_keys):
+            RV = self.reduced_variables[key]
+            RV._filename = RV.get_variable_file( RV.variableid, COMM=self.comm)
+                             
     def _results(self, newgrid=0):
         #pdb.set_trace()
         results = plot_spec._results(self, newgrid)
@@ -2021,7 +2017,10 @@ class amwg_plot_set9(amwg_plot_spec):
                 levels = None )
             }
 
-        self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
+        self.composite_plotspecs = {
+            self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id ]
+            }
+        # ...was self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
         self.computation_planned = True
     def _results(self, newgrid=0):
         #pdb.set_trace()
@@ -3264,7 +3263,10 @@ class amwg_plot_set15(amwg_plot_spec):
                                         title = 'difference: model-obs',
                                         levels = None )
         
-        self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
+        self.composite_plotspecs = {
+            self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id ]
+            }
+        # ... was self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
         self.computation_planned = True
         #pdb.set_trace()
     def customizeTemplates(self, templates):

@@ -193,8 +193,14 @@ def set_spatial_avg_method( var ):
     Sets the attribute var.spavgmeth to a string specifying how to compute spatial averages.
     At present the default is area weighting (the averager() default), and the only other
     possibility is mass weighting."""
+    # Don't change the spatial average method if it has already been set.
+    # Then set it to the default, and then check to see whether there's anything about the variable
+    # which calls for a non-default method.
     if hasattr( var, 'spavgmeth' ): return var
     var.spavgmeth = 'area weights'  # default
+
+    # Certain units would imply that the variable needs mass weighting.
+    # Otherwise, stick with the default.
     if not hasattr( var, 'units' ): return var
     su = var.units.split('/')
     if len(su)>=3:  return var
@@ -212,15 +218,23 @@ def set_spatial_avg_method( var ):
                 var.spavgmeth = 'mass weights'
         if su[0] in ['kg', 'g']:     # mass/mass (just the most common mass units)
                 var.spavgmeth = 'mass weights'
-        if su[0] in ['Pa', 'hPa', 'mbar']:  # pressure/pressure (just the most common mass units):
+        if su[0] in ['Pa', 'hPa', 'mbar']:  # pressure/pressure (just the most common such units):
                 var.spavgmeth = 'mass weights'
     return var
 
+def get_mass_weights( mv ):
+    """Returns mass weights, in a variable of th same shape as the input mv."""
+    # >>>> WORK IN PROGRESS <<<<
+    pass
+
 # Dictionary which matches a variable's :spavgmeth attribute to a function which computes
-# weights for its spatial average.
+# weights for its spatial average.  The function should have arguments:
+# - mv, the variable which will be averaged
+# The function should return:
+# - wt, an array of weights; wt.shape==mv.shape.
 # >>>> WORK IN PROGRESS <<<<<
 # >>>> This dict is subject to change, and the function it names does't exist. <<<<<
-#spavfuns = { 'area weights':None, 'mass weights':get_mass_weights() }
+spavgfuns = { 'area weights':None, 'mass weights':get_mass_weights }
 
 # -------- end of Miscellaneous  Utilities ---------
 
@@ -254,15 +268,21 @@ def reduce2scalar_seasonal_zonal( mv, seasons=seasonsyr, latmin=-90, latmax=90, 
     The input mv is a cdms2 variable too.
     This function uses UV-CDAT's genutil.avarager() function to handle weights and do averages.
     Time is restriced to the specified season.
-    Latitude weights may be provided as 'gw'.  The averager's default is reasonable, however.
+    Latitude weights may be provided as 'gw' which must depend (solely) on the latitude axis.  The
+    averager's default is reasonable, however.
     """
     if vid is None:
         vid = 'reduced_'+mv.id
     # reduce size of lat axis to (latmin,latmax)
     mv2 = mv(latitude=(latmin, latmax))
     # reduce size of gw to (latmin,latmax)
+    gw2 = None
     if gw is not None:
-        gw2 = gw(latitude=(latmin, latmax))
+        if len(gw.getDomain())==1 and gw.getDomain()[0][0].isLatitude():
+            gw2 = gw(latitude=(latmin, latmax))
+        else:
+            #print "debug For mv",mv.id,"gw rejected, domain is",gw.getDomain()
+            pass
 
     mvseas = calculate_seasonal_climatology(mv2, seasons)
     if mvseas is None:
@@ -280,7 +300,7 @@ def reduce2scalar_seasonal_zonal( mv, seasons=seasonsyr, latmin=-90, latmax=90, 
     axis_names = [ a.id for a in axes ]
     axes_string = '('+')('.join(axis_names)+')'
     if len(axes_string)>2:
-        if gw is None:
+        if gw2 is None:
             avmv = averager( mvseas, axis=axes_string )
         else:
             weights = [ gw2 if a.isLatitude() else 'weighted' for a in axes ]
@@ -678,14 +698,12 @@ def ttest_ab(mv1, mv2, constant = .1):
 
    t, prob = scipy.stats.ttest_ind(v1, v2, axis=tid1, equal_var=False)
    print 'prob:', prob
-   print type(prob)
    print 't: ', t
-   print type(t)
    missing = mv1.missing_value
    probnew = MV2.where(MV2.greater(prob, constant), 1, 0) # get rid of the tiny values that are essentially 0
    tnew = MV2.where(MV2.greater(t, constant), 1, 0)
 
-   print 'This needs some more work probably. Do we return t or prob?'
+   print '*** TODO This needs some more work probably. Do we return t or prob?'
    return tnew
 
 def ttest_time(mv1, mv2, mv3):
@@ -768,9 +786,8 @@ def ttest_time(mv1, mv2, mv3):
 # Step 3b - Add a 't' axis if it's not there. Does this need done? Should this need done?
 # Step 4 - RMSE
 def rmse_time(mv1, mv2):
-   print 'in rmse_time'
-   print mv1.id, 'mv1.shape: ', mv1.shape
-   print mv2.id, 'mv2.shape: ', mv2.shape
+   print mv1.id, '------------> rmse_time - mv1.shape: ', mv1.shape
+   print mv2.id, '------------> rmse_time - mv2.shape: ', mv2.shape
 
    mv1new, mv2new = regrid_without_obs(mv1, mv2)
 #   print mv1new.shape
@@ -786,13 +803,16 @@ def rmse_time(mv1, mv2):
 
 def correlation_time(mv1, mv2):
 
+   print 'min/max passed in: ', mv1.min(), mv2.min(), mv1.max(), mv2.max()
    mv1new, mv2new = regrid_without_obs(mv1, mv2)
    print 'mv1new/2 shapes: ', mv1new.shape, mv2new.shape
+   print 'new min/max: ', mv1new.min(), mv2new.min(), mv1new.max(), mv2new.max()
 
    corr = statistics.correlation(mv1new, mv2new, axis='t')
    print 'min/max:'
    print corr.min()
    print corr.max()
+   print corr.data
    print 'correlation result shape: ', corr.shape
    return corr
 
@@ -916,9 +936,10 @@ def regrid_without_obs(mv1, mv2):
    if axes1 is None or axes2 is None: 
       return None
 
-   print 'THERES A BUG HERE SOMEWHERE. PRINT AXES LIST TO SEE WHICH ONES ARE T'
-   print 'ALSO NEED TO AT LEAST REDUCE/REGRID TO A SINGLE T DIMENSION (OR SAME T DIMENSION)'
-   print 'I HATE THIS CODE'
+#   print 'axes1:', axes1
+#   print 'axes2:', axes2
+#   print 'THERES A BUG HERE SOMEWHERE. PRINT AXES LIST TO SEE WHICH ONES ARE T'
+#   print 'ALSO NEED TO AT LEAST REDUCE/REGRID TO A SINGLE T DIMENSION (OR SAME T DIMENSION)'
    mv1new = mv1
    mv2new = mv2
    lat1, idx1 = latAxis2 (mv1)
@@ -1042,6 +1063,54 @@ def regrid_with_obs(mv1, mv2, obs1):
    print 'and done shapes: ', mv1new.shape, mv2new.shape, obsnew.shape
    return mv1new, mv2new, obsnew
 
+# Calculate bias between mv1 and mv2. Regrid as appropriate
+# This is used by land set 9, but might be generally usable
+# Step 1 - Reconcile units
+# Step 2 - Regrid
+# Step 3 - mv1sub = mv1-obs, mv2sub = mv2-obs
+# Step 4 - prob = ttest(mv1sub, mv2sub)
+# Step 5 - 
+def bias_map(mv1, mv2, obs, season, constant=.05, diffmeans=.25): # assumes mv1 is data and mv2 is obs generally.
+   print mv1.id, '----> bias_map - mv1.shape: ', mv1.shape
+   print mv2.id, '----> bias_map - mv2.shape: ', mv2.shape
+   print obs.id, '----> bias_map - obs.shape: ', obs.shape
+   mv1new, mv2new, obsnew = regrid_with_obs(mv1, mv2, obs)
+
+   bias1 = mv1new - obsnew
+   bias2 = mv2new - obsnew
+
+   # extract just the season desired now.
+
+   # NCL math appears to be:
+   # b = t < siglvl and
+   #   (abs(x2-obs) <= abs(x1-obs) ) and
+   #   (abs(x2-x1) >= diffmeans )
+   # g = t < siglvl and
+   #   (abs(x2-obs) >= abs(x1-obs) ) and
+   #   (abs(x2-x1) >= diffmeans )
+
+   absx2x1 = MV2.absolute(mv2new-mv1new)
+   absx2obs = MV2.absolute(mv2new-obsnew)
+   absx1obs = MV2.absolute(mv1new-obsnew)
+
+   sigdiff = MV2.where(MV2.greater_equal(absx2x1, diffmeans), 1, 0)
+   sigle = MV2.where(MV2.less_equal(absx2obs, absx1obs), 1, 0)
+   sigge = MV2.where(MV2.greater_equal(absx2obs, absx1obs), 1, 0)
+   siglediff = MV2.where(MV2.logical_and(sigle, sigdiff), 1, 0)
+   siggediff = MV2.where(MV2.logical_and(sigge, sigdiff), 1, 0)
+
+
+   t = ttest_ab(bias1, bias2, .001) # constant here is just differentiating from 0.000x and 0
+
+   t1 = MV2.where( MV2.less_equal(t, constant), 1, 0)
+   b = MV2.where(MV2.logical_and(t1, siglediff), 1, 0)
+   g = MV2.where(MV2.logical_and(t1, siggediff), 1, 0)
+
+   #g is 2
+   g = MV2.where(MV2.equal(g, 1), 2, g)
+   vmap = b+g
+   return vmap
+
 
 # Takes 2 rmse variables in. Could be required to take 2 normal variables and we might have to calculate rmse?
 # Also, we might want to specify constant somehow.
@@ -1121,10 +1190,6 @@ def stddev_map(mv1, mv2, obs, recalc=True, constant=.1):
    vmap = MV2.where(MV2.equal(vsum, 0), absdiff.missing_value, vsum)
 
    return vmap
-
-def bias_map(mv1, mv2, obs, constant=.1):
-   # eww, this one is more complicated, plus need to implement T-test
-   pass
 
 # This could possibly be moved to lmwg, but it is not specific to land.
 # Does a yearly climatology, then spatial reduction over a subregion, then returns
@@ -1379,12 +1444,18 @@ def reduceMonthlyTrendRegion(mv, region, weights=None, vid=None):
    else:
       mvtrend = mv
 
+   if region == None:
+      mvtrend.id = vid
+      if hasattr(mv, 'units'): mvtrend.units = mv.units
+      return mvtrend
+
    # This is gross. But, how do I make cdutil.averager (T, X, Y) use land weights (X, Y) to get a (T) array?
    import genutil
    weightsub = select_region(weights, region)
    mvtrend, weights12 = genutil.grower(mvtrend, weightsub)
 
    mvvals = cdutil.averager(mvtrend, axis='xy', weights=weights12)
+   print 'mvvals leaving shape: ', mvvals.shape
 
    mvvals.id = vid
    if hasattr(mv, 'units'): mvvals.units = mv.units # probably needs some help
@@ -1464,6 +1535,8 @@ def reduce2latlon_seasonal( mv, season=seasonsyr, region=None, vid=None, exclude
     """
     # This differs from reduce2lat_seasonal only in the line "axis_names ="....
     # I need to think about how to structure the code so there's less cut-and-paste!
+    print 'mv type: ', type(mv)
+    print '----------->mv shape going in: ', mv.shape
     if vid is None:
         vid = 'reduced_'+mv.id
     # Note that the averager function returns a variable with meaningless id.
@@ -1487,11 +1560,11 @@ def reduce2latlon_seasonal( mv, season=seasonsyr, region=None, vid=None, exclude
             if axis.getBounds() is None:
                 axis._bounds_ = axis.genGenericBounds()
         avmv = averager( mvseas, axis=axes_string )  #original
-        #WORK IN PROGRESS: I'm not actually setting the weights yet!....<<<<<<<<<<<<>>>>>>>>>>>
+        #WORK IN PROGRESS: This can't work because the mass weight-setting function doesn't exist yet!....<<<<<<<<<<<<>>>>>>>>>>>
         #if mvseas.spavgmeth=='area weights':
         #    avmv = averager( mvseas, axis=axes_string )
         #elif mvseas.spavgmeth=='mass weights':
-        #    avmv = averager( mvseas, axis=axes_string )
+        #    avmv = averager( mvseas, axis=axes_string, weights=spavgfuns[mvseas.spavgmeth](mvseas) )
         #else:
         #    raise DiagError("ERROR: cannot recognize spavgmeth (spatial average method) attribute")
     else:
@@ -1504,6 +1577,7 @@ def reduce2latlon_seasonal( mv, season=seasonsyr, region=None, vid=None, exclude
     # >>> special ad-hoc code.  The target units should be provided in an argument, not by this if statement>>>>
         if avmv.units=="Pa" or avmv.units.lower()=="pascal" or avmv.units.lower()=="pascals":
             avmv = convert_variable( avmv, "millibar" )
+    print '----------> mv shape going out: ', avmv.shape
     return avmv
 
 def reduce_time_seasonal( mv, seasons=seasonsyr, region=None, vid=None ):
@@ -1839,8 +1913,46 @@ def minusb(mv2):
    mv.id = mv2.id
    return mv
 
+def aminusb_regrid(mv1, mv2):
+# This is similar to aminusb_2ax I think, but simpler in what it does. Could probably be consolidated
+   if mv1 is None or mv2 is None:
+      return None
+
+   mv1, mv2 = reconcile_units(mv1, mv2)
+   mv1new, mv2new = regrid_without_obs(mv1, mv2)
+   mv = mv1new - mv2new
+   if hasattr(mv1, 'units') and hasattr(mv2, 'units'):
+      if mv1.units == mv2.units:
+         mv.units = mv1.units
+   if hasattr(mv, 'long_name'):
+      if mv.long_name == mv1.long_name:
+         mv.long_name = ''
+   print '-------> IN regrid, ids:'
+   if hasattr(mv1, 'id'):
+      print 'mv1.id: ', mv1.id
+   else:
+      print 'no id for mv1'
+   if hasattr(mv2, 'id'):
+      print 'mv2.id:' , mv2.id
+   else:
+      print 'no id for mv2'
+   print "Mv1.id:", mv1.id
+   print 'mv2.id:', mv2.id
+   if hasattr(mv1, 'long_name'):
+      print 'mv1 longname: ', mv1.long_name
+   if hasattr(mv2, 'long_name'):
+      print 'mv2 longname: ', mv2.long_name
+   if hasattr(mv, 'id'):
+      print 'mv returning id: ', mv.id
+   else:
+      print 'mv returning has no id.'
+   print '<------- out regrid ids'
+   return mv
+
+
 def aminusb(mv1, mv2):
    """ returns mv1-mv2; they should be dimensioned alike."""
+#   print 'ENTERING AMINUSB. a shape: ', mv1.shape, 'b shape:', mv2.shape
    if mv1 is None or mv2 is None:
        return None
 
@@ -1888,7 +2000,7 @@ def adivb(mv1, mv2):
 def dummy2(mv1, mv2):
    return mv1
 def dummy(mv, vid=None):
-#   print 'mv shape passed to dummy: ', mv.shape
+   print '--------> mv shape passed to dummy: ', mv.shape
    return mv
 
 def ab_ratio(mv1, mv2):
@@ -2239,8 +2351,8 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
     Note that if mv1 _or_ mv2 have a missing value at index i, then the return value (mv1-mv2)
     will also have a missing value at index i.
     (*) Experimentally, there can be more than two axes if the first axes be trivial, i.e. length is 1.
-    If this works out, it should be generalized and reproduced in other aminusb_* functions.
-    """
+    If this works out, it should be generalized and reproduced in other aminusb_* functions."""
+    ""
     global regridded_vars   # experimental for now
     if mv1 is None or mv2 is None:
         print "WARNING, aminusb_2ax missing an input variable."
@@ -2283,6 +2395,7 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
     if len(axes1[0])==len(axes2[0]):
         # Only axis2 differs, there's a better way...
         return aminusb_ax2( mv1, mv2 )
+    
     if len(axes1[0])<=len(axes2[0]):
 #        if len(axes1[1])<=len(axes2[1]):
             mv1new = mv1
@@ -2310,6 +2423,7 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
 #            print "ERROR @4, aminusb_2ax IS NOT FINISHED"
 #            return None
 #        else:
+
             mv2new = mv2
             # Interpolate mv2 from axis2 to axis1 in both directions.  Use the CDAT regridder.
             grid2 = mv2.getGrid()
@@ -2529,9 +2643,7 @@ def run_cdscan( fam, famfiles, cache_path=None, COMM=None ):
               for f in famfiles ] )
     csum = hashlib.md5(file_list).hexdigest()
     xml_name = fam+'_cs'+csum+'.xml'
-    #pdb.set_trace()
-    print 'in run_cdscan', COMM.rank, xml_name, os.path.isfile( xml_name )
-    print 'in run_cdscan', COMM.rank, os.path.join( cache_path, os.path.basename(xml_name) )
+
     if os.path.isfile( xml_name ):
         #print "using cached cdscan output",xml_name," (in data directory)"
         return xml_name
@@ -2552,12 +2664,9 @@ def run_cdscan( fam, famfiles, cache_path=None, COMM=None ):
     # I know of no exception to the rule that all files in the file family keep their
     # units in the same place; so find where they are by checking the first file
     
-    print 'open file on ', COMM.rank, famfiles[0]
-    #from mpi4py import MPI
-    #f = MPI.File.Open(MPI.COMM_WORLD, famfiles[0], amode=MPI.MODE_RDONLY)
+
     f = cdms2.open( famfiles[0], mode='r' )
-    print 'opened ', COMM.rank
-    #pdb.set_trace()
+
     if f['time'] is None:
             cdscan_line = 'cdscan -q '+'-x '+xml_name+' '+' '.join(famfiles)
             f.close()
@@ -2590,28 +2699,27 @@ def run_cdscan( fam, famfiles, cache_path=None, COMM=None ):
                 print "WARNING, cannot find time units; will try to continue",famfiles[0]
                 cdscan_line = 'cdscan -q '+'-x '+xml_name+' -e time.units="'+time_units+'" '+\
                     ' '.join(famfiles)
-    #print COMM.rank, " cdscan_line=",cdscan_line
-    #if COMM.rank is not 0:
-    #    return xml_name
-    #print COMM.rank, 'popen'
-    #proc = subprocess.Popen([cdscan_line],shell=True)
-    #proc_status = proc.wait()
-    f.close()
-    print 'file closed', COMM.rank, famfiles[0]
-    import shlex
-    cdscan_line = '%s/bin/'%(sys.prefix) + cdscan_line
-    cdscan_line = shlex.split(cdscan_line)
-    from mpi4py import MPI
-    print 'in run_cdscan ', COMM.rank, xml_name, cdscan_line
-    comm1 = MPI.COMM_SELF.Spawn(        
-        sys.executable,
-        args=cdscan_line,
-        maxprocs=1)
-    #wait until cdscan is done
-    message = comm1.recv(source = MPI.ANY_SOURCE)
-    print 'after Spawn ', COMM.rank, comm1.rank, message, MPI.ANY_SOURCE
-    proc_status = MPI.Status().Get_error()
 
+    f.close()
+    
+    if COMM is None:
+        #serial mode
+        proc = subprocess.Popen([cdscan_line],shell=True)
+        proc_status = proc.wait()
+    else:
+        #parallel mode
+        import shlex
+        cdscan_line = '%s/bin/'%(sys.prefix) + cdscan_line
+        cdscan_line = shlex.split(cdscan_line)
+        from mpi4py import MPI
+        comm1 = MPI.COMM_SELF.Spawn(        
+            sys.executable,
+            args=cdscan_line,
+            maxprocs=1)
+        #wait until cdscan is done
+        message = comm1.recv(source = MPI.ANY_SOURCE)
+        proc_status = MPI.Status().Get_error()
+     
     if proc_status!=0: 
         print "ERROR: cdscan terminated with",proc_status
         print 'This is usually fatal. Frequent causes are an extra XML file in the dataset directory'
@@ -2845,13 +2953,14 @@ class reduced_variable(ftrow,basic_id):
             famfiles = [f for f in files if famdict[f]==fam]
 
             cache_path = self._filetable.cache_path()
-            fam += '_'+str(COMM.rank)
-            print 'in get_variable fam =', COMM.rank, fam
+            if COMM is not None:
+                fam += '_'+str(COMM.rank)
+
             if self._filename is not None:
                 xml_name = self._filename
             else:
                 xml_name = run_cdscan( fam, famfiles, cache_path, COMM=COMM )
-            print 'after cdscan', COMM.rank, xml_name
+
             filename = xml_name
         else:
             # the easy case, just one file has all the data on this variable
@@ -2859,7 +2968,7 @@ class reduced_variable(ftrow,basic_id):
         #fcf = get_datafile_filefmt(f)
         return filename
 
-    def reduce( self, vid=None ):
+    def reduce( self, vid=None, COMM=None ):
         """Finds and opens the files containing data required for the variable,
         Applies the reduction function to the data, and returns an MV.
         When completed, this will treat missing data as such.
@@ -2887,7 +2996,7 @@ class reduced_variable(ftrow,basic_id):
             filename = self._filename
         else:
             filename = self.get_variable_file( self.variableid )
-        print 'reduce',  filename   
+
         if filename is None:
             if self.variableid not in self._duvs:
                 # this belongs in a log file:
@@ -2938,14 +3047,17 @@ class reduced_variable(ftrow,basic_id):
                 duv_value = duv.derive( duv_inputs )
                 reduced_data = self._reduction_function( duv_value, vid=vid )
         else:
+
             f = cdms2.open( filename )
-            print 'reduce after open', filename
             self._file_attributes.update(f.attributes)
+
             if self.variableid in f.variables.keys():
                 var = f(self.variableid)
                 if os.path.basename(filename)[0:5]=='CERES':
                     var = special_case_fixed_variable( 'CERES', var )
+
                 reduced_data = self._reduction_function( var, vid=vid )
+                
             elif self.variableid in f.axes.keys():
                 taxis = cdms2.createAxis(f[self.variableid])   # converts the FileAxis to a TransientAxis.
                 taxis.id = f[self.variableid].id
@@ -2955,11 +3067,12 @@ class reduced_variable(ftrow,basic_id):
                 print "It did find variables",f.variables.keys()
                 print "and axes",f.axes.keys()
                 raise Exception
-            if reduced_data is not None:
+            if reduced_data is not None and type(reduced_data) is not list:
                 reduced_data._vid = vid
             f.close()
         if hasattr(reduced_data,'mask') and reduced_data.mask.all():
             reduced_data = None
+            
         return reduced_data
 
 class rv(reduced_variable):

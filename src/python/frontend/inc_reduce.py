@@ -34,14 +34,12 @@
 # "monthly" intervals are unequal except in a 360-day calendar.
 # A keyword + calendar + units will be sufficient if it's one of the likely requests.
 
-# >>>> WORK IN PROGRESS <<<<   And this will take some time to finish!
 # >>>> TO DO:
 # Create a suitable time axis when reading climo data without one.
 
 import numpy, cdms2, sys, os, math
 from numbers import Number
 from pprint import pprint
-import time
 from metrics.packages.acme_regridder.scripts.acme_regrid import addVariable
 #import debug
 
@@ -115,14 +113,20 @@ def next_tbounds_prescribed_step( red_time_bnds, data_time_bnds, dt ):
     t1t2 = numpy.array([[t0+dt, t1+dt]],dtype=numpy.int32)
     return numpy.concatenate( ( red_time_bnds, t1t2 ), axis=0 )
 
-def initialize_redfile( filen, axisdict, typedict, attdict, varnames ):
+def initialize_redfile( filen, axisdict, typedict, attdict, varnames, lock=None ):
     """Initializes the file containing reduced data.  Input is the filename, axes
     variables representing bounds on axes, and names of variables to be initialized.
     Axes are represented as a dictionary, with items like varname:[timeaxis, lataxis, lonaxis].
     Time should always be present as the first axis.
     Note that cdms2 will automatically write the bounds variable if it writes an axis which has bounds.
     """
+    #print "jfp1 about to open",filen
+    if lock is not None:  lock.acquire()
+    #t1 = time.time()
     g = cdms2.open( filen, 'w' )
+    #t2 = time.time()
+    if lock is not None:  lock.release()
+    #print "jfp1 opened",filen,"in",t2-t1,"sec"
     if 'time_bnds' not in varnames:
         addVariable( g, 'time_bnds', typedict['time_bnds'], axisdict['time_bnds'], attdict['time_bnds'] )
     for varn in varnames:
@@ -133,6 +137,7 @@ def initialize_redfile( filen, axisdict, typedict, attdict, varnames ):
 
 def initialize_redfile_from_datafile( redfilename, varnames, datafilen, dt=-1, init_red_tbounds=None,
                                       force_double=False ):
+
     """Initializes a file containing the partially-time-reduced average data, given the names
     of the variables to reduce and the name of a data file containing those variables with axes.
     The file is created and returned in an open state.  Closing the file is up to the calling function.
@@ -147,7 +152,13 @@ def initialize_redfile_from_datafile( redfilename, varnames, datafilen, dt=-1, i
     # Note: some of the attributes are set appropriately for climatologies, but maybe not for
     # other time reductions.  In particular, c.f. time long_name and varn cell_methods.
     boundless_axes = set([])
+    #print "jfp2 about to open",datafilen
+    if lock is not None:  lock.acquire()
+    #t1 = time.time()
     f = cdms2.open( datafilen )
+    #t2 = time.time()
+    if lock is not None:  lock.release()
+    #print "jfp2 opened",datafilen,"in",t2-t1,"sec"
     axisdict = {}
     typedict = {}
     attdict = {}
@@ -186,6 +197,7 @@ def initialize_redfile_from_datafile( redfilename, varnames, datafilen, dt=-1, i
             continue
         if f[varn].dtype.name.find('string')==0:
             # We can't handle string variables.
+            print "jfp WARNING, ignoring string variable",varn
             continue
         out_varnames.append(varn)
         dataaxes = f[varn].getAxisList()
@@ -236,6 +248,7 @@ def initialize_redfile_from_datafile( redfilename, varnames, datafilen, dt=-1, i
 
     g = initialize_redfile( redfilename, axisdict, typedict, attdict, out_varnames )
 
+
     if timeaxis is not None:
         g['time_bnds'][:] = red_time_bnds
         g['time_bnds'].initialized = 'yes'
@@ -248,7 +261,9 @@ def initialize_redfile_from_datafile( redfilename, varnames, datafilen, dt=-1, i
     else:
         tmin = tb[0][0]
         tmax = tb[-1][-1]
+
     f.close()
+
     return g, out_varnames, tmin, tmax
 
 def adjust_time_for_climatology( newtime, redtime ):
@@ -325,16 +340,18 @@ def two_pt_avg( mv1, mv2, i, a2, sw1, sw2, aw2=None, force_scalar_avg=False ):
             mask2 = False
             if hasattr(mv1,'_mask'):
                 mask1 = mv1.mask
-            elif getattr(mv1,'missing_value'):  # if no missing_value, then no mask
+
+            else:
                 valu = mv1.getValue()
                 if hasattr( valu, '_mask' ):
                     mask1 = valu._mask
             if hasattr(mv2,'_mask'):
                 mask2 = mv2.mask
-            elif getattr(mv2,'missing_value'):  # if no missing_value, then no mask
+
+            else:
                 valu = mv2.getValue()
                 if hasattr( valu, '_mask' ):
-                    mask2 = valu._mask
+                    mask2 = mv2.getValue()._mask
             if not numpy.all(mask1==mask2):
                 # Note that this test requires reading all the data.  That has to be done anyway to compute
                 # the average.  Let's hope that the system caches well enough so that there won't be any
@@ -379,12 +396,10 @@ def two_pt_avg( mv1, mv2, i, a2, sw1, sw2, aw2=None, force_scalar_avg=False ):
         # This is what happens most of the time.  It's a simple average (of two compatible numpy
         # arrays), weighted by scalars.  These scalars are the length of time represented by
         # by mv1, mv2.
-        # Note that a1,a2 are type TransientVariable which inherits from numpy.ma.MaskedArray
-        sw12 = sw1+sw2
-        a = ( a1*(sw1/sw12) + a2*(sw2/sw12) )
+
+        a = ( a1*sw1 + a2*sw2 ) / (sw1+sw2)
         try:
-            if a.dtype != a1.dtype:
-                a = a.astype( a1.dtype )
+            a = a.astype( a1.dtype )
         except Exception as e:
             # happens if a1 isn't a numpy array, e.g. a float.  Then it's ok to just go on.
             #print "In arithmetic average of",mv1.id,"in two_pt_avg, encountered exception:",e
@@ -538,10 +553,8 @@ def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds, 
                     else:
                         redvar[i] = newvar[j]
                     continue
-                if 'time' not in redvar.getAxisIds() and redvar.initialized=='yes':
-                    # ...This assumes time axis is named 'time', but a full-blown check for a time
-                    # axis, e.g. via redvar.getTime(), is surprisingly expensive because of a
-                    # udunits inefficiency.
+
+                if redvar.getTime() is None and redvar.initialized=='yes':
                     # Although there's no time axis (hence index i is irrelevant), values may
                     # differ from one file to the next, so we still have to do a time average.
                     if newtime_wts[j,k]>0:
@@ -569,17 +582,59 @@ def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds, 
                             redvar =\
                                 ( redvar*redtime_wts[i] + newvar*newtime_wts[j,k] ) /\
                                 ( redtime_wts[i] + newtime_wts[j,k] )
-                elif 'time' not in redvar.getAxisIds() and redvar.initialized=='no':
+
+                elif redvar.getTime() is None and redvar.initialized=='no':
                     redvar.assignValue(newvar)
+                #jfp was elif redvar.initialized=='yes':
                 elif (not hasattr(redvar[i],'mask') and redvar.initialized=='yes') or\
-                        (hasattr(redvar[i],'mask') and not redvar[i].mask.all()):
-                    # ... i.e., redvar[i] is initialized and is not entirely missing data
+                        (hasattr(redvar[i],'mask') and not redvar[i].mask.all()):   # i.e., redvar[i] is not entirely missing data
+                                                 # i.e., redvar[i] has been initialized
                     if newtime_wts[j,k]>0:
+                        if False:  # development code
+                            #  Experimental method using numpy average function, properly treats
+                            # missing data but requires and produces big weight arrays:
+                            w1 = numpy.full( redvar[i].shape, redtime_wts[i] )
+                            w2 = numpy.full( newvar[i].shape, newtime_wts[j,k] )
+                            a,w = numpy.ma.average( numpy.ma.array((redvar[i],newvar[j])), axis=0,
+                                                    weights=numpy.ma.array((w1,w2)), returned=True )
+                        if False:  # debugging, development code
+                            # redvari is the average from the old code - correct when there's no mask
+                            redvari =\
+                                ( redvar[i]*redtime_wts[i] + newvar[j]*newtime_wts[j,k] ) /\
+                                ( redtime_wts[i] + newtime_wts[j,k] )
+                            redvari = redvari.astype( redvar.dtype )
 
                         # Don't miss this line, it's where the average is computed:
                         redvar[i] = two_pt_avg( redvar, newvar, i, newvar[j],
                                                 redtime_wts[i], newtime_wts[j,k],
                                                 force_scalar_avg=force_scalar_avg )
+
+                        if False and not numpy.ma.allclose( redvari, redvar[i] ):  # debugging, development code
+                            # This is for debugging.  When masks are involved, redvari and redvar[i]
+                            # *should* be different; the average() function probably will be called in
+                            # two_pt_avg and it essentially ignores masked data; but the arithmetic
+                            # computation propagates a mask whenever it is True in one of the inputs.
+                            print "debug Averages aren't close for",redvar[i].id
+                            mrdx = 0
+                            mrdn = 0
+                            mrix = -1
+                            mrin = -1
+                            for ri in range( redvari.shape[0] ):
+                                if not numpy.ma.allclose( redvari[ri,:], redvar[i][ri,:] ):
+                                    mrdxi = (redvari[ri,:]-redvar[i][ri,:]).max()
+                                    mrdni = (redvari[ri,:]-redvar[i][ri,:]).min()
+                                    if mrdxi>mrdx:
+                                        mrdx = mrdxi
+                                        mrix = ri
+                                    if mrdni>mrdn:
+                                        mrdn = mrdni
+                                        mrin = ri
+                            #print "debug mrin,mrdn=",mrin,mrdn
+                            #print "debug mrix,mrdx=",mrix,mrdx
+                            #print "debug redvari  =",redvari,redvari.shape,redvari.dtype
+                            #print "debug redvar[i]=",redvar[i],redvar[i].shape,redvar[i].dtype
+                            #print "debug redvari mask  =",redvari.mask
+                            #print "debug redvar[i] mask=",redvari.mask
 
                 else:
                     # For averaging, unitialized is same as value=0 because redtime_wts is
@@ -629,13 +684,15 @@ def update_time_avg_from_files( redvars0, redtime_bnds, redtime_wts, filenames,
     The optional argument dt is used only in that dt=0 means that we are computing climatologies.
     The optional argument force_scalar_avg argument is for testing and is passed on to two_pt_avg.
     """
-    tnewvar = 0
-    ttotal = time.time()
+
     tmin = 1.0e10
     tmax = -1.0e10
     for filen in filenames:
+        #print "jfp3 about to open",filen
+        if lock is not None:  lock.acquire()
+        #t1 = time.time()
         f = cdms2.open(filen)
-        ftime = f.getAxis('time').clone()  # clone saves it in memory - faster
+        ftime = f.getAxis('time')
         data_tbounds = ftime.getBounds()
         # Compute tmin, tmax which represent the range of times for the data we computed with.
         # For regular model output files, these should come from the time bounds.
@@ -657,12 +714,11 @@ def update_time_avg_from_files( redvars0, redtime_bnds, redtime_wts, filenames,
         for redvar in redvars0:
             try:
                 varid = redvar.id
+                if varid not in f.variables.keys(): continue #jfp testing
                 t1=time.time()
                 newvar = f(varid)
-                tnewvar += time.time()-t1
-                # For testing done for Peter Caldwell...
-                #if hasattr(newvar,'dtype') and newvar.dtype=='float32':
-                #    newvar = newvar.astype('float64')
+                if hasattr(newvar,'dtype') and newvar.dtype=='float32':
+                    newvar = newvar.astype('float64')
                 if hasattr(newvar,'id'):  # excludes an ordinary number
                     # Usually newvar is a TransientVariable, hence doesn't have the file as :parent.
                     # We need the file to get associated variables, so:
@@ -703,8 +759,7 @@ def update_time_avg_from_files( redvars0, redtime_bnds, redtime_wts, filenames,
                                  new_time_weights=new_time_weights,
                                  force_scalar_avg=force_scalar_avg )
         f.close()
-    ttotal = time.time() - ttotal
-    print "jfp leaving update_time_avg_from_files, ttotal=",ttotal,"tnewvar=",tnewvar
+
     return tmin, tmax
 
 def test_time_avg( redfilename, varnames, datafilenames ):

@@ -1,5 +1,5 @@
 
-
+from metrics.common.utilities import *
 
 def id2str( id ):
     """computes a string id from a tuple id and returns it.
@@ -11,10 +11,10 @@ def id2str( id ):
     idlist = filter( lambda x: x!='', list(id) )
     if len(idlist)>=2 and type(idlist[1]) is str and idlist[1].isdigit():
         # e.g. ft0
-        strid = idlist[0]+'_'.join(idlist[1:])
+        strid = idlist[0]+underscore_join(idlist[1:])
     else:
         # e.g. var_TREFHT_0
-        strid = '_'.join(idlist)
+        strid = underscore_join(idlist)
     return strid
 
 class basic_id():
