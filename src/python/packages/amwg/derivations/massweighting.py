@@ -55,13 +55,17 @@ def weighting_choice( mv ):
         #              hyam, hybm have no axes other than the level axis
         if len( [a for a in axes if a.isLevel()] )>0:
             # 3-D variable
-            if un in ['K', 'deg K', 'deg C', 'deg F', 'ppt', 'ppm', 'pptv', 'ppbv', 'ppmv']:
+            if un in ['K', 'deg K', 'deg C', 'deg F', 'degC', 'degF', 'degK',
+                      'deg_C', 'deg_F', 'deg_K', 'deg_c', 'deg_f', 'deg_k',
+                      'degreeC', 'degreeF', 'degreeK', 'degree_C', 'degree_Celsius', 'degree_F',
+                      'degree_Fahrenheit', 'degree_K', 'degree_Kelvin', 'degree_c', 'degree_centigrade',
+                      'degree_f', 'degree_k'] + [ 'ppt', 'ppm', 'pptv', 'ppbv', 'ppmv' ]:
                 choice = 'mass'
             if un.find('/')>0:
                 p = un.find('/')
                 lft = un[0:p]
                 rht = un[p+1:]
-                if lft==rht and lft in ['kg', 'g', 'Pa', 'hPa', 'mbar', 'mol']:
+                if lft==rht and lft in ['kg', 'g', 'Pa', 'hPa', 'mbar', 'mol', 'mole']:
                     choice = 'mass'
         
     vname = mv.id
