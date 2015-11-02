@@ -2351,8 +2351,8 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
     Note that if mv1 _or_ mv2 have a missing value at index i, then the return value (mv1-mv2)
     will also have a missing value at index i.
     (*) Experimentally, there can be more than two axes if the first axes be trivial, i.e. length is 1.
-    If this works out, it should be generalized and reproduced in other aminusb_* functions.
-    """
+    If this works out, it should be generalized and reproduced in other aminusb_* functions."""
+    ""
     global regridded_vars   # experimental for now
     if mv1 is None or mv2 is None:
         print "WARNING, aminusb_2ax missing an input variable."
@@ -2395,6 +2395,7 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
     if len(axes1[0])==len(axes2[0]):
         # Only axis2 differs, there's a better way...
         return aminusb_ax2( mv1, mv2 )
+    
     if len(axes1[0])<=len(axes2[0]):
 #        if len(axes1[1])<=len(axes2[1]):
             mv1new = mv1
@@ -2422,6 +2423,7 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
 #            print "ERROR @4, aminusb_2ax IS NOT FINISHED"
 #            return None
 #        else:
+
             mv2new = mv2
             # Interpolate mv2 from axis2 to axis1 in both directions.  Use the CDAT regridder.
             grid2 = mv2.getGrid()

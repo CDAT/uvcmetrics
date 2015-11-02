@@ -1274,6 +1274,7 @@ class amwg_plot_set6(amwg_plot_spec):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the variable to be plotted, e.g. 'STRESS'.
         seasonid is a string such as 'DJF'."""
+
         filetable1, filetable2 = self.getfts(model, obs)
         plot_spec.__init__(self,seasonid)
         # self.plottype = ['Isofill','Vector']  <<<< later we'll add contour plots
@@ -1355,6 +1356,7 @@ class amwg_plot_set6(amwg_plot_spec):
             return [],[]
         reduced_vars = []
         needed_derivedvars = []
+        
         for var in rvars:
             if var in ['TAUX','TAUY'] and filetable.filefmt.find('CAM')>=0:
                 # We'll cheat a bit and change the sign as well as reducing dimensionality.
@@ -1404,6 +1406,7 @@ class amwg_plot_set6(amwg_plot_spec):
         variable computation and orginating from the specified filetable.
         rvars, a list, names the variables needed.
         Also, a list of the new drived variables is returned."""
+
         if filetable is None:
             vardict[','] = None
             return []

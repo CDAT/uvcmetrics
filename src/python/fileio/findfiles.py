@@ -337,7 +337,7 @@ class dirtree_datafiles( basic_datafiles ):
         if self._type == None or self._index == None or not hasattr(self,'_index'):
             shortname = ','.join([os.path.basename(str(r))
                              for r in self._root])   # <base directory> <filter name>
-        if len(self.opts[self._type]) > self._index:
+        elif len(self.opts[self._type]) > self._index:
             if self.opts[self._type][self._index].get('name', False) not in [False,None]:
                shortname = self.opts[self._type][self._index]['name'] 
             if self.opts[self._type][self._index].get('filter', False) != False:

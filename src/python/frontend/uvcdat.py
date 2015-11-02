@@ -1004,7 +1004,6 @@ class plot_spec(object):
         that means a coarser grid, typically from regridding model data to the obs grid.
         In the future regrid>0 will mean regrid everything to the finest grid and regrid<0
         will mean regrid everything to the coarsest grid."""
-
         for v in self.reduced_variables.keys():
             #print v
             value = self.reduced_variables[v].reduce(None)
@@ -1066,7 +1065,15 @@ class plot_spec(object):
             z2lab=""
             z3lab =""
             z3lab = ""
-            if zax is not None and len(getattr(zax,'data',[None]))>0:  # a tuple always passes
+            if zax is not None:
+                zaxdata = getattr(zax,'data',[None])
+                try:
+                    lenzaxdata = len(zaxdata)  # >0 for a tuple
+                except TypeError:
+                    lenzaxdata = 0
+                if lenzaxdata<=0:
+                    print "WARNING: no plottable data for",getattr(zax,'id',zax)
+                    continue
                 if hasattr(zax,'regridded') and newgrid!=0:
                     vars.append( regridded_vars[zax.regridded] )
                 else:

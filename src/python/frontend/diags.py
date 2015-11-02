@@ -99,6 +99,7 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
     """Runs the diagnostics.  The data is specified by the filetables.
     Most other choices, such as the plot sets, variables, and seasons, are specified in opts,
     an instance of Options."""
+
     filetable1 = modelfts[0]
     if len(obsfts) == 0:
          filetable2 = None
