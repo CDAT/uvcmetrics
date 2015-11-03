@@ -12,7 +12,7 @@ import metrics.packages.acme_regridder._regrid
 import cdutil
 import datetime
 import time
-from metrics.common import hashfile, store_provenance
+from metrics.common import store_provenance
 import cdat_info
 
 
@@ -165,7 +165,7 @@ if __name__ == "__main__":
         onm = args.out
     print "Output file:", onm
     fo = cdms2.open(onm, "w")
-    store_provenance(fo,__file__)
+    store_provenance(fo)
     history = ""
     # Ok now let's start by copying the attributes back onto the new file
     for a in f.attributes:

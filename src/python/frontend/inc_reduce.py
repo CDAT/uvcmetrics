@@ -42,6 +42,7 @@ import numpy, cdms2, sys, os, math
 from numbers import Number
 from pprint import pprint
 from metrics.packages.acme_regridder.scripts.acme_regrid import addVariable
+from metrics.common import store_provenance
 #import debug
 
 # Silence annoying messages about setting the NetCDF file type.  Also, these three lines will
@@ -122,6 +123,7 @@ def initialize_redfile( filen, axisdict, typedict, attdict, varnames ):
     Note that cdms2 will automatically write the bounds variable if it writes an axis which has bounds.
     """
     g = cdms2.open( filen, 'w' )
+    store_provenance(g)
     if 'time_bnds' not in varnames:
         addVariable( g, 'time_bnds', typedict['time_bnds'], axisdict['time_bnds'], attdict['time_bnds'] )
     for varn in varnames:

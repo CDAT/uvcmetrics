@@ -95,7 +95,12 @@ def hashfile(filename):
       f.close()
     return sha1.hexdigest()
 
-def store_provenance(outputFile,script_file_name):
+def store_provenance(outputFile,script_file_name=None):
+    if script_file_name is None:
+        for a in sys.argv:
+            if a.lower().find("python")==-1:
+                script_file_name = a
+                break
     outputFile.version = metrics.git.commit
     outputFile.UVCDAT = "UV-CDAT: %s Metrics: %s (%s) script_sha1: %s" % (
         '.'.join([str(x) for x in cdat_info.version()]),

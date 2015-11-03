@@ -6,6 +6,7 @@
 
 import os
 from ncl_isms import *
+from metrics.common import store_provenance
 
 # NCAR gets thse from environment variables!  We have to do it better, but for now, do it worse!
 version = None
@@ -31,6 +32,7 @@ def get_variables_for_atmospheric_heat_transport( infilename1, outfilename1, com
     cdms2.setNetcdfDeflateLevelFlag(value) ## where value is a integer between 0 and 9 included
 
     outfile1 = cdms2.open(outfilename1,"w")
+    store_provenance(outfile1)
     case1 = infile1.case     # e.g. "b30.009"
     if 'lat' in infile1.variables.keys() and infile1['lat'].isLatitude():
         lat1 = infile1['lat']

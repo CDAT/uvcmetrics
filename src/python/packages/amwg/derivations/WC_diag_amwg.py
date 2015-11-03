@@ -17,6 +17,7 @@ from socket import gethostname
 from string import replace
 # load potentially relevant libraries
 import metrics.packages.amwg.derivations
+from metrics.common import store_provenance
 
 
 
@@ -164,6 +165,7 @@ def create_precip_PDF_netcdf(mv, model_handle, path=''):
     
     
     f_out = cdms2.open(os.path.join(path,outputfilename),'w') 
+    store_provenance(f_out)
     att_keys = model_handle.attributes.keys()
     att_dic = {}
     for i in range(len(att_keys)):
