@@ -4,6 +4,11 @@ import numpy
 import subprocess
 import shutil
 
+MAJOR = 1
+MINOR = 0
+PATCH = 0
+Version = "%s.%s.%s" % (MAJOR,MINOR,PATCH)
+
 f=open("git.py","w")
 git_branch=subprocess.Popen(["git","rev-parse","--abbrev-ref","HEAD"],stdout=subprocess.PIPE).stdout.read().strip()
 print >>f, "branch = '%s'" % git_branch
@@ -17,12 +22,12 @@ else:
     commit = git_tag
     nm = git_tag
     diff=0
-print >>f, "closest_tag = '%s' " % nm
-print >>f, "commit = '%s' " % commit
-print >>f, "diff_from_tag = %s " % diff
+print >>f, "closest_tag = '%s'" % nm
+print >>f, "commit = '%s'" % commit
+print >>f, "diff_from_tag = %s" % diff
+print >>f, "metrics_version = '%s'" % Version
 f.close()
 
-Version="0.1.0"
 packages = {'metrics': 'src/python',
               'metrics.fileio': 'src/python/fileio',
               'metrics.graphics': 'src/python/graphics',

@@ -1,5 +1,11 @@
 import re
 import cdutil
+import metrics.git
+import cdat_info
+import hashlib
+import os
+import sys
+import datetime
 
 def natural_sort(l): 
     # from http://stackoverflow.com/questions/4836710/does-python-have-a-built-in-function-for-string-natural-sort
@@ -79,3 +85,28 @@ class DiagError (Exception):
     """Error object for diagnostics"""
     def __init__ ( self, args="Unspecified error from diagnostics" ):
         self.args = (args,)
+
+def hashfile(filename):
+    sha1 = hashlib.sha1()
+    f=open(filename,'rb')
+    try:
+      sha1.update(f.read())
+    finally:
+      f.close()
+    return sha1.hexdigest()
+
+def store_provenance(outputFile,script_file_name):
+    outputFile.version = metrics.git.commit
+    outputFile.UVCDAT = "UV-CDAT: %s Metrics: %s (%s) script_sha1: %s" % (
+        '.'.join([str(x) for x in cdat_info.version()]),
+        metrics.git.metrics_version,
+        metrics.git.commit,
+        hashfile(script_file_name))
+    history = getattr(outputFile, "history","")
+    if len(history)>0:
+        history+="\n"
+    history += "%s: created by %s from path: %s with input command line: %s" % (
+                    str(datetime.datetime.utcnow()),
+                    os.getlogin(), os.getcwd(), " ".join(sys.argv)
+                    )
+    outputFile.history = history

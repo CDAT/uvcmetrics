@@ -12,17 +12,9 @@ import metrics.packages.acme_regridder._regrid
 import cdutil
 import datetime
 import time
-import hashlib
+from metrics.common import hashfile, store_provenance
 import cdat_info
 
-def hashfile(filename):
-    sha1 = hashlib.sha1()
-    f=open(filename,'rb')
-    try:
-      sha1.update(f.read())
-    finally:
-      f.close()
-    return sha1.hexdigest()
 
 class WeightFileRegridder:
     def __init__(self, weightFile, toRegularGrid=True, fix_bounds=False):
@@ -173,18 +165,17 @@ if __name__ == "__main__":
         onm = args.out
     print "Output file:", onm
     fo = cdms2.open(onm, "w")
+    store_provenance(fo,__file__)
     history = ""
     # Ok now let's start by copying the attributes back onto the new file
     for a in f.attributes:
         if a != "history":
             setattr(fo, a, getattr(f, a))
-        else:
-            history = getattr(f, a)+"\n"
-    history += ("%s: weights applied via acme_regrid (git commit: %s), "
-                "created by %s from path: %s with input command line: %s") % (
+    history = fo.history+"\n"
+    history += "%s: weights applied via acme_regrid (git commit: %s), " % (
                     str(datetime.datetime.utcnow()), metrics.git.commit,
-                    os.getlogin(), os.getcwd(), " ".join(sys.argv)
                     )
+                    
     fo.history = history
     dirnm = os.path.dirname(args.file)
     basenm = os.path.basename(args.file)
@@ -201,11 +192,6 @@ if __name__ == "__main__":
     elif dirnm[0] != os.path.sep:
         dirnm = os.path.join(os.getcwd(), dirnm)
     fo.map_file = os.path.join(dirnm, basenm)
-    fo.version = metrics.git.commit
-    fo.UVCDAT = "UV-CDAT: %s METRICS: %s SHA1: %s" % (
-        '.'.join([str(x) for x in cdat_info.version()]),
-        metrics.git.commit,
-        hashfile(__file__))
 
     wgt = None
     if args.var is not None:
