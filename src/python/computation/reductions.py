@@ -14,6 +14,7 @@ import dateparser
 from datetime import datetime as datetime
 from unidata import udunits
 from metrics.packages.amwg.derivations import press2alt
+from metrics.packages.amwg.derivations.massweighting import *
 from metrics.packages.amwg.derivations import qflx_lhflx_conversions as flxconv
 from metrics.fileio.filetable import *
 from metrics.computation.units import *
@@ -197,33 +198,13 @@ def set_spatial_avg_method( var ):
     # Then set it to the default, and then check to see whether there's anything about the variable
     # which calls for a non-default method.
     if hasattr( var, 'spavgmeth' ): return var
-    var.spavgmeth = 'area weights'  # default
-
-    # Certain units would imply that the variable needs mass weighting.
-    # Otherwise, stick with the default.
-    if not hasattr( var, 'units' ): return var
-    su = var.units.split('/')
-    if len(su)>=3:  return var
-    if len(su)==1:
-        if su in\
-                ['degC', 'degF', 'degK', 'deg_C', 'deg_F', 'deg_K', 'deg_c', 'deg_f', 'deg_k',
-                 'degreeC', 'degreeF', 'degreeK', 'degree_C', 'degree_Celsius', 'degree_F',
-                 'degree_Fahrenheit', 'degree_K', 'degree_Kelvin', 'degree_c', 'degree_centigrade',
-                 'degree_f', 'degree_k']:   # temperature
-                var.spavgmeth = 'mass weights'
-        if su in ['ppt', 'ppb', 'ppm', 'pptv', 'ppbv', 'ppmv']:  # parts per (something)
-                var.spavgmeth = 'mass weights'
-    elif len(su)==2 and su[0]==su[1]:
-        if su[0] in ['mol','mole']:  # mol/mol
-                var.spavgmeth = 'mass weights'
-        if su[0] in ['kg', 'g']:     # mass/mass (just the most common mass units)
-                var.spavgmeth = 'mass weights'
-        if su[0] in ['Pa', 'hPa', 'mbar']:  # pressure/pressure (just the most common such units):
-                var.spavgmeth = 'mass weights'
+    var.spavgmeth = weighting_choice( var )
+    # ... weighting_choice() is only valid for atmos, but will probably be ok for other realms.
     return var
 
 def get_mass_weights( mv ):
     """Returns mass weights, in a variable of th same shape as the input mv."""
+    # This is only valid for atmos, it hasn't been implemented for other realms.
     # >>>> WORK IN PROGRESS <<<<
     pass
 
@@ -234,7 +215,7 @@ def get_mass_weights( mv ):
 # - wt, an array of weights; wt.shape==mv.shape.
 # >>>> WORK IN PROGRESS <<<<<
 # >>>> This dict is subject to change, and the function it names does't exist. <<<<<
-spavgfuns = { 'area weights':None, 'mass weights':get_mass_weights }
+spavgfuns = { 'area':None, 'mass':get_mass_weights }
 
 # -------- end of Miscellaneous  Utilities ---------
 
@@ -443,6 +424,13 @@ def reduce2levlat_seasonal( mv, seasons=seasonsyr, region=None, vid=None ):
     axis_names = [ a.id for a in axes if a.isLevel()==False and a.isLatitude()==False and a.isTime()==False ]
     axes_string = '('+')('.join(axis_names)+')'
 
+        #WORK IN PROGRESS: This can't work because the mass weight-setting function doesn't exist yet!....<<<<<<<<<<<<>>>>>>>>>>>
+        #if mvseas.spavgmeth=='area':
+        #    avmv = averager( mvseas, axis=axes_string )
+        #elif mvseas.spavgmeth=='mass':
+        #    avmv = averager( mvseas, axis=axes_string, weights=spavgfuns[mvseas.spavgmeth](mvseas) )
+        #else:
+        #    raise DiagError("ERROR: cannot recognize spavgmeth (spatial average method) attribute")
     if len(axes_string)>2:
         avmv = averager( mvseas, axis=axes_string )
     else:
@@ -1560,13 +1548,6 @@ def reduce2latlon_seasonal( mv, season=seasonsyr, region=None, vid=None, exclude
             if axis.getBounds() is None:
                 axis._bounds_ = axis.genGenericBounds()
         avmv = averager( mvseas, axis=axes_string )  #original
-        #WORK IN PROGRESS: This can't work because the mass weight-setting function doesn't exist yet!....<<<<<<<<<<<<>>>>>>>>>>>
-        #if mvseas.spavgmeth=='area weights':
-        #    avmv = averager( mvseas, axis=axes_string )
-        #elif mvseas.spavgmeth=='mass weights':
-        #    avmv = averager( mvseas, axis=axes_string, weights=spavgfuns[mvseas.spavgmeth](mvseas) )
-        #else:
-        #    raise DiagError("ERROR: cannot recognize spavgmeth (spatial average method) attribute")
     else:
         avmv = mvseas
     if avmv is None: return avmv
