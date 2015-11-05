@@ -12,7 +12,7 @@ size = comm.size
 rank = comm.rank
 data = []
 if rank is 0:
-    data = numpy.random.rand(40)
+    data = numpy.random.rand(np*nd)
     data.shape = np, nd
     print rank, data
 localdata = comm.scatter(data, root=master)
