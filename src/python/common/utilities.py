@@ -98,7 +98,7 @@ def hashfile(filename):
 def store_provenance(outputFile,script_file_name=None):
     if script_file_name is None:
         for a in sys.argv:
-            if a.lower().find("python")==-1:
+            if a[-10:].lower().find("python")==-1:
                 script_file_name = a
                 break
     outputFile.version = metrics.git.commit
