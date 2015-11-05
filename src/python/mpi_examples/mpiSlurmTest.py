@@ -1,10 +1,10 @@
 from mpi4py import MPI
 import sys, socket, numpy
 
-print sys.argv
+#print sys.argv
 np = int(sys.argv[1])
 nd = int(sys.argv[2])
-print np, nd
+#print np, nd
 
 master = 0
 comm = MPI.COMM_WORLD
