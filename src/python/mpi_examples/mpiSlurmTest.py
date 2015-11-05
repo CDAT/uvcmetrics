@@ -14,7 +14,7 @@ data = []
 if rank is 0:
     data = numpy.random.rand(np*nd)
     data.shape = np, nd
-    print rank, data
+    #print rank, data
 localdata = comm.scatter(data, root=master)
 line ='from %s on rank %i, the local data is ' % (socket.gethostname(), rank), localdata
 print line 
