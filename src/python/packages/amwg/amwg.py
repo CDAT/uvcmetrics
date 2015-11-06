@@ -1864,6 +1864,8 @@ class amwg_plot_set8(amwg_plot_spec):
         cdms2.setNetcdfDeflateLevelFlag(0)
         cdms2.setNetcdfUseParallelFlag(0)
         
+        import socket
+        print 'host is ',socket.gethostname()
 
         self.comm = MPI.COMM_WORLD
         self.size = self.comm.size
