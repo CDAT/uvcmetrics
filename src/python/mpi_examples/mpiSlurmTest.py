@@ -20,5 +20,6 @@ line ='from %s on rank %i, the local data is ' % (socket.gethostname(), rank), l
 print line 
 
 collectedData = comm.gather(localdata.sum(), root=master)
-if rank is master:
-    print 'rank is ', rank, collectedData
+if rank is not master:
+    sys.exit(0)
+print 'rank is ', rank, collectedData
