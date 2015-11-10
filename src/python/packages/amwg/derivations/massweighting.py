@@ -12,11 +12,13 @@
 
 # Thus we are computing rhodz(i,j,k) from hyai(k), P0, hybi(k), PS(i,j).
 
+import numpy
+import cdms2
 from atmconst import AtmConst
 
-def rhodz_from_p( PS, P0, hyai, hybi ):
+def rhodz_from_hybridlev( PS, P0, hyai, hybi ):
     """returns a variable rhodz which represents the air mass column density in each cell, assumes
-    kg,m,sec units and 3-D grid lon,lat,level"""
+    kg,m,sec,mbar units and 3-D grid lon,lat,level.  The input variables are from CAM."""
     # g*rhodz = delta-P, where delta-P is pressure difference between top and bottom of the cell
     # and g the acceleration due to gravity.
     # So rhodz is the mass in the cell per unit of horizontal (lat-lon) area.
@@ -25,12 +27,61 @@ def rhodz_from_p( PS, P0, hyai, hybi ):
     # (PS also depends on time, but this computation will be for a fixed value of time).
     # Thus rhodz will depend on lat,lon,level (and time).
     g = AtmConst.g     # 9.80665 m/s2.
-    pint = numpy.zeros( (PS.shape[1], PS.shape[2], hybi.shape[0]) )
+    pint = numpy.zeros( ( hybi.shape[0], PS.shape[1], PS.shape[2] ) )
     for k in range(hybi.shape[0]):
-	pint[:,:,k] = hyai[k]*P0 + PS[0,:,:]*hybi[k]
+	pint[k,:,:] = hyai[k]*P0 + PS[0,:,:]*hybi[k]
     # ... I don't know how to do this without a loop.
-    dp = pint[0:,0:,1:] - pint[0:,0:,0:-1]
+    dp = pint[1:,0:,0:] - pint[0:-1,0:,0:]
     rhodz = dp/g
+    return rhodz
+
+def rhodz_from_plev( lev ):
+    """returns a variable rhodz which represents the air mass column density in each cell.
+    The input variable is a level axis, units millibars."""
+    # Thus rhodz will depend on lat,lon,level (and time).
+    g = AtmConst.g     # 9.80665 m/s2.
+    dp = lev[1:] - lev[0:-1]
+    rhodz = dp/g
+    return rhodz
+
+def mass_weights( camfile ):
+    """Returns a (lev,lat,lon)-shaped array of mass weights computed from camfile, a filename or open file.
+    The file must either have a level axis lev in mbar or else have variables named PS,P0,hyai, and
+    hybi, with the usual CAM/CESM meanings.   All variables must use kg,m,sec,mbar units.
+    The requirements are not checked (maybe they will be checked or relaxed in the future)."""
+    if camfile.__class__.__name__ == 'CdmsFile':
+        cfile = camfile
+        cfilename = camfile.id
+    else:
+        assert( camfile.__class__.__name__ ) == 'str'
+        cfilename = camfile
+        cfile = cdms2.open(camfile)
+
+    if cfile['lev'].units=='level':
+        rhodz = rhodz_from_hybridlev( cfile('PS'), cfile('P0'), cfile('hyai'), cfile('hybi') )
+    elif cfile['lev'].units in ['millibars','mbar']:
+        rhodz  = rhodz_from_plev( cfile['lev'] )
+    else:
+        print "ERROR.  Cannot determine mass weights from file",cfilename
+
+    # Now that we have rhodz, we have to multiply it by the lat-lon area to get the weights,
+    # the mass in each cell.
+    # >>>>> This delta-lat x delta-lon is crude for larger lat-lon cells, I should do better >>>>>>
+    # >>>> cross my fingers about whether these are the right shape <<<<
+    lat = cfile['lat']
+    lon = cfile['lon']
+    if len(rhodz.shape)==3:   # lev-lat-lon, from CAM
+        for k in range( rhodz.shape[0] ):
+            rhodz[k,0:-1,0:-1] *= numpy.outer(lat[1:]-lat[0:-1], lon[1:]-lon[0:-1])
+        retval = rhodz
+    elif len(rhodz.shape)==1: # lev only, probably from obs
+        retval = numpy.zeros( (rhodz.shape[0], lat.shape[0], lon.shape[0]) )
+        for k in range( rhodz.shape[0] ):
+            retval[k,0:-1,0:-1] = rhodz[k] * numpy.outer(lat[1:]-lat[0:-1], lon[1:]-lon[0:-1])
+
+    if camfile.__class__.__name__ != 'CdmsFile':
+        cfile.close()
+    return retval
 
 def weighting_choice( mv ):
     """Chooses what kind of weighting to use for averaging a variable mv - a TransientVariable or

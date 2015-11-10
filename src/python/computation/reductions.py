@@ -327,17 +327,51 @@ def reduce2scalar_seasonal_zonal_level( mv, seasons=seasonsyr, latmin=-90, latma
     return reduce2scalar_seasonal_zonal( mvl, seasons, latmin=latmin, latmax=latmax, vid=vid, gw=gw )
 
 
-def reduce2scalar( mv, vid=None, gw=None ):
+def reduce2scalar( mv, vid=None, gw=None, weights=None, camfile=None ):
     """averages mv over the full range all axes, to a single scalar.
     Uses the averager module for greater capabilities
     Latitude weights may be provided as 'gw'.  The averager's default is reasonable, however.
+    If weights='mass', mass weighting will be used.  This requires several variables to be
+    available in a file camfile which must be provided (and open).
+    Alternatively, you can compute mass (or other) weights into a 3-D (lev,lat,lon) array (or MV)
+    and pass it as the 'weights' argument.
+    For the moment we expect mv to have lat and lon axes; and if it has no level axis,
+    the bottom level, i.e. the last in any level array, lev=levels[-1], will be assumed.
     """
     if vid is None:   # Note that the averager function returns a variable with meaningless id.
         vid = 'reduced_'+mv.id
     axes = allAxes( mv )
     axis_names = [ a.id for a in axes ]
     axes_string = '('+')('.join(axis_names)+')'
-    if gw is None:
+    if weights=='mass' or (hasattr(weights,'shape') and len(weights.shape)==3):
+        # In this case we will provide the averager with a full weight array, i.e.
+        # "of the same shape as V" in the language of the genutil averager() documentation (with V=mv)
+        # >>>> Note that a mass-weighted variable should have a mass weighting in any dimensionality <<<<<
+        # >>>> reduction, not just computing the mean as here.  I haven't done it yet!!!!            <<<<<<
+
+        if weights=='mass':
+            latlon_wts = mass_weights(camfile)  # array of shape (lev,lat,lon)
+        else:
+            latlon_wts = weights
+        axes = [ a[0] for a in mv.getDomain() ]
+        klevs = [i for i,j in enumerate([a.isLevel() for a in axes]) if j==True]
+        klats = [i for i,j in enumerate([a.isLatitude() for a in axes]) if j==True]
+        klons = [i for i,j in enumerate([a.isLongitude() for a in axes]) if j==True]
+        assert( len(klats)>0 ) # equivalent to assert( any( [a.isLatitude() for a in axes] ) )
+        assert( len(klons)>0 ) # equivalent to assert( any( [a.isLongitude() for a in axes] ) )
+        if len(klevs)>0:
+            klev = klevs[0]
+        klat = klats[0]        # thus axes[klat].isLatitude() is True
+        klon = klons[0]        # thus axes[klon].isLongitude() is True
+
+        avweights = mv.clone()
+        for inds in numpy.ndindex(avweights.shape):
+            if len(klevs)>0:
+                avweights[inds] = latlon_wts[inds[klev],inds[klat],inds[klon]]
+            else:
+                avweights[inds] = latlon_wts[-1,inds[klat],inds[klon]]
+        avmv = averager( mv, axis=axes_string, combinewts=0, weights=avweights )
+    elif gw is None:
         avmv = averager( mv, axis=axes_string )
     else:
         weights = [ gw if a.isLatitude() else 'weighted' for a in axes ]
@@ -2825,6 +2859,7 @@ class reduced_variable(ftrow,basic_id):
         self._file_attributes = {}
         self._duvs = duvs
         self._rvs = rvs
+        self._filename = None  # will be set later.  This attribute shouldn't be used, but sometimes it's just too tempting.
     def __repr__(self):
         return self._strid
 
@@ -2911,6 +2946,7 @@ class reduced_variable(ftrow,basic_id):
             # the easy case, just one file has all the data on this variable
             filename = files[0]
         #fcf = get_datafile_filefmt(f)
+        self._filename = filename
         return filename
 
     def reduce( self, vid=None ):
@@ -2991,12 +3027,14 @@ class reduced_variable(ftrow,basic_id):
             self._file_attributes.update(f.attributes)
             if self.variableid in f.variables.keys():
                 var = f(self.variableid)
+                weighting = weighting_choice(var)
                 if os.path.basename(filename)[0:5]=='CERES':
                     var = special_case_fixed_variable( 'CERES', var )
                 reduced_data = self._reduction_function( var, vid=vid )
             elif self.variableid in f.axes.keys():
                 taxis = cdms2.createAxis(f[self.variableid])   # converts the FileAxis to a TransientAxis.
                 taxis.id = f[self.variableid].id
+                weighting = weighting_choice(taxis)
                 reduced_data = self._reduction_function( taxis, vid=vid )
             else:
                 print "Reduce failed to find variable",self.variablid,"in file",filename
@@ -3005,9 +3043,11 @@ class reduced_variable(ftrow,basic_id):
                 raise Exception
             if reduced_data is not None and type(reduced_data) is not list:
                 reduced_data._vid = vid
+            reduced_data.weighting = weighting  # needed if we have to average it further later on
             f.close()
         if hasattr(reduced_data,'mask') and reduced_data.mask.all():
             reduced_data = None
+        reduced_data._filename = self._filename
         return reduced_data
 
 class rv(reduced_variable):

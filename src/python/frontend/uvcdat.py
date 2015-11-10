@@ -1215,6 +1215,17 @@ class plot_spec(object):
             print 'in uvcdat.py' # this next line is printed from two different possible places.
             print "ERROR, all values of",z.id,"are missing!"
             return None,None
+        if z is not None:
+            # Compute variable's mean.  This is an experiment; the right way to do it involves
+            # changing all the dimensionality reduction functions.
+            weighting = getattr( z, 'weighting', None )
+            if weighting=='mass' and hasattr(z,'_filename'):
+                # Note, derived_var doesn't have a _filename attribute yet, but I can give it one.
+                try:
+                    z.mean = reduce2scalar( z, weights='mass', camfile=z._filename ) # inefficient but simple to use
+                except Exception as e:
+                    print "ERROR, exception",e,"for variable",z.id
+            #else: use the VCS default of area weighting
         return z, zrv
         
 
