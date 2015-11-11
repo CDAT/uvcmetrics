@@ -3,6 +3,7 @@
 # Functions callable from the UV-CDAT GUI.
 
 import hashlib, os, pickle, sys, os, math, pdb, string
+from numbers import Number
 from metrics import *
 from metrics.fileio.filetable import *
 from metrics.fileio.findfiles import *
@@ -1172,8 +1173,13 @@ class plot_spec(object):
             #print p
             #print self.plotspec_values[p]
         #pdb.set_trace()
+
+        # dispose of any failed plots
+        self.plotspec_values = { p:ps for p,ps in self.plotspec_values.items() if ps is not None }
+
         print 'now composite plot'
         for p,ps in self.composite_plotspecs.iteritems():
+            self.plotspec_values[p] = [ self.plotspec_values[sp] for sp in ps if sp in self.plotspec_values ]
             self.plotspec_values[p] = [ self.plotspec_values[sp] for sp in ps if sp in self.plotspec_values ]
             # Normally ps is a list of names of a plots, we'll remember its value as a list of their values.
             if type( ps ) is tuple:
@@ -1181,12 +1187,11 @@ class plot_spec(object):
                 self.plotspec_values[p] = tuple( self.plotspec_values[p] )
             #print p
             #print self.plotspec_values[p]
-        #This next loop is a duplicate of the previous loop.  It can be viewed as a cleenup. The reason it's 
+        #This next loop is a duplicate of the previous loop.  It can be viewed as a cleanup. The reason it's 
         #needed is that there is no guaranteed order of execution with a dictionary.  So if a composite plot
         #is a composite of others then there may be an incomplete plot if the individual plots are defined
         #later.  Plot set 11 is an example of this.
         for p,ps in self.composite_plotspecs.iteritems():
-            self.plotspec_values[p] = [ self.plotspec_values[sp] for sp in ps if sp in self.plotspec_values ]
             # Normally ps is a list of names of a plots, we'll remember its value as a list of their values.
             if type( ps ) is tuple:
                 # ps is a tuple of names of simple plots which should be overlapped
@@ -1219,10 +1224,15 @@ class plot_spec(object):
             # Compute variable's mean.  This is an experiment; the right way to do it involves
             # changing all the dimensionality reduction functions.
             weighting = getattr( z, 'weighting', None )
-            if weighting=='mass' and hasattr(z,'_filename'):
+            if hasattr(z,'mean') and isinstance(z.mean,Number):
+                zmean = z.mean
+            else:
+                zmean = None
+            if weighting=='mass' and hasattr(z,'_filename') and zmean is None:
                 # Note, derived_var doesn't have a _filename attribute yet, but I can give it one.
                 try:
-                    z.mean = reduce2scalar( z, weights='mass', camfile=z._filename ) # inefficient but simple to use
+                    z.mean = reduce2scalar( z, weights='mass' ) # inefficient but simple to use
+                    z.mean = round2( z.mean, 4 )
                 except Exception as e:
                     print "ERROR, exception",e,"for variable",z.id
             #else: use the VCS default of area weighting

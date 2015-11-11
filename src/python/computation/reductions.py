@@ -12,6 +12,7 @@ from numpy import sin, ma
 #import dateutil.parser
 import dateparser
 from datetime import datetime as datetime
+from numbers import Number
 from unidata import udunits
 from metrics.packages.amwg.derivations import press2alt
 from metrics.packages.amwg.derivations.massweighting import *
@@ -327,12 +328,12 @@ def reduce2scalar_seasonal_zonal_level( mv, seasons=seasonsyr, latmin=-90, latma
     return reduce2scalar_seasonal_zonal( mvl, seasons, latmin=latmin, latmax=latmax, vid=vid, gw=gw )
 
 
-def reduce2scalar( mv, vid=None, gw=None, weights=None, camfile=None ):
+def reduce2scalar( mv, vid=None, gw=None, weights=None ):
     """averages mv over the full range all axes, to a single scalar.
     Uses the averager module for greater capabilities
     Latitude weights may be provided as 'gw'.  The averager's default is reasonable, however.
     If weights='mass', mass weighting will be used.  This requires several variables to be
-    available in a file camfile which must be provided (and open).
+    available in a file mv._filename, which attribute must exist if mv has hybrid levels.
     Alternatively, you can compute mass (or other) weights into a 3-D (lev,lat,lon) array (or MV)
     and pass it as the 'weights' argument.
     For the moment we expect mv to have lat and lon axes; and if it has no level axis,
@@ -350,7 +351,7 @@ def reduce2scalar( mv, vid=None, gw=None, weights=None, camfile=None ):
         # >>>> reduction, not just computing the mean as here.  I haven't done it yet!!!!            <<<<<<
 
         if weights=='mass':
-            latlon_wts = mass_weights(camfile)  # array of shape (lev,lat,lon)
+            latlon_wts = mv._filetable.weights['mass']  # array of shape (lev,lat,lon)
         else:
             latlon_wts = weights
         axes = [ a[0] for a in mv.getDomain() ]
@@ -2329,6 +2330,8 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
                 mv1 = s*mv1 + i
                 if hasattr(mv1,'id'):
                     mv1.id = mv1id
+                if hasattr(mv1,'mean'):
+                    mv1.mean = s*mv1.mean + i
             mv1.units = target_units
         if changemv2:
             tmp = udunits(1.0,mv2.units)
@@ -2350,6 +2353,8 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
                 mv2 = s*mv2 + i
                 if hasattr(mv2,'id'):
                     mv2.id = mv2id
+                if hasattr(mv2,'mean'):
+                    mv2.mean = s*mv2.mean + i
             mv2.units = target_units
     return mv1, mv2
 
@@ -2456,6 +2461,10 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
     if hasattr(mv1,'long_name'):
         aminusb.long_name = 'difference of '+mv1.long_name
     if hasattr(mv1,'units'):  aminusb.units = mv1.units
+    if hasattr(mv1,'mean') and hasattr(mv2,'mean'):
+        aminusb.mean = mv1.mean - mv2.mean
+    elif hasattr(aminusb,'mean') and isinstance(aminusb.mean,Number):
+        del aminusb.mean
     return aminusb
 
 def aminusb_1ax( mv1, mv2 ):
@@ -2778,7 +2787,6 @@ def correlateData(mv1, mv2, aux):
     """ This function computes correlation coefficient for arrays that have 
     a mismatch in shape. A typical example is model and obs. It regrids mv2 to mv1's grid."""
     
-    from numbers import Number
     from genutil.statistics import correlation
     #print mv1.shape, mv2.shape
     
@@ -3027,7 +3035,11 @@ class reduced_variable(ftrow,basic_id):
             self._file_attributes.update(f.attributes)
             if self.variableid in f.variables.keys():
                 var = f(self.variableid)
+                var._filename = self._filename
                 weighting = weighting_choice(var)
+                if weighting=='mass':
+                    if 'mass' not in self._filetable.weights:
+                        self._filetable.weights['mass'] = mass_weights( var )
                 if os.path.basename(filename)[0:5]=='CERES':
                     var = special_case_fixed_variable( 'CERES', var )
                 reduced_data = self._reduction_function( var, vid=vid )
@@ -3048,6 +3060,7 @@ class reduced_variable(ftrow,basic_id):
         if hasattr(reduced_data,'mask') and reduced_data.mask.all():
             reduced_data = None
         reduced_data._filename = self._filename
+        reduced_data._filetable = self._filetable
         return reduced_data
 
 class rv(reduced_variable):

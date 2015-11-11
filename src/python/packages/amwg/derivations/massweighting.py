@@ -40,48 +40,53 @@ def rhodz_from_plev( lev ):
     The input variable is a level axis, units millibars."""
     # Thus rhodz will depend on lat,lon,level (and time).
     g = AtmConst.g     # 9.80665 m/s2.
-    dp = lev[1:] - lev[0:-1]
+    # I expect lev[0] to be the ground (highest value), lev[-1] to be high (lowest value)
+    dp = lev[0:-1] - lev[1:]
     rhodz = dp/g
     return rhodz
 
-def mass_weights( camfile ):
-    """Returns a (lev,lat,lon)-shaped array of mass weights computed from camfile, a filename or open file.
-    The file must either have a level axis lev in mbar or else have variables named PS,P0,hyai, and
-    hybi, with the usual CAM/CESM meanings.   All variables must use kg,m,sec,mbar units.
-    The requirements are not checked (maybe they will be checked or relaxed in the future)."""
-    if camfile.__class__.__name__ == 'CdmsFile':
-        cfile = camfile
-        cfilename = camfile.id
-    else:
-        assert( camfile.__class__.__name__ ) == 'str'
-        cfilename = camfile
-        cfile = cdms2.open(camfile)
-
-    if cfile['lev'].units=='level':
+def rhodz_from_mv( mv ):
+    """returns an array rhodz which represents the air mass column density in each cell.
+    Its shape is lev,lat,lon.  The input is a cdms variable.  """
+    lev = mv.getLevel()
+    if lev.units=='level':  # hybrid level
+        cfile = cdms2.open( mv._filename )
         rhodz = rhodz_from_hybridlev( cfile('PS'), cfile('P0'), cfile('hyai'), cfile('hybi') )
-    elif cfile['lev'].units in ['millibars','mbar']:
-        rhodz  = rhodz_from_plev( cfile['lev'] )
-    else:
-        print "ERROR.  Cannot determine mass weights from file",cfilename
-
-    # Now that we have rhodz, we have to multiply it by the lat-lon area to get the weights,
-    # the mass in each cell.
-    # >>>>> This delta-lat x delta-lon is crude for larger lat-lon cells, I should do better >>>>>>
-    # >>>> cross my fingers about whether these are the right shape <<<<
-    lat = cfile['lat']
-    lon = cfile['lon']
-    if len(rhodz.shape)==3:   # lev-lat-lon, from CAM
-        for k in range( rhodz.shape[0] ):
-            rhodz[k,0:-1,0:-1] *= numpy.outer(lat[1:]-lat[0:-1], lon[1:]-lon[0:-1])
-        retval = rhodz
-    elif len(rhodz.shape)==1: # lev only, probably from obs
-        retval = numpy.zeros( (rhodz.shape[0], lat.shape[0], lon.shape[0]) )
-        for k in range( rhodz.shape[0] ):
-            retval[k,0:-1,0:-1] = rhodz[k] * numpy.outer(lat[1:]-lat[0:-1], lon[1:]-lon[0:-1])
-
-    if camfile.__class__.__name__ != 'CdmsFile':
         cfile.close()
-    return retval
+    elif lev.units in  ['millibars','mbar']:  # pressure level
+        lat = mv.getLatitude()
+        lon = mv.getLongitude()
+        rhodz1  = rhodz_from_plev( lev )  # same shape as lev
+        rhodz = numpy.zeros( (rhodz1.shape[0], lat.shape[0], lon.shape[0]) )  # (lev,lat,lon) shape
+        for k in range( rhodz1.shape[0] ):
+            rhodz[k,0:-1,0:-1] = rhodz1[k]
+    return rhodz
+
+def area_times_rhodz( mv, rhodz ):
+    """Returns a (lev,lat,lon)-shaped array of mass weights computed from a variable mv with
+    lev,lat,lon axes.  The other input, rhodz, is (lev,lat,lon) shaped and represents mass per unit
+    lat-lon area.   All variables must use kg,m,sec,mbar units.  Masks are ignored.
+    The requirements are not checked (maybe they will be checked or relaxed in the future)."""
+    # Basically our job is to compute the area weights and multiply by rhodz.
+    mv = mv(order='...yx')    # ensures lat before lon
+    grid = mv.getGrid()       # shape is (nlat,nlon).  Time & level are dropped.
+    latwgts,lonwgts = grid.getWeights()  # shape is same as grid, nothing is shrunk.
+    wtll = numpy.outer(numpy.array(latwgts), numpy.array(lonwgts))
+    wtlll = numpy.copy(rhodz)
+    for k in range( rhodz.shape[0] ):  # k is level index
+        wtlll[k,:,:] = rhodz[k,:,:]*wtll
+    if wtlll.max()<=0.0:
+        print "debug WRONG WRONG WRONG weights wtlll...",wtlll
+    return wtlll
+
+def mass_weights( mv ):
+    """Returns a (lev,lat,lon)-shaped array of mass weights computed from a variable mv with
+    lev,lat,lon axes.  It must have a _filename attribute if hybrid levels are used.
+    All variables must use kg,m,sec,mbar units.  Masks are ignored.
+    The requirements are not checked (maybe they will be checked or relaxed in the future)."""
+    # At this point, rhodz is cell mass per unit area. Multiply by that area to get the mass weight.
+    rhodz = rhodz_from_mv( mv )
+    return area_times_rhodz( mv, rhodz)
 
 def weighting_choice( mv ):
     """Chooses what kind of weighting to use for averaging a variable mv - a TransientVariable or
