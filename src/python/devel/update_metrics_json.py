@@ -17,10 +17,6 @@ to.valign="half"
 if 1:
  for k in P:
   print "TEMPLATE:",k
-  if k.find("of2")>-1 or k.find("of4")>-1:
-      pass
-  else:
-      continue
   p=x.gettemplate(str(k))
   p.xmintic2.priority=0
   p.xtic2.priority=0
