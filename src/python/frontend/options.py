@@ -67,6 +67,7 @@ class Options():
       self._opts['translate'] = True
       self._opts['translations'] = {}
       self._opts['levels'] = None
+      self._opts['parallel'] = False
 
       self._opts['output']['compress'] = True
       self._opts['output']['json'] = False
@@ -477,7 +478,9 @@ class Options():
             help="Specify variables of interest to process. The default is all variables which can also be specified with the keyword ALL") 
          runopts.add_argument('--regions', '--region', nargs='+', choices=all_regions.keys(),
             help="Specify a geographical region of interest. Note: Multi-word regions need quoted, e.g. 'Central Canada'")
-
+      runopts.add_argument('--parallel', '--parallel', nargs='+', choices=['on', 'off'],
+            help="Run in parallel mode by specifying on or off")
+      
       timeopts = parser.add_argument_group('Time Options')
       if 'metadiags' not in progname and 'metadiags.py' not in progname:
          # time-related options, primarily used in diags-new, but climatology.py too
@@ -542,7 +545,7 @@ class Options():
 
       ### Do the work
       args = parser.parse_args()
-#      print args
+      print args
 
       ####
       #### This is where we start actually dealing with some options.
@@ -602,10 +605,13 @@ class Options():
          if args.dsname != None:
             self._opts['dsname'] = args.dsname
 
+      if args.parallel != None:
+          self._opts['parallel'] = False
 
       # Disable the UVCDAT logo in plots for users (typically metadiags) that know about this option
       if args.no_antialiasing is True:
          self._opts['output']['antialiasing'] = False
+
       if 'climatology' not in progname and 'climatology.py' not in progname:
          if args.logo != None:
             if args.logo.lower() == 'no' or args.logo == 0:
@@ -670,7 +676,6 @@ class Options():
             self._opts['sets'] = args.sets
          if(args.varopts != None):
             self._opts['varopts'] = args.varopts
-
 
       # Timestart assumes a string like "months since 2000". I can't find documentation on
       # toRelativeTime() so I have no idea how to check for valid input
@@ -786,7 +791,6 @@ class Options():
          if(args.levels):
             self.processLevels(args.levels)
           
-
 ### Helper functions
 ### make_ft_dict - provides an easily parsed dictionary of the climos/raws for a given set of datasets
 def make_ft_dict(models):
