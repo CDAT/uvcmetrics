@@ -153,7 +153,7 @@ if __name__ == "__main__":
     parser.add_argument("--fix-esmf-bounds",dest="fix_bounds",action="store_true",default=False,help="fix esmf first and last longitudes being half width")
 
     args = parser.parse_args(sys.argv[1:])
-    print "AERGS:",args
+    #print "AERGS:",args
 
     # Read the weights file
     regdr = WeightFileRegridder(args.weights,True,fix_bounds=args.fix_bounds)
@@ -164,7 +164,7 @@ if __name__ == "__main__":
         onm = ".".join(args.file.split(".")[:-1])+"_regrid.nc"
     else:
         onm = args.out
-    print "Output file:", onm
+    #print "Output file:", onm
     fo = cdms2.open(onm, "w")
     store_provenance(fo,script_file_name=__file__)
     history = ""
