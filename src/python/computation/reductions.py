@@ -220,6 +220,103 @@ spavgfuns = { 'area':None, 'mass':get_mass_weights }
 
 # -------- end of Miscellaneous  Utilities ---------
 
+def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=None, weights=None, exclude_axes=[] ):
+    """This is a generic reduction function.  It reduces dimensionality by averaging over all but
+    specified axes.  This uses the averager module for greater capabilities
+
+    This function will return a variable computed by averaging the input variable mv over all
+    but the target axes.
+
+    The target axes is a list of axis ids (names), or one-character axis names such as X,Y,Z,T,
+    or axis objects.
+    Axis names (ids) may be listed in exclude_axes, to exclude them from the averaging process.
+
+    Latitude weights may be provided as 'gw'.  The averager's default is reasonable, however.
+
+    The genutil averager() function performs the averaging.  This normally uses its default
+    weighting, which typically is area weights.
+
+    But if weights='mass', mass weighting will be used.
+    For mass weighting, the weight will be recovered from the filetable specified in the _filetable
+    attribute of mv, which must exist.  Of course, this also requires the weights to have been
+    loaded into the filetable's weights dictionary.
+
+    Alternatively, you can compute mass (or other) weights into a 3-D (lev,lat,lon) array (or MV)
+    and pass it as the 'weights' argument.
+    """
+    # So far I've checked this code (without testing) for doing essentially the same thing
+    # (with appropriate arguments) as reduce2scalar and reduce2latlon_seasonal
+    if vid is None:   # Note that the averager function returns a variable with meaningless id.
+        vid = 'reduced_'+mv.id
+    if region is None or region=="global" or region=="Global" or\
+            getattr(region,'filekey',None)=="Global" or str(region)=="Global":
+        mvr = mv
+    else:
+        mvr = select_region(mv, region)
+    mvrs = calculate_seasonal_climatology(mvr, season)
+
+    axes = allAxes( mv )
+    for a in axes:
+        if hasattr(a,'axis'): continue
+        if a.isLatitude: a.axis = 'y'
+        elif a.isLongitude: a.axis = 'x'
+        elif a.isLevel: a.axis = 'z'
+    axis_names = [ a.id for a in axes if not a.isTime() and a.id not in exclude_axes and
+                   a not in target_axes and a.id not in target_axes and
+                   getattr(a,'axis').lower() not in target_axes and
+                   getattr(a,'axis').upper() not in target_axes ]
+    axes_string = '('+')('.join(axis_names)+')'
+
+    if len(axes_string)<=2:
+        avmv = mvrs
+    else:
+        for axis in mvrs.getAxisList():
+            if axis.getBounds() is None:
+                axis._bounds_ = axis.genGenericBounds()
+
+        if weights=='mass' or (hasattr(weights,'shape') and len(weights.shape)==3):
+            # In this case we will provide the averager with a full weight array, i.e.
+            # "of the same shape as V" in the language of the genutil averager() documentation (with V=mvrs)
+            if weights=='mass':
+                latlon_wts = mvrs._filetable.weights['mass']  # array of shape (lev,lat,lon)
+            else:
+                latlon_wts = weights
+            axes = [ a[0] for a in mvrs.getDomain() ]
+            klevs = [i for i,j in enumerate([a.isLevel() for a in axes]) if j==True]
+            klats = [i for i,j in enumerate([a.isLatitude() for a in axes]) if j==True]
+            klons = [i for i,j in enumerate([a.isLongitude() for a in axes]) if j==True]
+            assert( len(klats)>0 ) # equivalent to assert( any( [a.isLatitude() for a in axes] ) )
+            assert( len(klons)>0 ) # equivalent to assert( any( [a.isLongitude() for a in axes] ) )
+            if len(klevs)>0:
+                klev = klevs[0]
+            klat = klats[0]        # thus axes[klat].isLatitude() is True
+            klon = klons[0]        # thus axes[klon].isLongitude() is True
+
+            avweights = mvrs.clone()
+            for inds in numpy.ndindex(avweights.shape):
+                if len(klevs)>0:
+                    avweights[inds] = latlon_wts[inds[klev],inds[klat],inds[klon]]
+                else:
+                    avweights[inds] = latlon_wts[-1,inds[klat],inds[klon]]
+            avmv = averager( mvrs, axis=axes_string, weights=avweights )
+        elif gw is None:
+            avmv = averager( mvrs, axis=axes_string )   # "normal" averaging
+        else:
+            weights = [ gw if a.isLatitude() else 'weighted' for a in axes ]
+            avmv = averager( mvrs, axis=axes_string, combinewts=0, weights=weights )
+
+    if avmv is None: return None
+    avmv.id = vid
+    if hasattr(mv,'units'):
+        avmv.units = mv.units
+        # >>> special ad-hoc code.  The target units should be provided in an argument, not by this if statement>>>>
+        if avmv.units=="Pa" or avmv.units.lower()=="pascal" or avmv.units.lower()=="pascals":
+            avmv = convert_variable( avmv, "millibar" )
+
+    return avmv
+
+
+
 def reduce2scalar_zonal( mv, latmin=-90, latmax=90, vid=None, gw=None ):
     """returns the mean of the variable over the supplied latitude range.
     The computed quantity is a scalar but is returned as a cdms2 variable, i.e. a MV.
@@ -347,9 +444,6 @@ def reduce2scalar( mv, vid=None, gw=None, weights=None ):
     if weights=='mass' or (hasattr(weights,'shape') and len(weights.shape)==3):
         # In this case we will provide the averager with a full weight array, i.e.
         # "of the same shape as V" in the language of the genutil averager() documentation (with V=mv)
-        # >>>> Note that a mass-weighted variable should have a mass weighting in any dimensionality <<<<<
-        # >>>> reduction, not just computing the mean as here.  I haven't done it yet!!!!            <<<<<<
-
         if weights=='mass':
             latlon_wts = mv._filetable.weights['mass']  # array of shape (lev,lat,lon)
         else:
@@ -371,7 +465,7 @@ def reduce2scalar( mv, vid=None, gw=None, weights=None ):
                 avweights[inds] = latlon_wts[inds[klev],inds[klat],inds[klon]]
             else:
                 avweights[inds] = latlon_wts[-1,inds[klat],inds[klon]]
-        avmv = averager( mv, axis=axes_string, combinewts=0, weights=avweights )
+        avmv = averager( mv, axis=axes_string, weights=avweights )
     elif gw is None:
         avmv = averager( mv, axis=axes_string )
     else:
@@ -1507,8 +1601,6 @@ def reduce_time_space_seasonal_regional( mv, season=seasonsyr, region=None, vid=
     axis_names = [ a.id for a in axes if a.isLatitude() or a.isLongitude() or a.isLevel() and
                    a.id not in exclude_axes]
     axes_string = '('+')('.join(axis_names)+')'
-    #print "jfp in reduce_time_space_seasonal_regional, variable",mv.id,"has axes",[ax.id for ax in axes]
-    #print "jfp and will be reduced in",axis_names,"Exclusions were",exclude_axes
     if len(axes_string)>2:
         for axis in axes:
             if axis.getBounds() is None:
@@ -1553,6 +1645,13 @@ def reduce2latlon_seasonal_level( mv, season, level, vid=None):
    return mvseas
 
 def reduce2latlon_seasonal( mv, season=seasonsyr, region=None, vid=None, exclude_axes=[] ):
+    """as reduce2lat_seasonal, but both lat and lon axes are retained.
+    Axis names (ids) may be listed in exclude_axes, to exclude them from the averaging process.
+    """
+    return reduce2any( mv, target_axes=['x','y'], season=season, region=region, vid=vid,
+                       exclude_axes=exclude_axes )
+
+def old_reduce2latlon_seasonal( mv, season=seasonsyr, region=None, vid=None, exclude_axes=[] ):
     """as reduce2lat_seasonal, but both lat and lon axes are retained.
     Axis names (ids) may be listed in exclude_axes, to exclude them from the averaging process.
     """
@@ -2456,15 +2555,24 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
             mv1.regridded = mv1new.id   # a GUI can use this
             regridded_vars[mv1new.id] = mv1new
     aminusb = mv1new - mv2new
-    #aminusb.id = mv1.id
     aminusb.id = 'difference of '+mv1.id
     if hasattr(mv1,'long_name'):
         aminusb.long_name = 'difference of '+mv1.long_name
     if hasattr(mv1,'units'):  aminusb.units = mv1.units
     if hasattr(mv1,'mean') and hasattr(mv2,'mean'):
-        aminusb.mean = mv1.mean - mv2.mean
-    elif hasattr(aminusb,'mean') and isinstance(aminusb.mean,Number):
-        del aminusb.mean
+        # Note that mv1,mv2 will initially have a mean attribute which is a Numpy method. 
+        # We only need to compute a new mean if the mean attribute has been changed to a number.
+        try:
+            aminusb.mean = mv1.mean - mv2.mean
+        except TypeError:
+            # If this happens, "-" can't be applied to the means.
+            # For sure they aren't numbers.  Probably they are the Numpy builtin mean() method.
+            pass
+        except Exception:
+            if hasattr(aminusb,'mean') and isinstance(aminusb.mean,Number):
+                print "WARNING.  When computing the difference of",mv1.id,"and",mv2.id,\
+                    "the mean of the difference cannot be correctly computed."
+            del aminusb.mean
     return aminusb
 
 def aminusb_1ax( mv1, mv2 ):
