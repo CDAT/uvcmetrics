@@ -1231,8 +1231,8 @@ class plot_spec(object):
             if weighting=='mass' and hasattr(z,'_filename') and zmean is None:
                 # Note, derived_var doesn't have a _filename attribute yet, but I can give it one.
                 try:
-                    z.mean = reduce2scalar( z, weights='mass' ) # inefficient but simple to use
-                    z.mean = round2( z.mean, 4 )
+                    z.mean = reduce2scalar( z, weights='mass' )
+                    z.mean = round2( z.mean, 6 )
                 except Exception as e:
                     print "ERROR, exception",e,"for variable",z.id
             #else: use the VCS default of area weighting
