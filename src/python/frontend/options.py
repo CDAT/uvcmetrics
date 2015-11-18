@@ -462,6 +462,10 @@ class Options():
 
       # Runtime options.
       runopts = parser.add_argument_group('Runtime control')
+      #determine parallel mode of execution
+      runopts.add_argument('--parallel', action="store_true",default = False,
+           help="Run in parallel mode by specifying on or off")
+      
       if 'climatology' not in progname and 'climatology.py' not in progname:
          runopts.add_argument('--package', '-k', 
             help="The diagnostic package to run against the dataset(s).")
@@ -469,6 +473,7 @@ class Options():
             help="The sets within a diagnostic package to run. Multiple sets can be specified.") 
          runopts.add_argument('--varopts', nargs='+',
             help="Variable auxillary options")
+    
          #levels for isofill plots
          runopts.add_argument('--levels', help="Specify a file name containing a list of levels or the comma delimited levels directly")
          runopts.add_argument('--translate', nargs='?', default='y',
@@ -478,8 +483,6 @@ class Options():
             help="Specify variables of interest to process. The default is all variables which can also be specified with the keyword ALL") 
          runopts.add_argument('--regions', '--region', nargs='+', choices=all_regions.keys(),
             help="Specify a geographical region of interest. Note: Multi-word regions need quoted, e.g. 'Central Canada'")
-      runopts.add_argument('--parallel', '--parallel', nargs='+', choices=['on', 'off'],
-            help="Run in parallel mode by specifying on or off")
       
       timeopts = parser.add_argument_group('Time Options')
       if 'metadiags' not in progname and 'metadiags.py' not in progname:
@@ -605,8 +608,8 @@ class Options():
          if args.dsname != None:
             self._opts['dsname'] = args.dsname
 
-      if args.parallel != None:
-          self._opts['parallel'] = False
+      
+      self._opts['parallel'] = args.parallel
 
       # Disable the UVCDAT logo in plots for users (typically metadiags) that know about this option
       if args.no_antialiasing is True:

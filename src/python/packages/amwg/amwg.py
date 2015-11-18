@@ -1732,7 +1732,7 @@ class amwg_plot_set8(amwg_plot_spec):
     name = '8 - Annual Cycle Contour Plots of Zonal Means '
     number = '8'
 
-    def __init__( self, model, obs, varid, seasonid='ANN', region='global', aux=None, levels=None ):
+    def __init__( self, model, obs, varid, seasonid='ANN', region='global', aux=None, levels=None, parallel=False ):
         """filetable1, should be a directory filetable for each model.
         varid is a string, e.g. 'TREFHT'.  The zonal mean is computed for each month. """
 
@@ -1770,7 +1770,8 @@ class amwg_plot_set8(amwg_plot_spec):
         if not self.computation_planned:
             self.plan_computation( model, obs, varid, seasonid, levels=levels )
 
-        self.MPI_ENABLED = MPI_ENABLED
+        self.MPI_ENABLED = parallel
+        print 'MPI_ENABLED = ', self.MPI_ENABLED
 
         if self.MPI_ENABLED:
             self.mpi_init()
@@ -1851,12 +1852,20 @@ class amwg_plot_set8(amwg_plot_spec):
         self.computation_planned = True
 
     def mpi_init(self):
+        import sys, cdms2
         def splitList(keys, size):
             subLists = []
             for i in xrange(0, len(keys), size):
                 subLists += [keys[i:i+size]]
             return subLists        
         
+        #load MPI
+        try:
+            from mpi4py import MPI
+        except:
+            print 'mpi4py is not installed'
+            sys.exit(0)
+
         #turn off parallel IO. this is a requirement for now
         cdms2.setNetcdfClassicFlag(0)
         cdms2.setNetcdfShuffleFlag(0)
@@ -1869,7 +1878,7 @@ class amwg_plot_set8(amwg_plot_spec):
 
         self.comm = MPI.COMM_WORLD
         self.size = self.comm.size
-        self.rank = self.comm.rank               
+        self.rank = self.comm.rank          
         self.master = 0
 
         #split the keys of reduced_variables and scatter them        
@@ -1878,6 +1887,7 @@ class amwg_plot_set8(amwg_plot_spec):
             self.all_keys = splitList(self.reduced_variables.keys(), sublistSize)
         else:
             self.all_keys = None        
+            
         self.local_keys = self.comm.scatter(self.all_keys, root=self.master)
 
         #create xml files and avoid multiple calls to cdscan         

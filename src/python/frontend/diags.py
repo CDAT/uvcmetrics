@@ -239,7 +239,7 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                               #this is a total kludge so that the list of variables is passed in for processing
                               plot = sclass( modelfts, obsfts, variables, seasonid, region, vvaropts[aux] )
                            else:
-                              plot = sclass( modelfts, obsfts, varid, seasonid, region, vvaropts[aux], levels=opts['levels'] )
+                              plot = sclass( modelfts, obsfts, varid, seasonid, region, vvaropts[aux], levels=opts['levels'], parallel=opts['parallel'] )
                         res = plot.compute(newgrid=-1) # newgrid=0 for original grid, -1 for coarse
                         
                         if res is not None and len(res)>0:
