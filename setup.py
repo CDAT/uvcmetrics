@@ -4,6 +4,11 @@ import numpy
 import subprocess
 import shutil
 
+MAJOR = 1
+MINOR = 0
+PATCH = 0
+Version = "%s.%s.%s" % (MAJOR,MINOR,PATCH)
+
 f=open("git.py","w")
 git_branch=subprocess.Popen(["git","rev-parse","--abbrev-ref","HEAD"],stdout=subprocess.PIPE).stdout.read().strip()
 print >>f, "branch = '%s'" % git_branch
@@ -17,12 +22,12 @@ else:
     commit = git_tag
     nm = git_tag
     diff=0
-print >>f, "closest_tag = '%s' " % nm
-print >>f, "commit = '%s' " % commit
-print >>f, "diff_from_tag = %s " % diff
+print >>f, "closest_tag = '%s'" % nm
+print >>f, "commit = '%s'" % commit
+print >>f, "diff_from_tag = %s" % diff
+print >>f, "metrics_version = '%s'" % Version
 f.close()
 
-Version="0.1.0"
 packages = {'metrics': 'src/python',
               'metrics.fileio': 'src/python/fileio',
               'metrics.graphics': 'src/python/graphics',
@@ -31,7 +36,6 @@ packages = {'metrics': 'src/python',
               'metrics.computation': 'src/python/computation',
               'metrics.packages': 'src/python/packages',
               'metrics.common': 'src/python/common',
-              'metrics.packages.wgne': 'src/python/packages/wgne',
               'metrics.packages.amwg': 'src/python/packages/amwg',
               'metrics.packages.amwg.derivations': 'src/python/packages/amwg/derivations',
               'metrics.packages.lmwg': 'src/python/packages/lmwg',
@@ -49,7 +53,6 @@ setup (name = "metrics",
        packages = ['metrics',
                    'metrics.fileio',
                    'metrics.common',
-                   'metrics.packages.wgne',
                    'metrics.packages.acme_regridder',
                    'metrics.packages.acme_regridder.scripts',
                    'metrics.packages.amwg',
@@ -62,8 +65,7 @@ setup (name = "metrics",
                    'metrics.computation'
                    ],
        package_dir = packages,
-       scripts = ["src/python/packages/wgne/scripts/wgne_metrics_driver.py",
-                  "src/python/frontend/diags",
+       scripts = ["src/python/frontend/diags",
                   "src/python/frontend/diags-new.py",
                   "src/python/frontend/diags.py",
                   "src/python/frontend/climatology.py",

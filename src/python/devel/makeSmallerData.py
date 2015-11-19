@@ -1,4 +1,5 @@
 import os, cdms2, string, sys, pdb, MV2, numpy
+from metrics.common import store_provenance
 cdms2.setAutoBounds(0)
 
 #example
@@ -24,6 +25,7 @@ print fns
 for fn in fns:
     f = cdms2.open(old_dir + '/' + fn)
     g = cdms2.open(new_dir + '/' + fn, 'w')
+    store_provenance(g)
     
     for key, value in f.attributes.iteritems():
         setattr(g, key, value)

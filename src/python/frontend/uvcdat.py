@@ -18,6 +18,8 @@ import cProfile
 import logging
 import json
 import vcs
+from metrics.common import store_provenance
+
 vcsx=vcs.init()   # This belongs in one of the GUI files, e.g.diagnosticsDockWidget.py
                   # The GUI probably will have already called vcs.init().
                   # Then, here,  'from foo.bar import vcsx'
@@ -805,6 +807,7 @@ class uvc_simple_plotspec():
             cdms2.setNetcdfDeflateLevelFlag(value) ## where value is a integer between 0 and 9 included
 
             writer = cdms2.open( filename, 'w' )    # later, choose a better name and a path!
+            store_provenance(writer)
         elif format=="JSON file":
             print "ERROR: JSON file not implemented yet"
         elif format=="JSON string":

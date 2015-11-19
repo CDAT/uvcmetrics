@@ -21,6 +21,7 @@ from metrics.frontend.inc_reduce import *
 import os, re, time
 import argparse
 from pprint import pprint
+from metrics.common import store_provenance
 
 force_scalar_avg=False  # for testing
 season2nummonth = {
@@ -86,6 +87,7 @@ def reduce_twotimes2one( seasonname, fileout_template, fileout, g, redtime, redt
                     fileout_template ) ) ) )
     hname = os.path.join(outdir, 'climo2_temp.nc')
     h = cdms2.open(hname, 'w')
+    store_provenance(h)
     if redtime_bnds[0][1]-365 == redtime_bnds[1][0]:
         newtime = ( (redtime[0]-365)*redtime_wts[0] + redtime[1]*redtime_wts[1] ) /\
             ( redtime_wts[0] + redtime_wts[1] )

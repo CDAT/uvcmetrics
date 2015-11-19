@@ -24,6 +24,7 @@ from metrics.frontend.options import *
 # For psutil, see https://github.com/giampaolo/psutil ...
 # import psutil # used only for memory profiling
 import cProfile, time, resource
+from metrics.common import store_provenance
 
 class climatology_variable( reduced_variable ):
     def __init__(self,varname,filetable,seasonname='ANN'):
@@ -120,6 +121,7 @@ def compute_and_write_climatologies_keepvars( varkeys, reduced_variables, season
     cdms2.setNetcdfDeflateLevelFlag(value) ## where value is a integer between 0 and 9 included
 
     g = cdms2.open( os.path.join(path,filename), 'w' )    # later, choose a better name and a path!
+    store_provenance(g)
     for key in varkeys:
         if key in reduced_variables:
             var = reduced_variables[key]
