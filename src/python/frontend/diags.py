@@ -565,6 +565,7 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                                              # Note postname will have the obsfile key and things like _NP
                                        fname = outdir+'/'+basename+'_'+region_filekey+'_'+seasonid+'_'+varid+pname+'-combined.png'
                                        print "writing png file2",fname
+                                    # for testing: vcanvas2.png( fname , ignore_alpha = True, metadata={"metadtest":"spam"})
                                     vcanvas2.png( fname , ignore_alpha = True)
                                     number_diagnostic_plots += 1
                         elif res is not None:
