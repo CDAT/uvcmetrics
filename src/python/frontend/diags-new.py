@@ -630,7 +630,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                   for i in range(len(var_id_save)):
                      var[i].id = var_id_save[i]
             if savePNG:
-               vcanvas.png( fname, ignore_alpha=True )
+               vcanvas.png( fname, ignore_alpha=True, metadata=provenance_dict() )
 
    if tmmobs[0] is not None:  # If anything was plotted to vcanvas2
       vname = varid.replace(' ', '_')
@@ -643,7 +643,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
          fname = fnamebase+'-combined.png'
 
       print "writing png file2:",fname
-      vcanvas2.png( fname , ignore_alpha = True)
+      vcanvas2.png( fname , ignore_alpha = True, metadata=provenance_dict() )
 
 
 if __name__ == '__main__':
