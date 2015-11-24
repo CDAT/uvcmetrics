@@ -458,10 +458,11 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                      fname = fnamebase+'-ds0.png'
                   else:
                      fname = fnamebase+'.png'
-               elif '_diff' in vname:
+               elif '_diff' in vname or ('_ft0_' in vname and '_ft1_' in vname) or\
+                       ('_ft1_' in vname and '_ft2_' in vname):
                   fname = fnamebase+'-diff.png'
                elif '_obs' in vname:
-                  fname = fnamebase+'-model-and-obs.png'
+                  fname = fnamebase+'-obs.png'
                else:
                   if '_ttest' in vname:
                      if 'ft1' in vname and 'ft2' in vname:
