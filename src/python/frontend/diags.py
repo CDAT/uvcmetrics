@@ -531,7 +531,7 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                                                    for i in range(len(var_id_save)):
                                                        var[i].id = var_id_save[i]
                                            if savePNG:
-                                               vcanvas.png( fname, ignore_alpha=True )
+                                               vcanvas.png( fname, ignore_alpha=True, metadata=provenance_dict() )
 
                                            rdone += 1
                             if opts['output']['xml'] == True:
