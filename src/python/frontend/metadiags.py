@@ -424,7 +424,13 @@ def setnum( setname ):
 def list_vars(ft, package):
     dm = diagnostics_menu()
     vlist = []
+    if 'packages' not in opts._opts:
+       opts['packages'] = [ opts['package'] ]
     for pname in opts['packages']:
+        if pname not in dm:
+           pname = pname.upper()
+           if pname not in dm:
+              pname = pname.lower()
         pclass = dm[pname]()
 
         slist = pclass.list_diagnostic_sets()
@@ -448,7 +454,7 @@ def postDB(fts, dsname, package, host=None):
       vl_tmp = list_vars(fts[i+1], package)
       vlstr = vlstr+', '.join(vl_tmp)
 
-   string = '\'{"variables": "'+vl+'"}\''
+   string = '\'{"variables": "'+str(vl)+'"}\''
    print 'Variable list: ', string
    command = "echo "+string+' | curl -d @- \'http://'+host+'/exploratory_analysis/dataset_variables/'+dsname+'/\' -H "Accept:application/json" -H "Context-Type:application/json"'
    print 'Adding variable list to database on ', host
