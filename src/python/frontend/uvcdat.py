@@ -798,7 +798,6 @@ class uvc_simple_plotspec():
             format = "NetCDF file"
 
         filename = self.outfile( format, where )
-        print '>>>>>>>in write_plot_data ',  cdms2.getNetcdfUseParallelFlag()
         if format=="NetCDF file":
             value=0
             cdms2.setNetcdfShuffleFlag(value) ## where value is either 0 or 1
@@ -1050,12 +1049,12 @@ class plot_spec(object):
             collected_data = self.comm.gather(local_data, root=self.master)
             collected_axes = self.comm.gather(local_axes, root=self.master)
             collected_attr = self.comm.gather(local_attr, root=self.master)
-            print '>>>>>>>in plotspec rank is ', self.rank, cdms2.getNetcdfUseParallelFlag()
+
             if self.rank is self.master:
                 self.variable_values = buildVariables(self.all_keys, collected_data, collected_axes, collected_attr)
             else:
                 #other precesses can stop
-                sys.exit('Eiting processor = '+ str(self.rank) )
+                sys.exit('Eiting processor '+ str(self.rank) )
         else:
             #serial mode
             for v in self.reduced_variables.keys():
