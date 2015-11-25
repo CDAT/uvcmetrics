@@ -163,7 +163,6 @@ class uvc_composite_plotspec():
             format = "xml-NetCDF"
             conents_format = "NetCDF"
         
-        print '>>>>>>>in write_plot_data ',  cdms2.getNetcdfUseParallelFlag()
         filenames = []
         for p in self.plots:
             if type(p) is tuple:
@@ -799,7 +798,7 @@ class uvc_simple_plotspec():
             format = "NetCDF file"
 
         filename = self.outfile( format, where )
-
+        print '>>>>>>>in write_plot_data ',  cdms2.getNetcdfUseParallelFlag()
         if format=="NetCDF file":
             value=0
             cdms2.setNetcdfShuffleFlag(value) ## where value is either 0 or 1
