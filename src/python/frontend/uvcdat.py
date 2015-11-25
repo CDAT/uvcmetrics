@@ -1055,8 +1055,7 @@ class plot_spec(object):
                 self.variable_values = buildVariables(self.all_keys, collected_data, collected_axes, collected_attr)
             else:
                 #other precesses can stop
-                print 'exit rank = ', self.rank
-                sys.exit('EXIT '+ str(self.rank) )
+                sys.exit('Eiting processor = '+ str(self.rank) )
         else:
             #serial mode
             for v in self.reduced_variables.keys():
