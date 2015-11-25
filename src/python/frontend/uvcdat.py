@@ -1056,7 +1056,7 @@ class plot_spec(object):
             else:
                 #other precesses can stop
                 print 'exit rank = ', self.rank
-                #sys.exit()
+                sys.exit('EXIT '+ str(self.rank) )
         else:
             #serial mode
             for v in self.reduced_variables.keys():
