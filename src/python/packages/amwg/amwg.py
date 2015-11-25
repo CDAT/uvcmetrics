@@ -19,11 +19,11 @@ from unidata import udunits
 import cdutil.times, numpy
 from numbers import Number
 from pprint import pprint
-try:
-    from mpi4py import MPI
-    MPI_ENABLED = True
-except:
-    MPI_ENABLED = False
+#try:
+#    from mpi4py import MPI
+#    MPI_ENABLED = True
+#except:
+#    MPI_ENABLED = False
 
 seasonsyr=cdutil.times.Seasons('JFMAMJJASOND')
 
@@ -1894,7 +1894,7 @@ class amwg_plot_set8(amwg_plot_spec):
         for i, key in enumerate(self.local_keys):
             RV = self.reduced_variables[key]
             RV._filename = RV.get_variable_file( RV.variableid, COMM=self.comm)
-                             
+        print '>>>>>>>in mpi_init rank is ', self.rank, cdms2.getNetcdfUseParallelFlag(), len(self.local_keys)
     def _results(self, newgrid=0):
         #pdb.set_trace()
         results = plot_spec._results(self, newgrid)

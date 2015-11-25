@@ -162,7 +162,8 @@ class uvc_composite_plotspec():
                 ", will write a xml file pointing to NetCDF files."
             format = "xml-NetCDF"
             conents_format = "NetCDF"
-
+        
+        print '>>>>>>>in write_plot_data ',  cdms2.getNetcdfUseParallelFlag()
         filenames = []
         for p in self.plots:
             if type(p) is tuple:
@@ -1050,7 +1051,7 @@ class plot_spec(object):
             collected_data = self.comm.gather(local_data, root=self.master)
             collected_axes = self.comm.gather(local_axes, root=self.master)
             collected_attr = self.comm.gather(local_attr, root=self.master)
-            
+            print '>>>>>>>in plotspec rank is ', self.rank, cdms2.getNetcdfUseParallelFlag()
             if self.rank is self.master:
                 self.variable_values = buildVariables(self.all_keys, collected_data, collected_axes, collected_attr)
             else:
