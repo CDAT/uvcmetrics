@@ -415,7 +415,7 @@ class Options():
 
    ### Less-verbose help for metadiags.
    def metadiags_help(self):
-      print "metadiags concise help. Use --help for extended help\n"
+      print "metadiags concise help. Use --extended-help for extended help\n"
       print "Metadiags is meant to call diags.py (and other executables in \"loose coupling\" mode)"
       print " with appropriate arguments defined via the amwgmaster or lmwgmaster.py files"
       print "For additional instructions, see also"
@@ -459,7 +459,7 @@ class Options():
 
    ### Less-verbose help for diags.
    def diags_help(self):
-      print 'diags concise help. Use --help for extended help'
+      print 'diags concise help. Use --extended-help for extended help'
       print 'Minimum required arguments:'
       print '1. The --model keyword to describe the input dataset'
       print '2. A path for output data'
@@ -554,12 +554,12 @@ class Options():
          help="Increase the verbosity level. Each -v option increases the verbosity more.") # count
       otheropts.add_argument('--list', '-l', nargs=1, choices=['sets', 'vars', 'variables', 'packages', 'seasons', 'regions', 'translations','options','varopts'],
          help="Determine which packages, sets, regions, and variables are available")
-      otheropts.add_argument('-h', action='store_const', const=1,
-         help="Less-verbose help")
-      otheropts.add_argument('--help',action='store_const', const=1,
-         help="More verbose help")
+      otheropts.add_argument('-h', '--help', action='store_const', const=1,
+         help="Concise help screeen")
       otheropts.add_argument('--version',action='store_const', const=1,
          help="Version information")
+      otheropts.add_argument('--extended-help', action='store_const', const=1,
+         help="Extended/comprehensive help information")
 
       # Runtime options.
       runopts = parser.add_argument_group('Runtime control')
@@ -656,7 +656,7 @@ class Options():
 #         provenance_dict()['version']
 
          quit()
-      if(args.h == 1):
+      if(args.help == 1):
          if 'metadiags' in progname or 'metadiags.py' in progname:
             self.metadiags_help()
          elif 'climatology' in progname or 'climatology.py' in progname:
@@ -664,7 +664,7 @@ class Options():
          else:
             self.diags_help()
          quit()
-      if(args.help == 1):
+      if(args.extended_help == 1):
          parser.print_help()
          quit()
 
