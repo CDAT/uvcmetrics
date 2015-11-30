@@ -1259,7 +1259,7 @@ class lmwg_plot_set2(lmwg_plot_spec):
                   vid=vbase+str(level)+'_3',
                   zvars = [vbase+str(level)+'_ft1', vbase+str(level)+'_ft2'], zfunc = (lambda z:z),
                   plottype = self.plottype)
-               print '>>>>>>>>>>>>>>>>>>>>> ADDING PLOT 7   <<<<<<<<<<<<<<<<<<<<<<<<<<'
+               #print '>>>>>>>>>>>>>>>>>>>>> ADDING PLOT 7   <<<<<<<<<<<<<<<<<<<<<<<<<<'
                self.single_plotspecs[self.plot7_id] = plotspec(
                   vid=vbase+str(level)+'_ttest',
                   zvars = [vbase+str(level)+'_ttest1', vbase+str(level)+'_ttest2'], zfunc = ttest_ab,
