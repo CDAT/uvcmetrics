@@ -10,7 +10,7 @@ from metrics.fileio.findfiles import *
 from metrics.packages.diagnostic_groups import *
 
 # If not specified on an individual variable, this is the default.
-def_executable = 'diags-new.py'
+def_executable = 'diags.py'
 
 # The user specified a package; see what collections are available.
 def getCollections(pname):
@@ -148,7 +148,7 @@ def makeTables(collnum, model_dict, obspath, outpath, pname, outlog):
             else:
                auxstr = '--varopts '+a
 
-            cmdline = 'diags-new.py %s %s %s --table --set %s --prefix set%s --package %s --vars %s %s %s %s --outputdir %s' % (path0str, path1str, obsstr, collnum, collnum, package, vstr, seasonstr, regionstr, auxstr, outpath)
+            cmdline = 'diags.py %s %s %s --table --set %s --prefix set%s --package %s --vars %s %s %s %s --outputdir %s' % (path0str, path1str, obsstr, collnum, collnum, package, vstr, seasonstr, regionstr, auxstr, outpath)
             runcmdline(cmdline, outlog)
          
 def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
@@ -333,7 +333,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
                   pstr2 = '--model path=%s,climos=%s,type=model' % (modelpath1, cf1)
                else:
                   pstr2 = ''
-               cmdline = 'diags-new.py %s %s %s %s %s %s %s %s %s %s %s %s %s' % (pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, seasonstr, varstr, outstr, xmlstr, prestr, poststr, regionstr)
+               cmdline = 'diags.py %s %s %s %s %s %s %s %s %s %s %s %s %s' % (pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, seasonstr, varstr, outstr, xmlstr, prestr, poststr, regionstr)
                   
                if collnum != 'dontrun':
                   runcmdline(cmdline, outlog)
@@ -385,7 +385,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
                   else:
                      pstr2 = ''
 
-                  cmdline = 'diags-new.py %s %s %s %s %s %s %s %s %s %s %s %s %s %s' % (pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, seasonstr, varstr, outstr, xmlstr, prestr, poststr, regionstr, varopts)
+                  cmdline = 'diags.py %s %s %s %s %s %s %s %s %s %s %s %s %s %s' % (pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, seasonstr, varstr, outstr, xmlstr, prestr, poststr, regionstr, varopts)
                   if collnum != 'dontrun':
                      runcmdline(cmdline, outlog)
                   else:

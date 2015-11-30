@@ -8,6 +8,9 @@ import metrics.packages as packages
 import argparse, re
 from metrics.frontend.defines import *
 
+### This is subject to change, so it is at the top of the file
+help_url="https://acme-climate.atlassian.net/wiki/pages/viewpage.action?pageId=11010895"
+
 ### 2 types of "options" - global options that affect program execution, etc
 ### and dataset-specific options that define a given dataset.
 ### Dataset options:
@@ -82,7 +85,8 @@ class Options():
       self._opts['output']['table'] = False
 
       self._opts['dbhost'] = None
-      self._opts['dbopts'] = None
+      # Change the default here to not update the metadiags database on the Classic Viewer server
+      self._opts['dbopts'] = 'no'
       self._opts['dsname'] = None
 
    # Some short cut getter/setters
@@ -359,9 +363,12 @@ class Options():
          quit()
 
       if(self._opts['package'] != None):
-         if self._opts['package'].upper() in self.all_packages.keys() or self._opts['package'] in self.all_packages.keys():
-            return
-         else:
+         keys = self.all_packages.keys()
+         ukeys = []
+         for k in keys:
+            ukeys.append(k.upper())
+
+         if self._opts['package'].upper() not in ukeys:
             print 'Package ',self._opts['package'], 'not found in the list of package names -', self.all_packages.keys()
             quit()
 
@@ -389,19 +396,107 @@ class Options():
 
          pclass = dm[package.upper()]()
 
+         avail_sets = []
          slist = pclass.list_diagnostic_sets()
          keys = slist.keys()
          keys.sort()
          for k in keys:
             fields = k.split()
-            for user in args.sets:
-               if user == fields[0]:
-                  sets.append(user)
-         self._opts['sets'] = sets
-         if sets != args.sets:
-            print 'sets requested ', args.sets
-            print 'sets available: ', slist
+            avail_sets.append(fields[0])
+#            for user in args.sets:
+#               if user == fields[0]:
+#                  sets.append(user)
+         sets = self._opts['sets']
+         intersect = list(set(sets)-set(avail_sets))
+         if intersect != []:
+            print 'Collection(s) requested ', sets
+            print 'Collection(s) available: ', avail_sets
             quit()
+
+   ### Less-verbose help for metadiags.
+   def metadiags_help(self):
+      print "metadiags concise help. Use --help for extended help\n"
+      print "Metadiags is meant to call diags.py (and other executables in \"loose coupling\" mode)"
+      print " with appropriate arguments defined via the amwgmaster or lmwgmaster.py files"
+      print "For additional instructions, see also"
+      print help_url
+      print '\n'
+      print "Minimum required arguments:"
+      print "1. A single path pointing to the input dataset"
+      print "2. A path for output data"
+      print "3. The package type, e.g. amwg or lmwg\n"
+      print "All input paths (multiple models and/or obs) are specified in a similar fashion."
+      print "The argument (--model or --obs) takes one or more comma-separated arguments to"
+      print "describe the dataset"
+      print "The only required argument is the path={path} argument"
+      print "Optional additional arguments are:"
+      print "climos=[yes|no] - Is the dataset raw data or summary climatology files? "
+      print " Default is to assume the path contains climatology files"
+      print "dsname={name} - An arbitrary user-defined name for the dataset."
+      print " This is used in some plots and filenames. In addition, a path for raw data"
+      print " and a path for climatology files can be specified for the same dataset if the"
+      print " dsname is the same"
+      print "For observation only: filter={filter}, for example - 'f_startswith(\"NCEP\")'"
+      print "A simple example:"
+      print "  metadiags --model path=/path/to/my/data --obs path=/path/to/all/obs/data \\"
+      print "     --outputdir /path/to/output --package AMWG"
+      print "This will run all of the defined diagnostics in amwgmaster.py on the data in "
+      print " /path/to/my/data comparing with the appropriate observation file in "
+      print " /path/to/all/obs/data and write the results to /path/to/output/amwg\n"
+      print "A slightly more complicated example:"
+      print "  metadiags --model path=/path/to/my/data/raw,climos=no,dsname=myds1 \\"
+      print "     --model path=/path/to/my/data/climos,climos=yes,dsname=myds1 \\ "
+      print "     --outputdir /path/to/output --package LMWG"
+      print "This will use the climatology files for the dataset when possible and the"
+      print " raw dataset data when required (e.g. if nonlinear calculations are performed)\n"
+      print  "Frequently used optional arguments:"
+      print "--colls - Specify which collection(s) to run. "
+      print "--updatedb (and --hostname and --dsname) - Update the classic viewer database"
+      print " with information from this run. You'll also need to run the transfer script"
+      print " to actually move data over. These options are more fully documented elsewhere"
+      return
+      
+
+   ### Less-verbose help for diags.
+   def diags_help(self):
+      print 'diags concise help. Use --help for extended help'
+      print 'Minimum required arguments:'
+      print '1. The --model keyword to describe the input dataset'
+      print '2. A path for output data'
+      print '3. The package type, e.g. lmwg or amwg'
+      print '4. Which set/collection to run, e.g. "tier1b-so" or 5 or 14'
+      print '5. (Optional) The variables of interest, e.g. Z3 TLAI PBOT. The default is ALL variables valid for the package/set/dataset'
+      print '6. (Optional) The --obs keyword to describe observation dataset(s)'
+      print '7. (Optional) Variable options such as seasons, regions, and pressure levels\n'
+      print "All input paths (multiple models and/or obs) are specified in a similar fashion."
+      print "The argument (--model or --obs) takes one or more comma-separated arguments to"
+      print "describe the dataset"
+      print "The only required argument is the path={path} argument"
+      print "Optional additional arguments are:"
+      print "climos=[yes|no] - Is the dataset raw data or summary climatology files? "
+      print " Default is to assume the path contains climatology files"
+      print "dsname={name} - An arbitrary user-defined name for the dataset."
+      print " This is used in some plots and filenames. In addition, a path for raw data"
+      print " and a path for climatology files can be specified for the same dataset if the"
+      print " dsname is the same"
+      print "For observation only: filter={filter}, for example - 'f_startswith(\"NCEP\")'"
+      print 'The simplest example:'
+      print 'diags --model path=/path/to/my/data --package AMWG --outputdir . --coll 5'
+      print 'A slightly more complicated example:'
+      print 'diags --model path=/path/to/my/raw/data,climos=no --package LMWG --outputdir . --coll 2 --seasons DJF SON --vars TLAI'
+      return
+
+   def climatology_help(self):
+      print 'climatology concise help. Use --help for extended help'
+      print 'Minimum required arguments:'
+      print '1. The input path'
+      print '2. The output path'
+      print '3. The list of seasons'
+      print '4. (optional) The list of variables (defaults to ALL)'
+
+
+
+
 
    ###
    ### This actually sets up argparse
@@ -416,14 +511,15 @@ class Options():
       print progname
       progname = progname.split('/')[-1]
       parser = argparse.ArgumentParser(
+         add_help=False,
          description='UV-CDAT Climate Modeling Diagnostics', 
          usage='%(prog)s [options]',
          formatter_class=argparse.RawDescriptionHelpFormatter,
          epilog=('''\
             Examples:
-            %(prog)s --model path=/path/to/a/dataset,climos=yes --obs path=/path/to/a/obs/set,climos=yes,filter='f_startswith("NCEP")' --package AMWG --sets 4 --vars Z3 --varopts 300 500 
+            %(prog)s --model path=/path/to/a/dataset,climos=yes --obs path=/path/to/a/obs/set,climos=yes,filter='f_startswith("NCEP")' --package AMWG --coll 4 --vars Z3 --varopts 300 500 
             is the same as:
-            %(prog)s --path /path/to/a/dataset --climos yes --path /path/to/an/obsset --type obs --climos yes --filter 'f_startswith("NCEP")' --package AMWG --sets 4 --vars Z3 --varopts 300 500
+            %(prog)s --path /path/to/a/dataset --climos yes --path /path/to/an/obsset --type obs --climos yes --filter 'f_startswith("NCEP")' --package AMWG --coll 4 --vars Z3 --varopts 300 500
 
             --model/--obs or --path can be specified multiple times.
             '''))
@@ -454,15 +550,21 @@ class Options():
       otheropts = parser.add_argument_group('Other')
       otheropts.add_argument('--cachepath', nargs=1,
          help="Path for temporary and cachced files. Defaults to /tmp")
-      otheropts.add_argument('--verbose', '-V', action='count',
+      otheropts.add_argument('--verbose', action='count',
          help="Increase the verbosity level. Each -v option increases the verbosity more.") # count
       otheropts.add_argument('--list', '-l', nargs=1, choices=['sets', 'vars', 'variables', 'packages', 'seasons', 'regions', 'translations','options','varopts'],
          help="Determine which packages, sets, regions, and variables are available")
+      otheropts.add_argument('-h', action='store_const', const=1,
+         help="Less-verbose help")
+      otheropts.add_argument('--help',action='store_const', const=1,
+         help="More verbose help")
+      otheropts.add_argument('--version',action='store_const', const=1,
+         help="Version information")
 
       # Runtime options.
       runopts = parser.add_argument_group('Runtime control')
       if 'climatology' not in progname and 'climatology.py' not in progname:
-         runopts.add_argument('--package', '-k', 
+         runopts.add_argument('--package', '--packages', '-k', 
             help="The diagnostic package to run against the dataset(s).")
          runopts.add_argument('--sets', '--set', '--colls', '--coll', '-s', nargs='+', 
             help="The sets within a diagnostic package to run. Multiple sets can be specified.") 
@@ -531,9 +633,9 @@ class Options():
 
       if 'metadiags' in progname or 'metadiags.py' in progname:
          metaopts = parser.add_argument_group('Metadiags-specific')
-         metaopts.add_argument('--hostname',
+         metaopts.add_argument('--hostname', 
             help="Specify the hostname of the machine hosting the ACME classic viewer database so we can add this dataset and some metadata there")
-         metaopts.add_argument('--db', choices=['no', 'only', 'yes'],
+         metaopts.add_argument('--updatedb', choices=['no', 'only', 'yes'],
             help="Update the database with output from this run? Yes, no, only update the database (don't run anything. primarily for testing)")
          metaopts.add_argument('--dsname', 
             help="A unique identifier for the dataset(s). Used by classic viewer to display the data.")
@@ -546,8 +648,27 @@ class Options():
 
       ### Do the work
       args = parser.parse_args()
-#      print args
+      if(args.version == 1):
+         import metrics.common.utilities
+         klist = metrics.common.utilities.provenance_dict().keys()
+         for k in klist:
+            print '%s - %s' % (k, metrics.common.utilities.provenance_dict()[k])
+#         provenance_dict()['version']
 
+         quit()
+      if(args.h == 1):
+         if 'metadiags' in progname or 'metadiags.py' in progname:
+            self.metadiags_help()
+         elif 'climatology' in progname or 'climatology.py' in progname:
+            self.climatology_help()
+         else:
+            self.diags_help()
+         quit()
+      if(args.help == 1):
+         parser.print_help()
+         quit()
+
+   
       ####
       #### This is where we start actually dealing with some options.
       ####
@@ -555,6 +676,14 @@ class Options():
       # First, check for the --list option so we don't have to do as much work if it was passed.
       if(args.list != None):
          self.listOpts(args)
+
+      # First, print all of the provenance information regardless.
+      import metrics.common.utilities
+      klist = metrics.common.utilities.provenance_dict().keys()
+      print 'BEGIN PROVENANCE INFORMATION'
+      for k in klist:
+         print '%s - %s' % (k, metrics.common.utilities.provenance_dict()[k])
+      print 'END PROVENANCE INFORMATION'
 
       # Generally if we've gotten this far, it means no --list was specified. If we don't have
       # at least a path, we should exit.
@@ -601,8 +730,8 @@ class Options():
       if 'metadiags' in progname or 'metadiags.py' in progname:
          if args.hostname != None:
             self._opts['dbhost'] = args.hostname
-         if args.db != None:
-            self._opts['dbopts'] = args.db
+         if args.updatedb != None:
+            self._opts['dbopts'] = args.updatedb
          if args.dsname != None:
             self._opts['dsname'] = args.dsname
 
@@ -803,7 +932,7 @@ def make_ft_dict(models):
       if models[i]._name == None: # just add it if it has no name
          model_dict[key] = {}
          model_dict[key]['name'] = None
-         if models[i]._climos == 'yes':
+         if models[i]._climos != 'no': # Assume they are climos unless told otherwise
             model_dict[key]['climos'] = models[i]
             model_dict[key]['raw'] = None
          else:
@@ -817,14 +946,14 @@ def make_ft_dict(models):
             print 'Found %s in model_names weve seen already.' % name
             for j in model_dict.keys():
                if model_dict[j]['name'] == name:
-                  if models[i]._climos == 'yes':
+                  if models[i]._climos != 'no':
                      model_dict[j]['climos'] = models[i]
                   else:
                      model_dict[j]['raw'] = models[i]
          else:
             model_dict[key] = {}
             model_dict[key]['name'] = name
-            if models[i]._climos == 'yes':
+            if models[i]._climos != 'no':
                model_dict[key]['climos'] = models[i]
                model_dict[key]['raw'] = None
             else:
