@@ -1868,14 +1868,14 @@ class amwg_plot_set8(amwg_plot_spec):
         cdms2.setNetcdfDeflateLevelFlag(0)
         cdms2.setNetcdfUseParallelFlag(0)
         
-        import socket
-        print 'host is ',socket.gethostname()
-
         self.comm = MPI.COMM_WORLD
         self.size = self.comm.size
         self.rank = self.comm.rank          
         self.master = 0
-
+        
+        import socket
+        print 'host = ',socket.gethostname(), 'rank = ', self.rank
+        
         #split the keys of reduced_variables and scatter them        
         if self.rank is self.master:
             sublistSize = len(self.reduced_variables.keys())/self.size
