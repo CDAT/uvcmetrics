@@ -1889,7 +1889,7 @@ class amwg_plot_set8(amwg_plot_spec):
         for i, key in enumerate(self.local_keys):
             RV = self.reduced_variables[key]
             RV._filename = RV.get_variable_file( RV.variableid, COMM=self.comm)
-        print 'rank =', self.rank, 'keys are ', self.local_keys
+            print 'rank =', self.rank, 'keys are ', key #self.local_keys
     def _results(self, newgrid=0):
         #pdb.set_trace()
         print '>>>rank =', self.rank, 'keys are ', self.local_keys
