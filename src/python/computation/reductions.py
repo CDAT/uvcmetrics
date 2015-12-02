@@ -2624,7 +2624,7 @@ def run_cdscan( fam, famfiles, cache_path=None, COMM=None ):
               for f in famfiles ] )
     csum = hashlib.md5(file_list).hexdigest()
     xml_name = fam+'_cs'+csum+'.xml'
-    print '>>>>xml=', COMM.rank, xml_name
+    print '>>>>xml=', COMM.rank, xml_name, os.path.isfile( xml_name ), cache_path
     
     if os.path.isfile( xml_name ):
         #print "using cached cdscan output",xml_name," (in data directory)"
