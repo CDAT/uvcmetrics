@@ -1029,7 +1029,6 @@ class plot_spec(object):
             local_axes = []
             local_attr = []
             
-            print 'rank =', self.rank, 'keys are ', self.local_keys
             for key in self.local_keys:
                 v = self.reduced_variables[key]   
                 value = v.reduce(None, COMM=self.comm)
