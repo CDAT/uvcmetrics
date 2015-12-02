@@ -2685,7 +2685,6 @@ def run_cdscan( fam, famfiles, cache_path=None, COMM=None ):
     
     if COMM is None:
         #serial mode
-        print cdscan_line
         proc = subprocess.Popen([cdscan_line],shell=True)
         proc_status = proc.wait()
     else:
@@ -2911,7 +2910,7 @@ class reduced_variable(ftrow,basic_id):
         # To make it even easier on the first cut, I won't worry about missing data and
         # anything else inconvenient, and I'll assume CF compliance.
         files = list(set([r.fileid for r in rows]))
-
+        print files
         if len(files)>1:
             # Piece together the data from multiple files.  That's what cdscan is for...
             # One problem is there may be more than one file family in the same
