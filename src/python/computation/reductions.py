@@ -2624,7 +2624,6 @@ def run_cdscan( fam, famfiles, cache_path=None, COMM=None ):
               for f in famfiles ] )
     csum = hashlib.md5(file_list).hexdigest()
     xml_name = fam+'_cs'+csum+'.xml'
-    print '>>>>xml=', COMM.rank, xml_name, os.path.isfile( xml_name ), cache_path
     
     if os.path.isfile( xml_name ):
         #print "using cached cdscan output",xml_name," (in data directory)"
@@ -2647,9 +2646,7 @@ def run_cdscan( fam, famfiles, cache_path=None, COMM=None ):
     # I know of no exception to the rule that all files in the file family keep their
     # units in the same place; so find where they are by checking the first file
     
-    print '>>>>open=', COMM.rank, famfiles[0]
     f = cdms2.open( famfiles[0], mode='r' )
-    print '>>>>open=', COMM.rank, f['time']
     
     if f['time'] is None:
             cdscan_line = 'cdscan -q '+'-x '+xml_name+' '+' '.join(famfiles)
@@ -2685,7 +2682,6 @@ def run_cdscan( fam, famfiles, cache_path=None, COMM=None ):
                     ' '.join(famfiles)
 
     f.close()
-    print '>>>>cdscan=', COMM.rank, cdscan_line
     if COMM is None:
         #serial mode
         proc = subprocess.Popen([cdscan_line],shell=True)
@@ -2696,6 +2692,7 @@ def run_cdscan( fam, famfiles, cache_path=None, COMM=None ):
         cdscan_line = '%s/bin/'%(sys.prefix) + cdscan_line
         cdscan_line = shlex.split(cdscan_line)
         from mpi4py import MPI
+        print '>>>>cdscan=', COMM.rank, cdscan_line
         comm1 = MPI.COMM_SELF.Spawn(        
             sys.executable,
             args=cdscan_line,
