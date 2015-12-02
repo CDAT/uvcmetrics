@@ -1884,6 +1884,7 @@ class amwg_plot_set8(amwg_plot_spec):
             self.all_keys = None        
             
         self.local_keys = self.comm.scatter(self.all_keys, root=self.master)
+        print 'rank =', self.rank, 'keys are ', self.local_keys
 
         #create xml files and avoid multiple calls to cdscan         
         for i, key in enumerate(self.local_keys):
