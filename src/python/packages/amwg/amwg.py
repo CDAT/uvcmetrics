@@ -1888,7 +1888,6 @@ class amwg_plot_set8(amwg_plot_spec):
         #create xml files and avoid multiple calls to cdscan         
         for i, key in enumerate(self.local_keys):
             RV = self.reduced_variables[key]
-            RV.rank = self.rank
             print 'rank =', self.rank, 'keys are ', key #self.local_keys
             RV._filename = RV.get_variable_file( RV.variableid, COMM=self.comm)
             

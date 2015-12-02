@@ -2919,7 +2919,7 @@ class reduced_variable(ftrow,basic_id):
             famdict = { f:self.extract_filefamilyname(f) for f in files }
             families = list(set([ famdict[f] for f in files ]))
             families.sort(key=len)  # a shorter name is more likely to be what we want
-            print '>>>>files=', self.rank, files[0]
+            print '>>>>files=', COMM.rank, files[0]
             if len(families)==0:
                 print "WARNING.  No data to reduce.  files[0]=:",files[0]
                 return None
@@ -2937,7 +2937,7 @@ class reduced_variable(ftrow,basic_id):
             cache_path = self._filetable.cache_path()
             if COMM is not None:
                 fam += '_'+str(COMM.rank)
-
+            print '>>>>fam=', COMM.rank, self._filename
             if self._filename is not None:
                 xml_name = self._filename
             else:
