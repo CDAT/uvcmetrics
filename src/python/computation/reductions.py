@@ -2697,6 +2697,7 @@ def run_cdscan( fam, famfiles, cache_path=None, COMM=None ):
             sys.executable,
             args=cdscan_line,
             maxprocs=1)
+        print '>>>>cdscan=', COMM.rank, comm1
         #wait until cdscan is done
         message = comm1.recv(source = MPI.ANY_SOURCE)
         proc_status = MPI.Status().Get_error()
