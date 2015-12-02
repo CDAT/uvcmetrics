@@ -2649,7 +2649,7 @@ def run_cdscan( fam, famfiles, cache_path=None, COMM=None ):
     
     print '>>>>open=', COMM.rank, famfiles[0]
     f = cdms2.open( famfiles[0], mode='r' )
-    print '>>>>open=', COMM.rank, f
+    print '>>>>open=', COMM.rank, f['time']
     
     if f['time'] is None:
             cdscan_line = 'cdscan -q '+'-x '+xml_name+' '+' '.join(famfiles)
@@ -2685,7 +2685,7 @@ def run_cdscan( fam, famfiles, cache_path=None, COMM=None ):
                     ' '.join(famfiles)
 
     f.close()
-    
+    print '>>>>cdscan=', COMM.rank, cdscan_line
     if COMM is None:
         #serial mode
         proc = subprocess.Popen([cdscan_line],shell=True)
