@@ -2647,7 +2647,8 @@ def run_cdscan( fam, famfiles, cache_path=None, COMM=None ):
     
     print '>>>>open=', COMM.rank, famfiles[0]
     f = cdms2.open( famfiles[0], mode='r' )
-
+    print '>>>>open=', COMM.rank, f
+    
     if f['time'] is None:
             cdscan_line = 'cdscan -q '+'-x '+xml_name+' '+' '.join(famfiles)
             f.close()
