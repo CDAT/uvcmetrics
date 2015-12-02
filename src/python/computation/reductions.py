@@ -2645,7 +2645,7 @@ def run_cdscan( fam, famfiles, cache_path=None, COMM=None ):
     # I know of no exception to the rule that all files in the file family keep their
     # units in the same place; so find where they are by checking the first file
     
-
+    print '>>>>open=', COMM.rank, famfiles[0]
     f = cdms2.open( famfiles[0], mode='r' )
 
     if f['time'] is None:
