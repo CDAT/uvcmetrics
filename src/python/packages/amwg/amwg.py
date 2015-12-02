@@ -1892,6 +1892,7 @@ class amwg_plot_set8(amwg_plot_spec):
             RV._filename = RV.get_variable_file( RV.variableid, COMM=self.comm)
     def _results(self, newgrid=0):
         #pdb.set_trace()
+        print '>>>rank =', self.rank, 'keys are ', self.local_keys
         results = plot_spec._results(self, newgrid)
         if results is None:
             print "WARNING, AMWG plot set 8 found nothing to plot"
