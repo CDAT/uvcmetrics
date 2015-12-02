@@ -2685,6 +2685,7 @@ def run_cdscan( fam, famfiles, cache_path=None, COMM=None ):
     
     if COMM is None:
         #serial mode
+        print cdscan_line
         proc = subprocess.Popen([cdscan_line],shell=True)
         proc_status = proc.wait()
     else:
