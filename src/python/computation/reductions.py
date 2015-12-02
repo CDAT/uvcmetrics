@@ -2948,6 +2948,7 @@ class reduced_variable(ftrow,basic_id):
             # the easy case, just one file has all the data on this variable
             filename = files[0]
         #fcf = get_datafile_filefmt(f)
+        print '>>>>filename=', COMM.rank, filename
         return filename
 
     def reduce( self, vid=None, COMM=None ):
