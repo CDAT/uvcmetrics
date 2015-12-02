@@ -2631,6 +2631,7 @@ def run_cdscan( fam, famfiles, cache_path=None, COMM=None ):
         return xml_name
     if cache_path is not None:
         xml_name = os.path.join( cache_path, os.path.basename(xml_name) )
+        print "path=", COMM.rank, os.path.join(cache_path,xml_name), os.path.isfile( os.path.join(cache_path,xml_name) )
         if os.path.isfile( os.path.join(cache_path,xml_name) ):
             #print "using cached cdscan output",xml_name," (in cache directory)"
             return xml_name
