@@ -97,6 +97,12 @@ def hashfile(filename):
 
 provdic = {}
 def provenance_dict( script_file_name=None ):
+    try:
+        import pwd
+        user = pwd.getpwuid(os.getuid())[0]
+    except Exception:
+        user = os.environ.get('LOGNAME', 'unknown')
+
     global provdic
     if len(provdic)>=3:
         return provdic
@@ -114,7 +120,7 @@ def provenance_dict( script_file_name=None ):
         hashfile(script_file_name))
     provdic['history'] = "%s: created by %s from path: %s with input command line: %s" % (
                     str(datetime.datetime.utcnow()),
-                    os.getlogin(), os.getcwd(), " ".join(sys.argv)
+                    user, os.getcwd(), " ".join(sys.argv)
                     )
     return provdic
 
