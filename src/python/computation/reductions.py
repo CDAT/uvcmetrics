@@ -2910,7 +2910,7 @@ class reduced_variable(ftrow,basic_id):
         # To make it even easier on the first cut, I won't worry about missing data and
         # anything else inconvenient, and I'll assume CF compliance.
         files = list(set([r.fileid for r in rows]))
-        print '>>>>files=', self.rank, files
+    
         if len(files)>1:
             # Piece together the data from multiple files.  That's what cdscan is for...
             # One problem is there may be more than one file family in the same
@@ -2940,6 +2940,7 @@ class reduced_variable(ftrow,basic_id):
             if self._filename is not None:
                 xml_name = self._filename
             else:
+                print '>>>>fam=', self.rank, fam
                 xml_name = run_cdscan( fam, famfiles, cache_path, COMM=COMM )
 
             filename = xml_name
