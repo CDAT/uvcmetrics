@@ -2692,8 +2692,7 @@ def run_cdscan( fam, famfiles, cache_path=None, COMM=None ):
         cdscan_line = shlex.split(cdscan_line)
         from mpi4py import MPI
 
-        #comm1 = MPI.COMM_SELF.Spawn(  
-        comm1 = COMM.Spawn(     
+        comm1 = MPI.COMM_SELF.Spawn(      
             sys.executable,
             args=cdscan_line,
             maxprocs=1)
