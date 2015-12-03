@@ -2690,17 +2690,14 @@ def run_cdscan( fam, famfiles, cache_path=None, COMM=None ):
         import shlex
         cdscan_line = '%s/bin/'%(sys.prefix) + cdscan_line
         cdscan_line = shlex.split(cdscan_line)
+        
         from mpi4py import MPI
-
-        comm1 = MPI.COMM_SELF.Spawn(      
-            sys.executable,
-            args=cdscan_line,
-            maxprocs=1)
+        comm1 = MPI.COMM_SELF.Spawn( sys.executable, args=cdscan_line, maxprocs=1 )
         
         #wait until cdscan is done
         message = comm1.recv(source = MPI.ANY_SOURCE)
         proc_status = MPI.Status().Get_error()
-        print '>>>>cdscan=', COMM.rank, message, proc_status, xml_name
+
     if proc_status!=0: 
         print "ERROR: cdscan terminated with",proc_status
         print 'This is usually fatal. Frequent causes are an extra XML file in the dataset directory'
