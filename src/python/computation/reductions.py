@@ -2630,7 +2630,6 @@ def run_cdscan( fam, famfiles, cache_path=None, COMM=None ):
         return xml_name
     if cache_path is not None:
         xml_name = os.path.join( cache_path, os.path.basename(xml_name) )
-        print "path=", COMM.rank, os.path.join(cache_path,xml_name), os.path.isfile( os.path.join(cache_path,xml_name) )
         if os.path.isfile( os.path.join(cache_path,xml_name) ):
             #print "using cached cdscan output",xml_name," (in cache directory)"
             return xml_name
@@ -2692,17 +2691,17 @@ def run_cdscan( fam, famfiles, cache_path=None, COMM=None ):
         cdscan_line = '%s/bin/'%(sys.prefix) + cdscan_line
         cdscan_line = shlex.split(cdscan_line)
         from mpi4py import MPI
-        print '>>>>cdscan=', COMM.rank, cdscan_line
-        comm1 = MPI.COMM_SELF.Spawn(        
+
+        #comm1 = MPI.COMM_SELF.Spawn(  
+        comm1 = COMM.Spawn(     
             sys.executable,
             args=cdscan_line,
             maxprocs=1)
         
         #wait until cdscan is done
         message = comm1.recv(source = MPI.ANY_SOURCE)
-        print ">>>>recieved=", COMM.rank, message
         proc_status = MPI.Status().Get_error()
-        print '>>>>cdscan=', COMM.rank, proc_status, xml_name
+        print '>>>>cdscan=', COMM.rank, message, proc_status, xml_name
     if proc_status!=0: 
         print "ERROR: cdscan terminated with",proc_status
         print 'This is usually fatal. Frequent causes are an extra XML file in the dataset directory'
@@ -2921,7 +2920,7 @@ class reduced_variable(ftrow,basic_id):
             famdict = { f:self.extract_filefamilyname(f) for f in files }
             families = list(set([ famdict[f] for f in files ]))
             families.sort(key=len)  # a shorter name is more likely to be what we want
-            print '>>>>files=', COMM.rank, files[0]
+
             if len(families)==0:
                 print "WARNING.  No data to reduce.  files[0]=:",files[0]
                 return None
@@ -2939,7 +2938,7 @@ class reduced_variable(ftrow,basic_id):
             cache_path = self._filetable.cache_path()
             if COMM is not None:
                 fam += '_'+str(COMM.rank)
-            print '>>>>fam=', COMM.rank, self._filename
+
             if self._filename is not None:
                 xml_name = self._filename
             else:
@@ -2950,7 +2949,7 @@ class reduced_variable(ftrow,basic_id):
             # the easy case, just one file has all the data on this variable
             filename = files[0]
         #fcf = get_datafile_filefmt(f)
-        print '>>>>filename=', COMM.rank, filename
+
         return filename
 
     def reduce( self, vid=None, COMM=None ):
