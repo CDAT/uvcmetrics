@@ -2700,7 +2700,7 @@ def run_cdscan( fam, famfiles, cache_path=None, COMM=None ):
         
         #wait until cdscan is done
         message = comm1.recv(source = MPI.ANY_SOURCE)
-        print ">>>>recieved=", self.rank, message
+        print ">>>>recieved=", COMM.rank, message
         proc_status = MPI.Status().Get_error()
         print '>>>>cdscan=', COMM.rank, proc_status, xml_name
     if proc_status!=0: 
