@@ -1049,7 +1049,7 @@ class plot_spec(object):
             collected_data = self.comm.gather(local_data, root=self.master)
             collected_axes = self.comm.gather(local_axes, root=self.master)
             collected_attr = self.comm.gather(local_attr, root=self.master)
-            print 'data is passed back to master on rank', self.rank
+
             if self.rank is self.master:
                 self.variable_values = buildVariables(self.all_keys, collected_data, collected_axes, collected_attr)
             else:
