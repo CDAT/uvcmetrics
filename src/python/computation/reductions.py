@@ -11,7 +11,7 @@ from math import radians, log10
 from numpy import sin, ma
 #import dateutil.parser
 import dateparser
-from datetime import datetime as datetime
+import datetime
 from unidata import udunits
 from metrics.packages.amwg.derivations import press2alt
 from metrics.packages.amwg.derivations import qflx_lhflx_conversions as flxconv
@@ -172,7 +172,7 @@ def fix_time_units( timeunits ):
         # The parser won't understand negative years, but cdtime will.  So don't
         # fix the date quite yet...
         date = date[0:pre_bc]
-    new_date = str( dateparser.parse( date, default=datetime(1850,1,1,0,0)) )
+    new_date = str( dateparser.parse( date, default=datetime.datetime(1850,1,1,0,0)) )
     if date_is_bc:
         pre_yr = new_date.find(yr_bc)
         new_date = new_date[0:pre_yr]+yr_ad+new_date[pre_yr+len(yr_bc)]
@@ -3038,9 +3038,9 @@ class reduced_variable(ftrow,basic_id):
                 taxis.id = f[self.variableid].id
                 reduced_data = self._reduction_function( taxis, vid=vid )
             else:
-                print "Reduce failed to find variable",self.variablid,"in file",filename
-                print "It did find variables",f.variables.keys()
-                print "and axes",f.axes.keys()
+                print "Reduce failed to find variable",self.variableid,"in file",filename
+                print "It did find variables",sorted(f.variables.keys())
+                print "and axes",sorted(f.axes.keys())
                 raise Exception
             if reduced_data is not None and type(reduced_data) is not list:
                 reduced_data._vid = vid
