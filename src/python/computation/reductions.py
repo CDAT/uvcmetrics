@@ -2972,6 +2972,7 @@ class reduced_variable(ftrow,basic_id):
             vid = self._strid
 
         #avoid multiple calls to cdscan during compute loop
+        print ">>>>in reduce", COMM.rank, self._filename
         if self._filename is not None:
             filename = self._filename
         else:
