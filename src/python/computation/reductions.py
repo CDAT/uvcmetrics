@@ -2694,7 +2694,7 @@ def run_cdscan( fam, famfiles, cache_path=None, COMM=None ):
         from mpi4py import MPI
         print ">>>>cdscan=", COMM.rank, famfiles[0]
         comm1 = MPI.COMM_SELF.Spawn( sys.executable, args=cdscan_line, maxprocs=1 )
-        print ">>>>after cdscan"
+        print ">>>>after cdscan", COMM.rank
         #wait until cdscan is done
         message = comm1.recv(source = MPI.ANY_SOURCE)
         proc_status = MPI.Status().Get_error()
@@ -2939,6 +2939,7 @@ class reduced_variable(ftrow,basic_id):
             if self._filename is not None:
                 xml_name = self._filename
             else:
+                print ">>>>before run_cdscan", COMM.rank, fam
                 xml_name = run_cdscan( fam, famfiles, cache_path, COMM=COMM )
 
             filename = xml_name
