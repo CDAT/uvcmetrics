@@ -2692,8 +2692,9 @@ def run_cdscan( fam, famfiles, cache_path=None, COMM=None ):
         cdscan_line = shlex.split(cdscan_line)
         
         from mpi4py import MPI
+        print ">>>>cdscan=", COMM.rank, famfiles[0]
         comm1 = MPI.COMM_SELF.Spawn( sys.executable, args=cdscan_line, maxprocs=1 )
-        
+        print ">>>>after cdscan"
         #wait until cdscan is done
         message = comm1.recv(source = MPI.ANY_SOURCE)
         proc_status = MPI.Status().Get_error()
