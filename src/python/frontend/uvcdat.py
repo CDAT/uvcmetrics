@@ -1035,7 +1035,7 @@ class plot_spec(object):
                 try:
                     value = v.reduce(None, COMM=self.comm)
                 except:
-                    sys.exit('>>>exit='+str(self.comm.rank)+key)
+                    sys.exit('>>>exit='+str(self.comm.rank)+ '>>> '+ str(key))
     
                 try:
                     if  len(value.data)<=0:

@@ -3038,7 +3038,9 @@ class reduced_variable(ftrow,basic_id):
                 if os.path.basename(filename)[0:5]=='CERES':
                     var = special_case_fixed_variable( 'CERES', var )
 
+                print ">>>>>>>>>>>>in reduce", COMM.rank, vid
                 reduced_data = self._reduction_function( var, vid=vid )
+                print ">>>>>>>>>>>>in reduce after reduction", COMM.rank, reduced_data.shape
                 
             elif self.variableid in f.axes.keys():
                 taxis = cdms2.createAxis(f[self.variableid])   # converts the FileAxis to a TransientAxis.
