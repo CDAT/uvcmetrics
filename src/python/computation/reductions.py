@@ -3032,7 +3032,7 @@ class reduced_variable(ftrow,basic_id):
 
             f = cdms2.open( filename )
             self._file_attributes.update(f.attributes)
-
+            print ">>>>>>>>in reduce", COMM.rank, self.variableid in f.variables.keys()
             if self.variableid in f.variables.keys():
                 var = f(self.variableid)
                 if os.path.basename(filename)[0:5]=='CERES':
