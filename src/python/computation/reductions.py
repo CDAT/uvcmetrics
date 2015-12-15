@@ -3029,10 +3029,11 @@ class reduced_variable(ftrow,basic_id):
                 duv_value = duv.derive( duv_inputs )
                 reduced_data = self._reduction_function( duv_value, vid=vid )
         else:
-
+            print ">>>>>>>>in reduce open file", COMM.rank
             f = cdms2.open( filename )
+            print ">>>>>>>>in reduce file opened", COMM.rank
             self._file_attributes.update(f.attributes)
-            print ">>>>>>>>in reduce", COMM.rank, self.variableid in f.variables.keys()
+            print ">>>>>>>>in reduce update complete", COMM.rank, self.variableid in f.variables.keys()
             if self.variableid in f.variables.keys():
                 var = f(self.variableid)
                 if os.path.basename(filename)[0:5]=='CERES':
