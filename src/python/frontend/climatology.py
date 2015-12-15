@@ -1,291 +1,475 @@
 #!/usr/bin/env python
 
-# High-level functions to convert data to climatology files.
-# These are, in my understanding, files which have a time-average of the original
-# variables, with the time often restricted to a month or season.
-# This is basically a simplified version of plot_data.py.
+Usage = """Usage:
+python climatology.py --outfile fileout.nc --seasons SS1 SS2 ... --variables var1 var2 ... --infiles file1.nc file2.nc ....
+where:
+  fileout.nc is the name of an output file.  If it already exists, it will be overwritten.
+  SSS is the season in three letters, e.g. ANN, JJA, APR
+  var1 var2 ... are the names of variables as used in the input files
+  file1.nc file2.nc ... are NetCDF files.  The files must be structurally identical, and must cover
+exactly the same ranges in space and other axes, except for time.
+Each file is expected to cover a different, and disjoint, time range, and the times must be
+increasing.  That is, for any times tn, tm in files filen, filem, if n>m then tn>tm.
+"""
 
-# Example of running this from the shell:
-# python climatology.py --path <location of inputs> --output <where to put outputs> --seasons SON DJF --vars TREFHT
+# TO DO:
+# --seasons ALL for all 17 seasons, and default to this if seasons are not specified.
+#   In that case, investigate whether it would save any time to compute only months, and
+#   then other seasons from the months (probably slower on Rhea, but maybe not).
 
-# TO DO >>>> run argument: dict of attribute:value to be written out as file global attributes.
-
-import cdms2, math, os
-from metrics.fileio.findfiles import *
-from metrics.fileio.filetable import *
-from metrics.computation.reductions import *
-from metrics.packages.amwg.derivations.oaht import *
-from metrics.packages.amwg.derivations.ncl_isms import *
-from metrics.packages.amwg.derivations.vertical import *
-from metrics.packages.amwg.plot_data import derived_var, plotspec
-from cdutil.times import Seasons
+from metrics.frontend.inc_reduce import *
+import os, re, time
+import argparse
 from pprint import pprint
-from metrics.frontend.options import *
-# For psutil, see https://github.com/giampaolo/psutil ...
-# import psutil # used only for memory profiling
-import cProfile, time, resource
 from metrics.common import store_provenance
 
-class climatology_variable( reduced_variable ):
-    def __init__(self,varname,filetable,seasonname='ANN'):
-        self.seasonname = seasonname
-        if seasonname=='ANN':
-            reduced_variable.__init__( self,
-               variableid=varname, filetable=filetable,
-               reduction_function=(lambda x,vid=None: reduce_time(x,vid=vid)) )
-        else:
-            season = cdutil.times.Seasons([seasonname])
-            reduced_variable.__init__( self,
-               variableid=varname, filetable=filetable,
-               reduction_function=(lambda x,vid=None: reduce_time_seasonal(x,season)) )
+force_scalar_avg=False  # for testing
+season2nummonth = {
+    'ANN': [ '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12' ],
+    'DJF': [ '01', '02', '12' ],
+    'MAM': [ '03', '04', '05' ],
+    'JJA': [ '06', '07', '08' ],
+    'SON': [ '09', '10', '11' ],
+    'JAN': [ '01' ], 'FEB': [ '02' ], 'MAR': [ '03' ], 'APR': [ '04' ], 'MAY': [ '05' ],
+    'JUN': [ '06' ], 'JUL': [ '07' ], 'AUG': [ '08' ], 'SEP': [ '09' ], 'OCT': [ '10' ],
+    'NOV': [ '11' ], 'DEC': [ '12' ],
+    '01':['01'], '02':['02'], '03':['03'], '04':['04'], '05':['05'], '06':['06'], '07':['07'],
+    '08':['08'], '09':['09'], '10':['10'], '11':['11'], '12':['12'] }
+season2almonth = {
+    'ANN': ['DJF', 'MAM', 'JJA', 'SON',
+            'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'],
+    'DJF': ['JAN', 'FEB', 'DEC'],
+    'MAM': ['MAR', 'APR', 'MAY'],
+    'JJA': ['JUN', 'JUL', 'AUG'],
+    'SON': ['SEP', 'OCT', 'NOV'] }
 
-class climatology_squared_variable( reduced_variable ):
-    """represents the climatology of the square of a variable.
-    This, together with the variable's climatology, is theoretically sufficient for computing
-    its variance; but it would be numerically better to use this as a model for a class
-    representing the climatology of (var - climo(var))^2."""
-    def __init__(self,varname,filetable,seasonname='ANN'):
-        duv = derived_var( varname+'_sq', [varname], func=(lambda x: atimesb(x,x)) )
-        self.seasonname = seasonname
-        if seasonname=='ANN':
-            reduced_variable.__init__(
-                self,
-                variableid=varname+'_sq', filetable=filetable,
-                reduction_function=(lambda x,vid=None: reduce_time(x,vid=vid)),
-                duvs={ varname+'_sq':duv }, rvs={} )
-        else:
-            season = cdutil.times.Seasons([seasonname])
-            reduced_variable.__init__(
-                self,
-                variableid=varname+'_sq', filetable=filetable,
-                reduction_function=(lambda x,vid=None: reduce_time_seasonal(x,season)),
-                duvs={ varname+'_sq':duv }, rvs={} )
-
-class climatology_variance( reduced_variable ):
-    """represents a variance - the climatology of (v-climo(v))^2 where v is a variable.
-    Note that we're computing the variance on all data, not a sample - so the implicit
-    1/N in the average (not 1/(N-1)) is correct."""
-    def __init__(self,varname,filetable,seasonname='ANN',rvs={}):
-        duv = derived_var( varname+'_var',
-                           [varname,'_'.join([varname,seasonname])], func=varvari )
-        self.seasonname = seasonname
-        if seasonname=='ANN':
-            reduced_variable.__init__(
-                self,
-                variableid=varname+'_var', filetable=filetable,
-                reduction_function=(lambda x,vid=None: reduce_time(x,vid=vid)),
-                duvs={ varname+'_var':duv }, rvs=rvs )
-        else:
-            season = cdutil.times.Seasons([seasonname])
-            reduced_variable.__init__(
-                self,
-                variableid=varname+'_var', filetable=filetable,
-                reduction_function=(lambda x,vid=None: reduce_time_seasonal(x,season)),
-                duvs={ varname+'_var':duv }, rvs=rvs )
-
-def compute_and_write_climatologies_keepvars( varkeys, reduced_variables, season, case='', variant='', path='' ):
-    """Computes climatologies and writes them to a file.
-    Inputs: varkeys, names of variables whose climatologies are to be computed
-            reduced_variables, dict (key:rv) where key is a variable name and rv an instance
-               of the class reduced_variable
-            season: the season on which the climatologies will be computed
-            variant: a string to be inserted in the filename"""
-    # Compute the value of every variable we need.
-    varvals = {}
-    # First compute all the reduced variables
-    # Probably this loop consumes most of the running time.  It's what has to read in all the data.
-    for key in varkeys:
-        if key in reduced_variables:
-            varvals[key] = reduced_variables[key].reduce()
-
-    for key in varkeys:
-        if key in reduced_variables:
-            var = reduced_variables[key]
-            if varvals[key] is not None:
-                if 'case' in var._file_attributes.keys():
-                    case = var._file_attributes['case']+'_'
-                    break
-
-    print "writing climatology file for",case,variant,season
-    if variant!='':
-        variant = variant+'_'
-    print 'case: ',case
-    print 'variant: ', variant
-    print 'season: ', season
-    filename = case + variant + season + "_climo.nc"
-    # ...actually we want to write this to a full directory structure like
-    #    root/institute/model/realm/run_name/season/
-    value=0
-    cdms2.setNetcdfShuffleFlag(value) ## where value is either 0 or 1
-    cdms2.setNetcdfDeflateFlag(value) ## where value is either 0 or 1
-    cdms2.setNetcdfDeflateLevelFlag(value) ## where value is a integer between 0 and 9 included
-
-    g = cdms2.open( os.path.join(path,filename), 'w' )    # later, choose a better name and a path!
-    store_provenance(g)
-    for key in varkeys:
-        if key in reduced_variables:
-            var = reduced_variables[key]
-            if varvals[key] is not None:
-                varvals[key].id = var.variableid
-                varvals[key].reduced_variable=varvals[key].id
-                if hasattr(var,'units'):
-                    varvals[key].units = var.units+'*'+var.units
-                g.write(varvals[key])
-                for attr,val in var._file_attributes.items():
-                    if not hasattr( g, attr ):
-                        setattr( g, attr, val )
-    g.season = season
-    g.close()
-    return varvals,case
-
-def compute_and_write_climatologies( varkeys, reduced_variables, season, case='', variant='', path='' ):
-    """Computes climatologies and writes them to a file.
-    Inputs: varkeys, names of variables whose climatologies are to be computed
-            reduced_variables, dict (key:rv) where key is a variable name and rv an instance
-               of the class reduced_variable
-            season: the season on which the climatologies will be computed
-            variant: a string to be inserted in the filename"""
-    # Compute the value of every variable we need.
-    # This function does not return the variable values, or even keep them.
-
-    # First compute all the reduced variables
-    # Probably this loop consumes most of the running time.  It's what has to read in all the data.
-    firsttime = True
-    for key in varkeys:
-        if key in reduced_variables:
-            time0 = time.time()
-            #print "jfp",time.ctime()
-            varval = reduced_variables[key].reduce()
-            #print "jfp",time.ctime(),"reduced",key,"in time",time.time()-time0
-            pmemusg = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss # "maximum resident set size"
-            pmemusg = pmemusg / 1024./1024.  # On Linux, should be 1024 for MB
-            #print "jfp   peak memory",pmemusg,"MB (GB on Linux)"
-            #requires psutil process = psutil.Process(os.getpid())
-            #requires psutil mem = process.get_memory_info()[0] / float(2**20)
-            #print "jfp   process memory",mem,"MB"
-        else:
-            continue
-        if varval is None:
-            continue
-
-        var = reduced_variables[key]
-        if firsttime:
-            firsttime = False
-            if case=='':
-                case = getattr( var, 'case', '' )
-                if case!='':
-                    case = var._file_attributes['case']+'_'
-            if case=='':
-                case = 'nocase_'
-            if variant!='':
-                variant = variant+'_'
-            filename = case + variant + season + "_climo.nc"
-            value=0
-            cdms2.setNetcdfShuffleFlag(value) ## where value is either 0 or 1
-            cdms2.setNetcdfDeflateFlag(value) ## where value is either 0 or 1
-            cdms2.setNetcdfDeflateLevelFlag(value) ## where value is a integer between 0 and 9 included
-
-            g = cdms2.open( os.path.join(path,filename), 'w' )    # later, choose a better name and a path!
-            # ...actually we want to write this to a full directory structure like
-            #    root/institute/model/realm/run_name/season/
-
-        print "writing",key,"in climatology file",filename
-        varval.id = var.variableid
-        varval.reduced_variable=varval.id
-        if hasattr(var,'units'):
-            varval.units = var.units+'*'+var.units
-        g.write(varval)
-        for attr,val in var._file_attributes.items():
-            if not hasattr( g, attr ):
-                setattr( g, attr, val )
-    if firsttime:
-        print "ERROR, no variables found.  Did you specify the right input data?"
+def restrict_to_season( datafilenames, seasonname ):
+    """Returns a sorted subset of the input list of data (model output) filenames -
+    only files which are thought to correspond to the input season name.
+    Thus datafilenames is a list of strings, and seasonname a string.
+    Normally this function assumes that the filenames are of a format I have seen in ACME output:
+    ".*\.dddd-dd\.nc" where the 4+2 digits represent the year and month respectively.
+    However single-month climatology files with 3-letter month(season) names are accepted but not sorted.
+    The season name my be the standard 3-letter season, or a string with two decimal digits.
+    If any filename does not meet the expected format, then no filenames will be rejected.
+    """
+    newfns = []
+    if datafilenames[0][-8:]=='climo.nc' or datafilenames[0][-13:]=='climo-cdat.nc':
+        # climatology file, should be for a one-month season as input for a multi-month season
+        # The climo-cdat.nc is specifically for Peter Caldwell's test script.
+        if seasonname not in season2almonth:
+            return newfns
+        for fn in datafilenames:
+            for mo in season2almonth[seasonname]:
+                if fn.find('_'+mo+'_')>0:
+                    newfns.append(fn)
     else:
-        g.season = season
+        # This should be CESMM output files, e.g. B1850C5e1_ne30.cam.h0.0080-01.nc
+        for fn in datafilenames:
+            MO = re.match( "^.*\.\d\d\d\d-\d\d\.nc$", fn )
+            if MO is None:
+                print "WARNING filename",fn,"did not match, will be ignored."
+                continue
+            mon = fn[-5:-3]
+            if mon in season2nummonth[seasonname]:
+                newfns.append(fn)
+            newfns.sort()
+    return newfns
+
+def reduce_twotimes2one( seasonname, fileout_template, fileout, g, redtime, redtime_bnds,
+                         redtime_wts, redvars ):
+    # This occurs when multiple time units (redtime_bnds) contribute to a single season,
+    # as for DJF in "days since 0" units.  We need a final reduction to a single time point.
+    # This is possible (with sensible time bounds) only if a 1-year shift can join the
+    # intervals.
+    # I can't find a way to shrink a FileVariable, so we need to make a new file:
+    outdir = os.path.dirname( os.path.abspath( os.path.expanduser( os.path.expandvars(
+                    fileout_template ) ) ) )
+    hname = os.path.join(outdir, 'climo2_temp.nc')
+    h = cdms2.open(hname, 'w')
+    store_provenance(h)
+    if redtime_bnds[0][1]-365 == redtime_bnds[1][0]:
+        newtime = ( (redtime[0]-365)*redtime_wts[0] + redtime[1]*redtime_wts[1] ) /\
+            ( redtime_wts[0] + redtime_wts[1] )
+        newbnd0 = redtime_bnds[0][0]-365
+        newbnds = numpy.array([[newbnd0, redtime_bnds[1][1]]], dtype=numpy.int32)
+        newwt = redtime_wts[0]+redtime_wts[1]
+        for var in redvars:
+            redtime = var.getTime()  # partially-reduced time axis
+            if redtime is not None:  # some variables have no time axis
+                break
+        assert( redtime is not None )
+        timeax =  cdms2.createAxis( [newtime], id='time', bounds=newbnds )
+        timeax.bounds = 'time_bnds'
+        timeax.units = redtime.units
+        for att,val in redtime.__dict__.items() :
+                if (att=='_FillValue' or att[0]!='_')\
+                        and att!='parent' and att!='autoApiInfo' and att!='domain' and att!='attributes':
+                    setattr( timeax, att, val )
+        axes = [ timeax, g['time_bnds'].getDomain()[1][0] ]  # time, bnds shapes 1, 2.
+        addVariable( h, 'time_bnds', 'd', axes, {} )
+
+        #for var in redvars:
+        #    # Include the variable's associated weight variable, if any...
+        #    if hasattr(var,'vwgts'):
+        #        redvars.append( g[var.vwgts] )
+        for iv,var in enumerate(redvars):
+            if len(var.getDomain())>0:
+                axes = [ dom[0] for dom in var.getDomain() ]
+            else:
+                axes = []
+            # Get attributes of var from g for h...
+            attdict = {}
+            for att,val in g[var.id].__dict__.items() :
+                #if att[0]!='_'\
+                if (att=='_FillValue' or att[0]!='_')\
+                        and att!='parent' and att!='autoApiInfo' and att!='domain':
+                    attdict[att] = val
+
+            if var.getTime() is None:
+                if hasattr( var, 'axes' ):
+                    #newvar = cdms2.createVariable( var, id=var.id, axes=var.axes )
+                    if var.id not in h.variables:
+                        addVariable( h, var.id, var.typecode(), var.axes, attdict )
+                else:
+                    ### If we don't call subSlice(), then TransientVariable.__init__() will, and
+                    ### it will assume that the result is a TransientVariable with a domain.
+                    ##newvar = cdms2.createVariable( var.subSlice(), id=var.id )
+                    # First make FileAxes, then FileVariable
+                    varaxes = []
+                    for i in range(var.rank()):
+                        axis = cdms2.createAxis(numpy.ma.arange(numpy.ma.size(var, i),
+                                                                dtype=numpy.float_))
+                        axis.id = "axis_" + var.id + str(i)
+                        varaxes.append(axis)
+                    if var.id not in h.variables:
+                        addVariable( h, var.id, var.typecode(), varaxes, attdict )
+                # h[var.id][:] = var[:] # doesn't work for scalar-valued variables
+                h[var.id].assignValue(var)
+            else:    # time-dependent variable, average the time values for, e.g., D and JF
+                assert( axes[0].isTime() ) # haven't coded for the alternatives
+                axes[0] = timeax
+                if var.id not in h.variables:
+                    addVariable( h, var.id, var.typecode(), axes, attdict )
+                if var.dtype.kind=='i' or var.dtype.kind=='S' :
+                    # integer, any length, or string.
+                    # Time average makes no sense, any the existing value sdb ok.
+                    h[var.id].assignValue(var[0:1])
+                else:
+                    #newvd = (var[0:1]*redtime_wts[0] +
+                    #         var[1:2]*redtime_wts[1])/(redtime_wts[0]+redtime_wts[1])
+                    if hasattr( var, 'vwgts' ):
+                        varw = g[ var.vwgts ]
+                        newvd = two_pt_avg( var, var, 0, var[1], redtime_wts[0], redtime_wts[1],
+                                            numpy.ma.array([varw[1]]) )
+                    else:
+                        newvd = two_pt_avg( var, var, 0, var[1], redtime_wts[0], redtime_wts[1] )
+                    #newvar = cdms2.createVariable( newvd, id=var.id, axes=axes )
+                    # h[var.id][:] = newvd[:] # doesn't work for scalar-valued variables
+                    h[var.id].assignValue(newvd)
+                    if hasattr( var, 'vwgts' ):
+                        varwid = var.vwgts
+                        if varwid not in h.variables:
+                            addVariable( h, varwid, 'd', axes, {} )
+                        # Note that two_pt_avg sticks the new weights where weights
+                        # were for mv1, i.e. var in this case...
+                        h[varwid].assignValue( g(varwid)[0:1] )
+        #h.write( cdms2.createVariable( [newwt], id='time_weights' ) )
+        assert( g['time_bnds'].shape == (2,2) )
+        g00 = g['time_bnds'][0][0]
+        g01 = g['time_bnds'][0][1]
+        g10 = g['time_bnds'][1][0]
+        g11 = g['time_bnds'][1][1]
+        if g00 > g11:
+            # We need to make time_bnds contiguous.  If the season consists of contiguous months
+            # (that's all we support), this can happen only from the time_bnds crossing a year boundary.
+            # Assume 365-day (noleap) calendar.
+            g00 =  g00 - 365
+            g01 =  g01 - 365
+        assert( g01==g10 )
+        assert( g00<g01 )
+        assert( g11>g10 )
+        h['time_bnds'].assignValue([[g00,g11]])
+        addVariable( h, 'time_weights', 'd', [timeax], {} )
+        h['time_weights'][:] = newwt
+        h.season = seasonname
+        h.close()
         g.close()
-    return case
+        os.rename( fileout, os.path.join(outdir, 'climo2_old.nc') )
+        os.rename( hname, fileout )
+        return cdms2.open( fileout, 'r+' )
 
-def climo_driver(opts):
-    """ Test driver for setting up data for plots"""
-    # This script should just generate climos 
-    opts['output']['plots'] = False
-    datafiles1 = dirtree_datafiles(opts, modelid = 0)
-    filetable1 = basic_filetable(datafiles1, opts)
+def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason=[] ):
 
-    myvars = opts['vars']
-    allvars = filetable1.list_variables()
-    if myvars == ['ALL']:
-        myvars = allvars
+    # NetCDF library settings for speed:
+    if 'setNetcdf4Flag' in dir(cdms2):  # backwards compatible with old versions of UV-CDAT
+        cdms2.setNetcdf4Flag(1)
+    # doesn't work with FileVariable writes cdms2.setNetcdfUseNCSwitchModeFlag(0)
+    cdms2.setNetcdfShuffleFlag(0)
+    cdms2.setNetcdfDeflateFlag(0)
+    cdms2.setNetcdfDeflateLevelFlag(0) 
+
+    assert( len(datafilenames)>0 )
+    f = cdms2.open(datafilenames[0])
+    # to do: get the time axis even if the name isn't 'time'
+
+    if len(varnames)==0 or varnames is None or 'ALL' in varnames:
+        varnames = f.variables.keys()
+    if varnames==['AMWG']:
+        # backwards compatibility, do just a few variables:
+        varnames = [ 'ANRAIN', 'ANSNOW', 'AODDUST1', 'AODDUST3', 'AODVIS', 'AQRAIN', 'AQSNOW',
+                     'AREI', 'AREL', 'AWNC', 'AWNI', 'CCN3', 'CDNUMC', 'CLDHGH', 'CLDICE', 'CLDLIQ',
+                     'CLDLOW', 'CLDMED', 'CLDTOT', 'CLOUD', 'DCQ', 'DTCOND', 'DTV', 'FICE', 'FLDS',
+                     'FLNS', 'FLNSC', 'FLNT', 'FLNTC', 'FLUT', 'FLUTC', 'FREQI', 'FREQL', 'FREQR',
+                     'FREQS', 'FSDS', 'FSDSC', 'FSNS', 'FSNSC', 'FSNT', 'FSNTC', 'FSNTOA', 'FSNTOAC',
+                     'ICEFRAC', 'ICIMR', 'ICWMR', 'IWC', 'LANDFRAC', 'LHFLX', 'LWCF', 'NUMICE',
+                     'NUMLIQ', 'OCNFRAC', 'OMEGA', 'OMEGAT', 'PBLH', 'PRECC', 'PRECL', 'PRECSC',
+                     'PRECSL', 'PS', 'PSL', 'Q', 'QFLX', 'QRL', 'QRS', 'RELHUM', 'SHFLX',
+                     'SNOWHICE', 'SNOWHLND', 'SOLIN', 'SWCF', 'T', 'TAUX', 'TAUY', 'TGCLDIWP',
+                     'TGCLDLWP', 'TMQ', 'TREFHT', 'TS', 'U', 'U10', 'UU', 'V', 'VD01', 'VQ', 'VT',
+                     'VU', 'VV', 'WSUB', 'Z3', 'P0', 'time_bnds', 'area', 'hyai', 'hyam', 'hybi',
+                     'hybm', 'lat', 'lon' ]
+
+    data_time = f.getAxis('time') # a FileAxis.
+    calendar = getattr( data_time, 'calendar', None )
+    # to do: support arbitrary time units, arbitrary calendar.
+    if calendar != 'noleap':
+        print "ERROR. So far climos() has only been implemented for the noleap calendar.  Sorry!"
+        raise Exception("So far climos() has not been implemented for calendar %s."%
+                        getattr( data_time, 'calendar', 'None' ) )
+    if getattr( data_time, 'units', '' ).find('days')!=0:
+        print "ERROR. So far climos() has only been implemented for time in days.  Sorry!"
+        raise Exception("So far climos() has not been implemented for time in units %s."%
+                        getattr( data_time, 'units', '' ) )
+    fattr = f.attributes
+    input_global_attributes = {a:fattr[a] for a in fattr if a not in ['Conventions']}
+    climo_history = "climatologies computed by climatology2.py"
+    if 'history' in input_global_attributes:
+        input_global_attributes['history'] = input_global_attributes['history'] + climo_history
     else:
-        myvars = list(set(myvars)&set(allvars))
-        if len(myvars)<len(opts['vars']):
-            print "WARNING: Some variables are not available.  Computing climatologies for\n",myvars
+        input_global_attributes['history'] = climo_history
 
-    cseasons = opts['times']
-    if cseasons == []:
-       print 'Defaulting to all seasons'
-       cseasons = ['ANN','DJF','MAM','JJA','SON',
-                   'JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC']
-    
+    if 'ALL' in seasonnames:
+        allseasons = True
+        seasonnames = [ 'ANN', 'DJF', 'MAM', 'JJA', 'SON', 'JAN', 'FEB', 'MAR', 'APR', 'MAY',
+                        'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC' ]
+    else:
+        allseasons = False
+    omit_files = {seasonname:[] for seasonname in seasonnames}
+    for omits in omitBySeason:
+        omit_files[omits[0]] = omits[1:]
+    init_data_tbounds = data_time.getBounds()[0]
+    dt = 0      # specifies climatology file
+    redfilenames = []
+    redfiles = {}  # reduced files
 
-    #cseasons = ['ANN', 'DJF', 'JJA' ] 
-    #cseasons = ['JAN']
-    case = ''
+    if allseasons and len(omitBySeason)==0:
+        # This block computes multi-month seasons from sngle-month climatology files.
+        # I've only implemented it for "all" seasons.  And I haven't implemented it for when
+        # anything is in omitBySeason.
 
-    for season in cseasons:
-        print 'Processing ', season
+        ft_bn = os.path.basename( fileout_template )
+        ft_dn = os.path.dirname( fileout_template )
+        fileout_template = os.path.join( ft_dn, ft_bn )
+        seasons_1mon =\
+            [ 'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC' ]
+        for seasonname in seasons_1mon:
+            t1=time.time()
+            redfilenames, redfiles =\
+                climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_template,
+                                  data_time, calendar, dt, redfilenames, redfiles,
+                                  input_global_attributes )
+            t2=time.time()
+            print "allseasons, season",seasonname,"time is",t2-t1
+        omit_files = {seasonname:[] for seasonname in seasonnames}
 
-        reduced_variables1 = { var+'_'+season:climatology_variable(var,filetable1,season)
-                               for var in myvars }
-        # example:             for var in ['TREFHT','FLNT','SOILC']}
-        #reduced_variables = {
-        #    'TREFHT_ANN': reduced_variable(
-        #        variableid='TREFHT', filetable=filetable1,
-        #        reduction_function=(lambda x,vid=None: reduce_time(x,vid=vid)) ),
-        #    'TREFHT_DJF': reduced_variable(
-        #        variableid='TREFHT', filetable=filetable1,
-        #        reduction_function=(lambda x,vid=None: reduce_time_seasonal(x,seasonsDJF,vid=vid)) ),
-        #    'TREFHT_MAR': reduced_variable(
-        #        variableid='TREFHT', filetable=filetable1,
-        #        reduction_function=(lambda x,vid=None:
-        #                                reduce_time_seasonal(x,Seasons(['MAR']),vid=vid)) )
-        #    }
-        # Get the case name, used to compute the output file name.
-        varkeys = reduced_variables1.keys()
-        #varkeys = varkeys[0:2]  # quick version for testing
+        # How would I use omitBySeason here?  It's possible, but some trouble to do.
+        # What you would do is to use some of the raw data, of the files to be omitted,
+        # to partially un-do an average to, e.g., DJF, or to supplement it - as needed
+        # Thus 1-3 raw (model output) files, typically, will have to be re-read.
+        # If I do this, I also will have to take some care about weights because right now
+        # the climatology-based weights are scaled differently from the model-data-
+        # based weights.
+        
+        # For each multi-month season, change datafilenames to the 1-month climatology files,
+        # or 3-month for ANN.
+        t1=time.time()
+        seasonname = 'DJF'
+        datafilenames = []
+        for sn in ['JAN','FEB','DEC']:
+            datafilenames.append( fileout_template.replace('XXX',sn) )
+        redfilenames, redfiles =\
+            climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_template,
+                              data_time, calendar, dt, redfilenames, redfiles,
+                              input_global_attributes )
+        t2=time.time()
+        print "allseasons, season DJF, time is",t2-t1
+        t1=time.time()
+        seasonname = 'MAM'
+        datafilenames = []
+        for sn in ['MAR','APR','MAY']:
+            datafilenames.append( fileout_template.replace('XXX',sn) )
+        redfilenames, redfiles =\
+            climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_template,
+                              data_time, calendar, dt, redfilenames, redfiles,
+                              input_global_attributes )
+        t2=time.time()
+        print "allseasons, season MAM, time is",t2-t1
+        t1=time.time()
+        seasonname = 'JJA'
+        datafilenames = []
+        for sn in ['JUN','JUL','AUG']:
+            datafilenames.append( fileout_template.replace('XXX',sn) )
+        redfilenames, redfiles =\
+            climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_template,
+                              data_time, calendar, dt, redfilenames, redfiles,
+                              input_global_attributes )
+        t2=time.time()
+        print "allseasons, season JJA, time is",t2-t1
+        t1=time.time()
+        seasonname = 'SON'
+        datafilenames = []
+        for sn in ['SEP','OCT','NOV']:
+            datafilenames.append( fileout_template.replace('XXX',sn) )
+        redfilenames, redfiles =\
+            climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_template,
+                              data_time, calendar, dt, redfilenames, redfiles,
+                              input_global_attributes )
+        t2=time.time()
+        print "allseasons, season SON, time is",t2-t1
+        t1=time.time()
+        seasonname = 'ANN'
+        datafilenames = []
+        for sn in ['DJF', 'MAM', 'JJA', 'SON']:
+            datafilenames.append( fileout_template.replace('XXX',sn) )
+        redfilenames, redfiles =\
+            climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_template,
+                              data_time, calendar, dt, redfilenames, redfiles,
+                              input_global_attributes )
+        t2=time.time()
+        print "allseasons, season ANN, time is",t2-t1
 
-        casename = ''
-        if opts['model'][0]['name'] != None:
-           casename = opts['model'][0]['name']
-           print 'Using ', casename,' as dataset name'
-        if opts['output']['outputdir'] is not None and opts['output']['outputdir']!='':
-            outdir = opts['output']['outputdir']
-        else:
-            outdir = ''
-        outdir = os.path.join(outdir, 'climos')
-        print 'casename: ', casename
-        if not os.path.isdir(outdir):
-            try:
-               os.mkdir(outdir) # processOptions() verifies up to the /climos part, so make /climos now
-            except:
-               print 'Could not create outputdir - %s' %outdir
-               quit()
-        #rvs,case = compute_and_write_climatologies_keepvars( varkeys, reduced_variables1, season, casename,
-        #                                            path=outdir )
-        case = compute_and_write_climatologies( varkeys, reduced_variables1, season, casename,
-                                                    path=outdir )
+    else:
+        # This is the simplest and most flexible way to compute climatologies - directly
+        # from the input model data.
+        for seasonname in seasonnames:
+            if allseasons: t1=time.time()
+            redfilenames, redfiles =\
+                climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_template,
+                                  data_time, calendar, dt, redfilenames, redfiles,
+                                  input_global_attributes )
+            if allseasons:
+                t2=time.time()
+                print "original, season",seasonname,"time is",t2-t1
 
-        # Repeat for variance, climatology of (var-climo(var))**2/(N-1)
-        # using the (still-in-memory) data in the dict reduced_variables.
-#        print "jfp\ndoing var..."
-#        reduced_variables3 = { var+'_'+season:
-#                                   climatology_variance(var,filetable1,season,rvs=rvs)
-#                               for var in filetable1.list_variables() }
-#        compute_and_write_climatologies( varkeys, reduced_variables3, season, case, 'var',
-#                                         path=outdir )
+
+def climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_template,
+                      data_time, calendar, dt, redfilenames, redfiles,
+                      input_global_attributes ):
+    global force_scalar_avg  # saves typing!
+    print "doing season",seasonname
+    sredfiles = {}  # season reduced files
+    datafilenames = [fn for fn in datafilenames if fn not in omit_files[seasonname]]
+    datafilenames2 = restrict_to_season( datafilenames, seasonname )
+    if len(datafilenames2)<=0:
+        print "WARNING, no input data, skipping season",seasonname
+        return redfilenames, redfiles
+    season = daybounds(seasonname)
+    # ... assumes noleap calendar, returns time in days.
+    init_red_tbounds = numpy.array( season, dtype=numpy.int32 )
+    fileout = fileout_template.replace('XXX',seasonname)
+    g, out_varnames, tmin, tmax = initialize_redfile_from_datafile(
+        fileout, varnames, datafilenames2[0], dt, init_red_tbounds )
+    # g is the (newly created) climatology file.  It's open in 'w' mode.
+    season_tmin = tmin
+    season_tmax = tmax
+    redfilenames.append(fileout)
+    redfiles[fileout] = g
+    sredfiles[fileout] = g
+    redtime = g.getAxis('time')
+    redtime.units = 'days since 0'
+    redtime.long_name = 'climatological time'
+    redtime.calendar = calendar
+    redtime_wts = g['time_weights']
+    redtime_bnds = g[ g.getAxis('time').bounds ]
+    redvars = [ g[varn] for varn in out_varnames ]
+
+    tmin, tmax = update_time_avg_from_files( redvars, redtime_bnds, redtime_wts, datafilenames2,
+                                fun_next_tbounds = (lambda rtb,dtb,dt=dt: rtb),
+                                redfiles=sredfiles.values(), dt=dt,
+                                force_scalar_avg=force_scalar_avg )
+    season_tmin = min( tmin, season_tmin )
+    season_tmax = max( tmax, season_tmax )
+
+    if len(redtime)==2:
+        # reduce_twotimes2one() will close the supplied g, and return a g opened in 'r+' mode...
+        g = reduce_twotimes2one( seasonname, fileout_template, fileout, g, redtime,
+                                 redtime_bnds, redtime_wts, redvars )
+        redtime = g.getAxis('time')
+        redtime_bnds = g[ g.getAxis('time').bounds ]
+
+    for a in input_global_attributes:
+        setattr( g,a, input_global_attributes[a] )
+    if 'source' in input_global_attributes:
+        g.source += ", climatologies from "+str(datafilenames)
+    else:
+        g.source = str(datafilenames)
+    g.season = seasonname
+    g.Conventions = 'CF-1.7'
+
+    # At this point, for each season the time axis should have long name "climatological time"
+    # with units "days since 0", a value in the range [0,365] and in the midpoint of its bounds.
+    # But the CF Conventions, section 7.4 "Climatological Statistics" call for the time units
+    # and value to correspond to the original data.  Fix it up here
+    # For the time correction, use the lowest time in the data units, and the lowest time in "years since 0" units.
+    deltat = season_tmin - redtime_bnds[0][0]
+    redtime[:] += deltat
+    redtime_bnds[:] += deltat
+    redtime.units = data_time.units
+    redtime_bnds.units = redtime.units
+    g['time_climo'][:] = [ season_tmin, season_tmax ]
+    g['time_climo'].initialized = 'yes'
+    g['time_climo'].units = g['time'].units
+    g.close()
+    return redfilenames, redfiles
 
 if __name__ == '__main__':
-   o = Options()
-   o.processCmdLine()
-   o.verifyOptions()
-   climo_driver(o)
+    p = argparse.ArgumentParser(description="Climatology")
+    # TO DO: test with various paths.  Does this work naturally? <<<<<<<<<<<<
+    p.add_argument("--outfile", dest="outfile", help="Name of output file, XXX for season (mandatory)", nargs=1,
+                   required=True )
+    p.add_argument("--infiles", dest="infiles", help="Names of input files (mandatory)", nargs='+',
+                   required=True )
+    p.add_argument("--seasons", dest="seasons", help="Seasons, each 3 characters (mandatory)", nargs='+',
+                   required=True )
+    p.add_argument("--variables", dest="variables", help="Variable names (ALL or omit for all)", nargs='+',
+                   required=False, default=['ALL'] )
+    p.add_argument("--omitBySeason", dest="omitBySeason", help=
+               "Omit files for just the specified season.  For multiple seasons, provide this"+
+                   "argument multiple times. E.g. --omitBySeason DJF lastDECfile.nc\"",
+                   nargs='+', action='append', default=[] )
+    p.add_argument("--forceScalarAvg", dest="forceScalarAvg", default=False, help=
+                   "For testing, forces use of a simple scalar average, ignoring missing values" )
+    args = p.parse_args(sys.argv[1:])
+    print "input args="
+    pprint(args)
+
+    force_scalar_avg = args.forceScalarAvg
+    climos( args.outfile[0], args.seasons, args.variables, args.infiles, args.omitBySeason )
+
+    if False:
+        # For testing, print results...
+        for seasname in args.seasons:
+            g = cdms2.open( args.outfile[0].replace('XXX',seasname) )
+            redtime = g.getAxis('time')
+            redtime_bnds = g( redtime.bounds )
+            redtime_wts = g('time_weights')
+            TS = g('TS')
+            PS = g('PS')
+            print "season=",seasname
+            print "redtime=",redtime
+            print "redtime_bnds=",redtime_bnds
+            print "redtime_wts=",redtime_wts
+            print "TS=",TS,TS.shape
+            #print "PS=",PS,PS.shape
+

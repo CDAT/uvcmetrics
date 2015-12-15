@@ -8,9 +8,15 @@ from metrics.frontend.options import make_ft_dict
 from metrics.fileio.filetable import *
 from metrics.fileio.findfiles import *
 from metrics.packages.diagnostic_groups import *
+try:
+   from mpi4py import MPI
+except:
+   print 'Couldnt import mpi4py. suggest running metadiags.py instead'
+   sys.exit(1)
+
 
 # If not specified on an individual variable, this is the default.
-def_executable = 'diags.py'
+def_executable = 'diags-new.py'
 
 # The user specified a package; see what collections are available.
 def getCollections(pname):
@@ -148,7 +154,7 @@ def makeTables(collnum, model_dict, obspath, outpath, pname, outlog):
             else:
                auxstr = '--varopts '+a
 
-            cmdline = 'diags.py %s %s %s --table --set %s --prefix set%s --package %s --vars %s %s %s %s --outputdir %s' % (path0str, path1str, obsstr, collnum, collnum, package, vstr, seasonstr, regionstr, auxstr, outpath)
+            cmdline = 'diags-new.py %s %s %s --table --set %s --prefix set%s --package %s --vars %s %s %s %s --outputdir %s' % (path0str, path1str, obsstr, collnum, collnum, package, vstr, seasonstr, regionstr, auxstr, outpath)
             runcmdline(cmdline, outlog)
          
 def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
@@ -333,7 +339,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
                   pstr2 = '--model path=%s,climos=%s,type=model' % (modelpath1, cf1)
                else:
                   pstr2 = ''
-               cmdline = 'diags.py %s %s %s %s %s %s %s %s %s %s %s %s %s' % (pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, seasonstr, varstr, outstr, xmlstr, prestr, poststr, regionstr)
+               cmdline = 'diags-new.py %s %s %s %s %s %s %s %s %s %s %s %s %s' % (pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, seasonstr, varstr, outstr, xmlstr, prestr, poststr, regionstr)
                   
                if collnum != 'dontrun':
                   runcmdline(cmdline, outlog)
@@ -385,7 +391,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
                   else:
                      pstr2 = ''
 
-                  cmdline = 'diags.py %s %s %s %s %s %s %s %s %s %s %s %s %s %s' % (pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, seasonstr, varstr, outstr, xmlstr, prestr, poststr, regionstr, varopts)
+                  cmdline = 'diags-new.py %s %s %s %s %s %s %s %s %s %s %s %s %s %s' % (pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, seasonstr, varstr, outstr, xmlstr, prestr, poststr, regionstr, varopts)
                   if collnum != 'dontrun':
                      runcmdline(cmdline, outlog)
                   else:
@@ -463,13 +469,7 @@ def setnum( setname ):
 def list_vars(ft, package):
     dm = diagnostics_menu()
     vlist = []
-    if 'packages' not in opts._opts:
-       opts['packages'] = [ opts['package'] ]
     for pname in opts['packages']:
-        if pname not in dm:
-           pname = pname.upper()
-           if pname not in dm:
-              pname = pname.lower()
         pclass = dm[pname]()
 
         slist = pclass.list_diagnostic_sets()
@@ -493,7 +493,7 @@ def postDB(fts, dsname, package, host=None):
       vl_tmp = list_vars(fts[i+1], package)
       vlstr = vlstr+', '.join(vl_tmp)
 
-   string = '\'{"variables": "'+str(vl)+'"}\''
+   string = '\'{"variables": "'+vl+'"}\''
    print 'Variable list: ', string
    command = "echo "+string+' | curl -d @- \'http://'+host+'/exploratory_analysis/dataset_variables/'+dsname+'/\' -H "Accept:application/json" -H "Context-Type:application/json"'
    print 'Adding variable list to database on ', host
@@ -502,9 +502,35 @@ def postDB(fts, dsname, package, host=None):
 
 ### The driver part of the script
 if __name__ == '__main__':
+
+# This is meant as essentially a wrapper around diags(-new) with some extra intelligence added to diags(-new) and diags(-new) integrated in this file as well.
+
+# Basically, we distribute work via a master/worker system. A work unit is a set of one or more variables, one or more datasets, one obs set, and one plot type. 
+# Each node gets one work unit at a time. Each work unit can be subdivided among the cores on a given node such that a given node will load the obs set and dataset(s) and each core
+# will process variables based on that dataset and obs set and plot type.
+# Program flow:
+# Rank 0 - initial setup, directory creation, data validity checks, etc
+# All nodes - Determine communicators for {groups of cores on a given node} and {groups of nodes in the process}
+# Rank 0 - broadcast IO information to all nodes (process 0 in a node communicator)
+# Rank 0 - enter work unit sending loop
+# Core0s - enter work unit receiving loop; open files as needed; broadcast to cores (shared memory would be nicer...)
+# CoreX - process a given variable, dataset(s), obs, and plot type and generate plots
+
+### NEW COMMAND LINE OPTION: Maximum processes per *node*
+
+   # Assumes import mpi4py was successful.
+   self.comm = MPI_COMM_WORLD
+   self.size = self.comm.size
+   self.rank = self.comm.rank
+
+# Determine how many nodes we have.
+# Look at hostname I suppose. No good/portable way to do this otherwise.
+
    opts = Options()
    opts.processCmdLine()
    opts.verifyOptions()
+
+
 
    if opts['package'] == None or opts['package'] == '':
       print "Please specify a package when running metadiags."
