@@ -2694,11 +2694,10 @@ def run_cdscan( fam, famfiles, cache_path=None, COMM=None ):
         from mpi4py import MPI
         print ">>>>cdscan=", COMM.rank, famfiles[0]
         comm1 = MPI.COMM_SELF.Spawn( sys.executable, args=cdscan_line, maxprocs=1 )
-        print ">>>>after cdscan", COMM.rank
         #wait until cdscan is done
         message = comm1.recv(source = MPI.ANY_SOURCE)
         proc_status = MPI.Status().Get_error()
-
+        print ">>>>after cdscan", COMM.rank, message
     if proc_status!=0: 
         print "ERROR: cdscan terminated with",proc_status
         print 'This is usually fatal. Frequent causes are an extra XML file in the dataset directory'
