@@ -1031,11 +1031,11 @@ class plot_spec(object):
 
             for key in self.local_keys:
                 v = self.reduced_variables[key]
-                print '>>>>reduce=', self.comm.rank, v._filename
+                print '>>>>reduce try=', self.comm.rank, v._filename
                 try:
                     value = v.reduce(None, COMM=self.comm)
                 except:
-                    sys.exit('>>>exit='+str(self.comm.rank)+ '>>> '+ str(key))
+                    sys.exit('>>>exit='+str(self.comm.rank)+ '>>> '+ str(key)+'\n')
     
                 try:
                     if  len(value.data)<=0:
