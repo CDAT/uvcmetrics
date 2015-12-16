@@ -2691,7 +2691,7 @@ def run_cdscan( fam, famfiles, cache_path=None, COMM=None ):
         cdscan_line = '%s/bin/'%(sys.prefix) + cdscan_line
         cdscan_line = shlex.split(cdscan_line)
         
-        from metrics.fileio import cdscanFix
+        from metrics.fileio.cdscanFix import cdscanFix
         cdscanFix()
         import cdscan
         cdscan.main( cdscan_line )
