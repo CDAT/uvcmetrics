@@ -2691,12 +2691,19 @@ def run_cdscan( fam, famfiles, cache_path=None, COMM=None ):
         cdscan_line = '%s/bin/'%(sys.prefix) + cdscan_line
         cdscan_line = shlex.split(cdscan_line)
         
-        from mpi4py import MPI
+        from metrics.fileio import cdscanFix
+        cdscanFix()
+        import cdscan
+        cdscan.main( cdscan_line )
+        
+        #from mpi4py import MPI
         print ">>>>cdscan=", COMM.rank, famfiles[0]
-        comm1 = MPI.COMM_SELF.Spawn( sys.executable, args=cdscan_line, maxprocs=1 )
+        #comm1 = MPI.COMM_SELF.Spawn( sys.executable, args=cdscan_line, maxprocs=1 )
         #wait until cdscan is done
-        message = comm1.recv(source = MPI.ANY_SOURCE)
-        proc_status = MPI.Status().Get_error()
+        #message = comm1.recv(source = MPI.ANY_SOURCE)
+        #proc_status = MPI.Status().Get_error()
+        message = 'DONE'
+        proc_status=0
         if os.path.exists(xml_name):
             print ">>>>after cdscan", COMM.rank, message, os.path.getsize(xml_name)
         else:
