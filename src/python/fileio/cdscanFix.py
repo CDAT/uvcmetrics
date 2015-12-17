@@ -6,20 +6,21 @@ def cdscanFix():
     ospath = os.environ['PATH'].split(':')
     #print ospath
     
-    cdscanPath = None
-    for path in ospath:
+    cdscanPath = sys.prefix + '/bin/'
+    print cdscanPath
+    #for path in ospath:
         #print path
-        dirList = os.listdir(path)
-        if 'cdscan' in dirList:
-            cdscanPath = path
-            if 'cdscan.py' not in dirList:
-                #make a copy and put it there
-                try:
-                    shutil.copyfile(path+'/cdscan', path+'/cdscan.py')
-                    #print 'cdscan.py' in os.listdir(path)
-                except:
-                    pass
-            break
+    dirList = os.listdir(cdscanPath)
+    if 'cdscan' in dirList:
+        #cdscanPath = path
+        if 'cdscan.py' not in dirList:
+            #make a copy and put it there
+            try:
+                shutil.copyfile(cdscanPath+'/cdscan', cdscanPath+'/cdscan.py')
+                print 'cdscan.py' in os.listdir(path)
+            except:
+                pass
+            #break
     sys.path.insert(0, cdscanPath)
     #print cdscanPath
     #print cdscanPath in sys.path
