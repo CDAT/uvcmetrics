@@ -2692,10 +2692,7 @@ def run_cdscan( fam, famfiles, cache_path=None, COMM=None ):
         cdscan_line = shlex.split(cdscan_line)
         
         from metrics.fileio.cdscanFix import cdscanFix
-        cdscanFix()
-        if not os.path.exists(xml_name):
-            print ">>>>after cdscan", COMM.rank, 'no file', xml_name
-            
+        cdscanFix()            
         import cdscan        
         try:
             cdscan.main( cdscan_line )
@@ -2704,6 +2701,8 @@ def run_cdscan( fam, famfiles, cache_path=None, COMM=None ):
             print 'This is usually fatal. Frequent causes are an extra XML file in the dataset directory'
             print 'or non-CF compliant input files'
             raise Exception("cdscan failed - %s" %cdscan_line)
+        if not os.path.exists(xml_name):
+            print ">>>>after cdscanFix", COMM.rank, 'no file', xml_name
     return xml_name
 
 def join_data(*args ):
@@ -2939,7 +2938,6 @@ class reduced_variable(ftrow,basic_id):
             if self._filename is not None:
                 xml_name = self._filename
             else:
-                print ">>>>before run_cdscan", COMM.rank, fam
                 xml_name = run_cdscan( fam, famfiles, cache_path, COMM=COMM )
 
             filename = xml_name
