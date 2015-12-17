@@ -2693,26 +2693,17 @@ def run_cdscan( fam, famfiles, cache_path=None, COMM=None ):
         
         from metrics.fileio.cdscanFix import cdscanFix
         cdscanFix()
-        import cdscan
-        cdscan.main( cdscan_line )
-        
-        #from mpi4py import MPI
-        print ">>>>cdscan=", COMM.rank, famfiles[0]
-        #comm1 = MPI.COMM_SELF.Spawn( sys.executable, args=cdscan_line, maxprocs=1 )
-        #wait until cdscan is done
-        #message = comm1.recv(source = MPI.ANY_SOURCE)
-        #proc_status = MPI.Status().Get_error()
-        message = 'DONE'
-        proc_status=0
-        if os.path.exists(xml_name):
-            print ">>>>after cdscan", COMM.rank, message, os.path.getsize(xml_name)
-        else:
-            print ">>>>after cdscan", COMM.rank, message, 'no file', xml_name
-    if proc_status!=0: 
-        print "ERROR: cdscan terminated with",proc_status
-        print 'This is usually fatal. Frequent causes are an extra XML file in the dataset directory'
-        print 'or non-CF compliant input files'
-        raise Exception("cdscan failed - %s" %cdscan_line)
+        if not os.path.exists(xml_name):
+            print ">>>>after cdscan", COMM.rank, 'no file', xml_name
+            
+        import cdscan        
+        try:
+            cdscan.main( cdscan_line )
+        except:
+            print "ERROR: cdscan terminated with",proc_status
+            print 'This is usually fatal. Frequent causes are an extra XML file in the dataset directory'
+            print 'or non-CF compliant input files'
+            raise Exception("cdscan failed - %s" %cdscan_line)
     return xml_name
 
 def join_data(*args ):
@@ -2983,7 +2974,6 @@ class reduced_variable(ftrow,basic_id):
             vid = self._strid
 
         #avoid multiple calls to cdscan during compute loop
-        print ">>>>in reduce", COMM.rank, self._filename
         if self._filename is not None:
             filename = self._filename
         else:
@@ -3039,20 +3029,14 @@ class reduced_variable(ftrow,basic_id):
                 duv_value = duv.derive( duv_inputs )
                 reduced_data = self._reduction_function( duv_value, vid=vid )
         else:
-            print ">>>>>>>>in reduce open file", COMM.rank, filename
             f = cdms2.open( filename )
-            print ">>>>>>>>in reduce file opened", COMM.rank
             self._file_attributes.update(f.attributes)
-            print ">>>>>>>>in reduce update complete", COMM.rank, self.variableid in f.variables.keys()
             if self.variableid in f.variables.keys():
                 var = f(self.variableid)
                 if os.path.basename(filename)[0:5]=='CERES':
                     var = special_case_fixed_variable( 'CERES', var )
 
-                print ">>>>>>>>>>>>in reduce before reduction", COMM.rank, vid
-                reduced_data = self._reduction_function( var, vid=vid )
-                print ">>>>>>>>>>>>in reduce after reduction", COMM.rank, reduced_data.shape
-                
+                reduced_data = self._reduction_function( var, vid=vid )                
             elif self.variableid in f.axes.keys():
                 taxis = cdms2.createAxis(f[self.variableid])   # converts the FileAxis to a TransientAxis.
                 taxis.id = f[self.variableid].id
