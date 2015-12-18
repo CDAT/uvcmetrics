@@ -17,7 +17,7 @@ def cdscanFix():
                 #for an nfs mounted drive it seems necessary to wait until 
                 #the copy actually finishes.  This is totally a kludge but
                 #it seems necessary. The remedy is to change the way cdms2
-                #and uvcdat create cdscan
+                #and uvcdat create cdscan. .05 is arbitrary.
                 sleep(.05)
                 print 'cdscan.py' in os.listdir(path)
             except:

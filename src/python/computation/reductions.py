@@ -2681,32 +2681,32 @@ def run_cdscan( fam, famfiles, cache_path=None, COMM=None ):
                     ' '.join(famfiles)
 
     f.close()
-    if COMM is None:
-        #serial mode
-        proc = subprocess.Popen([cdscan_line],shell=True)
-        proc_status = proc.wait()
-    else:
+    #if COMM is None:
+    #    #serial mode
+    #    proc = subprocess.Popen([cdscan_line],shell=True)
+    #    proc_status = proc.wait()
+    #else:
         #parallel mode
-        import shlex
-        cdscan_line = '%s/bin/'%(sys.prefix) + cdscan_line
-        cdscan_line = shlex.split(cdscan_line)
-        
-        from metrics.fileio.cdscanFix import cdscanFix
-        cdscanFix()
-        #now import cdscan works          
-        import cdscan        
-        try:
-            cdscan.main( cdscan_line )
-        except:
-            print "ERROR: cdscan terminated"
-            print 'This is usually fatal. Frequent causes are an extra XML file in the dataset directory'
-            print 'or non-CF compliant input files'
-            RANK = 0
-            if COMM:
-                RANK = COMM.rank
-            if not os.path.exists(xml_name):
-                print ">>>>cdscan failed to create ", xml_name, " rank is", RANK
-            raise Exception("cdscan failed - %s" %cdscan_line)
+    import shlex
+    cdscan_line = '%s/bin/'%(sys.prefix) + cdscan_line
+    cdscan_line = shlex.split(cdscan_line)
+    
+    from metrics.fileio.cdscanFix import cdscanFix
+    cdscanFix()
+    #now import cdscan works          
+    import cdscan        
+    try:
+        cdscan.main( cdscan_line )
+    except:
+        print "ERROR: cdscan terminated"
+        print 'This is usually fatal. Frequent causes are an extra XML file in the dataset directory'
+        print 'or non-CF compliant input files'
+        RANK = 0
+        if COMM:
+            RANK = COMM.rank
+        if not os.path.exists(xml_name):
+            print ">>>>cdscan failed to create ", xml_name, " rank is", RANK
+        raise Exception("cdscan failed - %s" %cdscan_line)
     return xml_name
 
 def join_data(*args ):
