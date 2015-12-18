@@ -2697,12 +2697,15 @@ def run_cdscan( fam, famfiles, cache_path=None, COMM=None ):
         try:
             cdscan.main( cdscan_line )
         except:
-            print "ERROR: cdscan terminated with",proc_status
+            print "ERROR: cdscan terminated"
             print 'This is usually fatal. Frequent causes are an extra XML file in the dataset directory'
             print 'or non-CF compliant input files'
             raise Exception("cdscan failed - %s" %cdscan_line)
+        RANK = 0
+        if COMM:
+            RANK = COMM.rank
         if not os.path.exists(xml_name):
-            print ">>>>after cdscanFix", COMM.rank, 'no file', xml_name
+            print ">>>>cdscan failed to create ", xml_name, " rank is", RANK,
     return xml_name
 
 def join_data(*args ):
