@@ -2681,12 +2681,8 @@ def run_cdscan( fam, famfiles, cache_path=None, COMM=None ):
                     ' '.join(famfiles)
 
     f.close()
-    #if COMM is None:
-    #    #serial mode
-    #    proc = subprocess.Popen([cdscan_line],shell=True)
-    #    proc_status = proc.wait()
-    #else:
-        #parallel mode
+
+    #run cdscan to generate the xml file
     import shlex
     cdscan_line = '%s/bin/'%(sys.prefix) + cdscan_line
     cdscan_line = shlex.split(cdscan_line)
@@ -2707,6 +2703,7 @@ def run_cdscan( fam, famfiles, cache_path=None, COMM=None ):
         if not os.path.exists(xml_name):
             print ">>>>cdscan failed to create ", xml_name, " rank is", RANK
         raise Exception("cdscan failed - %s" %cdscan_line)
+    
     return xml_name
 
 def join_data(*args ):
