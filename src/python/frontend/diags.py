@@ -32,6 +32,7 @@ import metrics.frontend.defines as defines
 import cProfile
 from metrics.frontend.it import *
 from metrics.computation.region import *
+import debug
 
 def setnum( setname ):
     """extracts the plot set number from the full plot set name, and returns the number.
@@ -609,11 +610,14 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                   print "ERROR making summary plot:",e
             elif vcs.istaylordiagram(rsr.presentation):
                # this is a total hack that is related to the hack in uvdat.py
-               vcanvas.legendTitles = rsr.legendTitles
+               try:
+                   vcanvas.legendTitles = rsr.legendTitles
+               except:  # Recently the above has failed because vcanvas doesn't have the attribute legendTitles.
+                   pass
                if hasattr(plot, 'customizeTemplates'):
                   vcanvas.setcolormap("bl_to_darkred")
                   print vcanvas.listelements("colormap")
-                  tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (None, None)] )
+                  tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (None, None)], legendTitles=rsr.legendTitles )
                vcanvas.plot(var, rsr.presentation, tm, bg=1,
                   title=title, units=getattr(var,'units',''), source=rsr.source )
                savePNG = True
@@ -662,8 +666,11 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
       else:
          fname = fnamebase+'-combined.png'
 
-      print "writing png file2:",fname
-      vcanvas2.png( fname , ignore_alpha = True, metadata=provenance_dict() )
+      if vcanvas2.backend.renWin is None:
+          print "no data to plot to file2:", fname
+      else:
+          print "writing png file2:",fname
+          vcanvas2.png( fname , ignore_alpha = True, metadata=provenance_dict() )
 
 
 if __name__ == '__main__':

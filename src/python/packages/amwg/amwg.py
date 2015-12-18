@@ -3045,7 +3045,7 @@ class amwg_plot_set14(amwg_plot_spec):
                                         
         self.computation_planned = True
         #pdb.set_trace()
-    def customizeTemplates(self, templates):
+    def customizeTemplates(self, templates, legendTitles=[]):
         """Theis method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs, tm), (cnvs2, tm2) = templates
         tm.data.x1 = .1
@@ -3066,8 +3066,12 @@ class amwg_plot_set14(amwg_plot_spec):
         tm.dataname.priority=0
 
         lx = .75
-        ly = .95        
-        for i, ltitle in enumerate(cnvs.legendTitles):
+        ly = .95
+        if hasattr(cnvs,'legendTitles'):
+            lTitles = cnvs.legendTitles
+        else:
+            lTitles = legendTitles
+        for i, ltitle in enumerate(lTitles):
             text = cnvs.createtext()
             text.string = str(i) + '  ' + ltitle
             text.x = lx
