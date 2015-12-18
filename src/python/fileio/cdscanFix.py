@@ -13,7 +13,13 @@ def cdscanFix():
             #make a copy and put it there
             try:
                 shutil.copyfile(cdscanPath+'/cdscan', cdscanPath+'/cdscan.py')
-                #print 'cdscan.py' in os.listdir(path)
+                from time import sleep
+                #for an nfs mounted drive it seems necessary to wait until 
+                #the copy actually finishes.  This is totally a kludge but
+                #it seems necessary. The remedy is to change the way cdms2
+                #and uvcdat create cdscan
+                sleep(.05)
+                print 'cdscan.py' in os.listdir(path)
             except:
                 pass
     else:
