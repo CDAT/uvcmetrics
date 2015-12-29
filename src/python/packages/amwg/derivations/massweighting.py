@@ -105,25 +105,27 @@ def weighting_choice( mv ):
     #   "number/number"-type units: [mol]/[mol], [ppt], [ppb], [ppm], [pptv], [ppbv], [ppmv]
     # The default should still be area-weighting,
     choice = "area"
-    un = getattr( mv, 'units', '' )
-    axes = [a[0] for a in mv.getDomain() if not a[0].isTime()]
-    if len(axes)>1:  # a 3-D variable on an unstructured grid may have just 2 non-time axes.
-        #              hyam, hybm have no axes other than the level axis
-        if len( [a for a in axes if a.isLevel()] )>0:
-            # 3-D variable
-            if un in ['K', 'deg K', 'deg C', 'deg F', 'degC', 'degF', 'degK',
-                      'deg_C', 'deg_F', 'deg_K', 'deg_c', 'deg_f', 'deg_k',
-                      'degreeC', 'degreeF', 'degreeK', 'degree_C', 'degree_Celsius', 'degree_F',
-                      'degree_Fahrenheit', 'degree_K', 'degree_Kelvin', 'degree_c', 'degree_centigrade',
-                      'degree_f', 'degree_k'] + [ 'ppt', 'ppm', 'pptv', 'ppbv', 'ppmv' ]:
-                choice = 'mass'
-            if un.find('/')>0:
-                p = un.find('/')
-                lft = un[0:p]
-                rht = un[p+1:]
-                if lft==rht and lft in ['kg', 'g', 'Pa', 'hPa', 'mbar', 'mol', 'mole']:
+    if hasattr( mv, 'getDomain' ):
+        # if not, it's probably an axis
+        un = getattr( mv, 'units', '' )
+        axes = [a[0] for a in mv.getDomain() if not a[0].isTime()]
+        if len(axes)>1:  # a 3-D variable on an unstructured grid may have just 2 non-time axes.
+            #              hyam, hybm have no axes other than the level axis
+            if len( [a for a in axes if a.isLevel()] )>0:
+                # 3-D variable
+                if un in ['K', 'deg K', 'deg C', 'deg F', 'degC', 'degF', 'degK',
+                          'deg_C', 'deg_F', 'deg_K', 'deg_c', 'deg_f', 'deg_k',
+                          'degreeC', 'degreeF', 'degreeK', 'degree_C', 'degree_Celsius', 'degree_F',
+                          'degree_Fahrenheit', 'degree_K', 'degree_Kelvin', 'degree_c', 'degree_centigrade',
+                          'degree_f', 'degree_k'] + [ 'ppt', 'ppm', 'pptv', 'ppbv', 'ppmv' ]:
                     choice = 'mass'
+                if un.find('/')>0:
+                    p = un.find('/')
+                    lft = un[0:p]
+                    rht = un[p+1:]
+                    if lft==rht and lft in ['kg', 'g', 'Pa', 'hPa', 'mbar', 'mol', 'mole']:
+                        choice = 'mass'
         
-    vname = mv.id
+    #vname = mv.id
     # print "variable",mv.id.ljust(8,' '),"weighting",choice,"units",un
     return choice
