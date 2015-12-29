@@ -20,6 +20,7 @@ from metrics.computation.plotspec import *
 import metrics.frontend.defines as defines
 from metrics.packages.lmwg.defines import *
 
+debug_lmwg = False
 
 # This needs to be here for some unknown reason.
 class lmwg_set9_variables(basic_plot_variable):
@@ -1872,7 +1873,7 @@ class lmwg_plot_set5(lmwg_plot_spec):
    name = '5 - Tables of annual means'
    number = '5'
 
-   print '***** NEED PROPER UNIT CONVERSIONS FOR A FEW MORE UNITS ******'
+   if debug_lmwg: print '***** NEED PROPER UNIT CONVERSIONS FOR A FEW MORE UNITS ******'
    print '(Probably what is wrong with regional. carbon needs some more conversions too though)'
    # This jsonflag is gross, but Options has always been a 2nd class part of the design. Maybe I'll get to
    # change that for the next release.
@@ -2895,7 +2896,7 @@ class lmwg_plot_set9(lmwg_plot_spec):
 class lmwg_plot_set7(lmwg_plot_spec):
    name = '7 - Line plots, tables, and maps of RTM river flow and discharge to oceans'
    number = '7'
-   print '--------> SET 7'
+   if debug_lmwg: print '--------> SET 7'
    def __init__(self, model, obs, varid, seasonid=None, region=None, aux=None, levels=None):
       print 'SET 7 INIT'
 
