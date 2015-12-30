@@ -2,7 +2,7 @@ import subprocess, pdb
 SBATCH_EXEC = 'sbatch --nodes=1 --ntasks-per-node=6 diag.sh'
 proc=subprocess.Popen([SBATCH_EXEC], shell=True, stdout=subprocess.PIPE)
 #pdb.set_trace()
-subprocess.Popen.wait() #x.wait()
+subprocess.Popen.wait(proc) #x.wait()
 #retrieve jobid and create the slurm file name
 msg = proc.communicate()[0]
 msg = msg.split()
