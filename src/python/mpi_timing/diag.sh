@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH --job-name=diag_8 --time=01:00:00
-##SBATCH --nodes=$N --ntasks-per-node=$n
+
 #hostname
 
 source /opt/nfs/mcenerney1/11_03_15/bin/setup_runtime.sh
