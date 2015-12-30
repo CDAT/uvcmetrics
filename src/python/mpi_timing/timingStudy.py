@@ -1,10 +1,10 @@
 import subprocess, pdb
 SBATCH_EXEC = 'sbatch --nodes=1 --ntasks-per-node=6 diag.sh'
-x=subprocess.Popen([SBATCH_EXEC], shell=True, stdout=subprocess.PIPE)
-pdb.set_trace()
-x.wait()
+proc=subprocess.Popen([SBATCH_EXEC], shell=True, stdout=subprocess.PIPE)
+#pdb.set_trace()
+subprocess.Popen.wait() #x.wait()
 #retrieve jobid and create the slurm file name
-msg = x.communicate()[0]
+msg = proc.communicate()[0]
 msg = msg.split()
 jobid = msg[-1]
 slurmFile = 'slurm-'+jobid+'.out'
