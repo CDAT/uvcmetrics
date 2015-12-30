@@ -19,6 +19,8 @@ import cProfile
 import logging
 import json
 import vcs
+from metrics.common import store_provenance
+
 vcsx=vcs.init()   # This belongs in one of the GUI files, e.g.diagnosticsDockWidget.py
                   # The GUI probably will have already called vcs.init().
                   # Then, here,  'from foo.bar import vcsx'
@@ -146,8 +148,10 @@ class uvc_composite_plotspec():
         if len(self.title)<=0:
             fname = 'foo.xml'
         else:
-            fname = (self.title.strip()+'.xml').replace(' ','_').replace('/','_')[:115]  # 115 is to constrain file size
-            fname = fname+'.xml'
+            # the title join ends up with two spaces between fields. check for that first, then replace single spaces after.
+            fname = (self.title.strip()+'.xml').replace('  ','_').replace(' ','_').replace('/','_')[:115]  # 115 is to constrain file size
+            if '.xml' not in fname:
+               fname = fname+'.xml'
         filename = os.path.join(where,fname)
         #print "output to",filename
         return filename
@@ -781,7 +785,8 @@ class uvc_simple_plotspec():
         if len(self.title)<=0:
             fname = 'foo.nc'
         else:
-            fname = underscore_join([self.title.strip(),self.source]).replace(' ','_').replace('/','_') + '.nc'
+            # the title join ends up with two spaces between fields. check for that first, then replace single spaces after.
+            fname = underscore_join([self.title.strip(),self.source]).replace('  ','_').replace(' ','_').replace('/','_') + '.nc'
         filename = os.path.join(where,fname)
         return filename
     def write_plot_data( self, format="", where="" ):
@@ -806,6 +811,7 @@ class uvc_simple_plotspec():
             cdms2.setNetcdfDeflateLevelFlag(value) ## where value is a integer between 0 and 9 included
 
             writer = cdms2.open( filename, 'w' )    # later, choose a better name and a path!
+            store_provenance(writer)
         elif format=="JSON file":
             print "ERROR: JSON file not implemented yet"
         elif format=="JSON string":
@@ -1005,7 +1011,6 @@ class plot_spec(object):
         that means a coarser grid, typically from regridding model data to the obs grid.
         In the future regrid>0 will mean regrid everything to the finest grid and regrid<0
         will mean regrid everything to the coarsest grid."""
-
         for v in self.reduced_variables.keys():
             #print v
             value = self.reduced_variables[v].reduce(None)

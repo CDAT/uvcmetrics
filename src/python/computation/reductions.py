@@ -11,8 +11,8 @@ from math import radians, log10
 from numpy import sin, ma
 #import dateutil.parser
 import dateparser
-from datetime import datetime as datetime
 from numbers import Number
+import datetime
 from unidata import udunits
 from metrics.packages.amwg.derivations import press2alt
 from metrics.packages.amwg.derivations.massweighting import *
@@ -175,7 +175,7 @@ def fix_time_units( timeunits ):
         # The parser won't understand negative years, but cdtime will.  So don't
         # fix the date quite yet...
         date = date[0:pre_bc]
-    new_date = str( dateparser.parse( date, default=datetime(1850,1,1,0,0)) )
+    new_date = str( dateparser.parse( date, default=datetime.datetime(1850,1,1,0,0)) )
     if date_is_bc:
         pre_yr = new_date.find(yr_bc)
         new_date = new_date[0:pre_yr]+yr_ad+new_date[pre_yr+len(yr_bc)]
@@ -548,8 +548,9 @@ def ttest_ab(mv1, mv2, constant = .1):
    print 'shapes:'
    print mv1new.shape
    print mv2new.shape
-   print dir(v1)
-
+   print 'IDs:'
+   print mv1.id
+   print mv2.id
    
    import scipy.stats
    prob = mv1new # maybe retain some metadata
@@ -1875,6 +1876,23 @@ def evapfrac_special(mv1, mv2, mv3, mv4):
    var.units=''
    return var
 
+def pminuse(mv1, mv2, mv3, mv4, mv5):
+   """ returns precept minus evap transp """
+   print 'mv1 units--------------> ', mv1.units
+   print 'mv3 units--------------> ', mv3.units
+   prec = mv1+mv2
+#   prec = convert_units(prec, 'mm')
+   et = mv3+mv4+mv5
+#   et = convert_units(et, 'mm')
+   pme = prec-et
+
+   pme.id = 'p-e'
+   pme.setattribute('long_name', 'prec-et')
+   pme.setattribute('name','p-e')
+   return pme
+
+   
+
 
 def atimesb(mv1, mv2):
    """ returns mv1+mv2; they should be dimensioned alike and use the same units."""
@@ -2170,8 +2188,8 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
     Note that if mv1 _or_ mv2 have a missing value at index i, then the return value (mv1-mv2)
     will also have a missing value at index i.
     (*) Experimentally, there can be more than two axes if the first axes be trivial, i.e. length is 1.
-    If this works out, it should be generalized and reproduced in other aminusb_* functions.
-    """
+    If this works out, it should be generalized and reproduced in other aminusb_* functions."""
+    ""
     global regridded_vars   # experimental for now
     if mv1 is None or mv2 is None:
         print "WARNING, aminusb_2ax missing an input variable."
@@ -2214,6 +2232,7 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
     if len(axes1[0])==len(axes2[0]):
         # Only axis2 differs, there's a better way...
         return aminusb_ax2( mv1, mv2 )
+    
     if len(axes1[0])<=len(axes2[0]):
 #        if len(axes1[1])<=len(axes2[1]):
             mv1new = mv1
@@ -2241,6 +2260,7 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
 #            print "ERROR @4, aminusb_2ax IS NOT FINISHED"
 #            return None
 #        else:
+
             mv2new = mv2
             # Interpolate mv2 from axis2 to axis1 in both directions.  Use the CDAT regridder.
             grid2 = mv2.getGrid()
@@ -2857,9 +2877,9 @@ class reduced_variable(ftrow,basic_id):
                 weighting = weighting_choice(taxis)
                 reduced_data = self._reduction_function( taxis, vid=vid )
             else:
-                print "Reduce failed to find variable",self.variablid,"in file",filename
-                print "It did find variables",f.variables.keys()
-                print "and axes",f.axes.keys()
+                print "Reduce failed to find variable",self.variableid,"in file",filename
+                print "It did find variables",sorted(f.variables.keys())
+                print "and axes",sorted(f.axes.keys())
                 raise Exception
             if reduced_data is not None and type(reduced_data) is not list:
                 reduced_data._vid = vid

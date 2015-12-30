@@ -5,6 +5,7 @@ import sys, os
 import numpy
 import MV2
 import argparse
+from metrics.common import store_provenance
 
 if __name__=="__main__":
   value = 0
@@ -46,15 +47,7 @@ if __name__=="__main__":
     args.out = args.file[:-3]+"_with_grid_info.nc"
 
   fo=cdms2.open(args.out,"w")
-  ## Preserve global attributes
-  history = ""
-  for a in f.attributes:
-      if a != "history":
-          setattr(fo,a,getattr(f,a))
-      else:
-          history = f.history+"\n"
-  history+="Created via: %s" % " ".join(sys.argv)
-  fo.history=history
+  store_provenance(fo)
 
   for v in vars:
     print "Dealing with:",v

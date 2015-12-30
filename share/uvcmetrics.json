@@ -1124,17 +1124,17 @@
       },
       "source": {
         "priority": 0,
-        "textorientation": "texs",
+        "textorientation": "default",
         "texttable": "default",
         "x": 0.065,
-        "y": 0.885
+        "y": 0.96
       },
       "title": {
         "priority": 0,
         "textorientation": "texot",
         "texttable": "default",
         "x": 0.5,
-        "y": 0.96
+        "y": 0.98
       },
       "tname": {
         "priority": 0,
@@ -1493,14 +1493,14 @@
         "textorientation": "texs",
         "texttable": "default",
         "x": 0.065,
-        "y": 0.885
+        "y": 0.48
       },
       "title": {
         "priority": 0,
         "textorientation": "texot",
         "texttable": "default",
         "x": 0.5,
-        "y": 0.96
+        "y": 0.5
       },
       "tname": {
         "priority": 1,
@@ -1536,7 +1536,7 @@
         "textorientation": "texs",
         "texttable": "default",
         "x": 0.78,
-        "y": 0.885
+        "y": 0.4425
       },
       "xlabel1": {
         "priority": 1,
@@ -1567,7 +1567,7 @@
         "textorientation": "default",
         "texttable": "default",
         "x": 0.5,
-        "y": 0.277000010014
+        "y": 0.05
       },
       "xtic1": {
         "line": "default",
@@ -3327,10 +3327,10 @@
       },
       "title": {
         "priority": 0,
-        "textorientation": "texot",
+        "textorientation": "default",
         "texttable": "default",
-        "x": 0.5,
-        "y": 0.96
+        "x": 0.0,
+        "y": 0.9
       },
       "tname": {
         "priority": 0,
@@ -4791,10 +4791,10 @@
       },
       "title": {
         "priority": 0,
-        "textorientation": "texot",
+        "textorientation": "default",
         "texttable": "default",
-        "x": 0.5,
-        "y": 0.96
+        "x": 0.53,
+        "y": 0.9
       },
       "tname": {
         "priority": 0,
@@ -6255,10 +6255,10 @@
       },
       "title": {
         "priority": 0,
-        "textorientation": "texot",
+        "textorientation": "default",
         "texttable": "default",
-        "x": 0.5,
-        "y": 0.96
+        "x": 0.0,
+        "y": 0.45
       },
       "tname": {
         "priority": 0,
@@ -7353,10 +7353,10 @@
       },
       "title": {
         "priority": 0,
-        "textorientation": "texot",
+        "textorientation": "default",
         "texttable": "default",
-        "x": 0.5,
-        "y": 0.96
+        "x": 0.53,
+        "y": 0.45
       },
       "tname": {
         "priority": 0,

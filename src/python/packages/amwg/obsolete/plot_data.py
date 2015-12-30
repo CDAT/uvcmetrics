@@ -12,6 +12,7 @@ from metrics.packages.amwg.derivations.oaht import *
 from metrics.packages.amwg.derivations.ncl_isms import *
 from metrics.packages.amwg.derivations.vertical import *
 from pprint import pprint
+from metrics.common import store_provenance
 
 import cdutil.times
 seasonsDJF=cdutil.times.Seasons(['DJF'])
@@ -526,6 +527,7 @@ def test_driver( path1, path2=None, filt2=None ):
             cdms2.setNetcdfDeflateLevelFlag(value) ## where value is a integer between 0 and 9 included
 
             g = cdms2.open( filename, 'w' )    # later, choose a better name and a path!
+            store_provenance(g)
             # Much more belongs in g, e.g. axis and graph names.
             if xax is not None and len(xrv)>0:
                 xax.id = 'X'

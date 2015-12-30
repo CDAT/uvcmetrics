@@ -1276,6 +1276,7 @@ class amwg_plot_set6(amwg_plot_spec):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the variable to be plotted, e.g. 'STRESS'.
         seasonid is a string such as 'DJF'."""
+
         filetable1, filetable2 = self.getfts(model, obs)
         plot_spec.__init__(self,seasonid)
         # self.plottype = ['Isofill','Vector']  <<<< later we'll add contour plots
@@ -1357,6 +1358,7 @@ class amwg_plot_set6(amwg_plot_spec):
             return [],[]
         reduced_vars = []
         needed_derivedvars = []
+        
         for var in rvars:
             if var in ['TAUX','TAUY'] and filetable.filefmt.find('CAM')>=0:
                 # We'll cheat a bit and change the sign as well as reducing dimensionality.
@@ -1406,6 +1408,7 @@ class amwg_plot_set6(amwg_plot_spec):
         variable computation and orginating from the specified filetable.
         rvars, a list, names the variables needed.
         Also, a list of the new drived variables is returned."""
+
         if filetable is None:
             vardict[','] = None
             return []
@@ -3044,7 +3047,7 @@ class amwg_plot_set14(amwg_plot_spec):
                                         
         self.computation_planned = True
         #pdb.set_trace()
-    def customizeTemplates(self, templates):
+    def customizeTemplates(self, templates, legendTitles=[]):
         """Theis method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs, tm), (cnvs2, tm2) = templates
         tm.data.x1 = .1
@@ -3065,8 +3068,12 @@ class amwg_plot_set14(amwg_plot_spec):
         tm.dataname.priority=0
 
         lx = .75
-        ly = .95        
-        for i, ltitle in enumerate(cnvs.legendTitles):
+        ly = .95
+        if hasattr(cnvs,'legendTitles'):
+            lTitles = cnvs.legendTitles
+        else:
+            lTitles = legendTitles
+        for i, ltitle in enumerate(lTitles):
             text = cnvs.createtext()
             text.string = str(i) + '  ' + ltitle
             text.x = lx

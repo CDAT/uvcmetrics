@@ -2,7 +2,7 @@
 
 # Functions to apply masks, as needed for AMWG plot set 6.
 
-import numpy
+import numpy, pdb
 from cdms2.tvariable import TransientVariable
 
 def mask_OCNFRAC( mv, ocnfrac ):
