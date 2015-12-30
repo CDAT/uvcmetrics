@@ -1,7 +1,7 @@
 import subprocess
 SBATCH_EXEC = 'sbatch --nodes=1 --ntasks-per-node=6 diag.sh'
 x=subprocess.Popen([SBATCH_EXEC], shell=True, stdout=subprocess.PIPE)
-
+x.wait()
 #retrieve jobid and create the slurm file name
 msg = x.communicate()[0]
 msg = msg.split()
