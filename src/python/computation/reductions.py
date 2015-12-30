@@ -337,7 +337,7 @@ def reduce2scalar_zonal( mv, latmin=-90, latmax=90, vid=None, gw=None ):
     This function uses the cdms2 avarager() function to handle weights and do averages
     Latitude weights may be provided as 'gw'.  The averager's default is reasonable, however.
     """
-    print "jfp entering reduce2scalar_zonal"
+    print "jfp UNEXPECTED! entering reduce2scalar_zonal"
     if vid is None:
         vid = 'reduced_'+mv.id
     mv2 = mv(latitude=(latmin, latmax))
@@ -443,7 +443,7 @@ def reduce2scalar_seasonal_zonal_level( mv, season=seasonsyr, latmin=-90, latmax
     Level units is millibars.
     Latitude weights may be provided as 'gw'.  The averager's default is reasonable, however.
     """
-    print "jfp entering reduce2scalar_seasonal_zonal_level"
+    print "jfp uses 2any via reduce2scalar_seasonal_zonal: reduce2scalar_seasonal_zonal_level"
     # backwards compatibility with old keyword 'seasons':
     if seasons!=seasonsyr:
         season = seasons
@@ -468,8 +468,7 @@ def reduce2scalar_seasonal_zonal_level( mv, season=seasonsyr, latmin=-90, latmax
         return None
     return reduce2scalar_seasonal_zonal( mvl, season, latmin=latmin, latmax=latmax, vid=vid, gw=gw )
 
-
-def reduce2scalar( mv, vid=None, gw=None, weights=None ):
+def old_reduce2scalar( mv, vid=None, gw=None, weights=None ):
     """averages mv over the full range all axes, to a single scalar.
     Uses the averager module for greater capabilities
     Latitude weights may be provided as 'gw'.  The averager's default is reasonable, however.
@@ -480,7 +479,6 @@ def reduce2scalar( mv, vid=None, gw=None, weights=None ):
     For the moment we expect mv to have lat and lon axes; and if it has no level axis,
     the bottom level, i.e. the last in any level array, lev=levels[-1], will be assumed.
     """
-    print "jfp entering reduce2scalar"
     if vid is None:   # Note that the averager function returns a variable with meaningless id.
         vid = 'reduced_'+mv.id
     axes = allAxes( mv )
@@ -522,13 +520,27 @@ def reduce2scalar( mv, vid=None, gw=None, weights=None ):
 
     return avmv
 
+def reduce2scalar( mv, vid=None, gw=None, weights=None ):
+    """averages mv over the full range all axes, to a single scalar.
+    Uses the averager module for greater capabilities
+    Latitude weights may be provided as 'gw'.  The averager's default is reasonable, however.
+    If weights='mass', mass weighting will be used.  This requires several variables to be
+    available in a file mv._filename, which attribute must exist if mv has hybrid levels.
+    Alternatively, you can compute mass (or other) weights into a 3-D (lev,lat,lon) array (or MV)
+    and pass it as the 'weights' argument.
+    For the moment we expect mv to have lat and lon axes; and if it has no level axis,
+    the bottom level, i.e. the last in any level array, lev=levels[-1], will be assumed.
+    """
+    print "jfp uses 2any: reduce2scalar"
+    return reduce2any( mv, target_axes=[], vid=vid, gw=gw, weights=weights )
+
 def reduce2lat( mv, vid=None ):
     """returns the mean of the variable over all axes but latitude, as a cdms2 variable, i.e. a MV.
     The input mv is a also cdms2 variable, assumed to be indexed as is usual for CF-compliant
     variables, i.e. mv(time,lat,lon).  At present, no other axes (e.g. level) are supported.
     At present mv must depend on all three axes.
     """
-    print "jfp entering reduce2lat"
+    print "jfp UNEXPECTED! entering reduce2lat"
     if vid is None:   # Note that the averager function returns a variable with meaningless id.
         vid = 'reduced_'+mv.id
     axes = allAxes( mv )
@@ -546,7 +558,7 @@ def reduce2lat( mv, vid=None ):
 def reduce2level( mv, season=None, vid=None ):
     """as reduce2lat, but averaging reduces coordinates to lev
     NOTE: this function may be obsolete, season is NOT used."""
-    print "jfp entering reduce2level"
+    print "jfp UNEXPECTED! entering reduce2level"
     if vid is None:   # Note that the averager function returns a variable with meaningless id.
         vid = 'reduced_'+mv.id
     if levAxis(mv) is None: return None
@@ -567,7 +579,7 @@ def reduce2level( mv, season=None, vid=None ):
 
 def reduce2levlat( mv, vid=None ):
     """as reduce2lat, but averaging reduces coordinates to (lev,lat)"""
-    print "jfp entering reduce2levlat"
+    print "jfp UNEXPECTED! entering reduce2levlat"
     if vid is None:   # Note that the averager function returns a variable with meaningless id.
         vid = 'reduced_'+mv.id
     if levAxis(mv) is None: return None
@@ -631,7 +643,7 @@ def reduce2levlat_seasonal( mv, season=seasonsyr, region=None, vid=None ):
 def reduce2levlon_seasonal( mv, season=seasonsyr, region=None, vid=None ):
     """as reduce2levlat, but data is averaged only for time restricted to the specified season;
     as in reduce2lon_seasona."""
-    print "jfp entering reduce2levlon_seasonal"
+    print "jfp UNEXPECTED! entering reduce2levlon_seasonal"
     if vid is None:   # Note that the averager function returns a variable with meaningless id.
         vid = 'reduced_'+mv.id
     if levAxis(mv) is None: return None
@@ -653,9 +665,9 @@ def reduce2levlon_seasonal( mv, season=seasonsyr, region=None, vid=None ):
         avmv.units = mv.units
     #pdb.set_trace()
     return avmv
-def reduce2latlon( mv, vid=None ):
+
+def old_reduce2latlon( mv, vid=None ):
     """as reduce2lat, but averaging reduces coordinates to (lat,lon)"""
-    print "jfp entering reduce2latlon"
     if vid is None:   # Note that the averager function returns a variable with meaningless id.
         vid = 'reduced_'+mv.id
     axes = allAxes( mv )
@@ -679,9 +691,19 @@ def reduce2latlon( mv, vid=None ):
 
     return avmv
 
+def reduce2latlon( mv, vid=None ):
+    """as reduce2lat, but averaging reduces coordinates to (lat,lon)"""
+    print "jfp uses 2any: reduce2latlon"
+    # from the old reduce2latlon, not implemented in reduce2any:
+    for ax in axes:
+        if ax.getBounds() is None and hasattr(ax,'bounds')  and not (hasattr(ax,'_bounds_') and ax._bounds_ is not None):
+            if hasattr(ax,'parent') and ax.parent is not None:
+                ax._bounds_ = ax.parent.variables(ax.bounds)
+    return reduce2any( mv, target_axes=['x','y'], vid=vid )
+
 def reduce_time( mv, vid=None ):
     """as reduce2lat, but averaging reduces only the time coordinate"""
-    print "jfp entering reduce_time"
+    print "jfp UNEXPECTED! entering reduce_time"
     if vid is None:   # Note that the averager function returns a variable with meaningless id.
         #vid = 'reduced_'+mv.id
         vid = mv.id
@@ -750,14 +772,13 @@ def reduce2lat_seasonal( mv, season=seasonsyr, region=None, vid=None, seasons=se
     # backwards compatibility with old keyword 'seasons':
     if seasons!=seasonsyr:
         season = seasons
-    return reduce2any( mv, target_axes=['x'], season=season, region=region, vid=vid )
+    return reduce2any( mv, target_axes=['y'], season=season, region=region, vid=vid )
 
 def old_reduce2lon_seasonal( mv, season=seasonsyr, region=None, vid=None ):
     """This code was ripped from reduce2lat_seasonal.  The season
     is specified as an object of type cdutil.ties.Seasons, and defaults to the whole year.
     The returned variable will still have a time axis, with one value per season specified.
     """
-    print "jfp entering reduce2lon_seasonal"
 
     if vid is None:
         vid = 'reduced_'+mv.id
@@ -796,7 +817,7 @@ def reduce2lon_seasonal( mv, season=seasonsyr, region=None, vid=None ):
     The returned variable will still have a time axis, with one value per season specified.
     """
     print "jfp uses 2any: reduce2lon_seasonal"
-    return reduce2any( mv, target_axes=['y'], season=season, region=region, vid=vid )
+    return reduce2any( mv, target_axes=['x'], season=season, region=region, vid=vid )
 
 def old_reduce2level_seasonal( mv, season=seasonsyr, region='Global', vid=None, seasons=seasonsyr ):
     """as reduce2levlat, but data is averaged only for time restricted to the specified season;
@@ -1731,7 +1752,7 @@ def reduce_time_space_seasonal_regional( mv, season=seasonsyr, region=None, vid=
 # Brian Smith
 # 2/25/15
 def reduce2latlon_seasonal_level( mv, season, level, vid=None):
-   print "jfp entering reduce2latlon_seasonal_level"
+   print "jfp UNEXPECTED! entering reduce2latlon_seasonal_level"
 
    if vid is None:
       vid = 'reduced_'+mv.id
