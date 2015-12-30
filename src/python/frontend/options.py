@@ -415,12 +415,14 @@ class Options():
 
    ### Less-verbose help for metadiags.
    def metadiags_help(self):
-      print "metadiags concise help. Use --extended-help for extended help\n"
-      print "Metadiags is meant to call diags.py (and other executables in \"loose coupling\" mode)"
-      print " with appropriate arguments defined via the amwgmaster or lmwgmaster.py files"
+      print
+      print "metadiags concise help. Use --extended-help for extended help."
       print "For additional instructions, see also"
       print help_url
-      print '\n'
+      print
+      print "Metadiags is meant to call diags.py (and other executables in \"loose coupling\" mode)"
+      print " with appropriate arguments defined via the amwgmaster or lmwgmaster.py files"
+      print
       print "Minimum required arguments:"
       print "1. A single path pointing to the input dataset"
       print "2. A path for output data"
@@ -459,7 +461,11 @@ class Options():
 
    ### Less-verbose help for diags.
    def diags_help(self):
-      print 'diags concise help. Use --extended-help for extended help'
+      print
+      print 'diags concise help. Use --extended-help for extended help.'
+      print "For additional instructions, see also"
+      print help_url
+      print
       print 'Minimum required arguments:'
       print '1. The --model keyword to describe the input dataset'
       print '2. A path for output data'
@@ -512,7 +518,10 @@ class Options():
       progname = progname.split('/')[-1]
       parser = argparse.ArgumentParser(
          add_help=False,
-         description='UV-CDAT Climate Modeling Diagnostics', 
+         description=
+"""UV-CDAT Climate Modeling Diagnostics
+   For additional instructions, see also
+%s""" % help_url, 
          usage='%(prog)s [options]',
          formatter_class=argparse.RawDescriptionHelpFormatter,
          epilog=('''\
