@@ -435,6 +435,7 @@ def reduce2latlon( mv, vid=None ):
     At present mv must depend on all three axes.
     """
     # from the old reduce2latlon, not implemented in reduce2any:
+    axes = allAxes( mv )
     for ax in axes:
         if ax.getBounds() is None and hasattr(ax,'bounds')  and not (hasattr(ax,'_bounds_') and ax._bounds_ is not None):
             if hasattr(ax,'parent') and ax.parent is not None:
