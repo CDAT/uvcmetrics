@@ -746,12 +746,12 @@ class Options():
 
 
       # Disable the UVCDAT logo in plots for users (typically metadiags) that know about this option
-      if args.no_antialiasing is True:
-         self._opts['output']['antialiasing'] = False
       if 'climatology' not in progname and 'climatology.py' not in progname:
          if args.logo != None:
             if args.logo.lower() == 'no' or args.logo == 0:
                self._opts['output']['logo'] = False
+         if args.no_antialiasing is True:
+            self._opts['output']['antialiasing'] = False
          if args.table != None:
             if args.table == True:
                self._opts['output']['table'] = True
