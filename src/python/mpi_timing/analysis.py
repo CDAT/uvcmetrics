@@ -3,7 +3,7 @@ import numpy as np
 f=open('timing.dat')
 titles = f.readline()
 
-for line in f.readline():
+for line in f.readlines():
     line = line.split()
     Nnodes = line[0]
     Ntasks = line[1]
