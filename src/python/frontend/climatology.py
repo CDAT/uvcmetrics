@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 Usage = """Usage:
-python climatology2.py --outfile fileout.nc --seasons SS1 SS2 ... --variables var1 var2 ... --infiles file1.nc file2.nc ....
+python climatology.py --outfile fileout.nc --seasons SS1 SS2 ... --variables var1 var2 ... --infiles file1.nc file2.nc ....
 where:
   fileout.nc is the name of an output file.  If it already exists, it will be overwritten.
   SSS is the season in three letters, e.g. ANN, JJA, APR
@@ -27,12 +27,13 @@ from multiprocessing import Process, Lock
 ###from threading import Thread as Process
 ###from Queue import Queue
 import cProfile
+from metrics.common.utilities import DiagError
 
 comm = None
 #comm = MPI.COMM_WORLD
 MP = True
 queue = None
-lock = None
+lock = None  # for debugging; in normal use this should be None
 force_scalar_avg=False  # for testing
 
 def restrict_to_season( datafilenames, seasonname ):
@@ -258,7 +259,7 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
         fvarnames = f.variables.keys()
         fattr = f.attributes
         input_global_attributes = {a:fattr[a] for a in fattr if a not in ['Conventions']}
-        climo_history = "climatologies computed by climatology2.py"
+        climo_history = "climatologies computed by climatology.py"
         if 'history' in input_global_attributes:
             input_global_attributes['history'] = input_global_attributes['history'] + climo_history
         else:
@@ -609,14 +610,14 @@ if __name__ == '__main__':
                    nargs='+', action='append', default=[] )
     p.add_argument("--forceScalarAvg", dest="forceScalarAvg", default=False, help=
                    "For testing, forces use of a simple scalar average, ignoring missing values" )
-    if sys.argv[0].find('climatology2')>=0:
-        # normal case, we're running climatology2 more or less directly
+    if sys.argv[0].find('climatology')>=0:
+        # normal case, we're running climatology more or less directly
         args = p.parse_args(sys.argv[1:])
-    elif sys.argv[1].find('climatology2')>=0:
-        # But if we're running climatology2 "under" tau_python or somesuch, the arglist is shifted
+    elif sys.argv[1].find('climatology')>=0:
+        # But if we're running climatology "under" tau_python or somesuch, the arglist is shifted
         args = p.parse_args(sys.argv[2:])
     else:
-        raise DiagError( "climatology2 cannot recognize program & args" )
+        raise DiagError( "climatology cannot recognize program & args" )
     if comm is None or comm.rank==0:
         print "input args="
         pprint(args)
@@ -625,10 +626,10 @@ if __name__ == '__main__':
 
     # experimental code for multiprocessing on one node.  Leave queue=None for no multiprocessing.
     #queue = Queue()
-    MP = True
+    MP = False
     # N.B. The operating system on Rhea.ccs.ornl.gov does not support locks.
     #if MP:
-    #    lock = Lock()
+    #    lock = Lock()  # for debugging; in normal use leave this as None.
     print "jfp MP=",MP
 
     profileme = False
