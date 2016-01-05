@@ -3,6 +3,7 @@
 #SBATCH --job-name=diag_8 --time=01:00:00
 #SBATCH -D /opt/nfs/mcenerney1/slurm_output/
 #hostname
+rm /opt/nfs/mcenerney1/tmp/*
 
 source /opt/nfs/mcenerney1/11_03_15/bin/setup_runtime.sh
 
