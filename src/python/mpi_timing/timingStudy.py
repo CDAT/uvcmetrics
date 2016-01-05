@@ -12,7 +12,7 @@ config = [(1,1),(1,2),(1,3),(1,4)]
 config = [(1,6)]
 f=open('timing.dat', 'w')
 f.write('Nnodes  Ntasks runs \n')
-nruns = 5
+nruns = 2
 for (N,n) in config:
     SBATCH_EXEC = 'sbatch --nodes=' + str(N) + ' --ntasks-per-node=' + str(n) + ' ' + TIMING_PATH +'diag.sh'
     print SBATCH_EXEC
@@ -21,7 +21,7 @@ for (N,n) in config:
     for run in range(nruns):
         #SBATCH_EXEC = 'sbatch --nodes=1 --ntasks-per-node=6 diag.sh'
         proc=subprocess.Popen([SBATCH_EXEC], shell=True, stdout=subprocess.PIPE)
-        time.sleep(30)
+        time.sleep(15)
         #pdb.set_trace()
         #subprocess.Popen.wait(proc) #x.wait()
         #retrieve jobid and create the slurm file name
@@ -31,15 +31,16 @@ for (N,n) in config:
         slurmFile = 'slurm-'+jobid+'.out'
         print slurmFile
         
-        f=open(slurmFile)
-        for line in f.readlines():
+        g=open(slurmFile)
+        for line in g.readlines():
             if 'time =' in line:
                 print line
                 break
+        g.close()
         #retrieve run time
         t=line.split()[2]
         t = float(t)
-        print t
         timing_data += str(t) + ' '
+    print timing_data
     f.write(timing_data)
 f.close()
