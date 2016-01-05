@@ -38,8 +38,8 @@ for (N,n) in config:
                 break
         #retrieve run time
         t=line.split()[2]
-        time = float(t)
-        print time
-        timing_data += str(time) + ' '
+        t = float(t)
+        print t
+        timing_data += str(t) + ' '
     f.write(timing_data)
 f.close()
