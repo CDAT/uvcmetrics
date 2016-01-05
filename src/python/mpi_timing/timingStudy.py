@@ -31,7 +31,7 @@ for (N,n) in config:
         slurmFile = 'slurm-'+jobid+'.out'
         print slurmFile
         
-        g=open(slurmFile)
+        g=open('slurm_output/'+slurmFile)
         for line in g.readlines():
             if 'time =' in line:
                 print line
