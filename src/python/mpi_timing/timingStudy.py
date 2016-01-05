@@ -9,7 +9,7 @@ config = [(1,1),(1,2),(1,3),(1,4),(1,6),(1,8),
           (6,1),(6,2),(6,4),
           (8,1),(8,3)]
 config = [(1,1),(1,2),(1,3),(1,4)]
-config = [(1,6)]
+
 f=open('timing.dat', 'w')
 f.write('Nnodes  Ntasks  runs \n')
 nruns = 5
@@ -29,7 +29,6 @@ for (N,n) in config:
         msg = msg.split()
         jobid = msg[-1]
         slurmFile = 'slurm-'+jobid+'.out'
-        #print slurmFile
         
         g=open('slurm_output/'+slurmFile)
         for line in g.readlines():
@@ -40,6 +39,7 @@ for (N,n) in config:
         #retrieve run time
         t=line.split()[2]
         timing_data += t[0:6] + ' '
+        print slurmFile, t
     print timing_data
     f.write(timing_data)
 f.close()
