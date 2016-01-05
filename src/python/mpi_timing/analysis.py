@@ -1,9 +1,11 @@
 import numpy as np
 
-f=open('timing.dat')
-titles = f.readline()
+fin=open('timing.dat')
+titles = fin.readline()
 
-for line in f.readlines():
+fout = open('results.dat')
+
+for line in fin.readlines():
     line = line.split()
     Nnodes = line[0]
     Ntasks = line[1]
@@ -13,4 +15,9 @@ for line in f.readlines():
         data += [float(x)]
         
     data = np.array(data)
-    print Nnodes, Ntasks, data.mean(), data.var()
+    mean, var = data.mean(), data.var()
+    
+    output = Nnodes + ' ' + Ntasks + ' ' + str(mean) + ' ' + str(var) + '\n'
+    print output
+    
+    fout.write(output)
