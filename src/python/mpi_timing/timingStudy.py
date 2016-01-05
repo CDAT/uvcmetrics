@@ -17,7 +17,7 @@ for (N,n) in config:
     SBATCH_EXEC = 'sbatch --nodes=' + str(N) + ' --ntasks-per-node=' + str(n) + ' ' + TIMING_PATH +'diag.sh'
     print SBATCH_EXEC
     
-    timing_data = str(N) + '       ' + str(n) + '         '
+    timing_data = str(N) + '       ' + str(n) + '       '
     for run in range(nruns):
         #SBATCH_EXEC = 'sbatch --nodes=1 --ntasks-per-node=6 diag.sh'
         proc=subprocess.Popen([SBATCH_EXEC], shell=True, stdout=subprocess.PIPE)
