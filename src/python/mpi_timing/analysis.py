@@ -3,7 +3,7 @@ import numpy as np
 fin=open('timing.dat')
 titles = fin.readline()
 
-fout = open('results.dat')
+fout = open('results.dat', 'w')
 
 for line in fin.readlines():
     line = line.split()
