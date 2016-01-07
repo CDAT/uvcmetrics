@@ -26,11 +26,11 @@ if __name__ == "__main__":
 
 
     MAXs  = sc.parallelize(data.keys(), partitions).\
-            map(lambda key: (key, data[key].compute()) ).\
+            map(lambda key: (key, data[key].compute(), data[key].x.shape) ).\
             reduce(lambda x,y: (x,y) )
     
-
-    for k,v in MAXs:
-        print k, v
+    print len(MAXs)
+    for k,v,s  in MAXs:
+        print k, v, s
 
     sc.stop()
