@@ -27,7 +27,7 @@ if __name__ == "__main__":
         i += 1
     Max = {}
     def update(S, T):
-        print T[-1]
+        print S, T#T[-1]
         #Max[k] = v        
         
     MAXs  = sc.parallelize(data.keys(), partitions).\
