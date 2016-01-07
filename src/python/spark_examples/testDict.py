@@ -27,7 +27,7 @@ if __name__ == "__main__":
 
     MAXs  = sc.parallelize(data.keys(), partitions).\
             map(lambda key: (key, data[key].compute()) ).\
-            reduce(None)
+            reduce(lambda x: x)
     
 
     for k,v in MAXs:
