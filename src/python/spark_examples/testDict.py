@@ -30,8 +30,8 @@ if __name__ == "__main__":
             map(lambda key: (key, data[key].compute()) ).\
             reduce(lambda x,y: (x,y) )
     
-    print len(MAXs)
-    for k,v,s  in MAXs:
-        print k, v, s
+    print len(MAXs), type(MAXs)
+    for m in MAXs:
+        print m
 
     sc.stop()
