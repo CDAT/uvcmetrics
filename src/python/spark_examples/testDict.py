@@ -28,7 +28,7 @@ if __name__ == "__main__":
 
     MAXs  = sc.parallelize(data.keys(), partitions).\
             map(lambda key: data[key].compute() ).\
-            reduce(lambda x,y: print x )
+            reduce(lambda x,y: print(x) )
     
     print len(MAXs), type(MAXs)
     for m in MAXs:
