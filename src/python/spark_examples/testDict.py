@@ -26,7 +26,7 @@ if __name__ == "__main__":
         data[key] = X(np.array(range(i), dtype=float))
         i += 1
     Max = {}
-    def update(T):
+    def update(S, T):
         k,v = T[-1]
         Max[k] = v        
         
