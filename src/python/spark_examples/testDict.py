@@ -9,8 +9,7 @@ class X(object):
         self.x = y
     def compute(self):
         return self.x.max()
-def update(k, v):
-    Max[k] = v        
+
 if __name__ == "__main__":
     """
         Usage: pi [partitions]
@@ -27,6 +26,9 @@ if __name__ == "__main__":
         data[key] = X(np.array(range(i), dtype=float))
         i += 1
     Max = {}
+    def update(k, v):
+        Max[k] = v        
+        
     MAXs  = sc.parallelize(data.keys(), partitions).\
             map(lambda key: (key, data[key].compute()) ).\
             reduce(update )
