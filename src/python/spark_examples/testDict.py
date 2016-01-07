@@ -32,6 +32,6 @@ if __name__ == "__main__":
     
     print len(MAXs), type(MAXs)
     for m in MAXs:
-        print m
+        print m, '\n'
 
     sc.stop()
