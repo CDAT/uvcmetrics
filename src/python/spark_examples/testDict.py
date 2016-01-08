@@ -40,7 +40,7 @@ if __name__ == "__main__":
     M = P.map(lambda key: (key, data[key].compute()) )
     MAXs = M.reduceByKey( lambda x: x )
     
-    print MAXs#), type(MAXs)
+    print dir(MAXs) #), type(MAXs)
     #print Max
     #for m in MAXs:
     #    print m, '\n'
