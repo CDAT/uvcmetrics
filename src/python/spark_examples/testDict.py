@@ -19,12 +19,15 @@ if __name__ == "__main__":
 
     import string
     data = dict.fromkeys(string.ascii_lowercase, 0)
-    print data
+    
     
     i = 1
     for key in data.keys():
         data[key] = X(np.array(range(i), dtype=float))
         i += 1
+    print data
+    
+    
     Max = {}
     def update(S, T):
         print 'in update', '\n S=', S, '\n T=', T#T[-1]
