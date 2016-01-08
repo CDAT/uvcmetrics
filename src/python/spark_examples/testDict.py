@@ -38,11 +38,10 @@ if __name__ == "__main__":
         
     P = sc.parallelize(data.keys(), partitions)
     M = P.map(lambda key: (key, data[key].compute()) )
-    print M
     MAXs = M.reduceByKey( lambda x: x )
     
     print MAXs#), type(MAXs)
-    print Max
+    #print Max
     #for m in MAXs:
     #    print m, '\n'
 
