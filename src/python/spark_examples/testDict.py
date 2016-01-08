@@ -1,4 +1,4 @@
-import sys
+import sys, socket
 from random import random
 from operator import add
 import numpy as np
@@ -8,6 +8,7 @@ class X(object):
     def __init__(self, y):
         self.x = y
     def compute(self):
+        print 'host = ',socket.gethostname()
         return self.x.max()
 
 if __name__ == "__main__":
