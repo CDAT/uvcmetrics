@@ -32,9 +32,10 @@ if __name__ == "__main__":
         Max[k] = v
         return Max    
         
-    MAXs  = sc.parallelize(data.keys(), partitions).\
-            map(lambda key: (key, data[key].compute()) ).\
-            reduce(update )
+    P = sc.parallelize(data.keys(), partitions)
+    M = P.map(lambda key: (key, data[key].compute()) )
+    print M
+    MAXs = M.reduce(update )
     
     print MAXs#), type(MAXs)
     print Max
