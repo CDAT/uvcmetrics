@@ -27,9 +27,10 @@ if __name__ == "__main__":
         i += 1
     Max = {}
     def update(S, T):
-        print 'in update', 'S=', S, '\n T=', T#T[-1]
-        k, v = T
-        Max[k] = v
+        print 'in update', '\n S=', S, '\n T=', T#T[-1]
+        #k, v = T
+        #Max[k] = v
+        Max = dict(S.items() + T.items())
         return Max    
         
     P = sc.parallelize(data.keys(), partitions)
