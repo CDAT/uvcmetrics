@@ -27,7 +27,7 @@ if __name__ == "__main__":
         i += 1
     Max = {}
     def update(S, T):
-        print 'in update', S, T#T[-1]
+        print 'in update', 'S=', S, 'T=', T#T[-1]
         k, v = T
         Max[k] = v
         return Max    
