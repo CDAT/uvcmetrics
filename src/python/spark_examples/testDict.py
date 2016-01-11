@@ -2,6 +2,7 @@ import sys, socket
 from random import random
 from operator import add
 import numpy as np
+import cdms2
 
 from pyspark import SparkContext
 class X(object):
