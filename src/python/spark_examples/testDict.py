@@ -18,7 +18,7 @@ if __name__ == "__main__":
     """
     sc = SparkContext(appName="Dictionary Test")
     partitions = int(sys.argv[1])
-    print 'host = ',socket.gethostname()
+
     import string
     data = dict.fromkeys(string.ascii_lowercase, 0)
       
