@@ -9,7 +9,7 @@ class X(object):
         self.x = y
     def compute(self):
         print ('host = ' + socket.gethostname())
-        return self.x.max()
+        return self.x.mean()
 
 sc = SparkContext(appName="Dictionary Test")
 partitions = int(sys.argv[1])
@@ -25,7 +25,7 @@ for key in data.keys():
     
 P = sc.parallelize(data.keys(), partitions)
 M = P.map(lambda key: (key, data[key].compute()) )
-MAXs = M.reduceByKey( lambda x: x )
+MEANs = M.reduceByKey( lambda x: x )
     
-print dict(MAXs.collect()) 
+print dict(MEANs.collect()) 
 sc.stop()
