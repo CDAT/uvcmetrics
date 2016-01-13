@@ -15,9 +15,9 @@ for varid in varids:
     T.designateTime()
     T.id="time"
     T.units = "months"
-    cdutil.times.setTimeBoundsMonthly(T)
+    #cdutil.times.setTimeBoundsMonthly(T)
     var.setAxis(0, T)
-    pdb.set_trace()
+    #pdb.set_trace()
     f.write(var)
     n+=1
     
