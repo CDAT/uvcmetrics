@@ -13,7 +13,7 @@ class X(object):
         background = y.getValue()
         diff = self.x - background
         MEAN, STD = diff.mean(), diff.std()
-        print ('host = ' + socket.gethostname(), key, MEAN, STD, len(localData))
+        print ('host = ' + socket.gethostname(), ID, MEAN, STD, len(localData))
         return MEAN, STD
 
 sc = SparkContext(appName="Dictionary Test")
