@@ -1,5 +1,5 @@
 import cdms2
-import string, cdutil
+import string, cdutil, pdb
 import numpy as np
 
 varids=string.ascii_lowercase
@@ -17,5 +17,6 @@ for varid in varids:
     T.units = "months"
     cdutil.times.setTimeBoundsMonthly(T)
     var.setAxis(0, T)
+    pdb.set_trace()
     f.write(var)
     
