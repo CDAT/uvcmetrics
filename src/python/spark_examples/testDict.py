@@ -8,12 +8,13 @@ class X(object):
     def __init__(self, y):
         self.x = y
     def compute(self, ID):
-        print ('host = ' + socket.gethostname())
         f=cdms2.open('testData.nc')
-        x=f[ID]
-        localData = x.getValue().compressed()
-        diff = self.x - localData
-        return diff.mean(), diff.std()
+        y=f[ID]
+        background = y.getValue()
+        diff = self.x - background
+        MEAN, STD = diff.mean(), diff.std()
+        print ('host = ' + socket.gethostname(), key, MEAN, STD, len(localData))
+        return MEAN, STD
 
 sc = SparkContext(appName="Dictionary Test")
 partitions = int(sys.argv[1])
@@ -24,12 +25,14 @@ data = dict.fromkeys(string.ascii_lowercase, 0)
 i = 1
 for key in data.keys():
     data[key] = X(np.array(range(i), dtype=float))
-    print data[key].x
+    #print data[key].x
     i += 1
     
 P = sc.parallelize(data.keys(), partitions)
 M = P.map(lambda key: (key, data[key].compute(key)) )
-MEANs = M.reduceByKey( lambda x: x )
+results = M.reduceByKey( lambda x: x )
+results = dict(results.collect())
+for key in results.keys():    
+    print key, results[key]
     
-print dict(MEANs.collect()) 
 sc.stop()
