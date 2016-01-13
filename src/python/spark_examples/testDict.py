@@ -10,6 +10,7 @@ class X(object):
     def compute(self, ID):
         print ('host = ' + socket.gethostname())
         f=cdms2.open('/opt/nfs/mcenerney1/spark/testData.nc')
+        return 0,0
         #f=open('/opt/nfs/mcenerney1/spark/cmds')
         #MEAN = f.read()
         y=f[ID]
