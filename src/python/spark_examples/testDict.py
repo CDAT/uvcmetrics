@@ -8,12 +8,12 @@ class X(object):
     def __init__(self, y):
         self.x = y
     def compute(self, ID):
-        f=cdms2.open('/opt/nfs/mcenerney1/spark/testData.nc')
-        y=f[ID]
-        background = y.getValue()
-        diff = self.x - background
+        #f=cdms2.open('/opt/nfs/mcenerney1/spark/testData.nc')
+        #y=f[ID]
+        #background = y.getValue()
+        diff = self.x #- background
         MEAN, STD = diff.mean(), diff.std()
-        print ('host = ' + socket.gethostname(), ID, MEAN, STD, len(localData))
+        print ('host = ' + socket.gethostname(), ID, MEAN, STD, len(background))
         return MEAN, STD
 
 sc = SparkContext(appName="Dictionary Test")
