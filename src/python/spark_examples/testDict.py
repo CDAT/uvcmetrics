@@ -1,4 +1,4 @@
-import sys, socket
+import sys, socket, cdms2
 from random import random
 from operator import add
 import numpy as np
