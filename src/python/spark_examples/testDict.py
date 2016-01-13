@@ -9,13 +9,16 @@ class X(object):
         self.x = y
     def compute(self, ID):
         print ('host = ' + socket.gethostname())
-        f=cdms2.open('/opt/nfs/mcenerney1/spark/testData.nc')
-        y=f[ID]
-        background = y.getValue()
-        diff = self.x - background
-        MEAN, STD = diff.mean(), diff.std()
-        print ('host = ' + socket.gethostname(), ID, MEAN, STD, len(diff))
-        return MEAN, STD
+        #f=cdms2.open('/opt/nfs/mcenerney1/spark/testData.nc')
+        f=open('/opt/nfs/mcenerney1/spark/cmds')
+        MEAN = f.read()
+        #y=f[ID]
+        #background = y.getValue()
+        #diff = self.x - background
+        #MEAN, STD = diff.mean(), diff.std()
+        print ('host = ' + socket.gethostname(), ID, MEAN)  #, STD, len(diff))
+        f.close()
+        return MEAN#, STD
 
 sc = SparkContext(appName="Dictionary Test")
 partitions = int(sys.argv[1])
