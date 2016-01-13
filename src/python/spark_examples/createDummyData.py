@@ -5,7 +5,7 @@ import numpy as np
 varids=string.ascii_lowercase
 
 f=cdms2.open('testData.nc', 'w')
-n=0
+n=1
 for varid in varids:
     a = -1*np.arange(1, n+1, dtype=float)
     var = cdms2.createVariable(a)
@@ -19,4 +19,5 @@ for varid in varids:
     var.setAxis(0, T)
     pdb.set_trace()
     f.write(var)
+    n+=1
     
