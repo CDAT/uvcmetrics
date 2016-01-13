@@ -11,7 +11,7 @@ for varid in varids:
     var = cdms2.createVariable(a)
     var.id = varid
     var.units = 'peas'
-    T = cdms2.createAxis(np.arange(n, dtype='d'))
+    T = cdms2.createAxis(np.arange(1, n+1, dtype='d'))
     T.designateTime()
     T.id="time"
     T.units = "months"
