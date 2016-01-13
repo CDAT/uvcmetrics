@@ -8,7 +8,7 @@ class X(object):
     def __init__(self, y):
         self.x = y
     def compute(self, ID):
-        f=cdms2.open('testData.nc')
+        f=cdms2.open('/opt/nfs/mcenerney1/spark/testData.nc')
         y=f[ID]
         background = y.getValue()
         diff = self.x - background
