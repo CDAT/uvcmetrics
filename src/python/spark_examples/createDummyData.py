@@ -12,12 +12,12 @@ for varid in varids:
     var.id = varid
     var.units = 'peas'
     T = cdms2.createAxis(np.arange(1, n+1, dtype='d'))
-    T.designateTime()
-    T.id="time"
+    #T.designateTime()
+    T.id=varid
     T.units = "months"
     #cdutil.times.setTimeBoundsMonthly(T)
     var.setAxis(0, T)
     #pdb.set_trace()
     f.write(var)
     n+=1
-    
+f.close()  

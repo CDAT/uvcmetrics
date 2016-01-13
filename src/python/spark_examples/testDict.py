@@ -7,9 +7,13 @@ from pyspark import SparkContext
 class X(object):
     def __init__(self, y):
         self.x = y
-    def compute(self):
+    def compute(self, ID):
         print ('host = ' + socket.gethostname())
-        return self.x.mean()
+        f=cdms2.open('testData.nc')
+        x=f[ID]
+        localData = x.getValue().compressed()
+        diff = self.x - localData
+        return diff.mean(), diff.std()
 
 sc = SparkContext(appName="Dictionary Test")
 partitions = int(sys.argv[1])
@@ -24,7 +28,7 @@ for key in data.keys():
     i += 1
     
 P = sc.parallelize(data.keys(), partitions)
-M = P.map(lambda key: (key, data[key].compute()) )
+M = P.map(lambda key: (key, data[key].compute(key)) )
 MEANs = M.reduceByKey( lambda x: x )
     
 print dict(MEANs.collect()) 
