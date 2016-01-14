@@ -1,72 +1,269 @@
-#!/usr/bin/env python
+from mpi4py import MPI
+import sys, getopt, os, subprocess, platform, time, re, pdb, hashlib, pickle, cProfile
+from pprint import pprint
 
-print "THIS IS A WORK-IN-PROGRESS/PLACEHOLDER"
-print "PLEASE DO NOT RUN YET"
-quit()
-
-#### MPI-Wrapper around diags-new (rewrite from metadiags).
-#### Assumes parallel via spawning multiple diags-new.py
-### Launch - mpirun -np X python mpi-metadiags.py {command line options}
-### Flow:
-### 1) Determine how many processes per node (look at hostname for jobs, do some gather, then commsplit)
-### 2) Determine list of all jobs to run
-### 3) Distribute "diags-new" jobs (ie, same dataset, same obs, different variables/varopts/regions/seasons) to nodes
-### 4) Each node splits up work among cores
-
-### New option for this only - 
-## taskspernode: maximium number of processes on a single node (set to less than processes per node for memory constraints)
-
-### List of jobs - Dictionary consisting of dataset, seasons list, obs list, var list, varopts, regions list, etc.
-
-#### Need to think about integration with Jim's work too...
-
-### This file converts the dictionary file (in this case amwgmaster2.py) to a series of diags.py commands.
-import sys, getopt, os, subprocess
+# There's a lot of imports here. I think this needs cleaned up a great deal.
+# We really should just import "metrics" or something similar and get all the 
+# rest of this gorp, then maybe specifically import amwgmaster or lmwgmaster 
+# until those are cleaned up a bit.
+from metrics import *
+from metrics.packages.diagnostic_groups import *
 from metrics.frontend.options import Options
+from metrics.frontend.options import make_ft_dict
+from metrics.packages.diagnostic_groups import *
 from metrics.fileio.filetable import *
 from metrics.fileio.findfiles import *
+from metrics.computation.reductions import *
+from metrics.frontend.amwg_plotting import *
+# These next 5 liens really shouldn't be necessary. We should have a top level 
+# file in packages/ that import them all. Otherwise, this needs done in every
+# script that does anything with diags, and would need updated if new packages
+# are added, etc. 
+from metrics.packages.amwg import *
+from metrics.packages.amwg.derivations.vertical import *
+from metrics.packages.amwg.plot_data import plotspec, derived_var
+from metrics.packages.amwg.derivations import *
+from metrics.packages.lmwg import *
 from metrics.packages.diagnostic_groups import *
-from metrics.frontend.amwgmaster import *
-from mpi4py import MPI
+from metrics.frontend.uvcdat import *
+from metrics.frontend.options import *
+from metrics.common.utilities import *
+import metrics.frontend.defines as defines
+from metrics.frontend.it import *
+from metrics.computation.region import *
 
-# Splits out node communicators and node0 communicators from MPI_COMM_WORLD
-def setup_comms(comm): 
-   import platform
-   my_hname = platform.node()
-   size = comm.Get_size()
+verbosity = 1
+
+# This script parses {amwg|lmwg}master.py to determine the work to be done.
+# The goal is to maintain reasonable load balance while minimizing IO on a node level
+
+# Typical task lists look like:
+# AMWG: 
+# Set X, Obs 1, Vars [ ... ] Seasons/Regions [ . ] [ . ]
+# Set X, Obs 2, Vars [ ... ] Seasons/Regions [ . ] [ . ]
+# ...
+# Set X, Obs N, Vars [ ... ] Seasons/Regions [ . ] [ . ]
+# Set Y, Obs 1, Vars [ ... ] Seasons/Regions [ . ] [ . ]
+# ...
+# Most AMGW sets require multiple observation sets. A few have no observations, but they are rare
+
+# LMWG:
+# Set X, Obs 1, Vars [ . ] Seasons/Regions [ . ] [ . ]
+# Set X, No obs, Vars [ ...... ] Seasons/Regions [ . ] [ .]
+# Set Y, No obs, Vars [ ... ] Seasons/Regions [ . ] [ . ]
+
+# Most LMWG sets do NOT use obs sets but have lots of variables (hundreds)
+
+# A "taskset" is defined as a single observation set and a single collection with all of the variables,
+#  varopts, seasons, and regions for that obs/collection.
+# The goal here is to only have to open a single dataset and single obs set per NODE. A NODE would
+# work on multiple tasksets with each CORE working on a single "task" which is a single variable with the
+# "fixed" collection/obs and the seasons/regions/varopts.
+
+##############################################################################
+### setup_comms - takes comm_world and a maximum number of tasks per node  ###
+### (typically to limit memory on a node) and creates communicators where  ###
+### all members are on a given node (e.g. "node communicators") and        ###
+### communicators where all members have the same rank within a node       ###
+### communicator (e.g. "core communicators"). As an added bonus it creates ###
+### a separate communicator for core 0s on all nodes                       ###
+###                                                                        ###
+### TODO: Needs to actually look at tasks_per_node                         ###
+##############################################################################
+def setup_comms(comm, max_tasks_per_node=None):
    rank = comm.Get_rank()
-   
+   size = comm.Get_size()
+
+   my_hname = platform.node()
+
    hnames = []
    for i in range(size):
       hnames.append([])
 
-   # I can't figure out how to use mpi4py's allgather, but this works I suppose.
+   # No idea why this doesn't work, so just do the gather/bcast
+   #comm.allgather(my_hname, hnames)
    hnames = comm.gather(my_hname, root=0)
    hnames = comm.bcast(hnames, root=0)
-
    hnames_uniq = sorted(set(hnames))
+   if verbosity > 1:
+      print 'There are %d unique hosts e.g. nodes' % len(hnames_uniq)
 
    my_index = -1
    for i in range(len(hnames_uniq)):
       if my_hname == hnames_uniq[i]:
          my_index = i
 
-   node_comm = comm.Split(my_index, rank)
-   node_rank = node_comm.Get_rank()
+   # core_comms are communicators wherein all members are on DIFFERENT nodes. 
+   # There are {cores per node} unique core_comms
+   core_comm = comm.Split(my_index, rank)
+   core_rank = core_comm.Get_rank()
+   core_size = core_comm.Get_size()
 
-   if node_rank == 0:
-      node0 = 1
+#   print 'my core_rank: %d, world rank %d and hostname %s' % (core_rank, rank, my_hname)
+
+   # node_comms are communicators wherein all members are on the same node.
+   node_comm = comm.Split(core_rank, rank)
+
+   comm.barrier()
+   # Make an explicit core0 communicator as well.
+   # There are other ways to do this but this is clean and simple.
+   if core_rank == 0:
+      core0 = 1
    else:
-      node0 = 0
+      core0 = 0
 
-   node0_comm = comm.Split(node0, rank)
-   return node_comm, node0_comm
+   core0_comm = comm.Split(core0, rank)
 
+   return node_comm, core_comm, core0_comm, len(hnames_uniq)
 
+def create_tasksets(flag, opts):
+   taskset = {}
+   tasksets = []
 
+   # Get the master list first, then prune it based on command line arguments.
+   avail_colls = get_collections(flag)
 
-# The user specified a package; see what collections are available.
-def getCollections(pname):
+#   colls = list(set(avail_colls) & set(opts['packages']))
+   colls = list(set(avail_colls))
+
+   index = 0
+   total_subtasks = 0
+   for c in colls:
+      # Get the total list of observations used by this collection
+      vlist = list(set(diags_collection[c].keys()) - set(collection_special_vars))
+      obslist = []
+      for v in vlist:
+         obslist.extend(diags_collection[c][v]['obs'])
+      obslist = list(set(obslist)) #unique-ify
+      obslist.sort()
+
+      # For a given obs, start creating the tasks
+      for o in obslist:
+         subtasks = 0
+         taskset = {}
+         taskset['obs'] = o
+         taskset['coll'] = c
+         if diags_collection[c].get('package', False) == False or diags_collection[c]['package'].upper() == flag.upper():
+            taskset['package'] = flag
+
+         taskset['seasons'] = diags_collection[c].get('seasons', ['NA'])
+         subtasks = len(taskset['seasons'])
+
+         taskset['regions'] = diags_collection[c].get('regions', ['Global'])
+         subtasks = subtasks * len(taskset['regions'])
+
+         vlist = list(set(diags_collection[c].keys()) - set(collection_special_vars))
+         vl = []
+         for v in vlist:
+            if o in diags_collection[c][v].get('obs', ['NA']):
+               vl.append(v)
+
+         taskset['vars'] = {}
+         vtasks = 0
+         for v in vl:
+            taskset['vars'][v] = {}
+            vtasks = vtasks + 1
+
+            # look for varopts
+            varopts = diags_collection[c][v].get('varopts', None)
+            taskset['vars'][v]['varopts'] = varopts
+
+            # Look for special options (e.g. "requiresraw")
+            # These don't influence the total number of subtasks.
+            special_opts = diags_collection[c][v].get('options', None)
+            taskset['vars'][v]['options'] = special_opts
+
+            # Set the plottype as well
+            # Again, this doesn't influence the total number of subtasks.
+            taskset['vars'][v]['plottype'] = diags_collection[c][v].get('plottype', None)
+
+            # levels on the command line are either a comma separated list or a file.
+            # options.processLevels() takes care of turning a file into an array so
+            # anything in opts['levels'] is an array. 
+            # Assuming anything in *master.py will just a be a comma separated list
+            # rather than a file to not duplicate the code in options.processLevels()
+            levels = diags_collection[c][v].get('levels', None)
+            taskset['vars'][v]['levels'] = levels
+
+            optlevels = opts['levels']
+            if optlevels != None:
+               if type(taskset['vars'][v]['levels']) is list:
+                  taskset['vars'][v]['levels'].extend(optlevels)
+               else:
+                  taskset['vars'][v]['levels'] = optlevels
+
+            if type(taskset['vars'][v]['levels']) is list and varopts == None:
+               vtasks = vtasks + len(taskset['vars'][v]['levels']) - 1
+            if taskset['vars'][v]['levels'] == None and varopts != None:
+               # remove the vtasks = vtasks + 1 above if we have a bunch of varopts
+               vtasks = vtasks + len(varopts) - 1 
+            # This allows varopts and levels simulatenously. Not sure if that will ever occur however.
+            if type(taskset['vars'][v]['levels']) is list and varopts != None:
+               vtasks = vtasks + (len(taskset['vars'][v]['levels'])*len(varopts)) - 1
+
+         subtasks = subtasks * vtasks
+         taskset['subtasks'] = subtasks
+         tasksets.append(taskset)
+#         print 'TASKSET[%d]: %s' % (index, taskset)
+         index = index + 1
+         total_subtasks = total_subtasks + subtasks
+               
+   # Only node 0 is creating tasksets so this is ok to print.
+   if verbosity >= 1:
+      print 'TOTAL SUBTASKS: ', total_subtasks
+   return tasksets
+      
+# Assume the node_comms have already taken into account the desired maximum processes per node
+def divide_tasksets(tasksets, node_comm, core_comm, num_nodes, divide_constant=8):
+
+   # tasksets gets spread out over the nodes.
+   # individual nodes then take on tasks in the taskset
+
+   # If the number of subtasks is > divide_constant then we should divide the tasks among the
+   # CORES on the NODE. otherwise, just distribute the tasks.
+
+   # NOTE: Each node should probably barrier per taskset on the node_comm
+   my_tasks = []
+   # mynode is going to (num cores per node) instead. investigate divide_comms
+   my_node = node_comm.Get_rank()
+   my_core = core_comm.Get_rank()
+
+   num_cores = core_comm.Get_size()
+   num_tasks = len(tasksets)
+
+   if num_nodes == 1 and num_cores != 1:
+      my_index = my_core
+      if num_cores > divide_constant:
+         divisor = divide_constant
+      else:
+         divisor = num_cores
+   else:
+      divisor = num_nodes
+      my_index = my_node
+
+   tasks_per_node = num_tasks / divisor
+   extra_tasks = num_tasks - (tasks_per_node * divisor)
+
+   # TODO: Do we do this linearly or round-robin? Linear for now
+   my_low_index = my_index * tasks_per_node
+   my_high_index = ((my_index+1) * tasks_per_node) - 1
+
+   my_tasks = tasksets[my_low_index:my_high_index]
+      
+
+   # process 0 gets the bonus tasks
+   if extra_tasks != 0 and my_index == 0:
+      my_tasks.extend(tasksets[divisor * tasks_per_node:])
+
+   if verbosity > 1:
+      print 'total tasks %d divisor: %d my task list length: %d CORE_COMM SIZE: %d NODE_COMM_SIZE: %d NUM NODES: %d TPN: %d MY INDECES: [%d %d]' % (num_tasks, divisor, len(my_tasks), core_comm.Get_size(), node_comm.Get_size(), num_nodes, tasks_per_node, my_low_index, my_high_index)
+
+   core_comm.barrier()
+   node_comm.barrier()
+
+   return my_tasks
+   
+def get_collections(pname):
    allcolls = diags_collection.keys()
    colls = []
    dm = diagnostics_menu()
@@ -77,11 +274,11 @@ def getCollections(pname):
       fields = k.split()
       colls.append(fields[0])
 
-   # Find all mixed_plots sets that have the user-specified pname
-   # Deal with mixed_plots next
+   # At this point the list is just the collections defined in amwg/lmwg. It doesn't
+   # include special collections. So, add those.
    for c in allcolls:
       if diags_collection[c].get('mixed_plots', False) == True:
-         # mixed_packages requires mixed_plots 
+         # mixed_packages requires mixed_plots or is otherwise "special" somehow.
          if diags_collection[c].get('mixed_packages', False) == False:
             # If no package was specified, just assume it is universal
             # Otherwise, see if pname is in the list for this collection
@@ -89,206 +286,14 @@ def getCollections(pname):
                colls.append(c)
          else: # mixed packages. need to loop over variables then. if any variable is using this pname then add the package 
             vlist = list( set(diags_collection[c].keys()) - set(collection_special_vars))
+            if verbosity >= 2:
+               print 'VLIST: ', vlist
             for v in vlist:
                # This variable has a package
                if diags_collection[c][v].get('package', False) != False and diags_collection[c][v]['package'].upper() == pname.upper():
                   colls.append(c)
-            
-   print 'The following diagnostic collections appear to be available: %s' %colls
    return colls
-
-def makeTables(modelpath, obspath, outpath, pname, outlog):
-   if pname.upper() == 'AMWG':
-      seasons = diags_collection['1'].get('seasons', ['ANN'])
-      regions = diags_collection['1'].get('regions', ['Global'])
-      if 'NA' in seasons:
-         seasonstr = ''
-      else:
-         seasonstr = '--seasons '+' '.join(seasons)
-      regionstr = '--regions '+' '.join(regions)
-      cmdline = 'diags-new.py --model path=%s,climos=yes,type=model --obs path=%s,climos=yes,type=obs --set 1 --prefix set1 --package AMWG %s %s --outputdir %s' % (modelpath, obspath, seasonstr, regionstr, outpath)
-      runcmdline(cmdline, outlog)
-         
-def generatePlots(modelpath, obspath, outpath, pname, xmlflag, colls=None):
-   # Did the user specify a single collection? If not find out what collections we have
-   if colls == None:
-      colls = getCollections(pname) #find out which colls are available
-
-   # Create the outpath/{package} directory. options processing should take care of 
-   # makign sure outpath exists to get this far.
-   outpath = os.path.join(outpath,pname.lower())
-   if not os.path.isdir(outpath):
-      try:
-         os.makedirs(outpath)
-      except:
-         print 'Failed to create directory ', outpath
-   try:
-      outlog = open(os.path.join(outpath,'DIAGS_OUTPUT.log'), 'w')
-   except:
-      try:
-         os.mkdir(outpath)
-         outlog = open(os.path.join(outpath,'DIAGS_OUTPUT.log'), 'w')
-      except: 
-         print 'Couldnt create output log - %s/DIAGS_OUTPUT.log' % outpath
-         quit()
-
-   # Now, loop over collections.
-   for collnum in colls:
-      print 'Working on collection ', collnum
-      # Special case the tables since they are a bit special. (at least amwg)
-      if collnum == '1' and pname.upper() == 'AMWG':
-         makeTables(modelpath, obspath, outpath, pname, outlog)
-         continue
-      if collnum == '5' and pname.upper() == 'LMWG': 
-         makeTables(modelpath, obspath, outpath, pname, outlog)
-         continue
-
-      # deal with collection-specific optional arguments
-      optionsstr = ''
-      if diags_collection[collnum].get('options', False) != False:
-         # we have a few options
-         print 'Additional command line options to pass to diags.py - ', diags_collection[collnum]['options']
-         for k in diags_collection[collnum]['options'].keys():
-            optionsstr = optionsstr + '--%s %s ' % (k, diags_collection[collnum]['options'][k])
-
-      # Deal with packages
-      # Do we have a global package?
-      if diags_collection[collnum].get('package', False) != False and diags_collection[collnum]['package'].upper() == pname.upper():
-         if diags_collection[collnum].get('mixed_packages', False) == False:
-            packagestr = '--package '+pname
-      
-      if diags_collection[collnum].get('mixed_packages', False) == False:  #no mixed
-         # Check global package
-         if diags_collection[collnum].get('package', False) != False and diags_collection[collnum]['package'].upper() != pname.upper():
-            # skip over this guy
-            print 'Skipping over collection ', collnum
-            continue
-      else:
-         if diags_collection[collnum].get('package', False) != False and diags_collection[collnum]['package'].upper() == pname.upper():
-            print 'Processing collection ', collnum
-            packagestr = '--package '+pname
-            
-
-      # Given this collection, see what variables we have for it.
-      vlist = list( set(diags_collection[collnum].keys()) - set(collection_special_vars))
-
-      # now, see how many plot types we have to deal with
-      plotlist = []
-      for v in vlist:
-         plotlist.append(diags_collection[collnum][v]['plottype'])
-      plotlist = list(set(plotlist))
-         
-      # Get a list of unique observation sets required for this collection.
-      obslist = []
-      for v in vlist:
-         obslist.extend(diags_collection[collnum][v]['obs'])
-      obslist = list(set(obslist))
-
-      # At this point, we have a list of obs for this collection, a list of variables, and a list of plots
-      # We need to organize them so that we can loop over obs sets with a fixed plottype and list of variables.
-      # Let's build a dictionary for that.
-      for p in plotlist:
-         obsvars = {}
-         for o in obslist:
-            for v in vlist:
-               if o in diags_collection[collnum][v]['obs'] and diags_collection[collnum][v]['plottype'] == p:
-                  if obsvars.get(o, False) == False: # do we have any variables yet?
-                     obsvars[o] = [v] # nope, make a new array and add this variable
-                  else:
-                     obsvars[o].append(v)
-            if obsvars.get(o, False) != False:
-               obsvars[o] = list(set(obsvars[o]))
-
-         # ok we have a list of observations and the variables that go with them for this plot type.
-         for o in obsvars.keys():
-            # Each command line will be an obs set, then list of vars/regions/seasons that are consistent. Start constructing a command line now.
-            cmdline = ''
-            packagestr = ' --package '+pname
-            outstr = ' --outputdir '+outpath
-
-            if xmlflag == False:
-               xmlstr = ' --xml no'
-            else:
-               xmlstr = ''
-
-            if o != 'NA':
-               obsfname = diags_obslist[o]['filekey']
-               obsstr = ',filter="f_startswith(\''+obsfname+'\')"'  #note leading comma
-               poststr = '--postfix '+obsfname
-            else:
-               obsstr = ''
-               poststr = ' --postfix \'\''
-
-            setstr = ' --set '+p
-            prestr = ' --prefix set'+collnum
-
-            # set up season str (and later overwrite it if needed)
-            g_season = diags_collection[collnum].get('seasons', ['ANN'])
-            if 'NA' in g_season:
-               seasonstr = ''
-            else:
-               seasonstr = '--seasons '+' '.join(g_season)
-               
-            # set up region str (and later overwrite it if needed)
-            g_region = diags_collection[collnum].get('regions', ['Global'])
-            if g_region == ['Global']:
-               regionstr = ''
-            else:
-               regionstr = '--regions '+' '.join(g_region)
-
-            # Now, check each variable for a season/region/varopts argument. Any that do NOT have them can be dealt with first.
-            obs_vlist = obsvars[o]
-            simple_vars = []
-            for v in obs_vlist:
-               if diags_collection[collnum][v].get('seasons', False) == False and diags_collection[collnum][v].get('regions', False) == False and diags_collection[collnum][v].get('varopts', False) == False:
-                  simple_vars.append(v)
-
-            complex_vars = list(set(obs_vlist) - set(simple_vars))
-            # simple vars first
-            if len(simple_vars) != 0:
-               varstr = '--vars '+' '.join(simple_vars)
-               cmdline = 'diags-new.py --model path=%s,climos=yes,type=model --obs path=%s,climos=yes,type=obs%s %s %s %s %s %s %s %s %s %s %s' % (modelpath, obspath, obsstr, optionsstr, packagestr, setstr, seasonstr, varstr, outstr, xmlstr, prestr, poststr, regionstr)
-               if collnum != 'dontrun':
-                  runcmdline(cmdline, outlog)
-               else:
-                  print 'DONTRUN: ', cmdline
-
-            for v in complex_vars:
-            # run these individually basically.
-               g_region = diags_collection[collnum][v].get('regions', ['Global'])
-               g_season = diags_collection[collnum][v].get('seasons', ['ANN'])
-               if 'NA' in g_season:
-                  seasonstr = ''
-               else:
-                  seasonstr = '--seasons '+' '.join(g_season)
-                  
-               regionstr = '--regions '+' '.join(g_region)
-               varopts = ''
-               if diags_collection[collnum][v].get('varopts', False) != False:
-                  varopts = '--varopts '+' '.join(diags_collection[collnum][v]['varopts'])
-               varstr = '--vars '+v
-               # check for varopts.
-               cmdline = 'diags-new.py --model path=%s,climos=yes,type=model --obs path=%s,climos=yes,type=obs%s %s %s %s %s %s %s %s %s %s %s %s' % (modelpath, obspath, obsstr, optionsstr, packagestr, setstr, seasonstr, varstr, outstr, xmlstr, prestr, poststr, regionstr, varopts)
-               if collnum != 'dontrun':
-                  runcmdline(cmdline, outlog)
-               else:
-                  print 'DONTRUN: ', cmdline
-
-   outlog.close()
-
-def runcmdline(cmdline, outlog):
-   print 'Executing '+cmdline
-   try:
-      retcode = subprocess.check_call(cmdline, stdout=outlog, stderr=outlog, shell=True)
-      if retcode < 0:
-         print 'TERMINATE SIGNAL', -retcode
-   except subprocess.CalledProcessError as e:
-      print '\n\nEXECUTION FAILED FOR ', cmdline, ':', e
-      outlog.write('Command %s failed\n' % cmdline)
-      outlog.write('----------------------------------------------')
-      print 'See '+outpath+'/DIAGS_OUTPUT.log for details'
-
-
+   
 ### These 3 functions are used to add the variables to the database for speeding up
 ### classic view
 def setnum( setname ):
@@ -307,17 +312,16 @@ def setnum( setname ):
         setnumber = setname[index1:index1+index2]
     return setnumber
 
-def list_vars(path, package):
-    opts = Options()
-    opts['path'] = [path]
-    opts['packages'] = [package.upper()]
-
-    dtree1 = dirtree_datafiles(opts, modelid=0)
-    filetable1 = basic_filetable(dtree1, opts)
-
+def list_vars(ft, package):
     dm = diagnostics_menu()
     vlist = []
+    if 'packages' not in opts._opts:
+       opts['packages'] = [ opts['package'] ]
     for pname in opts['packages']:
+        if pname not in dm:
+           pname = pname.upper()
+           if pname not in dm:
+              pname = pname.lower()
         pclass = dm[pname]()
 
         slist = pclass.list_diagnostic_sets()
@@ -325,112 +329,783 @@ def list_vars(path, package):
         # now to get all variables, we need to extract just the integer from the slist entries.
         snums = [setnum(x) for x in slist.keys()]
         for s in slist.keys():
-            vlist.extend(pclass.list_variables(filetable1, None, s))
+            vlist.extend(pclass.list_variables(ft, ft, s)) # pass ft as "obs" since some of the code is not hardened against no obs fts
     vlist = list(set(vlist))
     return vlist
 
-def postDB(modelpath, dsname, package, host=None):
+##### This assumes dsname reflects the combination of datasets (somehow) if >2 datasets are provided
+##### Otherwise, the variable list could be off.
+def postDB(fts, dsname, package, host=None):
    if host == None:
       host = 'localhost:8081'
-   vl = list_vars(modelpath, package)
-   vl = ', '.join(vl)
 
-   string = '\'{"variables": "'+vl+'"}\''
-   print string
-   ### Need the curl string here
+   vl = list_vars(fts[0], package)
+   vlstr = ', '.join(vl)
+   for i in range(len(fts)-1):
+      vl_tmp = list_vars(fts[i+1], package)
+      vlstr = vlstr+', '.join(vl_tmp)
+
+   string = '\'{"variables": "'+str(vl)+'"}\''
+   if verbosity >= 2:
+      print 'Variable list: ', string
    command = "echo "+string+' | curl -d @- \'http://'+host+'/exploratory_analysis/dataset_variables/'+dsname+'/\' -H "Accept:application/json" -H "Context-Type:application/json"'
-   print 'Adding variable list to database on ', host
+   if verbosity >= 1:
+      print 'Adding variable list to database on ', host
    subprocess.call(command, shell=True)
 
+   
+###############################################################################
+###############################################################################
+###############################################################################
+###############################################################################
 
-### The driver part of the script
-if __name__ == '__main__':
-   modelpath = ''
-   obspath = ''
-   outpath = ''
-   colls = None
-   dsname = ''
-   hostname = 'acme-dev-0.ornl.gov'
-   package = ''
-   dbflag = True
-   dbonly = False
-   xmlflag = True #default to generating xml/netcdf files
-   helpflag = False
-   try:
-      opts, args = getopt.getopt(sys.argv[1:], 'p:m:v:o:c:d:H:b:h',["package=", "model=", "path=", "obs=", "obspath=", "output=", "outpath=", "outputdir=", "collections=", "colls=", "dsname=", "hostname=", "db=", "figures=", "help"])
-   except getopt.GetoptError as err:
-      print 'Error processing command line arguments'
-      print str(err)
-      quit()
+def setup_vcs(opts):
+   if opts['output']['plots'] == True:
+      vcanvas = vcs.init()
+      vcsx = vcanvas
+      vcanvas.setcolormap('bl_to_darkred') #Set the colormap to the NCAR colors
+      vcanvas2 = vcs.init()
+      vcanvas2.portrait()
+      vcanvas2.setcolormap('bl_to_darkred') #Set the colormap to the NCAR colors
+      LINE = vcanvas.createline('LINE', 'default')
+      LINE.width = 3.0
+      LINE.type = 'solid'
+      LINE.color = 242
+      if opts['output']['logo'] == False:
+         vcanvas.drawlogooff()
+         vcanvas2.drawlogooff()
+   else:
+   # No plots. JSON? XML? NetCDF? etc
+   # do something else
+      print 'Not plotting. Do we need any setup to produce output files?'
+      vcanvas = None
+      vcanvas2 = None
 
-   for opt, arg in opts:
-      if opt in ("-b", "--db"):
-         if arg == 'no':
-            dbflag = False
-            dbonly = False
-         if arg == 'only':
-            dbonly = True
-            dbflag = True
-         if arg == 'yes':
-            dbflag = True
-            dbonly = False
-      elif opt in ("-h", "--help"):
-         helpflag = True
-      elif opt in ("-m", "--model", "--path"):
-         modelpath = arg
-      elif opt in ("-v", "--obs", "--obspath"):
-         obspath = arg
-      elif opt in ("-p", "--package"):
-         package = arg.upper()
-         print package
-      elif opt in ("-o", "--output", "--outputdir", "--outpath"):
-         outpath = arg
-      elif opt in ("-c", "--collections", "--colls"):
-         print arg
-         colls = [ arg ]
-         print colls
-      elif opt in ("-d", "--dsname"):
-         dsname = arg
-      elif opt in ("-H", "--hostname"):
-         hostname = arg
-      elif opt in ("--figures"):
-         if arg == 'only':
-            xmlflag = False
+   return vcanvas, vcanvas2
+
+def make_filelists(opts):
+   model_fts = []
+   obs_fts = []
+   for i in range(len(opts['model'])):
+      model_fts.append(path2filetable(opts, modelid=i))
+   for i in range(len(opts['obs'])):
+      obs_fts.append(path2filetable(opts, obsid=i))
+
+   model_dict = make_ft_dict(model_fts)
+   files['model_dict'] = model_dict
+   files['model_fts'] = model_fts
+   files['obs_fts'] = obs_fts
+
+   num_models = len(model_dict.keys())
+   files['num_models'] = num_models
+   files['raw0'] = model_dict[model_dict.keys()[0]]['raw']
+   files['climo0'] = model_dict[model_dict.keys()[0]]['climos']
+   files['name0'] = model_dict[model_dict.keys()[0]].get('name', 'ft0')
+   files['defaultft0'] = files['climo0'] if files['climo0'] is not None else files['raw0']
+   files['modelpath'] = files['defaultft0'].root_dir()
+
+   if num_models == 2:
+      files['raw1'] = model_dict[model_dict.keys()[1]]['raw']
+      files['climo1'] = model_dict[model_dict.keys()[1]]['climos']
+      files['name1'] = model_dict[model_dict.keys()[1]].get('name', 'ft1')
+      files['defaultft1'] = files['climo1'] if files['climo1'] is not None else files['raw1']
+      files['modelpath1'] = files['defaultft1'].root_dir()
+   else:
+      files['modelpath1'] = None
+      files['defaultft1'] = None
+      files['raw1'] = None
+      files['climo1'] = None
+      files['name1'] = None
+
+   if files['climo0'] != None:
+      files['cf0'] = 'yes'
+   else:
+      files['cf0'] = 'no'
+   if files['climo1'] != None:
+      files['cf1'] = 'yes'
+   else:
+      files['cf1'] = 'no'
+
+   files['num_obs'] = len(opts['obs'])
+   files['obspath0'] = None
+   files['obspath1'] = None
+
+   if files['num_obs'] >= 1:
+      files['obspath0'] = opts['obs'][0]['path']
+   if files['num_obs'] == 2:
+      files['obspath1'] = opts['obs'][1]['path']
+      
+   files['outpath'] = os.path.join(opts['output']['outputdir'], opts['package'].lower())
+#   if not os.path.isdir(files['outpath']):
+#      try:
+#         os.makedirs(files['outpath'])
+#      except:
+#         print 'Failed to create output directory - %s' % files['outpath']
+
+   return files
+
+def process_task(files, setdict, opts, vcanvas, vcanvas2, task, outlog):
+   # For now this does NOT do a good job of sharing data on a node. Idealy one core would open
+   # a given file and broadcast data needed by other cores working on similar data. That will
+   # help with IO bottlenecks, but requires a fair amount of rewriting the "diags" part.
+
+   times = task['seasons']
+   regions = task['regions']
+   coll = task['coll']
+   obs = task['obs']
+   obsfname = diags_obslist[obs]['filekey']
+   vlist_dict = task['vars']
+   special_opts = diags_collection[task['coll']].get('options', None)
+
+   raw0 = files['raw0']
+   climo0 = files['climo0']
+   raw1 = files['raw1']
+   climo1 = files['climo1']
+   ft0 = files['defaultft0']
+   ft1 = files['defaultft1']
+
+   obs0 = files['obspath0']
+   obs1 = files['obspath1']
+
+   modelfts = files['model_fts']
+   obsfts = files['obs_fts']
+
+   dsnames = [files['name0'], files['name1']]
+
+   sndic = {setnum(s):s for s in setdict.keys()}
+
+   basename = opts['output']['prefix']
+   postname = opts['output']['postfix']
+
+   number_diagnostic_plots = 0
+
+   # Loop over the various subtasks in this task.
+   for time in times:
+      for region in regions:
+         region_rect = defines.all_regions[str(region)]
+         r_fname = region_rect.filekey
+         rname = str(region)
+
+         vcount = len(vlist_dict.keys())
+         counter = 0
+         for ivarid, varid in enumerate(vlist_dict.keys()):
+            plottype = vlist_dict[varid]['plottype']
+            # Convert the user-sensible "set number" into a "set class identifier string" and then the corresponding object 
+            setobj = setdict[sndic[plottype]]
+
+            # Why must this be nonstandard I wonder? This is taylor diagrams.
+            if plottype == '14' and 'AMWG' in [x.upper() for x in opts['package']] and ivarid >=1:
+               continue
+
+            # Assume variable options sanity checking is done at a higher level
+            varopts = vlist_dict[varid]['varopts']
+            levels = vlist_dict[varid]['levels']
+            if varopts == None:
+               varopts = [None]
+            if levels == None:
+               levels = [None]
+            for varopt in varopts:
+               for level in levels:
+                  # too bad none of this information is available from this setobj, since I
+                  # need most of it to make filenames, but I can't make the filenames until later.
+                  if verbosity >= 2:
+                     print 'CREATE SET OBJ'
+                  plot = setobj(modelfts, obsfts, varid, time, region, varopt, level)
+                  if verbosity >= 2:
+                     print 'CREATE SET OBJ - DONE'
+                     print 'PLOT.COMPUTE'
+
+                  res = plot.compute(newgrid = -1)
+                  if verbosity >= 2:
+                     print 'PLOT.COMPUTE - DONE'
+
+                  if res is not None and len(res)>0 and type(res) is not str: # Success, we have some plots to plot
+                     fnamebase = make_filename_base(opts, modelfts, obsfname, coll, varid, time, r_fname, varopt, level, basename=basename, postname=postname)
+                     # Move filename creation to makeplot()
+                     if opts['output']['plots'] == True:
+                        # make_plots needs cleaned up to NOT require plot and package. Why are amwg sets 11/12 special cased?
+                        make_plots(res, vcanvas, vcanvas2, varid, fnamebase, files['outpath'], plot, package)
+                        number_diagnostic_plots += 1
+
+                     if opts['output']['xml'] == True:
+                        ### TODO Call a create_filename thing here perhaps?
+                        # Also, write the nc output files and xml.
+                        # Probably make this a command line option.
+                        if res.__class__.__name__ is 'uvc_composite_plotspec':
+                           resc = res
+                           filenames = resc.write_plot_data("xml-NetCDF", files['outpath'] )
+                        else:
+                           resc = uvc_composite_plotspec( res )
+                           filenames = resc.write_plot_data("xml-NetCDF", files['outpath'] )
+                        if verbosity >= 1:
+                           print "wrote plots",resc.title," to",filenames
+                  elif res is not None:
+                     if type(res) is str:
+                        filename = make_filename_base(opts, modelfts, obsfname, coll, varid, time, r_fname, varopt, level, flag='table', basename=basename, postname=postname)
+                        fnamebase = os.path.join(files['outpath'], filename)
+                        if verbosity >= 1:
+                           print 'Creating table file --> ', fnamebase
+                        f = open(fnamebase, 'w')
+                        f.write(res)
+                        f.close()
+                     else:
+                     # but len(res)==0, probably plot tables
+                     # amwg should output a textual table too. maybe someday i'll fix this.
+                        if opts['output']['table'] == True or res.__class__.__name__ is 'amwg_plot_set1':
+                           resc = res
+                           filename = make_filename_base(opts, modelfts, obsfname, coll, varid, time, r_fname, varopt, level, flag='table', basename=basename, postname=postname)
+                           where = files['outpath']
+                           if verbosity > 1:
+                              print '-------> calling write_plot with where: %s, filename: %s' %(where, filename)
+
+                           filenames = resc.write_plot_data("text", where=where, fname=filename)
+                           number_diagnostic_plots += 1
+                           if verbosity >= 1:
+                              print "-------> wrote table",resc.title," to",filenames
+                        else:
+                           print 'No data to plot for ', varid, ' ', varopt
+               if verbosity > 1:
+                  print 'DONE WIHT LEVEL - ', level
+            if verbosity > 1:
+               print ' DONE WITH OPTS - ' ,varopt
+         if verbosity > 1:
+            print 'DONE WITH VARID - ', varid
+      if verbosity > 1:
+         print 'DONE WITH REGION - ', region
+
+   if verbosity >= 1:
+      print "total number of (compound) diagnostic plots generated for this task =", number_diagnostic_plots
+
+def make_filename_base(opts, modelfts, obsfname, coll, varid, time, r_fname, varopt, level, flag=None, basename=None, postname=None):
+   # Filenames are of the form basename_season_region(filename)_varid_varopts_levels_postfix
+   if verbosity >= 2:
+      print '********************************************************************************************************'
+      print 'passed in args: (%s) (%s) (%s) (%s) (%s) (%s) (%s) (%s) (%s) (%s)' % (obsfname, coll, varid, time, r_fname, varopt, level, flag, basename, postname)
+   if basename is None or basename == '':
+      basename = 'set%s' % coll
+   if postname is None or postname == '':
+      postname = '_%s' % obsfname
+   if varopt is None:
+      auxstr = ''
+   if level is None:
+      levelstr = ''
+   if flag is None:
+      postname = postname
+   elif flag == 'table':
+      postname = postname+'-table.txt'
+
+   # TODO postname needs to be set based on the taskset (it is the obs dataset filename basically)
+   
+   fname = '%s_%s_%s_%s_%s_%s_%s' % (basename, time, r_fname, varid, varopt, level, postname)
+   fname = fname.replace('__', '_')
+   if verbosity >= 2:
+      print 'returning %s' % fname
+      print '********************************************************************************************************'
+   
+   return fname
+
+# Because of legacy design, this can't be determined in a better way or place.
+# ideally you'd be able to just ask for a plot via metadiags and the dictionary and get
+# all you need with less effort.
+#### TODO - Do we need the old style very verbose names here?
+#### jfp, my answer: The right way to do it is that all the verbose information
+#### useful for file names should be constructed elsewhere, perhaps in a named tuple.
+#### The verbose names are formed, basically, by concatenating everything in that
+#### tuple.  What we should do here is to form file names by concatenating the
+#### most interesting parts of that tuple, whatever they are.  But it's important
+#### to use enough so that different plots will almost surely have different names.
+#### bes - it is also a requirement that filenames be reconstructable after-the-fact
+#### with only the dataset name (the dsname parameter probably) and the combination of
+#### seasons/vars/setnames/varopts/etc used to create the plot. Otherwise, there is no
+#### way for classic viewer to know the filename without lots more special casing. 
+def make_filename_post(fnamebase, vname):
+   print 'vname: ', vname
+   # I *really* hate to do this. Filename should be handled better at a level above diags*.py
+   special = ''
+   if 'RMSE_' in vname:
+      special='RMSE'
+   if 'Standard_Deviation' in vname:
+      special='STDDEV'
+   if 'BIAS_' in vname:
+      special='BIAS'
+   if 'CORR_' in vname:
+      special='CORR'
+   if verbosity > 1:
+      print '---> vname:', vname
+      print '---> fnamebase: ', fnamebase
+
+   if special != '':
+      if verbosity > 1:
+         print '--> Special: ', special
+      if ('_1' in vname and '_2' in vname) or '_MAP' in vname.upper():
+         fname = fnamebase+'-map.png'
+      elif '_1' in vname and '_2' not in vname:
+         fname = fnamebase+'-ds1.png'
+      elif '_2' in vname and '_1' not in vname:
+         fname = fnamebase+'-ds2.png'
+      elif '_0' in vname and '_1' not in vname:
+         fname = fnamebase+'-ds0.png'
       else:
-        print "Unknown option ", opt
+         print 'Couldnt determine filename; defaulting to just .png. vname:', vname, 'fnamebase:', fnamebase
+         fname = fnamebase+'.png'
+   elif '_diff' in vname or ('_ft0_' in vname and '_ft1_' in vname) or\
+           ('_ft1_' in vname and '_ft2_' in vname):
+      fname = fnamebase+'-diff.png'
+   elif '_obs' in vname:
+      fname = fnamebase+'-obs.png'
+   else:
+      if '_ttest' in vname:
+         if 'ft1' in vname and 'ft2' in vname:
+            fname = fnamebase+'-model1_model2_ttest.png'
+         elif 'ft1' in vname and 'ft2' not in vname:
+            fname = fnamebase+'-model1_ttest.png'
+         elif 'ft2' in vname and 'ft1' not in vname:
+            fname = fnamebase+'-model2_ttest.png'
+      elif '_ft1' in vname and '_ft2' not in vname:
+         fname = fnamebase+'-model.png'  
+         # if we had switched to model1 it would affect classic view, etc.
+      elif '_ft2' in vname and '_ft1' not in vname:
+         fname = fnamebase+'-model2.png'
+      elif '_ft0' in vname and '_ft1' not in vname:
+         fname = fnamebase+'-model0.png'
+      elif '_ft1' in vname and '_ft2' in vname:
+         fname = fnamebase+'-model-model2.png'
+      elif '_fts' in vname: # a special variable; typically like lmwg set3/6 or amwg set 2
+         fname = fnamebase+'_'+vname.replace('_fts','')+'.png'
+      else:
+         print 'Second spot - Couldnt determine filename; defaulting to just .png. vname:', vname, 'fnamebase:', fnamebase
+         fname = fnamebase+'.png'
+   return fname
 
-   comm = MPI.COMM_WORLD
-   node_comm, node0_comm = setup_comms(comm)
+# This looks like questionable design....
+def make_plots(res, vcanvas, vcanvas2, varid, fnamebase, outpath, plot, package):
+   if verbosity > 1:
+      print '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'
+      print 'TOP OF MAKE_PLOTS - rank %d - varid %s fnamebase %s' % ( MPI.COMM_WORLD.Get_rank(), varid, fnamebase)
+      print '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
+   # need to add plot and pacakge for the amwg 11,12 special cases. need to rethink how to deal with that
+   # At this loop level we are making one compound plot.  In consists
+   # of "single plots", each of which we would normally call "one" plot.
+   # But some "single plots" are made by drawing multiple "simple plots",
+   # One on top of the other.  VCS draws one simple plot at a time.
+   # Here we'll count up the plots and run through them to build lists
+   # of graphics methods and overlay statuses.
+   # We are given the list of results from plot(), the 2 VCS canvases and a filename minus the last bit
+   nsingleplots = len(res)
+   nsimpleplots = nsingleplots + sum([len(resr)-1 for resr in res if type(resr) is tuple])
+   gms = nsimpleplots * [None]
+   ovly = nsimpleplots * [0]
+   onPage = nsingleplots
+   ir = 0
+   for r,resr in enumerate(res):
+      if type(resr) is tuple:
+         for jr,rsr in enumerate(resr):
+            gms[ir] = resr[jr].ptype.lower()
+            ovly[ir] = jr
+            #print ir, ovly[ir], gms[ir]
+            ir += 1
+      elif resr is not None:
+         gms[ir] = resr.ptype.lower()
+         ovly[ir] = 0
+         ir += 1
+   if None in gms:
+      print "WARNING, missing a graphics method. gms=",gms
+   # Now get the templates which correspond to the graphics methods and overlay statuses.
+   # tmobs[ir] is the template for plotting a simple plot on a page
+   #   which has just one single-plot - that's vcanvas
+   # tmmobs[ir] is the template for plotting a simple plot on a page
+   #   which has the entire compound plot - that's vcanvas2
+   gmobs, tmobs, tmmobs = return_templates_graphic_methods( vcanvas, gms, ovly, onPage )
+   if verbosity > 1:
+      print '*************************************************'
+      print "tmpl nsingleplots=",nsingleplots,"nsimpleplots=",nsimpleplots
+      print "tmpl gms=",gms
+      print "tmpl len(res)=",len(res),"ovly=",ovly,"onPage=",onPage
+      print "tmpl gmobs=",gmobs
+      print 'TMOBS/TMMOBS:'
+      print tmobs
+      print tmmobs
+#      if tmobs != None:
+#         print "tmpl tmobs=",[tm.name for tm in tmobs]
+#      if tmmobs != None:
+#         print "tmpl tmmobs=",[tm.name for tm in tmmobs]
+      print '*************************************************'
 
-   # fewer arguments required
-   if dbflag == True and dbonly == True and (modelpath == '' or dsname == '' or package == ''):
-      print 'Please specify --model, --dsname, and --package with the db update'
+   # gmmobs provides the correct graphics methods to go with the templates.
+   # Unfortunately, for the moment we have to use rmr.presentation instead
+   # (below) because it contains some information such as axis and vector
+   # scaling which is not yet done as part of
+
+   vcanvas2.clear()
+   plotcv2 = False
+   ir = -1
+   for r,resr in enumerate(res):
+      if resr is None:
+         continue
+           
+      if type(resr) is not tuple:
+         resr = (resr, None )
+      vcanvas.clear()
+      # ... Thus all members of resr and all variables of rsr will be
+      # plotted in the same plot...
+      for rsr in resr:
+         if rsr is None:
+            continue
+         ir += 1
+         tm = tmobs[ir]
+         if tmmobs != []:
+            tm2 = tmmobs[ir]
+         title = rsr.title
+         rsr_presentation = rsr.presentation
+         for varIndex, var in enumerate(rsr.vars):
+            savePNG = True
+            seqsetattr(var,'title',title)
+
+            # ...But the VCS plot system will overwrite the title line
+            # with whatever else it can come up with:
+            # long_name, id, and units. Generally the units are harmless,
+            # but the rest has to go....
+
+            if seqhasattr(var,'long_name'):
+               if type(var) is tuple:
+                  for v in var:
+                     del v.long_name
+               else:
+                  del var.long_name
+            if seqhasattr(var,'id'):
+               if type(var) is tuple:   # only for vector plots
+                  vname = ','.join( seqgetattr(var,'id','') )
+                  vname = vname.replace(' ', '_')
+                  var_id_save = seqgetattr(var,'id','')
+                  seqsetattr( var,'id','' )
+               else:
+                  #print 'in the else clause.'
+                  #print var
+                  #print type(var)
+
+                  vname = var.id.replace(' ', '_')
+                  var_id_save = var.id
+                  var.id = ''         # If id exists, vcs uses it as a plot title
+                  # and if id doesn't exist, the system will create one before plotting!
+
+               vname = vname.replace('/', '_')
+
+               filename = make_filename_post(fnamebase, vname)
+               fname = os.path.join(outpath, filename)
+
+               if verbosity > 1:
+                  print "png file name: ",fname
+
+            if vcs.isscatter(rsr.presentation) or (plot.number in ['11', '12'] and package.upper() == 'AMWG'):
+               #pdb.set_trace()
+               if hasattr(plot, 'customizeTemplates'):
+                  if hasattr(plot, 'replaceIds'):
+                     var = plot.replaceIds(var)
+                  tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)] )
+               if len(rsr.vars) == 1:
+                  #scatter plot for plot set 12
+                  subtitle = title
+                  vcanvas.plot(var, 
+                     rsr_presentation, tm, bg=1, title=title,
+                     units='', source=rsr.source )
+                  savePNG = False    
+                  #plot the multibox plot
+                  try:
+                     if tm2 is not None and varIndex+1 == len(rsr.vars):
+                        if hasattr(plot, 'compositeTitle'):
+                           title = plot.compositeTitle
+                        vcanvas2.plot(var,
+                           rsr_presentation, tm2, bg=1, title=title, 
+                           units='', source=subtitle )
+                        plotcv2 = True
+                        savePNG = True
+                  except vcs.error.vcsError as e:
+                     print "ERROR making summary plot:",e
+                     savePNG = True                                              
+               elif len(rsr.vars) == 2:
+                  if varIndex == 0:
+                     #first pass through just save the array                                              
+                     xvar = var.flatten()
+                     savePNG = False
+                  elif varIndex == 1:
+                     #second pass through plot the 2nd variables or next 2 variables
+                     yvar = var.flatten()
+                     #pdb.set_trace()
+                     #this is only for amwg plot set 11
+                     if seqhasattr(rsr_presentation, 'overplotline') and rsr_presentation.overplotline:
+                        tm.line1.x1 = tm.box1.x1
+                        tm.line1.x2 = tm.box1.x2
+                        tm.line1.y1 = tm.box1.y2
+                        tm.line1.y2 = tm.box1.y1
+                        #pdb.set_trace()
+                        tm.line1.line = 'LINE'
+                        tm.line1.priority = 1
+                        tm2.line1.x1 = tm2.box1.x1
+                        tm2.line1.x2 = tm2.box1.x2
+                        tm2.line1.y1 = tm2.box1.y2
+                        tm2.line1.y2 = tm2.box1.y1
+                        tm2.line1.line = 'LINE'
+                        tm2.line1.priority = 1                                                   
+                        #tm.line1.list()
+                     if hasattr(plot, 'customizeTemplates'):
+                        tm2.xname.list()
+                        tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)])
+                        tm2.xname.list()
+                     vcanvas.plot(xvar, yvar, 
+                        rsr_presentation, tm, bg=1, title=title,
+                        units='', source=rsr.source ) 
+                    
+                  #plot the multibox plot
+                  try:
+                     if tm2 is not None and varIndex+1 == len(rsr.vars):
+                        #title refers to the title for the individual plots getattr(xvar,'units','')
+                        subtitle = title
+                        if hasattr(plot, 'compositeTitle'):
+                           title = plot.compositeTitle
+
+                        vcanvas2.plot(xvar, yvar,
+                           rsr_presentation, tm2, bg=1, title=title, 
+                           units='', source=subtitle)
+                        plotcv2 = True
+                        #tm2.units.list()
+                        if varIndex+1 == len(rsr.vars):
+                           savePNG = True
+                  except vcs.error.vcsError as e:
+                     print "ERROR making summary plot:",e
+                     savePNG = True
+            elif vcs.isvector(rsr.presentation) or rsr.presentation.__class__.__name__=="Gv":
+               strideX = rsr.strideX
+               strideY = rsr.strideY
+               # Note that continents=0 is a useful plot option
+               vcanvas.plot( var[0][::strideY,::strideX],
+                  var[1][::strideY,::strideX], rsr.presentation, tmobs[ir], bg=1,
+                  title=title, units=getattr(var,'units',''),
+                  source=rsr.source )
+               # the last two lines shouldn't be here.  These (title,units,source)
+               # should come from the contour plot, but that doesn't seem to
+               # have them.
+               try:
+                  if tm2 is not None:
+                     vcanvas2.plot( var[0][::strideY,::strideX],
+                        var[1][::strideY,::strideX],
+                        rsr.presentation, tm2, bg=1,
+                        title=title, units=getattr(var,'units',''),
+                        source=rsr.source )
+                        # the last two lines shouldn't be here.  These (title,units,source)
+                        # should come from the contour plot, but that doesn't seem to
+                        # have them.
+               except vcs.error.vcsError as e:
+                  print "ERROR making summary plot:",e
+            elif vcs.istaylordiagram(rsr.presentation):
+               # this is a total hack that is related to the hack in uvdat.py
+               vcanvas.legendTitles = rsr.legendTitles
+               if hasattr(plot, 'customizeTemplates'):
+                  vcanvas.setcolormap("bl_to_darkred")
+                  print vcanvas.listelements("colormap")
+                  tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (None, None)] )
+               vcanvas.plot(var, rsr.presentation, tm, bg=1,
+                  title=title, units=getattr(var,'units',''), source=rsr.source )
+               savePNG = True
+               rsr.presentation.script("jim_td")
+               # tm.script("jim_tm")
+               # fjim=cdms2.open("jim_data.nc","w")
+               # fjim.write(var,id="jim")
+               # fjim.close()
+            else:
+               #pdb.set_trace()
+               if hasattr(plot, 'customizeTemplates'):
+                  tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)] )
+               #vcanvas.plot(var, rsr.presentation, tm, bg=1,
+               #   title=title, units=getattr(var,'units',''), source=rsr.source )
+               plot.vcs_plot(vcanvas, var, rsr.presentation, tm, bg=1, title=title,
+                  units=getattr(var, 'units', ''), source=rsr.source)
+#                                      vcanvas3.clear()
+#                                      vcanvas3.plot(var, rsr.presentation )
+               savePNG = True
+               try:
+                  if tm2 is not None:
+                     #vcanvas2.plot(var, rsr.presentation, tm2, bg=1,
+                     #   title=title, units=getattr(var,'units',''), source=rsr.source )
+                     plot.vcs_plot( vcanvas2, var, rsr.presentation, tm2, bg=1,
+                        title=title, units=getattr(var, 'units', ''), 
+                        source = rsr.source, compoundplot=onPage )
+                     plotcv2 = True
+               except vcs.error.vcsError as e:
+                  print "ERROR making summary plot:",e
+            if var_id_save is not None:
+               if type(var_id_save) is str:
+                  var.id = var_id_save
+               else:
+                  for i in range(len(var_id_save)):
+                     var[i].id = var_id_save[i]
+            if savePNG:
+               if verbosity >= 2:
+                  print 'ABOUT TO SAVE ', fname
+               vcanvas.png( fname, ignore_alpha=True, metadata=provenance_dict() )
+               if verbosity >= 2:
+                  print 'DONE SAVING ', fname
+
+   if tmmobs[0] is not None:  # If anything was plotted to vcanvas2
+      vname = varid.replace(' ', '_')
+      vname = vname.replace('/', '_')
+
+      if verbosity >= 2:
+         print 'vname in tmmobs: ',vname
+      if '_diff' in vname:
+         fname = fnamebase+'-combined-diff.png'
+      else:
+         fname = fnamebase+'-combined.png'
+
+      if verbosity >= 2:
+         print "writing png file2:",fname
+      vcanvas2.png( fname , ignore_alpha = True, metadata=provenance_dict() )
+      if verbosity >= 2:
+         print "done writing png file after vcanvas2.png call ", fname
+
+   if verbosity >= 1:
+      print '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'
+      print 'END OF MAKE_PLOTS - rank %d - varid %s fnamebase %s' % ( MPI.COMM_WORLD.Get_rank(), varid, fnamebase)
+      print '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
+
+
+### The main driver script.
+if __name__ == '__main__':
+
+   # Figure out who we are.
+   comm_world = MPI.COMM_WORLD
+   rank = comm_world.Get_rank()
+
+   # First, process command line arguments. All ranks get the command line arguments
+   opts = Options()
+   opts.processCmdLine()
+   opts.verifyOptions()
+
+   if (opts['package'] == None or opts['package'] == '') and rank == 0:
+      print "Please specify a package"
+      quit()
+      
+   package = opts['package'].upper()
+   if package == 'AMWG':
+      from metrics.frontend.amwgmaster import *
+   elif package == 'LMWG':
+      from metrics.frontend.lmwgmaster import *
+
+
+   # Now, setup the various communicators - NODEs, core0s, and comm_world
+   node_comm, core_comm, core0_comm, num_nodes = setup_comms(comm_world)#, opts['taskspernode'])
+
+   # Next, deal with tasks lists.
+   tasksets = []
+   if rank == 0:
+      if verbosity >= 1:
+         print 'Communicators created'
+      tasksets = create_tasksets('amwg', opts)
+
+   comm_world.barrier()
+
+   if comm_world.Get_rank() == 0:
+      if verbosity >= 1:
+         print 'Distributing task lists'
+   tasksets = comm_world.bcast(tasksets, root=0)
+
+   # Now, divide up the tasks among nodes
+   my_tasks = divide_tasksets(tasksets, node_comm, core_comm, num_nodes)
+
+   if verbosity > 1:
+      print 'my_tasks: ' , my_tasks
+   if verbosity >= 2:
+      print 'MY_TASKS HERE: %d (world %d node %d core %d)' % (len(my_tasks), comm_world.Get_rank(), node_comm.Get_rank(), core_comm.Get_rank())
+
+   # And determine how many subtasks each rank has.
+   my_subtasks = 0
+   for t in my_tasks:
+      my_subtasks = my_subtasks + t['subtasks']
+
+   if verbosity > 1:
+      print '(%d %d %d) - my subtasks: %d' %(comm_world.Get_rank(), node_comm.Get_rank(), core_comm.Get_rank(),  my_subtasks)
+
+   comm_world.barrier()
+
+   # A little more setup.
+   if type(opts['package']) is list:
+      p = opts['package'][0]
+   else:
+      p = opts['package']
+   outpath = os.path.join(opts['output']['outputdir'], p.lower())
+   # Have rank 0 create the directory if necessary.
+   if rank == 0:
+      if not os.path.isdir(outpath):
+         try:
+            os.makedirs(outpath)
+         except:
+            print 'Failed to create output directory - ', outpath
+
+   # Make sure the directory is created
+   comm_world.barrier()
+
+   # Create the log file(s).
+   fname = "DIAGS_OUTPUT-"+str(rank)+".log"
+   if verbosity > 1:
+      print 'outpath: ', outpath
+      print 'fname: ', fname
+   try:
+      outlog = open(os.path.join(outpath, fname), 'w')
+   except:
+      print 'Failed to create log file - ', fname
+      MPI.Finalize()
       quit()
 
-   if helpflag == True or (dbonly == False and (modelpath == '' or obspath == '' or outpath == '' or package == '' or dsname == '')):
-      print 'Please specify at least:'
-      print '   --model /path for the model output path (e.g. climos.nc)'
-      print '   --obspath /path for the observation sets'
-      print '   --outpath /path for where to put the png files'
-      print '   --dsname somename for a short name of the dataset for later referencing'
-      print '   --package amwg for the type of diags to run, e.g. amwg or lmwg'
-      print 'Optional:'
-      print '   --hostname=host:port for the hostname where the django app is running' 
-      print '     The default is acme-dev-0.ornl.gov'
-      print '   --colls 3 to just run a subset of the diagnostic collections'
-      print '   --db only -- Just update the database of datasets on {hostname}'
-      print '   --db no -- Do not update the database of datasets on {hostname}'
-      print '   --figures only -- Just generate figures, not xml/netcdf files of the calculated data'
-      quit()
+   # Set up all of the filetables.
+   files = {}
+   model_fts = []
+   for i in range(len(opts['model'])):
+      model_fts.append(path2filetable(opts, modelid=i))
 
-   if dbonly == True:
-      print 'Updating the remote database only...'
-      postDB(modelpath, dsname, package, host=hostname) 
-      quit()
+   files = make_filelists(opts)
 
-   generatePlots(modelpath, obspath, outpath, package, xmlflag, colls=colls)
+   vcanvas, vcanvas2 = setup_vcs(opts)
 
-   if dbflag == True:
-      print 'Updating the remote database...'
-      postDB(modelpath, dsname, package, host=hostname) 
+   # This assumes one package for all tasks. It would be fairly easy to move this out
+   # but I was thinking performance is probably better if we only instantiate this once
+   # up front.
+   dm = diagnostics_menu()
+   if type(opts['package']) is list:
+      packages = [x.upper() for x in opts['package']]
+   else:
+      packages = opts['package'].upper()
+   if verbosity >= 2:
+      print 'packages: ' ,packages
+   if type(packages) is list:
+      pclass = dm[packages[0]]()
+   else:
+      pclass = dm[packages]()
+
+   setdict = pclass.list_diagnostic_sets()
+
+   index = 0
+   for t in my_tasks:
+      # we can instantiate the sclass here at least. No tasks will involve separate subtasks
+      if verbosity >= 1:
+         print '(%d %d %d) - Working on task %d (subtasks: %d)' % (comm_world.Get_rank(), node_comm.Get_rank(), core_comm.Get_rank(), index, t['subtasks'])
+      try:
+         process_task(files, setdict, opts, vcanvas, vcanvas2, t, outlog)
+      except:
+         print '***************************************************************************************************************'
+         print '***************************************************************************************************************'
+         print '***************************************************************************************************************'
+         print '------------------------->Process_task failed for task - ', t
+         print '***************************************************************************************************************'
+         print '***************************************************************************************************************'
+         print '***************************************************************************************************************'
+      index = index + 1
+   if verbosity >= 1:
+      print '(%d %d %d) - Processed %d tasks.' % (comm_world.Get_rank(), node_comm.Get_rank(), core_comm.Get_rank(), index)
+
+   vcanvas.close()
+   vcanvas2.close()
+   comm_world.barrier()
+
+   print 'Rank %d - ALL DONE' % comm_world.Get_rank()
+   comm_world.barrier()
+
 
