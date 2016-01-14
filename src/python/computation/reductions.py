@@ -2621,7 +2621,7 @@ def run_cdscan( fam, famfiles, cache_path=None ):
 
     # I know of no exception to the rule that all files in the file family keep their
     # units in the same place; so find where they are by checking the first file.
-    f = cdms2.open( famfiles[0] )
+    f = cdms2.open( famfiles[0], mode='r' )
     if f['time'] is None:
             cdscan_line = 'cdscan -q '+'-x '+xml_name+' '+' '.join(famfiles)
     else:
@@ -2653,14 +2653,26 @@ def run_cdscan( fam, famfiles, cache_path=None ):
                 print "WARNING, cannot find time units; will try to continue",famfiles[0]
                 cdscan_line = 'cdscan -q '+'-x '+xml_name+' -e time.units="'+time_units+'" '+\
                     ' '.join(famfiles)
-    print "cdscan_line=",cdscan_line
-    proc = subprocess.Popen([cdscan_line],shell=True)
-    proc_status = proc.wait()
-    if proc_status!=0: 
-        print "ERROR: cdscan terminated with",proc_status
-        print 'This is usually fatal. Frequent causes are an extra XML file in the dataset directory'
-        print 'or non-CF compliant input files'
-        raise Exception("cdscan failed - %s" %cdscan_line)
+    try:
+        f.close()
+    except:
+        pass
+    try:
+        path = sys.prefix+'/bin/'
+        sys.path.insert(0, path)
+        print 'Importing cdscan'
+        import cdscan
+        import shlex
+        print 'cdscan command line: ', cdscan_line
+        try:
+            cdscan_line = shlex.split(cdscan_line)
+            cdscan.main(cdscan_line)
+        except:
+            print 'ERROR: cdscan terminated. This is usually fatal. The arguments were:'
+            print cdscan_line
+    except:
+        print 'importing cdscan failed'
+
     return xml_name
 
 def join_data(*args ):
