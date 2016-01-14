@@ -286,11 +286,14 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
             else:
                xmlstr = ''
 
-            if o != 'NA':
+            if o != 'NA' and obspath != None:
                obsfname = diags_obslist[o]['filekey']
                obsstr = '--obs path='+obspath+',climos=yes,filter="f_startswith(\''+obsfname+'\')"' 
                poststr = '--postfix '+obsfname
             else:
+               if o != 'NA':
+                  print 'No observation path provided but this variable/collection combination specifies an obs set.'
+                  print 'Not making a comparison vs observations.'
                obsstr = ''
                poststr = ' --postfix \'\''
 
@@ -372,12 +375,14 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
                      else:
                         modelpath = raw0.root_dir()
                         cf0 = 'no'
-                     if raw1 == None and num_models == 2:
-                        print 'Only one raw dataset provided and this set requires raw data'
-                        quit()
-                     else:
-                        modelpath1 = raw1.root_dir()
-                        cf1 = 'no'
+                     if num_models == 2:
+                        if raw1 == None: 
+                           print '2 or more datasets provided, but only one raw dataset provided.'
+                           print 'This variable in this collection requires raw datasets for comparisons'
+                           quit()
+                        else:
+                           modelpath1 = raw1.root_dir()
+                           cf1 = 'no'
 
                   pstr1 = '--model path=%s,climos=%s,type=model' % (modelpath, cf0)
                   if modelpath1 != None:
@@ -547,7 +552,7 @@ if __name__ == '__main__':
       obspath = None
 
    # Set some defaults.
-   dbflag = True
+   dbflag = False
    dbonly = False
    xmlflag = True #default to generating xml/netcdf files
    hostname = 'acme-ea.ornl.gov'
