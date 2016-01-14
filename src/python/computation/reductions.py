@@ -3060,7 +3060,7 @@ class reduced_variable(ftrow,basic_id):
             f.close()
         if hasattr(reduced_data,'mask') and reduced_data.mask.all():
             reduced_data = None
-            
+        print reduced_data    
         return reduced_data
 
 class rv(reduced_variable):
