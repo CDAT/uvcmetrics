@@ -1068,9 +1068,9 @@ class plot_spec(object):
             M = P.map(lambda key: (key, self.reduced_variables[key].reduce(None) ) )
             RESULTS = M.reduceByKey( lambda x: x )
             print RESULTS
-            RESULTS = dict(RESULTS.collect())
-            for v in RESULTS.keys():
-                self.variable_values[v] = RESULTS[key]
+            #RESULTS = dict(RESULTS.collect())
+            #for v in RESULTS.keys():
+            #    self.variable_values[v] = RESULTS[key]
             sc.stop()
         else:
             #serial mode
