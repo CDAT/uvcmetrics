@@ -1059,6 +1059,17 @@ class plot_spec(object):
             else:
                 #other precesses can stop
                 sys.exit('Exiting processor '+ str(self.rank)+'\n' )
+        elif self.SPARK:
+            from pyspark import SparkContext
+            sc = SparkContext(appName="Diagnostic Test")
+            partitions = 2
+            P = sc.parallelize(self.reduced_variables.keys(), partitions)
+            M = P.map(lambda key: (key, self.reduced_variables[v].reduce(None) ) )
+            results = M.reduceByKey( lambda x: x )
+            results = dict(results.collect())
+            for v in results.keys():
+                self.variable_values[v] = value
+            sc.stop()
         else:
             #serial mode
             for v in self.reduced_variables.keys():

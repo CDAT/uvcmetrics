@@ -2963,6 +2963,8 @@ class reduced_variable(ftrow,basic_id):
         circularity!
         """
 
+        import cdms2 #needed for spark only
+        
         if self._filetable is None:
             print "ERROR no data found for reduced variable",self.variableid
             print "in",self.timerange, self.latrange, self.lonrange, self.levelrange
