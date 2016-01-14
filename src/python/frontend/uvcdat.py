@@ -1068,8 +1068,8 @@ class plot_spec(object):
             M = P.map(lambda key: (key, self.reduced_variables[key].reduce(None) ) )
             RESULTS = M.reduceByKey( lambda x: x )
             print 'M=', M
-            print 'RESULTS=', RESULTS==None
-            #self.variable_values = dict(RESULTS.collect())
+            print 'RESULTS=', dir(RESULTS)
+            self.variable_values = dict(RESULTS.collect())
             #for v in RESULTS.keys():
             #    self.variable_values[v] = RESULTS[key]
             sc.stop()
