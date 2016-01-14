@@ -70,6 +70,7 @@ class Options():
       self._opts['translate'] = True
       self._opts['translations'] = {}
       self._opts['levels'] = None
+      self._opts['taskspernode'] = None
 
       self._opts['output']['compress'] = True
       self._opts['output']['json'] = False
