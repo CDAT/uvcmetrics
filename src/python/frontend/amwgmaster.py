@@ -20,7 +20,7 @@ from metrics.frontend.defines import *
 # These are special "variables" that we need to skip over when iterating over real variables. 
 # They are usually flags or parameters for the entire collection.
 # Make sure no actual variables have these names, but that shouldn't be a problem.
-collection_special_vars = ['desc', 'preamble', 'regions', 'seasons', 'package', 'options', 'combined', 'imagesonly', 'tables']
+collection_special_vars = ['desc', 'preamble', 'regions', 'seasons', 'package', 'options', 'combined', 'imagesonly', 'tables', 'mixed_plots', 'parallel']
 
 #### NEW TIER1B Additions ####
 
@@ -28,6 +28,7 @@ collection_special_vars = ['desc', 'preamble', 'regions', 'seasons', 'package', 
 diags_collection['tier1b_wind'] = {}
 diags_collection['tier1b_wind']['desc'] = 'Tier1b External Diagnostics - Wind'
 diags_collection['tier1b_wind']['package'] = 'AMWG'
+diags_collection['tier1b_wind']['mixed_plots'] = True
 diags_collection['tier1b_wind']['options'] = {'logo':'no'}
 diags_collection['tier1b_wind']['seasons'] = ['NA']
 diags_collection['tier1b_wind']['U850'] = {'plottype':'NA', 'cmdline':['obsfilter', 'obspath', 'casename', 'figurebase', 'datadir', 'outdir', 'diagname'], 'desc':'Abbys diagnostic script', 'executable':'u850.tcsh', 'obs':['uwind'], 'postfixes':['maxwind', 'maxwind-lat', 'freq-dist']}
@@ -36,6 +37,7 @@ diags_collection['tier1b_wind']['U850'] = {'plottype':'NA', 'cmdline':['obsfilte
 diags_collection['tier1b_prect'] = {}
 diags_collection['tier1b_prect']['desc'] = 'Tier1b External Diagnostics - Precipitation'
 diags_collection['tier1b_prect']['package'] = 'AMWG'
+diags_collection['tier1b_prect']['mixed_plots'] = True
 diags_collection['tier1b_prect']['options'] = {'logo':'no'}
 diags_collection['tier1b_prect']['seasons'] = ['NA']
 diags_collection['tier1b_prect']['PRECT'] = {'plottype':'NA', 'cmdline':['casename', 'datadir', 'fieldname', 'outdir', 'figurebase', 'diagname'], 'desc':'Salils diagnostic script -GEV', 'executable':'gev.tcsh', 'obs':['NA_1'], 'postfixes':['gevfit-daily']}
@@ -44,6 +46,7 @@ diags_collection['tier1b_prect']['PRECT'] = {'plottype':'NA', 'cmdline':['casena
 diags_collection['tier1b_so'] = {}
 diags_collection['tier1b_so']['desc'] = 'Tier 1B Diagnostics (Southern Ocean)'
 diags_collection['tier1b_so']['package'] = 'AMWG'
+diags_collection['tier1b_so']['mixed_plots'] = True
 diags_collection['tier1b_so']['preamble'] = 'Diagnostic plot collection aimed at model evaluation in the Southern Ocean region.  See ACME Confluence page: https://acme-climate.atlassian.net/wiki/display/ATM/Tier+1b+metrics%3A+Southern+Ocean+and+Antarctica'
 diags_collection['tier1b_so']['combined'] = True
 diags_collection['tier1b_so']['options'] = {'logo':'no'}
@@ -67,6 +70,7 @@ diags_collection['tier1b_so']['CLDTOT'] = {'plottype': '9', 'obs':['CLOUDSAT_1']
 diags_collection['tier1b_clouds'] = {}
 diags_collection['tier1b_clouds']['desc'] = 'Tier 1B COSP Cloud Diagnostics (Global)'
 diags_collection['tier1b_clouds']['package'] = 'AMWG'
+diags_collection['tier1b_clouds']['mixed_plots'] = True
 diags_collection['tier1b_clouds']['preamble'] = 'Diagnostic plot collection aimed at model evaluation of global cloud simulations.  See ACME Confluence page: https://acme-climate.atlassian.net/wiki/display/ATM/Tier+1b+metrics%3A+Clouds'
 diags_collection['tier1b_clouds']['combined'] = True
 diags_collection['tier1b_clouds']['options'] = {'logo':'no'}
@@ -98,6 +102,7 @@ diags_collection['topten'] = {}
 diags_collection['topten']['combined'] = True
 diags_collection['topten']['desc'] = 'Tier 1A Diagnostics'
 diags_collection['topten']['package'] = 'AMWG'
+diags_collection['topten']['mixed_plots'] = True
 diags_collection['topten']['options'] = {'logo':'no'}
 diags_collection['topten']['PSL'] = {'plottype': '5', 'obs': ['ERAI_1']}
 diags_collection['topten']['STRESS'] = {'plottype': '6', 'obs': ['ERS_1']}
@@ -407,22 +412,23 @@ diags_collection['8']['desc'] = 'Annual cycle contour plots of zonal means'
 diags_collection['8']['package'] = 'AMWG'
 diags_collection['8']['options'] = {'logo':'no'}
 diags_collection['8']['seasons'] = ['NA']
+diags_collection['8']['parallel'] = True
 diags_collection['8']['PREH2O'] = {'plottype': '8', 'obs': ['NCEP_1', 'NVAP_1', 'JRA25_1', 'ERA40_1', 'ECMWF_1']}
 diags_collection['8']['PRECT'] = {'plottype': '8', 'obs': ['XA_1', 'GPCP_1']}
 diags_collection['8']['FLUT'] = {'plottype': '8', 'obs': ['ERBE_1', 'CERES2_1', 'CERES_1']}
 diags_collection['8']['U'] = {'plottype': '8', 'obs': ['ECMWF_1', 'NCEP_1', 'JRA25_1', 'ERA40_1'], 'varopts':['200']}
 # *** Collection 4a ***
-diags_collection['4a'] = {}
-diags_collection['4a']['desc'] = 'Vertical (XZ) contour plots of DJF, JJA and ANN meridional means'
-diags_collection['4a']['seasons'] = ['DJF', 'JJA', 'ANN']
-diags_collection['4a']['package'] = 'AMWG'
-diags_collection['4a']['options'] = {'logo':'no'}
-diags_collection['4a']['combined'] = True
-diags_collection['4a']['U'] = {'plottype': '4a', 'obs': ['ECMWF_1', 'NCEP_1', 'JRA25_1', 'ERA40_1']}
-diags_collection['4a']['SHUM'] = {'plottype': '4a', 'obs': ['ECMWF_1', 'JRA25_1', 'AIRS_1', 'ERA40_1', 'NCEP_1']}
-diags_collection['4a']['RELHUM'] = {'plottype': '4a', 'obs': ['ECMWF_1', 'NCEP_1', 'AIRS_1', 'ERA40_1']}
-diags_collection['4a']['OMEGA'] = {'plottype': '4a', 'obs': ['ECMWF_1', 'NCEP_1', 'JRA25_1', 'ERA40_1']}
-diags_collection['4a']['T'] = {'plottype': '4a', 'obs': ['NCEP_1', 'JRA25_1', 'ERA40_1', 'ECMWF_1', 'AIRS_1']}
+diags_collection['41'] = {}
+diags_collection['41']['desc'] = 'Vertical (XZ) contour plots of DJF, JJA and ANN meridional means'
+diags_collection['41']['seasons'] = ['DJF', 'JJA', 'ANN']
+diags_collection['41']['package'] = 'AMWG'
+diags_collection['41']['options'] = {'logo':'no'}
+diags_collection['41']['combined'] = True
+diags_collection['41']['U'] = {'plottype': '41', 'obs': ['ECMWF_1', 'NCEP_1', 'JRA25_1', 'ERA40_1']}
+diags_collection['41']['SHUM'] = {'plottype': '41', 'obs': ['ECMWF_1', 'JRA25_1', 'AIRS_1', 'ERA40_1', 'NCEP_1']}
+diags_collection['41']['RELHUM'] = {'plottype': '41', 'obs': ['ECMWF_1', 'NCEP_1', 'AIRS_1', 'ERA40_1']}
+diags_collection['41']['OMEGA'] = {'plottype': '41', 'obs': ['ECMWF_1', 'NCEP_1', 'JRA25_1', 'ERA40_1']}
+diags_collection['41']['T'] = {'plottype': '41', 'obs': ['NCEP_1', 'JRA25_1', 'ERA40_1', 'ECMWF_1', 'AIRS_1']}
 
 
 # *** Variables List ***

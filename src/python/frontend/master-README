@@ -30,6 +30,9 @@ Collection-level Flags:
              generated 'externally' and meant to be displayed by classic viewer. 
           tables:True - indicates that this collection is just numeric tables. This is useful because tables are
              slightly special cased in both metadiags and classic viewer.
+          mixed_plots:Basically, any collection that is NOT part of the original NCAR lmwg/amwg package, even if it is
+             just a single type of plot. 
+          parallel: Set to true if this collection supports being run in parallel. mostly impacts MPI-metadiags.
 
 Once any optional additional arguments have been specified, the variables that make up the set are defined.
 A typical variable entry has the variable name (as found in the obs sets and model output) as a key, then a plottype, a list of observation sets, and optional paraemeters.
