@@ -21,7 +21,7 @@ class X(object):
         print sys.prefix
         print ('host = ' + socket.gethostname())
         import cdms2
-        import vtk
+        import vcs
         cdms2.setNetcdfUseParallelFlag(0)
         f=cdms2.open('/opt/nfs/mcenerney1/spark/testData.nc')
         #f=open('/opt/nfs/mcenerney1/spark/cmds')
