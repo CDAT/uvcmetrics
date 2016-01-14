@@ -1,11 +1,4 @@
 #import uvcdat
-import os,sys
-import git
-import vcs
-vcs_tmp_canvas = vcs.init()
-vcs_tmp_canvas.scriptrun(os.path.join(sys.prefix,"share","uvcmetrics","uvcmetrics.json"))
-del(vcs_tmp_canvas)
-
 import os
 os.environ['LD_LIBRARY_PATH']='/opt/nfs/mcenerney1/11_03_15/lib:/opt/nfs/mcenerney1/11_03_15/Externals/lib64:/opt/nfs/mcenerney1/11_03_15/Externals/lib'
 os.environ['UVCDAT_SETUP_PATH']='/opt/nfs/mcenerney1/11_03_15'
@@ -15,3 +8,10 @@ paths = ['', '/opt/nfs/mcenerney1/11_03_15/lib/python2.7/site-packages/setuptool
 for pth in paths:
     if not pth in sys.path:
         sys.path.append(pth)
+                
+import os,sys
+import git
+import vcs
+vcs_tmp_canvas = vcs.init()
+vcs_tmp_canvas.scriptrun(os.path.join(sys.prefix,"share","uvcmetrics","uvcmetrics.json"))
+del(vcs_tmp_canvas)
