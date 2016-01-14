@@ -1069,7 +1069,7 @@ class plot_spec(object):
             results = M.reduceByKey( lambda x: x )
             results = dict(results.collect())
             for v in results.keys():
-                self.variable_values[v] = value
+                self.variable_values[v] = results[key]
             sc.stop()
         else:
             #serial mode
