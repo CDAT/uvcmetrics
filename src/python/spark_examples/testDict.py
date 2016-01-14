@@ -9,8 +9,8 @@ class X(object):
         self.x = y
     def compute(self, ID):
         print ('host = ' + socket.gethostname())
+        cdms2.setNetcdfUseParallelFlag(0)
         f=cdms2.open('/opt/nfs/mcenerney1/spark/testData.nc')
-        return 0,0
         #f=open('/opt/nfs/mcenerney1/spark/cmds')
         #MEAN = f.read()
         y=f[ID]
