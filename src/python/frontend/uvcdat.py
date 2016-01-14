@@ -1066,10 +1066,11 @@ class plot_spec(object):
             partitions = 2
             P = sc.parallelize(self.reduced_variables.keys(), partitions)
             M = P.map(lambda key: (key, self.reduced_variables[key].reduce(None) ) )
-            results = M.reduceByKey( lambda x: x )
-            results = dict(results.collect())
-            for v in results.keys():
-                self.variable_values[v] = results[key]
+            RESULTS = M.reduceByKey( lambda x: x )
+            print RESULTS.collect()
+            RESULTS = dict(RESULTS.collect())
+            for v in RESULTS.keys():
+                self.variable_values[v] = RESULTS[key]
             sc.stop()
         else:
             #serial mode
