@@ -1067,7 +1067,7 @@ class plot_spec(object):
             P = sc.parallelize(self.reduced_variables.keys(), partitions)
             M = P.map(lambda key: (key, self.reduced_variables[key].reduce(None) ) )
             RESULTS = M.reduceByKey( lambda x: x )
-            print RESULTS.collect()
+            print RESULTS
             RESULTS = dict(RESULTS.collect())
             for v in RESULTS.keys():
                 self.variable_values[v] = RESULTS[key]
