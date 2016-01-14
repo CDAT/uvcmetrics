@@ -8,10 +8,15 @@ class X(object):
     def __init__(self, y):
         self.x = y
     def compute(self, ID):
-        import cdms2
+        
         import os
-        print os.environ
+        os.environ['LD_LIBRARY_PATH']='/opt/nfs/mcenerney1/11_03_15/lib:/opt/nfs/mcenerney1/11_03_15/Externals/lib64:/opt/nfs/mcenerney1/11_03_15/Externals/lib'
+        os.environ['UVCDAT_SETUP_PATH']='/opt/nfs/mcenerney1/11_03_15'
+        os.environ['PYTHONPATH']='/opt/nfs/mcenerney1/11_03_15/lib/python2.7/site-packages:/opt/nfs/mcenerney1/11_03_15/Externals/lib/python2.7/site-packages'
+        import sys
+        print sys.prefix
         print ('host = ' + socket.gethostname())
+        import cdms2
         cdms2.setNetcdfUseParallelFlag(0)
         f=cdms2.open('/opt/nfs/mcenerney1/spark/testData.nc')
         #f=open('/opt/nfs/mcenerney1/spark/cmds')
