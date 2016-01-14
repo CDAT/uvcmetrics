@@ -1064,7 +1064,7 @@ class plot_spec(object):
             sc = SparkContext(appName="Diagnostic Test")
             partitions = 2
             P = sc.parallelize(self.reduced_variables.keys(), partitions)
-            M = P.map(lambda key: (key, self.reduced_variables[v].reduce(None) ) )
+            M = P.map(lambda key: (key, self.reduced_variables[key].reduce(None) ) )
             results = M.reduceByKey( lambda x: x )
             results = dict(results.collect())
             for v in results.keys():
