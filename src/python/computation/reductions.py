@@ -2972,7 +2972,7 @@ class reduced_variable(ftrow,basic_id):
         for pth in paths:
             if not pth in sys.path:
                 sys.path.append(pth)
-        
+        print 'entering reduce'
         if self._filetable is None:
             print "ERROR no data found for reduced variable",self.variableid
             print "in",self.timerange, self.latrange, self.lonrange, self.levelrange
