@@ -8,6 +8,7 @@ class X(object):
     def __init__(self, y):
         self.x = y
     def compute(self, ID):
+        import cdms2
         print ('host = ' + socket.gethostname())
         cdms2.setNetcdfUseParallelFlag(0)
         f=cdms2.open('/opt/nfs/mcenerney1/spark/testData.nc')
