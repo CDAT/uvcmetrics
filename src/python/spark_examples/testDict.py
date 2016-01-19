@@ -32,6 +32,11 @@ class X(object):
         MEAN, STD = diff.mean(), diff.std()
         print ('host = ' + socket.gethostname(), ID, MEAN, STD, len(diff))
         f.close()
+        import string
+        x=string.ascii_lowercase
+        ind = x.index(ID)
+        if 2*(ind/2) == ind:
+            return MEAN, STD, ID
         return MEAN, STD
 
 sc = SparkContext(appName="Dictionary Test")
