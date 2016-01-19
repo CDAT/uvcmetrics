@@ -1069,7 +1069,7 @@ class plot_spec(object):
             RESULTS = M.reduceByKey( lambda x: x )
             print 'M=', M
             print 'RESULTS=', dir(RESULTS)
-            self.variable_values = dict(RESULTS.collect())
+            self.variable_values = dict(M.collect())
             #for v in RESULTS.keys():
             #    self.variable_values[v] = RESULTS[key]
             sc.stop()
