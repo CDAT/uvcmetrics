@@ -36,8 +36,8 @@ class X(object):
         x=string.ascii_lowercase
         ind = x.index(ID)
         if 2*(ind/2) == ind:
-            return MEAN, STD, ID
-        return MEAN, STD
+            return [MEAN, STD], [ID]
+        return [MEAN, STD]
 
 sc = SparkContext(appName="Dictionary Test")
 partitions = int(sys.argv[1])
