@@ -1076,10 +1076,10 @@ class plot_spec(object):
             collected_data, collected_axes, collected_attr = [], [], []
             for key in RESULTS.keys():
                 print 'key = ', key
-                data, axes, attr = RESULTS[key]
-                collected_data += [data]
-                collected_axes += [axes]
-                collected_attr += [attr]
+                local_data, local_axes, local_attr = RESULTS[key]
+                collected_data += [local_data]
+                collected_axes += [local_axes]
+                collected_attr += [local_attr]
             self.variable_values = buildVariables(RESULTS.keys(), collected_data, collected_axes, collected_attr)
         else:
             #serial mode
