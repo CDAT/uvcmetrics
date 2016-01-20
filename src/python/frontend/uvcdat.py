@@ -1070,9 +1070,8 @@ class plot_spec(object):
             print 'M=', M
             #print 'RESULTS=', dir(RESULTS)
             self.variable_values = dict(M.collect())
-            #for v in RESULTS.keys():
-            #    self.variable_values[v] = RESULTS[key]
             sc.stop()
+            print self.variable_values
         else:
             #serial mode
             for v in self.reduced_variables.keys():
