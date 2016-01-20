@@ -1073,7 +1073,8 @@ class plot_spec(object):
             sc.stop()
             
             #spark post processing
-            print RESULTS
+            for key in RESULtS.keys():
+                print key
             collected_data, collected_axes, collected_attr = [], [], []
             for key in RESULTS.keys():
                 data, axes, attr = RESULTS[key]
