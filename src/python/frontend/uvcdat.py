@@ -1018,7 +1018,7 @@ class plot_spec(object):
             variables = {}
             for KEYS, DATA, AXES, ATTR in zip(keyList, dataList, axesList, attrList):
                 for key, data, axes, attr in zip(KEYS, DATA, AXES, ATTR):
-                    print 'key = ', key, len(data), len(axes), len(attr)
+                    print 'key = ', key, data, axes, attr
                     variables[key] = buildVariable(data, axes, attr)
             return variables
         #print 'slices'
