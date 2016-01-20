@@ -1078,11 +1078,12 @@ class plot_spec(object):
             #spark post processing
             collected_data, collected_axes, collected_attr = [], [], []
             for key in RESULTS.keys():
-                print 'key = ', key
                 local_data, local_axes, local_attr = RESULTS[key]
+                print 'key = ', key, len(local_data), len(local_axes), len(local_attr)
                 collected_data += [local_data]
                 collected_axes += [local_axes]
                 collected_attr += [local_attr]
+            print len(collected_data), len(collected_axes), len(collected_attr)
             self.variable_values = buildVariables(RESULTS.keys(), collected_data, collected_axes, collected_attr)
         else:
             #serial mode
