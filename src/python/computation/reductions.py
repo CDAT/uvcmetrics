@@ -3061,7 +3061,8 @@ class reduced_variable(ftrow,basic_id):
         if hasattr(reduced_data,'mask') and reduced_data.mask.all():
             reduced_data = None
         print type(reduced_data), len(reduced_data)    
-        return reduced_data.getValue()
+        return reduced_data.asma(), reduced_data.getAxisList(), reduced_data.attributes
+        #return reduced_data   #.getValue()
 
 class rv(reduced_variable):
     """same as reduced_variable, but short name saves on typing"""

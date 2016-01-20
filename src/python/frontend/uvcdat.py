@@ -1069,9 +1069,16 @@ class plot_spec(object):
             #RESULTS = M.reduceByKey( lambda x: x )
             print 'M=', M
             #print 'RESULTS=', dir(RESULTS)
-            self.variable_values = dict(M.collect())
+            RESULTS = dict(M.collect())
             sc.stop()
-            print self.variable_values
+            
+            #spark post processing
+            collected_data, collected_axes, collected_attr = [], [], []
+            for key in RESULTS.keys():
+                collected_data += RESULTS[key][0]
+                collected_axes += RESULTS[key][1]
+                collected_attr += RESULTS[key][2]
+            self.variable_values = buildVariables(RESULTS.keys(), collected_data, collected_axes, collected_attr)
         else:
             #serial mode
             for v in self.reduced_variables.keys():
