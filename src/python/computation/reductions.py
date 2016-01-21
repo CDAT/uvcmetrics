@@ -2972,7 +2972,7 @@ class reduced_variable(ftrow,basic_id):
         for pth in paths:
             if not pth in sys.path:
                 sys.path.append(pth)
-        print 'entering reduce'
+
         if self._filetable is None:
             print "ERROR no data found for reduced variable",self.variableid
             print "in",self.timerange, self.latrange, self.lonrange, self.levelrange
@@ -3060,9 +3060,8 @@ class reduced_variable(ftrow,basic_id):
             f.close()
         if hasattr(reduced_data,'mask') and reduced_data.mask.all():
             reduced_data = None
-        print type(reduced_data), len(reduced_data)    
         return reduced_data.asma(), reduced_data.getAxisList(), reduced_data.attributes
-        #return reduced_data   #.getValue()
+        #return reduced_data
 
 class rv(reduced_variable):
     """same as reduced_variable, but short name saves on typing"""

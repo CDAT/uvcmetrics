@@ -1060,16 +1060,14 @@ class plot_spec(object):
                 #other precesses can stop
                 sys.exit('Exiting processor '+ str(self.rank)+'\n' )
         elif self.SPARK:
-
+            #spark mode
             from pyspark import SparkContext
             sc = SparkContext(appName="Diagnostic Test")
             partitions = 4
             P = sc.parallelize(self.reduced_variables.keys(), partitions)
-            M = P.map(lambda key: (key, self.reduced_variables[key].reduce(None) ) )
-            #RESULTS = M.reduceByKey( lambda x: x )
-            print 'M=', M
-            #print 'RESULTS=', dir(RESULTS)
-            RESULTS = dict(M.collect())
+            M = P.map( lambda x: x ) 
+            RESULTS = M.reduceByKey( lambda key: (key, self.reduced_variables[key].reduce(None) ) )
+            RESULTS = dict(RESULTS.collect())
             sc.stop()
             
             #spark post processing
@@ -1077,6 +1075,8 @@ class plot_spec(object):
             for key in RESULTS.keys():
                 local_data, local_axes, local_attr = RESULTS[key]
                 print 'key = ', key, len(local_data), len(local_axes), len(local_attr)
+                #the following list of list looks strange but it's meant to do the same
+                #thing as in the mpi implementation
                 all_keys += [[key]]
                 collected_data += [[local_data]]
                 collected_axes += [[local_axes]]
