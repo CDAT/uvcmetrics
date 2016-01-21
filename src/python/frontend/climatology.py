@@ -573,6 +573,7 @@ def climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_t
         g.source = str(datafilenames)
     g.season = seasonname
     g.Conventions = 'CF-1.7'
+    store_provenance(g)
 
     # At this point, for each season the time axis should have long name "climatological time"
     # with units "days since 0", a value in the range [0,365] and in the midpoint of its bounds.
