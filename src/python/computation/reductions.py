@@ -2949,7 +2949,7 @@ class reduced_variable(ftrow,basic_id):
 
         return filename
 
-    def reduce( self, vid=None, COMM=None ):
+    def reduce( self, vid=None, COMM=None, RETURN_ARRAYS=False ):
         """Finds and opens the files containing data required for the variable,
         Applies the reduction function to the data, and returns an MV.
         When completed, this will treat missing data as such.
@@ -3060,8 +3060,10 @@ class reduced_variable(ftrow,basic_id):
             f.close()
         if hasattr(reduced_data,'mask') and reduced_data.mask.all():
             reduced_data = None
-        return reduced_data.asma(), reduced_data.getAxisList(), reduced_data.attributes
-        #return reduced_data
+        if RETURN_ARRAYS:
+            return reduced_data.asma(), reduced_data.getAxisList(), reduced_data.attributes
+        else:
+            return reduced_data
 
 class rv(reduced_variable):
     """same as reduced_variable, but short name saves on typing"""
