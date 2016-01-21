@@ -1082,7 +1082,7 @@ class plot_spec(object):
                 collected_axes += [[local_axes]]
                 collected_attr += [[local_attr]]
             print len(collected_data), len(collected_axes), len(collected_attr)
-            self.variable_values = buildVariables(RESULTS.keys(), collected_data, collected_axes, collected_attr)
+            self.variable_values = buildVariables(all_keys, collected_data, collected_axes, collected_attr)
             for key, value in self.variable_values.items():
                 print key, value.shape
         else:
