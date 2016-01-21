@@ -12,7 +12,7 @@ for (N,n) in config:
     os.environ['SPARKOUTPUT'] = spark_output_file
     timing_data = str(N) + '       ' + str(n) + '       '
     for run in range(nruns):
-        proc=subprocess.Popen(['spark_diag.sh'], shell=True, stdout=subprocess.PIPE)
+        proc=subprocess.Popen([TIMING_PATH+'spark_diag.sh'], shell=True, stdout=subprocess.PIPE)
         time.sleep(30)
 
         #retrieve timing data        
