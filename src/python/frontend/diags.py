@@ -32,7 +32,7 @@ import metrics.frontend.defines as defines
 import cProfile
 from metrics.frontend.it import *
 from metrics.computation.region import *
-import debug
+#import debug
 
 def setnum( setname ):
     """extracts the plot set number from the full plot set name, and returns the number.

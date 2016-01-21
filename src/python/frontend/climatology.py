@@ -21,27 +21,20 @@ from metrics.frontend.inc_reduce import *
 import os, re, time
 import argparse
 from pprint import pprint
-from metrics.common import store_provenance
+#from mpi4py import MPI
+from multiprocessing import Process, Lock
+##from multiprocessing import Queue
+###from threading import Thread as Process
+###from Queue import Queue
+import cProfile
+from metrics.common.utilities import DiagError
 
+comm = None
+#comm = MPI.COMM_WORLD
+MP = True
+queue = None
+lock = None  # for debugging; in normal use this should be None
 force_scalar_avg=False  # for testing
-season2nummonth = {
-    'ANN': [ '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12' ],
-    'DJF': [ '01', '02', '12' ],
-    'MAM': [ '03', '04', '05' ],
-    'JJA': [ '06', '07', '08' ],
-    'SON': [ '09', '10', '11' ],
-    'JAN': [ '01' ], 'FEB': [ '02' ], 'MAR': [ '03' ], 'APR': [ '04' ], 'MAY': [ '05' ],
-    'JUN': [ '06' ], 'JUL': [ '07' ], 'AUG': [ '08' ], 'SEP': [ '09' ], 'OCT': [ '10' ],
-    'NOV': [ '11' ], 'DEC': [ '12' ],
-    '01':['01'], '02':['02'], '03':['03'], '04':['04'], '05':['05'], '06':['06'], '07':['07'],
-    '08':['08'], '09':['09'], '10':['10'], '11':['11'], '12':['12'] }
-season2almonth = {
-    'ANN': ['DJF', 'MAM', 'JJA', 'SON',
-            'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'],
-    'DJF': ['JAN', 'FEB', 'DEC'],
-    'MAM': ['MAR', 'APR', 'MAY'],
-    'JJA': ['JUN', 'JUL', 'AUG'],
-    'SON': ['SEP', 'OCT', 'NOV'] }
 
 def restrict_to_season( datafilenames, seasonname ):
     """Returns a sorted subset of the input list of data (model output) filenames -
@@ -53,6 +46,24 @@ def restrict_to_season( datafilenames, seasonname ):
     The season name my be the standard 3-letter season, or a string with two decimal digits.
     If any filename does not meet the expected format, then no filenames will be rejected.
     """
+    season2nummonth = {
+        'ANN': [ '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12' ],
+        'DJF': [ '01', '02', '12' ],
+        'MAM': [ '03', '04', '05' ],
+        'JJA': [ '06', '07', '08' ],
+        'SON': [ '09', '10', '11' ],
+        'JAN': [ '01' ], 'FEB': [ '02' ], 'MAR': [ '03' ], 'APR': [ '04' ], 'MAY': [ '05' ],
+        'JUN': [ '06' ], 'JUL': [ '07' ], 'AUG': [ '08' ], 'SEP': [ '09' ], 'OCT': [ '10' ],
+        'NOV': [ '11' ], 'DEC': [ '12' ],
+        '01':['01'], '02':['02'], '03':['03'], '04':['04'], '05':['05'], '06':['06'], '07':['07'],
+        '08':['08'], '09':['09'], '10':['10'], '11':['11'], '12':['12'] }
+    season2almonth = {
+        'ANN': ['DJF', 'MAM', 'JJA', 'SON',
+                'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'],
+        'DJF': ['JAN', 'FEB', 'DEC'],
+        'MAM': ['MAR', 'APR', 'MAY'],
+        'JJA': ['JUN', 'JUL', 'AUG'],
+        'SON': ['SEP', 'OCT', 'NOV'] }
     newfns = []
     if datafilenames[0][-8:]=='climo.nc' or datafilenames[0][-13:]=='climo-cdat.nc':
         # climatology file, should be for a one-month season as input for a multi-month season
@@ -77,7 +88,7 @@ def restrict_to_season( datafilenames, seasonname ):
     return newfns
 
 def reduce_twotimes2one( seasonname, fileout_template, fileout, g, redtime, redtime_bnds,
-                         redtime_wts, redvars ):
+                         redtime_wts, redvars, lock=None ):
     # This occurs when multiple time units (redtime_bnds) contribute to a single season,
     # as for DJF in "days since 0" units.  We need a final reduction to a single time point.
     # This is possible (with sensible time bounds) only if a 1-year shift can join the
@@ -86,8 +97,9 @@ def reduce_twotimes2one( seasonname, fileout_template, fileout, g, redtime, redt
     outdir = os.path.dirname( os.path.abspath( os.path.expanduser( os.path.expandvars(
                     fileout_template ) ) ) )
     hname = os.path.join(outdir, 'climo2_temp.nc')
+    if lock is not None:  lock.acquire()
     h = cdms2.open(hname, 'w')
-    store_provenance(h)
+    if lock is not None:  lock.release()
     if redtime_bnds[0][1]-365 == redtime_bnds[1][0]:
         newtime = ( (redtime[0]-365)*redtime_wts[0] + redtime[1]*redtime_wts[1] ) /\
             ( redtime_wts[0] + redtime_wts[1] )
@@ -193,11 +205,16 @@ def reduce_twotimes2one( seasonname, fileout_template, fileout, g, redtime, redt
         addVariable( h, 'time_weights', 'd', [timeax], {} )
         h['time_weights'][:] = newwt
         h.season = seasonname
+        if lock is not None:  lock.acquire()
         h.close()
         g.close()
+        if lock is not None:  lock.release()
         os.rename( fileout, os.path.join(outdir, 'climo2_old.nc') )
         os.rename( hname, fileout )
-        return cdms2.open( fileout, 'r+' )
+        if lock is not None:  lock.acquire()
+        g = cdms2.open( fileout, 'r+' )
+        if lock is not None:  lock.release()
+        return g
 
 def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason=[] ):
 
@@ -209,12 +226,60 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
     cdms2.setNetcdfDeflateFlag(0)
     cdms2.setNetcdfDeflateLevelFlag(0) 
 
-    assert( len(datafilenames)>0 )
-    f = cdms2.open(datafilenames[0])
-    # to do: get the time axis even if the name isn't 'time'
+    if 'ALL' in seasonnames:
+        allseasons = True
+        seasonnames = [ 'ANN', 'DJF', 'MAM', 'JJA', 'SON', 'JAN', 'FEB', 'MAR', 'APR', 'MAY',
+                        'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC' ]
+    else:
+        allseasons = False
+    omit_files = {seasonname:[] for seasonname in seasonnames}
+    for omits in omitBySeason:
+        omit_files[omits[0]] = omits[1:]
+
+    if comm is None or comm.rank==0:
+        # Get time axis and global attributes from a sample file - only for rank 0 because
+        # we don't want several processors to be opening it simultaneously.
+        assert( len(datafilenames)>0 )
+        if lock is not None:  lock.acquire()
+        f = cdms2.open(datafilenames[0])
+        if lock is not None:  lock.release()
+        # to do: get the time axis even if the name isn't 'time'
+        data_time = f.getAxis('time') # a FileAxis.
+        time_units = getattr( data_time, 'units', '' )
+        calendar = getattr( data_time, 'calendar', None )
+        # to do: support arbitrary time units, arbitrary calendar.
+        if calendar != 'noleap':
+            print "ERROR. So far climos() has only been implemented for the noleap calendar.  Sorry!"
+            raise Exception("So far climos() has not been implemented for calendar %s."%
+                            calendar )
+        if time_units.find('days')!=0:
+            print "ERROR. So far climos() has only been implemented for time in days.  Sorry!"
+            raise Exception("So far climos() has not been implemented for time in units %s."%
+                            time_units )
+        fvarnames = f.variables.keys()
+        fattr = f.attributes
+        input_global_attributes = {a:fattr[a] for a in fattr if a not in ['Conventions']}
+        climo_history = "climatologies computed by climatology.py"
+        if 'history' in input_global_attributes:
+            input_global_attributes['history'] = input_global_attributes['history'] + climo_history
+        else:
+            input_global_attributes['history'] = climo_history
+        if lock is not None:  lock.acquire()
+        f.close()
+        if lock is not None:  lock.release()
+        foutp = [ time_units, calendar, input_global_attributes, fvarnames ]  # all the output from this block
+    else:
+        foutp = []
+    if comm is not None and comm.size>1:
+        local_foutp = comm.bcast( foutp, root=0 )
+    if comm is not None and comm.rank>0:
+        time_units = local_foutp[0]
+        calendar   = local_foutp[1]
+        input_global_attributes = local_foutp[2]
+        fvarnames = local_foutp[3]
 
     if len(varnames)==0 or varnames is None or 'ALL' in varnames:
-        varnames = f.variables.keys()
+        varnames = fvarnames
     if varnames==['AMWG']:
         # backwards compatibility, do just a few variables:
         varnames = [ 'ANRAIN', 'ANSNOW', 'AODDUST1', 'AODDUST3', 'AODVIS', 'AQRAIN', 'AQSNOW',
@@ -230,57 +295,101 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
                      'VU', 'VV', 'WSUB', 'Z3', 'P0', 'time_bnds', 'area', 'hyai', 'hyam', 'hybi',
                      'hybm', 'lat', 'lon' ]
 
-    data_time = f.getAxis('time') # a FileAxis.
-    calendar = getattr( data_time, 'calendar', None )
-    # to do: support arbitrary time units, arbitrary calendar.
-    if calendar != 'noleap':
-        print "ERROR. So far climos() has only been implemented for the noleap calendar.  Sorry!"
-        raise Exception("So far climos() has not been implemented for calendar %s."%
-                        getattr( data_time, 'calendar', 'None' ) )
-    if getattr( data_time, 'units', '' ).find('days')!=0:
-        print "ERROR. So far climos() has only been implemented for time in days.  Sorry!"
-        raise Exception("So far climos() has not been implemented for time in units %s."%
-                        getattr( data_time, 'units', '' ) )
-    fattr = f.attributes
-    input_global_attributes = {a:fattr[a] for a in fattr if a not in ['Conventions']}
-    climo_history = "climatologies computed by climatology2.py"
-    if 'history' in input_global_attributes:
-        input_global_attributes['history'] = input_global_attributes['history'] + climo_history
-    else:
-        input_global_attributes['history'] = climo_history
-
-    if 'ALL' in seasonnames:
-        allseasons = True
-        seasonnames = [ 'ANN', 'DJF', 'MAM', 'JJA', 'SON', 'JAN', 'FEB', 'MAR', 'APR', 'MAY',
-                        'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC' ]
-    else:
-        allseasons = False
-    omit_files = {seasonname:[] for seasonname in seasonnames}
-    for omits in omitBySeason:
-        omit_files[omits[0]] = omits[1:]
-    init_data_tbounds = data_time.getBounds()[0]
     dt = 0      # specifies climatology file
     redfilenames = []
-    redfiles = {}  # reduced files
 
     if allseasons and len(omitBySeason)==0:
         # This block computes multi-month seasons from sngle-month climatology files.
         # I've only implemented it for "all" seasons.  And I haven't implemented it for when
         # anything is in omitBySeason.
 
+        filerank = {}
+        filetag = {}
+        seasons_1mon =\
+            [ 'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC' ]
+        seasons_3mon = { 'DJF':['JAN','FEB','DEC'], 'MAM':['MAR','APR','MAY'],
+                         'JJA':['JUN','JUL','AUG'], 'SON':['SEP','OCT','NOV'] }
+        seasons_ann = { 'ANN':[ 'MAM', 'JJA', 'SON', 'DJF' ] }
+
         ft_bn = os.path.basename( fileout_template )
         ft_dn = os.path.dirname( fileout_template )
         fileout_template = os.path.join( ft_dn, ft_bn )
-        seasons_1mon =\
-            [ 'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC' ]
-        for seasonname in seasons_1mon:
-            t1=time.time()
-            redfilenames, redfiles =\
-                climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_template,
-                                  data_time, calendar, dt, redfilenames, redfiles,
-                                  input_global_attributes )
-            t2=time.time()
-            print "allseasons, season",seasonname,"time is",t2-t1
+
+        # Figure out which seasons and files belong to which processor (for MPI).
+        myseasons1 = []
+        myseasons3 = []
+        myseasonsa = []
+        if comm is None:
+            commsize = 1
+        else:
+            commsize = comm.size
+        for isn,sn in enumerate(seasons_1mon):
+            sfilen = fileout_template.replace('XXX',sn)
+            redfilenames.append( sfilen )
+            for i in range(commsize):  # assign seasons to processors as e.g. 1,2,3,1,2,3,...
+                if isn%commsize==i:
+                    filerank[sfilen] = i
+                    if comm is None or i==comm.rank:  myseasons1.append(sn)
+            filetag[sfilen] = isn
+        for isn,sn in enumerate(seasons_3mon):
+            sfilen = fileout_template.replace('XXX',sn)
+            redfilenames.append( sfilen )
+            for i in range(commsize):  # assign seasons to processors as e.g. 1,2,3,1,2,3,...
+                if isn%commsize==i:
+                    filerank[sfilen] = i
+                    if comm is None or i==comm.rank:  myseasons3.append(sn)
+            filetag[sfilen] = isn + len(seasons_1mon)
+        for isn,sn in enumerate(seasons_ann):
+            sfilen = fileout_template.replace('XXX',sn)
+            redfilenames.append( sfilen )
+            for i in range(commsize):  # assign seasons to processors as e.g. 1,2,3,1,2,3,...
+                if isn%commsize==i:
+                    filerank[sfilen] = i
+                    if comm is None or i==comm.rank:  myseasonsa.append(sn)
+            filetag[sfilen] = isn + len(seasons_1mon) + len(seasons_3mon)
+        #myseasons = [ seasons_1mon[i] for i in range(len(seasons_1mon)) if i%comm.size==comm.rank ]
+        myseasons = myseasons1
+
+        t1all=time.time()
+        if not MP:
+            for seasonname in myseasons:
+                t1=time.time()
+                wrotefile =\
+                    climo_one_season( seasonname, datafilenames, omit_files, varnames,
+                                      fileout_template, time_units, calendar, dt,
+                                      force_scalar_avg,
+                                      input_global_attributes, filerank, filetag,
+                                      outseasons=seasons_3mon, queue1=None, lock1=lock, comm1=comm )
+                # let appropriate MPI process know that the file is available
+                climo_file_done_mpi( wrotefile, fileout_template, seasonname,
+                                     seasons_3mon, filerank, filetag, comm )
+                t2=time.time()
+                print "allseasons, season",seasonname,"time is",t2-t1
+        else:
+            proc = {}
+            for seasonname in myseasons:
+                proc[seasonname] =\
+                    p_climo_one_season( seasonname, datafilenames, omit_files, varnames,
+                                        fileout_template, time_units, calendar, dt,
+                                        force_scalar_avg, input_global_attributes,
+                                        filerank, filetag,
+                                        outseasons=seasons_3mon, queue1=queue, lock1=lock, comm1=comm )
+            for seasonname in myseasons:
+                # This is a local (to the node) barrier.  It would be better to just go on, have the
+                # forked process send a signal and disappear, and then the when next phase needs the
+                # data, it waits for the signal.  That's similar to what I do for MPI, but I haven't
+                # yet figured it out for local multiprocessing.
+                #print "jfp waiting to join",proc[seasonname],"for season",seasonname
+                proc[seasonname].join()  # wait for process to terminate
+                #print "jfp joined",proc[seasonname],"for season",seasonname
+            for seasonname in myseasons:
+                wrotefile = True #testing
+                climo_file_done_mpi( wrotefile, fileout_template, seasonname,
+                                     seasons_3mon, filerank, filetag, comm )
+        t2all=time.time()
+        if comm is None:  comm_rank = 0
+        else: comm_rank = comm.rank
+        print "For all 1-month seasons on",comm_rank,", time is",t2all-t1all
         omit_files = {seasonname:[] for seasonname in seasonnames}
 
         # How would I use omitBySeason here?  It's possible, but some trouble to do.
@@ -293,99 +402,147 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
         
         # For each multi-month season, change datafilenames to the 1-month climatology files,
         # or 3-month for ANN.
-        t1=time.time()
-        seasonname = 'DJF'
-        datafilenames = []
-        for sn in ['JAN','FEB','DEC']:
-            datafilenames.append( fileout_template.replace('XXX',sn) )
-        redfilenames, redfiles =\
-            climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_template,
-                              data_time, calendar, dt, redfilenames, redfiles,
-                              input_global_attributes )
-        t2=time.time()
-        print "allseasons, season DJF, time is",t2-t1
-        t1=time.time()
-        seasonname = 'MAM'
-        datafilenames = []
-        for sn in ['MAR','APR','MAY']:
-            datafilenames.append( fileout_template.replace('XXX',sn) )
-        redfilenames, redfiles =\
-            climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_template,
-                              data_time, calendar, dt, redfilenames, redfiles,
-                              input_global_attributes )
-        t2=time.time()
-        print "allseasons, season MAM, time is",t2-t1
-        t1=time.time()
-        seasonname = 'JJA'
-        datafilenames = []
-        for sn in ['JUN','JUL','AUG']:
-            datafilenames.append( fileout_template.replace('XXX',sn) )
-        redfilenames, redfiles =\
-            climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_template,
-                              data_time, calendar, dt, redfilenames, redfiles,
-                              input_global_attributes )
-        t2=time.time()
-        print "allseasons, season JJA, time is",t2-t1
-        t1=time.time()
-        seasonname = 'SON'
-        datafilenames = []
-        for sn in ['SEP','OCT','NOV']:
-            datafilenames.append( fileout_template.replace('XXX',sn) )
-        redfilenames, redfiles =\
-            climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_template,
-                              data_time, calendar, dt, redfilenames, redfiles,
-                              input_global_attributes )
-        t2=time.time()
-        print "allseasons, season SON, time is",t2-t1
-        t1=time.time()
-        seasonname = 'ANN'
-        datafilenames = []
-        for sn in ['DJF', 'MAM', 'JJA', 'SON']:
-            datafilenames.append( fileout_template.replace('XXX',sn) )
-        redfilenames, redfiles =\
-            climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_template,
-                              data_time, calendar, dt, redfilenames, redfiles,
-                              input_global_attributes )
-        t2=time.time()
-        print "allseasons, season ANN, time is",t2-t1
 
+        #myseasons = [ seasons_3mon.keys()[i] for i in range(len(seasons_3mon))
+        #              if i%comm.size==comm.rank ]
+        myseasons = myseasons3
+        t1all=time.time()
+        if not MP:
+            for seasonname in myseasons:
+                t1=time.time()
+                datafilenames = []
+                for sn in seasons_3mon[seasonname]:   # e.g. sn='JAN','FEB','DEC' for seasonname='DJF'
+                    datafilenames.append( fileout_template.replace('XXX',sn) )
+                wrotefile =\
+                    climo_one_season( seasonname, datafilenames, omit_files, varnames,
+                                      fileout_template, time_units, calendar, dt,
+                                      force_scalar_avg, input_global_attributes,
+                                      filerank=filerank, filetag=filetag,
+                                      outseasons=seasons_ann, queue1=None, lock1=lock, comm1=comm )
+                climo_file_done_mpi( wrotefile, fileout_template, seasonname,
+                                     seasons_ann, filerank, filetag, comm )
+                t2=time.time()
+                print "allseasons, season",seasonname,"time is",t2-t1
+        else:
+            proc = {}
+            for seasonname in myseasons:
+                datafilenames = []
+                for sn in seasons_3mon[seasonname]:   # e.g. sn='JAN','FEB','DEC' for seasonname='DJF'
+                    datafilenames.append( fileout_template.replace('XXX',sn) )
+                proc[seasonname] =\
+                    p_climo_one_season( seasonname, datafilenames, omit_files, varnames,
+                                        fileout_template, time_units, calendar, dt,
+                                        force_scalar_avg, input_global_attributes,
+                                        filerank=filerank, filetag=filetag,
+                                        outseasons=seasons_ann, queue1=queue, lock1=lock, comm1=comm )
+            for seasonname in myseasons:
+                # This is a local (to the node) barrier.  It would be better to just go on, have the
+                # forked process send a signal and disappear, and then the when next phase needs the
+                # data, it waits for the signal.  That's similar to what I do for MPI, but I haven't
+                # yet figured it out for local multiprocessing.
+                #print "jfp joining",proc[seasonname],"for season",seasonname
+                proc[seasonname].join()  # wait for process to terminate
+                #print "jfp joined",proc[seasonname],"for season",seasonname
+            for seasonname in myseasons:
+                wrotefile = True # testing
+                climo_file_done_mpi( wrotefile, fileout_template, seasonname,
+                                     seasons_ann, filerank, filetag, comm )
+        t2all=time.time()
+        if comm is None:  comm_rank = 0
+        else: comm_rank = comm.rank
+        print "For all 3-month seasons on",comm_rank,", time is",t2all-t1all
+
+        if comm is None or comm.rank==0:
+            t1=time.time()
+            seasonname = 'ANN'
+            datafilenames = []
+            for sn in seasons_ann[seasonname]:
+                datafilenames.append( fileout_template.replace('XXX',sn) )
+            wrotefile =\
+                climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_template,
+                                  time_units, calendar, dt, force_scalar_avg,
+                                  input_global_attributes, filerank=filerank,
+                                  filetag=filetag, outseasons=None, queue1=None, lock1=lock, comm1=comm )
+            climo_file_done_mpi( wrotefile, fileout_template, seasonname,
+                                 None, filerank, filetag, comm )
+            t2=time.time()
+            print "allseasons, season ANN, time is",t2-t1
+        return
     else:
         # This is the simplest and most flexible way to compute climatologies - directly
-        # from the input model data.
+        # from the input model data.  There is no attempt to compute in parallel.
+        if comm is not None and comm.rank>0:
+            return
         for seasonname in seasonnames:
-            if allseasons: t1=time.time()
-            redfilenames, redfiles =\
-                climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_template,
-                                  data_time, calendar, dt, redfilenames, redfiles,
-                                  input_global_attributes )
-            if allseasons:
-                t2=time.time()
-                print "original, season",seasonname,"time is",t2-t1
+            redfilenames.append(fileout_template.replace('XXX',seasonname))
+        for seasonname in seasonnames:
+            t1=time.time()
+            climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_template,
+                              time_units, calendar, dt, force_scalar_avg,
+                              input_global_attributes, filerank={}, filetag={},
+                              outseasons=None, queue1=None, lock1=lock, comm1=comm )
+            t2=time.time()
+            print "season",seasonname,"time is",t2-t1
+        return
 
+def p_climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_template,
+                      time_units, calendar, dt, force_scalar_avg1,
+                      input_global_attributes, filerank={}, filetag={},
+                        outseasons=None, queue1=None, lock1=None, comm1=None ):
+    """climo_one_season but run as a separate process.  returns the process, the caller should
+    join it."""
+    # p.join()
+
+    argtuple = ( seasonname, datafilenames, omit_files, varnames, fileout_template,
+                 time_units, calendar, dt, force_scalar_avg1,
+                 input_global_attributes, filerank, filetag, outseasons, queue1, lock1, comm1 )
+    p = Process( target=climo_one_season, args=argtuple )
+    p.start()
+    return p
+
+def climo_file_done_mpi( redfile, fileout_template, seasonname, outseasons,
+                         filerank, filetag, comm1 ):
+    # When a file redfile, computed for season seasonname, has been written and closed, this
+    # function is called to inform the appropriate MPI node.  Note that if another process is
+    # waiting for the file, the process could wait forever - correct because the file isn't there.
+    if comm1 is None or comm1.size<=1:   # MPI isn't running.
+        return
+    if redfile is True:
+        redfile = fileout_template.replace('XXX',seasonname)
+    if redfile is False or outseasons is None:
+        return
+    for ise,seass in enumerate(outseasons):
+        if seasonname in outseasons[seass]:
+            outfile = fileout_template.replace('XXX',seass)
+            #print "jfp sending from",comm1.rank,"to",filerank[outfile],"tag",filetag[redfile],"for",redfile
+            comm1.isend( 0, filerank[outfile], filetag[redfile] )
 
 def climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_template,
-                      data_time, calendar, dt, redfilenames, redfiles,
-                      input_global_attributes ):
-    global force_scalar_avg  # saves typing!
+                      time_units, calendar, dt, force_scalar_avg1,
+                      input_global_attributes, filerank={}, filetag={},
+                      outseasons=None, queue1=None, lock1=None, comm1=None ):
     print "doing season",seasonname
-    sredfiles = {}  # season reduced files
     datafilenames = [fn for fn in datafilenames if fn not in omit_files[seasonname]]
     datafilenames2 = restrict_to_season( datafilenames, seasonname )
     if len(datafilenames2)<=0:
         print "WARNING, no input data, skipping season",seasonname
-        return redfilenames, redfiles
+        return False
     season = daybounds(seasonname)
     # ... assumes noleap calendar, returns time in days.
+
     init_red_tbounds = numpy.array( season, dtype=numpy.int32 )
     fileout = fileout_template.replace('XXX',seasonname)
+    filein = datafilenames2[0]
+    if comm1 is not None and comm1.size>1 and filein in filerank and filerank[filein]>=0:
+        #print "jfp receiving from",filerank[filein],"to",comm1.rank,"tag",filetag[filein],"for",filein
+        comm1.recv( source=filerank[filein], tag=filetag[filein] )
+
     g, out_varnames, tmin, tmax = initialize_redfile_from_datafile(
-        fileout, varnames, datafilenames2[0], dt, init_red_tbounds )
+        fileout, varnames, filein, dt, init_red_tbounds, lock=lock1 )
     # g is the (newly created) climatology file.  It's open in 'w' mode.
+
     season_tmin = tmin
     season_tmax = tmax
-    redfilenames.append(fileout)
-    redfiles[fileout] = g
-    sredfiles[fileout] = g
     redtime = g.getAxis('time')
     redtime.units = 'days since 0'
     redtime.long_name = 'climatological time'
@@ -396,15 +553,15 @@ def climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_t
 
     tmin, tmax = update_time_avg_from_files( redvars, redtime_bnds, redtime_wts, datafilenames2,
                                 fun_next_tbounds = (lambda rtb,dtb,dt=dt: rtb),
-                                redfiles=sredfiles.values(), dt=dt,
-                                force_scalar_avg=force_scalar_avg )
+                                redfiles=[g], dt=dt,
+                                force_scalar_avg=force_scalar_avg1, lock=lock1 )
     season_tmin = min( tmin, season_tmin )
     season_tmax = max( tmax, season_tmax )
 
     if len(redtime)==2:
         # reduce_twotimes2one() will close the supplied g, and return a g opened in 'r+' mode...
         g = reduce_twotimes2one( seasonname, fileout_template, fileout, g, redtime,
-                                 redtime_bnds, redtime_wts, redvars )
+                                 redtime_bnds, redtime_wts, redvars, lock=lock1 )
         redtime = g.getAxis('time')
         redtime_bnds = g[ g.getAxis('time').bounds ]
 
@@ -425,18 +582,21 @@ def climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_t
     deltat = season_tmin - redtime_bnds[0][0]
     redtime[:] += deltat
     redtime_bnds[:] += deltat
-    redtime.units = data_time.units
+    redtime.units = time_units
     redtime_bnds.units = redtime.units
     g['time_climo'][:] = [ season_tmin, season_tmax ]
     g['time_climo'].initialized = 'yes'
     g['time_climo'].units = g['time'].units
+    if lock is not None:  lock.acquire()
     g.close()
-    return redfilenames, redfiles
+    if lock is not None:  lock.release()
+
+    return True
 
 if __name__ == '__main__':
     p = argparse.ArgumentParser(description="Climatology")
     # TO DO: test with various paths.  Does this work naturally? <<<<<<<<<<<<
-    p.add_argument("--outfile", dest="outfile", help="Name of output file, XXX for season (mandatory)", nargs=1,
+    p.add_argument("--outfile","--o", dest="outfile", help="Name of output file, XXX for season (mandatory)", nargs=1,
                    required=True )
     p.add_argument("--infiles", dest="infiles", help="Names of input files (mandatory)", nargs='+',
                    required=True )
@@ -444,18 +604,42 @@ if __name__ == '__main__':
                    required=True )
     p.add_argument("--variables", dest="variables", help="Variable names (ALL or omit for all)", nargs='+',
                    required=False, default=['ALL'] )
-    p.add_argument("--omitBySeason", dest="omitBySeason", help=
+    p.add_argument("--omitBySeason","--m", dest="omitBySeason", help=
                "Omit files for just the specified season.  For multiple seasons, provide this"+
                    "argument multiple times. E.g. --omitBySeason DJF lastDECfile.nc\"",
                    nargs='+', action='append', default=[] )
     p.add_argument("--forceScalarAvg", dest="forceScalarAvg", default=False, help=
                    "For testing, forces use of a simple scalar average, ignoring missing values" )
-    args = p.parse_args(sys.argv[1:])
-    print "input args="
-    pprint(args)
+    if sys.argv[0].find('climatology')>=0:
+        # normal case, we're running climatology more or less directly
+        args = p.parse_args(sys.argv[1:])
+    elif sys.argv[1].find('climatology')>=0:
+        # But if we're running climatology "under" tau_python or somesuch, the arglist is shifted
+        args = p.parse_args(sys.argv[2:])
+    else:
+        raise DiagError( "climatology cannot recognize program & args" )
+    if comm is None or comm.rank==0:
+        print "input args="
+        pprint(args)
 
     force_scalar_avg = args.forceScalarAvg
-    climos( args.outfile[0], args.seasons, args.variables, args.infiles, args.omitBySeason )
+
+    # experimental code for multiprocessing on one node.  Leave queue=None for no multiprocessing.
+    #queue = Queue()
+    MP = False
+    # N.B. The operating system on Rhea.ccs.ornl.gov does not support locks.
+    #if MP:
+    #    lock = Lock()  # for debugging; in normal use leave this as None.
+    print "jfp MP=",MP
+
+    profileme = False
+    if profileme is True:
+        prof = cProfile.Profile()
+        prof.runcall( climos, args.outfile[0], args.seasons, args.variables,
+                      args.infiles, args.omitBySeason )
+        prof.dump_stats('results_stats')
+    else:
+        climos( args.outfile[0], args.seasons, args.variables, args.infiles, args.omitBySeason )
 
     if False:
         # For testing, print results...
