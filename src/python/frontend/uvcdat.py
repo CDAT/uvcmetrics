@@ -1081,9 +1081,9 @@ class plot_spec(object):
             for key in RESULTS.keys():
                 local_data, local_axes, local_attr = RESULTS[key]
                 print 'key = ', key, len(local_data), len(local_axes), len(local_attr)
-                collected_data += [local_data]
-                collected_axes += [local_axes]
-                collected_attr += [local_attr]
+                collected_data += [[local_data]]
+                collected_axes += [[local_axes]]
+                collected_attr += [[local_attr]]
             print len(collected_data), len(collected_axes), len(collected_attr)
             self.variable_values = buildVariables(RESULTS.keys(), collected_data, collected_axes, collected_attr)
         else:
