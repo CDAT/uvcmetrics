@@ -35,15 +35,60 @@ def rhodz_from_hybridlev( PS, P0, hyai, hybi ):
     rhodz = dp/g
     return rhodz
 
-def rhodz_from_plev( lev ):
+def interp_extrap_to_one_more_level( lev ):
+    """The input argument is a level axis.  We create a new level axis levc which is like
+    lev but has one more value; they are interlaced like
+    levc[0]<lev[0]<levc[1]<...<lev[N-1]<levc[N] where N=len(lev)"""
+    if lev.getBounds() is None:
+        # genGeneric bounds chooses the halfway points.  The bounds for the first and last levels
+        # step outside the level range enough to make the levels halfway between bounds.
+        levbounds = lev.genGenericBounds()
+    else:
+        levbounds = lev.bounds
+    levc = cdms2.createAxis( numpy.append( levbounds[0:,0], levbounds[-1,1] ), id=lev.id )
+    levc.units = getattr( lev, 'units', None )
+    levc.axis = 'Z'
+    levc.long_name = getattr( lev, 'long_name', None )
+    return levc
+
+def rhodz_from_plev( lev, nlev_want ):
     """returns a variable rhodz which represents the air mass column density in each cell.
-    The input variable is a level axis, units millibars."""
+    The input variable is a level axis, units millibars.  nlev_want is 0 for a straightforward
+    computation.  If nlev_want>0, then first lev should be changed to something with that
+    number of levels, by some interpolation/extrapolation process."""
     # Thus rhodz will depend on lat,lon,level (and time).
     g = AtmConst.g     # 9.80665 m/s2.
+    if nlev_want==0 or nlev_want==len(lev):
+        levc = lev             # The "good" case.
+    elif nlev_want==1+len(lev):  # Not so bad
+        levc = interp_extrap_to_one_more_level( lev )
+    else:                      # Terminally bad, don't know what to do
+        raise DiagError( "ERROR, rhodz_from_plev does not have the right number of levels %, %" %\
+                             (len(lev),nlev_want) )
     # I expect lev[0] to be the ground (highest value), lev[-1] to be high (lowest value)
-    dp = lev[0:-1] - lev[1:]
+    dp = levc[0:-1] - levc[1:]
     rhodz = dp/g
     return rhodz
+
+def check_compatible_levels( var, pvar ):
+    """Checks whether the levels of var and psrcv are compatible in that they may be used
+    for mass weighting without any special effort.  var is the variable to be averaged,
+    and pvar is a variable which will be used to get the pressures.  For example, var
+    could be temperature, T, and pvar could be a hybrid level variable such as hybi.
+    The return value is 0 if compatible, otherwise number
+    of levels needed to properly average var with mass weighting."""
+    vlev = var.getLevel()
+    plev = pvar.getLevel()
+    # We want plev[0] < var[0] < plev[1] < ... < var[N-1] < plev[N]
+    # where var is defined on N levels and plev on N+1 levels.
+    # But for now, just check the lengths of the two level arrays:
+    compatible =  len(vlev)+1 == len(plev)
+    if compatible:
+        return 0
+    else:
+        print "WARNING, poor levels for mass weighting, variables",var.id,pvar.id
+        print "numbers of levels: var",len(vlev),"pvar",len(plev)
+        return len(vlev)+1
 
 def rhodz_from_mv( mv ):
     """returns an array rhodz which represents the air mass column density in each cell.
@@ -51,12 +96,18 @@ def rhodz_from_mv( mv ):
     lev = mv.getLevel()
     if lev.units=='level':  # hybrid level
         cfile = cdms2.open( mv._filename )
+        check_compatible_levels( mv, cfile('hybi') )
         rhodz = rhodz_from_hybridlev( cfile('PS'), cfile('P0'), cfile('hyai'), cfile('hybi') )
         cfile.close()
     elif lev.units in  ['millibars','mbar']:  # pressure level
+        # Note that lev is the level axis of mv, thus each value of mv is centered _at_ a level.
+        # We want the levels to be offset from that, i.e. for mv to represent a quantity
+        # belonging to the mass between two levels.  That's not possible unless
+        # there's another level axis somewhere, and there's no standard way to identify it.
         lat = mv.getLatitude()
         lon = mv.getLongitude()
-        rhodz1  = rhodz_from_plev( lev )  # same shape as lev
+        nlev_want = check_compatible_levels( mv, mv )
+        rhodz1  = rhodz_from_plev( lev, nlev_want )
         rhodz = numpy.zeros( (rhodz1.shape[0], lat.shape[0], lon.shape[0]) )  # (lev,lat,lon) shape
         for k in range( rhodz1.shape[0] ):
             rhodz[k,0:-1,0:-1] = rhodz1[k]
@@ -127,5 +178,6 @@ def weighting_choice( mv ):
                         choice = 'mass'
         
     #vname = mv.id
+    mv.weighting = choice
     # print "variable",mv.id.ljust(8,' '),"weighting",choice,"units",un
     return choice
