@@ -1063,7 +1063,8 @@ class plot_spec(object):
             #spark mode
             from pyspark import SparkContext
             sc = SparkContext(appName="Diagnostic Test")
-            partitions = 4
+            partitions = os.environ['NUM_PARTITIONS']
+            print 'partitions = ', partitions
             P = sc.parallelize(self.reduced_variables.keys(), partitions)
             RESULTS = P.map( lambda key: (key, self.reduced_variables[key].reduce(None, RETURN_ARRAYS=True))  ) 
             RESULTS = dict(RESULTS.collect())
