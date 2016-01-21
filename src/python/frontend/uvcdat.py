@@ -1063,7 +1063,7 @@ class plot_spec(object):
 
             from pyspark import SparkContext
             sc = SparkContext(appName="Diagnostic Test")
-            partitions = 2
+            partitions = 4
             P = sc.parallelize(self.reduced_variables.keys(), partitions)
             M = P.map(lambda key: (key, self.reduced_variables[key].reduce(None) ) )
             #RESULTS = M.reduceByKey( lambda x: x )
