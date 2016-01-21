@@ -1007,10 +1007,7 @@ class plot_spec(object):
         def buildVariables(keyList, dataList, axesList, attrList):
             def buildVariable(data, axes, attr):
                 x=cdms2.createVariable(data)
-                try:
-                    x.setAxisList(axes)
-                except:
-                    print 'axes=', axes
+                x.setAxisList(axes)
                 for key, value in attr.iteritems():
                     if key != 'name':
                         x.setattribute(key, value)
@@ -1018,7 +1015,6 @@ class plot_spec(object):
             variables = {}
             for KEYS, DATA, AXES, ATTR in zip(keyList, dataList, axesList, attrList):
                 for key, data, axes, attr in zip(KEYS, DATA, AXES, ATTR):
-                    print 'key = ', key, data, axes, attr
                     variables[key] = buildVariable(data, axes, attr)
             return variables
         #print 'slices'
