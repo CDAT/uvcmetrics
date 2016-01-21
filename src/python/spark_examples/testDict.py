@@ -56,8 +56,8 @@ P = sc.parallelize(data.keys(), partitions)
 #results = M.reduceByKey( lambda x: x )
 
 
-M = P.map(lambda key: (key, data) )
-results = M.reduceByKey( lambda key, data: data[key].compute(key) )
+M = P.map(lambda key: key )
+results = M.reduceByKey( lambda key: data[key].compute(key) )
 results = dict(results.collect())
 for key in results.keys():    
     print key, results[key]
