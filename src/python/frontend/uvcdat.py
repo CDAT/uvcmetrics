@@ -1073,10 +1073,11 @@ class plot_spec(object):
             sc.stop()
             
             #spark post processing
-            collected_data, collected_axes, collected_attr = [], [], []
+            all_keys, collected_data, collected_axes, collected_attr = [], [], [], []
             for key in RESULTS.keys():
                 local_data, local_axes, local_attr = RESULTS[key]
                 print 'key = ', key, len(local_data), len(local_axes), len(local_attr)
+                all_keys += [[key]]
                 collected_data += [[local_data]]
                 collected_axes += [[local_axes]]
                 collected_attr += [[local_attr]]
