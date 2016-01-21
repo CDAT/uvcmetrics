@@ -192,32 +192,35 @@ def compose( rf1, rf2 ):
     return rf12    
 
 def set_spatial_avg_method( var ):
+    # >>> probably obsolete <<<
     """Determines how to compute spatial averages of a variable var.
-    Sets the attribute var.spavgmeth to a string specifying how to compute spatial averages.
+    Sets the attribute var.weighting to a string specifying how to compute spatial averages.
     At present the default is area weighting (the averager() default), and the only other
     possibility is mass weighting."""
     # Don't change the spatial average method if it has already been set.
     # Then set it to the default, and then check to see whether there's anything about the variable
     # which calls for a non-default method.
-    if hasattr( var, 'spavgmeth' ): return var
-    var.spavgmeth = weighting_choice( var )
+    if hasattr( var, 'weighting' ): return var
+    var.weighting = weighting_choice( var )
     # ... weighting_choice() is only valid for atmos, but will probably be ok for other realms.
     return var
 
-def get_mass_weights( mv ):
-    """Returns mass weights, in a variable of th same shape as the input mv."""
-    # This is only valid for atmos, it hasn't been implemented for other realms.
-    # >>>> WORK IN PROGRESS <<<<
-    pass
+def set_mean( mv ):
+    # Set mean attribute of a variable.  Typically this appears in a plot header.
+    weighting = getattr( mv, 'weighting', None )
+    if hasattr(mv,'mean') and isinstance(mv.mean,Number):
+        mvmean = mv.mean
+    else:
+        mvmean = None
+    if weighting=='mass' and hasattr(mv,'_filename') and mvmean is None:
+        # The _filename attribute, or else a lot of data we don't have, is needed to compute
+        # mass-based weights.
+        try:
+            mv.mean = reduce2scalar( mv, weights='mass' )
+        except Exception as e:
+            print "ERROR, exception",e,"for variable",mv.id
+    #else: use the VCS default of area weighting
 
-# Dictionary which matches a variable's :spavgmeth attribute to a function which computes
-# weights for its spatial average.  The function should have arguments:
-# - mv, the variable which will be averaged
-# The function should return:
-# - wt, an array of weights; wt.shape==mv.shape.
-# >>>> WORK IN PROGRESS <<<<<
-# >>>> This dict is subject to change, and the function it names does't exist. <<<<<
-spavgfuns = { 'area':None, 'mass':get_mass_weights }
 
 # -------- end of Miscellaneous  Utilities ---------
 
@@ -237,16 +240,18 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
     The genutil averager() function performs the averaging.  This normally uses its default
     weighting, which typically is area weights.
 
-    But if weights='mass', mass weighting will be used.
-    For mass weighting, the weight will be recovered from the filetable specified in the _filetable
-    attribute of mv, which must exist.  Of course, this also requires the weights to have been
-    loaded into the filetable's weights dictionary.
+    But if weights='mass' (or if None and mv's :weighting attribute be 'mass'), mass weighting will
+    be used.  For mass weighting, the weight will be recovered from the filetable specified in the
+    _filetable attribute of mv, which must exist.  Of course, this also requires the weights to have
+    been loaded into the filetable's weights dictionary.
 
     Alternatively, you can compute mass (or other) weights into a 3-D (lev,lat,lon) array (or MV)
     and pass it as the 'weights' argument.
     """
     # So far I've checked this code (without testing) for doing essentially the same thing
     # (with appropriate arguments) as reduce2scalar and reduce2latlon_seasonal
+    if len(mv.shape)==0:
+        return mv
     if vid is None:   # Note that the averager function returns a variable with meaningless id.
         vid = 'reduced_'+mv.id
     if region is None or region=="global" or region=="Global" or\
@@ -272,6 +277,14 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
     axes_string = '('+')('.join(axis_names)+')'
     axes = mvrs.getAxisList()
 
+    if weights==None:
+        # weights unspecified (probably).  Are they specified in a variable attribute?
+        # If mass weighting is appropriate, the weighting attribute should say so.  It was set by
+        # an earlier weighting_choice() call.
+        weights = getattr( mv, 'weighting', None )
+        if not hasattr(mvrs,'_filetable') and hasattr(mv,'_filetable'):
+            mvrs._filetable = mv._filetable
+ 
     if len(axes_string)<=2:
         avmv = mvrs
     else:
@@ -289,20 +302,62 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
             klevs = [i for i,j in enumerate([a.isLevel() for a in axes]) if j==True]
             klats = [i for i,j in enumerate([a.isLatitude() for a in axes]) if j==True]
             klons = [i for i,j in enumerate([a.isLongitude() for a in axes]) if j==True]
-            assert( len(klats)>0 ) # equivalent to assert( any( [a.isLatitude() for a in axes] ) )
-            assert( len(klons)>0 ) # equivalent to assert( any( [a.isLongitude() for a in axes] ) )
+            #assert( len(klats)>0 ), "no latitudes exist"
+            ## equivalent to assert( any( [a.isLatitude() for a in axes] ) )
+            #assert( len(klons)>0 ), "no longitudes exist"
+            ## equivalent to assert( any( [a.isLongitude() for a in axes] ) )
+            if len(klats)>0:
+                klat = klats[0]        # thus axes[klat].isLatitude() is True
+            if len(klons)>0:
+                klon = klons[0]        # thus axes[klon].isLongitude() is True
             if len(klevs)>0:
                 klev = klevs[0]
-            klat = klats[0]        # thus axes[klat].isLatitude() is True
-            klon = klons[0]        # thus axes[klon].isLongitude() is True
-
             avweights = mvrs.clone()
-            for inds in numpy.ndindex(avweights.shape):
+
+            if len(klats)>0 and len(klons)>0:
+                # We have both latitudes and longitudes
+                for inds in numpy.ndindex(avweights.shape):
+                    ilat = inds[klat]
+                    ilon = inds[klon]
+                    if len(klevs)>0:
+                        ilev = inds[klev]
+                    else:
+                        ilev = -1   # means use the bottom, usually best if there are no levels
+                    avweights[inds] = latlon_wts[ilev,ilat,ilon]
+            elif len(klats)>0:
+                # We have latitudes, no longitudes.  Normally this means that the longitudes have
+                # been averaged out.
+                for inds in numpy.ndindex(avweights.shape):
+                    ilat = inds[klat]
+                    if len(klevs)>0:
+                        ilev = inds[klev]
+                    else:
+                        ilev = -1   # means use the bottom, usually best if there are no levels
+                    avweights[inds] = numpy.sum( latlon_wts[ilev,ilat,:] )
+            elif len(klons)>0:
+                # We have longitudes, no latitudes.  Normally this means that the latitudes have
+                # been averaged out.
+                for inds in numpy.ndindex(avweights.shape):
+                    ilon = inds[klon]
+                    if len(klevs)>0:
+                        ilev = inds[klev]
+                    else:
+                        ilev = -1   # means use the bottom, usually best if there are no levels
+                    avweights[inds] = numpy.sum( latlon_wts[ilev,:,ilon] )
+            else:
+                # No latitudes, no longitudes!
                 if len(klevs)>0:
-                    avweights[inds] = latlon_wts[inds[klev],inds[klat],inds[klon]]
+                    ilev = inds[klev]
                 else:
-                    avweights[inds] = latlon_wts[-1,inds[klat],inds[klon]]
+                    # Probably something's wrong, there's basically nothing to do.
+                    # But we can go on with something sensible anyway.
+                    ilev = -1   # means use the bottom, usually best if there are no levels
+                    print "WARNING, computing a mass-weighted average of",mvrs.id,\
+                        "with no spatial axes"
+                avweights[inds] = numpy.sum( latlon_wts[ilev,:,:] )
+
             avmv = averager( mvrs, axis=axes_string, weights=avweights )
+
         elif gw is None:
             avmv = averager( mvrs, axis=axes_string )   # "normal" averaging
         else:
@@ -320,12 +375,20 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
 
     if avmv is None: return None
     avmv.id = vid
+
+    # set units and mean
     if hasattr(mv,'units'):
         avmv.units = mv.units
         # >>> special ad-hoc code.  The target units should be provided in an argument, not by this if statement>>>>
         if avmv.units=="Pa" or avmv.units.lower()=="pascal" or avmv.units.lower()=="pascals":
             avmv = convert_variable( avmv, "millibar" )
-
+    if not hasattr( avmv, '_filename' ) and hasattr( mv,'_filename' ):
+        avmv._filename = mv._filename
+    if not hasattr( avmv, '_filetable' ) and hasattr( mv,'_filetable' ):
+        avmv._filetable = mv._filetable
+    avmv.weighting = weights
+    set_mean( avmv )
+    
     return avmv
 
 
@@ -345,6 +408,7 @@ def reduce2scalar_seasonal_zonal( mv, season=seasonsyr, latmin=-90, latmax=90, v
         season = seasons
     # reduce size of lat axis to (latmin,latmax)
     mv2 = mv(latitude=(latmin, latmax))
+    if not hasattr( mv2, '_filetable') and hasattr(mv,'_filetable'): mv2._filetable = mv._filetable
     # reduce size of gw to (latmin,latmax)
     gw2 = None
     if gw is not None:
@@ -1970,7 +2034,24 @@ def aminusb_ax2( mv1, mv2 ):
     if hasattr(mv1,'long_name'):
         aminusb.long_name = 'difference of '+mv1.long_name
     if hasattr(mv1,'units'):  aminusb.units = mv1.units
+
     aminusb.initDomain( ab_axes )
+
+    if hasattr(mv1,'mean') and hasattr(mv2,'mean'):
+        # Note that mv1,mv2 will initially have a mean attribute which is a Numpy method. 
+        # We only need to compute a new mean if the mean attribute has been changed to a number.
+        try:
+            aminusb.mean = mv1.mean - mv2.mean
+        except TypeError:
+            # If this happens, "-" can't be applied to the means.
+            # For sure they aren't numbers.  Probably they are the Numpy builtin mean() method.
+            pass
+        except Exception:
+            if hasattr(aminusb,'mean') and isinstance(aminusb.mean,Number):
+                print "WARNING.  When computing the difference of",mv1.id,"and",mv2.id,\
+                    "the mean of the difference cannot be correctly computed."
+            del aminusb.mean
+
     return aminusb
 
 
@@ -2871,11 +2952,13 @@ class reduced_variable(ftrow,basic_id):
                         self._filetable.weights['mass'] = mass_weights( var )
                 if os.path.basename(filename)[0:5]=='CERES':
                     var = special_case_fixed_variable( 'CERES', var )
+                if not hasattr( var, '_filetable'): var._filetable = self._filetable
                 reduced_data = self._reduction_function( var, vid=vid )
             elif self.variableid in f.axes.keys():
                 taxis = cdms2.createAxis(f[self.variableid])   # converts the FileAxis to a TransientAxis.
                 taxis.id = f[self.variableid].id
                 weighting = weighting_choice(taxis)
+                if not hasattr( taxis, '_filetable'): taxis._filetable = self._filetable
                 reduced_data = self._reduction_function( taxis, vid=vid )
             else:
                 print "Reduce failed to find variable",self.variableid,"in file",filename

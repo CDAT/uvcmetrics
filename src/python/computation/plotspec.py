@@ -62,7 +62,7 @@ class derived_var(basic_id):
         dictvals = [ inpdict.get(inp,None) for inp in self._inputs ]
         nonevals = [ inp for inp in self._inputs if inpdict.get(inp,None) is None ]
         for var in dictvals:
-            # set some attributes which *may* help do a mass-weighted mean computation
+            # set some attributes which may help do a mass-weighted mean computation
             if hasattr(var,'_filename'):
                 self._filename = var._filename
                 if hasattr(var,'_filetable'):
