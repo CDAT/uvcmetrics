@@ -1,17 +1,18 @@
 import subprocess, pdb, time, sys, os
 from config import *
-
-TIMING_PATH = '/opt/nfs/mcenerney1/uvcmetrics/src/python/spark_timing/'
-
+NFSHOME = os.environ['NFSHOME']
+TIMING_PATH = NFSHOME + '/uvcmetrics/src/python/spark_timing/'
+SPARKOUTPUTDIR = NFSHOME + '/spark_output/'
 f=open(TIMING_PATH + 'timing.dat', 'w')
 f.write('Nnodes  Ntasks  Npartitions runs \n')
 nruns = 5
 for (N,n) in config:
     os.environ['NUM_PARTITIONS'] = str(N*n)
-    spark_output_file = 'spark_output/spark_run_'+ str(N) +'_' + str(n)
-    os.environ['SPARKOUTPUT'] = spark_output_file
     timing_data = str(N) + '       ' + str(n) + '       '
     for run in range(nruns):
+        timing_data += str(run) + '       ' 
+        spark_output_file = SPARKOUTPUTDIR + 'spark_run_'+ str(N) +'_' + str(n)
+        os.environ['SPARKOUTPUT'] = spark_output_file
         proc=subprocess.Popen([TIMING_PATH+'spark_diag.sh'], shell=True, stdout=subprocess.PIPE)
         time.sleep(30)
 
