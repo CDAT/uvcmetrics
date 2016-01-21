@@ -1073,17 +1073,17 @@ class plot_spec(object):
             all_keys, collected_data, collected_axes, collected_attr = [], [], [], []
             for key in RESULTS.keys():
                 local_data, local_axes, local_attr = RESULTS[key]
-                print 'key = ', key, len(local_data), len(local_axes), len(local_attr)
+                #print 'key = ', key, len(local_data), len(local_axes), len(local_attr)
                 #the following list of list looks strange but it's meant to do the same
                 #thing as in the mpi implementation
                 all_keys += [[key]]
                 collected_data += [[local_data]]
                 collected_axes += [[local_axes]]
                 collected_attr += [[local_attr]]
-            print len(collected_data), len(collected_axes), len(collected_attr)
+            #print len(collected_data), len(collected_axes), len(collected_attr)
             self.variable_values = buildVariables(all_keys, collected_data, collected_axes, collected_attr)
-            for key, value in self.variable_values.items():
-                print key, value.shape
+            #for key, value in self.variable_values.items():
+            #    print key, value.shape
         else:
             #serial mode
             for v in self.reduced_variables.keys():
