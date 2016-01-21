@@ -52,12 +52,12 @@ for key in data.keys():
     i += 1
     
 P = sc.parallelize(data.keys(), partitions)
-#M = P.map(lambda key: (key, data[key].compute(key)) )
-#results = M.reduceByKey( lambda x: x )
+M = P.map(lambda key: (key, data[key].compute(key)) )
+results = M.reduceByKey( lambda x: x )
 
 
-M = P.map(lambda x, y: (x, y) )
-results = M.reduceByKey( lambda key: (key, data[key].compute(key))  )
+#M = P.map(lambda x: x )
+#results = M.reduceByKey( lambda key: (key, data[key].compute(key))  )
 results = dict(results.collect())
 for key in results.keys():    
     print key, results[key]
