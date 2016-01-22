@@ -27,7 +27,7 @@ from multiprocessing import Process, Lock
 ###from threading import Thread as Process
 ###from Queue import Queue
 import cProfile
-from metrics.common.utilities import DiagError
+from metrics.common.utilities import DiagError, store_provenance
 
 comm = None
 #comm = MPI.COMM_WORLD
