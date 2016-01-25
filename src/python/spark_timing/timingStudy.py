@@ -7,8 +7,9 @@ f=open(TIMING_PATH + 'timing.dat', 'w')
 f.write('Nnodes  Ntasks  Npartitions \n')
 nruns = 5
 for (N,n) in config:
-    os.environ['NUM_PARTITIONS'] = str(int(N)*int(n))
-    timing_data = str(N) + '       ' + str(n) + '       '
+    Npartitions = int(N)*int(n)
+    os.environ['NUM_PARTITIONS'] = str(Npartitions)
+    timing_data = str(N) + '       ' + str(n) + '       ' + str(Npartitions) + '       '
     for run in range(nruns):
         spark_output_file = SPARKOUTPUTDIR + 'spark_run_'+ str(N) +'_' + str(n) + '_' + str(run)
         os.environ['SPARKOUTPUT'] = spark_output_file
