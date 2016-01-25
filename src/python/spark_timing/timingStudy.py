@@ -4,17 +4,16 @@ NFSHOME = os.environ['NFSHOME']
 TIMING_PATH = NFSHOME + '/uvcmetrics/src/python/spark_timing/'
 SPARKOUTPUTDIR = NFSHOME + '/spark_output/'
 f=open(TIMING_PATH + 'timing.dat', 'w')
-f.write('Nnodes  Ntasks  Npartitions runs \n')
+f.write('Nnodes  Ntasks  Npartitions \n')
 nruns = 5
 for (N,n) in config:
-    os.environ['NUM_PARTITIONS'] = str(N*n)
-    timing_data = str(N) + '       ' + str(n) + '       '
+    os.environ['NUM_PARTITIONS'] = str(int(N)*int(n))
+    timing_data = N + '       ' + n + '       '
     for run in range(nruns):
-        timing_data += str(run) + '       ' 
-        spark_output_file = SPARKOUTPUTDIR + 'spark_run_'+ str(N) +'_' + str(n)
+        spark_output_file = SPARKOUTPUTDIR + 'spark_run_'+ N +'_' + n + '_' + str(run)
         os.environ['SPARKOUTPUT'] = spark_output_file
         proc=subprocess.Popen([TIMING_PATH+'spark_diag.sh'], shell=True, stdout=subprocess.PIPE)
-        time.sleep(30)
+        time.sleep(15)
 
         #retrieve timing data        
         g=open(spark_output_file)
