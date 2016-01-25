@@ -51,13 +51,15 @@ def interp_extrap_to_one_more_level( lev ):
     levc.long_name = getattr( lev, 'long_name', None )
     return levc
 
-def rhodz_from_plev( lev, nlev_want ):
+def rhodz_from_plev( lev, nlev_want, mv ):
     """returns a variable rhodz which represents the air mass column density in each cell.
     The input variable is a level axis, units millibars.  nlev_want is 0 for a straightforward
     computation.  If nlev_want>0, then first lev should be changed to something with that
     number of levels, by some interpolation/extrapolation process."""
     # Thus rhodz will depend on lat,lon,level (and time).
     g = AtmConst.g     # 9.80665 m/s2.
+    lat = mv.getLatitude()
+    lon = mv.getLongitude()
     if nlev_want==0 or nlev_want==len(lev):
         levc = lev             # The "good" case.
     elif nlev_want==1+len(lev):  # Not so bad
@@ -66,8 +68,31 @@ def rhodz_from_plev( lev, nlev_want ):
         raise DiagError( "ERROR, rhodz_from_plev does not have the right number of levels %, %" %\
                              (len(lev),nlev_want) )
     # I expect lev[0] to be the ground (highest value), lev[-1] to be high (lowest value)
-    dp = levc[0:-1] - levc[1:]
-    rhodz = dp/g
+    lev3d = numpy.zeros( (levc.shape[0], lat.shape[0], lon.shape[0] ))
+    for k in range( levc.shape[0] ):
+        lev3d[k,:,:] = levc[k]
+    if hasattr( lev, '_filename' ):
+        # We'll try to use other variables to do better than extrapolating.
+        # This only works in CAM, CESM, ACME, etc.
+        f = cdms2.open(lev._filename)
+        fvars = f.variables.keys()
+        if 'PS' in fvars:
+            PS = f('PS')
+            assert (len(PS.shape)==3), "expected PS to be shaped (time,lat,lon)"
+            assert (PS.shape[0]==1), "expected PS first dimension to be a single time"
+            # N.B. If I keep this code, must check units.
+            nlat = PS.shape[1]  # normally lat, but doesn't have to be
+            nlon = PS.shape[2]  # normally lon, but doesn't have to be
+            for ilat in range(nlat):
+                for ilon in range(nlon):
+                    if PS[0,ilat,ilon]>lev[0]:
+                        lev3d[0,ilat,ilon] = PS[0,ilat,ilon]
+                    # else some levels are underground.  Subterranean data should later get
+                    # masked out, but even if it doesn't, doing nothing here does no harm.
+        f.close()
+
+    dp = lev3d[0:-1,:,:] - lev3d[1:,:,:]
+    rhodz = dp/g   # (lev) shape
     return rhodz
 
 def check_compatible_levels( var, pvar ):
@@ -104,13 +129,10 @@ def rhodz_from_mv( mv ):
         # We want the levels to be offset from that, i.e. for mv to represent a quantity
         # belonging to the mass between two levels.  That's not possible unless
         # there's another level axis somewhere, and there's no standard way to identify it.
-        lat = mv.getLatitude()
-        lon = mv.getLongitude()
         nlev_want = check_compatible_levels( mv, mv )
-        rhodz1  = rhodz_from_plev( lev, nlev_want )
-        rhodz = numpy.zeros( (rhodz1.shape[0], lat.shape[0], lon.shape[0]) )  # (lev,lat,lon) shape
-        for k in range( rhodz1.shape[0] ):
-            rhodz[k,0:-1,0:-1] = rhodz1[k]
+        if hasattr(mv,'_filename') and not hasattr(lev,'_filename'):
+            lev._filename = mv._filename
+        rhodz  = rhodz_from_plev( lev, nlev_want, mv )
     return rhodz
 
 def area_times_rhodz( mv, rhodz ):
