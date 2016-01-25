@@ -4,7 +4,7 @@ rm $NFSHOME/tmp/*
 
 source $NFSHOME/11_03_15/bin/setup_runtime.sh
 
-$SPARKHOME/bin/pyspark --master spark://aims2.llnl.gov:8080  \
+$SPARKHOME/bin/pyspark --master spark://aims2.llnl.gov:7077  \
 $NFSHOME/uvcmetrics/src/python/frontend/diags.py \
 --model path=$NFSHOME/uvcmetrics_test_data/cam_output/,climos=yes \
 --obs path=$NFSHOME/uvcmetrics_test_data/obs_atmos/,filter='f_startswith("c_t_NCEP")',climos=yes \
