@@ -3,7 +3,7 @@
 rm $NFSHOME/tmp/*
 
 source $NFSHOME/11_03_15/bin/setup_runtime.sh
-
+echo $SPARKHOME
 $SPARKHOME/bin/pyspark --master spark://aims2.llnl.gov:7077  \
 $NFSHOME/uvcmetrics/src/python/frontend/diags.py \
 --model path=$NFSHOME/uvcmetrics_test_data/cam_output/,climos=yes \
