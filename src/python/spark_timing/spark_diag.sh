@@ -1,6 +1,6 @@
 #!/bin/bash
 
-rm /opt/nfs/mcenerney1/tmp/*
+rm $NFSHOME/tmp/*
 
 source $NFSHOME/11_03_15/bin/setup_runtime.sh
 
