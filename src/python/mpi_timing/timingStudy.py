@@ -3,7 +3,7 @@ from config import *
 
 NFSHOME = os.environ['NFSHOME']
 TIMING_PATH = NFSHOME + '/uvcmetrics/src/python/mpi_timing/'
-MPI_OUTPUTDIR = NFSHOME + '/mpi_output/'
+MPI_OUTPUTDIR = NFSHOME + 'mpi_output/'
 f=open(MPI_OUTPUTDIR + 'timing.dat', 'w')
 f.write('Nnodes  Ntasks  runs \n')
 nruns = 5
