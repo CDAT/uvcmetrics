@@ -1,16 +1,10 @@
-import subprocess, pdb, time, sys
+import subprocess, pdb, time, sys, os
+from config import *
 
-TIMING_PATH = '/opt/nfs/mcenerney1/uvcmetrics/src/python/mpi_timing/'
-
-config = [(1,1),(1,2),(1,3),(1,4),(1,6),(1,8),
-          (2,1),(2,2),(2,3),(2,4),(2,6),
-          (3,1),(3,2),(3,4),(3,8),
-          (4,1),(4,2),(4,3),(4,6),
-          (6,1),(6,2),(6,4),
-          (8,1),(8,3)]
-config = [(1,1),(1,2),(1,3),(1,4)]
-
-f=open('timing.dat', 'w')
+NFSHOME = os.environ['NFSHOME']
+TIMING_PATH = NFSHOME + '/uvcmetrics/src/python/mpi_timing/'
+MPI_OUTPUTDIR = NFSHOME + '/mpi_output/'
+f=open(MPI_OUTPUTDIR + 'timing.dat', 'w')
 f.write('Nnodes  Ntasks  runs \n')
 nruns = 5
 for (N,n) in config:
@@ -21,7 +15,7 @@ for (N,n) in config:
     for run in range(nruns):
         #SBATCH_EXEC = 'sbatch --nodes=1 --ntasks-per-node=6 diag.sh'
         proc=subprocess.Popen([SBATCH_EXEC], shell=True, stdout=subprocess.PIPE)
-        time.sleep(30)
+        time.sleep(20)
         #pdb.set_trace()
         #subprocess.Popen.wait(proc) #x.wait()
         #retrieve jobid and create the slurm file name
@@ -30,7 +24,7 @@ for (N,n) in config:
         jobid = msg[-1]
         slurmFile = 'slurm-'+jobid+'.out'
         
-        g=open('slurm_output/'+slurmFile)
+        g=open('mpi_output/'+slurmFile)
         for line in g.readlines():
             if 'time =' in line:
                 #print line
