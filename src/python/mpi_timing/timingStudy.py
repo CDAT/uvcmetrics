@@ -15,7 +15,7 @@ for (N,n) in config:
     for run in range(nruns):
         #SBATCH_EXEC = 'sbatch --nodes=1 --ntasks-per-node=6 diag.sh'
         proc=subprocess.Popen([SBATCH_EXEC], shell=True, stdout=subprocess.PIPE)
-        time.sleep(20)
+        time.sleep(30)
         #pdb.set_trace()
         #subprocess.Popen.wait(proc) #x.wait()
         #retrieve jobid and create the slurm file name
