@@ -24,7 +24,7 @@ for (N,n) in config:
         jobid = msg[-1]
         slurmFile = 'slurm-'+jobid+'.out'
         
-        g=open('mpi_output/'+slurmFile)
+        g=open(MPI_OUTPUTDIR + slurmFile)
         for line in g.readlines():
             if 'time =' in line:
                 #print line
