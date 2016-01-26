@@ -3,7 +3,7 @@
 #SBATCH --job-name=diag_8 --time=01:00:00
 #SBATCH -D /opt/nfs/mcenerney1/mpi_output/
 #hostname
-rm $NFSHOME/tmp/*
+
 
 source $NFSHOME/11_03_15/bin/setup_runtime.sh
 
