@@ -1771,7 +1771,7 @@ class amwg_plot_set8(amwg_plot_spec):
         if self.MPI_ENABLED:
             self.mpi_init()
             
-        self.SPARK = False   
+        self.SPARK = True   
     def plan_computation( self, model, obs, varid, seasonid, levels=None ):
         filetable1, filetable2 = self.getfts(model, obs)
 
