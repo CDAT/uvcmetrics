@@ -10,5 +10,5 @@ $NFSHOME/uvcmetrics/src/python/frontend/diags.py \
 --obs path=$NFSHOME/uvcmetrics_test_data/obs_atmos/,filter='f_startswith("c_t_NCEP")',climos=yes \
 --outputdir $NFSHOME/diagout/ \
 --cachepath $NFSHOME/tmp/ \
---package AMWG --sets 8 --seasons ANN --plots yes --vars T --parallel \
+--package AMWG --sets 8 --seasons ANN --plots yes --vars T  \
 > $SPARKOUTPUT
