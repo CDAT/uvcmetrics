@@ -2962,7 +2962,7 @@ class reduced_variable(ftrow,basic_id):
         with elements of the form (variable id):(reduced_var object).  There is no check for
         circularity!
         """
-
+        import cdms2, numpy
         import os
         os.environ['LD_LIBRARY_PATH']='/opt/nfs/mcenerney1/11_03_15/lib:/opt/nfs/mcenerney1/11_03_15/Externals/lib64:/opt/nfs/mcenerney1/11_03_15/Externals/lib'
         os.environ['UVCDAT_SETUP_PATH']='/opt/nfs/mcenerney1/11_03_15'
