@@ -2617,7 +2617,7 @@ def run_cdscan( fam, famfiles, cache_path=None, COMM=None ):
     # Which cdscan will be run?  Popen inherits its environment from its caller, so the cdscan
     # will be whatever is in the user's path.  Normally that's right, but it would be better
     # to ensure that it belongs to the same UV-CDAT instance as the one we're running.
-    
+    import cdms2, numpy
     famfiles.sort()   # improves consistency between runs
     file_list = '-'.join(
         [ f+'size'+str(os.path.getsize(f))+'mtime'+str(os.path.getmtime(f))\
@@ -2896,7 +2896,7 @@ class reduced_variable(ftrow,basic_id):
     def get_variable_file( self, variableid, COMM=None ):
         """returns the name of a file containing data for a variable specified by name.
         If there are several such files, cdscan is run and the resulting xml file is returned."""
-
+        import cdms2, numpy
         rows = self._filetable.find_files( variableid, time_range=self.timerange,
                                            lat_range=self.latrange, lon_range=self.lonrange,
                                            level_range=self.levelrange,
