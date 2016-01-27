@@ -4,6 +4,7 @@
 #SBATCH -D /opt/nfs/mcenerney1/mpi_output/
 #hostname
 
+rm $NFSHOME/tmp/*
 
 source $NFSHOME/11_03_15/bin/setup_runtime.sh
 
