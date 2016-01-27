@@ -1061,8 +1061,6 @@ class plot_spec(object):
                 sys.exit('Exiting processor '+ str(self.rank)+'\n' )
         elif self.SPARK:
             #spark mode
-            import socket
-            print ('host = ' + socket.gethostname() )
             from pyspark import SparkContext
             sc = SparkContext(appName="Diagnostic Test")
             partitions = int(os.environ['NUM_PARTITIONS'])
@@ -1089,6 +1087,7 @@ class plot_spec(object):
             #    print key, value.shape
         else:
             #serial mode
+            print 'serial mode', self.SPARK
             for v in self.reduced_variables.keys():
                 value = self.reduced_variables[v].reduce(None)    
                 try:
