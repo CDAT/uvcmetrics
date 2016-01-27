@@ -407,7 +407,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
                      print 'DONTRUN: ', cmdline
             else: # different executable; just pass all option key:values as command line options.
                # Look for a cmdline list in the options for this variable.
-               execstr = def_executable # if we've gotten this far, we are just using diags scripts.
+               execstr = diags_collection[collnum].get('exec', def_executable) # should probably NOT be def_executable....
                cmdlineOpts = diags_collection[collnum][v].get('cmdline', False)
                fnamebase = 'set'+collnum
                if cmdlineOpts != False:
@@ -424,11 +424,17 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
                      execstr = execstr+' --fieldname '+ v
                   if 'diagname' in cmdlineOpts:
                      if name0 == None:
-                        execstr = execstr+' --diagname '+ dsname
+                        if dsname == None:
+                           execstr = execstr+' --diagname TEST'
+                        else:
+                           execstr = execstr+' --diagname '+ dsname
                      else:
                         execstr = execstr+' --diagname '+ name0
                   if 'casename' in cmdlineOpts:
-                     execstr = execstr+' --casename '+ dsname
+                     if dsname == None:
+                        execstr = execstr+' --casename TESTCASE'
+                     else:
+                        execstr = execstr+' --casename '+ dsname
                   if 'figurebase' in cmdlineOpts:
                      execstr = execstr+' --figurebase '+ fnamebase
 
