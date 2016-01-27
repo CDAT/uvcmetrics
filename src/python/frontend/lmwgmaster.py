@@ -8,7 +8,7 @@ from metrics.frontend.defines import *
 # These are special "variables" that we need to skip over when iterating over real variables. 
 # They are usually flags or parameters for the entire collection.
 # Make sure no actual variables have these names, but that shouldn't be a problem.
-collection_special_vars = ['desc', 'preamble', 'regions', 'seasons', 'package', 'options', 'combined', 'imagesonly', 'tables']
+collection_special_vars = ['desc', 'preamble', 'regions', 'seasons', 'package', 'options', 'combined', 'imagesonly', 'tables', 'mixed_plots', 'parallel']
 
 ### Collection 1
 diags_collection['1'] = {}
@@ -344,16 +344,18 @@ diags_collection['6']['desc'] = 'Line plots of annual trends in regional soil wa
 diags_collection['6']['seasons'] = ['ANN']
 diags_collection['6']['package'] = 'LMWG'
 diags_collection['6']['options'] = {'logo':'no'}
+# Technically only soil_temp, radiative_fluxes, and hydrology ACTUALLY require raw, but we need some sort of
+# annual average climatology file to generate the others. Setting to RAW for now.
 diags_collection['6']['Soil_Temp'] = {'plottype':'6', 'obs':['NA'], 'options':{'requiresraw':True}}
 diags_collection['6']['Radiative_Fluxes'] = {'plottype':'6', 'obs':['NA'], 'options':{'requiresraw':True}}
-diags_collection['6']['Carbon_Nitrogen_Fluxes'] = {'plottype':'6', 'obs':['NA']}
-diags_collection['6']['TotalSoilIce_TotalSoilH2O'] = {'plottype':'6', 'obs':['NA']}
-diags_collection['6']['SoilLiq_Water'] = {'plottype':'6', 'obs':['NA']}
-diags_collection['6']['TotalSnowH2O_TotalSnowIce'] = {'plottype':'6', 'obs':['NA']}
-diags_collection['6']['Turbulent_Fluxes'] = {'plottype':'6', 'obs':['NA']}
-diags_collection['6']['SoilIce'] = {'plottype':'6', 'obs':['NA']}
-diags_collection['6']['Fire_Fluxes'] = {'plottype':'6', 'obs':['NA']}
-diags_collection['6']['Total_Precip'] = {'plottype':'6', 'obs':['NA']}
+diags_collection['6']['Carbon_Nitrogen_Fluxes'] = {'plottype':'6', 'obs':['NA'], 'options':{'requiresraw':True}}
+diags_collection['6']['TotalSoilIce_TotalSoilH2O'] = {'plottype':'6', 'obs':['NA'], 'options':{'requiresraw':True}}
+diags_collection['6']['SoilLiq_Water'] = {'plottype':'6', 'obs':['NA'], 'options':{'requiresraw':True}}
+diags_collection['6']['TotalSnowH2O_TotalSnowIce'] = {'plottype':'6', 'obs':['NA'], 'options':{'requiresraw':True}}
+diags_collection['6']['Turbulent_Fluxes'] = {'plottype':'6', 'obs':['NA'], 'options':{'requiresraw':True}}
+diags_collection['6']['SoilIce'] = {'plottype':'6', 'obs':['NA'], 'options':{'requiresraw':True}}
+diags_collection['6']['Fire_Fluxes'] = {'plottype':'6', 'obs':['NA'], 'options':{'requiresraw':True}}
+diags_collection['6']['Total_Precip'] = {'plottype':'6', 'obs':['NA'], 'options':{'requiresraw':True}}
 diags_collection['6']['Hydrology'] = {'plottype':'6', 'obs':['NA'], 'options':{'requiresraw':True}}
 
 ### Collection 7

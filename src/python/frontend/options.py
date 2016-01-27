@@ -416,8 +416,6 @@ class Options():
 #######
 ####### This should be modified to look in the master dictionary files...
 #######
-#         dm = metrics.packages.diagnostic_groups.diagnostics_menu()
-#
 #         pclass = dm[package.upper()]()
 #
 #         avail_sets = []
