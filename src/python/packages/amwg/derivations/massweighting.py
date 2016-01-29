@@ -80,8 +80,8 @@ def rhodz_from_plev( lev, nlev_want, mv ):
             PS = f('PS')
             assert (len(PS.shape)==3), "expected PS to be shaped (time,lat,lon)"
             assert (PS.shape[0]==1), "expected PS first dimension to be a single time"
-            assert (hasttr(lev,'units')), "levels should have units and don't"
-            assert (hasttr(PS,'units')), "PS should have units and doesn't"
+            assert (hasattr(lev,'units')), "levels should have units and don't"
+            assert (hasattr(PS,'units')), "PS should have units and doesn't"
             assert (PS.units==lev.units), "PS and lev should have the same units"
             # I could write code to make the units the same, but I don't expect PS and pressure
             # levels from the same file to ever have different units.
