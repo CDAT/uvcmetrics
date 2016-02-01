@@ -1,6 +1,6 @@
 import sys, subprocess, pdb
 import cdms2
-#from mpi4py import MPI
+from mpi4py import MPI
 import mpi4py
 
 sz = mpi4py.MPI.COMM_WORLD.Get_size()
