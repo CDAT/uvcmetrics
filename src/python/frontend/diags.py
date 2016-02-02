@@ -340,6 +340,8 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
    # Here we'll count up the plots and run through them to build lists
    # of graphics methods and overlay statuses.
    # We are given the list of results from plot(), the 2 VCS canvases and a filename minus the last bit
+   cdms2.setAutoBounds(True)   # makes the VCS-computed means the same as when we
+   #                             compute means after calling genGenericBounds().
    fnamebase = fname
    nsingleplots = len(res)
    nsimpleplots = nsingleplots + sum([len(resr)-1 for resr in res if type(resr) is tuple])
