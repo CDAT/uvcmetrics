@@ -1,7 +1,7 @@
 import sys, subprocess, pdb
 import cdms2
 from mpi4py import MPI
-import mpi4py
+import mpi4py, socket
 
 sz = mpi4py.MPI.COMM_WORLD.Get_size()
 rk = mpi4py.MPI.COMM_WORLD.Get_rank()
@@ -19,7 +19,7 @@ cdms2.setNetcdfUseParallelFlag(0)
 if rk == 0:
     #pdb.set_trace()
     f = cdms2.open( '~/uvcmetrics_test_data/obs_atmos/c_t_NCEP_01_climo.nc', 'r' )
-    print rk, f.variables, '\n'
+    print rk, socket.hostname(), f.variables, '\n'
 else:
     f = cdms2.open( '~/uvcmetrics_test_data/obs_atmos/c_t_NCEP_02_climo.nc', 'r' )
-    print rk, f.variables, '\n' #'nothing to do'
+    print rk, socket.hostname(), f.variables, '\n' #'nothing to do'
