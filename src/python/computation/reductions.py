@@ -2893,7 +2893,7 @@ class reduced_variable(ftrow,basic_id):
         else:
             return filename
 
-    def get_variable_file( self, variableid, COMM=None ):
+    def get_variable_file( self, variableid, COMM=None, RETURN_ARRAYS=False ):
         """returns the name of a file containing data for a variable specified by name.
         If there are several such files, cdscan is run and the resulting xml file is returned."""
         import cdms2, numpy
@@ -2935,7 +2935,10 @@ class reduced_variable(ftrow,basic_id):
             cache_path = self._filetable.cache_path()
             if COMM is not None:
                 fam += '_'+str(COMM.rank)
-
+            elif RETURN_ARRAYS:
+                import numpy as np
+                RINT = np.random.randint(0, 1000)
+                fam += '_'+str(RINT)
             if self._filename is not None:
                 xml_name = self._filename
             else:
@@ -2988,7 +2991,9 @@ class reduced_variable(ftrow,basic_id):
         if self._filename is not None:
             filename = self._filename
         else:
-            filename = self.get_variable_file( self.variableid )
+            #note the RETURN_ARRAYS is a total hack that is True only for spark
+            #this needs to be redone if spark is to be used in the future.
+            filename = self.get_variable_file( self.variableid, RETURN_ARRAYS=RETURN_ARRAYS )
 
         if filename is None:
             if self.variableid not in self._duvs:
