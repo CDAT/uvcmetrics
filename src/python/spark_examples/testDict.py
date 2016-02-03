@@ -50,13 +50,13 @@ for key in data.keys():
     data[key] = X(np.array(range(i), dtype=float))
     #print data[key].x
     i += 1
-KEYS = [data.keys()[0:12], data.keys()[13:]]    
+KEYS = [data.keys()[0:13], data.keys()[13:]]    
 print KEYS
 #P = sc.parallelize(data.keys(), partitions)
 #results = P.map(lambda key: (key, data[key].compute(key)) )
 #results = M.reduceByKey( lambda x: x )
 P = sc.parallelize(KEYS, partitions)
-M = P.map(lambda KEYS: KEYS) 
+M = P.map(lambda KEYS: pass) 
 results = M.reduceByKey( lambda key: data[key].compute(key) ) 
 print results
 results = dict(results.collect())
