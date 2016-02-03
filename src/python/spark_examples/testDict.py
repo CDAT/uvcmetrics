@@ -51,13 +51,14 @@ for key in data.keys():
     #print data[key].x
     i += 1
 KEYS = [data.keys()[0:12], data.keys()[13:]]    
+print KEYS
 #P = sc.parallelize(data.keys(), partitions)
 #results = P.map(lambda key: (key, data[key].compute(key)) )
 #results = M.reduceByKey( lambda x: x )
 P = sc.parallelize(KEYS, partitions)
 M = P.map(lambda KEYS: KEYS) 
 results = M.reduceByKey( lambda key: data[key].compute(key) ) 
-
+print results
 results = dict(results.collect())
 for key in results.keys():    
     print key, results[key]
