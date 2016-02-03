@@ -2850,6 +2850,7 @@ class reduced_variable(ftrow,basic_id):
         self._duvs = duvs
         self._rvs = rvs
         self._filename = None #included because of mpi issues with cdscan
+        self.XML_ID = None #included because of spark issues with cdscan
     def __repr__(self):
         return self._strid
 
@@ -2935,7 +2936,7 @@ class reduced_variable(ftrow,basic_id):
             cache_path = self._filetable.cache_path()
             if COMM is not None:
                 fam += '_'+str(COMM.rank)
-            elif RETURN_ARRAYS:
+            elif RETURN_ARRAYS: #this only happens when it's spark
                 import numpy as np
                 RINT = np.random.randint(0, 1000)
                 fam += '_'+str(RINT)
