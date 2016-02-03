@@ -1226,10 +1226,10 @@ class plot_spec(object):
             print "ERROR, all values of",z.id,"are missing!"
             return None,None
         if z is not None and not (hasattr(z,'mean') and isinstance(z.mean,Number)):
-            # Compute variable's mean.  It should have already happened in a dimensionality
-            # reduction functions.
-            print "WARNING no mean attribute in variable",z.id,\
-                "; will compute it in compute_plot_var_value."
+            # Compute variable's mean.  For mass weighting, it should have already happened in a
+            # dimensionality reduction functions.
+            print "INFO no mean attribute in variable",z.id,\
+                "; we may compute it in compute_plot_var_value."
             set_mean( z )
         if (hasattr(z,'mean') and isinstance(z.mean,Number)):
             # VCS display of z.mean has too many digits unless we round:
