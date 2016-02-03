@@ -56,8 +56,11 @@ print KEYS
 #results = P.map(lambda key: (key, data[key].compute(key)) )
 #results = M.reduceByKey( lambda x: x )
 P = sc.parallelize(KEYS, partitions)
-print P.mapPartitions()
+
 print dir(P)
+
+print P.mapPartitions(0)
+print P.mapPartitions(1)
 results = P.map(lambda key: (key, data[key].compute(key)) ) 
 #results = M.reduceByKey( lambda key: (key, data[key].compute(key)) ) 
 print results
