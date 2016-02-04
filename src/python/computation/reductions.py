@@ -2936,10 +2936,6 @@ class reduced_variable(ftrow,basic_id):
             cache_path = self._filetable.cache_path()
             if COMM is not None:
                 fam += '_'+str(COMM.rank)
-            #elif RETURN_ARRAYS: #this only happens when it's spark
-            #    import numpy as np
-            #    RINT = np.random.randint(0, 1000)
-            #    fam += '_'+str(RINT)
             
             if self._filename is not None:
                 xml_name = self._filename
@@ -2951,7 +2947,7 @@ class reduced_variable(ftrow,basic_id):
             # the easy case, just one file has all the data on this variable
             filename = files[0]
         #fcf = get_datafile_filefmt(f)
-
+        print filename
         return filename
 
     def reduce( self, vid=None, COMM=None, RETURN_ARRAYS=False ):
