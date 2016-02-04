@@ -2936,12 +2936,14 @@ class reduced_variable(ftrow,basic_id):
             cache_path = self._filetable.cache_path()
             if COMM is not None:
                 fam += '_'+str(COMM.rank)
-            elif RETURN_ARRAYS: #this only happens when it's spark
-                import numpy as np
-                RINT = np.random.randint(0, 1000)
-                fam += '_'+str(RINT)
+            #elif RETURN_ARRAYS: #this only happens when it's spark
+            #    import numpy as np
+            #    RINT = np.random.randint(0, 1000)
+            #    fam += '_'+str(RINT)
+            
             if self._filename is not None:
                 xml_name = self._filename
+                print 'xml_name = ', xml_name
             else:
                 xml_name = run_cdscan( fam, famfiles, cache_path, COMM=COMM )
 

@@ -1772,6 +1772,8 @@ class amwg_plot_set8(amwg_plot_spec):
             self.mpi_init()
             
         self.SPARK = True   
+        if self.SPARK:
+            self.spark_init()
     def plan_computation( self, model, obs, varid, seasonid, levels=None ):
         filetable1, filetable2 = self.getfts(model, obs)
 
@@ -1898,13 +1900,13 @@ class amwg_plot_set8(amwg_plot_spec):
                 subLists += [keys[i:i+size]]
             return subLists        
 
-        XML_ID = numpy.random.randint(0, 1000)        
+        #XML_ID = numpy.random.randint(0, 1000)        
 
         #create xml files and avoid multiple calls to cdscan         
         for i, key in enumerate(self.reduced_variables.keys()):
             RV = self.reduced_variables[key]
-            RV._filename = RV.get_variable_file( RV.variableid, COMM=self.comm)  
-            RV.XML_ID = XML_ID          
+            RV._filename = RV.get_variable_file( RV.variableid)  
+            #RV.XML_ID = XML_ID          
     def _results(self, newgrid=0):
         #pdb.set_trace()
         results = plot_spec._results(self, newgrid)
