@@ -17,7 +17,7 @@ for line in fin.readlines():
     data = np.array(data)
     mean, var = data.mean(), data.var()
     
-    output = Nnodes + ' ' + Ntasks + ' ' + str(mean) + ' ' + str(var) + '\n'
+    output = Nnodes + ' ' + Ntasks + ' ' + str(mean) + ' ' + str(var)
     print output
     
     fout.write(output)
