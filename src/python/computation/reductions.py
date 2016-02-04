@@ -2947,7 +2947,7 @@ class reduced_variable(ftrow,basic_id):
             # the easy case, just one file has all the data on this variable
             filename = files[0]
         #fcf = get_datafile_filefmt(f)
-        print filename
+
         return filename
 
     def reduce( self, vid=None, COMM=None, RETURN_ARRAYS=False ):
@@ -2988,7 +2988,6 @@ class reduced_variable(ftrow,basic_id):
         #avoid multiple calls to cdscan during compute loop
         if self._filename is not None:
             filename = self._filename
-            print 'xml_name = ', filename
         else:
             filename = self.get_variable_file( self.variableid )
 
