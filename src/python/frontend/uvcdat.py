@@ -1068,7 +1068,7 @@ class plot_spec(object):
             P = sc.parallelize(self.reduced_variables.keys(), partitions)
             RESULTS = P.map( lambda key: (key, self.reduced_variables[key].reduce(None, RETURN_ARRAYS=True))  ) 
             RESULTS = dict(RESULTS.collect())
-            sc.stop()
+            #sc.stop()
             
             #spark post processing
             all_keys, collected_data, collected_axes, collected_attr = [], [], [], []
