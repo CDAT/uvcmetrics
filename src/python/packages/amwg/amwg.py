@@ -1772,6 +1772,7 @@ class amwg_plot_set8(amwg_plot_spec):
             self.mpi_init()
             
         self.SPARK = True   
+        print 'SPARK_ENABLED = ', self.SPARK
         if self.SPARK:
             self.spark_init()
     def plan_computation( self, model, obs, varid, seasonid, levels=None ):
