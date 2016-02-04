@@ -14,7 +14,7 @@ for (N,n) in config:
         spark_output_file = SPARK_OUTPUTDIR + 'spark_run_'+ str(N) +'_' + str(n) + '_' + str(run)
         os.environ['SPARKOUTPUT'] = spark_output_file
         proc=subprocess.Popen([TIMING_PATH+'spark_diag.sh'], shell=True, stdout=subprocess.PIPE)
-        time.sleep(20)
+        time.sleep(30)
 
         #retrieve timing data        
         g=open(spark_output_file)
