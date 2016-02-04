@@ -15,6 +15,7 @@
 import numpy
 import cdms2
 from atmconst import AtmConst
+from unidata import udunits
 
 def rhodz_from_hybridlev( PS, P0, hyai, hybi ):
     """returns a variable rhodz which represents the air mass column density in each cell, assumes
@@ -44,7 +45,7 @@ def interp_extrap_to_one_more_level( lev ):
         # step outside the level range enough to make the levels halfway between bounds.
         levbounds = lev.genGenericBounds()
     else:
-        levbounds = lev.bounds
+        levbounds = lev.getBounds()  # was lev.bounds
     levc = cdms2.createAxis( numpy.append( levbounds[0:,0], levbounds[-1,1] ), id=lev.id )
     levc.units = getattr( lev, 'units', None )
     levc.axis = 'Z'
@@ -78,19 +79,38 @@ def rhodz_from_plev( lev, nlev_want, mv ):
         fvars = f.variables.keys()
         if 'PS' in fvars:
             PS = f('PS')
+            # I could relax all of the following assertions, but not without a test
+            # problem, and I don't have one.  An assertion failure will provide a test
+            # problem and make it clear what has to be done.
             assert (len(PS.shape)==3), "expected PS to be shaped (time,lat,lon)"
             assert (PS.shape[0]==1), "expected PS first dimension to be a single time"
             assert (hasattr(lev,'units')), "levels should have units and don't"
             assert (hasattr(PS,'units')), "PS should have units and doesn't"
-            assert (PS.units==lev.units), "PS and lev should have the same units"
-            # I could write code to make the units the same, but I don't expect PS and pressure
-            # levels from the same file to ever have different units.
+
+            # Make sure we can convert PS to the units of lev.  They come
+            # from the same files so they should use the same units, but that's not always so!
+            # Such an exception is ERAI obs files where lev.units=hPa and PS.units=mbar.
+            # That's really the same, but we don't know that until going through udunits.
+            # The first couple lines are because udunits doesn't understand 'mb' to be a pressure
+            # unit, but some obs files do.
+            levunits = 'mbar' if lev.units=='mb' else lev.units
+            PSunits = 'mbar' if PS.units=='mb' else PS.units
+            tmp = udunits(1.0,levunits)
+            try:
+                s,i = tmp.how(PSunits)
+            except Exception as e:
+                # conversion not possible.
+                print "ERROR could not convert from PS units",PS.units,"to lev units",lev.units
+                return None
+            # Now, s*PS+i would be PS in the units of lev.  In all cases I've seen, s==1 and i==0
+
             nlat = PS.shape[1]  # normally lat, but doesn't have to be
             nlon = PS.shape[2]  # normally lon, but doesn't have to be
             for ilat in range(nlat):
                 for ilon in range(nlon):
-                    if PS[0,ilat,ilon]>lev[0]:
-                        lev3d[0,ilat,ilon] = PS[0,ilat,ilon]
+                    psl = s*PS[0,ilat,ilon] + i
+                    if psl>lev[0]:
+                        lev3d[0,ilat,ilon] = psl
                     # else some levels are underground.  Subterranean data should later get
                     # masked out, but even if it doesn't, doing nothing here does no harm.
         f.close()
@@ -128,7 +148,7 @@ def rhodz_from_mv( mv ):
         check_compatible_levels( mv, cfile('hybi') )
         rhodz = rhodz_from_hybridlev( cfile('PS'), cfile('P0'), cfile('hyai'), cfile('hybi') )
         cfile.close()
-    elif lev.units in  ['millibars','mbar']:  # pressure level
+    elif lev.units in  ['millibars','mbar','mb','Pa','hPa']:  # pressure level
         # Note that lev is the level axis of mv, thus each value of mv is centered _at_ a level.
         # We want the levels to be offset from that, i.e. for mv to represent a quantity
         # belonging to the mass between two levels.  That's not possible unless
@@ -200,7 +220,8 @@ def weighting_choice( mv ):
                     p = un.find('/')
                     lft = un[0:p]
                     rht = un[p+1:]
-                    if lft==rht and lft in ['kg', 'g', 'Pa', 'hPa', 'mbar', 'mol', 'mole']:
+                    if lft==rht and lft in ['kg', 'g', 'Pa', 'hPa', 'mbar', 'millibars', 'mb',
+                                            'mol', 'mole']:
                         choice = 'mass'
         
     #vname = mv.id
