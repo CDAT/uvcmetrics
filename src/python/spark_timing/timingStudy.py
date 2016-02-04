@@ -20,12 +20,13 @@ for (N,n) in config:
         g=open(spark_output_file)
         for line in g.readlines():
             if 'time =' in line:
-                #print line
+                print line
                 break
         g.close()
         #retrieve run time
         t=line.split()[2]
         timing_data += t[0:6] + '  '
+        
         print spark_output_file, t
     print timing_data
     f.write(timing_data + '\n')
