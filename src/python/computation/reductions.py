@@ -2943,7 +2943,6 @@ class reduced_variable(ftrow,basic_id):
             
             if self._filename is not None:
                 xml_name = self._filename
-                print 'xml_name = ', xml_name
             else:
                 xml_name = run_cdscan( fam, famfiles, cache_path, COMM=COMM )
 
@@ -2993,10 +2992,9 @@ class reduced_variable(ftrow,basic_id):
         #avoid multiple calls to cdscan during compute loop
         if self._filename is not None:
             filename = self._filename
+            print 'xml_name = ', filename
         else:
-            #note the RETURN_ARRAYS is a total hack that is True only for spark
-            #this needs to be redone if spark is to be used in the future.
-            filename = self.get_variable_file( self.variableid, RETURN_ARRAYS=RETURN_ARRAYS )
+            filename = self.get_variable_file( self.variableid )
 
         if filename is None:
             if self.variableid not in self._duvs:
