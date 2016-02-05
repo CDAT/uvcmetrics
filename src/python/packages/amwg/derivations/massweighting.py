@@ -185,6 +185,31 @@ def mass_weights( mv ):
     rhodz = rhodz_from_mv( mv )
     return area_times_rhodz( mv, rhodz)
 
+def bulk_units_p( un, recur=False ):
+    """This function identifies whether the unit string un belongs to a variable whose averages
+    should be mass-weighted.  I think of the variable as a "bulk property of the material" such
+    as temperature or density."""
+    if un in ['K', 'deg K', 'deg C', 'deg F', 'degC', 'degF', 'degK',
+              'deg_C', 'deg_F', 'deg_K', 'deg_c', 'deg_f', 'deg_k',
+              'degreeC', 'degreeF', 'degreeK', 'degree_C', 'degree_Celsius',
+              'degree_F', 'degree_Fahrenheit', 'degree_f', 'degree_K', 'degree_Kelvin',
+              'degree_c', 'degree_centigrade', 'degree_k'] +  [ '1/kg', 'm-3' ] +\
+              [ 'ppt', 'ppm', 'pptv', 'ppbv', 'ppmv' ]:
+              return True
+    if un.find('/')>0:
+        p = un.find('/')
+        lft = un[0:p]
+        rht = un[p+1:]
+        if lft==rht and lft in ['kg', 'g', 'Pa', 'hPa', 'mbar', 'millibars', 'mb',
+                                'mol', 'mole']:
+            return True
+        if recur==False and un[-2:]=='/s':
+            return bulk_units_p( un[:-2], recur=True )
+        if recur==False and un[-4:]=='/sec':
+            return bulk_units_p( un[:-4], recur=True )
+    return False
+
+
 def weighting_choice( mv ):
     """Chooses what kind of weighting to use for averaging a variable mv - a TransientVariable or
     FileVariable.  The return value is a string such as "area" or "mass"."""
@@ -203,28 +228,17 @@ def weighting_choice( mv ):
     # The default should still be area-weighting,
     choice = "area"
     if hasattr( mv, 'getDomain' ):
-        # if not, it's probably an axis
+        # if not, it's probably an axis.  But it could be something nonstandard, like nbdate.
         un = getattr( mv, 'units', '' )
         axes = [a[0] for a in mv.getDomain() if not a[0].isTime()]
         if len(axes)>1:  # a 3-D variable on an unstructured grid may have just 2 non-time axes.
             #              hyam, hybm have no axes other than the level axis
             if len( [a for a in axes if a.isLevel()] )>0:
                 # 3-D variable
-                if un in ['K', 'deg K', 'deg C', 'deg F', 'degC', 'degF', 'degK',
-                          'deg_C', 'deg_F', 'deg_K', 'deg_c', 'deg_f', 'deg_k',
-                          'degreeC', 'degreeF', 'degreeK', 'degree_C', 'degree_Celsius', 'degree_F',
-                          'degree_Fahrenheit', 'degree_K', 'degree_Kelvin', 'degree_c', 'degree_centigrade',
-                          'degree_f', 'degree_k'] + [ 'ppt', 'ppm', 'pptv', 'ppbv', 'ppmv' ]:
+                if bulk_units_p(un):
                     choice = 'mass'
-                if un.find('/')>0:
-                    p = un.find('/')
-                    lft = un[0:p]
-                    rht = un[p+1:]
-                    if lft==rht and lft in ['kg', 'g', 'Pa', 'hPa', 'mbar', 'millibars', 'mb',
-                                            'mol', 'mole']:
-                        choice = 'mass'
+        mv.weighting = choice
         
     #vname = mv.id
-    mv.weighting = choice
     # print "variable",mv.id.ljust(8,' '),"weighting",choice,"units",un
     return choice
