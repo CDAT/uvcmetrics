@@ -1771,7 +1771,7 @@ class amwg_plot_set8(amwg_plot_spec):
         if self.MPI_ENABLED:
             self.mpi_init()
             
-        self.SPARK = True   
+        self.SPARK = False  
         print 'SPARK_ENABLED = ', self.SPARK
         if self.SPARK:
             self.spark_init()
