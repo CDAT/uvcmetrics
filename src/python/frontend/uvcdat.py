@@ -1060,6 +1060,8 @@ class plot_spec(object):
                 #other precesses can stop
                 #sys.exit('Exiting processor '+ str(self.rank)+'\n' )
                 print 'Exiting processor '+ str(self.rank)+'\n'
+                
+            self.comm.Abort(1)
         elif self.SPARK:
             #spark mode
             from pyspark import SparkContext
