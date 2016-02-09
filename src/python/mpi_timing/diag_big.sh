@@ -11,7 +11,7 @@ source $NFSHOME/11_03_15/bin/setup_runtime.sh
 
 mpirun  python $NFSHOME/uvcmetrics/src/python/frontend/diags.py \
 --model path=$NFSHOME/cmip5_css02_data/,climos=no \
---obs   path=$NFSHOME/cmip5_css02/data/,climos=no, \
+--obs   path=$NFSHOME/cmip5_css02_data/,climos=no, \
 --outputdir $NFSHOME/diagout/ \
 --package AMWG --sets 8 --seasons ANN --plots yes --vars hur --parallel \
 --cachepath $NFSHOME/tmp/
