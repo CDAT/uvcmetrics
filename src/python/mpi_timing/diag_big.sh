@@ -2,7 +2,7 @@
 
 #SBATCH --job-name=diag_8 --time=01:00:00
 #SBATCH -D /opt/nfs/mcenerney1/mpi_output/big/
-#SBATCH --exclude=greyworm2,greyworm7
+#SBATCH --exclude=greyworm2,greyworm7,greyworm5
 #hostname
 
 rm $NFSHOME/tmp/*
