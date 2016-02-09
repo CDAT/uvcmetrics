@@ -1057,7 +1057,6 @@ class plot_spec(object):
             if self.rank is self.master:
                 self.variable_values = buildVariables(self.all_keys, collected_data, collected_axes, collected_attr)
                 print 'Exiting processor '+ str(self.rank)+'\n'
-                self.comm.Abort(1)
             #else:
                 #other precesses can stop
                 #sys.exit('Exiting processor '+ str(self.rank)+'\n' )

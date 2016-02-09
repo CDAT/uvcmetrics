@@ -1766,15 +1766,14 @@ class amwg_plot_set8(amwg_plot_spec):
             self.plan_computation( model, obs, varid, seasonid, levels=levels )
 
         self.MPI_ENABLED = parallel
-        print 'MPI_ENABLED = ', self.MPI_ENABLED
-
         if self.MPI_ENABLED:
             self.mpi_init()
+            print 'MPI_ENABLED = ', self.MPI_ENABLED
             
         self.SPARK = False  
-        print 'SPARK_ENABLED = ', self.SPARK
         if self.SPARK:
             self.spark_init()
+            print 'SPARK_ENABLED = ', self.SPARK
     def plan_computation( self, model, obs, varid, seasonid, levels=None ):
         filetable1, filetable2 = self.getfts(model, obs)
 
