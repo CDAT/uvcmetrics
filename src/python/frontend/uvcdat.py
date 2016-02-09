@@ -1057,10 +1057,9 @@ class plot_spec(object):
             if self.rank is self.master:
                 self.variable_values = buildVariables(self.all_keys, collected_data, collected_axes, collected_attr)
                 print 'Exiting processor '+ str(self.rank)+'\n'
-            #else:
+            else:
                 #other precesses can stop
-                #sys.exit('Exiting processor '+ str(self.rank)+'\n' )
-            #   print 'Exiting processor '+ str(self.rank)+'\n'
+                sys.exit('Exiting processor '+ str(self.rank)+'\n' )
                 
         elif self.SPARK:
             #spark mode
