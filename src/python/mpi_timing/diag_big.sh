@@ -13,5 +13,5 @@ mpirun  python $NFSHOME/uvcmetrics/src/python/frontend/diags.py \
 --model path=/cmip5_css02/data/cmip5/output1/MIROC/MIROC5/piControl/mon/atmos/Amon/r1i1p1/hur/1/,climos=no \
 --obs path=/cmip5_css02/data/cmip5/output1/MIROC/MIROC5/piControl/mon/atmos/Amon/r1i1p1/hur/1/,climos=no \
 --outputdir $NFSHOME/diagout/ \
---package AMWG --sets 8 --seasons ANN --plots yes --vars T --parallel \
+--package AMWG --sets 8 --seasons ANN --plots yes --vars hur --parallel \
 --cachepath $NFSHOME/tmp/
