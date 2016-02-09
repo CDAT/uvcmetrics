@@ -1058,7 +1058,8 @@ class plot_spec(object):
                 self.variable_values = buildVariables(self.all_keys, collected_data, collected_axes, collected_attr)
             else:
                 #other precesses can stop
-                sys.exit('Exiting processor '+ str(self.rank)+'\n' )
+                #sys.exit('Exiting processor '+ str(self.rank)+'\n' )
+                print 'Exiting processor '+ str(self.rank)+'\n'
         elif self.SPARK:
             #spark mode
             from pyspark import SparkContext
