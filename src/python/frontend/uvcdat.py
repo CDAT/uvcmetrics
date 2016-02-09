@@ -1024,7 +1024,7 @@ class plot_spec(object):
         #print self.reduced_variables.keys()
 
         if self.MPI_ENABLED:
-            #parallel mode
+            #mpi mode
             local_data = []
             local_axes = []
             local_attr = []
@@ -1056,12 +1056,13 @@ class plot_spec(object):
 
             if self.rank is self.master:
                 self.variable_values = buildVariables(self.all_keys, collected_data, collected_axes, collected_attr)
-            else:
+                print 'Exiting processor '+ str(self.rank)+'\n'
+                self.comm.Abort(1)
+            #else:
                 #other precesses can stop
                 #sys.exit('Exiting processor '+ str(self.rank)+'\n' )
-                print 'Exiting processor '+ str(self.rank)+'\n'
+            #   print 'Exiting processor '+ str(self.rank)+'\n'
                 
-            self.comm.Abort(1)
         elif self.SPARK:
             #spark mode
             from pyspark import SparkContext
