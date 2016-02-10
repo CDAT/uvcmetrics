@@ -2974,7 +2974,10 @@ class reduced_variable(ftrow,basic_id):
             if not pth in sys.path:
                 sys.path.append(pth)
         import socket
-        print ('host = ' + socket.gethostname() )        
+        XXX = None
+        if not COMM:
+            XXX=COMM.rank
+        print ('host = ' + socket.gethostname(), XXX )        
         
         if self._filetable is None:
             print "ERROR no data found for reduced variable",self.variableid
