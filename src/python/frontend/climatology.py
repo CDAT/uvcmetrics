@@ -43,6 +43,8 @@ def restrict_to_season( datafilenames, seasonname ):
     Normally this function assumes that the filenames are of a format I have seen in ACME output:
     ".*\.dddd-dd\.nc" where the 4+2 digits represent the year and month respectively.
     However single-month climatology files with 3-letter month(season) names are accepted but not sorted.
+    Any climatology filenames are expected to look something like "spam_XXX_climo.nc" where XXX is a season
+    name.
     The season name my be the standard 3-letter season, or a string with two decimal digits.
     If any filename does not meet the expected format, then no filenames will be rejected.
     """
@@ -216,6 +218,25 @@ def reduce_twotimes2one( seasonname, fileout_template, fileout, g, redtime, redt
         if lock is not None:  lock.release()
         return g
 
+def clean_fileout_template( fileout_template ):
+    """returns a version of the input fileout_template which is cleaner and which follows the
+    traditional format of a climatology file, e.g. base_SON_climo.nc"""
+    # How is it cleaner?  Any // between dirname and basename will become /.
+    # That's not much, but we can add more features as they become necessary.
+    ft_bn = os.path.basename( fileout_template )
+    ft_dn = os.path.dirname( fileout_template )
+
+    if ft_bn[-9:]!='_climo.nc':
+        if ft_bn[-3:]=='.nc':
+            ft_bn = ft_bn[0:-3] + '_climo.nc'
+        else:
+            ft_bn = ft_bn + '_climo.nc'
+    if ft_bn.find('_XXX')<0:
+        ft_bn = ft_bn[0:-9]+'_XXX_climo.nc'
+
+    fileout_template = os.path.join( ft_dn, ft_bn )
+    return fileout_template
+
 def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason=[] ):
 
     # NetCDF library settings for speed:
@@ -235,6 +256,7 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
     omit_files = {seasonname:[] for seasonname in seasonnames}
     for omits in omitBySeason:
         omit_files[omits[0]] = omits[1:]
+    fileout_template = clean_fileout_template( fileout_template )
 
     if comm is None or comm.rank==0:
         # Get time axis and global attributes from a sample file - only for rank 0 because
@@ -310,10 +332,6 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
         seasons_3mon = { 'DJF':['JAN','FEB','DEC'], 'MAM':['MAR','APR','MAY'],
                          'JJA':['JUN','JUL','AUG'], 'SON':['SEP','OCT','NOV'] }
         seasons_ann = { 'ANN':[ 'MAM', 'JJA', 'SON', 'DJF' ] }
-
-        ft_bn = os.path.basename( fileout_template )
-        ft_dn = os.path.dirname( fileout_template )
-        fileout_template = os.path.join( ft_dn, ft_bn )
 
         # Figure out which seasons and files belong to which processor (for MPI).
         myseasons1 = []
