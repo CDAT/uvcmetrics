@@ -2977,7 +2977,7 @@ class reduced_variable(ftrow,basic_id):
         XXX = None
         if not COMM:
             XXX=COMM.rank
-        print ('host = ' + socket.gethostname(), XXX )        
+        print ('host = ' + socket.gethostname(), COMM.rank )        
         
         if self._filetable is None:
             print "ERROR no data found for reduced variable",self.variableid
