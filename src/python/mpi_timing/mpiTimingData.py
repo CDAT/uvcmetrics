@@ -15,6 +15,7 @@ for file in listing:
 timing_data = 'Nnodes  Ntasks  runs \n'
 old_Nnodes, old_Ntasks = None, None
 for slurmFile in listing:
+    pdb.set_trace()
     Nnodes, Ntasks, run = slurmFile.split('_')[2:]
     
     g=open(SLURM_OUTPUTDIR + slurmFile)
