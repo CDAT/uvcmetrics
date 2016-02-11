@@ -4,7 +4,7 @@ from config import *
 DIRSIZE = sys.argv[1] #small or big
 NFSHOME = os.environ['NFSHOME']
 SLURM_OUTPUTDIR = NFSHOME + '/mpi_output/' + DIRSIZE + '/'
-listing = os.listdir()
+listing = os.listdir(SLURM_OUTPUTDIR)
 listing.sort()
 for file in listing:
     if 'spark' not in file:
