@@ -3,8 +3,7 @@
 #SBATCH --job-name=diag_8 --time=02:00:00
 #SBATCH -D /opt/nfs/mcenerney1/mpi_output/big/
 #SBATCH --output=$SLURMOUTPUT
-#SBATCH --exclude=greyworm2,greyworm7
-#SBATCH --mem=20GB
+#SBATCH --exclude=greyworm1,greyworm2,greyworm7
 
 rm $NFSHOME/tmp/*
 
