@@ -1025,6 +1025,9 @@ class plot_spec(object):
 
         if self.MPI_ENABLED:
             #mpi mode
+            import time
+            start = time.time()
+
             local_data = []
             local_axes = []
             local_attr = []
@@ -1060,7 +1063,8 @@ class plot_spec(object):
             else:
                 #other precesses can stop
                 sys.exit('Exiting processor '+ str(self.rank)+'\n' )
-                
+            end = time.time()
+            print 'time = ', end-start
         elif self.SPARK:
             #spark mode
             from pyspark import SparkContext
