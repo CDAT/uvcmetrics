@@ -1022,10 +1022,11 @@ class plot_spec(object):
         #print self.SLICE
         #print 'variable keys', self.rank, len(self.reduced_variables.keys()), 'seasonid' in self.reduced_variables.keys()
         #print self.reduced_variables.keys()
-
+        
+        import time
         if self.MPI_ENABLED:
             #mpi mode
-            import time
+            
             start = time.time()
 
             local_data = []
@@ -1064,7 +1065,7 @@ class plot_spec(object):
                 #other precesses can stop
                 sys.exit('Exiting processor '+ str(self.rank)+'\n' )
             end = time.time()
-            print 'time = ', end-start
+            print 'mpi time = ', end-start
         elif self.SPARK:
             #spark mode
             from pyspark import SparkContext
@@ -1093,7 +1094,7 @@ class plot_spec(object):
             #    print key, value.shape
         else:
             #serial mode
-            print 'serial mode', self.SPARK
+            start = time.time()
             for v in self.reduced_variables.keys():
                 value = self.reduced_variables[v].reduce(None)    
                 try:
@@ -1106,7 +1107,8 @@ class plot_spec(object):
                     except: # value.size may not exist
                         pass
                 self.variable_values[v] = value  # could be None
-    
+            end = time.time()
+            print 'serial time = ', end-start    
         postponed = []   # derived variables we won't do right away
         
         #if self.rank is not self.master:
