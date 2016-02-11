@@ -1068,6 +1068,7 @@ class plot_spec(object):
             print 'mpi time = ', end-start
         elif self.SPARK:
             #spark mode
+            start = time.time()
             from pyspark import SparkContext
             sc = SparkContext(appName="Diagnostic Test")
             partitions = int(os.environ['NUM_PARTITIONS'])
@@ -1091,6 +1092,8 @@ class plot_spec(object):
             #print len(collected_data), len(collected_axes), len(collected_attr)
             self.variable_values = buildVariables(all_keys, collected_data, collected_axes, collected_attr)
             #for key, value in self.variable_values.items():
+            end = time.time()
+            print 'spark time = ', end-start    
             #    print key, value.shape
         else:
             #serial mode
