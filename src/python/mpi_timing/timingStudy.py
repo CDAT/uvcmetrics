@@ -1,9 +1,11 @@
 import subprocess, pdb, time, sys, os
 from config import *
-
+DIRSIZE = sys.argv[1]
 NFSHOME = os.environ['NFSHOME']
 TIMING_PATH = NFSHOME + '/uvcmetrics/src/python/mpi_timing/'
 MPI_OUTPUTDIR = NFSHOME + 'mpi_output/'
+
+SLURM_OUTPUTDIR = NFSHOME + '/mpi_output/' + DIRSIZE + '/'
 f=open(MPI_OUTPUTDIR + 'timing.dat', 'w')
 f.write('Nnodes  Ntasks  runs \n')
 nruns = 5
@@ -14,6 +16,7 @@ for (N,n) in config:
     timing_data = str(N) + '       ' + str(n) + '       '
     for run in range(nruns):
         #SBATCH_EXEC = 'sbatch --nodes=1 --ntasks-per-node=6 diag.sh'
+        mpi_output_file = SLURM_OUTPUTDIR + 'slurm_run_'+ str(N) +'_' + str(n) + '_' + str(run)
         proc=subprocess.Popen([SBATCH_EXEC], shell=True, stdout=subprocess.PIPE)
         time.sleep(30)
         #pdb.set_trace()
