@@ -4,6 +4,7 @@
 #SBATCH -D /opt/nfs/mcenerney1/mpi_output/big/
 #SBATCH --output=mpi_run
 #SBATCH --exclude=greyworm1,greyworm2,greyworm7
+#SBATCH --mem=50MB
 
 rm $NFSHOME/tmp/*
 
