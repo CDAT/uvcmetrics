@@ -21,7 +21,6 @@ from metrics.frontend.inc_reduce import *
 import os, re, time
 import argparse
 from pprint import pprint
-#from mpi4py import MPI
 from multiprocessing import Process, Lock
 ##from multiprocessing import Queue
 ###from threading import Thread as Process
@@ -30,8 +29,7 @@ import cProfile
 from metrics.common.utilities import DiagError, store_provenance
 
 comm = None
-#comm = MPI.COMM_WORLD
-MP = True
+MP = False
 queue = None
 lock = None  # for debugging; in normal use this should be None
 force_scalar_avg=False  # for testing
@@ -44,7 +42,7 @@ def restrict_to_season( datafilenames, seasonname ):
     ".*\.dddd-dd\.nc" where the 4+2 digits represent the year and month respectively.
     However single-month climatology files with 3-letter month(season) names are accepted but not sorted.
     Any climatology filenames are expected to look something like "spam_XXX_climo.nc" where XXX is a season
-    name.
+    name.  (clim or climo-cdat may be used in place of climo).
     The season name my be the standard 3-letter season, or a string with two decimal digits.
     If any filename does not meet the expected format, then no filenames will be rejected.
     """
@@ -67,7 +65,7 @@ def restrict_to_season( datafilenames, seasonname ):
         'JJA': ['JUN', 'JUL', 'AUG'],
         'SON': ['SEP', 'OCT', 'NOV'] }
     newfns = []
-    if datafilenames[0][-8:]=='climo.nc' or datafilenames[0][-13:]=='climo-cdat.nc':
+    if datafilenames[0][-8:]=='climo.nc' or datafilenames[0][-7:]=='clim.nc' or datafilenames[0][-13:]=='climo-cdat.nc':
         # climatology file, should be for a one-month season as input for a multi-month season
         # The climo-cdat.nc is specifically for Peter Caldwell's test script.
         if seasonname not in season2almonth:
@@ -226,13 +224,18 @@ def clean_fileout_template( fileout_template ):
     ft_bn = os.path.basename( fileout_template )
     ft_dn = os.path.dirname( fileout_template )
 
-    if ft_bn[-9:]!='_climo.nc':
+    if ft_bn[-9:]=='_climo.nc':
+        tail = '_climo.nc'
+    elif ft_bn[-8:]=='_clim.nc':
+        tail = '_clim.nc'
+    else:
+        tail = '_climo.nc'
         if ft_bn[-3:]=='.nc':
-            ft_bn = ft_bn[0:-3] + '_climo.nc'
+            ft_bn = ft_bn[0:-3] + tail
         else:
-            ft_bn = ft_bn + '_climo.nc'
+            ft_bn = ft_bn + tail
     if ft_bn.find('_XXX')<0:
-        ft_bn = ft_bn[0:-9]+'_XXX_climo.nc'
+        ft_bn = ft_bn[0:-len(tail)]+'_XXX'+tail
 
     fileout_template = os.path.join( ft_dn, ft_bn )
     return fileout_template
@@ -629,6 +632,12 @@ if __name__ == '__main__':
                    nargs='+', action='append', default=[] )
     p.add_argument("--forceScalarAvg", dest="forceScalarAvg", default=False, help=
                    "For testing, forces use of a simple scalar average, ignoring missing values" )
+    p.add_argument("--oneproc", dest="oneproc", action='store_true', help=
+                   "Only one processor, one process, one thread; this overrides other arguments such as --MP,--MPI.")
+    p.add_argument("--multiprocessing", dest="MP", action='store_true', help=
+                   "use the Python multiprocessing module - multiple processes per processor.")
+    p.add_argument("--MPI", dest="MPI", action='store_true', help=
+                   "use MPI (mpi4py) multiprocessing - multiple processesors.")
     if sys.argv[0].find('climatology')>=0:
         # normal case, we're running climatology more or less directly
         args = p.parse_args(sys.argv[1:])
@@ -642,14 +651,21 @@ if __name__ == '__main__':
         pprint(args)
 
     force_scalar_avg = args.forceScalarAvg
+    if not args.oneproc:
+        MP = args.MP
+        if args.MPI:
+            from mpi4py import MPI
+            comm = MPI.COMM_WORLD
+        else:
+            comm = None
 
+    print "jfp MP=",MP,"comm=",comm
     # experimental code for multiprocessing on one node.  Leave queue=None for no multiprocessing.
     #queue = Queue()
-    MP = False
+    #MP = False
     # N.B. The operating system on Rhea.ccs.ornl.gov does not support locks.
     #if MP:
     #    lock = Lock()  # for debugging; in normal use leave this as None.
-    print "jfp MP=",MP
 
     profileme = False
     if profileme is True:
