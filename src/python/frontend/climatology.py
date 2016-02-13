@@ -18,7 +18,7 @@ increasing.  That is, for any times tn, tm in files filen, filem, if n>m then tn
 #   then other seasons from the months (probably slower on Rhea, but maybe not).
 
 from metrics.frontend.inc_reduce import *
-import os, re, time
+import os, re, time, platform
 import argparse
 from pprint import pprint
 from multiprocessing import Process, Lock
@@ -652,14 +652,29 @@ if __name__ == '__main__':
 
     force_scalar_avg = args.forceScalarAvg
     if not args.oneproc:
-        MP = args.MP
-        if args.MPI:
+        try:
             from mpi4py import MPI
-            comm = MPI.COMM_WORLD
+            haveMPI = True
+        except:
+            haveMPI = False
+        if args.MPI:
+            if haveMPI:
+                comm = MPI.COMM_WORLD
+            else:
+                print "\nERROR.  MPI requested but is not available.\n"
+                raise DiagError("MPI not available in this build")
         else:
             comm = None
+        if args.MP:
+            if haveMPI and platform.node().find('rhea')>=0:
+                print "\nERROR. This Python was built with MPI and the platform is",platform.node()
+                print "This combination is incompatible with the multiprocessing module.\n"
+                MP = False
+                raise DiagError("multiprocessing incompatible with MPI on %s",platform.node())
+            else:
+                MP = args.MP
 
-    print "jfp MP=",MP,"comm=",comm
+    print "MP=",MP,"comm=",comm
     # experimental code for multiprocessing on one node.  Leave queue=None for no multiprocessing.
     #queue = Queue()
     #MP = False
