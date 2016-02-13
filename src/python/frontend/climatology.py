@@ -670,7 +670,7 @@ if __name__ == '__main__':
                 print "\nERROR. This Python was built with MPI and the platform is",platform.node()
                 print "This combination is incompatible with the multiprocessing module.\n"
                 MP = False
-                raise DiagError("multiprocessing incompatible with MPI on %s",platform.node())
+                raise DiagError("multiprocessing incompatible with MPI on %s"%platform.node())
             else:
                 MP = args.MP
 
