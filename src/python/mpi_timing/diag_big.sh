@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH --job-name=diag_8 --time=02:00:00
-#SBATCH -D /opt/nfs/mcenerney1/mpi_output/big/
+#SBATCH -D /opt/nfs/mcenerney1/slurm_output/big/
 #SBATCH --output=mpi_run
 #SBATCH --exclude=greyworm2,greyworm7
 #SBATCH --mem=120MB
