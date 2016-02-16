@@ -2,7 +2,7 @@
 
 #SBATCH --job-name=diag_8 --time=01:00:00
 #SBATCH -D /opt/nfs/mcenerney1/slurm_output/small/
-#SBATCH --output=$SLURM_OUTPUT
+#SBATCH --output=xxxxx
 #SBATCH --exclude=greyworm2,greyworm7
 
 rm $NFSHOME/tmp/*
