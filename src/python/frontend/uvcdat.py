@@ -1066,7 +1066,7 @@ class plot_spec(object):
                 sys.exit('Exiting processor '+ str(self.rank)+'\n' )
             end = time.time()
             print 'mpi time = ', end-start
-        elif self.SPARK:
+        elif self.SPARK_ENABLED:
             #spark mode
             start = time.time()
             from pyspark import SparkContext
