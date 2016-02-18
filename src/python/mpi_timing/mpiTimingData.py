@@ -6,7 +6,9 @@ NFSHOME = os.environ['NFSHOME']
 SLURM_OUTPUTDIR = NFSHOME + '/spark_output/' + DIRSIZE + '/'
 listing = os.listdir(SLURM_OUTPUTDIR)
 listing.sort()
+print listing
 for file in listing:
+    print file
     if 'spark' not in file:
         listing.remove(file)
 print listing        
@@ -15,7 +17,7 @@ old_Nnodes, old_Ntasks = None, None
 for file in listing:
     Nnodes, Ntasks, run = file.split('_')[1:]
     
-    g=open(SLURM_OUTPUTDIR + slurmFile)
+    g=open(SLURM_OUTPUTDIR + file)
     for line in g.readlines():
         if 'time =' in line:
             #print line
