@@ -10,8 +10,6 @@ for file in listing:
     if 'spark' not in file:
         listing.remove(file)
         
-#f=open(SLURM_OUTPUTDIR + 'timing.dat', 'w')
-#pdb.set_trace()
 timing_data = 'Nnodes  Ntasks  runs '
 old_Nnodes, old_Ntasks = None, None
 for slurmFile in listing:
@@ -33,5 +31,6 @@ for slurmFile in listing:
     timing_data += str(round(t,2)) + ' '
     print slurmFile, t
 print timing_data
-#f.write(timing_data + '\n')
-#f.close()
+f=open(SLURM_OUTPUTDIR + 'timing.dat', 'w')
+f.write(timing_data + '\n')
+f.close()
