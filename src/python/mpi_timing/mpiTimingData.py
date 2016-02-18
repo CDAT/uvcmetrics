@@ -13,7 +13,7 @@ for file in listing:
 timing_data = 'Nnodes  Ntasks  runs '
 old_Nnodes, old_Ntasks = None, None
 for slurmFile in listing:
-    Nnodes, Ntasks, run = slurmFile.split('_')[:]
+    Nnodes, Ntasks, run = slurmFile.split('_')[1:]
     
     g=open(SLURM_OUTPUTDIR + slurmFile)
     for line in g.readlines():
