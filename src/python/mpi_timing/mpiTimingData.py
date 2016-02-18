@@ -9,11 +9,11 @@ listing.sort()
 for file in listing:
     if 'spark' not in file:
         listing.remove(file)
-        
+print listing        
 timing_data = 'Nnodes  Ntasks  runs '
 old_Nnodes, old_Ntasks = None, None
-for slurmFile in listing:
-    Nnodes, Ntasks, run = slurmFile.split('_')[1:]
+for file in listing:
+    Nnodes, Ntasks, run = file.split('_')[1:]
     
     g=open(SLURM_OUTPUTDIR + slurmFile)
     for line in g.readlines():
