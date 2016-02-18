@@ -30,7 +30,7 @@ for slurmFile in listing:
     if not (Nnodes, Ntasks) == (old_Nnodes, old_Ntasks):
         timing_data += str(Nnodes) + '       ' + str(Ntasks) + '       '
         old_Nnodes, old_Ntasks = Nnodes, Ntasks
-    timing_data += round(t,2) + ' '
+    timing_data += str(round(t,2)) + ' '
     print slurmFile, t
 print timing_data
 #f.write(timing_data + '\n')
