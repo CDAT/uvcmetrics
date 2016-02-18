@@ -1892,6 +1892,7 @@ class amwg_plot_set8(amwg_plot_spec):
         for i, key in enumerate(self.local_keys):
             RV = self.reduced_variables[key]
             RV._filename = RV.get_variable_file( RV.variableid, COMM=self.comm)
+        print "mpi_init complete"
     def spark_init(self):
         import sys, cdms2
 
