@@ -25,6 +25,7 @@ for slurmFile in listing:
     g.close()
     #retrieve run time
     t=line.split('=')[1]
+    pdb.set_trace()
     if not (Nnodes, Ntasks == old_Nnodes, old_Ntasks):
         timing_data += str(Nnodes) + '       ' + str(Ntasks) + '       '
         old_Nnodes, old_Ntasks = Nnodes, Ntasks
