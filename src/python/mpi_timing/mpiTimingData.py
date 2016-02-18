@@ -3,7 +3,7 @@ from config import *
 
 DIRSIZE = sys.argv[1] #small or big
 NFSHOME = os.environ['NFSHOME']
-SLURM_OUTPUTDIR = NFSHOME + '/spark_output/' + DIRSIZE + '/'
+SLURM_OUTPUTDIR = NFSHOME + '/slurm_output/' + DIRSIZE + '/'
 listing = os.listdir(SLURM_OUTPUTDIR)
 listing.sort()
 
