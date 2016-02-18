@@ -28,7 +28,7 @@ for slurmFile in listing:
     t=float(t)
     #pdb.set_trace()
     if not (Nnodes, Ntasks) == (old_Nnodes, old_Ntasks):
-        timing_data += str(Nnodes) + '       ' + str(Ntasks) + '       '
+        timing_data += '\n' + str(Nnodes) + '       ' + str(Ntasks) + '       '
         old_Nnodes, old_Ntasks = Nnodes, Ntasks
     timing_data += str(round(t,2)) + ' '
     print slurmFile, t
