@@ -11,7 +11,7 @@ for file in listing:
         listing.remove(file)
         
 #f=open(SLURM_OUTPUTDIR + 'timing.dat', 'w')
-
+pdb.set_trace()
 timing_data = 'Nnodes  Ntasks  runs \n'
 old_Nnodes, old_Ntasks = None, None
 for slurmFile in listing:
