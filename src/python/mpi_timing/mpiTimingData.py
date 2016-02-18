@@ -9,7 +9,7 @@ listing.sort()
 
 newlist = []
 for file in listing:
-    if 'run' not in file:
+    if 'run' in file:
         newlist += [file]
 listing = newlist     
 timing_data = 'Nnodes  Ntasks  runs '
