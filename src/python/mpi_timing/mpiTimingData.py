@@ -11,7 +11,7 @@ for file in listing:
         listing.remove(file)
         
 #f=open(SLURM_OUTPUTDIR + 'timing.dat', 'w')
-pdb.set_trace()
+#pdb.set_trace()
 timing_data = 'Nnodes  Ntasks  runs \n'
 old_Nnodes, old_Ntasks = None, None
 for slurmFile in listing:
@@ -24,7 +24,7 @@ for slurmFile in listing:
             break
     g.close()
     #retrieve run time
-    t=line.split()[2]
+    t=line.split('=')[1]
     if not (Nnodes, Ntasks == old_Nnodes, old_Ntasks):
         timing_data += str(Nnodes) + '       ' + str(Ntasks) + '       '
         old_Nnodes, old_Ntasks = Nnodes, Ntasks
