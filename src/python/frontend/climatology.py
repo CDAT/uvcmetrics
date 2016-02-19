@@ -18,7 +18,7 @@ increasing.  That is, for any times tn, tm in files filen, filem, if n>m then tn
 #   then other seasons from the months (probably slower on Rhea, but maybe not).
 
 from metrics.frontend.inc_reduce import *
-import os, re, time, platform
+import os, sys, re, time, platform
 import argparse
 from pprint import pprint
 from multiprocessing import Process, Lock
