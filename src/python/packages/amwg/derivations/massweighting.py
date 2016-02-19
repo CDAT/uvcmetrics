@@ -75,6 +75,7 @@ def rhodz_from_plev( lev, nlev_want, mv ):
     if hasattr( lev, '_filename' ):
         # We'll try to use other variables to do better than extrapolating.
         # This only works in CAM, CESM, ACME, etc.
+        # For simplicity, if data is available at multiple times we will use just the first time.
         f = cdms2.open(lev._filename)
         fvars = f.variables.keys()
         if 'PS' in fvars:
@@ -83,9 +84,9 @@ def rhodz_from_plev( lev, nlev_want, mv ):
             # problem, and I don't have one.  An assertion failure will provide a test
             # problem and make it clear what has to be done.
             assert (len(PS.shape)==3), "expected PS to be shaped (time,lat,lon)"
-            assert (PS.shape[0]==1), "expected PS first dimension to be a single time"
             assert (hasattr(lev,'units')), "levels should have units and don't"
             assert (hasattr(PS,'units')), "PS should have units and doesn't"
+            assert (PS.shape[0]>=1), "expected PS first dimension to be time, with at least one time."
 
             # Make sure we can convert PS to the units of lev.  They come
             # from the same files so they should use the same units, but that's not always so!

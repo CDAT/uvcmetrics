@@ -630,14 +630,17 @@ if __name__ == '__main__':
                "Omit files for just the specified season.  For multiple seasons, provide this"+
                    "argument multiple times. E.g. --omitBySeason DJF lastDECfile.nc\"",
                    nargs='+', action='append', default=[] )
-    p.add_argument("--forceScalarAvg", dest="forceScalarAvg", default=False, help=
-                   "For testing, forces use of a simple scalar average, ignoring missing values" )
     p.add_argument("--oneproc", dest="oneproc", action='store_true', help=
                    "Only one processor, one process, one thread; this overrides other arguments such as --MP,--MPI.")
     p.add_argument("--multiprocessing", dest="MP", action='store_true', help=
                    "use the Python multiprocessing module - multiple processes per processor.")
     p.add_argument("--MPI", dest="MPI", action='store_true', help=
                    "use MPI (mpi4py) multiprocessing - multiple processesors.")
+    p.add_argument("--forceScalarAvg", dest="forceScalarAvg", default=False, help=argparse.SUPPRESS )
+    #              For testing, forces use of a simple scalar average, ignoring missing values
+    p.add_argument("--bypassChecks", dest="bypassChecks", default=False, help=argparse.SUPPRESS )
+    #              For testing, bypass certain checks.  In particular you can run multiprocessing in a MPI-enabled
+    #              UV-CDAT even on Rhea.
     if sys.argv[0].find('climatology')>=0:
         # normal case, we're running climatology more or less directly
         args = p.parse_args(sys.argv[1:])
@@ -666,7 +669,7 @@ if __name__ == '__main__':
         else:
             comm = None
         if args.MP:
-            if haveMPI and platform.node().find('rhea')>=0:
+            if haveMPI and platform.node().find('rhea')>=0 and not args.bypassChecks:
                 print "\nERROR. This Python was built with MPI and the platform is",platform.node()
                 print "This combination is incompatible with the multiprocessing module.\n"
                 MP = False
