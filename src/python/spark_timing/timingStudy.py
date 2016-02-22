@@ -3,7 +3,7 @@ from config import *
 DIRSIZE = sys.argv[1]
 NFSHOME = os.environ['NFSHOME']
 TIMING_PATH = NFSHOME + '/uvcmetrics/src/python/spark_timing/'
-SPARK_OUTPUTDIR = NFSHOME + '/spark_output/'
+SPARK_OUTPUTDIR = NFSHOME + '/spark_output/' + DIRSIZE + '/'
 
 RUNS = [0,1,2,3,4]
 RUNS = [0]
