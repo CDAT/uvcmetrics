@@ -1899,7 +1899,10 @@ class amwg_plot_set8(amwg_plot_spec):
         #create xml files and avoid multiple calls to cdscan         
         for i, key in enumerate(self.reduced_variables.keys()):
             RV = self.reduced_variables[key]
-            RV._filename = RV.get_variable_file( RV.variableid)         
+            RV._filename = RV.get_variable_file( RV.variableid)     
+        NFSHOME = os.environ['NFSHOME']
+        PATH = NFSHOME + '/tmp/*'    
+        os.chmod(PATH, 755)
     def _results(self, newgrid=0):
         #pdb.set_trace()
         results = plot_spec._results(self, newgrid)
