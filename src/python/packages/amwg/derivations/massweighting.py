@@ -24,8 +24,9 @@ def rhodz_from_hybridlev( PS, P0, hyai, hybi ):
     # and g the acceleration due to gravity.
     # So rhodz is the mass in the cell per unit of horizontal (lat-lon) area.
     # For averages, rhodz can be multiplied by an area weight to get a mass weight.
-    # I expect that P0 is a constant; hyai,hybi depend only on level; and PS depends on lat & lon
-    # (PS also depends on time, but this computation will be for a fixed value of time).
+    # I expect that P0 is a constant; hyai,hybi depend only on level; and
+    # PS depends on lat & lon (PS also depends on time, but this computation will be for a fixed
+    # value of time).
     # Thus rhodz will depend on lat,lon,level (and time).
     g = AtmConst.g     # 9.80665 m/s2.
     pint = numpy.zeros( ( hybi.shape[0], PS.shape[1], PS.shape[2] ) )
@@ -120,13 +121,18 @@ def rhodz_from_plev( lev, nlev_want, mv ):
     rhodz = dp/g   # (lev) shape
     return rhodz
 
-def check_compatible_levels( var, pvar ):
+def check_compatible_levels( var, pvar, strict=False ):
     """Checks whether the levels of var and psrcv are compatible in that they may be used
     for mass weighting without any special effort.  var is the variable to be averaged,
     and pvar is a variable which will be used to get the pressures.  For example, var
     could be temperature, T, and pvar could be a hybrid level variable such as hybi.
     The return value is 0 if compatible, otherwise number
-    of levels needed to properly average var with mass weighting."""
+    of levels needed to properly average var with mass weighting.
+    If strict==True, we will raise an exception if lenghts are not compatible.  This is the right
+    behavior when there are hybrid levels - such levels should be available at interfaces, and
+    a mass-weighted variable should be centered between the level interfaces.
+    If strict==false, a warning will be printed, and the program will go on.
+    """
     vlev = var.getLevel()
     plev = pvar.getLevel()
     # We want plev[0] < var[0] < plev[1] < ... < var[N-1] < plev[N]
@@ -136,9 +142,12 @@ def check_compatible_levels( var, pvar ):
     if compatible:
         return 0
     else:
-        print "WARNING, poor levels for mass weighting, variables",var.id,pvar.id
-        print "numbers of levels: var",len(vlev),"pvar",len(plev)
-        return len(vlev)+1
+        print "numbers of levels: ",var.id,":",len(vlev),";",pvar.id,":",len(plev)
+        if strict:
+            raise DiagError("ERROR, numbers of levels are not compatible with mass weighting.")
+        else:
+            print "WARNING, poor levels for mass weighting, variables",var.id,pvar.id
+            return len(vlev)+1
 
 def rhodz_from_mv( mv ):
     """returns an array rhodz which represents the air mass column density in each cell.
@@ -146,7 +155,7 @@ def rhodz_from_mv( mv ):
     lev = mv.getLevel()
     if lev.units=='level':  # hybrid level
         cfile = cdms2.open( mv._filename )
-        check_compatible_levels( mv, cfile('hybi') )
+        check_compatible_levels( mv, cfile('hybi'), True )
         rhodz = rhodz_from_hybridlev( cfile('PS'), cfile('P0'), cfile('hyai'), cfile('hybi') )
         cfile.close()
     elif lev.units in  ['millibars','mbar','mb','Pa','hPa']:  # pressure level
