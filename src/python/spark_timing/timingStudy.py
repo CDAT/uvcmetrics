@@ -14,4 +14,4 @@ for (N,n,wait_time) in config:
         spark_output_file = SPARK_OUTPUTDIR + 'run_'+ str(N) +'_' + str(n) + '_' + str(run)
         os.environ['SPARKOUTPUT'] = spark_output_file
         proc=subprocess.Popen([TIMING_PATH+'spark_diag_big.sh'], shell=True, stdout=subprocess.PIPE)
-        #time.sleep(wait_time*60)
+        time.sleep(wait_time*60)
