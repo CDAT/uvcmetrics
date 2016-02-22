@@ -1904,6 +1904,7 @@ class amwg_plot_set8(amwg_plot_spec):
         time.sleep(5)
         NFSHOME = os.environ['NFSHOME']
         PATH = NFSHOME + '/tmp/*'    
+        print os.listdir(PATH)
         os.chmod(PATH, 755)
     def _results(self, newgrid=0):
         #pdb.set_trace()
