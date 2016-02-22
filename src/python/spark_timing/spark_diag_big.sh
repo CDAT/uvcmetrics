@@ -2,13 +2,15 @@
 
 rm $NFSHOME/tmp/*
 
-source $NFSHOME/11_03_15/bin/setup_runtime.sh
+source $NFSHOME/02_17_15/bin/setup_runtime.sh
 
-/opt/nfs/analysis/spark-1.5.2/bin/pyspark --master spark://198.128.245.179:7077   \
+$SPARKHOME/bin/pyspark \
 $NFSHOME/uvcmetrics/src/python/frontend/diags.py \
---model path=$NFSHOME/cmip5_css02_model/,climos=no \
---obs   path=$NFSHOME/cmip5_css02_obs/,climos=no \
+--model path=$NFSHOME/timing_study_data/cmip5_css02_model/,climos=no \
+--obs   path=$NFSHOME/timing_study_data/cmip5_css02_obs/,climos=no \
 --outputdir $NFSHOME/diagout/ \
 --cachepath $NFSHOME/tmp/ \
 --package AMWG --sets 8 --seasons ANN --plots yes --vars hur  \
 > $SPARKOUTPUT
+
+#--master spark://198.128.245.179:7077   \
