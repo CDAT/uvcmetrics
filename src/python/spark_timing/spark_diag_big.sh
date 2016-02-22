@@ -2,7 +2,7 @@
 
 rm $NFSHOME/tmp/*
 
-source $NFSHOME/02_17_15/bin/setup_runtime.sh
+source $NFSHOME/02_17_16/bin/setup_runtime.sh
 
 $SPARKHOME/bin/pyspark \
 $NFSHOME/uvcmetrics/src/python/frontend/diags.py \
