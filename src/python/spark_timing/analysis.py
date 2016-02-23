@@ -21,9 +21,9 @@ for line in fin.readlines():
         data += [float(x)]
         
     data = np.array(data)
-    mean, var = data.mean(), data.var()
+    mean, var = data.mean(), data.std()
     
-    output = Nnodes + ' ' + Ntasks + ' ' +  Nparts +  ' ' + str(mean) + ' ' + str(var)
+    output = Nnodes + ' ' + Ntasks + ' ' +  Nparts +  ' ' + str(mean) + ' ' + str(std)
     print output
     
     fout.write(output)
