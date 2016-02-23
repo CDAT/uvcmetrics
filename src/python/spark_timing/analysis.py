@@ -9,7 +9,7 @@ fin=open(SPARK_OUTPUTDIR+'timing.dat')
 titles = fin.readline()
 
 fout = open(SPARK_OUTPUTDIR+'results.dat', 'w')
-fout.write('Nnodes  Ntasks  Npartitions means std')
+fout.write('Nnodes  Ntasks  Npartitions means std\n')
 
 for line in fin.readlines():
     line = line.split()
