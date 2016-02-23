@@ -28,17 +28,20 @@ for file in listing:
             break
     g.close()
     
-    #retrieve run time
-    t=line.split('=')[1]
-    t=float(t)
-    #pdb.set_trace()
-    Npart = float(Nnodes)*float(Ntasks)
-    if not (Nnodes, Ntasks) == (old_Nnodes, old_Ntasks):
-        timing_data += '\n' + str(Nnodes) + '       ' + str(Ntasks) + '       ' + str(Npart) + '       '
-        old_Nnodes, old_Ntasks = Nnodes, Ntasks
-    timing_data += str(round(t,2)) + ' '    
-    
-    print file, t
+    try:
+        #retrieve run time
+        t=line.split('=')[1]
+        t=float(t)
+        #pdb.set_trace()
+        Npart = float(Nnodes)*float(Ntasks)
+        if not (Nnodes, Ntasks) == (old_Nnodes, old_Ntasks):
+            timing_data += '\n' + str(Nnodes) + '       ' + str(Ntasks) + '       ' + str(Npart) + '       '
+            old_Nnodes, old_Ntasks = Nnodes, Ntasks
+        timing_data += str(round(t,2)) + ' '    
+        
+        print file, t
+    except:
+        pass
 print timing_data
 #f=open(SPARK_OUTPUTDIR + 'timing.dat', 'w')
 #f.write(timing_data + '\n')
