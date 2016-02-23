@@ -87,13 +87,17 @@ class DiagError (Exception):
         self.args = (args,)
 
 def hashfile(filename):
-    sha1 = hashlib.sha1()
-    f=open(filename,'rb')
     try:
-      sha1.update(f.read())
-    finally:
-      f.close()
-    return sha1.hexdigest()
+        sha1 = hashlib.sha1()
+        f=open(filename,'rb')
+        try:
+          sha1.update(f.read())
+        finally:
+          f.close()
+        return sha1.hexdigest()
+    except:
+        # probably there is no script
+        return 0
 
 provdic = {}
 def provenance_dict( script_file_name=None ):
