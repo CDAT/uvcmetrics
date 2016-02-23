@@ -9,7 +9,8 @@ fin=open(SPARK_OUTPUTDIR+'timing.dat')
 titles = fin.readline()
 
 fout = open(SPARK_OUTPUTDIR+'results.dat', 'w')
-fout.write(titles + '\n')
+fout.write('Nnodes  Ntasks  Npartitions means std')
+
 for line in fin.readlines():
     line = line.split()
     Nnodes = line[0]
@@ -22,8 +23,11 @@ for line in fin.readlines():
         
     data = np.array(data)
     mean, std = data.mean(), data.std()
+    mean = round(mean,2)
+    std = round(std,2)
     
-    output = Nnodes + ' ' + Ntasks + ' ' +  Nparts +  ' ' + str(round(mean,2)) + ' ' + str(round(std,2))
+    output = Nnodes + '       ' + Ntasks + '       ' +  Nparts +  '       ' + str(mean) + ' ' + str(std)
+    #output = '\n' + str(Nnodes) + '       ' + str(Ntasks) + '       ' + str(int(Npart)) + '           '
     print output
     
     fout.write(output+'\n')
