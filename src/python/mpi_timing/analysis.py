@@ -24,7 +24,7 @@ for line in fin.readlines():
     data = np.array(data)
     mean, std = data.mean(), data.std()
     
-    output = Nnodes + ' ' + Ntasks + ' ' + str(mean) + ' ' + str(std)
+    output = Nnodes + ' ' + Ntasks + ' ' + str(round(mean,2)) + ' ' + str(round(std,2))
     print output
     
     fout.write(output+'\n')
