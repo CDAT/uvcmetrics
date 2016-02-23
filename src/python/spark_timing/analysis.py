@@ -1,9 +1,13 @@
 import numpy as np
+DIRSIZE = sys.argv[1] #small or big
+NFSHOME = os.environ['NFSHOME']
+TIMING_PATH = NFSHOME + '/uvcmetrics/src/python/spark_timing/'
+SPARK_OUTPUTDIR = NFSHOME + '/spark_output/' + DIRSIZE + '/'
 
-fin=open('timing.dat')
+fin=open(SPARK_OUTPUTDIR+'timing.dat')
 titles = fin.readline()
 
-fout = open('results.dat', 'w')
+fout = open(SPARK_OUTPUTDIR+'results.dat', 'w')
 
 for line in fin.readlines():
     line = line.split()
