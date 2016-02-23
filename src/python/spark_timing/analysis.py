@@ -27,7 +27,6 @@ for line in fin.readlines():
     std = round(std,2)
     
     output = Nnodes + '       ' + Ntasks + '       ' +  Nparts +  '           ' + str(mean) + '   ' + str(std)
-    #output = '\n' + str(Nnodes) + '       ' + str(Ntasks) + '       ' + str(int(Npart)) + '           '
     print output
     
     fout.write(output+'\n')

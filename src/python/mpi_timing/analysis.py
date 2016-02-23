@@ -11,7 +11,7 @@ fin=open(SLURM_OUTPUTDIR+'timing.dat')
 titles = fin.readline()
 
 fout = open(SLURM_OUTPUTDIR+'results.dat', 'w')
-fout.write(titles + '\n')
+fout.write('Nnodes  Ntasks  means std\n')
 for line in fin.readlines():
     line = line.split()
     Nnodes = line[0]
@@ -23,8 +23,11 @@ for line in fin.readlines():
         
     data = np.array(data)
     mean, std = data.mean(), data.std()
-    
+    mean = round(mean,2)
+    std = round(std,2)
+        
     output = Nnodes + ' ' + Ntasks + ' ' + str(round(mean,2)) + ' ' + str(round(std,2))
+    output = Nnodes + '       ' + Ntasks + '       ' +  str(mean) + '   ' + str(std)
     print output
     
     fout.write(output+'\n')
