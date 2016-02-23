@@ -35,14 +35,14 @@ for file in listing:
         #pdb.set_trace()
         Npart = float(Nnodes)*float(Ntasks)
         if not (Nnodes, Ntasks) == (old_Nnodes, old_Ntasks):
-            timing_data += '\n' + str(Nnodes) + '       ' + str(Ntasks) + '       ' + str(Npart) + '       '
+            timing_data += '\n' + str(Nnodes) + '       ' + str(Ntasks) + '       ' + str(int(Npart)) + '       '
             old_Nnodes, old_Ntasks = Nnodes, Ntasks
         timing_data += str(round(t,2)) + ' '    
         
-        print file, t
+        #print file, t
     except:
         pass
 print timing_data
-#f=open(SPARK_OUTPUTDIR + 'timing.dat', 'w')
-#f.write(timing_data + '\n')
-#f.close()
+f=open(SPARK_OUTPUTDIR + 'timing.dat', 'w')
+f.write(timing_data + '\n')
+f.close()
