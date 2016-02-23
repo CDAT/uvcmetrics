@@ -6,7 +6,7 @@
 
 rm $NFSHOME/tmp/*
 
-source $NFSHOME/02_16_16/bin/setup_runtime.sh
+source $NFSHOME/02_17_16/bin/setup_runtime.sh
 
 mpirun  python $NFSHOME/uvcmetrics/src/python/frontend/diags.py \
 --model path=$NFSHOME/timing_study_data/cmip5_css02_model/,climos=no \
