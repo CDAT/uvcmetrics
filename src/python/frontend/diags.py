@@ -412,6 +412,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
          for varIndex, var in enumerate(rsr.vars):
             savePNG = True
             seqsetattr(var,'title',title)
+            var.filetable = None
 
             # ...But the VCS plot system will overwrite the title line
             # with whatever else it can come up with:
@@ -673,7 +674,6 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
       else:
           print "writing png file2:",fname
           vcanvas2.png( fname , ignore_alpha = True, metadata=provenance_dict() )
-
 
 if __name__ == '__main__':
    print "UV-CDAT Diagnostics, command-line version"
