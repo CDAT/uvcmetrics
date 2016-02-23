@@ -26,4 +26,4 @@ for line in fin.readlines():
     output = Nnodes + ' ' + Ntasks + ' ' +  Nparts +  ' ' + str(mean) + ' ' + str(std)
     print output
     
-    fout.write(output)
+    fout.write(output+'\n')

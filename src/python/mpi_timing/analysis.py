@@ -1,9 +1,16 @@
+import subprocess, pdb, time, sys, os
 import numpy as np
+from config import *
 
-fin=open('timing.dat')
+DIRSIZE = sys.argv[1] #small or big
+NFSHOME = os.environ['NFSHOME']
+SLURM_OUTPUTDIR = NFSHOME + '/slurm_output/' + DIRSIZE + '/'
+
+
+fin=open(SLURM_OUTPUTDIR+'timing.dat')
 titles = fin.readline()
 
-fout = open('results.dat', 'w')
+fout = open(SLURM_OUTPUTDIR+'results.dat', 'w')
 
 for line in fin.readlines():
     line = line.split()
@@ -15,9 +22,9 @@ for line in fin.readlines():
         data += [float(x)]
         
     data = np.array(data)
-    mean, var = data.mean(), data.var()
+    mean, std = data.mean(), data.std()
     
-    output = Nnodes + ' ' + Ntasks + ' ' + str(mean) + ' ' + str(var)
+    output = Nnodes + ' ' + Ntasks + ' ' + str(mean) + ' ' + str(std)
     print output
     
     fout.write(output)
