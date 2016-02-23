@@ -1,3 +1,4 @@
+import subprocess, pdb, time, sys, os
 import numpy as np
 DIRSIZE = sys.argv[1] #small or big
 NFSHOME = os.environ['NFSHOME']
