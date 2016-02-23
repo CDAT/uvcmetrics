@@ -32,8 +32,9 @@ for file in listing:
     t=line.split('=')[1]
     t=float(t)
     #pdb.set_trace()
+    Npart = float(Nnodes)*float(Ntasks)
     if not (Nnodes, Ntasks) == (old_Nnodes, old_Ntasks):
-        timing_data += '\n' + str(Nnodes) + '       ' + str(Ntasks) + '       ' + float(Nnodes)*float(Ntasks) + '       '
+        timing_data += '\n' + str(Nnodes) + '       ' + str(Ntasks) + '       ' + str(Npart) + '       '
         old_Nnodes, old_Ntasks = Nnodes, Ntasks
     timing_data += str(round(t,2)) + ' '    
     
