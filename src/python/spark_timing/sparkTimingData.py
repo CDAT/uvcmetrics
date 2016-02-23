@@ -1,5 +1,7 @@
 import subprocess, pdb, time, sys, os
 from config import *
+
+DIRSIZE = sys.argv[1] #small or big
 NFSHOME = os.environ['NFSHOME']
 TIMING_PATH = NFSHOME + '/uvcmetrics/src/python/spark_timing/'
 SPARK_OUTPUTDIR = NFSHOME + '/spark_output/' + DIRSIZE + '/'
