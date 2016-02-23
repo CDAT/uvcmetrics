@@ -2,7 +2,7 @@ import subprocess, pdb, time, sys, os
 from config import *
 NFSHOME = os.environ['NFSHOME']
 TIMING_PATH = NFSHOME + '/uvcmetrics/src/python/spark_timing/'
-SPARK_OUTPUTDIR = NFSHOME + '/spark_output/'
+SPARK_OUTPUTDIR = NFSHOME + '/spark_output/' + DIRSIZE + '/'
 listing = os.listdir(SPARK_OUTPUTDIR)
 listing.sort()
 
