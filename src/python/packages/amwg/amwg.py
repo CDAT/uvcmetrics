@@ -1900,8 +1900,6 @@ class amwg_plot_set8(amwg_plot_spec):
         for i, key in enumerate(self.reduced_variables.keys()):
             RV = self.reduced_variables[key]
             RV._filename = RV.get_variable_file( RV.variableid)   
-        import time
-        time.sleep(5)  
     def _results(self, newgrid=0):
         #pdb.set_trace()
         results = plot_spec._results(self, newgrid)

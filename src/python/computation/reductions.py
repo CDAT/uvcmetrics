@@ -2965,6 +2965,8 @@ class reduced_variable(ftrow,basic_id):
         """
         import cdms2, numpy
         import os
+        #all of these are to satisfy the workers to do connect with the python version of uvcdat for spark
+        #this needs to be solved in a different way.
         os.environ['LD_LIBRARY_PATH']='/opt/nfs/mcenerney1/02_17_16/lib:/opt/nfs/mcenerney1/02_17_16/Externals/lib64:/opt/nfs/mcenerney1/02_17_16/Externals/lib'
         os.environ['UVCDAT_SETUP_PATH']='/opt/nfs/mcenerney1/02_17_16'
         os.environ['PYTHONPATH']='/opt/nfs/mcenerney1/02_17_16/lib/python2.7/site-packages:/opt/nfs/mcenerney1/02_17_16/Externals/lib/python2.7/site-packages'
