@@ -242,7 +242,7 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
 
     But if weights='mass' (or if None and mv's :weighting attribute be 'mass'), mass weighting will
     be used.  For mass weighting, the weight will be recovered from the filetable specified in the
-    _filetable attribute of mv, which must exist.  Of course, this also requires the weights to have
+    filetable attribute of mv, which must exist.  Of course, this also requires the weights to have
     been loaded into the filetable's weights dictionary.
 
     Alternatively, you can compute mass (or other) weights into a 3-D (lev,lat,lon) array (or MV)
@@ -282,8 +282,8 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
         # If mass weighting is appropriate, the weighting attribute should say so.  It was set by
         # an earlier weighting_choice() call.
         weights = getattr( mv, 'weighting', None )
-        if not hasattr(mvrs,'_filetable') and hasattr(mv,'_filetable'):
-            mvrs._filetable = mv._filetable
+        if not hasattr(mvrs,'filetable') and hasattr(mv,'filetable'):
+            mvrs.filetable = mv.filetable
  
     if len(axes_string)<=2:
         avmv = mvrs
@@ -296,7 +296,7 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
             # In this case we will provide the averager with a full weight array, i.e.
             # "of the same shape as V" in the language of the genutil averager() documentation (with V=mvrs)
             if weights=='mass':
-                latlon_wts = mvrs._filetable.weights['mass']  # array of shape (lev,lat,lon)
+                latlon_wts = mvrs.filetable.weights['mass']  # array of shape (lev,lat,lon)
             else:
                 latlon_wts = weights
             klevs = [i for i,j in enumerate([a.isLevel() for a in axes]) if j==True]
@@ -384,8 +384,8 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
             avmv = convert_variable( avmv, "millibar" )
     if not hasattr( avmv, '_filename' ) and hasattr( mv,'_filename' ):
         avmv._filename = mv._filename
-    if not hasattr( avmv, '_filetable' ) and hasattr( mv,'_filetable' ):
-        avmv._filetable = mv._filetable
+    if not hasattr( avmv, 'filetable' ) and hasattr( mv,'filetable' ):
+        avmv.filetable = mv.filetable
     avmv.weighting = weights
     set_mean( avmv )
     
@@ -408,7 +408,7 @@ def reduce2scalar_seasonal_zonal( mv, season=seasonsyr, latmin=-90, latmax=90, v
         season = seasons
     # reduce size of lat axis to (latmin,latmax)
     mv2 = mv(latitude=(latmin, latmax))
-    if not hasattr( mv2, '_filetable') and hasattr(mv,'_filetable'): mv2._filetable = mv._filetable
+    if not hasattr( mv2, 'filetable') and hasattr(mv,'filetable'): mv2.filetable = mv.filetable
     # reduce size of gw to (latmin,latmax)
     gw2 = None
     if gw is not None:
@@ -2772,7 +2772,7 @@ class reduced_variable(ftrow,basic_id):
         #    self._vid = reduced_var_id      # self._vid is deprecated
         if filetable is None:
             print "WARNING.  No filetable specified for reduced_variable instance",variableid
-        self._filetable = filetable
+        self.filetable = filetable
         self._filefilter = filefilter  # used to filter results of search in filetable
         self._file_attributes = {}
         self._duvs = duvs
@@ -2824,7 +2824,7 @@ class reduced_variable(ftrow,basic_id):
     def get_variable_file( self, variableid ):
         """returns the name of a file containing data for a variable specified by name.
         If there are several such files, cdscan is run and the resulting xml file is returned."""
-        rows = self._filetable.find_files( variableid, time_range=self.timerange,
+        rows = self.filetable.find_files( variableid, time_range=self.timerange,
                                            lat_range=self.latrange, lon_range=self.lonrange,
                                            level_range=self.levelrange,
                                            seasonid=self._season.seasons[0],
@@ -2857,7 +2857,7 @@ class reduced_variable(ftrow,basic_id):
             # To do this safely, incorporate the file list (names,lengths,dates) into the xml file name.
             famfiles = [f for f in files if famdict[f]==fam]
 
-            cache_path = self._filetable.cache_path()
+            cache_path = self.filetable.cache_path()
             xml_name = run_cdscan( fam, famfiles, cache_path )
             filename = xml_name
         else:
@@ -2881,10 +2881,10 @@ class reduced_variable(ftrow,basic_id):
         circularity!
         """
 
-        if self._filetable is None:
+        if self.filetable is None:
             print "ERROR no data found for reduced variable",self.variableid
             print "in",self.timerange, self.latrange, self.lonrange, self.levelrange
-            print "filetable is",self._filetable
+            print "filetable is",self.filetable
             return None
         if vid is None:
             #vid = self._vid      # self._vid is deprecated
@@ -2896,7 +2896,7 @@ class reduced_variable(ftrow,basic_id):
                 # this belongs in a log file:
                 print "ERROR no data found for reduced variable",self.variableid
                 print "in",self.timerange, self.latrange, self.lonrange, self.levelrange
-                print "filetable is",self._filetable
+                print "filetable is",self.filetable
                 return None
             else:
                 # DUVs (derived unreduced variables) would logically be treated as a separate stage
@@ -2948,17 +2948,17 @@ class reduced_variable(ftrow,basic_id):
                 var._filename = self._filename
                 weighting = weighting_choice(var)
                 if weighting=='mass':
-                    if 'mass' not in self._filetable.weights:
-                        self._filetable.weights['mass'] = mass_weights( var )
+                    if 'mass' not in self.filetable.weights:
+                        self.filetable.weights['mass'] = mass_weights( var )
                 if os.path.basename(filename)[0:5]=='CERES':
                     var = special_case_fixed_variable( 'CERES', var )
-                if not hasattr( var, '_filetable'): var._filetable = self._filetable
+                if not hasattr( var, 'filetable'): var.filetable = self.filetable
                 reduced_data = self._reduction_function( var, vid=vid )
             elif self.variableid in f.axes.keys():
                 taxis = cdms2.createAxis(f[self.variableid])   # converts the FileAxis to a TransientAxis.
                 taxis.id = f[self.variableid].id
                 weighting = weighting_choice(taxis)
-                if not hasattr( taxis, '_filetable'): taxis._filetable = self._filetable
+                if not hasattr( taxis, 'filetable'): taxis.filetable = self.filetable
                 reduced_data = self._reduction_function( taxis, vid=vid )
             else:
                 print "Reduce failed to find variable",self.variableid,"in file",filename
@@ -2972,7 +2972,7 @@ class reduced_variable(ftrow,basic_id):
         if hasattr(reduced_data,'mask') and reduced_data.mask.all():
             reduced_data = None
         reduced_data._filename = self._filename
-        reduced_data._filetable = self._filetable
+        reduced_data.filetable = self.filetable
         return reduced_data
 
 class rv(reduced_variable):

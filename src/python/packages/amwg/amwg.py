@@ -663,7 +663,7 @@ class amwg_plot_set3(amwg_plot_spec,basic_id):
                     for dv in dvs:
                         self.derived_variables[dv.id()] = dv
                     zvar = self.derived_variables[zvar]
-                    zvar._filetable = filetable1
+                    zvar.filetable = filetable1
 
         #self.reduced_variables[varnom+'_1'] = zvar
         #zvar._vid = varnom+'_1'      # _vid is deprecated
@@ -708,22 +708,22 @@ class amwg_plot_set3(amwg_plot_spec,basic_id):
             zval = self.variable_values[zvar.id()]  # new-style key
         #zval = self.variable_values[zvar._vid] # _vid is deprecated
         if zval is None: return None
-        zunam = zvar._filetable._strid  # part of y1 distinguishing it from y2, e.g. ft_1
+        zunam = zvar.filetable._strid  # part of y1 distinguishing it from y2, e.g. ft_1
         zval.id = '_'.join([self._id[0],self._id[1],zunam])
         z2val = self.variable_values[z2var._strid]
         if z2val is None:
             z2unam = ''
             zdiffval = None
         else:
-            z2unam = z2var._filetable._strid  # part of y2 distinguishing it from y1, e.g. ft_2
+            z2unam = z2var.filetable._strid  # part of y2 distinguishing it from y1, e.g. ft_2
             z2val.id = '_'.join([self._id[0],self._id[1],z2unam])
             zdiffval = apply( self.plot_b.zfunc, [zval,z2val] )
             zdiffval.id = '_'.join([self._id[0],self._id[1],
-                                    zvar._filetable._strid, z2var._filetable._strid, 'diff'])
+                                    zvar.filetable._strid, z2var.filetable._strid, 'diff'])
         # ... e.g. CLT_DJF_set3_CAM456_NCEP_diff
-        ft1src = zvar._filetable.source()
+        ft1src = zvar.filetable.source()
         try:
-            ft2src = z2var._filetable.source()
+            ft2src = z2var.filetable.source()
         except:
             ft2src = ''
         plot_a_val = uvc_plotspec(
