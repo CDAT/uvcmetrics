@@ -822,6 +822,10 @@ class uvc_simple_plotspec():
         plot_these = []
 
         for zax in self.vars:
+            try:
+                del zax.filetable  # we'll write var soon, and can't write a filetable
+            except:
+                pass
             writer.write( zax )
             plot_these.append( str(seqgetattr(zax,'id','')) )
         writer.plot_these = ' '.join(plot_these)

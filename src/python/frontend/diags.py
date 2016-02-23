@@ -412,7 +412,10 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
          for varIndex, var in enumerate(rsr.vars):
             savePNG = True
             seqsetattr(var,'title',title)
-            var.filetable = None
+            try:
+                del var.filetable  # we'll write var soon, and can't write a filetable
+            except:
+                pass
 
             # ...But the VCS plot system will overwrite the title line
             # with whatever else it can come up with:
