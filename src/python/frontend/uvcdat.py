@@ -1232,7 +1232,9 @@ class plot_spec(object):
         if z is not None and not (hasattr(z,'mean') and isinstance(z.mean,Number)):
             # Compute variable's mean.  For mass weighting, it should have already happened in a
             # dimensionality reduction functions.
-            print "INFO no mean attribute in variable",z.id,\
+            if type(z) is tuple: zid = [zz.id for zz in z]
+            else: zid = z.id
+            print "INFO no mean attribute in variable",zid,\
                 "; we may compute it in compute_plot_var_value."
             set_mean( z )
         if (hasattr(z,'mean') and isinstance(z.mean,Number)):
