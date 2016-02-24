@@ -1662,10 +1662,16 @@ class amwg_plot_set7(amwg_plot_spec):
        reduced_varlis = [
            reduced_variable(
                 variableid=varid, filetable=filetable1, season=self.season,
-                reduction_function=(lambda x, vid, region=None: reduce2latlon_seasonal( x(latitude=aux, longitude=(0, 360)), self.season, region, vid=vid ) ) ),
+#                reduction_function=(lambda x, vid, region=None: reduce2latlon_seasonal( x(latitude=aux, longitude=(0, 360)), self.season, region, vid=vid ) ) ),
+                # A (0,360) range breaks if mass weighting, due to an apparent bug in UV-CDAT slicing.
+                reduction_function=(lambda x, vid, region=None: reduce2latlon_seasonal(
+                       x(latitude=aux), self.season, region, vid=vid ) ) ),
             reduced_variable(
                 variableid=varid, filetable=filetable2, season=self.season,
-                reduction_function=(lambda x,vid, region=None: reduce2latlon_seasonal( x(latitude=aux, longitude=(0, 360)), self.season, region, vid=vid ) ) )
+#                reduction_function=(lambda x,vid, region=None: reduce2latlon_seasonal( x(latitude=aux, longitude=(0, 360)), self.season, region, vid=vid ) ) )
+                # A (0,360) range breaks if mass weighting, due to an apparent bug in UV-CDAT slicing.
+                reduction_function=(lambda x,vid, region=None: reduce2latlon_seasonal(
+                       x(latitude=aux), self.season, region, vid=vid ) ) )
             ]
        self.reduced_variables = { v.id():v for v in reduced_varlis }
        vid1 = rv.dict_id( varid, seasonid, filetable1 )
