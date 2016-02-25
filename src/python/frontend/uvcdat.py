@@ -1207,6 +1207,7 @@ class plot_spec(object):
         #later.  Plot set 11 is an example of this.
         for p,ps in self.composite_plotspecs.iteritems():
             # Normally ps is a list of names of a plots, we'll remember its value as a list of their values.
+            self.plotspec_values[p] = [ self.plotspec_values[sp] for sp in ps if sp in self.plotspec_values ]
             if type( ps ) is tuple:
                 # ps is a tuple of names of simple plots which should be overlapped
                 self.plotspec_values[p] = tuple( self.plotspec_values[p] )
@@ -1242,6 +1243,10 @@ class plot_spec(object):
             print "INFO no mean attribute in variable",zid,\
                 "; we may compute it in compute_plot_var_value."
             set_mean( z )
+            if hasattr(z,'mean') and isinstance(z.mean,cdms2.tvariable.TransientVariable) and\
+                    z.mean.shape==():
+                # ... adding 0.0 converts a numpy array of shape () to an actual number
+                z.mean = z.mean.getValue()+0.0
         if (hasattr(z,'mean') and isinstance(z.mean,Number)):
             # VCS display of z.mean has too many digits unless we round:
             z.mean = round2( z.mean, 6 )
