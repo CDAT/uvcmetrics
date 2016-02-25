@@ -824,13 +824,13 @@ class uvc_simple_plotspec():
         for zax in self.vars:
             try:
                 del zax.filetable  # we'll write var soon, and can't write a filetable
-                for ax in zax.getAxisList():
-                    try:
-                        del ax.filetable
-                    except:
-                        pass
             except:
                 pass
+            for ax in zax.getAxisList():
+                try:
+                    del ax.filetable
+                except:
+                    pass
             writer.write( zax )
             plot_these.append( str(seqgetattr(zax,'id','')) )
         writer.plot_these = ' '.join(plot_these)
