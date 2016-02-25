@@ -1204,7 +1204,7 @@ class plot_spec(object):
         #This next loop is a duplicate of the previous loop.  It can be viewed as a cleanup. The reason it's 
         #needed is that there is no guaranteed order of execution with a dictionary.  So if a composite plot
         #is a composite of others then there may be an incomplete plot if the individual plots are defined
-        #later.  Plot set 11 is an example of this.
+        #later.  Plot set 11 is an example of this.  It can happen with plot set 6 too.
         for p,ps in self.composite_plotspecs.iteritems():
             # Normally ps is a list of names of a plots, we'll remember its value as a list of their values.
             self.plotspec_values[p] = [ self.plotspec_values[sp] for sp in ps if sp in self.plotspec_values ]
