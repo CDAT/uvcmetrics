@@ -824,6 +824,11 @@ class uvc_simple_plotspec():
         for zax in self.vars:
             try:
                 del zax.filetable  # we'll write var soon, and can't write a filetable
+                for ax in zax.getAxisList():
+                    try:
+                        del ax.filetable
+                    except:
+                        pass
             except:
                 pass
             writer.write( zax )
