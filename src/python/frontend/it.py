@@ -30,7 +30,8 @@ def return_templates_graphic_methods(canvas1=None, gms=None, ovly=None, onPage=N
             
             templateOptionsUVWG_DUD_Multi = TemplateOptionsUVWGDUDMulti()
             
-            graphicMethodObjects, templates = build_templates(canvas1, [gms[i]], [ovly[i]], 1, 1, TemplateOptionsUVWGMulti(),
+            graphicMethodObjects, templates = build_templates(canvas1, [gms[i]], [ovly[i]], 1, 1,
+                                                              TemplateOptionsUVWGMulti(),
                                                               templateOptionsArray, templateNameArray)
 
             gmobs.append(graphicMethodObjects[0])                  
@@ -50,10 +51,9 @@ def return_templates_graphic_methods(canvas1=None, gms=None, ovly=None, onPage=N
             
             templateOptionsUVWG1DDUDMulti = TemplateOptionsUVWG1DDUDMulti()
             
-            graphicMethodObjects, templates = build_templates(canvas1, [gms[i]], [ovly[i]], 1, 1, TemplateOptionsUVWG1DMulti(),
+            graphicMethodObjects, templates = build_templates(canvas1, [gms[i]], [ovly[i]], 1, 1,
+                                                              TemplateOptionsUVWG1DMulti(),
                                                               templateOptionsArray, templateNameArray)
-
-            print "Length graphicMethodObjects: ", len(graphicMethodObjects)
             
             gmobs.append(graphicMethodObjects[0])                  
 
@@ -72,7 +72,8 @@ def return_templates_graphic_methods(canvas1=None, gms=None, ovly=None, onPage=N
             
             templateOptionsUVWG_DUD_Multi_Scatter = TemplateOptionsUVWGDUDMultiScatter()
 
-            graphicMethodObjects, templates = build_templates(canvas1, [gms[i]], [ovly[i]], 1, 1, TemplateOptionsUVWGMultiScatter(),
+            graphicMethodObjects, templates = build_templates(canvas1, [gms[i]], [ovly[i]], 1, 1,
+                                                              TemplateOptionsUVWGMultiScatter(),
                                                               templateOptionsArray, templateNameArray)
             
             gmobs.append(graphicMethodObjects[0])                  
