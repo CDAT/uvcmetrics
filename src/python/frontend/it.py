@@ -1,7 +1,7 @@
 import vcs, cdms2, random
 import numpy as np
-from templatefactory import *
-from templateoptions import *
+from metrics.frontend.templatefactory import *
+from metrics.frontend.templateoptions import *
 
 
 #######################################################################################################
