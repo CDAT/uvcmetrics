@@ -1242,7 +1242,7 @@ class plot_spec(object):
             else: zid = z.id
             print "INFO no mean attribute in variable",zid,\
                 "; we may compute it in compute_plot_var_value."
-            set_mean( z )
+            set_mean( z, season=self.season, region=self.region )
             if hasattr(z,'mean') and isinstance(z.mean,cdms2.tvariable.TransientVariable) and\
                     z.mean.shape==():
                 # ... adding 0.0 converts a numpy array of shape () to an actual number

@@ -205,7 +205,7 @@ def set_spatial_avg_method( var ):
     # ... weighting_choice() is only valid for atmos, but will probably be ok for other realms.
     return var
 
-def set_mean( mv ):
+def set_mean( mv, season=seasonsyr, region=None, gw=None ):
     # Set mean attribute of a variable.  Typically this appears in a plot header.
     weighting = getattr( mv, 'weighting', None )
     if hasattr(mv,'mean') and isinstance(mv.mean,Number):
@@ -216,9 +216,9 @@ def set_mean( mv ):
         # The _filename attribute, or else a lot of data we don't have, is needed to compute
         # mass-based weights.
         try:
-            mv.mean = reduce2scalar( mv, weights='mass' )
+            mv.mean = reduce2scalar( mv, season=season, region=region, gw=gw, weights='mass' )
         except Exception as e:
-            print "ERROR, exception",e,"for variable",mv.id
+            print "ERROR caught by set_mean, exception",e,"for variable",mv.id
     #else: use the VCS default of area weighting
 
 
@@ -454,7 +454,7 @@ def reduce2scalar_seasonal_zonal_level( mv, season=seasonsyr, latmin=-90, latmax
         return None
     return reduce2scalar_seasonal_zonal( mvl, season, latmin=latmin, latmax=latmax, vid=vid, gw=gw )
 
-def reduce2scalar( mv, vid=None, gw=None, weights=None ):
+def reduce2scalar( mv, vid=None, gw=None, weights=None, season=seasonsyr, region=None ):
     """averages mv over the full range all axes, to a single scalar.
     Uses the averager module for greater capabilities
     Latitude weights may be provided as 'gw'.  The averager's default is reasonable, however.
@@ -465,7 +465,8 @@ def reduce2scalar( mv, vid=None, gw=None, weights=None ):
     For the moment we expect mv to have lat and lon axes; and if it has no level axis,
     the bottom level, i.e. the last in any level array, lev=levels[-1], will be assumed.
     """
-    return reduce2any( mv, target_axes=[], vid=vid, gw=gw, weights=weights )
+    return reduce2any( mv, target_axes=[], vid=vid, gw=gw, weights=weights, season=season,
+                       region=region )
 
 def reduce2levlat_seasonal( mv, season=seasonsyr, region=None, vid=None ):
     """returns the mean of the variable over all axes but level and latitude, as a cdms2 variable, i.e. a MV.
