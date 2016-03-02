@@ -680,6 +680,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
 
 if __name__ == '__main__':
    print "UV-CDAT Diagnostics, command-line version"
+   print ' '.join(sys.argv)
    o = Options()
    o.processCmdLine()
    o.verifyOptions()
