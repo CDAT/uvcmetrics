@@ -284,7 +284,7 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
         weights = getattr( mv, 'weighting', None )
         if not hasattr(mvrs,'filetable') and hasattr(mv,'filetable'):
             mvrs.filetable = mv.filetable
- 
+
     if len(axes_string)<=2:
         avmv = mvrs
     else:
