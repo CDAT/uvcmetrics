@@ -30,7 +30,6 @@ def calcy2(y1, dy, yl):
 # Function that creates the templates and graphics methods for the diagnostics plots                  #
 #                                                                                                     #
 #######################################################################################################
-@profile
 def build_templates(canvas=None, graphicMethodStrings=None, overlay=None, rows=1, columns=1,
                     mainTemplateOptions=None, templateOptionsArray=None, templateNameArray=None,
                     legendDirection='vertical', forceAspectRatio=False, onlyData=False):
