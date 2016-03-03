@@ -314,6 +314,16 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
                 klev = klevs[0]
             avweights = mvrs.clone()
 
+            # The variable mv, hence mvrs and avweights may have been expanded in longitude after
+            # the weight array in the filetable was constructed.  This happens for polar plots.
+            # So here we expand the weight array exactly the same way, if we can:
+            if len(klons)>0:
+                ll_lon = latlon_wts.getLongitude()
+                av_lon = avweights.getLongitude()
+                if ll_lon.topology=='circular' and av_lon.topology=='circular' and\
+                        len(ll_lon)<len(av_lon):
+                    latlon_wts = latlon_wts( longitude=( av_lon[0], av_lon[-1] ) )
+
             if len(klats)>0 and len(klons)>0:
                 # We have both latitudes and longitudes
                 for inds in numpy.ndindex(avweights.shape):
