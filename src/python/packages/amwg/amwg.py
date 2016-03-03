@@ -1848,7 +1848,6 @@ class amwg_plot_set8(amwg_plot_spec):
             }
         #... was self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
         self.computation_planned = True
-
     def mpi_init(self):
         import sys, cdms2
         def splitList(keys, size):

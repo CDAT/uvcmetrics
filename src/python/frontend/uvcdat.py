@@ -1069,12 +1069,6 @@ class plot_spec(object):
         elif self.SPARK_ENABLED:
             #spark mode
             import os, sys, pdb
-            print 'PYSPARK_PYTHON = ',os.environ['PYSPARK_PYTHON']
-            print 'LD_LIBRARY_PATH = ',os.environ['LD_LIBRARY_PATH']
-            print 'UVCDAT_SETUP_PATH = ',os.environ['UVCDAT_SETUP_PATH']
-            print 'PYTHONPATH = ', os.environ['PYTHONPATH']
-            for ppp in sys.path:
-                print ppp
             start = time.time()
             from pyspark import SparkContext
             sc = SparkContext(appName="Diagnostic Test")
@@ -1082,14 +1076,7 @@ class plot_spec(object):
             print 'partitions = ', partitions
             P = sc.parallelize(self.reduced_variables.keys(), partitions)
             RESULTS = P.map( lambda key: (key, self.reduced_variables[key].reduce(None, RETURN_ARRAYS=True))  ) 
-            print 'after map'
-            print 'PYSPARK_PYTHON = ',os.environ['PYSPARK_PYTHON']
-            print 'LD_LIBRARY_PATH = ',os.environ['LD_LIBRARY_PATH']
-            print 'UVCDAT_SETUP_PATH = ',os.environ['UVCDAT_SETUP_PATH']
-            print 'PYTHONPATH = ', os.environ['PYTHONPATH']
-            for ppp in sys.path:
-                print ppp
-            print help(RESULTS.collect)
+
             RRR = RESULTS.collect()
             RESULTS = dict(RRR)
             #sc.stop()
