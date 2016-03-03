@@ -206,7 +206,8 @@ def set_spatial_avg_method( var ):
     return var
 
 def set_mean( mv, season=seasonsyr, region=None, gw=None ):
-    # Set mean attribute of a variable.  Typically this appears in a plot header.
+    """Set mean attribute of a variable.  Typically this appears in a plot header."""
+    if season is None: season=seasonsyr
     weighting = getattr( mv, 'weighting', None )
     if hasattr(mv,'mean') and isinstance(mv.mean,Number):
         mvmean = mv.mean
