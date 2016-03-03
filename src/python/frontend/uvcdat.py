@@ -1076,7 +1076,7 @@ class plot_spec(object):
             print 'partitions = ', partitions
             P = sc.parallelize(self.reduced_variables.keys(), partitions)
             RESULTS = P.map( lambda key: (key, self.reduced_variables[key].reduce(None, RETURN_ARRAYS=True))  ) 
-
+            print 'RESULKTS = ', type(RESULTS)
             RRR = RESULTS.collect()
             RESULTS = dict(RRR)
             #sc.stop()
