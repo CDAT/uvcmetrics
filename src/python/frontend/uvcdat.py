@@ -1068,7 +1068,8 @@ class plot_spec(object):
             print 'mpi time = ', end-start
         elif self.SPARK_ENABLED:
             #spark mode
-
+            import os
+            print os.environ['PYSPARK_PYTHON']
             start = time.time()
             from pyspark import SparkContext
             sc = SparkContext(appName="Diagnostic Test")
