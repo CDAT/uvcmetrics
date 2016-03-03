@@ -1070,6 +1070,7 @@ class plot_spec(object):
             #spark mode
             import os
             print 'PYSPARK_PYTHON = ',os.environ['PYSPARK_PYTHON']
+            print 'PYTHONPATH = ', os.environ['PYTHONPATH']
             start = time.time()
             from pyspark import SparkContext
             sc = SparkContext(appName="Diagnostic Test")
