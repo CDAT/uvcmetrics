@@ -1089,7 +1089,7 @@ class plot_spec(object):
             print 'PYTHONPATH = ', os.environ['PYTHONPATH']
             for ppp in sys.path:
                 print ppp
-            pdb.set_trace()
+            print dir(RESULTS)
             RESULTS = dict(RESULTS.collect())
             #sc.stop()
             
