@@ -1068,7 +1068,7 @@ class plot_spec(object):
             print 'mpi time = ', end-start
         elif self.SPARK_ENABLED:
             #spark mode
-            import os
+            import os, sys
             print 'PYSPARK_PYTHON = ',os.environ['PYSPARK_PYTHON']
             print 'PYTHONPATH = ', os.environ['PYTHONPATH']
             start = time.time()
@@ -1080,7 +1080,11 @@ class plot_spec(object):
             RESULTS = P.map( lambda key: (key, self.reduced_variables[key].reduce(None, RETURN_ARRAYS=True))  ) 
             print 'after map'
             print 'PYSPARK_PYTHON = ',os.environ['PYSPARK_PYTHON']
+            print 'LD_LIBRARY_PATH = ',os.environ['LD_LIBRARY_PATH']
+            print 'UVCDAT_SETUP_PATH = ',os.environ['UVCDAT_SETUP_PATH']
             print 'PYTHONPATH = ', os.environ['PYTHONPATH']
+            for ppp in sys.path:
+                print ppp
             RESULTS = dict(RESULTS.collect())
             #sc.stop()
             
