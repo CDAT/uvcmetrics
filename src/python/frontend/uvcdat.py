@@ -1089,8 +1089,9 @@ class plot_spec(object):
             print 'PYTHONPATH = ', os.environ['PYTHONPATH']
             for ppp in sys.path:
                 print ppp
-            print dir(RESULTS)
-            RESULTS = dict(RESULTS.collect())
+            print help(RESULTS.collect)
+            RRR = RESULTS.collect()
+            RESULTS = dict(RRR)
             #sc.stop()
             
             #spark post processing
