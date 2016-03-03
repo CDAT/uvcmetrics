@@ -1078,6 +1078,9 @@ class plot_spec(object):
             print 'partitions = ', partitions
             P = sc.parallelize(self.reduced_variables.keys(), partitions)
             RESULTS = P.map( lambda key: (key, self.reduced_variables[key].reduce(None, RETURN_ARRAYS=True))  ) 
+            print 'after map'
+            print 'PYSPARK_PYTHON = ',os.environ['PYSPARK_PYTHON']
+            print 'PYTHONPATH = ', os.environ['PYTHONPATH']
             RESULTS = dict(RESULTS.collect())
             #sc.stop()
             
