@@ -1079,7 +1079,7 @@ class plot_spec(object):
             print 'RESULKTS = ', type(RESULTS)
             RRR = RESULTS.collect()
             RESULTS = dict(RRR)
-            #sc.stop()
+            sc.stop()
             
             #spark post processing
             all_keys, collected_data, collected_axes, collected_attr = [], [], [], []
