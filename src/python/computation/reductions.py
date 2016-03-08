@@ -2964,7 +2964,6 @@ class reduced_variable(ftrow,basic_id):
         circularity!
         """
         import cdms2, numpy, os, sys
-        print 'actual reduction'
         
         #all of these are to satisfy the workers to do connect with the python version of uvcdat for spark
         #this needs to be solved in a different way.
