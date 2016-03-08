@@ -5,7 +5,7 @@ NFSHOME = os.environ['NFSHOME']
 TIMING_PATH = NFSHOME + '/uvcmetrics/src/python/spark_timing/'
 SPARK_OUTPUTDIR = NFSHOME + '/spark_output/' + DIRSIZE + '/'
 
-RUNS = [0]
+RUNS = [1,2,3,4]
 for (N,n,wait_time) in config:
     Npartitions = int(N)*int(n)
     os.environ['NUM_PARTITIONS'] = str(Npartitions)
