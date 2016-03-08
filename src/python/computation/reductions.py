@@ -2963,7 +2963,7 @@ class reduced_variable(ftrow,basic_id):
         with elements of the form (variable id):(reduced_var object).  There is no check for
         circularity!
         """
-        import cdms2, numpy, os
+        import cdms2, numpy, os, sys
         print 'actual reduction'
         
         #all of these are to satisfy the workers to do connect with the python version of uvcdat for spark
@@ -2971,7 +2971,7 @@ class reduced_variable(ftrow,basic_id):
         os.environ['LD_LIBRARY_PATH']='/opt/nfs/mcenerney1/02_17_16/lib:/opt/nfs/mcenerney1/02_17_16/Externals/lib64:/opt/nfs/mcenerney1/02_17_16/Externals/lib'
         os.environ['UVCDAT_SETUP_PATH']='/opt/nfs/mcenerney1/02_17_16'
         os.environ['PYTHONPATH']='/opt/nfs/mcenerney1/02_17_16/lib/python2.7/site-packages:/opt/nfs/mcenerney1/02_17_16/Externals/lib/python2.7/site-packages'
-        import sys
+
         paths = ['', '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/site-packages/setuptools-17.1.1-py2.7.egg', 
                  '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/site-packages/singledispatch-3.4.0.3-py2.7.egg', 
                  '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/site-packages/pyOpenSSL-0.14-py2.7.egg', 

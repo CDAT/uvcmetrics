@@ -1,7 +1,5 @@
 #!/bin/bash
 
-rm $NFSHOME/tmp/*
-
 source $NFSHOME/02_17_16/bin/setup_runtime.sh
 
 $SPARKHOME/bin/pyspark \
@@ -13,4 +11,4 @@ $NFSHOME/uvcmetrics/src/python/frontend/diags.py \
 --package AMWG --sets 8 --seasons ANN --plots yes --vars hur  \
 > $SPARKOUTPUT
 
-#--master spark://198.128.245.179:7077   \
+#--master spark://198.128.245.179:7077   \##rm $NFSHOME/tmp/*
