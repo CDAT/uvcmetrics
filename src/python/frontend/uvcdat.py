@@ -3,6 +3,7 @@
 # Functions callable from the UV-CDAT GUI.
 
 import hashlib, os, pickle, sys, os, math, pdb, string
+from numbers import Number
 from metrics import *
 from metrics.fileio.filetable import *
 from metrics.fileio.findfiles import *
@@ -821,6 +822,15 @@ class uvc_simple_plotspec():
         plot_these = []
 
         for zax in self.vars:
+            try:
+                del zax.filetable  # we'll write var soon, and can't write a filetable
+            except:
+                pass
+            for ax in zax.getAxisList():
+                try:
+                    del ax.filetable
+                except:
+                    pass
             writer.write( zax )
             plot_these.append( str(seqgetattr(zax,'id','')) )
         writer.plot_these = ' '.join(plot_these)
@@ -1177,8 +1187,13 @@ class plot_spec(object):
             #print p
             #print self.plotspec_values[p]
         #pdb.set_trace()
+
+        # dispose of any failed plots
+        self.plotspec_values = { p:ps for p,ps in self.plotspec_values.items() if ps is not None }
+
         print 'now composite plot'
         for p,ps in self.composite_plotspecs.iteritems():
+            self.plotspec_values[p] = [ self.plotspec_values[sp] for sp in ps if sp in self.plotspec_values ]
             self.plotspec_values[p] = [ self.plotspec_values[sp] for sp in ps if sp in self.plotspec_values ]
             # Normally ps is a list of names of a plots, we'll remember its value as a list of their values.
             if type( ps ) is tuple:
@@ -1186,13 +1201,13 @@ class plot_spec(object):
                 self.plotspec_values[p] = tuple( self.plotspec_values[p] )
             #print p
             #print self.plotspec_values[p]
-        #This next loop is a duplicate of the previous loop.  It can be viewed as a cleenup. The reason it's 
+        #This next loop is a duplicate of the previous loop.  It can be viewed as a cleanup. The reason it's 
         #needed is that there is no guaranteed order of execution with a dictionary.  So if a composite plot
         #is a composite of others then there may be an incomplete plot if the individual plots are defined
-        #later.  Plot set 11 is an example of this.
+        #later.  Plot set 11 is an example of this.  It can happen with plot set 6 too.
         for p,ps in self.composite_plotspecs.iteritems():
-            self.plotspec_values[p] = [ self.plotspec_values[sp] for sp in ps if sp in self.plotspec_values ]
             # Normally ps is a list of names of a plots, we'll remember its value as a list of their values.
+            self.plotspec_values[p] = [ self.plotspec_values[sp] for sp in ps if sp in self.plotspec_values ]
             if type( ps ) is tuple:
                 # ps is a tuple of names of simple plots which should be overlapped
                 self.plotspec_values[p] = tuple( self.plotspec_values[p] )
@@ -1220,6 +1235,22 @@ class plot_spec(object):
             print 'in uvcdat.py' # this next line is printed from two different possible places.
             print "ERROR, all values of",z.id,"are missing!"
             return None,None
+        if z is not None and not (hasattr(z,'mean') and isinstance(z.mean,Number)):
+            # Compute variable's mean.  For mass weighting, it should have already happened in a
+            # dimensionality reduction functions.
+            if type(z) is tuple: zid = [zz.id for zz in z]
+            else: zid = z.id
+            print "INFO no mean attribute in variable",zid,\
+                "; we may compute it in compute_plot_var_value."
+            set_mean( z )
+            if hasattr(z,'mean') and isinstance(z.mean,cdms2.tvariable.TransientVariable) and\
+                    z.mean.shape==():
+                # ... adding 0.0 converts a numpy array of shape () to an actual number
+                z.mean = z.mean.getValue()+0.0
+        if (hasattr(z,'mean') and isinstance(z.mean,Number)):
+            # VCS display of z.mean has too many digits unless we round:
+            z.mean = round2( z.mean, 6 )
+
         return z, zrv
         
 

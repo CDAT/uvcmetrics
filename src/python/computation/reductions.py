@@ -11,9 +11,11 @@ from math import radians, log10
 from numpy import sin, ma
 #import dateutil.parser
 import dateparser
+from numbers import Number
 import datetime
 from unidata import udunits
 from metrics.packages.amwg.derivations import press2alt
+from metrics.packages.amwg.derivations.massweighting import *
 from metrics.packages.amwg.derivations import qflx_lhflx_conversions as flxconv
 from metrics.fileio.filetable import *
 from metrics.computation.units import *
@@ -22,6 +24,7 @@ import metrics.frontend.defines as defines
 from metrics.computation.region import *
 from genutil import *
 from metrics.computation.region_functions import *
+#import debug
 
 regridded_vars = {}  # experimental
 
@@ -189,80 +192,209 @@ def compose( rf1, rf2 ):
     return rf12    
 
 def set_spatial_avg_method( var ):
+    # >>> probably obsolete <<<
     """Determines how to compute spatial averages of a variable var.
-    Sets the attribute var.spavgmeth to a string specifying how to compute spatial averages.
+    Sets the attribute var.weighting to a string specifying how to compute spatial averages.
     At present the default is area weighting (the averager() default), and the only other
     possibility is mass weighting."""
     # Don't change the spatial average method if it has already been set.
     # Then set it to the default, and then check to see whether there's anything about the variable
     # which calls for a non-default method.
-    if hasattr( var, 'spavgmeth' ): return var
-    var.spavgmeth = 'area weights'  # default
-
-    # Certain units would imply that the variable needs mass weighting.
-    # Otherwise, stick with the default.
-    if not hasattr( var, 'units' ): return var
-    su = var.units.split('/')
-    if len(su)>=3:  return var
-    if len(su)==1:
-        if su in\
-                ['degC', 'degF', 'degK', 'deg_C', 'deg_F', 'deg_K', 'deg_c', 'deg_f', 'deg_k',
-                 'degreeC', 'degreeF', 'degreeK', 'degree_C', 'degree_Celsius', 'degree_F',
-                 'degree_Fahrenheit', 'degree_K', 'degree_Kelvin', 'degree_c', 'degree_centigrade',
-                 'degree_f', 'degree_k']:   # temperature
-                var.spavgmeth = 'mass weights'
-        if su in ['ppt', 'ppb', 'ppm', 'pptv', 'ppbv', 'ppmv']:  # parts per (something)
-                var.spavgmeth = 'mass weights'
-    elif len(su)==2 and su[0]==su[1]:
-        if su[0] in ['mol','mole']:  # mol/mol
-                var.spavgmeth = 'mass weights'
-        if su[0] in ['kg', 'g']:     # mass/mass (just the most common mass units)
-                var.spavgmeth = 'mass weights'
-        if su[0] in ['Pa', 'hPa', 'mbar']:  # pressure/pressure (just the most common such units):
-                var.spavgmeth = 'mass weights'
+    if hasattr( var, 'weighting' ): return var
+    var.weighting = weighting_choice( var )
+    # ... weighting_choice() is only valid for atmos, but will probably be ok for other realms.
     return var
 
-def get_mass_weights( mv ):
-    """Returns mass weights, in a variable of th same shape as the input mv."""
-    # >>>> WORK IN PROGRESS <<<<
-    pass
+def set_mean( mv ):
+    # Set mean attribute of a variable.  Typically this appears in a plot header.
+    weighting = getattr( mv, 'weighting', None )
+    if hasattr(mv,'mean') and isinstance(mv.mean,Number):
+        mvmean = mv.mean
+    else:
+        mvmean = None
+    if weighting=='mass' and hasattr(mv,'_filename') and mvmean is None:
+        # The _filename attribute, or else a lot of data we don't have, is needed to compute
+        # mass-based weights.
+        try:
+            mv.mean = reduce2scalar( mv, weights='mass' )
+        except Exception as e:
+            print "ERROR, exception",e,"for variable",mv.id
+    #else: use the VCS default of area weighting
 
-# Dictionary which matches a variable's :spavgmeth attribute to a function which computes
-# weights for its spatial average.  The function should have arguments:
-# - mv, the variable which will be averaged
-# The function should return:
-# - wt, an array of weights; wt.shape==mv.shape.
-# >>>> WORK IN PROGRESS <<<<<
-# >>>> This dict is subject to change, and the function it names does't exist. <<<<<
-spavgfuns = { 'area weights':None, 'mass weights':get_mass_weights }
 
 # -------- end of Miscellaneous  Utilities ---------
 
-def reduce2scalar_zonal( mv, latmin=-90, latmax=90, vid=None, gw=None ):
-    """returns the mean of the variable over the supplied latitude range.
-    The computed quantity is a scalar but is returned as a cdms2 variable, i.e. a MV.
-    The input mv is a cdms2 variable too.
-    This function uses the cdms2 avarager() function to handle weights and do averages
-    Latitude weights may be provided as 'gw'.  The averager's default is reasonable, however.
-    """
-    if vid is None:
-        vid = 'reduced_'+mv.id
-    mv2 = mv(latitude=(latmin, latmax))
+def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=None, weights=None, exclude_axes=[] ):
+    """This is a generic reduction function.  It reduces dimensionality by averaging over all but
+    specified axes.  This uses the averager module for greater capabilities
 
-    axis_names = [ a.id for a in axes ]
-    axes_string = '('+')('.join(axis_names)+')'
-    if gw is None:
-        avmv = averager( mv2, axis=axes_string )
+    This function will return a variable computed by averaging the input variable mv over all
+    but the target axes.
+
+    The target axes is a list of axis ids (names), or one-character axis names such as X,Y,Z,T,
+    or axis objects.
+    Axis names (ids) may be listed in exclude_axes, to exclude them from the averaging process.
+
+    Latitude weights may be provided as 'gw'.  The averager's default is reasonable, however.
+
+    The genutil averager() function performs the averaging.  This normally uses its default
+    weighting, which typically is area weights.
+
+    But if weights='mass' (or if None and mv's :weighting attribute be 'mass'), mass weighting will
+    be used.  For mass weighting, the weight will be recovered from the filetable specified in the
+    filetable attribute of mv, which must exist.  Of course, this also requires the weights to have
+    been loaded into the filetable's weights dictionary.
+
+    Alternatively, you can compute mass (or other) weights into a 3-D (lev,lat,lon) array (or MV)
+    and pass it as the 'weights' argument.
+    """
+    # So far I've checked this code (without testing) for doing essentially the same thing
+    # (with appropriate arguments) as reduce2scalar and reduce2latlon_seasonal
+    if len(mv.shape)==0:
+        return mv
+    if vid is None:   # Note that the averager function returns a variable with meaningless id.
+        vid = 'reduced_'+mv.id
+    if region is None or region=="global" or region=="Global" or\
+            getattr(region,'filekey',None)=="Global" or str(region)=="Global":
+        mvr = mv
     else:
-        weights = [ gw if a.isLatitude() else 'weighted' for a in axes ]
-        avmv = averager( mv2, axis=axes_string, combinewts=0, weights=weights )
-    avmv.id = vid   # Note that the averager function returns a variable with meaningless id.
+        mvr = select_region(mv, region)
+    mvrs = calculate_seasonal_climatology(mvr, season)
+    if mvrs is None:
+        # Among other cases, this can happen if mv has all missing values.
+        return None
+
+    mv_axes = allAxes( mv )
+    for a in mv_axes:
+        if hasattr(a,'axis'): continue
+        if a.isLatitude: a.axis = 'y'
+        elif a.isLongitude: a.axis = 'x'
+        elif a.isLevel: a.axis = 'z'
+    axis_names = [ a.id for a in mv_axes if not a.isTime() and a.id not in exclude_axes and
+                   a not in target_axes and a.id not in target_axes and
+                   getattr(a,'axis').lower() not in target_axes and
+                   getattr(a,'axis').upper() not in target_axes ]
+    axes_string = '('+')('.join(axis_names)+')'
+    axes = mvrs.getAxisList()
+
+    if weights==None:
+        # weights unspecified (probably).  Are they specified in a variable attribute?
+        # If mass weighting is appropriate, the weighting attribute should say so.  It was set by
+        # an earlier weighting_choice() call.
+        weights = getattr( mv, 'weighting', None )
+        if not hasattr(mvrs,'filetable') and hasattr(mv,'filetable'):
+            mvrs.filetable = mv.filetable
+ 
+    if len(axes_string)<=2:
+        avmv = mvrs
+    else:
+        for axis in axes:
+            if axis.getBounds() is None:
+                axis._bounds_ = axis.genGenericBounds()
+
+        if weights=='mass' or (hasattr(weights,'shape') and len(weights.shape)==3):
+            # In this case we will provide the averager with a full weight array, i.e.
+            # "of the same shape as V" in the language of the genutil averager() documentation (with V=mvrs)
+            if weights=='mass':
+                latlon_wts = mvrs.filetable.weights['mass']  # array of shape (lev,lat,lon)
+            else:
+                latlon_wts = weights
+            klevs = [i for i,j in enumerate([a.isLevel() for a in axes]) if j==True]
+            klats = [i for i,j in enumerate([a.isLatitude() for a in axes]) if j==True]
+            klons = [i for i,j in enumerate([a.isLongitude() for a in axes]) if j==True]
+            #assert( len(klats)>0 ), "no latitudes exist"
+            ## equivalent to assert( any( [a.isLatitude() for a in axes] ) )
+            #assert( len(klons)>0 ), "no longitudes exist"
+            ## equivalent to assert( any( [a.isLongitude() for a in axes] ) )
+            if len(klats)>0:
+                klat = klats[0]        # thus axes[klat].isLatitude() is True
+            if len(klons)>0:
+                klon = klons[0]        # thus axes[klon].isLongitude() is True
+            if len(klevs)>0:
+                klev = klevs[0]
+            avweights = mvrs.clone()
+
+            if len(klats)>0 and len(klons)>0:
+                # We have both latitudes and longitudes
+                for inds in numpy.ndindex(avweights.shape):
+                    ilat = inds[klat]
+                    ilon = inds[klon]
+                    if len(klevs)>0:
+                        ilev = inds[klev]
+                    else:
+                        ilev = -1   # means use the bottom, usually best if there are no levels
+                    avweights[inds] = latlon_wts[ilev,ilat,ilon]
+            elif len(klats)>0:
+                # We have latitudes, no longitudes.  Normally this means that the longitudes have
+                # been averaged out.
+                for inds in numpy.ndindex(avweights.shape):
+                    ilat = inds[klat]
+                    if len(klevs)>0:
+                        ilev = inds[klev]
+                    else:
+                        ilev = -1   # means use the bottom, usually best if there are no levels
+                    avweights[inds] = numpy.sum( latlon_wts[ilev,ilat,:] )
+            elif len(klons)>0:
+                # We have longitudes, no latitudes.  Normally this means that the latitudes have
+                # been averaged out.
+                for inds in numpy.ndindex(avweights.shape):
+                    ilon = inds[klon]
+                    if len(klevs)>0:
+                        ilev = inds[klev]
+                    else:
+                        ilev = -1   # means use the bottom, usually best if there are no levels
+                    avweights[inds] = numpy.sum( latlon_wts[ilev,:,ilon] )
+            else:
+                # No latitudes, no longitudes!
+                if len(klevs)>0:
+                    ilev = inds[klev]
+                else:
+                    # Probably something's wrong, there's basically nothing to do.
+                    # But we can go on with something sensible anyway.
+                    ilev = -1   # means use the bottom, usually best if there are no levels
+                    print "WARNING, computing a mass-weighted average of",mvrs.id,\
+                        "with no spatial axes"
+                avweights[inds] = numpy.sum( latlon_wts[ilev,:,:] )
+
+            avmv = averager( mvrs, axis=axes_string, weights=avweights )
+
+        elif gw is None:
+            avmv = averager( mvrs, axis=axes_string )   # "normal" averaging
+        else:
+            weights = [ gw if a.isLatitude() else 'weighted' for a in axes ]
+            try:
+                avmv = averager( mvrs, axis=axes_string, combinewts=0, weights=weights )
+            except AveragerError as e:
+                print "AveragerError: %s" %e
+                raise e
+                return None
+            except Exception as e:
+                print "Exception: %s" %e
+                raise e
+                return None
+
+    if avmv is None: return None
+    avmv.id = vid
+
+    # set units and mean
     if hasattr(mv,'units'):
         avmv.units = mv.units
-
+        # >>> special ad-hoc code.  The target units should be provided in an argument, not by this if statement>>>>
+        if avmv.units=="Pa" or avmv.units.lower()=="pascal" or avmv.units.lower()=="pascals":
+            avmv = convert_variable( avmv, "millibar" )
+    if not hasattr( avmv, '_filename' ) and hasattr( mv,'_filename' ):
+        avmv._filename = mv._filename
+    if not hasattr( avmv, 'filetable' ) and hasattr( mv,'filetable' ):
+        avmv.filetable = mv.filetable
+    avmv.weighting = weights
+    set_mean( avmv )
+    
     return avmv
 
-def reduce2scalar_seasonal_zonal( mv, seasons=seasonsyr, latmin=-90, latmax=90, vid=None, gw=None ):
+
+
+def reduce2scalar_seasonal_zonal( mv, season=seasonsyr, latmin=-90, latmax=90, vid=None, gw=None,
+                                  seasons=seasonsyr):
     """returns the mean of the variable over the supplied latitude range (in degrees).
     The computed quantity is a scalar but is returned as a cdms2 variable, i.e. a MV.
     The input mv is a cdms2 variable too.
@@ -271,10 +403,12 @@ def reduce2scalar_seasonal_zonal( mv, seasons=seasonsyr, latmin=-90, latmax=90, 
     Latitude weights may be provided as 'gw' which must depend (solely) on the latitude axis.  The
     averager's default is reasonable, however.
     """
-    if vid is None:
-        vid = 'reduced_'+mv.id
+    # backwards compatibility with old keyword 'seasons':
+    if seasons!=seasonsyr:
+        season = seasons
     # reduce size of lat axis to (latmin,latmax)
     mv2 = mv(latitude=(latmin, latmax))
+    if not hasattr( mv2, 'filetable') and hasattr(mv,'filetable'): mv2.filetable = mv.filetable
     # reduce size of gw to (latmin,latmax)
     gw2 = None
     if gw is not None:
@@ -283,38 +417,10 @@ def reduce2scalar_seasonal_zonal( mv, seasons=seasonsyr, latmin=-90, latmax=90, 
         else:
             #print "debug For mv",mv.id,"gw rejected, domain is",gw.getDomain()
             pass
+    return reduce2any( mv2, target_axes=[], vid=vid, season=season, gw=gw2 )
 
-    mvseas = calculate_seasonal_climatology(mv2, seasons)
-    if mvseas is None:
-        # Among other cases, this can happen if mv has all missing values.
-        return None
-
-    axes = allAxes( mvseas )
-
-    for ax in axes:
-        if ax.isTime():
-            continue
-        if ax.getBounds() is None:
-            ax._bounds_ = ax.genGenericBounds()  # needed for averager()
-    
-    axis_names = [ a.id for a in axes ]
-    axes_string = '('+')('.join(axis_names)+')'
-    if len(axes_string)>2:
-        if gw2 is None:
-            avmv = averager( mvseas, axis=axes_string )
-        else:
-            weights = [ gw2 if a.isLatitude() else 'weighted' for a in axes ]
-            avmv = averager( mvseas, axis=axes_string, combinewts=0, weights=weights )
-    else:
-        avmv = mvseas
-    avmv.id = vid   # Note that the averager function returns a variable with meaningless id.
-    if hasattr(mv,'units'):
-        avmv.units = mv.units
-
-    return avmv
-
-def reduce2scalar_seasonal_zonal_level( mv, seasons=seasonsyr, latmin=-90, latmax=90, level=None,
-                                        vid=None, gw=None ):
+def reduce2scalar_seasonal_zonal_level( mv, season=seasonsyr, latmin=-90, latmax=90, level=None,
+                                        vid=None, gw=None, seasons=seasonsyr ):
     """returns the mean of the variable at the supplied level and over the supplied latitude range
     The computed quantity is a scalar but is returned as a cdms2 variable, i.e. a MV.
     The input mv is a cdms2 variable too.  Its level axis *must* have pressure levels in millibars,
@@ -324,9 +430,12 @@ def reduce2scalar_seasonal_zonal_level( mv, seasons=seasonsyr, latmin=-90, latma
     Level units is millibars.
     Latitude weights may be provided as 'gw'.  The averager's default is reasonable, however.
     """
+    # backwards compatibility with old keyword 'seasons':
+    if seasons!=seasonsyr:
+        season = seasons
     levax = levAxis(mv)
     if level is None or levax is None:
-        return reduce2scalar_seasonal_zonal( mv, seasons, latmin, latmax, vid )
+        return reduce2scalar_seasonal_zonal( mv, season, latmin, latmax, vid )
 
     # Check whether mv has pressure levels in mbar as required.  Conversions must be done prior to
     # calling this function because conversion from hybrid levels requires several other variables.
@@ -343,166 +452,66 @@ def reduce2scalar_seasonal_zonal_level( mv, seasons=seasonsyr, latmin=-90, latma
     mvl = select_lev( mv, level )   # mv restricted (approximately) to the specified level
     if mvl is None:
         return None
-    return reduce2scalar_seasonal_zonal( mvl, seasons, latmin=latmin, latmax=latmax, vid=vid, gw=gw )
+    return reduce2scalar_seasonal_zonal( mvl, season, latmin=latmin, latmax=latmax, vid=vid, gw=gw )
 
-
-def reduce2scalar( mv, vid=None, gw=None ):
+def reduce2scalar( mv, vid=None, gw=None, weights=None ):
     """averages mv over the full range all axes, to a single scalar.
     Uses the averager module for greater capabilities
     Latitude weights may be provided as 'gw'.  The averager's default is reasonable, however.
+    If weights='mass', mass weighting will be used.  This requires several variables to be
+    available in a file mv._filename, which attribute must exist if mv has hybrid levels.
+    Alternatively, you can compute mass (or other) weights into a 3-D (lev,lat,lon) array (or MV)
+    and pass it as the 'weights' argument.
+    For the moment we expect mv to have lat and lon axes; and if it has no level axis,
+    the bottom level, i.e. the last in any level array, lev=levels[-1], will be assumed.
     """
-    if vid is None:   # Note that the averager function returns a variable with meaningless id.
-        vid = 'reduced_'+mv.id
-    axes = allAxes( mv )
-    axis_names = [ a.id for a in axes ]
-    axes_string = '('+')('.join(axis_names)+')'
-    if gw is None:
-        avmv = averager( mv, axis=axes_string )
-    else:
-        weights = [ gw if a.isLatitude() else 'weighted' for a in axes ]
-        avmv = averager( mv, axis=axes_string, combinewts=0, weights=weights )
-    avmv.id = vid
-    if hasattr(mv,'units'):
-        avmv.units = mv.units
+    return reduce2any( mv, target_axes=[], vid=vid, gw=gw, weights=weights )
 
-    return avmv
+def reduce2levlat_seasonal( mv, season=seasonsyr, region=None, vid=None ):
+    """returns the mean of the variable over all axes but level and latitude, as a cdms2 variable, i.e. a MV.
+    The input mv is a also cdms2 variable, assumed to be indexed as is usual for CF-compliant
+    variables, i.e. mv(time,lat,lon).  At present, no other axes (e.g. level) are supported.
+    At present mv must depend on all three axes.
+    Data us used only for time restricted to the specified season.  The season
+    is specified as an object of type cdutil.ties.Seasons, and defaults to the whole year.
+    The returned variable will still have a time axis, with one value per season specified.
+    """
+    # reduce2any will reduce along all non-target axes, without checking whether the target axes
+    # exist.  For backwards compatibility, we'll retain that check here without putting it in
+    # reduce2any:
+    if levAxis(mv) is None: return None
+    if latAxis(mv) is None: return None
+    return reduce2any( mv, target_axes=['y','z'], season=season, region=region, vid=vid )
 
-def reduce2lat( mv, vid=None ):
-    """returns the mean of the variable over all axes but latitude, as a cdms2 variable, i.e. a MV.
+def reduce2levlon_seasonal( mv, season=seasonsyr, region=None, vid=None ):
+    """as reduce2levlon_seasonal, but the axes retained are level and longitude."""
+    # reduce2any will reduce along all non-target axes, without checking whether the target axes
+    # exist.  For backwards compatibility, we'll retain that check here without putting it in
+    # reduce2any:
+    if levAxis(mv) is None: return None
+    if lonAxis(mv) is None: return None
+    return reduce2any( mv, target_axes=['x','z'], season=season, region=region, vid=vid )
+
+def reduce2latlon( mv, vid=None ):
+    """returns the mean of the variable over all axes but latitude&longitude, as a cdms2 variable, i.e. a MV.
     The input mv is a also cdms2 variable, assumed to be indexed as is usual for CF-compliant
     variables, i.e. mv(time,lat,lon).  At present, no other axes (e.g. level) are supported.
     At present mv must depend on all three axes.
     """
-    if vid is None:   # Note that the averager function returns a variable with meaningless id.
-        vid = 'reduced_'+mv.id
+    # from the old reduce2latlon, not implemented in reduce2any:
     axes = allAxes( mv )
-    #axis_names = [ a.id for a in axes if a.id!='lat' ]
-    axis_names = [ a.id for a in axes if not a.isLatitude() ]
-    axes_string = '('+')('.join(axis_names)+')'
-
-    avmv = averager( mv, axis=axes_string )
-    avmv.id = vid
-    if hasattr(mv,'units'):
-        avmv.units = mv.units
-
-    return avmv
-
-def reduce2level( mv, seasons=None, vid=None ):
-    """as reduce2lat, but averaging reduces coordinates to lev
-    NOTE: this function may be obsolete, seasons is NOT used."""
-    if vid is None:   # Note that the averager function returns a variable with meaningless id.
-        vid = 'reduced_'+mv.id
-    if levAxis(mv) is None: return None
-    axes = allAxes( mv )
-    timeax = timeAxis(mv)
-    if timeax is not None and timeax.getBounds() is None:
-        timeax._bounds_ = timeax.genGenericBounds()
-        
-    axis_names = [ a.id for a in axes if a.isLevel()==False ]
-    axes_string = '('+')('.join(axis_names)+')'
-
-    avmv = averager( mv, axis=axes_string )
-    avmv.id = vid
-    if hasattr(mv,'units'):
-        avmv.units = mv.units
-    return avmv
-
-
-def reduce2levlat( mv, vid=None ):
-    """as reduce2lat, but averaging reduces coordinates to (lev,lat)"""
-    if vid is None:   # Note that the averager function returns a variable with meaningless id.
-        vid = 'reduced_'+mv.id
-    if levAxis(mv) is None: return None
-    if latAxis(mv) is None: return None
-    axes = allAxes( mv )
-    timeax = timeAxis(mv)
-    if timeax is not None and timeax.getBounds() is None:
-        timeax._bounds_ = timeax.genGenericBounds()
-    axis_names = [ a.id for a in axes if a.isLevel()==False and a.isLatitude()==False ]
-    axes_string = '('+')('.join(axis_names)+')'
-
-    avmv = averager( mv, axis=axes_string )
-    avmv.id = vid
-    if hasattr(mv,'units'):
-        avmv.units = mv.units
-
-    return avmv
-
-def reduce2levlat_seasonal( mv, seasons=seasonsyr, region=None, vid=None ):
-    """as reduce2levlat, but data is averaged only for time restricted to the specified season;
-    as in reduce2lat_seasona."""
-    if vid is None:   # Note that the averager function returns a variable with meaningless id.
-        vid = 'reduced_'+mv.id
-    if levAxis(mv) is None: return None
-    if latAxis(mv) is None: return None
-    axes = allAxes( mv )
-
-    mvr = select_region(mv, region)
-    mvseas = reduce_time_seasonal(mvr, seasons, region)
-
-    axis_names = [ a.id for a in axes if a.isLevel()==False and a.isLatitude()==False and a.isTime()==False ]
-    axes_string = '('+')('.join(axis_names)+')'
-
-    if len(axes_string)>2:
-        avmv = averager( mvseas, axis=axes_string )
-    else:
-        avmv = mvseas
-    avmv.id = vid
-    if hasattr(mv,'units'):
-        avmv.units = mv.units
-    return avmv
-
-def reduce2levlon_seasonal( mv, seasons=seasonsyr, region=None, vid=None ):
-    """as reduce2levlat, but data is averaged only for time restricted to the specified season;
-    as in reduce2lon_seasona."""
-    if vid is None:   # Note that the averager function returns a variable with meaningless id.
-        vid = 'reduced_'+mv.id
-    if levAxis(mv) is None: return None
-    if lonAxis(mv) is None: return None
-    axes = allAxes( mv )
-
-    mvr = select_region(mv, region)
-    mvseas = reduce_time_seasonal(mvr, seasons, region)
-
-    axis_names = [ a.id for a in axes if a.isLevel()==False and a.isLongitude()==False and a.isTime()==False ]
-    axes_string = '('+')('.join(axis_names)+')'
-
-    if len(axes_string)>2:
-        avmv = averager( mvseas, axis=axes_string )
-    else:
-        avmv = mvseas
-    avmv.id = vid
-    if hasattr(mv,'units'):
-        avmv.units = mv.units
-    #pdb.set_trace()
-    return avmv
-def reduce2latlon( mv, vid=None ):
-    """as reduce2lat, but averaging reduces coordinates to (lat,lon)"""
-    if vid is None:   # Note that the averager function returns a variable with meaningless id.
-        vid = 'reduced_'+mv.id
-    axes = allAxes( mv )
-    #axis_names = [ a.id for a in axes if a.id!='lat' and a.id!='lon' ]
-    axis_names = [ a.id for a in axes if not a.isLatitude() and not a.isLongitude() ]
-    if len(axis_names)<=0:
-        return mv
-    axes_string = '('+')('.join(axis_names)+')'
     for ax in axes:
         if ax.getBounds() is None and hasattr(ax,'bounds')  and not (hasattr(ax,'_bounds_') and ax._bounds_ is not None):
             if hasattr(ax,'parent') and ax.parent is not None:
                 ax._bounds_ = ax.parent.variables(ax.bounds)
-        # The averager insists on bounds.  Sometimes they don't exist, especially for obs.
-        #if ax.id!='lat' and ax.id!='lon' and not hasattr( ax, 'bounds' ):
-        if ax.getBounds() is None and not ax.isLatitude() and not ax.isLongitude():
-            ax.setBounds( ax.genGenericBounds() )
-    avmv = averager( mv, axis=axes_string )
-    avmv.id = vid
-    if hasattr(mv,'units'):
-        avmv.units = mv.units
-
-    return avmv
+    return reduce2any( mv, target_axes=['x','y'], vid=vid )
 
 def reduce_time( mv, vid=None ):
-    """as reduce2lat, but averaging reduces only the time coordinate"""
+    """returns the mean of the variable over all axes but time, as a cdms2 variable, i.e. a MV.
+    The input mv is a also cdms2 variable, assumed to be indexed as is usual for CF-compliant
+    variables, i.e. mv(time,lat,lon).  At present, no other axes (e.g. level) are supported.
+    At present mv must depend on all three axes.
+    """
     if vid is None:   # Note that the averager function returns a variable with meaningless id.
         #vid = 'reduced_'+mv.id
         vid = mv.id
@@ -526,130 +535,44 @@ def reduce_time( mv, vid=None ):
 
     return avmv
 
-def reduce2lat_seasonal( mv, seasons=seasonsyr, region=None, vid=None ):
-    """as reduce2lat, but data is used only for time restricted to the specified season.  The season
+def reduce2lat_seasonal( mv, season=seasonsyr, region=None, vid=None, seasons=seasonsyr ):
+    """returns the mean of the variable over all axes but latitude, as a cdms2 variable, i.e. a MV.
+    The input mv is a also cdms2 variable, assumed to be indexed as is usual for CF-compliant
+    variables, i.e. mv(time,lat,lon).  At present, no other axes (e.g. level) are supported.
+    At present mv must depend on all three axes.
+    Data us used only for time restricted to the specified season.  The season
     is specified as an object of type cdutil.ties.Seasons, and defaults to the whole year.
     The returned variable will still have a time axis, with one value per season specified.
     """
+    # backwards compatibility with old keyword 'seasons':
+    if seasons!=seasonsyr:
+        season = seasons
+    return reduce2any( mv, target_axes=['y'], season=season, region=region, vid=vid )
 
-    if vid is None:
-        vid = 'reduced_'+mv.id
-    # Note that the averager function returns a variable with meaningless id.
-    # The climatology function returns the same id as mv, which we also don't want.
-
-    mvr = select_region(mv, region)
-    mvseas = calculate_seasonal_climatology(mvr, seasons)
-
-    if mvseas is None:
-        # Among other cases, this can happen if mv has all missing values.
-        return None
-    
-    axes = allAxes( mvseas )
-    for ax in axes:
-        if ax.getBounds() is None:
-            ax._bounds_ = ax.genGenericBounds()
-    #axis_names = [ a.id for a in axes if a.id!='lat' and a.id!='time']
-    axis_names = [ a.id for a in axes if not a.isLatitude() and not a.isTime() ]
-    axes_string = '('+')('.join(axis_names)+')'
-
-    if len(axes_string)>2:
-        avmv = averager( mvseas, axis=axes_string )
-    else:
-        avmv = mvseas
-    avmv.id = vid
-
-    if hasattr(mv,'units'):
-        avmv.units = mv.units
-    return avmv
-
-def reduce2lon_seasonal( mv, seasons=seasonsyr, region=None, vid=None ):
+def reduce2lon_seasonal( mv, season=seasonsyr, region=None, vid=None ):
     """This code was ripped from reduce2lat_seasonal.  The season
     is specified as an object of type cdutil.ties.Seasons, and defaults to the whole year.
     The returned variable will still have a time axis, with one value per season specified.
     """
+    return reduce2any( mv, target_axes=['x'], season=season, region=region, vid=vid )
 
-    if vid is None:
-        vid = 'reduced_'+mv.id
-    # Note that the averager function returns a variable with meaningless id.
-    # The climatology function returns the same id as mv, which we also don't want.
-
-    mvr = select_region(mv, region)
-    mvseas = calculate_seasonal_climatology(mvr, seasons)
-
-    if mvseas is None:
-        # Among other cases, this can happen if mv has all missing values.
-        return None
-    
-    axes = allAxes( mvseas )
-    for ax in axes:
-        if ax.getBounds() is None:
-            ax._bounds_ = ax.genGenericBounds()
-    #axis_names = [ a.id for a in axes if a.id!='lat' and a.id!='time']
-    axis_names = [ a.id for a in axes if not a.isLongitude() and not a.isTime() ]
-    axes_string = '('+')('.join(axis_names)+')'
-
-    if len(axes_string)>2:
-        avmv = averager( mvseas, axis=axes_string )
-    else:
-        avmv = mvseas
-    avmv.id = vid
-
-    if hasattr(mv,'units'):
-        avmv.units = mv.units
-    #pdb.set_trace()
-    return avmv
-
-def reduce2level_seasonal( mv, seasons=seasonsyr, region='Global', vid=None ):
+def reduce2level_seasonal( mv, season=seasonsyr, region='Global', vid=None, seasons=seasonsyr ):
     """as reduce2levlat, but data is averaged only for time restricted to the specified season;
     as in reduce2lat_seasonal."""
-    #pdb.set_trace()
-    if vid is None:   # Note that the averager function returns a variable with meaningless id.
-        vid = 'reduced_'+mv.id
+    # backwards compatibility with old keyword 'seasons':
+    if seasons!=seasonsyr:
+        season = seasons
+    # a feature in old version of this function, there's no analog in reduce2any:
     if levAxis(mv) is None: return None
-    axes = allAxes( mv )
 
-    #if region:
-    #    mvr = select_region(mv, region)
-    #else:
-    #    mvr = mv
+    avmv = reduce2any( mv, target_axes=['z'], season=season, region=region, vid=vid )
 
-    
-    #mvseas = reduce_time_seasonal(mvr, seasons, region)
-    
-    #copied from reduce_time_seasonal
-    mvseas = calculate_seasonal_climatology(mv, seasons)
-
-    if vid is None:
-        #vid = 'reduced_'+mv.id
-        vid = mv.id
-    mvseas.id = vid
-    
-    # Note that the averager function returns a variable with meaningless id.
-    # The climatology function returns the same id as mv, which we also don't want.
-
-    #mvsr = select_region(mv, region)
-
-    if hasattr( mv, 'units' ):
-        mvseas.units = mv.units
-    #end of copy from reduce_time_seasonal
-
-    axis_names = [ a.id for a in axes if a.isLevel()==False and a.isTime()==False ]
-    axes_string = '('+')('.join(axis_names)+')'
-
-    if len(axes_string)>2:
-        avmv = averager( mvseas, axis=axes_string )
-    else:
-        avmv = mvseas
-    avmv.id = vid
-          
+    # a feature in old version of this function, there's no analog in reduce2any:
     axis = avmv.getAxis(0)
     if axis.units in ['lev', 'level', 'mbar', 'millibars']:
         axis.units = 'mbar'
         axis.id = 'pressure'
     axis.designateLevel()
-    #avmv.info()
-    
-    #pdb.set_trace()    
 
     return avmv
 
@@ -1485,8 +1408,6 @@ def reduce_time_space_seasonal_regional( mv, season=seasonsyr, region=None, vid=
     axis_names = [ a.id for a in axes if a.isLatitude() or a.isLongitude() or a.isLevel() and
                    a.id not in exclude_axes]
     axes_string = '('+')('.join(axis_names)+')'
-    #print "jfp in reduce_time_space_seasonal_regional, variable",mv.id,"has axes",[ax.id for ax in axes]
-    #print "jfp and will be reduced in",axis_names,"Exclusions were",exclude_axes
     if len(axes_string)>2:
         for axis in axes:
             if axis.getBounds() is None:
@@ -1530,62 +1451,21 @@ def reduce2latlon_seasonal_level( mv, season, level, vid=None):
 
    return mvseas
 
-def reduce2latlon_seasonal( mv, season=seasonsyr, region=None, vid=None, exclude_axes=[] ):
+def reduce2latlon_seasonal( mv, season=seasonsyr, region=None, vid=None, exclude_axes=[], seasons=seasonsyr ):
     """as reduce2lat_seasonal, but both lat and lon axes are retained.
     Axis names (ids) may be listed in exclude_axes, to exclude them from the averaging process.
     """
-    # This differs from reduce2lat_seasonal only in the line "axis_names ="....
-    # I need to think about how to structure the code so there's less cut-and-paste!
-    print 'mv type: ', type(mv)
-    print '----------->mv shape going in: ', mv.shape
-    if vid is None:
-        vid = 'reduced_'+mv.id
-    # Note that the averager function returns a variable with meaningless id.
-    # The climatology function returns the same id as mv, which we also don't want.
-    if region is None or region=="global" or region=="Global" or\
-            getattr(region,'filekey',None)=="Global" or str(region)=="Global":
-        mvr = mv
-    else:
-        mvr = select_region(mv, region)
-    mvseas = calculate_seasonal_climatology(mvr, season)
-    set_spatial_avg_method( mvseas )
+    # backwards compatibility with old keyword 'seasons':
+    if seasons!=seasonsyr:
+        season = seasons
+    return reduce2any( mv, target_axes=['x','y'], season=season, region=region, vid=vid,
+                       exclude_axes=exclude_axes )
 
-    axes = allAxes( mv )
-    #axis_names = [ a.id for a in axes if a.id!='lat' and a.id!='lon' and a.id!='time' and\
-    axis_names = [ a.id for a in axes if not a.isLatitude() and not a.isLongitude() and
-                   not a.isTime() and a.id not in exclude_axes]
-    axes_string = '('+')('.join(axis_names)+')'
-
-    if len(axes_string)>2:
-        for axis in mvseas.getAxisList():
-            if axis.getBounds() is None:
-                axis._bounds_ = axis.genGenericBounds()
-        avmv = averager( mvseas, axis=axes_string )  #original
-        #WORK IN PROGRESS: This can't work because the mass weight-setting function doesn't exist yet!....<<<<<<<<<<<<>>>>>>>>>>>
-        #if mvseas.spavgmeth=='area weights':
-        #    avmv = averager( mvseas, axis=axes_string )
-        #elif mvseas.spavgmeth=='mass weights':
-        #    avmv = averager( mvseas, axis=axes_string, weights=spavgfuns[mvseas.spavgmeth](mvseas) )
-        #else:
-        #    raise DiagError("ERROR: cannot recognize spavgmeth (spatial average method) attribute")
-    else:
-        avmv = mvseas
-    if avmv is None: return avmv
-    avmv.id = vid
-
-    if hasattr(mv,'units'):
-        avmv.units = mv.units
-    # >>> special ad-hoc code.  The target units should be provided in an argument, not by this if statement>>>>
-        if avmv.units=="Pa" or avmv.units.lower()=="pascal" or avmv.units.lower()=="pascals":
-            avmv = convert_variable( avmv, "millibar" )
-    print '----------> mv shape going out: ', avmv.shape
-    return avmv
-
-def reduce_time_seasonal( mv, seasons=seasonsyr, region=None, vid=None ):
+def reduce_time_seasonal( mv, season=seasonsyr, region=None, vid=None ):
     """as reduce2lat_seasonal, but all non-time axes are retained.
     """
 
-    avmv = calculate_seasonal_climatology(mv, seasons)
+    avmv = calculate_seasonal_climatology(mv, season)
 
     if vid is None:
         #vid = 'reduced_'+mv.id
@@ -2154,7 +2034,24 @@ def aminusb_ax2( mv1, mv2 ):
     if hasattr(mv1,'long_name'):
         aminusb.long_name = 'difference of '+mv1.long_name
     if hasattr(mv1,'units'):  aminusb.units = mv1.units
+
     aminusb.initDomain( ab_axes )
+
+    if hasattr(mv1,'mean') and hasattr(mv2,'mean'):
+        # Note that mv1,mv2 will initially have a mean attribute which is a Numpy method. 
+        # We only need to compute a new mean if the mean attribute has been changed to a number.
+        try:
+            aminusb.mean = mv1.mean - mv2.mean
+        except TypeError:
+            # If this happens, "-" can't be applied to the means.
+            # For sure they aren't numbers.  Probably they are the Numpy builtin mean() method.
+            pass
+        except Exception:
+            if hasattr(aminusb,'mean') and isinstance(aminusb.mean,Number):
+                print "WARNING.  When computing the difference of",mv1.id,"and",mv2.id,\
+                    "the mean of the difference cannot be correctly computed."
+            del aminusb.mean
+
     return aminusb
 
 
@@ -2332,6 +2229,8 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
                 mv1 = s*mv1 + i
                 if hasattr(mv1,'id'):
                     mv1.id = mv1id
+                if hasattr(mv1,'mean') and isinstance(mv1.mean,Number):
+                    mv1.mean = s*mv1.mean + i
             mv1.units = target_units
         if changemv2:
             tmp = udunits(1.0,mv2.units)
@@ -2353,6 +2252,8 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
                 mv2 = s*mv2 + i
                 if hasattr(mv2,'id'):
                     mv2.id = mv2id
+                if hasattr(mv2,'mean') and isinstance(mv2.mean,Number):
+                    mv2.mean = s*mv2.mean + i
             mv2.units = target_units
     return mv1, mv2
 
@@ -2456,11 +2357,24 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
             mv1.regridded = mv1new.id   # a GUI can use this
             regridded_vars[mv1new.id] = mv1new
     aminusb = mv1new - mv2new
-    #aminusb.id = mv1.id
     aminusb.id = 'difference of '+mv1.id
     if hasattr(mv1,'long_name'):
         aminusb.long_name = 'difference of '+mv1.long_name
     if hasattr(mv1,'units'):  aminusb.units = mv1.units
+    if hasattr(mv1,'mean') and hasattr(mv2,'mean'):
+        # Note that mv1,mv2 will initially have a mean attribute which is a Numpy method. 
+        # We only need to compute a new mean if the mean attribute has been changed to a number.
+        try:
+            aminusb.mean = mv1.mean - mv2.mean
+        except TypeError:
+            # If this happens, "-" can't be applied to the means.
+            # For sure they aren't numbers.  Probably they are the Numpy builtin mean() method.
+            pass
+        except Exception:
+            if hasattr(aminusb,'mean') and isinstance(aminusb.mean,Number):
+                print "WARNING.  When computing the difference of",mv1.id,"and",mv2.id,\
+                    "the mean of the difference cannot be correctly computed."
+            del aminusb.mean
     return aminusb
 
 def aminusb_1ax( mv1, mv2 ):
@@ -2490,14 +2404,14 @@ def aminusb_1ax( mv1, mv2 ):
     aminusb.id = mv1.id
     return aminusb
 
-def timeave_seasonal( mv, seasons=seasonsyr ):
+def timeave_seasonal( mv, season=seasonsyr ):
     """Returns time averages of the cems2 variable mv.  The average is comuted only over times which
     lie in the specified season(s).  The returned variable has the same number of
     dimensions as mv, but the time axis  has been reduced to the number of seasons requested.
     The seasons are specified as an object of type cdutil.times.Seasons, and defaults to the whole
     year.
     """
-    return seasons.climatology(mv)
+    return season.climatology(mv)
 
 def minmin_maxmax( *args ):
     """returns a TransientVariable containing the minimum and maximum values of all the variables
@@ -2783,7 +2697,6 @@ def correlateData(mv1, mv2, aux):
     """ This function computes correlation coefficient for arrays that have 
     a mismatch in shape. A typical example is model and obs. It regrids mv2 to mv1's grid."""
     
-    from numbers import Number
     from genutil.statistics import correlation
     #print mv1.shape, mv2.shape
     
@@ -2859,11 +2772,12 @@ class reduced_variable(ftrow,basic_id):
         #    self._vid = reduced_var_id      # self._vid is deprecated
         if filetable is None:
             print "WARNING.  No filetable specified for reduced_variable instance",variableid
-        self._filetable = filetable
+        self.filetable = filetable
         self._filefilter = filefilter  # used to filter results of search in filetable
         self._file_attributes = {}
         self._duvs = duvs
         self._rvs = rvs
+        self._filename = None  # will be set later.  This attribute shouldn't be used, but sometimes it's just too tempting.
     def __repr__(self):
         return self._strid
 
@@ -2910,7 +2824,7 @@ class reduced_variable(ftrow,basic_id):
     def get_variable_file( self, variableid ):
         """returns the name of a file containing data for a variable specified by name.
         If there are several such files, cdscan is run and the resulting xml file is returned."""
-        rows = self._filetable.find_files( variableid, time_range=self.timerange,
+        rows = self.filetable.find_files( variableid, time_range=self.timerange,
                                            lat_range=self.latrange, lon_range=self.lonrange,
                                            level_range=self.levelrange,
                                            seasonid=self._season.seasons[0],
@@ -2943,13 +2857,14 @@ class reduced_variable(ftrow,basic_id):
             # To do this safely, incorporate the file list (names,lengths,dates) into the xml file name.
             famfiles = [f for f in files if famdict[f]==fam]
 
-            cache_path = self._filetable.cache_path()
+            cache_path = self.filetable.cache_path()
             xml_name = run_cdscan( fam, famfiles, cache_path )
             filename = xml_name
         else:
             # the easy case, just one file has all the data on this variable
             filename = files[0]
         #fcf = get_datafile_filefmt(f)
+        self._filename = filename
         return filename
 
     def reduce( self, vid=None ):
@@ -2966,10 +2881,10 @@ class reduced_variable(ftrow,basic_id):
         circularity!
         """
 
-        if self._filetable is None:
+        if self.filetable is None:
             print "ERROR no data found for reduced variable",self.variableid
             print "in",self.timerange, self.latrange, self.lonrange, self.levelrange
-            print "filetable is",self._filetable
+            print "filetable is",self.filetable
             return None
         if vid is None:
             #vid = self._vid      # self._vid is deprecated
@@ -2981,7 +2896,7 @@ class reduced_variable(ftrow,basic_id):
                 # this belongs in a log file:
                 print "ERROR no data found for reduced variable",self.variableid
                 print "in",self.timerange, self.latrange, self.lonrange, self.levelrange
-                print "filetable is",self._filetable
+                print "filetable is",self.filetable
                 return None
             else:
                 # DUVs (derived unreduced variables) would logically be treated as a separate stage
@@ -3030,12 +2945,20 @@ class reduced_variable(ftrow,basic_id):
             self._file_attributes.update(f.attributes)
             if self.variableid in f.variables.keys():
                 var = f(self.variableid)
+                var._filename = self._filename
+                weighting = weighting_choice(var)
+                if weighting=='mass':
+                    if 'mass' not in self.filetable.weights:
+                        self.filetable.weights['mass'] = mass_weights( var )
                 if os.path.basename(filename)[0:5]=='CERES':
                     var = special_case_fixed_variable( 'CERES', var )
+                if not hasattr( var, 'filetable'): var.filetable = self.filetable
                 reduced_data = self._reduction_function( var, vid=vid )
             elif self.variableid in f.axes.keys():
                 taxis = cdms2.createAxis(f[self.variableid])   # converts the FileAxis to a TransientAxis.
                 taxis.id = f[self.variableid].id
+                weighting = weighting_choice(taxis)
+                if not hasattr( taxis, 'filetable'): taxis.filetable = self.filetable
                 reduced_data = self._reduction_function( taxis, vid=vid )
             else:
                 print "Reduce failed to find variable",self.variableid,"in file",filename
@@ -3044,9 +2967,12 @@ class reduced_variable(ftrow,basic_id):
                 raise Exception
             if reduced_data is not None and type(reduced_data) is not list:
                 reduced_data._vid = vid
+            reduced_data.weighting = weighting  # needed if we have to average it further later on
             f.close()
         if hasattr(reduced_data,'mask') and reduced_data.mask.all():
             reduced_data = None
+        reduced_data._filename = self._filename
+        reduced_data.filetable = self.filetable
         return reduced_data
 
 class rv(reduced_variable):

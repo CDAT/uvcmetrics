@@ -180,6 +180,9 @@ class basic_filetable(basic_id):
         self.lonaxes.sort()
         self.levaxes.sort()
 
+        self.weights = {}   # dictionary for storing weights used for averaging over a grid
+        #                     This is unlikely to work if there is more than one lev,lat,lon axis.
+
     def __repr__(self):
        return 'filetable from '+str(self._filelist)[:100]+'...'
     def full_repr(self):

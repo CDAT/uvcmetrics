@@ -97,6 +97,8 @@ class amwg_plot_spec(plot_spec):
     # list is the preferred method.  Of course, if the variable be already available as data,
     # then that is preferred over any computation.
     standard_variables = {
+        # mass weighting, Jeff Painter based on communications from Susannah Burrows.
+
         # water cycle, Chris Terai:
         'QFLX_LND':[derived_var(
                 vid='QFLX_LND', inputs=['QFLX','OCNFRAC'], outputs=['QFLX_LND'],
@@ -661,7 +663,7 @@ class amwg_plot_set3(amwg_plot_spec,basic_id):
                     for dv in dvs:
                         self.derived_variables[dv.id()] = dv
                     zvar = self.derived_variables[zvar]
-                    zvar._filetable = filetable1
+                    zvar.filetable = filetable1
 
         #self.reduced_variables[varnom+'_1'] = zvar
         #zvar._vid = varnom+'_1'      # _vid is deprecated
@@ -706,22 +708,22 @@ class amwg_plot_set3(amwg_plot_spec,basic_id):
             zval = self.variable_values[zvar.id()]  # new-style key
         #zval = self.variable_values[zvar._vid] # _vid is deprecated
         if zval is None: return None
-        zunam = zvar._filetable._strid  # part of y1 distinguishing it from y2, e.g. ft_1
+        zunam = zvar.filetable._strid  # part of y1 distinguishing it from y2, e.g. ft_1
         zval.id = '_'.join([self._id[0],self._id[1],zunam])
         z2val = self.variable_values[z2var._strid]
         if z2val is None:
             z2unam = ''
             zdiffval = None
         else:
-            z2unam = z2var._filetable._strid  # part of y2 distinguishing it from y1, e.g. ft_2
+            z2unam = z2var.filetable._strid  # part of y2 distinguishing it from y1, e.g. ft_2
             z2val.id = '_'.join([self._id[0],self._id[1],z2unam])
             zdiffval = apply( self.plot_b.zfunc, [zval,z2val] )
             zdiffval.id = '_'.join([self._id[0],self._id[1],
-                                    zvar._filetable._strid, z2var._filetable._strid, 'diff'])
+                                    zvar.filetable._strid, z2var.filetable._strid, 'diff'])
         # ... e.g. CLT_DJF_set3_CAM456_NCEP_diff
-        ft1src = zvar._filetable.source()
+        ft1src = zvar.filetable.source()
         try:
-            ft2src = z2var._filetable.source()
+            ft2src = z2var.filetable.source()
         except:
             ft2src = ''
         plot_a_val = uvc_plotspec(
@@ -1660,10 +1662,16 @@ class amwg_plot_set7(amwg_plot_spec):
        reduced_varlis = [
            reduced_variable(
                 variableid=varid, filetable=filetable1, season=self.season,
-                reduction_function=(lambda x, vid, region=None: reduce2latlon_seasonal( x(latitude=aux, longitude=(0, 360)), self.season, region, vid=vid ) ) ),
+#                reduction_function=(lambda x, vid, region=None: reduce2latlon_seasonal( x(latitude=aux, longitude=(0, 360)), self.season, region, vid=vid ) ) ),
+                # A (0,360) range breaks if mass weighting, due to an apparent bug in UV-CDAT slicing.
+                reduction_function=(lambda x, vid, region=None: reduce2latlon_seasonal(
+                       x(latitude=aux), self.season, region, vid=vid ) ) ),
             reduced_variable(
                 variableid=varid, filetable=filetable2, season=self.season,
-                reduction_function=(lambda x,vid, region=None: reduce2latlon_seasonal( x(latitude=aux, longitude=(0, 360)), self.season, region, vid=vid ) ) )
+#                reduction_function=(lambda x,vid, region=None: reduce2latlon_seasonal( x(latitude=aux, longitude=(0, 360)), self.season, region, vid=vid ) ) )
+                # A (0,360) range breaks if mass weighting, due to an apparent bug in UV-CDAT slicing.
+                reduction_function=(lambda x,vid, region=None: reduce2latlon_seasonal(
+                       x(latitude=aux), self.season, region, vid=vid ) ) )
             ]
        self.reduced_variables = { v.id():v for v in reduced_varlis }
        vid1 = rv.dict_id( varid, seasonid, filetable1 )

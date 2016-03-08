@@ -1,3 +1,5 @@
+#/env/bash
+
 # lots of "diags" runs, for testing
 echo "Atmosphere"
 echo "set 1"

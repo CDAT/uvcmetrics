@@ -18,10 +18,9 @@ increasing.  That is, for any times tn, tm in files filen, filem, if n>m then tn
 #   then other seasons from the months (probably slower on Rhea, but maybe not).
 
 from metrics.frontend.inc_reduce import *
-import os, re, time
+import os, sys, re, time, platform
 import argparse
 from pprint import pprint
-#from mpi4py import MPI
 from multiprocessing import Process, Lock
 ##from multiprocessing import Queue
 ###from threading import Thread as Process
@@ -30,8 +29,7 @@ import cProfile
 from metrics.common.utilities import DiagError, store_provenance
 
 comm = None
-#comm = MPI.COMM_WORLD
-MP = True
+MP = False
 queue = None
 lock = None  # for debugging; in normal use this should be None
 force_scalar_avg=False  # for testing
@@ -43,6 +41,8 @@ def restrict_to_season( datafilenames, seasonname ):
     Normally this function assumes that the filenames are of a format I have seen in ACME output:
     ".*\.dddd-dd\.nc" where the 4+2 digits represent the year and month respectively.
     However single-month climatology files with 3-letter month(season) names are accepted but not sorted.
+    Any climatology filenames are expected to look something like "spam_XXX_climo.nc" where XXX is a season
+    name.  (clim or climo-cdat may be used in place of climo).
     The season name my be the standard 3-letter season, or a string with two decimal digits.
     If any filename does not meet the expected format, then no filenames will be rejected.
     """
@@ -65,7 +65,7 @@ def restrict_to_season( datafilenames, seasonname ):
         'JJA': ['JUN', 'JUL', 'AUG'],
         'SON': ['SEP', 'OCT', 'NOV'] }
     newfns = []
-    if datafilenames[0][-8:]=='climo.nc' or datafilenames[0][-13:]=='climo-cdat.nc':
+    if datafilenames[0][-8:]=='climo.nc' or datafilenames[0][-7:]=='clim.nc' or datafilenames[0][-13:]=='climo-cdat.nc':
         # climatology file, should be for a one-month season as input for a multi-month season
         # The climo-cdat.nc is specifically for Peter Caldwell's test script.
         if seasonname not in season2almonth:
@@ -216,6 +216,30 @@ def reduce_twotimes2one( seasonname, fileout_template, fileout, g, redtime, redt
         if lock is not None:  lock.release()
         return g
 
+def clean_fileout_template( fileout_template ):
+    """returns a version of the input fileout_template which is cleaner and which follows the
+    traditional format of a climatology file, e.g. base_SON_climo.nc"""
+    # How is it cleaner?  Any // between dirname and basename will become /.
+    # That's not much, but we can add more features as they become necessary.
+    ft_bn = os.path.basename( fileout_template )
+    ft_dn = os.path.dirname( fileout_template )
+
+    if ft_bn[-9:]=='_climo.nc':
+        tail = '_climo.nc'
+    elif ft_bn[-8:]=='_clim.nc':
+        tail = '_clim.nc'
+    else:
+        tail = '_climo.nc'
+        if ft_bn[-3:]=='.nc':
+            ft_bn = ft_bn[0:-3] + tail
+        else:
+            ft_bn = ft_bn + tail
+    if ft_bn.find('_XXX')<0:
+        ft_bn = ft_bn[0:-len(tail)]+'_XXX'+tail
+
+    fileout_template = os.path.join( ft_dn, ft_bn )
+    return fileout_template
+
 def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason=[] ):
 
     # NetCDF library settings for speed:
@@ -235,6 +259,7 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
     omit_files = {seasonname:[] for seasonname in seasonnames}
     for omits in omitBySeason:
         omit_files[omits[0]] = omits[1:]
+    fileout_template = clean_fileout_template( fileout_template )
 
     if comm is None or comm.rank==0:
         # Get time axis and global attributes from a sample file - only for rank 0 because
@@ -310,10 +335,6 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
         seasons_3mon = { 'DJF':['JAN','FEB','DEC'], 'MAM':['MAR','APR','MAY'],
                          'JJA':['JUN','JUL','AUG'], 'SON':['SEP','OCT','NOV'] }
         seasons_ann = { 'ANN':[ 'MAM', 'JJA', 'SON', 'DJF' ] }
-
-        ft_bn = os.path.basename( fileout_template )
-        ft_dn = os.path.dirname( fileout_template )
-        fileout_template = os.path.join( ft_dn, ft_bn )
 
         # Figure out which seasons and files belong to which processor (for MPI).
         myseasons1 = []
@@ -609,8 +630,17 @@ if __name__ == '__main__':
                "Omit files for just the specified season.  For multiple seasons, provide this"+
                    "argument multiple times. E.g. --omitBySeason DJF lastDECfile.nc\"",
                    nargs='+', action='append', default=[] )
-    p.add_argument("--forceScalarAvg", dest="forceScalarAvg", default=False, help=
-                   "For testing, forces use of a simple scalar average, ignoring missing values" )
+    p.add_argument("--oneproc", dest="oneproc", action='store_true', help=
+                   "Only one processor, one process, one thread; this overrides other arguments such as --MP,--MPI.")
+    p.add_argument("--multiprocessing", dest="MP", action='store_true', help=
+                   "use the Python multiprocessing module - multiple processes per processor.")
+    p.add_argument("--MPI", dest="MPI", action='store_true', help=
+                   "use MPI (mpi4py) multiprocessing - multiple processesors.")
+    p.add_argument("--forceScalarAvg", dest="forceScalarAvg", default=False, help=argparse.SUPPRESS )
+    #              For testing, forces use of a simple scalar average, ignoring missing values
+    p.add_argument("--bypassChecks", dest="bypassChecks", default=False, help=argparse.SUPPRESS )
+    #              For testing, bypass certain checks.  In particular you can run multiprocessing in a MPI-enabled
+    #              UV-CDAT even on Rhea.
     if sys.argv[0].find('climatology')>=0:
         # normal case, we're running climatology more or less directly
         args = p.parse_args(sys.argv[1:])
@@ -624,14 +654,36 @@ if __name__ == '__main__':
         pprint(args)
 
     force_scalar_avg = args.forceScalarAvg
+    if not args.oneproc:
+        try:
+            from mpi4py import MPI
+            haveMPI = True
+        except:
+            haveMPI = False
+        if args.MPI:
+            if haveMPI:
+                comm = MPI.COMM_WORLD
+            else:
+                print "\nERROR.  MPI requested but is not available.\n"
+                raise DiagError("MPI not available in this build")
+        else:
+            comm = None
+        if args.MP:
+            if haveMPI and platform.node().find('rhea')>=0 and not args.bypassChecks:
+                print "\nERROR. This Python was built with MPI and the platform is",platform.node()
+                print "This combination is incompatible with the multiprocessing module.\n"
+                MP = False
+                raise DiagError("multiprocessing incompatible with MPI on %s"%platform.node())
+            else:
+                MP = args.MP
 
+    print "MP=",MP,"comm=",comm
     # experimental code for multiprocessing on one node.  Leave queue=None for no multiprocessing.
     #queue = Queue()
-    MP = False
+    #MP = False
     # N.B. The operating system on Rhea.ccs.ornl.gov does not support locks.
     #if MP:
     #    lock = Lock()  # for debugging; in normal use leave this as None.
-    print "jfp MP=",MP
 
     profileme = False
     if profileme is True:

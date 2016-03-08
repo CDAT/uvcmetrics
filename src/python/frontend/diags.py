@@ -20,7 +20,7 @@ from metrics.frontend.amwg_plotting import *
 # are added, etc. 
 from metrics.packages.amwg import *
 from metrics.packages.amwg.derivations.vertical import *
-from metrics.packages.amwg.plot_data import plotspec, derived_var
+#obsolete from metrics.packages.amwg.plot_data import plotspec, derived_var
 from metrics.packages.amwg.derivations import *
 from metrics.packages.lmwg import *
 from metrics.packages.diagnostic_groups import *
@@ -340,6 +340,8 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
    # Here we'll count up the plots and run through them to build lists
    # of graphics methods and overlay statuses.
    # We are given the list of results from plot(), the 2 VCS canvases and a filename minus the last bit
+   cdms2.setAutoBounds(True)   # makes the VCS-computed means the same as when we
+   #                             compute means after calling genGenericBounds().
    fnamebase = fname
    nsingleplots = len(res)
    nsimpleplots = nsingleplots + sum([len(resr)-1 for resr in res if type(resr) is tuple])
@@ -410,6 +412,10 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
          for varIndex, var in enumerate(rsr.vars):
             savePNG = True
             seqsetattr(var,'title',title)
+            try:
+                del var.filetable  # we'll write var soon, and can't write a filetable
+            except:
+                pass
 
             # ...But the VCS plot system will overwrite the title line
             # with whatever else it can come up with:
@@ -671,7 +677,6 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
       else:
           print "writing png file2:",fname
           vcanvas2.png( fname , ignore_alpha = True, metadata=provenance_dict() )
-
 
 if __name__ == '__main__':
    print "UV-CDAT Diagnostics, command-line version"
