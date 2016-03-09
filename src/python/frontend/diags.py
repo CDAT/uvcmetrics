@@ -114,9 +114,13 @@ def run_diags( opts ):
    # set up some VCS things if we are going to eventually plot things
    if opts['output']['plots'] == True:
       vcanvas = vcs.init()
+      if opts['output']['antialiasing'] is False:
+          vcanvas.setantialiasing(0)
       vcsx = vcanvas
       vcanvas.setcolormap('bl_to_darkred') #Set the colormap to the NCAR colors
       vcanvas2 = vcs.init()
+      if opts['output']['antialiasing'] is False:
+          vcanvas.setantialiasing(0)
       vcanvas2.portrait()
       vcanvas2.setcolormap('bl_to_darkred') #Set the colormap to the NCAR colors
       LINE = vcanvas.createline('LINE', 'default')
