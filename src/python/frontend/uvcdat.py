@@ -1074,8 +1074,11 @@ class plot_spec(object):
             sc = SparkContext(appName="Diagnostic Test")
             partitions = int(os.environ['NUM_PARTITIONS'])
             print 'partitions = ', partitions
-    
-            P = sc.parallelize(self.reduced_variables.keys(), partitions)
+            
+            #this is for weak scaling only. it will be eliminated later
+            TEMP_RS_KEYS = self.reduced_variables.keys()[0:2*partitions]
+            P = sc.parallelize(TEMP_RS_KEYS, partitions)
+            #P = sc.parallelize(self.reduced_variables.keys(), partitions)
             RESULTS = P.map( lambda key: (key, self.reduced_variables[key].reduce(None, RETURN_ARRAYS=True))  ) 
             RRR = RESULTS.collect()
             RESULTS = dict(RRR)
@@ -1097,6 +1100,7 @@ class plot_spec(object):
             #for key, value in self.variable_values.items():
             end = time.time()
             print 'spark time = ', end-start    
+            sys.exit(0)
             #    print key, value.shape
         else:
             #serial mode
