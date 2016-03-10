@@ -4,7 +4,7 @@ DIRSIZE = sys.argv[1]
 NFSHOME = os.environ['NFSHOME']
 TIMING_PATH = NFSHOME + '/uvcmetrics/src/python/mpi_timing/'
 SLURM_OUTPUTDIR = NFSHOME + '/slurm_output/' + DIRSIZE + '/'
-RUNS = [0]#,1,2,3,4]
+RUNS = [0,1,2,3,4]
 for (N,n,wait_time) in config:
     SBATCH_EXEC = 'sbatch --nodes=' + str(N) + ' --ntasks-per-node=' + str(n) + ' ' + TIMING_PATH +'diag_big.sh'
     print SBATCH_EXEC
