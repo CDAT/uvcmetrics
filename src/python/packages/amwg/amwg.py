@@ -1770,7 +1770,7 @@ class amwg_plot_set8(amwg_plot_spec):
             self.mpi_init()
             print 'MPI_ENABLED = ', self.MPI_ENABLED
             
-        self.SPARK_ENABLED = True  
+        self.SPARK_ENABLED = False  
         if self.SPARK_ENABLED:
             self.spark_init()
             print 'SPARK_ENABLED = ', self.SPARK_ENABLED
@@ -1849,7 +1849,7 @@ class amwg_plot_set8(amwg_plot_spec):
         #... was self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
         self.computation_planned = True
     def mpi_init(self):
-        import sys, cdms2
+        import sys, cdms2, os
         def splitList(keys, size):
             subLists = []
             for i in xrange(0, len(keys), size):
@@ -1878,10 +1878,14 @@ class amwg_plot_set8(amwg_plot_spec):
         import socket
         print 'host = ',socket.gethostname(), 'rank = ', self.rank
         
+        slurm_output_file = os.environ['SLURMOUTPUT']
+        XXX = slurm_output_file('_')
+        nnodes = int(XXX[1])
+        TEMP_RS_KEYS = self.reduced_variables.keys()[0:3*nnodes]
         #split the keys of reduced_variables and scatter them        
         if self.rank is self.master:
-            sublistSize = len(self.reduced_variables.keys())/self.size
-            self.all_keys = splitList(self.reduced_variables.keys(), sublistSize)
+            sublistSize = len(TEMP_RS_KEYS)/self.size#len(self.reduced_variables.keys())/self.size
+            self.all_keys = splitList(TEMP_RS_KEYS, sublistSize)#self.reduced_variables.keys(), sublistSize)
         else:
             self.all_keys = None        
             
