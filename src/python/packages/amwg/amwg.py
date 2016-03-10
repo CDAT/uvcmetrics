@@ -1880,6 +1880,8 @@ class amwg_plot_set8(amwg_plot_spec):
         
         slurm_output_file = os.environ['SLURMOUTPUT']
         XXX = slurm_output_file.split('_')
+        print slurm_output_file
+        print XXX
         nnodes = int(XXX[1])
         TEMP_RS_KEYS = self.reduced_variables.keys()[0:3*nnodes]
         #split the keys of reduced_variables and scatter them        
