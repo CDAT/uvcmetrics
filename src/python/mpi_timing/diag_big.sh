@@ -2,7 +2,7 @@
 
 #SBATCH --job-name=diag_8 --time=02:00:00
 #SBATCH -D /opt/nfs/mcenerney1/slurm_output/big/weak/
-#SBATCH --exclude=greyworm2
+#SBATCH --exclude=greyworm2,greyworm7
 
 rm $NFSHOME/tmp/*
 
