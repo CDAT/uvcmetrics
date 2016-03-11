@@ -65,6 +65,7 @@ def run_diags( opts ):
       print 'obs %s id: %s' % (i, obsfts[i]._strid)
    # Setup some output things
 
+
    outdir = opts['output']['outputdir']
    if outdir is None:
       outdir = os.path.join(os.environ['HOME'],"tmp","diagout")
