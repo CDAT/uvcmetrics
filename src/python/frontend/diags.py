@@ -68,7 +68,7 @@ def run_diags( opts ):
    outdir = opts['output']['outputdir']
    if outdir is None:
       outdir = os.path.join(os.environ['HOME'],"tmp","diagout")
-      print 'Writing output to %s. Override with --outputdir option' % outdir
+      logging.warning('Writing output to %s. Override with --outputdir option', outdir)
    # Parts of the eventual output filenames
    basename = opts['output']['prefix']
    postname = opts['output']['postfix']
@@ -84,7 +84,7 @@ def run_diags( opts ):
    times = opts.get ('times', None)
    if times is None or times == []:
       times = ['ANN']
-      print "Defaulting to time ANN. You can specify times with --seasons/--seasonally, --months/--monthly or --yearly"
+      logging.warning("Defaulting to time ANN. You can specify times with --seasons/--seasonally, --months/--monthly or --yearly");
    else:
       print "Using times=",times
 

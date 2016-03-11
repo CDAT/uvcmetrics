@@ -37,7 +37,7 @@
 # >>>> TO DO:
 # Create a suitable time axis when reading climo data without one.
 
-import numpy, cdms2, sys, os, math
+import numpy, cdms2, sys, os, math, logging
 from numbers import Number
 from pprint import pprint
 import time
@@ -193,11 +193,11 @@ def initialize_redfile_from_datafile( redfilename, varnames, datafilen, dt=-1, i
     out_varnames = []
     for varn in varnames:
         if f[varn] is None:
-            print "WARNING,",varn,"was not found in",datafilen
+            logging.warning("%s was not found in %s", varn, datafilen)
             continue
         if f[varn].dtype.name.find('string')==0:
             # We can't handle string variables.
-            print "jfp WARNING, ignoring string variable",varn
+            logging.warning("Ignoring string variable %s", varn)
             continue
         out_varnames.append(varn)
         dataaxes = f[varn].getAxisList()
@@ -232,7 +232,7 @@ def initialize_redfile_from_datafile( redfilename, varnames, datafilen, dt=-1, i
                         attdict[varn]['missing_value'].astype( new_dtype )
 
     for ax in boundless_axes:
-        print "WARNING, axis",ax.id,"has no bounds"
+        logging.warning("Axis %s has no bounds", ax.id)
     if timeaxis is not None:
         tbndaxis = cdms2.createAxis( [0,1], None, 'tbnd' )
 
@@ -449,9 +449,7 @@ def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds, 
             try:
                 assert( var.getDomain()[0][0].isTime() )
             except Exception as e:
-                print "redvars=",redvars
-                print "var=",var
-                print "var.getDomain()=",var.getDomain()
+                logging.exception("redvars=%s, var=%s, var.getDomain()=%s", redvars, var, var.getDomain())
                 raise e
             break
     assert( redtime is not None )
@@ -462,9 +460,7 @@ def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds, 
             try:
                 assert( var.getDomain()[0][0].isTime() )
             except Exception as e:
-                print "newvars=",newvars
-                print "var=",var
-                print "var.getDomain()=",var.getDomain()
+                logging.exception("redvars=%s, var=%s, var.getDomain()=%s", redvars, var, var.getDomain())
                 raise e
             break
     assert( newtime is not None ) # The input data should have a time axis!
@@ -581,7 +577,7 @@ def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds, 
                                 ( redtime_wts[i] + newtime_wts[j,k] )
                         else:
                             #won't work because redvar is a FileVariable
-                            print "WARNING, probably miscomputing average of",redvar.id
+                            logging.warning("Probably miscomputing average of %s", redvar.id)
                             redvar =\
                                 ( redvar*redtime_wts[i] + newvar*newtime_wts[j,k] ) /\
                                 ( redtime_wts[i] + newtime_wts[j,k] )
@@ -703,7 +699,7 @@ def update_time_avg_from_files( redvars0, redtime_bnds, redtime_wts, filenames,
                     print "skipping",redvar.id
             except Exception as e:
                 if varid!='time_climo':  # I know about this one.
-                    print "skipping",redvar.id,"due to exception:",
+                    logging.exception("skipping %s due to exception", redvar.id)
                     print e
                 pass
         if len(varids)==0:

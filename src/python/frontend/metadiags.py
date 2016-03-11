@@ -236,7 +236,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
             print pname.upper()
             print diags_collection[collnum]['package']
             # skip over this guy
-            print 'Skipping over collection ', collnum
+            logging.warning('Skipping over collection %s', collnum)
             continue
       else:
          if diags_collection[collnum].get('package', False) != False and diags_collection[collnum]['package'].upper() == pname.upper():
@@ -434,7 +434,7 @@ def runcmdline(cmdline, outlog):
    try:
       retcode = subprocess.check_call(cmdline, stdout=outlog, stderr=outlog, shell=True)
       if retcode < 0:
-         print 'TERMINATE SIGNAL', -retcode
+         logging.warning('TERMINATE SIGNAL %s', -retcode)
    except subprocess.CalledProcessError as e:
       logging.exception('\n\nEXECUTION FAILED FOR %s: %s', cmdline, e)
       outlog.write('Command %s failed\n' % cmdline)
