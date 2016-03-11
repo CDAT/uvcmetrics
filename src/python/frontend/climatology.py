@@ -18,7 +18,7 @@ increasing.  That is, for any times tn, tm in files filen, filem, if n>m then tn
 #   then other seasons from the months (probably slower on Rhea, but maybe not).
 
 from metrics.frontend.inc_reduce import *
-import os, sys, re, time, platform
+import os, sys, re, time, platform, logging
 import argparse
 from pprint import pprint
 from multiprocessing import Process, Lock
@@ -79,7 +79,7 @@ def restrict_to_season( datafilenames, seasonname ):
         for fn in datafilenames:
             MO = re.match( "^.*\.\d\d\d\d-\d\d\.nc$", fn )
             if MO is None:
-                print "WARNING filename",fn,"did not match, will be ignored."
+                logging.warning('Filename %s did not match, will be ignored.', fn)
                 continue
             mon = fn[-5:-3]
             if mon in season2nummonth[seasonname]:
@@ -274,11 +274,13 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
         calendar = getattr( data_time, 'calendar', None )
         # to do: support arbitrary time units, arbitrary calendar.
         if calendar != 'noleap':
-            print "ERROR. So far climos() has only been implemented for the noleap calendar.  Sorry!"
+            # didn't use logging.exception because for that, there must be a try-catch block
+            logging.error("So far climos() has only been implemented for the noleap calendar.  Sorry!")
             raise Exception("So far climos() has not been implemented for calendar %s."%
                             calendar )
         if time_units.find('days')!=0:
-            print "ERROR. So far climos() has only been implemented for time in days.  Sorry!"
+            # didn't use logging.exception because for that, there must be a try-catch block
+            logging.error("So far climos() has only been implemented for time in days.  Sorry!")
             raise Exception("So far climos() has not been implemented for time in units %s."%
                             time_units )
         fvarnames = f.variables.keys()
@@ -546,7 +548,7 @@ def climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_t
     datafilenames = [fn for fn in datafilenames if fn not in omit_files[seasonname]]
     datafilenames2 = restrict_to_season( datafilenames, seasonname )
     if len(datafilenames2)<=0:
-        print "WARNING, no input data, skipping season",seasonname
+        logging.warning('No input data, skipping season %s', seasonname)
         return False
     season = daybounds(seasonname)
     # ... assumes noleap calendar, returns time in days.
@@ -664,13 +666,13 @@ if __name__ == '__main__':
             if haveMPI:
                 comm = MPI.COMM_WORLD
             else:
-                print "\nERROR.  MPI requested but is not available.\n"
+                logging.error("\nMPI requested but is not available.\n")
                 raise DiagError("MPI not available in this build")
         else:
             comm = None
         if args.MP:
             if haveMPI and platform.node().find('rhea')>=0 and not args.bypassChecks:
-                print "\nERROR. This Python was built with MPI and the platform is",platform.node()
+                logging.error("\nThis Python was built with MPI and the platform is %s", platform.node())
                 print "This combination is incompatible with the multiprocessing module.\n"
                 MP = False
                 raise DiagError("multiprocessing incompatible with MPI on %s"%platform.node())
