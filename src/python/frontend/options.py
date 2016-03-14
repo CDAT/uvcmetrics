@@ -3,7 +3,7 @@
 ### TODO: Seperate subclasses for datasets vs obs 
 
 
-import cdms2, os
+import cdms2, os, logging
 import metrics.packages as packages
 import argparse, re
 from metrics.frontend.defines import *
@@ -177,7 +177,7 @@ class Options():
          kvs = PATTERN.split(data[i])[1::2]
          for k in kvs:
             if '=' not in k:
-               print 'All options need specified as {option}={value}. No equal sign in option - ', k
+               logging.critical('All options need specified as {option}={value}. No equal sign in option - %s', k)
                quit()
             key, value = k.split('=')
             if key in defkeys:
@@ -189,7 +189,7 @@ class Options():
                else:
                   self._opts[dictkey][i][key] = value
             else:
-               print 'Unknown option ', k
+               logging.warning('Unknown option %s', k)
          print 'Added set: ', self._opts[dictkey][i]
 
    def processLevels(self, levels):
@@ -218,8 +218,8 @@ class Options():
        except:
            pass
        
-       print levels, 'Levels are not specified correctly.'
-       print 'They must be a comma delimited (no spaces) list of numbers or a file name that contains the list.'
+       logging.warning('%s Levels are not specified correctly.', levels)
+       logging.critical('They must be a comma delimited (no spaces) list of numbers or a file name that contains the list.')
        quit()
        
    def processModel(self, models):
@@ -286,7 +286,7 @@ class Options():
             print 'NOTE: Not all variables make sense for plotting or running diagnostics. Multi-word variable names need enclosed in single quotes:\'word1 word2\''
             print 'ALL is a valid variable name as well'
       if vl == []:
-         print 'No variable list returned. Is set',setname[0],'a valid set?'
+         logging.critical('No variable list returned. Is set %s a valid set?',setname[0])
          quit()
       return 
 
@@ -332,24 +332,24 @@ class Options():
       import metrics.packages.diagnostic_groups 
       import os
       if len(self._opts['model']) == 0 and len(self._opts['obs']) == 0:
-         print 'At least one model or obs set needs describted'
+         logging.critical('At least one model or obs set needs describted')
          quit()
       if len(self._opts['model']) != 0:
          for i in range(len(self._opts['model'])):
             if self._opts['model'][i]['path'] == None or self._opts['model'][i]['path'] == '':
-               print 'Each dataset must have a path provided'
+               logging.critical('Each dataset must have a path provided')
                quit()
             # check if the path exists
             if not os.path.exists(self._opts['model'][i]['path']):
-               print 'Path - %s - does not exist' % self._opts['model'][i]['path']
+               logging.critical('Path - %s - does not exist', self._opts['model'][i]['path'])
                quit()
       if len(self._opts['obs']) != 0:
          for i in range(len(self._opts['obs'])):
             if self._opts['obs'][i]['path'] == None or self._opts['obs'][i]['path'] == '':
-               print 'Each dataset must have a path provided'
+               logging.critical('Each dataset must have a path provided')
                quit()
             if not os.path.exists(self._opts['obs'][i]['path']):
-               print 'Obs Path - %s - does not exist' % self._opts['obs'][i]['path']
+               logging.critical('Obs Path - %s - does not exist', self._opts['obs'][i]['path'])
                quit()
 #      if(self._opts['package'] == None):
 #         print 'Please specify a package e.g. AMWG, LMWG, etc'
@@ -359,7 +359,7 @@ class Options():
       # We shouldn't get here anyway. This is primarily in case something gets postpended to the user-specified outputdir
       # in options(). Currently that happens elsewhere, but seems like a raesonable check to keep here anyway.
       if not os.path.exists(self._opts['output']['outputdir']):
-         print 'output directory %s does not exist' % self._opts['output']['outputdir']
+         logging.critical('output directory %s does not exist', self._opts['output']['outputdir'])
          quit()
 
       if(self._opts['package'] != None):
@@ -369,7 +369,7 @@ class Options():
             ukeys.append(k.upper())
 
          if self._opts['package'].upper() not in ukeys:
-            print 'Package ',self._opts['package'], 'not found in the list of package names -', self.all_packages.keys()
+            logging.critical('Package %s not found in the list of package names - %s', self._opts['package'], self.all_packages.keys())
             quit()
 
       # Should we check for random case too? I suppose.
@@ -381,7 +381,7 @@ class Options():
          rlist.sort()
          self._opts['regions'].sort()
          if rlist != self._opts['regions']:
-            print 'Unknown region[s] specified: ', list(set(self._opts['regions']) - set(rlist))
+            logging.critical('Unknown region[s] specified: %s', list(set(self._opts['regions']) - set(rlist)))
             quit()
       if(self._opts['sets'] != None and self._opts['package'] != None):
          sets = []
@@ -409,8 +409,8 @@ class Options():
          sets = self._opts['sets']
          intersect = list(set(sets)-set(avail_sets))
          if intersect != []:
-            print 'Collection(s) requested ', sets
-            print 'Collection(s) available: ', avail_sets
+            logging.critical('Collection(s) requested %s', sets)
+            logging.critical('Collection(s) available: %s', avail_sets)
             quit()
 
    ### Less-verbose help for metadiags.
@@ -697,12 +697,12 @@ class Options():
       # Generally if we've gotten this far, it means no --list was specified. If we don't have
       # at least a path, we should exit.
       if(args.path == None and args.model == None and args.obs == None):
-         print 'Must specify a --path or one of the --model/--obs options, or the --list option'
+         logging.critical('Must specify a --path or one of the --model/--obs options, or the --list option')
          print 'For help, type "diags --help".'
          quit()
 
       if args.path != None and (args.model != None or args.obs != None):
-         print 'Please do not combine --path and the --model/--obs methods right now'
+         logging.critical('Please do not combine --path and the --model/--obs methods right now')
          quit()
       
       ### Process dataset/obs arguments
@@ -799,7 +799,7 @@ class Options():
       # If an output directory was specified but doesn't exist already, we can throw an error now.
       if(args.outputdir != None):
          if not os.path.isdir(args.outputdir):
-            print "ERROR, output directory",args.outputdir,"does not exist!"
+            logging.critical("Output directory %s does not exist!",args.outputdir)
             quit()
          self._opts['output']['outputdir'] = args.outputdir
 
@@ -895,7 +895,7 @@ class Options():
             
       if 'variables' in args.list or 'vars' in args.list or 'var' in args.list:
          if args.path == None and args.model == None and args.obs == None:
-            print 'Must provide a dataset when requesting a variable listing'
+            logging.critical('Must provide a dataset when requesting a variable listing')
             quit()
          else:
             if args.path == None:
@@ -910,7 +910,7 @@ class Options():
 
       if 'options' in args.list or 'option' in args.list:
          if args.path == None and args.model == None and args.obs == None:
-            print 'Must provide a dataset when requesting a variable listing'
+            logging.critical('Must provide a dataset when requesting a variable listing')
             quit()
          else:
             if args.path == None:
@@ -928,9 +928,9 @@ class Options():
       if 'climatology' not in progname and 'climatology.py' not in progname:
          if(args.levels):
             self.processLevels(args.levels)
-          
 
 ### Helper functions
+
 ### make_ft_dict - provides an easily parsed dictionary of the climos/raws for a given set of datasets
 def make_ft_dict(models):
    model_dict = {}
