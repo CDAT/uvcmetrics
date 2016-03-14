@@ -4,6 +4,7 @@
 import cdms2
 import sys
 import os
+import logging
 import numpy
 import MV2
 import argparse
@@ -296,7 +297,7 @@ if __name__ == "__main__":
                 else:
                     V2[:] = V[:]
             except Exception, err:
-                print "Variable %s falied with error: %s" % (V2.id, err)
+                logging.exception("Variable %s falied with error: %s", V2.id, err)
     # latitude and longitude bounds
     if args.store_bounds:
       fo["latitude_bounds"][:]=regdr.lats.getBounds()
