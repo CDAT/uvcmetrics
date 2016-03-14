@@ -14,6 +14,7 @@
 
 import numpy
 import cdms2
+import logging
 from atmconst import AtmConst
 from unidata import udunits
 
@@ -102,7 +103,7 @@ def rhodz_from_plev( lev, nlev_want, mv ):
                 s,i = tmp.how(PSunits)
             except Exception as e:
                 # conversion not possible.
-                print "ERROR could not convert from PS units",PS.units,"to lev units",lev.units
+                logging.exception("Could not convert from PS units %s to lev units %s",PS.units,lev.units)
                 return None
             # Now, s*PS+i would be PS in the units of lev.  In all cases I've seen, s==1 and i==0
 
@@ -146,7 +147,7 @@ def check_compatible_levels( var, pvar, strict=False ):
         if strict:
             raise DiagError("ERROR, numbers of levels are not compatible with mass weighting.")
         else:
-            print "WARNING, poor levels for mass weighting, variables",var.id,pvar.id
+            logging.warning("Poor levels for mass weighting, variables %s %s",var.id,pvar.id)
             return len(vlev)+1
 
 def rhodz_from_mv( mv ):
