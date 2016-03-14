@@ -205,8 +205,9 @@ def set_spatial_avg_method( var ):
     # ... weighting_choice() is only valid for atmos, but will probably be ok for other realms.
     return var
 
-def set_mean( mv ):
-    # Set mean attribute of a variable.  Typically this appears in a plot header.
+def set_mean( mv, season=seasonsyr, region=None, gw=None ):
+    """Set mean attribute of a variable.  Typically this appears in a plot header."""
+    if season is None: season=seasonsyr
     weighting = getattr( mv, 'weighting', None )
     if hasattr(mv,'mean') and isinstance(mv.mean,Number):
         mvmean = mv.mean
@@ -284,7 +285,7 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
         weights = getattr( mv, 'weighting', None )
         if not hasattr(mvrs,'filetable') and hasattr(mv,'filetable'):
             mvrs.filetable = mv.filetable
- 
+
     if len(axes_string)<=2:
         avmv = mvrs
     else:
@@ -313,6 +314,16 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
             if len(klevs)>0:
                 klev = klevs[0]
             avweights = mvrs.clone()
+
+            # The variable mv, hence mvrs and avweights may have been expanded in longitude after
+            # the weight array in the filetable was constructed.  This happens for polar plots.
+            # So here we expand the weight array exactly the same way, if we can:
+            if len(klons)>0:
+                ll_lon = latlon_wts.getLongitude()
+                av_lon = avweights.getLongitude()
+                if ll_lon.topology=='circular' and av_lon.topology=='circular' and\
+                        len(ll_lon)<len(av_lon):
+                    latlon_wts = latlon_wts( longitude=( av_lon[0], av_lon[-1] ) )
 
             if len(klats)>0 and len(klons)>0:
                 # We have both latitudes and longitudes
