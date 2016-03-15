@@ -940,8 +940,6 @@ class plot_spec(object):
         return new_id
     def compute(self,newgrid=0):
         return self.results(newgrid)
-    def results(self,newgrid=0):
-        return self._results(newgrid)
 
     def uniquefts(self, ftlist):
         names = []
@@ -1007,6 +1005,8 @@ class plot_spec(object):
         return dups, climo, raw 
 
 
+    def results(self,newgrid=0):
+        return self._results(newgrid)
 # To profile, replace (by name changes) the above results() with the following one:
     def profiled_results(self,newgrid=0):
         if newgrid!=0:
