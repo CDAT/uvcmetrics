@@ -16,12 +16,17 @@ to.halign = "center"
 to.valign = "half"
 if 1:
     for k in P:
-        print "TEMPLATE:", k
         p = x.gettemplate(str(k))
         p.xmintic2.priority = 0
         p.xtic2.priority = 0
         p.ymintic2.priority = 0
         p.ytic2.priority = 0
+        p.title.x = (p.data.x1+p.data.x2)/2.
+        p.title.y = p.data.y2+.025
+        p.title.textorientation = "tex6"
+        mean = x.createtextorientation("texmean")
+        mean.halign="center"
+        p.mean.textorientation = mean
         b1 = p.box1
         if k.find("of3") > -1:
             p.data.x1 += .015
@@ -32,12 +37,12 @@ if 1:
             p.legend.y2 += ydelta
             p.min.y += ydelta
             p.max.y += ydelta
-            p.mean.y = p.min.y
-            p.mean.x = p.min.x
+            p.mean.y = p.data.y2+.01
+            p.mean.x = (p.data.x1+p.data.x2)/2.
             p.min.y = p.min.y + ydelta
             p.mean.textorientation = p.min.textorientation
             p.mean.texttable = p.min.texttable
-            p.title.y -= .005
+            #p.title.y -= .005
         elif k.find("of") == -1:
             p.min.list()
             p.max.list()
@@ -52,12 +57,6 @@ if 1:
         p.box1.x1 = p.data.x1
         p.box1.y1 = p.data.y1
         p.box1.y2 = p.data.y2
-#  print "YTT :",p.ylabel1.texttable
-#  print "YTO :",p.ylabel1.textorientation
-#  print "XTT :",p.xlabel1.texttable
-#  print "XTO :",p.xlabel1.textorientation
-#  print "XNTT :",p.xname.texttable
-#  print "XNTO :",p.xname.textorientation
         for e in elts:
             for s in ["x", "y"]:
                 E = getattr(p, s + e)
@@ -80,7 +79,7 @@ if 1:
                 if hasattr(E, "line"):
                     E.line = "default"
             if k.find("of3") > -1:
-                p.xname.y = p.box1.y1 - .027
+                p.xname.y = p.box1.y1 - .02
             elif k.find("of2") > -1:
                 p.xname.y = p.box1.y1 - .032
                 p.xlabel1.textorientation = "tex6"
@@ -93,6 +92,7 @@ if 1:
                 p.xlabel1.texttable = "std"
                 p.ylabel1.textorientation = "tex6"
                 p.ylabel1.texttable = "std"
+                p.title.textorientation="tex6"
             elif k.find("of5") > -1:
                 p.xname.y = p.box1.y1 - .022
             elif k.find("of6") > -1:
@@ -152,6 +152,7 @@ if 1:
                 p.xname.textorientation = "tex4x"
         p.script("new")
 
+sys.exit()
 y = vcs.init()
 import os
 import cdms2
