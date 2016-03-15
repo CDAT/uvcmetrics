@@ -8,10 +8,7 @@ import numpy as np
 #                                                                                                     #
 #######################################################################################################
 def return_templates_graphic_methods(canvas1=None, gms=None, ovly=None, onPage=None):
-   print canvas1
-   print gms
-   print ovly
-   print onPage
+   print "tmpl canvas1,gms,ovly,onPage:", canvas1,gms,ovly,onPage
    if len(gms) == len(ovly): 
 
       # Create a unique graphics method for each diagnostic display
@@ -65,7 +62,7 @@ def return_templates_graphic_methods(canvas1=None, gms=None, ovly=None, onPage=N
       tmmobs = []
       ct = 0
       for i in range(len(gms)):
-          print '******* onPage ', onPage, ' ***** gms[',i,']: ', gms[i],' ***********************'
+          # print 'tmpl ******* onPage ', onPage, ' ***** gms[',i,']: ', gms[i],' ***********************'
           if onPage == 2 and gms[i] in ['yxvsx', 'scatter']:
              if ovly[i] == 0:     # use full template
                 ct += 1
@@ -116,6 +113,12 @@ def return_templates_graphic_methods(canvas1=None, gms=None, ovly=None, onPage=N
                 tmmobs.append( canvas1.createtemplate('UVWG_%dof9_'%ct + (str(random.random())[2:]), 'UVWG_%dof9'%ct) )
              else:                # overlay plot use DUD - only plot the data
                 tmmobs.append( canvas1.createtemplate('UVWG_DUD_%dof9_'%ct + (str(random.random())[2:]), 'UVWG_DUD_%dof9'%ct) )
+          elif onPage == 10:
+             if ovly[i] == 0:
+                ct += 1
+                tmmobs.append( canvas1.createtemplate('UVWG_%dof10_'%ct + (str(random.random())[2:]), 'UVWG_%dof10'%ct) )
+             else:                # overlay plot use DUD - only plot the data
+                tmmobs.append( canvas1.createtemplate('UVWG_DUD_%dof10_'%ct + (str(random.random())[2:]), 'UVWG_DUD_%dof10'%ct) )
           else:
              print 'onpage: ', onPage
              tmmobs.append(None)  #jfp

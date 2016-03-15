@@ -97,6 +97,8 @@ class amwg_plot_spec(plot_spec):
     # list is the preferred method.  Of course, if the variable be already available as data,
     # then that is preferred over any computation.
     standard_variables = {
+        # mass weighting, Jeff Painter based on communications from Susannah Burrows.
+
         # water cycle, Chris Terai:
         'QFLX_LND':[derived_var(
                 vid='QFLX_LND', inputs=['QFLX','OCNFRAC'], outputs=['QFLX_LND'],
@@ -526,7 +528,7 @@ class amwg_plot_set2(amwg_plot_spec):
                 z2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2'],
                 z2func=(lambda z: z[1][3]),
                 plottype = self.plottype,
-                title = 'CAM & NCEP HEAT_TRANSPORT GLOBAL',
+                title = 'CAM and NCEP HEAT_TRANSPORT GLOBAL',
                 source = ft1src ),
             'CAM_NCEP_HEAT_TRANSPORT_PACIFIC': plotspec(
                 vid='CAM_NCEP_HEAT_TRANSPORT_PACIFIC',
@@ -541,7 +543,7 @@ class amwg_plot_set2(amwg_plot_spec):
                 z2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2' ],
                 z2func=(lambda y: y[1][0]),
                 plottype = self.plottype,
-                title = 'CAM & NCEP HEAT_TRANSPORT PACIFIC',
+                title = 'CAM and NCEP HEAT_TRANSPORT PACIFIC',
                 source = ft1src ),
             'CAM_NCEP_HEAT_TRANSPORT_ATLANTIC': plotspec(
                 vid='CAM_NCEP_HEAT_TRANSPORT_ATLANTIC',
@@ -556,7 +558,7 @@ class amwg_plot_set2(amwg_plot_spec):
                 z2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2' ],
                 z2func=(lambda y: y[1][1]),
                 plottype = self.plottype ,
-                title = 'CAM & NCEP HEAT_TRANSPORT ATLANTIC',
+                title = 'CAM and NCEP HEAT_TRANSPORT ATLANTIC',
                 source = ft1src ),
             'CAM_NCEP_HEAT_TRANSPORT_INDIAN': plotspec(
                 vid='CAM_NCEP_HEAT_TRANSPORT_INDIAN',
@@ -571,7 +573,7 @@ class amwg_plot_set2(amwg_plot_spec):
                 z2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2' ],
                 z2func=(lambda y: y[1][2]),
                 plottype = self.plottype,
-                title = 'CAM & NCEP HEAT_TRANSPORT INDIAN',
+                title = 'CAM and NCEP HEAT_TRANSPORT INDIAN',
                 source = ft1src ),
             }
         self.composite_plotspecs = {
@@ -661,7 +663,7 @@ class amwg_plot_set3(amwg_plot_spec,basic_id):
                     for dv in dvs:
                         self.derived_variables[dv.id()] = dv
                     zvar = self.derived_variables[zvar]
-                    zvar._filetable = filetable1
+                    zvar.filetable = filetable1
 
         #self.reduced_variables[varnom+'_1'] = zvar
         #zvar._vid = varnom+'_1'      # _vid is deprecated
@@ -706,22 +708,22 @@ class amwg_plot_set3(amwg_plot_spec,basic_id):
             zval = self.variable_values[zvar.id()]  # new-style key
         #zval = self.variable_values[zvar._vid] # _vid is deprecated
         if zval is None: return None
-        zunam = zvar._filetable._strid  # part of y1 distinguishing it from y2, e.g. ft_1
+        zunam = zvar.filetable._strid  # part of y1 distinguishing it from y2, e.g. ft_1
         zval.id = '_'.join([self._id[0],self._id[1],zunam])
         z2val = self.variable_values[z2var._strid]
         if z2val is None:
             z2unam = ''
             zdiffval = None
         else:
-            z2unam = z2var._filetable._strid  # part of y2 distinguishing it from y1, e.g. ft_2
+            z2unam = z2var.filetable._strid  # part of y2 distinguishing it from y1, e.g. ft_2
             z2val.id = '_'.join([self._id[0],self._id[1],z2unam])
             zdiffval = apply( self.plot_b.zfunc, [zval,z2val] )
             zdiffval.id = '_'.join([self._id[0],self._id[1],
-                                    zvar._filetable._strid, z2var._filetable._strid, 'diff'])
+                                    zvar.filetable._strid, z2var.filetable._strid, 'diff'])
         # ... e.g. CLT_DJF_set3_CAM456_NCEP_diff
-        ft1src = zvar._filetable.source()
+        ft1src = zvar.filetable.source()
         try:
-            ft2src = z2var._filetable.source()
+            ft2src = z2var.filetable.source()
         except:
             ft2src = ''
         plot_a_val = uvc_plotspec(
@@ -1274,6 +1276,7 @@ class amwg_plot_set6(amwg_plot_spec):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the variable to be plotted, e.g. 'STRESS'.
         seasonid is a string such as 'DJF'."""
+
         filetable1, filetable2 = self.getfts(model, obs)
         plot_spec.__init__(self,seasonid)
         # self.plottype = ['Isofill','Vector']  <<<< later we'll add contour plots
@@ -1355,6 +1358,7 @@ class amwg_plot_set6(amwg_plot_spec):
             return [],[]
         reduced_vars = []
         needed_derivedvars = []
+        
         for var in rvars:
             if var in ['TAUX','TAUY'] and filetable.filefmt.find('CAM')>=0:
                 # We'll cheat a bit and change the sign as well as reducing dimensionality.
@@ -1404,6 +1408,7 @@ class amwg_plot_set6(amwg_plot_spec):
         variable computation and orginating from the specified filetable.
         rvars, a list, names the variables needed.
         Also, a list of the new drived variables is returned."""
+
         if filetable is None:
             vardict[','] = None
             return []
@@ -3042,7 +3047,7 @@ class amwg_plot_set14(amwg_plot_spec):
                                         
         self.computation_planned = True
         #pdb.set_trace()
-    def customizeTemplates(self, templates):
+    def customizeTemplates(self, templates, legendTitles=[]):
         """Theis method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs, tm), (cnvs2, tm2) = templates
         tm.data.x1 = .1
@@ -3063,8 +3068,12 @@ class amwg_plot_set14(amwg_plot_spec):
         tm.dataname.priority=0
 
         lx = .75
-        ly = .95        
-        for i, ltitle in enumerate(cnvs.legendTitles):
+        ly = .95
+        if hasattr(cnvs,'legendTitles'):
+            lTitles = cnvs.legendTitles
+        else:
+            lTitles = legendTitles
+        for i, ltitle in enumerate(lTitles):
             text = cnvs.createtext()
             text.string = str(i) + '  ' + ltitle
             text.x = lx

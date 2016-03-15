@@ -180,6 +180,9 @@ class basic_filetable(basic_id):
         self.lonaxes.sort()
         self.levaxes.sort()
 
+        self.weights = {}   # dictionary for storing weights used for averaging over a grid
+        #                     This is unlikely to work if there is more than one lev,lat,lon axis.
+
     def __repr__(self):
        return 'filetable from '+str(self._filelist)[:100]+'...'
     def full_repr(self):
@@ -326,8 +329,8 @@ class basic_filetable(basic_id):
        A filter filefilter may be supplied, to restrict which files will be found.
        For ranges, None means you want all values."""
        if variable not in self._varindex.keys():
-          print 'couldnt find variable',variable,' in varindex keys. Possibly part of a derived variable'
-#          print 'couldnt find variable',variable,' in varindex keys - ', self._varindex.keys(),' of',self
+          print 'INFO: couldnt find variable',variable,'in',self,".  If needed, we'll try to compute it."
+          # print "  variables of",self,"are:",self._varindex.keys()
           return None
        candidates = self._varindex[ variable ]
        found = []

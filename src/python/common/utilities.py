@@ -1,5 +1,11 @@
 import re
 import cdutil
+import metrics.git
+import cdat_info
+import hashlib
+import os
+import sys
+import datetime
 
 def natural_sort(l): 
     # from http://stackoverflow.com/questions/4836710/does-python-have-a-built-in-function-for-string-natural-sort
@@ -79,3 +85,61 @@ class DiagError (Exception):
     """Error object for diagnostics"""
     def __init__ ( self, args="Unspecified error from diagnostics" ):
         self.args = (args,)
+
+def hashfile(filename):
+    try:
+        sha1 = hashlib.sha1()
+        f=open(filename,'rb')
+        try:
+          sha1.update(f.read())
+        finally:
+          f.close()
+        return sha1.hexdigest()
+    except:
+        # probably there is no script
+        return 0
+
+provdic = {}
+def provenance_dict( script_file_name=None ):
+    try:
+        import pwd
+        user = pwd.getpwuid(os.getuid())[0]
+    except Exception:
+        user = os.environ.get('LOGNAME', 'unknown')
+
+    global provdic
+    if len(provdic)>=3:
+        return provdic
+
+    if script_file_name is None:
+        for a in sys.argv:
+            if a[-10:].lower().find("python")==-1:
+                script_file_name = a
+                break
+    provdic['version'] = metrics.git.commit
+    provdic['UVCDAT'] = "UV-CDAT: %s Metrics: %s (%s) script_sha1: %s" % (
+        '.'.join([str(x) for x in cdat_info.version()]),
+        metrics.git.metrics_version,
+        metrics.git.commit,
+        hashfile(script_file_name))
+    provdic['history'] = "%s: created by %s from path: %s with input command line: %s" % (
+                    str(datetime.datetime.utcnow()),
+                    user, os.getcwd(), " ".join(sys.argv)
+                    )
+    return provdic
+
+def merge_provenance_history( old_history, provdic ):
+    # Merge the old history string into the history string of the provenance dictionary provdic.
+    # Change the history in the input dictionary and return the dictionary.
+    if len(old_history)>0:
+        provdic['history'] = old_history + '\n' + provdic['history']
+    return provdic
+
+def store_provenance( outputFile, script_file_name=None ):
+    old_history = getattr(outputFile,'history','')
+    provdic = provenance_dict( script_file_name )
+    provdic = merge_provenance_history( old_history, provdic )
+    for key,val in provdic.items():
+        setattr( outputFile, key, val )
+    return provdic
+

@@ -253,7 +253,7 @@ diags_collection['2']['FSDSNI'] = {'plottype':'2', 'obs':['NA']}
 diags_collection['2']['CWDC'] = {'plottype':'2', 'obs':['NA']}
 diags_collection['2']['FCTR'] = {'plottype':'2', 'obs':['NA']}
 diags_collection['2']['TOTCOLC'] = {'plottype':'2', 'obs':['NA']}
-diags_collection['2']['P-E'] = {'plottype':'2', 'obs':['NA']}
+diags_collection['2']['P-E'] = {'plottype':'2', 'obs':['NA'], 'options':{'requiresraw':True}}
 diags_collection['2']['SR'] = {'plottype':'2', 'obs':['NA']}
 diags_collection['2']['SUPPLEMENT_TO_SMINN'] = {'plottype':'2', 'obs':['NA']}
 diags_collection['2']['PREC'] = {'plottype':'2', 'obs':['WILLMOTT_1']}
@@ -316,15 +316,15 @@ diags_collection['3']['desc'] = 'Line plots of monthly climatology: regional air
 diags_collection['3']['seasons'] = ['ANN']
 diags_collection['3']['package'] = 'LMWG'
 diags_collection['3']['options'] = {'logo':'no'}
-diags_collection['3']['Radiative_Fluxes'] = {'plottype':'3', 'obs':['NA']}
+diags_collection['3']['Radiative_Fluxes'] = {'plottype':'3', 'obs':['NA'], 'options':{'requiresraw':True}} #RNET, ASA, Albedos require raw data
 diags_collection['3']['Carbon_Nitrogen_Fluxes'] = {'plottype':'3', 'obs':['NA']}
 diags_collection['3']['Snow_vs_Obs'] = {'plottype':'3', 'obs':['CMC_SNOW_1', 'USAF_1'], 'options':{'twoobs':'yes'}}
 diags_collection['3']['Turbulent_Fluxes'] = {'plottype':'3', 'obs':['NA']}
-diags_collection['3']['Albedo_vs_Obs'] = {'plottype':'3', 'obs':['MODIS_1']}
+diags_collection['3']['Albedo_vs_Obs'] = {'plottype':'3', 'obs':['MODIS_1'], 'options':{'requiresraw':True}}
 diags_collection['3']['Fire_Fluxes'] = {'plottype':'3', 'obs':['NA']}
 diags_collection['3']['Total_Precip'] = {'plottype':'3', 'obs':['CMC_SNOW_1', 'WILLMOTT_1'], 'options':{'twoobs':'yes'}}
 diags_collection['3']['Hydrology'] = {'plottype':'3', 'obs':['NA']}
-diags_collection['3']['Energy_Moisture_Control_of_Evap'] = {'plottype':'3', 'obs':['NA']}
+diags_collection['3']['Energy_Moisture_Control_of_Evap'] = {'plottype':'3', 'obs':['NA'], 'options':{'requiresraw':True}} #EVAPFRAC
 
 ### Collection 5
 ### Underlying code checks for difference vs default validity (looks for num_models == 2 before caring about varopts)
@@ -344,8 +344,8 @@ diags_collection['6']['desc'] = 'Line plots of annual trends in regional soil wa
 diags_collection['6']['seasons'] = ['ANN']
 diags_collection['6']['package'] = 'LMWG'
 diags_collection['6']['options'] = {'logo':'no'}
-diags_collection['6']['Soil_Temp'] = {'plottype':'6', 'obs':['NA']}
-diags_collection['6']['Radiative_Fluxes'] = {'plottype':'6', 'obs':['NA']}
+diags_collection['6']['Soil_Temp'] = {'plottype':'6', 'obs':['NA'], 'options':{'requiresraw':True}}
+diags_collection['6']['Radiative_Fluxes'] = {'plottype':'6', 'obs':['NA'], 'options':{'requiresraw':True}}
 diags_collection['6']['Carbon_Nitrogen_Fluxes'] = {'plottype':'6', 'obs':['NA']}
 diags_collection['6']['TotalSoilIce_TotalSoilH2O'] = {'plottype':'6', 'obs':['NA']}
 diags_collection['6']['SoilLiq_Water'] = {'plottype':'6', 'obs':['NA']}
@@ -354,11 +354,16 @@ diags_collection['6']['Turbulent_Fluxes'] = {'plottype':'6', 'obs':['NA']}
 diags_collection['6']['SoilIce'] = {'plottype':'6', 'obs':['NA']}
 diags_collection['6']['Fire_Fluxes'] = {'plottype':'6', 'obs':['NA']}
 diags_collection['6']['Total_Precip'] = {'plottype':'6', 'obs':['NA']}
-diags_collection['6']['Hydrology'] = {'plottype':'6', 'obs':['NA']}
+diags_collection['6']['Hydrology'] = {'plottype':'6', 'obs':['NA'], 'options':{'requiresraw':True}}
 
 ### Collection 7
-#diags_collection['7'] = {}
-#diags_collection['7']['desc'] = 'Line plots, tables, and maps of RTM river flow and discharge to oceans'
+diags_collection['7T'] = {}
+diags_collection['7T']['desc'] = 'Line plots, tables, and maps of RTM river flow and discharge to oceans'
+diags_collection['7T']['RTM_Tables'] = {'plottype':'7', 'obs':['NA']}
+diags_collection['7T']['tables'] = True
+diags_collection['7'] = {}
+diags_collection['7']['desc'] = 'Line plots, tables, and maps of RTM river flow and discharge to oceans'
+diags_collection['7']['Scatter_plots'] = {'plottype':'7', 'obs':['NA']}
 
 ### Collection 9
 diags_collection['9'] = {}

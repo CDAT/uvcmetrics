@@ -3,6 +3,7 @@
 # Functions callable from the UV-CDAT GUI.
 
 import hashlib, os, pickle, sys, os, math, pdb, string
+from numbers import Number
 from metrics import *
 from metrics.fileio.filetable import *
 from metrics.fileio.findfiles import *
@@ -18,6 +19,8 @@ import cProfile
 import logging
 import json
 import vcs
+from metrics.common import store_provenance
+
 vcsx=vcs.init()   # This belongs in one of the GUI files, e.g.diagnosticsDockWidget.py
                   # The GUI probably will have already called vcs.init().
                   # Then, here,  'from foo.bar import vcsx'
@@ -145,8 +148,10 @@ class uvc_composite_plotspec():
         if len(self.title)<=0:
             fname = 'foo.xml'
         else:
-            fname = (self.title.strip()+'.xml').replace(' ','_').replace('/','_')[:115]  # 115 is to constrain file size
-            fname = fname+'.xml'
+            # the title join ends up with two spaces between fields. check for that first, then replace single spaces after.
+            fname = (self.title.strip()+'.xml').replace('  ','_').replace(' ','_').replace('/','_')[:115]  # 115 is to constrain file size
+            if '.xml' not in fname:
+               fname = fname+'.xml'
         filename = os.path.join(where,fname)
         #print "output to",filename
         return filename
@@ -780,7 +785,8 @@ class uvc_simple_plotspec():
         if len(self.title)<=0:
             fname = 'foo.nc'
         else:
-            fname = underscore_join([self.title.strip(),self.source]).replace(' ','_').replace('/','_') + '.nc'
+            # the title join ends up with two spaces between fields. check for that first, then replace single spaces after.
+            fname = underscore_join([self.title.strip(),self.source]).replace('  ','_').replace(' ','_').replace('/','_') + '.nc'
         filename = os.path.join(where,fname)
         return filename
     def write_plot_data( self, format="", where="" ):
@@ -805,6 +811,7 @@ class uvc_simple_plotspec():
             cdms2.setNetcdfDeflateLevelFlag(value) ## where value is a integer between 0 and 9 included
 
             writer = cdms2.open( filename, 'w' )    # later, choose a better name and a path!
+            store_provenance(writer)
         elif format=="JSON file":
             print "ERROR: JSON file not implemented yet"
         elif format=="JSON string":
@@ -815,6 +822,15 @@ class uvc_simple_plotspec():
         plot_these = []
 
         for zax in self.vars:
+            try:
+                del zax.filetable  # we'll write var soon, and can't write a filetable
+            except:
+                pass
+            for ax in zax.getAxisList():
+                try:
+                    del ax.filetable
+                except:
+                    pass
             writer.write( zax )
             plot_these.append( str(seqgetattr(zax,'id','')) )
         writer.plot_these = ' '.join(plot_these)
@@ -924,8 +940,6 @@ class plot_spec(object):
         return new_id
     def compute(self,newgrid=0):
         return self.results(newgrid)
-    def results(self,newgrid=0):
-        return self._results(newgrid)
 
     def uniquefts(self, ftlist):
         names = []
@@ -991,6 +1005,8 @@ class plot_spec(object):
         return dups, climo, raw 
 
 
+    def results(self,newgrid=0):
+        return self._results(newgrid)
 # To profile, replace (by name changes) the above results() with the following one:
     def profiled_results(self,newgrid=0):
         if newgrid!=0:
@@ -1004,7 +1020,6 @@ class plot_spec(object):
         that means a coarser grid, typically from regridding model data to the obs grid.
         In the future regrid>0 will mean regrid everything to the finest grid and regrid<0
         will mean regrid everything to the coarsest grid."""
-
         for v in self.reduced_variables.keys():
             #print v
             value = self.reduced_variables[v].reduce(None)
@@ -1066,7 +1081,15 @@ class plot_spec(object):
             z2lab=""
             z3lab =""
             z3lab = ""
-            if zax is not None and len(getattr(zax,'data',[None]))>0:  # a tuple always passes
+            if zax is not None:
+                zaxdata = getattr(zax,'data',[None])
+                try:
+                    lenzaxdata = len(zaxdata)  # >0 for a tuple
+                except TypeError:
+                    lenzaxdata = 0
+                if lenzaxdata<=0:
+                    print "WARNING: no plottable data for",getattr(zax,'id',zax)
+                    continue
                 if hasattr(zax,'regridded') and newgrid!=0:
                     vars.append( regridded_vars[zax.regridded] )
                 else:
@@ -1164,8 +1187,13 @@ class plot_spec(object):
             #print p
             #print self.plotspec_values[p]
         #pdb.set_trace()
+
+        # dispose of any failed plots
+        self.plotspec_values = { p:ps for p,ps in self.plotspec_values.items() if ps is not None }
+
         print 'now composite plot'
         for p,ps in self.composite_plotspecs.iteritems():
+            self.plotspec_values[p] = [ self.plotspec_values[sp] for sp in ps if sp in self.plotspec_values ]
             self.plotspec_values[p] = [ self.plotspec_values[sp] for sp in ps if sp in self.plotspec_values ]
             # Normally ps is a list of names of a plots, we'll remember its value as a list of their values.
             if type( ps ) is tuple:
@@ -1173,13 +1201,13 @@ class plot_spec(object):
                 self.plotspec_values[p] = tuple( self.plotspec_values[p] )
             #print p
             #print self.plotspec_values[p]
-        #This next loop is a duplicate of the previous loop.  It can be viewed as a cleenup. The reason it's 
+        #This next loop is a duplicate of the previous loop.  It can be viewed as a cleanup. The reason it's 
         #needed is that there is no guaranteed order of execution with a dictionary.  So if a composite plot
         #is a composite of others then there may be an incomplete plot if the individual plots are defined
-        #later.  Plot set 11 is an example of this.
+        #later.  Plot set 11 is an example of this.  It can happen with plot set 6 too.
         for p,ps in self.composite_plotspecs.iteritems():
-            self.plotspec_values[p] = [ self.plotspec_values[sp] for sp in ps if sp in self.plotspec_values ]
             # Normally ps is a list of names of a plots, we'll remember its value as a list of their values.
+            self.plotspec_values[p] = [ self.plotspec_values[sp] for sp in ps if sp in self.plotspec_values ]
             if type( ps ) is tuple:
                 # ps is a tuple of names of simple plots which should be overlapped
                 self.plotspec_values[p] = tuple( self.plotspec_values[p] )
@@ -1207,6 +1235,22 @@ class plot_spec(object):
             print 'in uvcdat.py' # this next line is printed from two different possible places.
             print "ERROR, all values of",z.id,"are missing!"
             return None,None
+        if z is not None and not (hasattr(z,'mean') and isinstance(z.mean,Number)):
+            # Compute variable's mean.  For mass weighting, it should have already happened in a
+            # dimensionality reduction functions.
+            if type(z) is tuple: zid = [zz.id for zz in z]
+            else: zid = z.id
+            print "INFO no mean attribute in variable",zid,\
+                "; we may compute it in compute_plot_var_value."
+            set_mean( z, season=getattr(self,'season',None), region=getattr(self,'region',None) )
+            if hasattr(z,'mean') and isinstance(z.mean,cdms2.tvariable.TransientVariable) and\
+                    z.mean.shape==():
+                # ... adding 0.0 converts a numpy array of shape () to an actual number
+                z.mean = z.mean.getValue()+0.0
+        if (hasattr(z,'mean') and isinstance(z.mean,Number)):
+            # VCS display of z.mean has too many digits unless we round:
+            z.mean = round2( z.mean, 6 )
+
         return z, zrv
         
 

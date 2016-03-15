@@ -3,7 +3,7 @@
 # The user provides some minimal specification of the data he wants analyzed.
 # Our goal here is to find all the data files which comprise that data.
 
-import hashlib, pickle, operator, os, functools, sys, re
+import hashlib, pickle, operator, os, functools, sys, re, getpass
 import pprint
 from metrics.common.version import version
 from metrics.common.utilities import *
@@ -172,7 +172,7 @@ class basic_datafiles:
         return True
     def _cachefile( self, ftid=None ):
         """returns a cache file based on the supplied cache path, the files list, the
-        filetable id"""
+        filetable id, and the username"""
         if ftid is None:
             ftid = self.short_name()
         cache_path = self.opts['cachepath']
@@ -183,7 +183,7 @@ class basic_datafiles:
                             'mtime'+(str(os.path.getmtime(f)) if os.path.isfile(f) else '0')\
                             for f in self.files ]
         search_string = ' '.join(
-            [self.long_name(),cache_path,version,';'.join(datafile_ls)] )
+            [getpass.getuser(),self.long_name(),cache_path,version,';'.join(datafile_ls)] )
         csum = hashlib.md5(search_string).hexdigest()
         cachefilename = csum+'.cache'
         cachefile=os.path.normpath( cache_path+'/'+cachefilename )
@@ -337,7 +337,7 @@ class dirtree_datafiles( basic_datafiles ):
         if self._type == None or self._index == None or not hasattr(self,'_index'):
             shortname = ','.join([os.path.basename(str(r))
                              for r in self._root])   # <base directory> <filter name>
-        if len(self.opts[self._type]) > self._index:
+        elif len(self.opts[self._type]) > self._index:
             if self.opts[self._type][self._index].get('name', False) not in [False,None]:
                shortname = self.opts[self._type][self._index]['name'] 
             if self.opts[self._type][self._index].get('filter', False) != False:
