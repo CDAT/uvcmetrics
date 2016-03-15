@@ -14,6 +14,10 @@ to = x.gettextorientation("tex6")
 to.height = 6
 to.halign = "center"
 to.valign = "half"
+mean = x.createtextorientation("texmean")
+mean.halign="center"
+txname = x.createtextorientation("xname")
+txname.height = 1
 if 1:
     for k in P:
         p = x.gettemplate(str(k))
@@ -24,9 +28,8 @@ if 1:
         p.title.x = (p.data.x1+p.data.x2)/2.
         p.title.y = p.data.y2+.025
         p.title.textorientation = "tex6"
-        mean = x.createtextorientation("texmean")
-        mean.halign="center"
         p.mean.textorientation = mean
+        p.units.y = p.title.y
         b1 = p.box1
         if k.find("of3") > -1:
             p.data.x1 += .015
@@ -35,14 +38,23 @@ if 1:
             p.data.y2 += ydelta
             p.legend.y1 += ydelta
             p.legend.y2 += ydelta
-            p.min.y += ydelta
+            
             p.max.y += ydelta
-            p.mean.y = p.data.y2+.01
-            p.mean.x = (p.data.x1+p.data.x2)/2.
-            p.min.y = p.min.y + ydelta
+            
+            p.mean.x = p.max.x
+            p.mean.y = p.max.y + ydelta
+                        
+            p.min.x = p.max.x
+            p.min.y += 2*ydelta
+            
+            #p.mean.y = p.data.y2+.01
+            #p.mean.x = (p.data.x1+p.data.x2)/2.
+            #p.min.y = p.min.y + ydelta
             p.mean.textorientation = p.min.textorientation
             p.mean.texttable = p.min.texttable
-            #p.title.y -= .005
+            p.xname.textorientation = txname
+            p.title.y += .01
+            p.xname.priority = 0
         elif k.find("of") == -1:
             p.min.list()
             p.max.list()
@@ -99,7 +111,10 @@ if 1:
                 p.xname.y = p.box1.y1 - .022
             else:
                 p.xname.y = p.box1.y1 - .025
+            #import pdb
+            #pdb.set_trace()
             p.xname.x = (p.box1.x1 + p.box1.x2) / 2.
+            #p.xname.priority = 0 #JMcE
             if k.find("of3") > -1 and k.find("3of3") == -1:  # only bottom one has labels
                 p.xname.priority = 0
                 p.xlabel1.priority = 0
@@ -150,6 +165,7 @@ if 1:
                 to.height = 12
                 to.halign = "center"
                 p.xname.textorientation = "tex4x"
+
         p.script("new")
 
 sys.exit()
