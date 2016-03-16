@@ -3264,12 +3264,13 @@ class amwg_plot_set15(amwg_plot_spec):
             tm.min.priority = 0
             tm.mean.priority = 0
             tm.dataname.priority = 0
+            tm.legend.y2 = tm.mean.y
             
             tm.xlabel1.priority = 1 
             tm.xtic1.priority = 1 
             tm.yname.priority = 1
             tm.yname.priority = 1
-            tm.xname.priority = 1
+            #tm.xname.priority = 1
             tm.ylabel1.priority = 1 
             tm.ytic1.priority = 1  
                         

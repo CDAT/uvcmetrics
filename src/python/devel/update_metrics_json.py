@@ -1,5 +1,7 @@
 import json
 import vcs
+import sys
+
 x = vcs.init()
 
 D = json.load(open("share/uvcmetrics.bad.json"))
@@ -18,9 +20,15 @@ mean = x.createtextorientation("texmean")
 mean.halign="center"
 txname = x.createtextorientation("xname")
 txname.height = 1
+units = None
+tex3y = x.createtextorientation("tex3y","tex4y")
+tex3y.height = 10
 if 1:
     for k in P:
         p = x.gettemplate(str(k))
+        if units is None:
+            units = x.createtextorientation("texunits",p.units.textorientation)
+            units.halign = "right"
         p.xmintic2.priority = 0
         p.xtic2.priority = 0
         p.ymintic2.priority = 0
@@ -30,6 +38,9 @@ if 1:
         p.title.textorientation = "tex6"
         p.mean.textorientation = mean
         p.units.y = p.title.y
+        p.units.textorientation = units
+        p.dataname.y = p.data.y2 + .01
+        p.source.y = p.data.y2 + .01
         b1 = p.box1
         if k.find("of3") > -1:
             p.data.x1 += .015
@@ -55,10 +66,11 @@ if 1:
             p.xname.textorientation = txname
             p.title.y += .01
             p.xname.priority = 0
-        elif k.find("of") == -1:
-            p.min.list()
-            p.max.list()
             p.mean.list()
+        elif k.find("of") == -1:
+            #p.min.list()
+            #p.max.list()
+            #p.mean.list()
             p.max.priority = 0
             p.min.priority = 0
             p.zname.priority = 0
@@ -126,7 +138,7 @@ if 1:
             if k.lower().find("dud") > -1:
                 p.xname.priority = 0
             if k.find("of3") > -1:
-                p.yname.x = p.box1.x1 - .045
+                p.yname.x = p.box1.x1 - .049
             elif k.find("of2") > -1:
                 p.yname.x = p.box1.x1 - .0388
             elif k.find("of4") > -1:
@@ -143,7 +155,7 @@ if 1:
             if k.lower().find("dud") > -1:
                 p.yname.priority = 0
             if k.lower().find("of") == -1:
-                # p.yname.textorientation = "tex4y"
+                p.yname.textorientation = "tex4y"
                 to = x.gettextorientation("tex4x")
                 # to.height=12
                 # to.halign="center"
@@ -159,6 +171,8 @@ if 1:
                 p.yname.textorientation = "tex2y"
                 p.xname.textorientation = "tex2x"
                 p.xname.y -= .0003
+            elif k.find("of3") > -1:
+                p.yname.textorientation = "tex3y"
             else:
                 p.yname.textorientation = "tex4y"
                 to = x.gettextorientation("tex4x")
