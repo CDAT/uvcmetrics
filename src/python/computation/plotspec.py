@@ -136,7 +136,8 @@ class plotspec(basic_id):
         title = None,
         source = '',
         overplotline = False,
-        levels = None
+        levels = None,  # deprecated
+        plotparms = None
         ):
         """Initialize a plotspec (plot specification).  Inputs are an id and plot type,
         and lists of x,y,z variables (as keys in the plotvars dictionary), functions to
@@ -146,6 +147,9 @@ class plotspec(basic_id):
         axes may be specified - e.g. ya to substitute for y in a plot, or ya1 as an addition
         to y in the plot.
         """
+        if plotparms is not None:
+            levels = plotparms['levels']
+            self.plotparms = plotparms
         if type(vid) is tuple:
             # probably this is an id tuple with the first element stripped off
             basic_id.__init__(self,*vid)
