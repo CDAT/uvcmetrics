@@ -1817,7 +1817,6 @@ class amwg_plot_set8(amwg_plot_spec):
                                     zvars = [vidModel],
                                     zfunc = (lambda x: MV2.transpose(x)),
                                     plottype = self.plottype,
-                                    title = 'Model',
                                     levels = levels )}
         if self.FT2:
             self.single_plotspecs[self.plot2_id] = \
@@ -1825,14 +1824,12 @@ class amwg_plot_set8(amwg_plot_spec):
                                         zvars=[vidObs],   
                                         zfunc = (lambda x: MV2.transpose(x)),                                
                                         plottype = self.plottype,
-                                        title = 'Observation',
                                         levels = levels )
             self.single_plotspecs[self.plot3_id] = \
                                plotspec(vid = ps.dict_idid(vidDiff), 
                                         zvars = [vidDiff],
                                         zfunc = (lambda x: MV2.transpose(x)),
                                         plottype = self.plottype,
-                                        title = 'Difference ',
                                         levels = None )
             
         self.composite_plotspecs = {
