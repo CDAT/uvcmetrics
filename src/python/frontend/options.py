@@ -262,11 +262,17 @@ class Options():
    def listVariables(self, package, setname):
       import metrics.fileio.filetable as ft
       import metrics.fileio.findfiles as fi
+      if setname is None:
+         print "ERROR, must specify plot set to list variables"
+         quit()
       dtree = fi.dirtree_datafiles(self, modelid=0)
       filetable = ft.basic_filetable(dtree, self)
 
       # this needs a filetable probably, or we just define the maximum list of variables somewhere
-      if package.lower() == 'lmwg':
+      if package is None:
+         print "ERROR, must specify package to list variables"
+         quit()
+      elif package.lower() == 'lmwg':
          import metrics.packages.lmwg.lmwg
          pinstance = metrics.packages.lmwg.lmwg.LMWG()
       elif package.lower()=='amwg':
