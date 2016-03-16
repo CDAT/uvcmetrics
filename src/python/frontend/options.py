@@ -244,7 +244,10 @@ class Options():
       # I don't know of a better way to do this. I'd rather have these
       # defined (perhaps in defines.py) 
       # it would clean up a lot of code here, and in amwg/lmwg I think.
-      if packageid.lower() == 'lmwg':
+      if packageid is None:
+         print "ERROR, must specify package to list plot sets"
+         quit()
+      elif packageid.lower() == 'lmwg':
          import metrics.packages.lmwg.lmwg
          pinstance = metrics.packages.lmwg.lmwg.LMWG()
       elif packageid.lower() == 'amwg':
@@ -299,10 +302,19 @@ class Options():
    def listVarOptions(self, package, setname, varname):
       import metrics.fileio.filetable as ft
       import metrics.fileio.findfiles as fi
+      if setname is None:
+         print "ERROR, must specify plot set to list variable options"
+         quit()
+      if varname is None:
+         print "ERROR, must specify variable to list variable options"
+         quit()
       dtree = fi.dirtree_datafiles(self, modelid=0)
       filetable = ft.basic_filetable(dtree, self)
 
-      if package.lower() == 'lmwg':
+      if package is None:
+         print "ERROR, must specify package to list variable options"
+         quit()
+      elif package.lower() == 'lmwg':
          import metrics.packages.lmwg.lmwg
          pinstance = metrics.packages.lmwg.lmwg.LMWG()
       elif package.lower()=='amwg':
@@ -321,6 +333,8 @@ class Options():
                   vo = vl[v].varoptions()
                   print 'Variable ', v,'in set', setname[0],'from package',package,'at path', self._opts['model'][0]['path'],'has options:'
                   print vo
+               else:
+                  print 'Variable ', v,'in set', setname[0],'from package',package,'at path', self._opts['model'][0]['path'],'has no options.'
 
 
    ###
