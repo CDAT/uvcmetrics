@@ -2784,6 +2784,7 @@ class amwg_plot_set13(amwg_plot_spec):
                 v.finalize(flip_y=True)
         return self.plotspec_values[self.plotall_id]
 
+
 class amwg_plot_set14(amwg_plot_spec):
     """ Example script
       diags.py --model path=$HOME/amwg_diagnostics/cam35_data/,filter='f_startswith("ccsm")',climos=yes \

@@ -88,7 +88,7 @@
     "textorientation": "texd", 
     "texttable": "default", 
     "x": 0.045, 
-    "y": 0.870000014305
+    "y": 0.96
    }, 
    "file": {
     "priority": 1, 
@@ -182,7 +182,7 @@
     "textorientation": "texs", 
     "texttable": "default", 
     "x": 0.065, 
-    "y": 0.885
+    "y": 0.887000014305
    }, 
    "title": {
     "priority": 1, 
@@ -222,16 +222,16 @@
    }, 
    "units": {
     "priority": 0, 
-    "textorientation": "texunits", 
+    "textorientation": "texs", 
     "texttable": "default", 
-    "x": 0.78, 
+    "x": 0.749999988079, 
     "y": 0.885000014305
    }, 
    "xlabel1": {
     "priority": 1, 
     "textorientation": "defcenter", 
     "texttable": "default", 
-    "y": 0.23499999046299996
+    "y": 0.24499999046299997
    }, 
    "xlabel2": {
     "priority": 0, 
@@ -313,7 +313,7 @@
     "priority": 1, 
     "textorientation": "tex4y", 
     "texttable": "default", 
-    "x": 0.023000000745100002, 
+    "x": 0.0030000007450999983, 
     "y": 0.5600000023839999
    }, 
    "ytic1": {
@@ -454,7 +454,7 @@
     "textorientation": "texd", 
     "texttable": "default", 
     "x": 0.045, 
-    "y": 0.870000014305
+    "y": 0.96
    }, 
    "file": {
     "priority": 1, 
@@ -548,7 +548,7 @@
     "textorientation": "texs", 
     "texttable": "default", 
     "x": 0.065, 
-    "y": 0.885
+    "y": 0.887000014305
    }, 
    "title": {
     "priority": 1, 
@@ -588,16 +588,16 @@
    }, 
    "units": {
     "priority": 0, 
-    "textorientation": "texunits", 
+    "textorientation": "texs", 
     "texttable": "default", 
-    "x": 0.78, 
+    "x": 0.749999988079, 
     "y": 0.885000014305
    }, 
    "xlabel1": {
     "priority": 1, 
     "textorientation": "defcenter", 
     "texttable": "default", 
-    "y": 0.23499999046299996
+    "y": 0.24499999046299997
    }, 
    "xlabel2": {
     "priority": 0, 
@@ -679,7 +679,7 @@
     "priority": 1, 
     "textorientation": "tex4y", 
     "texttable": "default", 
-    "x": 0.023000000745100002, 
+    "x": 0.0030000007450999983, 
     "y": 0.5600000023839999
    }, 
    "ytic1": {
@@ -820,7 +820,7 @@
     "textorientation": "texd", 
     "texttable": "default", 
     "x": 0.045, 
-    "y": 0.9400000000000001
+    "y": 0.96
    }, 
    "file": {
     "priority": 0, 
@@ -914,7 +914,7 @@
     "textorientation": "texs", 
     "texttable": "default", 
     "x": 0.065, 
-    "y": 0.885
+    "y": 0.9570000000000001
    }, 
    "title": {
     "priority": 0, 
@@ -954,9 +954,9 @@
    }, 
    "units": {
     "priority": 0, 
-    "textorientation": "texunits", 
+    "textorientation": "texs", 
     "texttable": "default", 
-    "x": 0.78, 
+    "x": 0.55, 
     "y": 0.9550000000000001
    }, 
    "xlabel1": {
@@ -988,7 +988,7 @@
     "textorientation": "tex2x", 
     "texttable": "default", 
     "x": 0.45, 
-    "y": 0.5477
+    "y": 0.5447
    }, 
    "xtic1": {
     "line": "default", 
@@ -1186,7 +1186,7 @@
     "textorientation": "texd", 
     "texttable": "default", 
     "x": 0.045, 
-    "y": 0.46
+    "y": 0.96
    }, 
    "file": {
     "priority": 0, 
@@ -1280,7 +1280,7 @@
     "textorientation": "texs", 
     "texttable": "default", 
     "x": 0.065, 
-    "y": 0.885
+    "y": 0.47700000000000004
    }, 
    "title": {
     "priority": 0, 
@@ -1320,9 +1320,9 @@
    }, 
    "units": {
     "priority": 0, 
-    "textorientation": "texunits", 
+    "textorientation": "texs", 
     "texttable": "default", 
-    "x": 0.78, 
+    "x": 0.55, 
     "y": 0.47500000000000003
    }, 
    "xlabel1": {
@@ -1354,7 +1354,7 @@
     "textorientation": "tex2x", 
     "texttable": "default", 
     "x": 0.45, 
-    "y": 0.06770000000000001
+    "y": 0.06470000000000001
    }, 
    "xtic1": {
     "line": "default", 
@@ -1552,7 +1552,7 @@
     "textorientation": "texd", 
     "texttable": "default", 
     "x": 0.045, 
-    "y": 0.870000014305
+    "y": 0.96
    }, 
    "file": {
     "priority": 0, 
@@ -1646,7 +1646,7 @@
     "textorientation": "texs", 
     "texttable": "default", 
     "x": 0.065, 
-    "y": 0.885
+    "y": 0.887000014305
    }, 
    "title": {
     "priority": 0, 
@@ -1686,16 +1686,16 @@
    }, 
    "units": {
     "priority": 0, 
-    "textorientation": "texunits", 
+    "textorientation": "texs", 
     "texttable": "default", 
-    "x": 0.78, 
+    "x": 0.749999988079, 
     "y": 0.885000014305
    }, 
    "xlabel1": {
     "priority": 0, 
     "textorientation": "defcenter", 
     "texttable": "default", 
-    "y": 0.23499999046299996
+    "y": 0.24499999046299997
    }, 
    "xlabel2": {
     "priority": 0, 
@@ -1777,7 +1777,7 @@
     "priority": 0, 
     "textorientation": "tex4y", 
     "texttable": "default", 
-    "x": 0.023000000745100002, 
+    "x": 0.0030000007450999983, 
     "y": 0.5600000023839999
    }, 
    "ytic1": {
@@ -1918,7 +1918,7 @@
     "textorientation": "texd", 
     "texttable": "default", 
     "x": 0.045, 
-    "y": 0.9400000000000001
+    "y": 0.96
    }, 
    "file": {
     "priority": 0, 
@@ -2012,7 +2012,7 @@
     "textorientation": "texs", 
     "texttable": "default", 
     "x": 0.065, 
-    "y": 0.885
+    "y": 0.9570000000000001
    }, 
    "title": {
     "priority": 0, 
@@ -2052,9 +2052,9 @@
    }, 
    "units": {
     "priority": 0, 
-    "textorientation": "texunits", 
+    "textorientation": "texs", 
     "texttable": "default", 
-    "x": 0.78, 
+    "x": 0.55, 
     "y": 0.9550000000000001
    }, 
    "xlabel1": {
@@ -2086,7 +2086,7 @@
     "textorientation": "tex2x", 
     "texttable": "default", 
     "x": 0.45, 
-    "y": 0.5477
+    "y": 0.5447
    }, 
    "xtic1": {
     "line": "default", 
@@ -2284,7 +2284,7 @@
     "textorientation": "texd", 
     "texttable": "default", 
     "x": 0.045, 
-    "y": 0.46
+    "y": 0.96
    }, 
    "file": {
     "priority": 0, 
@@ -2378,7 +2378,7 @@
     "textorientation": "texs", 
     "texttable": "default", 
     "x": 0.065, 
-    "y": 0.885
+    "y": 0.47700000000000004
    }, 
    "title": {
     "priority": 0, 
@@ -2418,9 +2418,9 @@
    }, 
    "units": {
     "priority": 0, 
-    "textorientation": "texunits", 
+    "textorientation": "texs", 
     "texttable": "default", 
-    "x": 0.78, 
+    "x": 0.55, 
     "y": 0.47500000000000003
    }, 
    "xlabel1": {
@@ -2452,7 +2452,7 @@
     "textorientation": "tex2x", 
     "texttable": "default", 
     "x": 0.45, 
-    "y": 0.06770000000000001
+    "y": 0.06470000000000001
    }, 
    "xtic1": {
     "line": "default", 
@@ -2650,7 +2650,7 @@
     "textorientation": "botcenter", 
     "texttable": "std", 
     "x": 0.1, 
-    "y": 0.96
+    "y": 0.969
    }, 
    "file": {
     "priority": 0, 
@@ -2744,7 +2744,7 @@
     "textorientation": "texsu", 
     "texttable": "default", 
     "x": 0.065, 
-    "y": 0.965
+    "y": 0.977
    }, 
    "title": {
     "priority": 1, 
@@ -2784,13 +2784,13 @@
    }, 
    "units": {
     "priority": 0, 
-    "textorientation": "texunits", 
+    "textorientation": "texsu", 
     "texttable": "default", 
-    "x": 0.78, 
+    "x": 0.6000000000000001, 
     "y": 0.975
    }, 
    "xlabel1": {
-    "priority": 0, 
+    "priority": 1, 
     "textorientation": "7rcc", 
     "texttable": "std", 
     "y": 0.683
@@ -2818,7 +2818,7 @@
     "textorientation": "xname", 
     "texttable": "default", 
     "x": 0.4375, 
-    "y": 0.678
+    "y": 0.66
    }, 
    "xtic1": {
     "line": "default", 
@@ -2875,7 +2875,7 @@
     "priority": 1, 
     "textorientation": "tex3y", 
     "texttable": "default", 
-    "x": 0.025999999999999995, 
+    "x": 0.009999999999999995, 
     "y": 0.833
    }, 
    "ytic1": {
@@ -3016,7 +3016,7 @@
     "textorientation": "texd", 
     "texttable": "default", 
     "x": 0.045, 
-    "y": 0.89
+    "y": 0.96
    }, 
    "file": {
     "priority": 0, 
@@ -3110,14 +3110,14 @@
     "textorientation": "texs", 
     "texttable": "default", 
     "x": 0.065, 
-    "y": 0.885
+    "y": 0.907
    }, 
    "title": {
     "priority": 0, 
     "textorientation": "tex6", 
     "texttable": "default", 
     "x": 0.285, 
-    "y": 0.905
+    "y": 0.9550000000000001
    }, 
    "tname": {
     "priority": 0, 
@@ -3150,9 +3150,9 @@
    }, 
    "units": {
     "priority": 0, 
-    "textorientation": "texunits", 
+    "textorientation": "texs", 
     "texttable": "default", 
-    "x": 0.78, 
+    "x": 0.26999999999999996, 
     "y": 0.905
    }, 
    "xlabel1": {
@@ -3181,10 +3181,10 @@
    }, 
    "xname": {
     "priority": 1, 
-    "textorientation": "tex4x", 
+    "textorientation": "default", 
     "texttable": "default", 
     "x": 0.285, 
-    "y": 0.5549999999999999
+    "y": 0.5499999999999999
    }, 
    "xtic1": {
     "line": "default", 
@@ -3382,7 +3382,7 @@
     "textorientation": "botcenter", 
     "texttable": "std", 
     "x": 0.1, 
-    "y": 0.9400000000000001
+    "y": 0.969
    }, 
    "file": {
     "priority": 0, 
@@ -3476,7 +3476,7 @@
     "textorientation": "tex6s", 
     "texttable": "default", 
     "x": 0.295, 
-    "y": 0.94
+    "y": 0.9570000000000001
    }, 
    "title": {
     "priority": 0, 
@@ -3516,14 +3516,14 @@
    }, 
    "units": {
     "priority": 0, 
-    "textorientation": "texunits", 
+    "textorientation": "texsu", 
     "texttable": "default", 
-    "x": 0.78, 
+    "x": 0.26, 
     "y": 0.9550000000000001
    }, 
    "xlabel1": {
     "priority": 1, 
-    "textorientation": "tex6", 
+    "textorientation": "tex6b", 
     "texttable": "std", 
     "y": 0.6749999999999999
    }, 
@@ -3547,7 +3547,7 @@
    }, 
    "xname": {
     "priority": 1, 
-    "textorientation": "tex4x", 
+    "textorientation": "default", 
     "texttable": "default", 
     "x": 0.29500000000000004, 
     "y": 0.6679999999999999
@@ -3581,7 +3581,7 @@
    }, 
    "ylabel1": {
     "priority": 1, 
-    "textorientation": "tex6", 
+    "textorientation": "tex6b", 
     "texttable": "std", 
     "x": 0.115
    }, 
@@ -3748,7 +3748,7 @@
     "textorientation": "botcenter", 
     "texttable": "std", 
     "x": 0.1, 
-    "y": 0.9400000000000001
+    "y": 0.969
    }, 
    "file": {
     "priority": 0, 
@@ -3841,8 +3841,8 @@
     "priority": 1, 
     "textorientation": "tex6s", 
     "texttable": "default", 
-    "x": 0.295, 
-    "y": 0.94
+    "x": 0.13, 
+    "y": 0.9570000000000001
    }, 
    "title": {
     "priority": 0, 
@@ -3882,14 +3882,14 @@
    }, 
    "units": {
     "priority": 0, 
-    "textorientation": "texunits", 
+    "textorientation": "texsu", 
     "texttable": "default", 
-    "x": 0.78, 
+    "x": 0.26, 
     "y": 0.9550000000000001
    }, 
    "xlabel1": {
-    "priority": 0, 
-    "textorientation": "tex6", 
+    "priority": 1, 
+    "textorientation": "tex6b", 
     "texttable": "std", 
     "y": 0.6749999999999999
    }, 
@@ -3913,7 +3913,7 @@
    }, 
    "xname": {
     "priority": 0, 
-    "textorientation": "tex4x", 
+    "textorientation": "default", 
     "texttable": "default", 
     "x": 0.29500000000000004, 
     "y": 0.6679999999999999
@@ -3947,7 +3947,7 @@
    }, 
    "ylabel1": {
     "priority": 1, 
-    "textorientation": "tex6", 
+    "textorientation": "tex6b", 
     "texttable": "std", 
     "x": 0.115
    }, 
@@ -4114,7 +4114,7 @@
     "textorientation": "botcenter", 
     "texttable": "std", 
     "x": 0.1, 
-    "y": 0.63
+    "y": 0.969
    }, 
    "file": {
     "priority": 0, 
@@ -4208,7 +4208,7 @@
     "textorientation": "texsu", 
     "texttable": "default", 
     "x": 0.065, 
-    "y": 0.635
+    "y": 0.647
    }, 
    "title": {
     "priority": 1, 
@@ -4248,13 +4248,13 @@
    }, 
    "units": {
     "priority": 0, 
-    "textorientation": "texunits", 
+    "textorientation": "texsu", 
     "texttable": "default", 
-    "x": 0.78, 
+    "x": 0.6000000000000001, 
     "y": 0.645
    }, 
    "xlabel1": {
-    "priority": 0, 
+    "priority": 1, 
     "textorientation": "7rcc", 
     "texttable": "std", 
     "y": 0.353
@@ -4282,7 +4282,7 @@
     "textorientation": "xname", 
     "texttable": "default", 
     "x": 0.4375, 
-    "y": 0.348
+    "y": 0.32999999999999996
    }, 
    "xtic1": {
     "line": "default", 
@@ -4339,7 +4339,7 @@
     "priority": 1, 
     "textorientation": "tex3y", 
     "texttable": "default", 
-    "x": 0.025999999999999995, 
+    "x": 0.009999999999999995, 
     "y": 0.503
    }, 
    "ytic1": {
@@ -4480,7 +4480,7 @@
     "textorientation": "texd", 
     "texttable": "default", 
     "x": 0.045, 
-    "y": 0.89
+    "y": 0.96
    }, 
    "file": {
     "priority": 0, 
@@ -4574,14 +4574,14 @@
     "textorientation": "texs", 
     "texttable": "default", 
     "x": 0.065, 
-    "y": 0.885
+    "y": 0.907
    }, 
    "title": {
     "priority": 0, 
     "textorientation": "tex6", 
     "texttable": "default", 
     "x": 0.7649999999999999, 
-    "y": 0.905
+    "y": 0.9550000000000001
    }, 
    "tname": {
     "priority": 0, 
@@ -4614,9 +4614,9 @@
    }, 
    "units": {
     "priority": 0, 
-    "textorientation": "texunits", 
+    "textorientation": "texs", 
     "texttable": "default", 
-    "x": 0.78, 
+    "x": 0.75, 
     "y": 0.905
    }, 
    "xlabel1": {
@@ -4645,10 +4645,10 @@
    }, 
    "xname": {
     "priority": 1, 
-    "textorientation": "tex4x", 
+    "textorientation": "default", 
     "texttable": "default", 
     "x": 0.7649999999999999, 
-    "y": 0.5549999999999999
+    "y": 0.5499999999999999
    }, 
    "xtic1": {
     "line": "default", 
@@ -4846,7 +4846,7 @@
     "textorientation": "botcenter", 
     "texttable": "std", 
     "x": 0.1, 
-    "y": 0.9400000000000001
+    "y": 0.969
    }, 
    "file": {
     "priority": 0, 
@@ -4940,7 +4940,7 @@
     "textorientation": "tex6s", 
     "texttable": "default", 
     "x": 0.75, 
-    "y": 0.94
+    "y": 0.9570000000000001
    }, 
    "title": {
     "priority": 0, 
@@ -4980,14 +4980,14 @@
    }, 
    "units": {
     "priority": 0, 
-    "textorientation": "texunits", 
+    "textorientation": "texsu", 
     "texttable": "default", 
-    "x": 0.78, 
+    "x": 0.72, 
     "y": 0.9550000000000001
    }, 
    "xlabel1": {
     "priority": 1, 
-    "textorientation": "tex6", 
+    "textorientation": "tex6b", 
     "texttable": "std", 
     "y": 0.6749999999999999
    }, 
@@ -5011,7 +5011,7 @@
    }, 
    "xname": {
     "priority": 1, 
-    "textorientation": "tex4x", 
+    "textorientation": "default", 
     "texttable": "default", 
     "x": 0.75, 
     "y": 0.6679999999999999
@@ -5045,7 +5045,7 @@
    }, 
    "ylabel1": {
     "priority": 1, 
-    "textorientation": "tex6", 
+    "textorientation": "tex6b", 
     "texttable": "std", 
     "x": 0.565
    }, 
@@ -5212,7 +5212,7 @@
     "textorientation": "botcenter", 
     "texttable": "std", 
     "x": 0.1, 
-    "y": 0.9400000000000001
+    "y": 0.969
    }, 
    "file": {
     "priority": 0, 
@@ -5305,8 +5305,8 @@
     "priority": 1, 
     "textorientation": "tex6s", 
     "texttable": "default", 
-    "x": 0.75, 
-    "y": 0.94
+    "x": 0.58, 
+    "y": 0.9570000000000001
    }, 
    "title": {
     "priority": 0, 
@@ -5346,14 +5346,14 @@
    }, 
    "units": {
     "priority": 0, 
-    "textorientation": "texunits", 
+    "textorientation": "texsu", 
     "texttable": "default", 
-    "x": 0.78, 
+    "x": 0.72, 
     "y": 0.9550000000000001
    }, 
    "xlabel1": {
-    "priority": 0, 
-    "textorientation": "tex6", 
+    "priority": 1, 
+    "textorientation": "tex6b", 
     "texttable": "std", 
     "y": 0.6749999999999999
    }, 
@@ -5377,7 +5377,7 @@
    }, 
    "xname": {
     "priority": 0, 
-    "textorientation": "tex4x", 
+    "textorientation": "default", 
     "texttable": "default", 
     "x": 0.75, 
     "y": 0.6679999999999999
@@ -5411,7 +5411,7 @@
    }, 
    "ylabel1": {
     "priority": 1, 
-    "textorientation": "tex6", 
+    "textorientation": "tex6b", 
     "texttable": "std", 
     "x": 0.565
    }, 
@@ -5578,7 +5578,7 @@
     "textorientation": "botcenter", 
     "texttable": "std", 
     "x": 0.1, 
-    "y": 0.3
+    "y": 0.969
    }, 
    "file": {
     "priority": 0, 
@@ -5672,7 +5672,7 @@
     "textorientation": "texsu", 
     "texttable": "default", 
     "x": 0.065, 
-    "y": 0.305
+    "y": 0.317
    }, 
    "title": {
     "priority": 1, 
@@ -5712,9 +5712,9 @@
    }, 
    "units": {
     "priority": 0, 
-    "textorientation": "texunits", 
+    "textorientation": "texsu", 
     "texttable": "default", 
-    "x": 0.78, 
+    "x": 0.6000000000000001, 
     "y": 0.315
    }, 
    "xlabel1": {
@@ -5746,7 +5746,7 @@
     "textorientation": "xname", 
     "texttable": "default", 
     "x": 0.4375, 
-    "y": 0.018
+    "y": 0.0
    }, 
    "xtic1": {
     "line": "default", 
@@ -5803,7 +5803,7 @@
     "priority": 1, 
     "textorientation": "tex3y", 
     "texttable": "default", 
-    "x": 0.025999999999999995, 
+    "x": 0.009999999999999995, 
     "y": 0.173
    }, 
    "ytic1": {
@@ -5944,7 +5944,7 @@
     "textorientation": "texd", 
     "texttable": "default", 
     "x": 0.045, 
-    "y": 0.43
+    "y": 0.96
    }, 
    "file": {
     "priority": 0, 
@@ -6038,14 +6038,14 @@
     "textorientation": "texs", 
     "texttable": "default", 
     "x": 0.065, 
-    "y": 0.885
+    "y": 0.447
    }, 
    "title": {
     "priority": 0, 
     "textorientation": "tex6", 
     "texttable": "default", 
     "x": 0.285, 
-    "y": 0.445
+    "y": 0.495
    }, 
    "tname": {
     "priority": 0, 
@@ -6078,9 +6078,9 @@
    }, 
    "units": {
     "priority": 0, 
-    "textorientation": "texunits", 
+    "textorientation": "texs", 
     "texttable": "default", 
-    "x": 0.78, 
+    "x": 0.26999999999999996, 
     "y": 0.445
    }, 
    "xlabel1": {
@@ -6109,10 +6109,10 @@
    }, 
    "xname": {
     "priority": 1, 
-    "textorientation": "tex4x", 
+    "textorientation": "default", 
     "texttable": "default", 
     "x": 0.285, 
-    "y": 0.095
+    "y": 0.09
    }, 
    "xtic1": {
     "line": "default", 
@@ -6310,7 +6310,7 @@
     "textorientation": "botcenter", 
     "texttable": "std", 
     "x": 0.1, 
-    "y": 0.63
+    "y": 0.969
    }, 
    "file": {
     "priority": 0, 
@@ -6404,7 +6404,7 @@
     "textorientation": "tex6s", 
     "texttable": "default", 
     "x": 0.295, 
-    "y": 0.63
+    "y": 0.647
    }, 
    "title": {
     "priority": 0, 
@@ -6444,14 +6444,14 @@
    }, 
    "units": {
     "priority": 0, 
-    "textorientation": "texunits", 
+    "textorientation": "texsu", 
     "texttable": "default", 
-    "x": 0.78, 
+    "x": 0.26, 
     "y": 0.645
    }, 
    "xlabel1": {
     "priority": 1, 
-    "textorientation": "tex6", 
+    "textorientation": "tex6b", 
     "texttable": "std", 
     "y": 0.365
    }, 
@@ -6475,7 +6475,7 @@
    }, 
    "xname": {
     "priority": 1, 
-    "textorientation": "tex4x", 
+    "textorientation": "default", 
     "texttable": "default", 
     "x": 0.29500000000000004, 
     "y": 0.358
@@ -6509,7 +6509,7 @@
    }, 
    "ylabel1": {
     "priority": 1, 
-    "textorientation": "tex6", 
+    "textorientation": "tex6b", 
     "texttable": "std", 
     "x": 0.115
    }, 
@@ -6676,7 +6676,7 @@
     "textorientation": "botcenter", 
     "texttable": "std", 
     "x": 0.1, 
-    "y": 0.63
+    "y": 0.969
    }, 
    "file": {
     "priority": 0, 
@@ -6769,8 +6769,8 @@
     "priority": 1, 
     "textorientation": "tex6s", 
     "texttable": "default", 
-    "x": 0.295, 
-    "y": 0.63
+    "x": 0.13, 
+    "y": 0.647
    }, 
    "title": {
     "priority": 0, 
@@ -6810,14 +6810,14 @@
    }, 
    "units": {
     "priority": 0, 
-    "textorientation": "texunits", 
+    "textorientation": "texsu", 
     "texttable": "default", 
-    "x": 0.78, 
+    "x": 0.26, 
     "y": 0.645
    }, 
    "xlabel1": {
-    "priority": 0, 
-    "textorientation": "tex6", 
+    "priority": 1, 
+    "textorientation": "tex6b", 
     "texttable": "std", 
     "y": 0.365
    }, 
@@ -6841,7 +6841,7 @@
    }, 
    "xname": {
     "priority": 0, 
-    "textorientation": "tex4x", 
+    "textorientation": "default", 
     "texttable": "default", 
     "x": 0.29500000000000004, 
     "y": 0.358
@@ -6875,7 +6875,7 @@
    }, 
    "ylabel1": {
     "priority": 1, 
-    "textorientation": "tex6", 
+    "textorientation": "tex6b", 
     "texttable": "std", 
     "x": 0.115
    }, 
@@ -7042,7 +7042,7 @@
     "textorientation": "texd", 
     "texttable": "default", 
     "x": 0.045, 
-    "y": 0.43
+    "y": 0.96
    }, 
    "file": {
     "priority": 0, 
@@ -7136,14 +7136,14 @@
     "textorientation": "texs", 
     "texttable": "default", 
     "x": 0.065, 
-    "y": 0.885
+    "y": 0.447
    }, 
    "title": {
     "priority": 0, 
     "textorientation": "tex6", 
     "texttable": "default", 
     "x": 0.7649999999999999, 
-    "y": 0.445
+    "y": 0.495
    }, 
    "tname": {
     "priority": 0, 
@@ -7176,9 +7176,9 @@
    }, 
    "units": {
     "priority": 0, 
-    "textorientation": "texunits", 
+    "textorientation": "texs", 
     "texttable": "default", 
-    "x": 0.78, 
+    "x": 0.75, 
     "y": 0.445
    }, 
    "xlabel1": {
@@ -7207,10 +7207,10 @@
    }, 
    "xname": {
     "priority": 1, 
-    "textorientation": "tex4x", 
+    "textorientation": "default", 
     "texttable": "default", 
     "x": 0.7649999999999999, 
-    "y": 0.095
+    "y": 0.09
    }, 
    "xtic1": {
     "line": "default", 
@@ -7408,7 +7408,7 @@
     "textorientation": "botcenter", 
     "texttable": "std", 
     "x": 0.1, 
-    "y": 0.63
+    "y": 0.969
    }, 
    "file": {
     "priority": 0, 
@@ -7502,7 +7502,7 @@
     "textorientation": "tex6s", 
     "texttable": "default", 
     "x": 0.75, 
-    "y": 0.63
+    "y": 0.647
    }, 
    "title": {
     "priority": 0, 
@@ -7542,14 +7542,14 @@
    }, 
    "units": {
     "priority": 0, 
-    "textorientation": "texunits", 
+    "textorientation": "texsu", 
     "texttable": "default", 
-    "x": 0.78, 
+    "x": 0.72, 
     "y": 0.645
    }, 
    "xlabel1": {
     "priority": 1, 
-    "textorientation": "tex6", 
+    "textorientation": "tex6b", 
     "texttable": "std", 
     "y": 0.365
    }, 
@@ -7573,7 +7573,7 @@
    }, 
    "xname": {
     "priority": 1, 
-    "textorientation": "tex4x", 
+    "textorientation": "default", 
     "texttable": "default", 
     "x": 0.75, 
     "y": 0.358
@@ -7607,7 +7607,7 @@
    }, 
    "ylabel1": {
     "priority": 1, 
-    "textorientation": "tex6", 
+    "textorientation": "tex6b", 
     "texttable": "std", 
     "x": 0.565
    }, 
@@ -7774,7 +7774,7 @@
     "textorientation": "botcenter", 
     "texttable": "std", 
     "x": 0.1, 
-    "y": 0.63
+    "y": 0.969
    }, 
    "file": {
     "priority": 0, 
@@ -7867,8 +7867,8 @@
     "priority": 1, 
     "textorientation": "tex6s", 
     "texttable": "default", 
-    "x": 0.75, 
-    "y": 0.63
+    "x": 0.58, 
+    "y": 0.647
    }, 
    "title": {
     "priority": 0, 
@@ -7908,14 +7908,14 @@
    }, 
    "units": {
     "priority": 0, 
-    "textorientation": "texunits", 
+    "textorientation": "texsu", 
     "texttable": "default", 
-    "x": 0.78, 
+    "x": 0.72, 
     "y": 0.645
    }, 
    "xlabel1": {
-    "priority": 0, 
-    "textorientation": "tex6", 
+    "priority": 1, 
+    "textorientation": "tex6b", 
     "texttable": "std", 
     "y": 0.365
    }, 
@@ -7939,7 +7939,7 @@
    }, 
    "xname": {
     "priority": 0, 
-    "textorientation": "tex4x", 
+    "textorientation": "default", 
     "texttable": "default", 
     "x": 0.75, 
     "y": 0.358
@@ -7973,7 +7973,7 @@
    }, 
    "ylabel1": {
     "priority": 1, 
-    "textorientation": "tex6", 
+    "textorientation": "tex6b", 
     "texttable": "std", 
     "x": 0.565
    }, 
@@ -8140,7 +8140,7 @@
     "textorientation": "botcenter", 
     "texttable": "std", 
     "x": 0.1, 
-    "y": 0.32
+    "y": 0.969
    }, 
    "file": {
     "priority": 0, 
@@ -8234,7 +8234,7 @@
     "textorientation": "tex6s", 
     "texttable": "default", 
     "x": 0.295, 
-    "y": 0.32
+    "y": 0.337
    }, 
    "title": {
     "priority": 0, 
@@ -8274,14 +8274,14 @@
    }, 
    "units": {
     "priority": 0, 
-    "textorientation": "texunits", 
+    "textorientation": "texsu", 
     "texttable": "default", 
-    "x": 0.78, 
+    "x": 0.26, 
     "y": 0.335
    }, 
    "xlabel1": {
     "priority": 1, 
-    "textorientation": "tex6", 
+    "textorientation": "tex6b", 
     "texttable": "std", 
     "y": 0.05500000000000001
    }, 
@@ -8305,7 +8305,7 @@
    }, 
    "xname": {
     "priority": 1, 
-    "textorientation": "tex4x", 
+    "textorientation": "default", 
     "texttable": "default", 
     "x": 0.29500000000000004, 
     "y": 0.04800000000000001
@@ -8339,7 +8339,7 @@
    }, 
    "ylabel1": {
     "priority": 1, 
-    "textorientation": "tex6", 
+    "textorientation": "tex6b", 
     "texttable": "std", 
     "x": 0.115
    }, 
@@ -8506,7 +8506,7 @@
     "textorientation": "botcenter", 
     "texttable": "std", 
     "x": 0.1, 
-    "y": 0.32
+    "y": 0.969
    }, 
    "file": {
     "priority": 0, 
@@ -8599,8 +8599,8 @@
     "priority": 1, 
     "textorientation": "tex6s", 
     "texttable": "default", 
-    "x": 0.295, 
-    "y": 0.32
+    "x": 0.13, 
+    "y": 0.337
    }, 
    "title": {
     "priority": 0, 
@@ -8640,14 +8640,14 @@
    }, 
    "units": {
     "priority": 0, 
-    "textorientation": "texunits", 
+    "textorientation": "texsu", 
     "texttable": "default", 
-    "x": 0.78, 
+    "x": 0.26, 
     "y": 0.335
    }, 
    "xlabel1": {
     "priority": 1, 
-    "textorientation": "tex6", 
+    "textorientation": "tex6b", 
     "texttable": "std", 
     "y": 0.05500000000000001
    }, 
@@ -8670,8 +8670,8 @@
     "y2": 0.32
    }, 
    "xname": {
-    "priority": 1, 
-    "textorientation": "tex4x", 
+    "priority": 0, 
+    "textorientation": "default", 
     "texttable": "default", 
     "x": 0.29500000000000004, 
     "y": 0.04800000000000001
@@ -8705,7 +8705,7 @@
    }, 
    "ylabel1": {
     "priority": 1, 
-    "textorientation": "tex6", 
+    "textorientation": "tex6b", 
     "texttable": "std", 
     "x": 0.115
    }, 
@@ -8872,7 +8872,7 @@
     "textorientation": "botcenter", 
     "texttable": "std", 
     "x": 0.1, 
-    "y": 0.32
+    "y": 0.969
    }, 
    "file": {
     "priority": 0, 
@@ -8965,8 +8965,8 @@
     "priority": 1, 
     "textorientation": "tex6s", 
     "texttable": "default", 
-    "x": 0.75, 
-    "y": 0.32
+    "x": 0.58, 
+    "y": 0.337
    }, 
    "title": {
     "priority": 0, 
@@ -9006,14 +9006,14 @@
    }, 
    "units": {
     "priority": 0, 
-    "textorientation": "texunits", 
+    "textorientation": "texsu", 
     "texttable": "default", 
-    "x": 0.78, 
+    "x": 0.72, 
     "y": 0.335
    }, 
    "xlabel1": {
     "priority": 1, 
-    "textorientation": "tex6", 
+    "textorientation": "tex6b", 
     "texttable": "std", 
     "y": 0.05500000000000001
    }, 
@@ -9036,8 +9036,8 @@
     "y2": 0.32
    }, 
    "xname": {
-    "priority": 1, 
-    "textorientation": "tex4x", 
+    "priority": 0, 
+    "textorientation": "default", 
     "texttable": "default", 
     "x": 0.75, 
     "y": 0.04800000000000001
@@ -9071,7 +9071,7 @@
    }, 
    "ylabel1": {
     "priority": 1, 
-    "textorientation": "tex6", 
+    "textorientation": "tex6b", 
     "texttable": "std", 
     "x": 0.565
    }, 
@@ -9238,7 +9238,7 @@
     "textorientation": "texd", 
     "texttable": "default", 
     "x": 0.045, 
-    "y": 0.870000014305
+    "y": 0.96
    }, 
    "file": {
     "priority": 0, 
@@ -9332,7 +9332,7 @@
     "textorientation": "texs", 
     "texttable": "default", 
     "x": 0.065, 
-    "y": 0.885
+    "y": 0.887000014305
    }, 
    "title": {
     "priority": 0, 
@@ -9372,16 +9372,16 @@
    }, 
    "units": {
     "priority": 0, 
-    "textorientation": "texunits", 
+    "textorientation": "texs", 
     "texttable": "default", 
-    "x": 0.78, 
+    "x": 0.749999988079, 
     "y": 0.885000014305
    }, 
    "xlabel1": {
     "priority": 0, 
     "textorientation": "defcenter", 
     "texttable": "default", 
-    "y": 0.23499999046299996
+    "y": 0.24499999046299997
    }, 
    "xlabel2": {
     "priority": 0, 
@@ -9463,7 +9463,7 @@
     "priority": 0, 
     "textorientation": "tex4y", 
     "texttable": "default", 
-    "x": 0.023000000745100002, 
+    "x": 0.0030000007450999983, 
     "y": 0.5600000023839999
    }, 
    "ytic1": {
@@ -9604,7 +9604,7 @@
     "textorientation": "botcenter", 
     "texttable": "std", 
     "x": 0.1, 
-    "y": 0.96
+    "y": 0.969
    }, 
    "file": {
     "priority": 0, 
@@ -9698,7 +9698,7 @@
     "textorientation": "texsu", 
     "texttable": "default", 
     "x": 0.065, 
-    "y": 0.965
+    "y": 0.977
    }, 
    "title": {
     "priority": 0, 
@@ -9738,9 +9738,9 @@
    }, 
    "units": {
     "priority": 0, 
-    "textorientation": "texunits", 
+    "textorientation": "texsu", 
     "texttable": "default", 
-    "x": 0.78, 
+    "x": 0.6000000000000001, 
     "y": 0.975
    }, 
    "xlabel1": {
@@ -9772,7 +9772,7 @@
     "textorientation": "xname", 
     "texttable": "default", 
     "x": 0.4375, 
-    "y": 0.678
+    "y": 0.66
    }, 
    "xtic1": {
     "line": "default", 
@@ -9829,7 +9829,7 @@
     "priority": 0, 
     "textorientation": "tex3y", 
     "texttable": "default", 
-    "x": 0.025999999999999995, 
+    "x": 0.009999999999999995, 
     "y": 0.833
    }, 
    "ytic1": {
@@ -9970,7 +9970,7 @@
     "textorientation": "texd", 
     "texttable": "default", 
     "x": 0.045, 
-    "y": 0.89
+    "y": 0.96
    }, 
    "file": {
     "priority": 0, 
@@ -10064,14 +10064,14 @@
     "textorientation": "texs", 
     "texttable": "default", 
     "x": 0.065, 
-    "y": 0.885
+    "y": 0.907
    }, 
    "title": {
     "priority": 0, 
     "textorientation": "tex6", 
     "texttable": "default", 
     "x": 0.285, 
-    "y": 0.905
+    "y": 0.9550000000000001
    }, 
    "tname": {
     "priority": 0, 
@@ -10104,9 +10104,9 @@
    }, 
    "units": {
     "priority": 0, 
-    "textorientation": "texunits", 
+    "textorientation": "texs", 
     "texttable": "default", 
-    "x": 0.78, 
+    "x": 0.26999999999999996, 
     "y": 0.905
    }, 
    "xlabel1": {
@@ -10135,10 +10135,10 @@
    }, 
    "xname": {
     "priority": 0, 
-    "textorientation": "tex4x", 
+    "textorientation": "default", 
     "texttable": "default", 
     "x": 0.285, 
-    "y": 0.5549999999999999
+    "y": 0.5499999999999999
    }, 
    "xtic1": {
     "line": "default", 
@@ -10168,7 +10168,7 @@
     "y": 0.941999971867
    }, 
    "ylabel1": {
-    "priority": 0, 
+    "priority": 1, 
     "textorientation": "tex6", 
     "texttable": "std", 
     "x": 0.085
@@ -10336,7 +10336,7 @@
     "textorientation": "botcenter", 
     "texttable": "std", 
     "x": 0.1, 
-    "y": 0.9400000000000001
+    "y": 0.969
    }, 
    "file": {
     "priority": 0, 
@@ -10430,7 +10430,7 @@
     "textorientation": "tex6s", 
     "texttable": "default", 
     "x": 0.295, 
-    "y": 0.94
+    "y": 0.9570000000000001
    }, 
    "title": {
     "priority": 0, 
@@ -10470,14 +10470,14 @@
    }, 
    "units": {
     "priority": 0, 
-    "textorientation": "texunits", 
+    "textorientation": "texsu", 
     "texttable": "default", 
-    "x": 0.78, 
+    "x": 0.26, 
     "y": 0.9550000000000001
    }, 
    "xlabel1": {
     "priority": 0, 
-    "textorientation": "tex6", 
+    "textorientation": "tex6b", 
     "texttable": "std", 
     "y": 0.6749999999999999
    }, 
@@ -10501,7 +10501,7 @@
    }, 
    "xname": {
     "priority": 0, 
-    "textorientation": "tex4x", 
+    "textorientation": "default", 
     "texttable": "default", 
     "x": 0.29500000000000004, 
     "y": 0.6679999999999999
@@ -10535,7 +10535,7 @@
    }, 
    "ylabel1": {
     "priority": 0, 
-    "textorientation": "tex6", 
+    "textorientation": "tex6b", 
     "texttable": "std", 
     "x": 0.115
    }, 
@@ -10702,7 +10702,7 @@
     "textorientation": "botcenter", 
     "texttable": "std", 
     "x": 0.1, 
-    "y": 0.9400000000000001
+    "y": 0.969
    }, 
    "file": {
     "priority": 0, 
@@ -10795,8 +10795,8 @@
     "priority": 0, 
     "textorientation": "tex6s", 
     "texttable": "default", 
-    "x": 0.295, 
-    "y": 0.94
+    "x": 0.13, 
+    "y": 0.9570000000000001
    }, 
    "title": {
     "priority": 0, 
@@ -10836,14 +10836,14 @@
    }, 
    "units": {
     "priority": 0, 
-    "textorientation": "texunits", 
+    "textorientation": "texsu", 
     "texttable": "default", 
-    "x": 0.78, 
+    "x": 0.26, 
     "y": 0.9550000000000001
    }, 
    "xlabel1": {
     "priority": 0, 
-    "textorientation": "tex6", 
+    "textorientation": "tex6b", 
     "texttable": "std", 
     "y": 0.6749999999999999
    }, 
@@ -10867,7 +10867,7 @@
    }, 
    "xname": {
     "priority": 0, 
-    "textorientation": "tex4x", 
+    "textorientation": "default", 
     "texttable": "default", 
     "x": 0.29500000000000004, 
     "y": 0.6679999999999999
@@ -10901,7 +10901,7 @@
    }, 
    "ylabel1": {
     "priority": 0, 
-    "textorientation": "tex6", 
+    "textorientation": "tex6b", 
     "texttable": "std", 
     "x": 0.115
    }, 
@@ -11068,7 +11068,7 @@
     "textorientation": "botcenter", 
     "texttable": "std", 
     "x": 0.1, 
-    "y": 0.63
+    "y": 0.969
    }, 
    "file": {
     "priority": 0, 
@@ -11162,7 +11162,7 @@
     "textorientation": "texsu", 
     "texttable": "default", 
     "x": 0.065, 
-    "y": 0.635
+    "y": 0.647
    }, 
    "title": {
     "priority": 0, 
@@ -11202,9 +11202,9 @@
    }, 
    "units": {
     "priority": 0, 
-    "textorientation": "texunits", 
+    "textorientation": "texsu", 
     "texttable": "default", 
-    "x": 0.78, 
+    "x": 0.6000000000000001, 
     "y": 0.645
    }, 
    "xlabel1": {
@@ -11236,7 +11236,7 @@
     "textorientation": "xname", 
     "texttable": "default", 
     "x": 0.4375, 
-    "y": 0.348
+    "y": 0.32999999999999996
    }, 
    "xtic1": {
     "line": "default", 
@@ -11293,7 +11293,7 @@
     "priority": 0, 
     "textorientation": "tex3y", 
     "texttable": "default", 
-    "x": 0.025999999999999995, 
+    "x": 0.009999999999999995, 
     "y": 0.503
    }, 
    "ytic1": {
@@ -11434,7 +11434,7 @@
     "textorientation": "texd", 
     "texttable": "default", 
     "x": 0.045, 
-    "y": 0.89
+    "y": 0.96
    }, 
    "file": {
     "priority": 0, 
@@ -11528,14 +11528,14 @@
     "textorientation": "texs", 
     "texttable": "default", 
     "x": 0.065, 
-    "y": 0.885
+    "y": 0.907
    }, 
    "title": {
     "priority": 0, 
     "textorientation": "tex6", 
     "texttable": "default", 
     "x": 0.7649999999999999, 
-    "y": 0.905
+    "y": 0.9550000000000001
    }, 
    "tname": {
     "priority": 0, 
@@ -11568,9 +11568,9 @@
    }, 
    "units": {
     "priority": 0, 
-    "textorientation": "texunits", 
+    "textorientation": "texs", 
     "texttable": "default", 
-    "x": 0.78, 
+    "x": 0.75, 
     "y": 0.905
    }, 
    "xlabel1": {
@@ -11599,10 +11599,10 @@
    }, 
    "xname": {
     "priority": 0, 
-    "textorientation": "tex4x", 
+    "textorientation": "default", 
     "texttable": "default", 
     "x": 0.7649999999999999, 
-    "y": 0.5549999999999999
+    "y": 0.5499999999999999
    }, 
    "xtic1": {
     "line": "default", 
@@ -11632,7 +11632,7 @@
     "y": 0.941999971867
    }, 
    "ylabel1": {
-    "priority": 0, 
+    "priority": 1, 
     "textorientation": "tex6", 
     "texttable": "std", 
     "x": 0.565
@@ -11800,7 +11800,7 @@
     "textorientation": "botcenter", 
     "texttable": "std", 
     "x": 0.1, 
-    "y": 0.9400000000000001
+    "y": 0.969
    }, 
    "file": {
     "priority": 0, 
@@ -11894,7 +11894,7 @@
     "textorientation": "tex6s", 
     "texttable": "default", 
     "x": 0.75, 
-    "y": 0.94
+    "y": 0.9570000000000001
    }, 
    "title": {
     "priority": 0, 
@@ -11934,14 +11934,14 @@
    }, 
    "units": {
     "priority": 0, 
-    "textorientation": "texunits", 
+    "textorientation": "texsu", 
     "texttable": "default", 
-    "x": 0.78, 
+    "x": 0.72, 
     "y": 0.9550000000000001
    }, 
    "xlabel1": {
     "priority": 0, 
-    "textorientation": "tex6", 
+    "textorientation": "tex6b", 
     "texttable": "std", 
     "y": 0.6749999999999999
    }, 
@@ -11965,7 +11965,7 @@
    }, 
    "xname": {
     "priority": 0, 
-    "textorientation": "tex4x", 
+    "textorientation": "default", 
     "texttable": "default", 
     "x": 0.75, 
     "y": 0.6679999999999999
@@ -11999,7 +11999,7 @@
    }, 
    "ylabel1": {
     "priority": 0, 
-    "textorientation": "tex6", 
+    "textorientation": "tex6b", 
     "texttable": "std", 
     "x": 0.565
    }, 
@@ -12166,7 +12166,7 @@
     "textorientation": "botcenter", 
     "texttable": "std", 
     "x": 0.1, 
-    "y": 0.9400000000000001
+    "y": 0.969
    }, 
    "file": {
     "priority": 0, 
@@ -12259,8 +12259,8 @@
     "priority": 0, 
     "textorientation": "tex6s", 
     "texttable": "default", 
-    "x": 0.75, 
-    "y": 0.94
+    "x": 0.58, 
+    "y": 0.9570000000000001
    }, 
    "title": {
     "priority": 0, 
@@ -12300,14 +12300,14 @@
    }, 
    "units": {
     "priority": 0, 
-    "textorientation": "texunits", 
+    "textorientation": "texsu", 
     "texttable": "default", 
-    "x": 0.78, 
+    "x": 0.72, 
     "y": 0.9550000000000001
    }, 
    "xlabel1": {
     "priority": 0, 
-    "textorientation": "tex6", 
+    "textorientation": "tex6b", 
     "texttable": "std", 
     "y": 0.6749999999999999
    }, 
@@ -12331,7 +12331,7 @@
    }, 
    "xname": {
     "priority": 0, 
-    "textorientation": "tex4x", 
+    "textorientation": "default", 
     "texttable": "default", 
     "x": 0.75, 
     "y": 0.6679999999999999
@@ -12365,7 +12365,7 @@
    }, 
    "ylabel1": {
     "priority": 0, 
-    "textorientation": "tex6", 
+    "textorientation": "tex6b", 
     "texttable": "std", 
     "x": 0.565
    }, 
@@ -12532,7 +12532,7 @@
     "textorientation": "botcenter", 
     "texttable": "std", 
     "x": 0.1, 
-    "y": 0.3
+    "y": 0.969
    }, 
    "file": {
     "priority": 0, 
@@ -12626,7 +12626,7 @@
     "textorientation": "texsu", 
     "texttable": "default", 
     "x": 0.065, 
-    "y": 0.305
+    "y": 0.317
    }, 
    "title": {
     "priority": 0, 
@@ -12666,9 +12666,9 @@
    }, 
    "units": {
     "priority": 0, 
-    "textorientation": "texunits", 
+    "textorientation": "texsu", 
     "texttable": "default", 
-    "x": 0.78, 
+    "x": 0.6000000000000001, 
     "y": 0.315
    }, 
    "xlabel1": {
@@ -12700,7 +12700,7 @@
     "textorientation": "xname", 
     "texttable": "default", 
     "x": 0.4375, 
-    "y": 0.018
+    "y": 0.0
    }, 
    "xtic1": {
     "line": "default", 
@@ -12757,7 +12757,7 @@
     "priority": 0, 
     "textorientation": "tex3y", 
     "texttable": "default", 
-    "x": 0.025999999999999995, 
+    "x": 0.009999999999999995, 
     "y": 0.173
    }, 
    "ytic1": {
@@ -12898,7 +12898,7 @@
     "textorientation": "texd", 
     "texttable": "default", 
     "x": 0.045, 
-    "y": 0.43
+    "y": 0.96
    }, 
    "file": {
     "priority": 0, 
@@ -12992,14 +12992,14 @@
     "textorientation": "texs", 
     "texttable": "default", 
     "x": 0.065, 
-    "y": 0.885
+    "y": 0.447
    }, 
    "title": {
     "priority": 0, 
     "textorientation": "tex6", 
     "texttable": "default", 
     "x": 0.285, 
-    "y": 0.445
+    "y": 0.495
    }, 
    "tname": {
     "priority": 0, 
@@ -13032,9 +13032,9 @@
    }, 
    "units": {
     "priority": 0, 
-    "textorientation": "texunits", 
+    "textorientation": "texs", 
     "texttable": "default", 
-    "x": 0.78, 
+    "x": 0.26999999999999996, 
     "y": 0.445
    }, 
    "xlabel1": {
@@ -13063,10 +13063,10 @@
    }, 
    "xname": {
     "priority": 0, 
-    "textorientation": "tex4x", 
+    "textorientation": "default", 
     "texttable": "default", 
     "x": 0.285, 
-    "y": 0.095
+    "y": 0.09
    }, 
    "xtic1": {
     "line": "default", 
@@ -13096,7 +13096,7 @@
     "y": 0.941999971867
    }, 
    "ylabel1": {
-    "priority": 0, 
+    "priority": 1, 
     "textorientation": "tex6", 
     "texttable": "std", 
     "x": 0.085
@@ -13264,7 +13264,7 @@
     "textorientation": "botcenter", 
     "texttable": "std", 
     "x": 0.1, 
-    "y": 0.63
+    "y": 0.969
    }, 
    "file": {
     "priority": 0, 
@@ -13358,7 +13358,7 @@
     "textorientation": "tex6s", 
     "texttable": "default", 
     "x": 0.295, 
-    "y": 0.63
+    "y": 0.647
    }, 
    "title": {
     "priority": 0, 
@@ -13398,14 +13398,14 @@
    }, 
    "units": {
     "priority": 0, 
-    "textorientation": "texunits", 
+    "textorientation": "texsu", 
     "texttable": "default", 
-    "x": 0.78, 
+    "x": 0.26, 
     "y": 0.645
    }, 
    "xlabel1": {
     "priority": 0, 
-    "textorientation": "tex6", 
+    "textorientation": "tex6b", 
     "texttable": "std", 
     "y": 0.365
    }, 
@@ -13429,7 +13429,7 @@
    }, 
    "xname": {
     "priority": 0, 
-    "textorientation": "tex4x", 
+    "textorientation": "default", 
     "texttable": "default", 
     "x": 0.29500000000000004, 
     "y": 0.358
@@ -13463,7 +13463,7 @@
    }, 
    "ylabel1": {
     "priority": 0, 
-    "textorientation": "tex6", 
+    "textorientation": "tex6b", 
     "texttable": "std", 
     "x": 0.115
    }, 
@@ -13630,7 +13630,7 @@
     "textorientation": "botcenter", 
     "texttable": "std", 
     "x": 0.1, 
-    "y": 0.63
+    "y": 0.969
    }, 
    "file": {
     "priority": 0, 
@@ -13723,8 +13723,8 @@
     "priority": 0, 
     "textorientation": "tex6s", 
     "texttable": "default", 
-    "x": 0.295, 
-    "y": 0.63
+    "x": 0.13, 
+    "y": 0.647
    }, 
    "title": {
     "priority": 0, 
@@ -13764,14 +13764,14 @@
    }, 
    "units": {
     "priority": 0, 
-    "textorientation": "texunits", 
+    "textorientation": "texsu", 
     "texttable": "default", 
-    "x": 0.78, 
+    "x": 0.26, 
     "y": 0.645
    }, 
    "xlabel1": {
     "priority": 0, 
-    "textorientation": "tex6", 
+    "textorientation": "tex6b", 
     "texttable": "std", 
     "y": 0.365
    }, 
@@ -13795,7 +13795,7 @@
    }, 
    "xname": {
     "priority": 0, 
-    "textorientation": "tex4x", 
+    "textorientation": "default", 
     "texttable": "default", 
     "x": 0.29500000000000004, 
     "y": 0.358
@@ -13829,7 +13829,7 @@
    }, 
    "ylabel1": {
     "priority": 0, 
-    "textorientation": "tex6", 
+    "textorientation": "tex6b", 
     "texttable": "std", 
     "x": 0.115
    }, 
@@ -13996,7 +13996,7 @@
     "textorientation": "texd", 
     "texttable": "default", 
     "x": 0.045, 
-    "y": 0.43
+    "y": 0.96
    }, 
    "file": {
     "priority": 0, 
@@ -14090,14 +14090,14 @@
     "textorientation": "texs", 
     "texttable": "default", 
     "x": 0.065, 
-    "y": 0.885
+    "y": 0.447
    }, 
    "title": {
     "priority": 0, 
     "textorientation": "tex6", 
     "texttable": "default", 
     "x": 0.7649999999999999, 
-    "y": 0.445
+    "y": 0.495
    }, 
    "tname": {
     "priority": 0, 
@@ -14130,9 +14130,9 @@
    }, 
    "units": {
     "priority": 0, 
-    "textorientation": "texunits", 
+    "textorientation": "texs", 
     "texttable": "default", 
-    "x": 0.78, 
+    "x": 0.75, 
     "y": 0.445
    }, 
    "xlabel1": {
@@ -14161,10 +14161,10 @@
    }, 
    "xname": {
     "priority": 0, 
-    "textorientation": "tex4x", 
+    "textorientation": "default", 
     "texttable": "default", 
     "x": 0.7649999999999999, 
-    "y": 0.095
+    "y": 0.09
    }, 
    "xtic1": {
     "line": "default", 
@@ -14194,7 +14194,7 @@
     "y": 0.941999971867
    }, 
    "ylabel1": {
-    "priority": 0, 
+    "priority": 1, 
     "textorientation": "tex6", 
     "texttable": "std", 
     "x": 0.565
@@ -14362,7 +14362,7 @@
     "textorientation": "botcenter", 
     "texttable": "std", 
     "x": 0.1, 
-    "y": 0.63
+    "y": 0.969
    }, 
    "file": {
     "priority": 0, 
@@ -14456,7 +14456,7 @@
     "textorientation": "tex6s", 
     "texttable": "default", 
     "x": 0.75, 
-    "y": 0.63
+    "y": 0.647
    }, 
    "title": {
     "priority": 0, 
@@ -14496,14 +14496,14 @@
    }, 
    "units": {
     "priority": 0, 
-    "textorientation": "texunits", 
+    "textorientation": "texsu", 
     "texttable": "default", 
-    "x": 0.78, 
+    "x": 0.72, 
     "y": 0.645
    }, 
    "xlabel1": {
     "priority": 0, 
-    "textorientation": "tex6", 
+    "textorientation": "tex6b", 
     "texttable": "std", 
     "y": 0.365
    }, 
@@ -14527,7 +14527,7 @@
    }, 
    "xname": {
     "priority": 0, 
-    "textorientation": "tex4x", 
+    "textorientation": "default", 
     "texttable": "default", 
     "x": 0.75, 
     "y": 0.358
@@ -14561,7 +14561,7 @@
    }, 
    "ylabel1": {
     "priority": 0, 
-    "textorientation": "tex6", 
+    "textorientation": "tex6b", 
     "texttable": "std", 
     "x": 0.565
    }, 
@@ -14728,7 +14728,7 @@
     "textorientation": "botcenter", 
     "texttable": "std", 
     "x": 0.1, 
-    "y": 0.63
+    "y": 0.969
    }, 
    "file": {
     "priority": 0, 
@@ -14821,8 +14821,8 @@
     "priority": 0, 
     "textorientation": "tex6s", 
     "texttable": "default", 
-    "x": 0.75, 
-    "y": 0.63
+    "x": 0.58, 
+    "y": 0.647
    }, 
    "title": {
     "priority": 0, 
@@ -14862,14 +14862,14 @@
    }, 
    "units": {
     "priority": 0, 
-    "textorientation": "texunits", 
+    "textorientation": "texsu", 
     "texttable": "default", 
-    "x": 0.78, 
+    "x": 0.72, 
     "y": 0.645
    }, 
    "xlabel1": {
     "priority": 0, 
-    "textorientation": "tex6", 
+    "textorientation": "tex6b", 
     "texttable": "std", 
     "y": 0.365
    }, 
@@ -14893,7 +14893,7 @@
    }, 
    "xname": {
     "priority": 0, 
-    "textorientation": "tex4x", 
+    "textorientation": "default", 
     "texttable": "default", 
     "x": 0.75, 
     "y": 0.358
@@ -14927,7 +14927,7 @@
    }, 
    "ylabel1": {
     "priority": 0, 
-    "textorientation": "tex6", 
+    "textorientation": "tex6b", 
     "texttable": "std", 
     "x": 0.565
    }, 
@@ -15094,7 +15094,7 @@
     "textorientation": "botcenter", 
     "texttable": "std", 
     "x": 0.1, 
-    "y": 0.32
+    "y": 0.969
    }, 
    "file": {
     "priority": 0, 
@@ -15188,7 +15188,7 @@
     "textorientation": "tex6s", 
     "texttable": "default", 
     "x": 0.295, 
-    "y": 0.32
+    "y": 0.337
    }, 
    "title": {
     "priority": 0, 
@@ -15228,14 +15228,14 @@
    }, 
    "units": {
     "priority": 0, 
-    "textorientation": "texunits", 
+    "textorientation": "texsu", 
     "texttable": "default", 
-    "x": 0.78, 
+    "x": 0.26, 
     "y": 0.335
    }, 
    "xlabel1": {
     "priority": 0, 
-    "textorientation": "tex6", 
+    "textorientation": "tex6b", 
     "texttable": "std", 
     "y": 0.05500000000000001
    }, 
@@ -15259,7 +15259,7 @@
    }, 
    "xname": {
     "priority": 0, 
-    "textorientation": "tex4x", 
+    "textorientation": "default", 
     "texttable": "default", 
     "x": 0.29500000000000004, 
     "y": 0.04800000000000001
@@ -15293,7 +15293,7 @@
    }, 
    "ylabel1": {
     "priority": 0, 
-    "textorientation": "tex6", 
+    "textorientation": "tex6b", 
     "texttable": "std", 
     "x": 0.115
    }, 
@@ -15460,7 +15460,7 @@
     "textorientation": "botcenter", 
     "texttable": "std", 
     "x": 0.1, 
-    "y": 0.32
+    "y": 0.969
    }, 
    "file": {
     "priority": 0, 
@@ -15553,8 +15553,8 @@
     "priority": 0, 
     "textorientation": "tex6s", 
     "texttable": "default", 
-    "x": 0.295, 
-    "y": 0.32
+    "x": 0.13, 
+    "y": 0.337
    }, 
    "title": {
     "priority": 0, 
@@ -15594,14 +15594,14 @@
    }, 
    "units": {
     "priority": 0, 
-    "textorientation": "texunits", 
+    "textorientation": "texsu", 
     "texttable": "default", 
-    "x": 0.78, 
+    "x": 0.26, 
     "y": 0.335
    }, 
    "xlabel1": {
     "priority": 0, 
-    "textorientation": "tex6", 
+    "textorientation": "tex6b", 
     "texttable": "std", 
     "y": 0.05500000000000001
    }, 
@@ -15625,7 +15625,7 @@
    }, 
    "xname": {
     "priority": 0, 
-    "textorientation": "tex4x", 
+    "textorientation": "default", 
     "texttable": "default", 
     "x": 0.29500000000000004, 
     "y": 0.04800000000000001
@@ -15659,7 +15659,7 @@
    }, 
    "ylabel1": {
     "priority": 0, 
-    "textorientation": "tex6", 
+    "textorientation": "tex6b", 
     "texttable": "std", 
     "x": 0.115
    }, 
@@ -15826,7 +15826,7 @@
     "textorientation": "botcenter", 
     "texttable": "std", 
     "x": 0.1, 
-    "y": 0.32
+    "y": 0.969
    }, 
    "file": {
     "priority": 0, 
@@ -15919,8 +15919,8 @@
     "priority": 0, 
     "textorientation": "tex6s", 
     "texttable": "default", 
-    "x": 0.75, 
-    "y": 0.32
+    "x": 0.58, 
+    "y": 0.337
    }, 
    "title": {
     "priority": 0, 
@@ -15960,14 +15960,14 @@
    }, 
    "units": {
     "priority": 0, 
-    "textorientation": "texunits", 
+    "textorientation": "texsu", 
     "texttable": "default", 
-    "x": 0.78, 
+    "x": 0.72, 
     "y": 0.335
    }, 
    "xlabel1": {
     "priority": 0, 
-    "textorientation": "tex6", 
+    "textorientation": "tex6b", 
     "texttable": "std", 
     "y": 0.05500000000000001
    }, 
@@ -15991,7 +15991,7 @@
    }, 
    "xname": {
     "priority": 0, 
-    "textorientation": "tex4x", 
+    "textorientation": "default", 
     "texttable": "default", 
     "x": 0.75, 
     "y": 0.04800000000000001
@@ -16025,7 +16025,7 @@
    }, 
    "ylabel1": {
     "priority": 0, 
-    "textorientation": "tex6", 
+    "textorientation": "tex6b", 
     "texttable": "std", 
     "x": 0.565
    }, 
@@ -16109,14 +16109,14 @@
   "tex2x": {
    "angle": 0, 
    "halign": 1, 
-   "height": 11, 
+   "height": 19, 
    "path": 0, 
    "valign": 1
   }, 
   "tex2y": {
    "angle": 270, 
    "halign": 1, 
-   "height": 12, 
+   "height": 13, 
    "path": 0, 
    "valign": 2
   }, 
@@ -16124,6 +16124,13 @@
    "angle": 270, 
    "halign": 1, 
    "height": 10, 
+   "path": 0, 
+   "valign": 2
+  }, 
+  "tex6b": {
+   "angle": 0, 
+   "halign": 1, 
+   "height": 6, 
    "path": 0, 
    "valign": 2
   }, 
