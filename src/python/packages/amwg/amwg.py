@@ -2699,7 +2699,8 @@ class amwg_plot_set13(amwg_plot_spec):
                 func=uncompress_fisccp1 )]
         }
 
-    def __init__( self, model, obs, varnom, seasonid=None, region=None, aux=None, levels=None ):
+    def __init__( self, model, obs, varnom, seasonid=None, region=None, aux=None, levels=None,
+                  plotparms=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varnom is a string.  The variable described may depend on time,lat,lon and will be averaged
         in those dimensions.  But it also should have two other axes which will be used for the
@@ -2713,6 +2714,10 @@ class amwg_plot_set13(amwg_plot_spec):
         self.reduced_variables = {}
         self.derived_variables = {}
         self.plottype = 'Boxfill'
+        if plotparms is None:
+            plotparms = { 'model':{'levels':levels, 'colormap':'rainbow'},
+                          'obs':{'levels':levels, 'colormap':'rainbow'},
+                          'diff':{'levels':None, 'colormap':'bl_to_darkred'} }
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
         ft1id,ft2id = filetable_ids(filetable1,filetable2)
         self.plot1_id = '_'.join([ft1id,varnom,seasonid,str(region),'histo'])
@@ -2720,7 +2725,7 @@ class amwg_plot_set13(amwg_plot_spec):
         self.plot3_id = '_'.join([ft1id+'-'+ft2id,varnom,seasonid,str(region),'histo'])
         self.plotall_id = '_'.join([ft1id,ft2id,varnom,seasonid])
         if not self.computation_planned:
-            self.plan_computation( model, obs, varnom, seasonid, region )
+            self.plan_computation( model, obs, varnom, seasonid, region, plotparms )
     @staticmethod
     def _list_variables( model, obs ):
         allvars = amwg_plot_set13._all_variables( model, obs)
@@ -2806,7 +2811,7 @@ class amwg_plot_set13(amwg_plot_spec):
         for dv in dvs:
             self.derived_variables[ dv.id() ] = dv
         return varid
-    def plan_computation( self, model, obs, varnom, seasonid, region ):
+    def plan_computation( self, model, obs, varnom, seasonid, region, plotparms ):
         filetable1, filetable2 = self.getfts(model, obs)
         ft1src = filetable1.source()
         try:

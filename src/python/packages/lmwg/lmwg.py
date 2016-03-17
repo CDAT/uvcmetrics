@@ -392,7 +392,8 @@ class lmwg_plot_set1(lmwg_plot_spec):
    ### These are special cased since they have 10 levels plotted. However, they are not "derived" per se.
    _level_vars = ['SOILLIQ', 'SOILICE', 'SOILPSI', 'TSOI']
 
-   def __init__(self, model, obs, varid, seasonid=None, region=None, aux=None, levels=None):
+   def __init__(self, model, obs, varid, seasonid=None, region=None, aux=None, levels=None,
+                plotparms='ignored'):
       print 'SOILLIQ LEVELS QUESTIONABLE?'
       plot_spec.__init__(self,seasonid)
       self.plottype = 'Yxvsx'
@@ -611,7 +612,8 @@ class lmwg_plot_set2(lmwg_plot_spec):
    _level_varnames = [x+y for y in ['(1)', '(5)', '(10)'] for x in _level_vars]
    _obs_vars = ['TSA', 'PREC', 'TOTRUNOFF', 'SNOWDP', 'H2OSNO', 'FSNO', 'VBSA', 'NBSA', 'VWSA', 'NWSA', 'ASA']
    _nonlinear_vars = ['EVAPFRAC', 'ASA', 'VBSA', 'NBSA', 'VWSA', 'NWSA', 'RNET']
-   def __init__( self, model, obs, varid, seasonid=None, region=None, aux=None, levels=None):
+   def __init__( self, model, obs, varid, seasonid=None, region=None, aux=None, levels=None,
+                 plotparms='ignored' ):
       # common regardless of number of fts
       plot_spec.__init__(self,seasonid)
       self.plottype = 'Isofill'
@@ -1349,7 +1351,8 @@ class lmwg_plot_set3(lmwg_plot_spec):
    _derived_varnames = ['EVAPFRAC', 'PREC', 'TOTRUNOFF', 'LHEAT', 'ASA', 'VBSA', 'NBSA', 'VWSA', 'NWSA', 'RNET']
    name = '3 - Grouped Line plots of monthly climatology: regional air temperature, precipitation, runoff, snow depth, radiative fluxes, and turbulent fluxes'
    number = '3'
-   def __init__(self, model, obs, varid, seasonid=None, region=None, aux=None, levels=None):
+   def __init__(self, model, obs, varid, seasonid=None, region=None, aux=None, levels=None,
+                plotparms='ignored' ):
 
       plot_spec.__init__(self, seasonid)
       self.plottype = 'Yxvsx'
@@ -2064,7 +2067,8 @@ class lmwg_plot_set5(lmwg_plot_spec):
    print '(Probably what is wrong with regional. carbon needs some more conversions too though)'
    # This jsonflag is gross, but Options has always been a 2nd class part of the design. Maybe I'll get to
    # change that for the next release.
-   def __init__( self, model, obs, varid, seasonid=None, region=None, aux=None, jsonflag=False, levels=None):
+   def __init__( self, model, obs, varid, seasonid=None, region=None, aux=None, jsonflag=False,
+                 levels=None, plotparms='ignored' ):
 #      print 'jsonflag passed in: ', jsonflag
 
       plot_spec.__init__(self,seasonid)
@@ -2523,7 +2527,8 @@ class lmwg_plot_set6(lmwg_plot_spec):
    varlist = []
    name = '6 - Group Line plots of annual trends in regional soil water/ice and temperature, runoff, snow water/ice, photosynthesis'
    number = '6'
-   def __init__(self, model, obs, varid, seasonid=None, region=None, aux=None, levels=None):
+   def __init__(self, model, obs, varid, seasonid=None, region=None, aux=None, levels=None,
+                plotparms='ignored' ):
       plot_spec.__init__(self, seasonid)
       self.plottype = 'Yxvsx'
 
@@ -2849,7 +2854,8 @@ class lmwg_plot_set9(lmwg_plot_spec):
    name = '9 - Contour plots and statistics for precipitation and temperature. Statistics include DJF, JJA, and ANN biases, and RMSE, correlation and standard deviation of the annual cycle relative to observations'
    number = '9'
 #   print 'set 9 preinit'
-   def __init__(self, model, obs, varid, seasonid=None, region=None, aux=None, levels=None):
+   def __init__(self, model, obs, varid, seasonid=None, region=None, aux=None, levels=None,
+                plotparms='ignored' ):
 
       plot_spec.__init__(self, seasonid)
 
@@ -3083,7 +3089,8 @@ class lmwg_plot_set9(lmwg_plot_spec):
 class lmwg_plot_set7(lmwg_plot_spec):
    name = '7 - Line plots, tables, and maps of RTM river flow and discharge to oceans'
    number = '7'
-   def __init__(self, model, obs, varid, seasonid=None, region=None, aux=None, levels=None):
+   def __init__(self, model, obs, varid, seasonid=None, region=None, aux=None, levels=None,
+                plotparms='ignored' ):
 
       self.tables = False
       plot_spec.__init__(self, seasonid)

@@ -242,7 +242,8 @@ def run_diags( opts ):
                   else:
                       if snum == '14' and package.upper() == 'AMWG': #Taylor diagrams
                           #this is a total kludge so that the list of variables is passed in for processing
-                          plot = sclass( modelfts, obsfts, variables, time, region, vvaropts[aux] )
+                          plot = sclass( modelfts, obsfts, variables, time, region, vvaropts[aux],
+                                         plotparms = { 'model':{}, 'obs':{}, 'diff':{} } )
                       else:
                           plot = sclass( modelfts, obsfts, varid, time, region, vvaropts[aux],
                                          levels=opts['levels'],  # deprecated

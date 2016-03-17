@@ -148,7 +148,7 @@ class plotspec(basic_id):
         to y in the plot.
         """
         if plotparms is not None:
-            levels = plotparms['levels']
+            if 'levels' in plotparms: levels = plotparms['levels']
             self.plotparms = plotparms
         if type(vid) is tuple:
             # probably this is an id tuple with the first element stripped off
