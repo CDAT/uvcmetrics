@@ -322,7 +322,7 @@ class ps(plotspec):
 #                                vid = yvar.id+" line plot", plottype='Yxvsx' )
 
 class basic_two_line_plot( plotspec ):
-    def __init__( self, zvar, z2var ):
+    def __init__( self, zvar, z2var, plotparms=None ):
         """zvar, z2var should be the actual vertical values (y-axis) of the plots.
         They should already have been reduced to 1-D variables.
         The horizontal axis is the axis of z*var."""
@@ -332,7 +332,7 @@ class basic_two_line_plot( plotspec ):
                            vid = z2var.variableid+z2var.variableid+" line plot", plottype='Yxvsx' )
 
 class one_line_diff_plot( plotspec ):
-    def __init__( self, zvar, z2var, vid ):
+    def __init__( self, zvar, z2var, vid, plotparms=None ):
         """z*var should be the actual vertical values (y-axis) of the plots.
         z*var should already have been reduced to 1-D variables.
         The horizontal axis of the plot is the axis of z*."""

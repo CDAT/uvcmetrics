@@ -427,8 +427,7 @@ class amwg_plot_set2(amwg_plot_spec):
     """
     name = '2 - Line Plots of Annual Implied Northward Transport'
     number = '2'
-    def __init__( self, model, obs, varid, seasonid=None, region=None, aux=None, levels="ignored",
-                  plotparms=None ):
+    def __init__( self, model, obs, varid, seasonid=None, region=None, aux=None, plotparms=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the derived variable to be plotted, e.g. 'Ocean_Heat'.
         The seasonid argument will be ignored."""
@@ -606,7 +605,7 @@ class amwg_plot_set3(amwg_plot_spec,basic_id):
     # Here, the plotspec contains the variables themselves.
     name = '3 - Line Plots of  Zonal Means'
     number = '3'
-    def __init__( self, model, obs, varnom, seasonid=None, regionid=None, aux=None, levels="ignored",
+    def __init__( self, model, obs, varnom, seasonid=None, regionid=None, aux=None,
                   plotparms=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varnom is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'."""
@@ -684,11 +683,11 @@ class amwg_plot_set3(amwg_plot_spec,basic_id):
 
         #self.reduced_variables[varnom+'_2'] = z2var
         #z2var._vid = varnom+'_2'      # _vid is deprecated
-        self.plot_a = basic_two_line_plot( zvar, z2var, plotparms['model'] )
+        self.plot_a = basic_two_line_plot( zvar, z2var, plotparms=plotparms['model'] )
         ft1id,ft2id = filetable_ids(filetable1,filetable2)
         vid = '_'.join([self._id[0],self._id[1],ft1id,ft2id,'diff'])
         # ... e.g. CLT_DJF_ft1_ft2_diff
-        self.plot_b = one_line_diff_plot( zvar, z2var, vid, plotparms['diff'] )
+        self.plot_b = one_line_diff_plot( zvar, z2var, vid, plotparms=plotparms['diff'] )
         self.computation_planned = True
     def _results(self,newgrid=0):
         # At the moment this is very specific to plot set 3.  Maybe later I'll use a
@@ -751,8 +750,7 @@ class amwg_plot_set4and41(amwg_plot_spec):
     reduction_functions = { '4':[reduce2lat_seasonal, reduce2levlat_seasonal], 
                            '41':[reduce2lon_seasonal, reduce2levlon_seasonal]}
     rf_ids = { '4': 'levlat', '41': 'levlon'}
-    def __init__( self, model, obs, varid, seasonid=None, regionid=None, aux=None, levels=None,
-                  plotparms=None ):
+    def __init__( self, model, obs, varid, seasonid=None, regionid=None, aux=None, plotparms=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'.
         At the moment we assume that data from filetable1 has CAM hybrid levels,
@@ -761,9 +759,9 @@ class amwg_plot_set4and41(amwg_plot_spec):
         plot_spec.__init__(self,seasonid)
         self.plottype = 'Isofill'
         if plotparms is None:
-            plotparms = { 'model':{'levels':levels, 'colormap':'rainbow'},
-                          'obs':{'levels':levels, 'colormap':'rainbow'},
-                          'diff':{'levels':None, 'colormap':'bl_to_darkred'} }
+            plotparms = { 'model':{'colormap':'rainbow'},
+                          'obs':{'colormap':'rainbow'},
+                          'diff':{'colormap':'bl_to_darkred'} }
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
         if regionid=="Global" or regionid=="global" or regionid is None:
             self._regionid="Global"
@@ -922,7 +920,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
     the difference between the two.  A plot's x-axis is longitude and its y-axis is the latitude;
     normally a world map will be overlaid.
     """
-    def __init__( self, model, obs,  varid, seasonid=None, regionid=None, aux=None, levels=None,
+    def __init__( self, model, obs,  varid, seasonid=None, regionid=None, aux=None,
                   plotparms=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the variable to be plotted, e.g. 'TREFHT'.
@@ -932,9 +930,9 @@ class amwg_plot_set5and6(amwg_plot_spec):
         plot_spec.__init__(self,seasonid, regionid)
         self.plottype = 'Isofill'
         if plotparms is None:
-            plotparms = { 'model':{'levels':levels, 'colormap':'rainbow'},
-                          'obs':{'levels':levels, 'colormap':'rainbow'},
-                          'diff':{'levels':None, 'colormap':'bl_to_darkred'} }
+            plotparms = { 'model':{'colormap':'rainbow'},
+                          'obs':{'colormap':'rainbow'},
+                          'diff':{'colormap':'bl_to_darkred'} }
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
         if regionid=="Global" or regionid=="global" or regionid is None:
             self._regionid="Global"
@@ -1270,8 +1268,7 @@ class amwg_plot_set6(amwg_plot_spec):
     # The first in the list (e.g. [a,b,c]) is to be preferred.
     #... If this works, I'll make it universal, defaulting to {}.  For plot set 6, the first
     # data variable will be used for the contour plot, and the other two for the vector plot.
-    def __init__( self, model, obs, varid, seasonid=None, regionid=None, aux=None, levels=None,
-                  plotparms=None ):
+    def __init__( self, model, obs, varid, seasonid=None, regionid=None, aux=None, plotparms=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the variable to be plotted, e.g. 'STRESS'.
         seasonid is a string such as 'DJF'."""
@@ -1279,9 +1276,9 @@ class amwg_plot_set6(amwg_plot_spec):
         filetable1, filetable2 = self.getfts(model, obs)
         plot_spec.__init__(self,seasonid)
         if plotparms is None:
-            plotparms = { 'model':{'levels':levels, 'colormap':'rainbow'},
-                          'obs':{'levels':levels, 'colormap':'rainbow'},
-                          'diff':{'levels':None, 'colormap':'bl_to_darkred'} }
+            plotparms = { 'model':{'colormap':'rainbow'},
+                          'obs':{'colormap':'rainbow'},
+                          'diff':{'colormap':'bl_to_darkred'} }
         # self.plottype = ['Isofill','Vector']  <<<< later we'll add contour plots
         self.plottype = 'Vector'
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
@@ -1634,7 +1631,7 @@ class amwg_plot_set7(amwg_plot_spec):
     name = '7 - Polar Contour and Vector Plots of Seasonal Means'
     number = '7'
     def __init__( self, model, obs, varid, seasonid=None, region=None, aux=slice(0,None),
-                  levels=None, plotparms=None ):
+                  plotparms=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the variable to be plotted, e.g. 'TREFHT'.
         seasonid is a string such as 'DJF'."""
@@ -1643,9 +1640,9 @@ class amwg_plot_set7(amwg_plot_spec):
         plot_spec.__init__(self,seasonid)
         self.plottype = 'Isofill_polar'
         if plotparms is None:
-            plotparms = { 'model':{'levels':levels, 'colormap':'rainbow'},
-                          'obs':{'levels':levels, 'colormap':'rainbow'},
-                          'diff':{'levels':None, 'colormap':'bl_to_darkred'} }
+            plotparms = { 'model':{'colormap':'rainbow'},
+                          'obs':{'colormap':'rainbow'},
+                          'diff':{'colormap':'bl_to_darkred'} }
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
 
         self.varid = varid
@@ -1753,7 +1750,7 @@ class amwg_plot_set8(amwg_plot_spec):
     name = '8 - Annual Cycle Contour Plots of Zonal Means '
     number = '8'
 
-    def __init__( self, model, obs, varid, seasonid='ANN', region='global', aux=None, levels=None,
+    def __init__( self, model, obs, varid, seasonid='ANN', region='global', aux=None,
                   plotparms=None ):
         """filetable1, should be a directory filetable for each model.
         varid is a string, e.g. 'TREFHT'.  The zonal mean is computed for each month. """
@@ -1779,9 +1776,9 @@ class amwg_plot_set8(amwg_plot_spec):
         
         plot_spec.__init__(self, seasonid)
         if plotparms is None:
-            plotparms = { 'model':{'levels':levels, 'colormap':'rainbow'},
-                          'obs':{'levels':levels, 'colormap':'rainbow'},
-                          'diff':{'levels':None, 'colormap':'bl_to_darkred'} }
+            plotparms = { 'model':{'colormap':'rainbow'},
+                          'obs':{'colormap':'rainbow'},
+                          'diff':{'colormap':'bl_to_darkred'} }
         self.plottype = 'Isofill'
         self._seasonid = seasonid
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
@@ -1911,7 +1908,7 @@ class amwg_plot_set9(amwg_plot_spec):
     # Here, the plotspec contains the variables themselves.
     name = '9 - Horizontal Contour Plots of DJF-JJA Differences'
     number = '9'
-    def __init__( self, model, obs, varid, seasonid='DJF-JJA', regionid=None, aux=None, levels=None,
+    def __init__( self, model, obs, varid, seasonid='DJF-JJA', regionid=None, aux=None,
                   plotparms=None ):
         filetable1, filetable2 = self.getfts(model, obs)
         """filetable1, filetable2 should be filetables for each model.
@@ -1938,9 +1935,9 @@ class amwg_plot_set9(amwg_plot_spec):
         plot_spec.__init__(self, seasonid)
         self.plottype = 'Isofill'
         if plotparms is None:
-            plotparms = { 'model':{'levels':levels, 'colormap':'rainbow'},
-                          'obs':{'levels':levels, 'colormap':'rainbow'},
-                          'diff':{'levels':None, 'colormap':'bl_to_darkred'} }
+            plotparms = { 'model':{'colormap':'rainbow'},
+                          'obs':{'colormap':'rainbow'},
+                          'diff':{'colormap':'bl_to_darkred'} }
         self._seasonid = seasonid
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
         ft1id, ft2id = filetable_ids(filetable1, filetable2)
@@ -2059,8 +2056,7 @@ class amwg_plot_set10(amwg_plot_spec, basic_id):
     name = '10 - Annual Line Plots of  Global Means'
     number = '10'
  
-    def __init__( self, model, obs, varid, seasonid='ANN', region=None, aux=None, levels="ignored",
-                  plotparms=None ):
+    def __init__( self, model, obs, varid, seasonid='ANN', region=None, aux=None, plotparms=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'."""
         filetable1, filetable2 = self.getfts(model, obs)
@@ -2155,8 +2151,7 @@ class amwg_plot_set11(amwg_plot_spec):
     --outputdir $HOME/Documents/Climatology/ClimateData/diagout/ --package AMWG --sets 11 --seasons JAN --plots yes  --vars LWCF """
     name = '11 - Pacific annual cycle, Scatter plots'
     number = '11'
-    def __init__( self, model, obs, varid, seasonid='ANN', region=None, aux=None, levels=None,
-                  plotparms=None ):
+    def __init__( self, model, obs, varid, seasonid='ANN', region=None, aux=None, plotparms=None ):
         filetable1, filetable2 = self.getfts(model, obs)
         """filetable1, filetable2 should be filetables for each model.
         varid is a string, e.g. 'TREFHT'.  The seasonal difference is Seasonid
@@ -2369,8 +2364,7 @@ class amwg_plot_set12(amwg_plot_spec):
     name = '12 - Vertical Profiles at 17 selected raobs stations'
     number = '12'
 
-    def __init__( self, model, obs, varid, seasonid='ANN', region=None, aux=None, levels=None,
-                  plotparms=None):
+    def __init__( self, model, obs, varid, seasonid='ANN', region=None, aux=None, plotparms=None):
 
         """filetable1, filetable2 should be filetables for each model.
         varid is a string, e.g. 'TREFHT'.  The seasonal difference is Seasonid
@@ -2699,8 +2693,7 @@ class amwg_plot_set13(amwg_plot_spec):
                 func=uncompress_fisccp1 )]
         }
 
-    def __init__( self, model, obs, varnom, seasonid=None, region=None, aux=None, levels=None,
-                  plotparms=None ):
+    def __init__( self, model, obs, varnom, seasonid=None, region=None, aux=None, plotparms=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varnom is a string.  The variable described may depend on time,lat,lon and will be averaged
         in those dimensions.  But it also should have two other axes which will be used for the
@@ -2715,9 +2708,9 @@ class amwg_plot_set13(amwg_plot_spec):
         self.derived_variables = {}
         self.plottype = 'Boxfill'
         if plotparms is None:
-            plotparms = { 'model':{'levels':levels, 'colormap':'rainbow'},
-                          'obs':{'levels':levels, 'colormap':'rainbow'},
-                          'diff':{'levels':None, 'colormap':'bl_to_darkred'} }
+            plotparms = { 'model':{'colormap':'rainbow'},
+                          'obs':{'colormap':'rainbow'},
+                          'diff':{'colormap':'bl_to_darkred'} }
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
         ft1id,ft2id = filetable_ids(filetable1,filetable2)
         self.plot1_id = '_'.join([ft1id,varnom,seasonid,str(region),'histo'])
@@ -3192,8 +3185,7 @@ class amwg_plot_set15(amwg_plot_spec):
     name = '15 - ARM Sites Annual Cycle Contour Plots'
     number = '15'
 
-    def __init__( self, model, obs, varid, seasonid='ANN', region=None, aux=None, levels=None,
-                  plotparms=None ):
+    def __init__( self, model, obs, varid, seasonid='ANN', region=None, aux=None, plotparms=None ):
         """filetable1, should be a directory filetable for each model.
         varid is a string, e.g. 'TREFHT'.  The zonal mean is computed for each month. """
         filetable1, filetable2 = self.getfts(model, obs)
@@ -3215,9 +3207,9 @@ class amwg_plot_set15(amwg_plot_spec):
         plot_spec.__init__(self, seasonid)
         self.plottype = 'Isofill'
         if plotparms is None:
-            plotparms = { 'model':{'levels':levels, 'colormap':'rainbow'},
-                          'obs':{'levels':levels, 'colormap':'rainbow'},
-                          'diff':{'levels':None, 'colormap':'bl_to_darkred'} }
+            plotparms = { 'model':{'colormap':'rainbow'},
+                          'obs':{'colormap':'rainbow'},
+                          'diff':{'colormap':'bl_to_darkred'} }
         self._seasonid = seasonid
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
         ft1id, ft2id = filetable_ids(filetable1, filetable2)
@@ -3313,7 +3305,8 @@ class amwg_plot_set15(amwg_plot_spec):
                                         zrangevars={'yrange':[1000., 0.]},
                                         plottype = self.plottype,
                                         title = 'difference: model-obs',
-                                        levels = None )
+                                        source = ', '.join([ft1src,ft2src]),
+                                        plotparms = plotparms['diff'] )
         
         self.composite_plotspecs = {
             self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id ]
