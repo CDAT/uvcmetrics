@@ -16,11 +16,11 @@ from metrics.packages.lmwg.lmwg import *
 def amwg_plot_spec_vcs_plot( self, canvas, var, gm, tm, *args, **kwargs ):
     if 'compoundplot' in kwargs:
         del kwargs['compoundplot']  # confuses VCS
-    if 'plotparms' in kwargs:
+    if 'plotparms' in kwargs and kwargs['plotparms'] is not None:
         plotparms = kwargs['plotparms']
         if 'colormap' in plotparms:
             gm.colormap = plotparms['colormap']
-        canvas.plot( var, gm, tm, *args, **kwargs )
+    canvas.plot( var, gm, tm, *args, **kwargs )
 
 amwg_plot_spec.vcs_plot = amwg_plot_spec_vcs_plot
 

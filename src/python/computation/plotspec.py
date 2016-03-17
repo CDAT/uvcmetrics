@@ -328,7 +328,7 @@ class basic_two_line_plot( plotspec ):
         The horizontal axis is the axis of z*var."""
         # plotspec.__init__( self, y1vars=[y1var], y2vars=[y2var],
         #                    vid = y1var.variableid+y2var.variableid+" line plot", plottype='Yxvsx' )
-        plotspec.__init__( self, zvars=[zvar], z2vars=[z2var],
+        plotspec.__init__( self, zvars=[zvar], z2vars=[z2var], plotparms=plotparms,
                            vid = z2var.variableid+z2var.variableid+" line plot", plottype='Yxvsx' )
 
 class one_line_diff_plot( plotspec ):
@@ -339,7 +339,7 @@ class one_line_diff_plot( plotspec ):
         plotspec.__init__( self,
             zvars=[zvar,z2var],
             zfunc=aminusb_1ax,   # aminusb_1ax(y1,y2)=y1-y2; each y has 1 axis, use min axis
-            vid=vid,
+            vid=vid, plotparms=plotparms,
             plottype='Yxvsx' )
 
 # class contour_plot( plotspec ):
