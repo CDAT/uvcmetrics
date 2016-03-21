@@ -1,16 +1,30 @@
 import vcs, cdms2, random, math
 import EzTemplate
 import numpy as np
-from templateoptions import *
+from metrics.frontend.templateoptions import *
+from vtk import vtkTextActor, vtkTextRenderer, vtkTextProperty, vtkPropPicker
 
 # Font Scale Factor for defining font size
 def gaussian(x, mu, sig):
     return np.exp(-np.power(x - mu, 2.) / (2 * np.power(sig, 2.)))
 
+def linear(x):
+    coeff = -1.0
+    maxVal = 1.0
+    return (x/10.0) * coeff + maxVal;
+
 # Adjust spaces, margins and plot aspect ratio:
 def calcdx(multiplot, rows, columns):
     dx=(1.-multiplot.margins.right-multiplot.margins.left-(columns-1)*multiplot.spacing.horizontal)/columns
     return dx
+
+def calcx1():
+    x1=self.margins.left+column*(dx+self.spacing.horizontal)
+    return x1
+
+def calcx2(x1, dx, xl):
+    x2=x1+dx-xl
+    return x2
 
 def calcdy(multiplot, rows, columns):
     dy=(1.-multiplot.margins.top-multiplot.margins.bottom-(rows-1)*multiplot.spacing.vertical)/rows
@@ -24,24 +38,52 @@ def calcy2(y1, dy, yl):
     y2=y1+dy-yl
     return y2    
 
+def debugInfoFunc(graphicMethodStrings=None, overlay=None, rows=1, columns=1,
+                  mainTemplateOptions=None, templateOptionsArray=None, templateNameArray=None,
+                  legendDirection='vertical', forceAspectRatio=False, onlyData=False):
+    print "===================================================================="
+    print "============================= Debug Info ==========================="
+    print "===================================================================="
 
+    if graphicMethodStrings != None:
+        for i in range(len(graphicMethodStrings)):
+            print "graphicMethodString: ",graphicMethodStrings[i]
+    if overlay != None:
+        for i in range(len(overlay)):
+            print "overlay: ",overlay[i]
+    print "rows = {0}, columns = {1}".format(rows, columns)
+    print "Main template options type: ",mainTemplateOptions.typeName
+    if templateOptionsArray != None:
+        for i in range(len(templateOptionsArray)):
+            print "template option array item: ",templateOptionsArray[i].typeName
+    print "legend direction: ",legendDirection
+    print "force aspect ration: ",forceAspectRatio
+    print "onlyData: ",onlyData
+    
+            
 #######################################################################################################
 #                                                                                                     #
 # Function that creates the templates and graphics methods for the diagnostics plots                  #
 #                                                                                                     #
 #######################################################################################################
+#@profile
 def build_templates(canvas=None, graphicMethodStrings=None, overlay=None, rows=1, columns=1,
                     mainTemplateOptions=None, templateOptionsArray=None, templateNameArray=None,
-                    legendDirection='vertical', forceAspectRatio=False, onlyData=False):
+                    legendDirection='vertical', forceAspectRatio=False, onlyData=False, disableLegend=False):
     """
     This function generates and adjusts the templates needed to plot the diagnostic plots.
     """
+
+    #debug:
+    # debugInfoFunc(graphicMethodStrings, overlay, rows, columns,
+    #               mainTemplateOptions, templateOptionsArray, templateNameArray,
+    #               legendDirection, forceAspectRatio, onlyData)
 
     if rows == 0 or columns == 0:
         raise ValueError("One must enter a size bigger than zero for rows and columns.")
         exit(0)
 
-    if (graphicMethodStrings == None) or (mainTemplateOptions == None) or (overlay == None):
+    if ((graphicMethodStrings == None) or (mainTemplateOptions == None)) or ((overlay == None) or (canvas == None)):
         return (None, None)
 
     graphicMethodObjects = []
@@ -74,20 +116,26 @@ def build_templates(canvas=None, graphicMethodStrings=None, overlay=None, rows=1
             graphicMethodObjects.append( td )
             #graphicMethodObjects[i].addMarker()
             #graphicMethodObjects[i].Marker.size = 8
-         
+
+    # if rows > columns:
+    #     canvas.portrait()
+    # else:
+    #     canvas.landscape()
+
     # Creates EzTemplate
-    M = None
-    if rows >= columns:
-        canvas.portrait()
-    else:
-        canvas.landscape()
     M = EzTemplate.Multi(rows=rows, columns=columns)
 
     # Set EzTemplate Options
     M.legend.direction = legendDirection  # default='horizontal'
 
     # Font size auto-scale
-    scaleFactor = gaussian(float(max(rows, columns))/10, 0.1, 0.5)
+    scaleFactor = gaussian(float(max(rows, columns))/10.0, 0.1, 0.45)
+
+    # Title size auto-scale
+    if (rows == columns) and (rows ==1):
+        titleScaleFactor = 1.3*scaleFactor
+    else:
+        titleScaleFactor = linear(float(max(rows, columns)))
 
     # Get from yxvsx_merra_tas.py
     # Set conversion factor to multiply font height coordinates by
@@ -99,7 +147,7 @@ def build_templates(canvas=None, graphicMethodStrings=None, overlay=None, rows=1
     dy = calcdy(M, rows, columns)
 
     # Aspect Ratio:
-    if forceAspectRatio:
+    if forceAspectRatio:        
         if dx > 2*dy:
             while calcdx(M, rows, columns) > 2*dy:
                 M.margins.left  *= 1.05
@@ -111,73 +159,79 @@ def build_templates(canvas=None, graphicMethodStrings=None, overlay=None, rows=1
 
     # Adjusts margins and vertical spaces to
     # handle title-data or title-(out of box) problems
-    if mainTemplateOptions.title:
+    if mainTemplateOptions.title:        
         y1_row0 = calcy1(M, 0, dy, 0.0)
         y1_row1 = calcy1(M, 1, dy, 0.0)
         y2_row1 = calcy2(y1_row1, dy, 0.0)
 
-        title_height = 14 * fontht2norm  # 14 is the default size
+        title_height = 14 * fontht2norm  # 14 is the default font size
         
         if rows > 1:
-            Mt = EzTemplate.Multi(rows=rows, columns=columns, legend_direction=legendDirection)        
-            Mt.margins.top    = M.margins.top
-            Mt.margins.bottom = M.margins.bottom
+            Mt         = EzTemplate.Multi(rows=rows, columns=columns, legend_direction=legendDirection)        
+            Mt.margins = M.margins
+            Mt.spacing = M.spacing
             
-            tt = Mt.get(row=1, column=0, legend='local')
-            titley2 = title_height + tt.title.y
-            
-            # Avoiding overlay of titles and data
-            while titley2 > y1_row0:
-                Mt.spacing.vertical *= 1.085
-                dy      = calcdy(Mt, rows, columns)
-                y1_row0 = calcy1(Mt, 0, dy, 0.0)
-                #print "Title row 1 y={0}, data row 0 y={1}".format(titley2, y1_row0)
-                
-            tt = Mt.get(row=0, column=0, legend='local')
-            titley2 = title_height + tt.title.y
-
-            #print "Title y2 = {0}".format(titley2)
-            
+            # Avoiding overlay of titles and xnames:
+            templateAbove = Mt.get(row=0, column=0, legend='local', font=False)
+            templateBelow = Mt.get(row=1, column=0, legend='local', font=False)
+            titleBelowY2 = title_height + templateBelow.title.y
+                        
+            while titleBelowY2 > templateAbove.xname.y:
+                Mt.spacing.vertical  *= 1.05
+                templateBelow         = Mt.get(row=1, column=0, legend='local', font=False)
+                templateAbove         = Mt.get(row=0, column=0, legend='local', font=False)
+                titleBelowY2          = title_height + templateBelow.title.y
+                                                    
             # Avoiding titles out of bounds
-            while titley2 > 1.0:
-                Mt.margins.top    *= 1.9
-                Mt.margins.bottom *= 1.9
-                tt      = Mt.get(row=0, column=0, legend='local')
-                titley2 = title_height + tt.title.y
-                #print "Title y2 = {0}".format(titley2)
+            titleAboveY2 = title_height + templateAbove.title.y
+            while titleAboveY2 > 1.0:
+                Mt.margins.top     *= 1.25
+                Mt.margins.bottom  *= 1.25
+                templateAbove       = Mt.get(row=0, column=0, legend='local')
+                titleAboveY2        = title_height + templateAbove.title.y
 
-            M.spacing.vertical = Mt.spacing.vertical
-            M.margins.top      = Mt.margins.top 
-            M.margins.bottom   = Mt.margins.bottom
+            M.spacing = Mt.spacing
+            M.margins = Mt.margins
             
         elif rows == 1:
             title_height = 60 * fontht2norm  # one plot per page has a different scale
-            Mt = EzTemplate.Multi(rows=rows, columns=columns)
-            Mt.margins.top    = M.margins.top
-            Mt.margins.bottom = M.margins.bottom
-            tt      = Mt.get(row=0, column=0, legend='local')
+            Mt         = EzTemplate.Multi(rows=rows, columns=columns)
+            Mt.margins = M.margins
+            Mt.spacing = M.spacing
+            tt         = Mt.get(row=0, column=0, legend='local')
             tt.scalefont(scaleFactor)
             titley2 = title_height * scaleFactor + tt.title.y
 
-            #print "Title height: ", title_height
-            #print "Title y2 = {0}".format(titley2)
-                       
             # Avoiding titles out of bounds
             while titley2 > 1.0:
                 Mt.margins.top    *= 1.25
                 Mt.margins.bottom *= 1.25
-                tt = Mt.get(row=0, column=0, legend='local')
+                tt      = Mt.get(row=0, column=0, legend='local')
                 titley2 = title_height * scaleFactor + tt.title.y
-                #print "Title y2 = {0}".format(titley2)
                            
-            M.margins.top    = Mt.margins.top 
-            M.margins.bottom = Mt.margins.bottom
+            M.margins = Mt.margins 
+            M.spacing = Mt.spacing
+
+    # Adjusts yname position related to the page margins
+    if mainTemplateOptions.yname:
+         Mt         = EzTemplate.Multi(rows=rows, columns=columns, legend_direction=legendDirection)
+         Mt.spacing = M.spacing
+         Mt.margins = M.margins
+         tt = Mt.get(row=0, column=0, legend='local', font=False)
+
+         while tt.yname.x < 0.0015:
+             Mt.margins.left *= 1.05
+             tt = Mt.get(row=0, column=0, legend='local', font=False)
+             print "yname x = ",tt.yname.x
+             
+         M.margins = Mt.margins 
+         M.spacing = Mt.spacing
 
     # Adjusts the Xname position related to out of page problems
     if mainTemplateOptions.xname:
-        Mt = EzTemplate.Multi(rows=rows, columns=columns, legend_direction=legendDirection)        
-        Mt.margins.top    = M.margins.top
-        Mt.margins.bottom = M.margins.bottom
+        Mt         = EzTemplate.Multi(rows=rows, columns=columns, legend_direction=legendDirection)        
+        Mt.margins = M.margins
+        Mt.spacing = M.spacing
 
         tt = None
         if rows > 1 :
@@ -196,6 +250,7 @@ def build_templates(canvas=None, graphicMethodStrings=None, overlay=None, rows=1
             else:
                 tt = Mt.get(row=0, column=0, legend='local')
             xnameY = tt.xname.y
+            #print "xnameY = ", xnameY
 
         M.margins.top    = Mt.margins.top 
         M.margins.bottom = Mt.margins.bottom
@@ -222,6 +277,7 @@ def build_templates(canvas=None, graphicMethodStrings=None, overlay=None, rows=1
                 dy      = calcdy(Mt, rows, columns)
                 y1_row1 = calcy1(Mt, 1, dy, 0.0)
                 y2_row1 = calcy2(y1_row1, dy, 0.0)
+                #print "dy = {0}, y1_row1 = {1}, y2_row1 = {2}".format(dy, y1_row1, y2_row1)
 
             M.spacing.vertical = Mt.spacing.vertical 
 
@@ -314,14 +370,15 @@ def build_templates(canvas=None, graphicMethodStrings=None, overlay=None, rows=1
             delta = float(tt.data.x2 - tt.data.x1)
             posx2 = tt.legend.x1 + 0.09*delta
             if posx2 > 1.0:
-                posx2 = tt.legend.x1 + 0.05*delta
+                posx2    = tt.legend.x1 + 0.05*delta
                 legendx2 = posx2
         
-            tt2 = Mt.get(row=0, column=1, legend='local')
+            tt2    = Mt.get(row=0, column=1, legend='local')
             ynamex = tt2.yname.x
 
         M.spacing.horizontal = Mt.spacing.horizontal
 
+    # Adjusts legend position
     if mainTemplateOptions.legend:
         Mt = EzTemplate.Multi(rows=rows, columns=columns, legend_direction=legendDirection)
         Mt.legend.direction   = legendDirection
@@ -379,13 +436,18 @@ def build_templates(canvas=None, graphicMethodStrings=None, overlay=None, rows=1
 
             M.margins.top    = Mt.margins.top 
             M.margins.bottom = Mt.margins.bottom
-        
-    finalTemplates = []
+
+    ######################
     # Generating Templates
+    
+    finalTemplates = []
+    
     for i in range(len(graphicMethodStrings)):
         if (len(overlay) > 1) and (overlay[i] == 1):
             lastTemplate = finalTemplates[-1]
             cpLastTemplate = canvas.createtemplate(lastTemplate.name+'_overlay', lastTemplate.name)
+            # Avoiding legend overlaping.
+            cpLastTemplate.legend.y1 *= 1.05
             setTemplateOptions(cpLastTemplate, templateOptionsArray[i])
             finalTemplates.append(cpLastTemplate)
             continue
@@ -404,11 +466,19 @@ def build_templates(canvas=None, graphicMethodStrings=None, overlay=None, rows=1
             # Align title
             delta                          = template.data.x2 - template.data.x1
             template.title.x               = template.data.x1 + float(delta)/2.0
+            template.title.y              *= 0.99
             title_orientation              = vcs.createtextorientation()
             title_orientation.halign       = "center"
-            title_orientation.height      *= scaleFactor # 100 * deltaY  # default = 14
+            title_orientation.height      *= titleScaleFactor # 100 * deltaY  # default = 14
             template.title.textorientation = title_orientation
-
+            
+        if mainTemplateOptions.dataname:
+            template.dataname.x               = template.data.x1
+            template.dataname.y               = template.data.y2 * 1.011
+            dataname_orientation              = vcs.gettextorientation(template.dataname.textorientation)
+            dataname_orientation.height      *= 0.98
+            template.dataname.textorientation = dataname_orientation
+            
         if mainTemplateOptions.legend:
             # Adjusting legend position
             delta = template.data.x2 - template.data.x1
@@ -420,11 +490,56 @@ def build_templates(canvas=None, graphicMethodStrings=None, overlay=None, rows=1
         if mainTemplateOptions.mean:
             # Align Mean
             template.mean.x               = template.title.x
+            template.mean.y              *= 0.99
             mean_orientation              = vcs.createtextorientation()
             mean_orientation.halign       = "center"
-            mean_orientation.valign       = "top"
-            mean_orientation.height      *= scaleFactor*0.7
+            #mean_orientation.valign       = "top"
+            if (rows == columns) and (rows ==1):
+                mean_orientation.height      *= scaleFactor*0.88
+            else:
+                mean_orientation.height      *= scaleFactor*0.65
             template.mean.textorientation = mean_orientation
+
+        if mainTemplateOptions.xname:
+            #template.xname.y              *= 1.01
+            xname_orientation              = vcs.gettextorientation(template.xname.textorientation)
+            xname_orientation.halign       = "center"
+            #xname_orientation.valign       = "bottom"
+            xname_orientation.height      *= 0.85
+            template.xname.textorientation = xname_orientation
+
+        if mainTemplateOptions.yname:
+            #template.yname.y              *= 1.01
+            yname_orientation              = vcs.gettextorientation(template.yname.textorientation)
+            yname_orientation.halign       = "center"
+            #yname_orientation.valign       = "top"
+            yname_orientation.height      *= 0.85
+            template.yname.textorientation = yname_orientation
+
+        if mainTemplateOptions.xlabel1:
+            #template.xlabel1.y              *= 1.01
+            xlabel1_orientation              = vcs.gettextorientation(template.xlabel1.textorientation)
+            #xlabel1_orientation.halign       = "center"
+            #xlabel1_orientation.valign       = "bottom"
+            xlabel1_orientation.height      *= 0.85
+            template.xlabel1.textorientation = xlabel1_orientation
+
+        if mainTemplateOptions.ylabel1:
+            #template.ylabel1.y              *= 1.01
+            ylabel1_orientation              = vcs.gettextorientation(template.ylabel1.textorientation)
+            #ylabel1_orientation.halign       = "center"
+            #ylabel1_orientation.valign       = "bottom"
+            ylabel1_orientation.height      *= 0.85
+            template.ylabel1.textorientation = ylabel1_orientation
+
+        if mainTemplateOptions.units:
+            template.units.x               = template.data.x2 - (5*14*fontht2norm) # 5 charactes
+            template.units.y               = template.mean.y
+            units_orientation              = vcs.gettextorientation(template.units.textorientation)
+            units_orientation.halign       = "left"
+            #units_orientation.valign       = "bottom"
+            units_orientation.height      *= 0.85
+            template.units.textorientation = units_orientation
 
         if mainTemplateOptions.min:
             template.min.x = template.legend.x1
@@ -433,7 +548,10 @@ def build_templates(canvas=None, graphicMethodStrings=None, overlay=None, rows=1
             minTo          = canvas.gettextorientation(template.min.textorientation)
             minheight      = minTo.height * fontht2norm
             template.max.x = template.legend.x1
-            template.max.y = template.min.y - 1.35*minheight 
+            if (rows == columns) and (rows ==1):
+                template.max.y = template.min.y - 1.55*minheight
+            else:
+                template.max.y = template.min.y - 1.35*minheight 
 
         if onlyData:
             dudTemplate = TemplateOptions()
@@ -442,11 +560,15 @@ def build_templates(canvas=None, graphicMethodStrings=None, overlay=None, rows=1
             setTemplateOptions(template, dudTemplate)
         else:
             if (templateOptionsArray is not None) and (len(templateOptionsArray) > i):
-                setTemplateOptions(template, templateOptionsArray[i])    
+                setTemplateOptions(template, templateOptionsArray[i])
             else:
                 setTemplateOptions(template, mainTemplateOptions)    
 
+        if disableLegend == True:
+            template.legend.priority = 0
+                
         finalTemplates.append(template)
+        print "------ Template built ------\n"
 
     return (graphicMethodObjects, finalTemplates)
 
