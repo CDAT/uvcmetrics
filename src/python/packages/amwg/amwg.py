@@ -1824,7 +1824,7 @@ class amwg_plot_set8(amwg_plot_spec):
                                         zvars=[vidObs],   
                                         zfunc = (lambda x: MV2.transpose(x)),                                
                                         plottype = self.plottype,
-                                         levels = levels )
+                                        levels = levels )
             self.single_plotspecs[self.plot3_id] = \
                                plotspec(vid = ps.dict_idid(vidDiff), 
                                         zvars = [vidDiff],
@@ -2219,12 +2219,12 @@ class amwg_plot_set11(amwg_plot_spec):
         self.computation_planned = True
         #pdb.set_trace()
     def customizeTemplates(self, templates):
-        """Theis method does what the title says.  It is a hack that will no doubt change as diags changes."""
+        """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
         #pdb.set_trace()
         tm2.yname.priority=0
         tm2.xname.priority=0
-        tm2.title.y=.98
+        #tm2.title.y=.98
 
         ly = .96      
         xpos = {'model':.15, 'obs':.6}  
@@ -2249,31 +2249,6 @@ class amwg_plot_set11(amwg_plot_spec):
         
         return tm1, tm2    
     
-        #the following is dead code that I'm keeping for now
-        #because it has some info on how to change elements
-        #of a template  
-        #pdb.set_trace()
-        #plot diagonal lines
-        if "UVC_TMP_LINE" not in vcs.listelements("line"):
-            LINE = cnvs1.createline('UVC_TMP_LINE')
-        else:
-            LINE = cnvs1.getline("UVC_TMP_LINE")
-        LINE.width = 3.0
-        LINE.type = 'solid'
-        LINE.color = 242
-        tm1.line1.x1 = tm1.box1.x1
-        tm1.line1.y1 = tm1.box1.y2
-        tm1.line1.x2 = tm1.box1.x2        
-        tm1.line1.y2 = tm1.box1.y1
-        tm1.line1.line = LINE
-        tm1.line1.priority = 1
-        tm2.line1.x1 = tm2.box1.x1
-        tm2.line1.y1 = tm2.box1.y2
-        tm2.line1.x2 = tm2.box1.x2
-        tm2.line1.y2 = tm2.box1.y1
-        tm2.line1.line = LINE
-        tm2.line1.priority = 1     
-        return tm1, tm2  
     def _results(self, newgrid=0):
         #pdb.set_trace()
         results = plot_spec._results(self, newgrid)
@@ -2455,15 +2430,15 @@ class amwg_plot_set12(amwg_plot_spec):
         #pdb.set_trace()
         #plot the axes names for the single plot
         tm1.xname.priority = 1
-        tm1.xname.x = tm1.data.x1 + .4
-        tm1.xname.y = tm1.yname.y - .22
+        #tm1.xname.x = tm1.data.x1 + .4
+        #tm1.xname.y = tm1.yname.y - .22
         
         tm1.comment1.priority = 1
-        tm1.comment1.x = tm1.data.x2 + .03
-        tm1.comment1.y = tm1.data.y1 + .25    
+        #tm1.comment1.x = tm1.data.x2 + .03
+        #tm1.comment1.y = tm1.data.y1 + .25    
         to = cnvs1.createtextorientation(None, tm1.yname.textorientation)
         to.angle=-90
-        tm1.comment1.textorientation=to        
+        #tm1.comment1.textorientation=to        
         
         #setup the custom legend
         lineTypes = {}
@@ -2513,29 +2488,29 @@ class amwg_plot_set12(amwg_plot_spec):
         #plot the axes names for the multi plot
         to = cnvs2.createtextorientation(None, tm2.xname.textorientation)
         to.height = 10
-        tm2.xname.textorientation=to 
+        #tm2.xname.textorientation=to 
         tm2.xname.priority = 1
-        tm2.xname.x = tm2.data.x1 + .1
-        tm2.xname.y = tm2.data.y1 - .05
+        #tm2.xname.x = tm2.data.x1 + .1
+        #tm2.xname.y = tm2.data.y1 - .05
         
         th=cnvs2.createtextorientation(None, tm2.xlabel1.textorientation)
         th.height=10
-        tm2.xlabel1.textorientation = th
+        #tm2.xlabel1.textorientation = th
         th=cnvs2.createtextorientation(None, tm2.ylabel1.textorientation)
         th.height=10
-        tm2.ylabel1.textorientation = th
+        #tm2.ylabel1.textorientation = th
         
         #pdb.set_trace()        
         tm2.comment1.priority = 1
-        tm2.comment1.x = tm2.data.x1 - .075
-        tm2.comment1.y = tm2.data.y1 + .1
+        #tm2.comment1.x = tm2.data.x1 - .075
+        #tm2.comment1.y = tm2.data.y1 + .1
         to = cnvs2.createtextorientation(None, tm2.yname.textorientation)
         to.angle=-90
         to.height=10
-        tm2.comment1.textorientation=to
+        #tm2.comment1.textorientation=to
           
-        tm2.source.x = tm2.ytic1.x1 + .15
-        tm2.source.y = tm2.data.y2 + .015
+        #tm2.source.x = tm2.ytic1.x1 + .15
+        #tm2.source.y = tm2.data.y2 + .015
         if self.plotCompositeTitle:
             tm2.source.priority = 1
             self.plotCompositeTitle = False
@@ -2806,6 +2781,7 @@ class amwg_plot_set13(amwg_plot_spec):
                 v.finalize(flip_y=True)
         return self.plotspec_values[self.plotall_id]
 
+
 class amwg_plot_set14(amwg_plot_spec):
     """ Example script
       diags.py --model path=$HOME/amwg_diagnostics/cam35_data/,filter='f_startswith("ccsm")',climos=yes \
@@ -3050,21 +3026,21 @@ class amwg_plot_set14(amwg_plot_spec):
     def customizeTemplates(self, templates, legendTitles=[]):
         """Theis method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs, tm), (cnvs2, tm2) = templates
-        tm.data.x1 = .1
-        tm.data.y1 = .1
-        tm.data.x2 = .9
-        tm.data.y2 = .9
+        #tm.data.x1 = .1
+        #tm.data.y1 = .1
+        #tm.data.x2 = .9
+        #tm.data.y2 = .9
         #pdb.set_trace()
-        tm.yname.x = tm.yname.x + tm.data.x1/2
-        tm.xname.y = tm.data.y1 - .05
-        tm.line1.x1=tm.data.x1
-        tm.line1.x2=tm.data.x1
-        tm.line1.y1=.05
-        tm.line1.y2=.05
+        #tm.yname.x = tm.yname.x + tm.data.x1/2
+        #tm.xname.y = tm.data.y1 - .05
+        #tm.line1.x1=tm.data.x1
+        #tm.line1.x2=tm.data.x1
+        #tm.line1.y1=.05
+        #tm.line1.y2=.05
         
-        tm.xlabel1.y = tm.data.y1-.02
-        tm.xtic1.y1 = tm.data.y1 - .02
-        tm.xtic1.y2 = tm.data.y1 - .02
+        #tm.xlabel1.y = tm.data.y1-.02
+        #tm.xtic1.y1 = tm.data.y1 - .02
+        #tm.xtic1.y2 = tm.data.y1 - .02
         tm.dataname.priority=0
 
         lx = .75
@@ -3231,54 +3207,54 @@ class amwg_plot_set15(amwg_plot_spec):
         """Theis method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
  
-        tm1.data.x1 += .05
-        tm1.box1.x1 = tm1.data.x1
-        tm1.legend.x1 = tm1.data.x1
+        #tm1.data.x1 += .05
+        #tm1.box1.x1 = tm1.data.x1
+        #tm1.legend.x1 = tm1.data.x1
      
-        tm1.yname.x = .05
-        tm1.yname.y = (tm1.data.y1 + tm1.data.y2)/2
+        #tm1.yname.x = .05
+        #tm1.yname.y = (tm1.data.y1 + tm1.data.y2)/2
         to = cnvs1.createtextorientation(None, tm1.yname.textorientation)
         to.angle=-90
-        tm1.yname.textorientation=to 
+        #tm1.yname.textorientation=to 
                 
-        tm1.xname.y = tm1.data.y1 - .05
+        #tm1.xname.y = tm1.data.y1 - .05
         delta = tm1.ytic1.x1 - tm1.ytic1.x2
-        tm1.ytic1.x1 = tm1.data.x1
-        tm1.ytic1.x2 = tm1.data.x1 - delta
-        tm1.ylabel1.x = tm1.ytic1.x2
+        #tm1.ytic1.x1 = tm1.data.x1
+        #tm1.ytic1.x2 = tm1.data.x1 - delta
+        #tm1.ylabel1.x = tm1.ytic1.x2
 
         tm1.crdate.priority = 0
         tm1.crtime.priority = 0        
 
-        tm2.data.x1 += .05
-        tm2.box1.x1 = tm2.data.x1
-        tm2.data.y1 += .025
-        tm2.data.y2 += .025
-        tm2.box1.y1 = tm2.data.y1
-        tm2.box1.y2 = tm2.data.y2
-        tm2.legend.y1 = tm2.data.y1
-        tm2.legend.y2 = tm2.data.y2
+        #tm2.data.x1 += .05
+        #tm2.box1.x1 = tm2.data.x1
+        #tm2.data.y1 += .025
+        #tm2.data.y2 += .025
+        #tm2.box1.y1 = tm2.data.y1
+        #tm2.box1.y2 = tm2.data.y2
+        #tm2.legend.y1 = tm2.data.y1
+        #tm2.legend.y2 = tm2.data.y2
 
-        tm2.yname.x = .05
-        tm2.yname.y = (tm2.data.y1 + tm2.data.y2)/2
+        #tm2.yname.x = .05
+        #tm2.yname.y = (tm2.data.y1 + tm2.data.y2)/2
         to = cnvs2.createtextorientation(None, tm2.yname.textorientation)
         to.angle=-90
-        tm2.yname.textorientation=to 
+        #tm2.yname.textorientation=to 
 
-        tm2.xname.x = (tm2.data.x1 + tm2.data.x2)/2
-        tm2.xname.y = tm2.data.y1 - .025
+        #tm2.xname.x = (tm2.data.x1 + tm2.data.x2)/2
+        #tm2.xname.y = tm2.data.y1 - .025
         #pdb.set_trace()
         #delta = abs(tm2.ytic1.x1 - tm2.ytic1.x2)
-        tm2.ytic1.x1 = tm2.data.x1
-        tm2.ytic1.x2 = tm2.data.x1 - delta
-        tm2.ytic1.line = 'default'
-        tm2.ylabel1.x = tm2.ytic1.x2
+        #tm2.ytic1.x1 = tm2.data.x1
+        #tm2.ytic1.x2 = tm2.data.x1 - delta
+        #tm2.ytic1.line = 'default'
+        #tm2.ylabel1.x = tm2.ytic1.x2
         
         delta = abs(tm2.xtic1.y1 - tm2.xtic1.y2)
-        tm2.xtic1.y1 = tm2.data.y1
-        tm2.xtic1.y2 = tm2.xtic1.y1 - delta
-        tm2.xlabel1.y = tm2.xtic1.y2
-        tm2.xtic1.line = 'default'
+        #tm2.xtic1.y1 = tm2.data.y1
+        #tm2.xtic1.y2 = tm2.xtic1.y1 - delta
+        #tm2.xlabel1.y = tm2.xtic1.y2
+        #tm2.xtic1.line = 'default'
         
         for tm in [tm1, tm2]:       
             #tm.title.priority = 0
@@ -3286,12 +3262,13 @@ class amwg_plot_set15(amwg_plot_spec):
             tm.min.priority = 0
             tm.mean.priority = 0
             tm.dataname.priority = 0
+            tm.legend.y2 = tm.mean.y
             
             tm.xlabel1.priority = 1 
             tm.xtic1.priority = 1 
             tm.yname.priority = 1
             tm.yname.priority = 1
-            tm.xname.priority = 1
+            #tm.xname.priority = 1
             tm.ylabel1.priority = 1 
             tm.ytic1.priority = 1  
                         
