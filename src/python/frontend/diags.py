@@ -402,6 +402,12 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
             ir += 1
     if None in gms:
         print "WARNING, missing a graphics method. gms=",gms
+
+    # Debug:
+    # print "tmpl nsingleplots=",nsingleplots,"nsimpleplots=",nsimpleplots
+    # print "tmpl gms=",gms
+    # print "tmpl len(res)=",len(res),"ovly=",ovly,"onPage=",onPage
+        
     # Now get the templates which correspond to the graphics methods and overlay statuses.
     # tmobs[ir] is the template for plotting a simple plot on a page
     #   which has just one single-plot - that's vcanvas
@@ -722,6 +728,8 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                     plot.vcs_plot(vcanvas, var, rsr.presentation, tm, bg=1, title=title,
                                   units=getattr(var, 'units', ''),  yunits=yUnit, yname=yUnit)
                     savePNG = True
+
+                    # Multi-plot
                     try:
                         if tm2 is not None:
                             #vcanvas2.plot(var, rsr.presentation, tm2, bg=1,
@@ -792,7 +800,10 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                                     text_ytitle.string = yUnit
                                     tm2.yname.priority = 1
                                     tm2.yunits.priority = 1
-                                 
+
+                            if vcs.isboxfill(rsr.presentation):
+                                vcanvas2.landscape()
+                                    
                             # Multiple plots on a page:
                             plot.vcs_plot( vcanvas2, var, rsr.presentation, tm2, bg=1, title=title,
                                            units=getattr(var, 'units', ''),

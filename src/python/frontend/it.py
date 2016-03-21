@@ -104,6 +104,9 @@ def return_templates_graphic_methods(canvas1=None, gms=None, ovly=None, onPage=N
       templateNameArray = []
 
       # Template Names:
+      if onPage == 1:
+         rows    = 1
+         columns = 1
       if onPage == 2:
          rows    = 2
          columns = 1

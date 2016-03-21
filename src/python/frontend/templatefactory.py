@@ -90,27 +90,47 @@ def build_templates(canvas=None, graphicMethodStrings=None, overlay=None, rows=1
     
     for i in range(len(graphicMethodStrings)):  # make sure the graphics method exists
         if (graphicMethodStrings[i] == 'isofill') and ('uvwg' not in canvas.listelements('isofill')) :
-            graphicMethodObjects.append( canvas.createisofill('uvwg_' + (str(random.random())[2:]), 'default') )
+            graphicMethodObjects.append(
+                canvas.createisofill('uvwg_' + (str(random.random())[2:]), 'default')
+            )
+            
         if (graphicMethodStrings[i] == 'isoline') and ('uvwg' not in canvas.listelements('isoline')) :
-            graphicMethodObjects.append( canvas.createisoline('uvwg_' + (str(random.random())[2:]), 'default') )
+            graphicMethodObjects.append(
+                canvas.createisoline('uvwg_' + (str(random.random())[2:]), 'default')
+            )
+            
+        if (graphicMethodStrings[i] == 'boxfill') and ('uvwg' not in canvas.listelements('boxfill')) :
+            graphicMethodObjects.append(
+                canvas.createisoline('uvwg_' + (str(random.random())[2:]), 'default')
+            )
+            
         if (graphicMethodStrings[i] == 'yxvsx') and ('uvwg' not in canvas.listelements('yxvsx')) :
-            graphicMethodObjects.append( canvas.createyxvsx('uvwg_' + (str(random.random())[2:]), 'default') )
+            graphicMethodObjects.append(
+                canvas.createyxvsx('uvwg_' + (str(random.random())[2:]), 'default')
+            )
             if overlay[i] == 0:
                 graphicMethodObjects[i].linewidth = 1.5
             else:
                 graphicMethodObjects[i].linewidth = 2.0
                 graphicMethodObjects[i].line = 'dash'
                 graphicMethodObjects[i].linecolor = 242
+                
         if (graphicMethodStrings[i] == 'vector') and ('uvwg' not in canvas.listelements('vector')) :
-            graphicMethodObjects.append( canvas.createvector('uvwg_' + (str(random.random())[2:]), 'default') )
+            graphicMethodObjects.append(
+                canvas.createvector('uvwg_' + (str(random.random())[2:]), 'default')
+            )
+            
         if (graphicMethodStrings[i] == 'scatter') and ('uvwg' not in canvas.listelements('scatter')) :
-            graphicMethodObjects.append( canvas.createscatter('uvwg_' + (str(random.random())[2:]), 'default') )
+            graphicMethodObjects.append(
+                canvas.createscatter('uvwg_' + (str(random.random())[2:]), 'default')
+            )
             if overlay[i] == 0:
                 graphicMethodObjects[i].markersize = 8
             else:
                 graphicMethodObjects[i].linewidth = 2.0
                 graphicMethodObjects[i].linecolor = 242
                 graphicMethodObjects[i].markersize = 1
+                
         if (graphicMethodStrings[i] == 'taylordiagram'):
             td = canvas.createtaylordiagram('taylor_' + (str(random.random())[2:]), 'default')
             graphicMethodObjects.append( td )
