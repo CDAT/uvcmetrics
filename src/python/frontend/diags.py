@@ -704,9 +704,9 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                         tm.legend.priority = 0
 
                     if vcs.isisofill(rsr.presentation):
-                        vcanvas2.setcolormap("categorical")
+                        vcanvas.setcolormap("categorical")
                     else:
-                        vcanvas2.setcolormap("rainbow")                        
+                        vcanvas.setcolormap("rainbow")                        
 
                     # Polar Plots:
                     # for i in range(len(var.getAxisIds())):
@@ -741,12 +741,19 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                                 vcanvas2.setcolormap("categorical")
                             else:
                                 vcanvas2.setcolormap("rainbow")
+                            # Pre-defined colormaps:
+                            # ['AMIP', 'NCAR', 'bl_to_darkred', 'bl_to_drkorang', 'blends',
+                            # 'blue_to_grey', 'blue_to_grn', 'blue_to_orange', 'blue_to_orgred',
+                            # 'brown_to_blue', 'categorical', 'default', 'grn_to_magenta',
+                            # 'ltbl_to_drkbl', 'rainbow', 'rainbow_no_grn', 'sequential',
+                            # 'white_to_blue', 'white_to_green', 'white_to_magenta',
+                            # 'white_to_red', 'white_to_yellow']
                             
-                            if vcs.isisofill(rsr.presentation):
-                                if title.find(')-(') > 0:
-                                    setManualColormap(vcanvas2, level=17)
-                                else:
-                                    vcanvas2.setcolormap("categorical")
+                            # if vcs.isisofill(rsr.presentation):
+                            #     if title.find(')-(') > 0:
+                            #         setManualColormap(vcanvas2, level=17)
+                            #     else:
+                            #         vcanvas2.setcolormap("categorical")
                             
                             # Let's change the colormap of polar maps.
                             # for i in range(len(var.getAxisIds())):
