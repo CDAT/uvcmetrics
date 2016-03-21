@@ -9,12 +9,12 @@ from templateoptions import *
 # Function that creates the templates and graphics methods for the diagnostics plots                  #
 #                                                                                                     #
 #######################################################################################################
-def return_templates_graphic_methods(canvas1=None, gms=None, ovly=None, onPage=None):
+def return_templates_graphic_methods(canvas1=None, gms=None, ovly=None, onPage=None, disLegend=False):
    print "tmpl canvas1,gms,ovly,onPage:", canvas1,gms,ovly,onPage
    
    if len(gms) == len(ovly): 
 
-      # Create a unique graphics method for each diagnostic display
+      # Create a unique graphics method and a template for each diagnostic plot
       gmobs        = []
       tmobs        = []
 
@@ -25,18 +25,22 @@ def return_templates_graphic_methods(canvas1=None, gms=None, ovly=None, onPage=N
             templateOptionsArray = []
             templateNameArray    = []
 
-            templateOptionsArray.append(TemplateOptionsUVWGMulti())
+            tt = TemplateOptionsUVWGMulti_New()
+            templateOptionsArray.append(tt)
+            #templateOptionsArray.append(TemplateOptionsUVWGMulti())
             templateNameArray.append('uvwg_' + (str(random.random())[2:]))
             
-            templateOptionsUVWG_DUD_Multi = TemplateOptionsUVWGDUDMulti()
-            
-            graphicMethodObjects, templates = build_templates(canvas1, [gms[i]], [ovly[i]], 1, 1, TemplateOptionsUVWGMulti(),
-                                                              templateOptionsArray, templateNameArray)
+            graphicMethodObjects, templates = build_templates(canvas1, [gms[i]], [ovly[i]], 1, 1,
+                                                              TemplateOptionsUVWGMulti(),
+                                                              templateOptionsArray,
+                                                              templateNameArray,
+                                                              disableLegend=disLegend)
 
             gmobs.append(graphicMethodObjects[0])                  
                   
             if ovly[i] == 1:  # overlay plot use DUD - only plot the data
-               setTemplateOptions(templates[0], templateOptionsUVWG_DUD_Multi)
+               setTemplateOptions(templates[0], TemplateOptionsUVWGDUDMulti())
+
             tmobs.append(templates[0])
                   
          elif (gms[i] in ['yxvsx']):
@@ -45,19 +49,25 @@ def return_templates_graphic_methods(canvas1=None, gms=None, ovly=None, onPage=N
             templateOptionsArray = []
             templateNameArray    = []
 
-            templateOptionsArray.append(TemplateOptionsUVWG1DMulti())
+            ttt = TemplateOptionsUVWG1DMulti()
+            templateOptionsArray.append(ttt)
             templateNameArray.append('uvwg_' + (str(random.random())[2:]))
             
-            templateOptionsUVWG1DDUDMulti = TemplateOptionsUVWG1DDUDMulti()
-            
-            graphicMethodObjects, templates = build_templates(canvas1, [gms[i]], [ovly[i]], 1, 1, TemplateOptionsUVWG1DMulti(),
-                                                              templateOptionsArray, templateNameArray)
+            ttest = TemplateOptionsUVWG1DMulti()
+            #ttest.title = False
+            graphicMethodObjects, templates = build_templates(canvas1, [gms[i]], [ovly[i]], 1, 1,
+                                                              ttest,
+                                                              templateOptionsArray,
+                                                              templateNameArray,
+                                                              forceAspectRatio=False,
+                                                              disableLegend=disLegend)
 
             
             gmobs.append(graphicMethodObjects[0])                  
 
             if ovly[i] == 1:  # overlay plot use DUD - only plot the data
-               setTemplateOptions(templates[0], templateOptionsUVWG1DDUDMulti)
+               setTemplateOptions(templates[0], TemplateOptionsUVWG1DDUDMulti())
+
             tmobs.append(templates[0])
 
          elif (gms[i] in ['scatter']):
@@ -69,27 +79,31 @@ def return_templates_graphic_methods(canvas1=None, gms=None, ovly=None, onPage=N
             templateOptionsArray.append(TemplateOptionsUVWGMultiScatter())
             templateNameArray.append('uvwg_' + (str(random.random())[2:]))
             
-            templateOptionsUVWG_DUD_Multi_Scatter = TemplateOptionsUVWGDUDMultiScatter()
-
-            graphicMethodObjects, templates = build_templates(canvas1, [gms[i]], [ovly[i]], 1, 1, TemplateOptionsUVWGMultiScatter(),
-                                                              templateOptionsArray, templateNameArray)
+            graphicMethodObjects, templates = build_templates(canvas1, [gms[i]], [ovly[i]], 1, 1,
+                                                              TemplateOptionsUVWGMultiScatter(),
+                                                              templateOptionsArray,
+                                                              templateNameArray,
+                                                              disableLegend=disLegend)
             
             gmobs.append(graphicMethodObjects[0])                  
                   
             for t in range(len(templates)):
                if ovly[i] == 1:  # overlay plot use DUD - only plot the data
-                  setTemplateOptions(templates[t], templateOptionsUVWG_DUD_Multi_Scatter)
+                  setTemplateOptions(templates[t], TemplateOptionsUVWGDUDMultiScatter())
                tmobs.append(templates[t])
          
          elif (gms[i] in ['taylordiagram']):
+            tgm = canvas1.createtaylordiagram('taylor_' + (str(random.random())[2:]), 'default')
+            gmobs.append(tgm)
             tmpl = canvas1.createtemplate('taylor_' + (str(random.random())[2:]), 'deftaylor')
-            tmobs.append( tmpl )
-
+            tmobs.append(tmpl)
+      
       rows              = 0
       columns           = 0
       tmmobs            = []
       templateNameArray = []
-            
+
+      # Template Names:
       if onPage == 2:
          rows    = 2
          columns = 1
@@ -136,16 +150,30 @@ def return_templates_graphic_methods(canvas1=None, gms=None, ovly=None, onPage=N
          for i in range(2):
             templateNameArray.append('UVWG1D_%dof10_'%i + (str(random.random())[2:]))
 
+      # Debug info:
+      print "-------------------------------"
+      print "-------------------------------"
+      for gmss in gms:
+         print "Graphic method: ", gmss
+
+      # Multiple plots per page template generation:
       templateOptionsArray = []
       for i in range(len(gms)):
          if (gms[i] in ['isofill', 'isoline', 'boxfill', 'vector']):
             if ovly[i]:
                templateOptionsArray.append(TemplateOptionsUVWGDUDMulti())
             else:
-               templateOptionsArray.append(TemplateOptionsUVWGMulti())
-         elif (gms[i] in ['yxvsx']):
+               tt = TemplateOptionsUVWGMulti_New()
+               templateOptionsArray.append(tt)
+               #templateOptionsArray.append(TemplateOptionsUVWGMulti())
+         elif (gms[i] in ['yxvsx']):            
             if ovly[i]:
-               templateOptionsArray.append(TemplateOptionsUVWG1DDUDMulti())
+               #templateOptionsArray.append(TemplateOptionsUVWG1DDUDMulti())
+               ntt = TemplateOptionsUVWG1DMulti()
+               ntt.setAllFalse()
+               ntt.data = True
+               ntt.legend = True               
+               templateOptionsArray.append(ntt)
             else:
                templateOptionsArray.append(TemplateOptionsUVWG1DMulti())
          elif (gms[i] in ['scatter']):
@@ -154,13 +182,17 @@ def return_templates_graphic_methods(canvas1=None, gms=None, ovly=None, onPage=N
             else:
                templateOptionsArray.append(TemplateOptionsUVWGMultiScatter())
          elif (gms[i] in ['taylordiagram']):
-             templateOptionsArray.append(TemplateOptionsUVWG())
-             #templateOptionsArray.append(TemplateOptionsUVWG())
+             templateOptionsArray.append(TemplateOptionsUVWG())             
             
       graphicMethodObjects = []
 
-      graphicMethodObjects, tmmobs = build_templates(canvas1, gms, ovly, rows, columns, TemplateOptionsUVWG(),
-                                                     templateOptionsArray, templateNameArray, 'vertical', False)
+      graphicMethodObjects, tmmobs = build_templates(canvas1, gms, ovly, rows, columns,
+                                                     TemplateOptionsUVWGMulti_New(),
+                                                     templateOptionsArray,
+                                                     templateNameArray,
+                                                     'vertical',
+                                                     forceAspectRatio=False,
+                                                     disableLegend=disLegend)
                
       return (gmobs, tmobs, tmmobs)
    else:
