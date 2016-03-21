@@ -107,7 +107,8 @@ class TemplateOptions(object):
                  'yvalue',
                  'zname',
                  'zunits',
-                 'zvalue']
+                 'zvalue',
+                 'typeName']
     
     def _getbox1(self):
         return self._box1
@@ -571,6 +572,8 @@ class TemplateOptions(object):
         self._zunits         = True
         self._zvalue         = True
 
+        self.typeName = "TemplateOptions"
+
     def __iter__(self):
         for attr, value in self.__dict__.iteritems():
             yield attr, value
@@ -688,6 +691,8 @@ class TemplateOptionsUVWGMulti(TemplateOptions):
         self._zunits         = False
         self._zvalue         = False
 
+        self.typeName = "TemplateOptionsUVWGMulti"
+
 class TemplateOptionsUVWGDUDMulti(TemplateOptions):
     """
     Template Options Object for multiple plots on a page.
@@ -746,6 +751,8 @@ class TemplateOptionsUVWGDUDMulti(TemplateOptions):
         self._zname          = False
         self._zunits         = False
         self._zvalue         = False
+
+        self.typeName = "TemplateOptionsUVWGDUDMulti"
 
 class TemplateOptionsUVWGMultiScatter(TemplateOptions):
     """
@@ -806,6 +813,8 @@ class TemplateOptionsUVWGMultiScatter(TemplateOptions):
         self._zunits         = False
         self._zvalue         = False
 
+        self.typeName = "TemplateOptionsUVWGMultiScatter"
+
 class TemplateOptionsUVWGDUDMultiScatter(TemplateOptions):
     """
     Template Options Object for multiple plots on a page.
@@ -865,6 +874,8 @@ class TemplateOptionsUVWGDUDMultiScatter(TemplateOptions):
         self._zunits         = False
         self._zvalue         = False
 
+        self.typeName = "TemplateOptionsUVWGDUDMultiScatter"
+
 class TemplateOptionsUVWG1DMulti(TemplateOptions):
     """
     Template Options Object for multiple plots on a page.
@@ -876,53 +887,55 @@ class TemplateOptionsUVWG1DMulti(TemplateOptions):
         self._box2           = False
         self._box3           = False
         self._box4           = False
-        self._comment1       = True
+        self._comment1       = False
         self._comment2       = False
         self._comment3       = False
         self._comment4       = False
         self._crdate         = False            
         self._crtime         = False
         self._data           = True
-        self._dataname       = False
+        self._dataname       = True
         self._file           = False
         self._function       = False
         self._legend         = True
         self._line1          = False
         self._line2          = False
-        self._line3          = False
-        self._line4          = False
-        self._logicalmask    = False
+        self._line3          = True
+        self._line4          = True
+        self._logicalmask    = True
         self._mean           = False
         self._min            = False
         self._max            = False
-        self._source         = False
-        self._title          = False
+        self._source         = False  # Still need to decide this one
+        self._title          = True
         self._tname          = False
         self._transformation = False   
         self._tunits         = False
-        self._tvalue         = False
-        self._units          = False
+        self._tvalue         = True
+        self._units          = True
         self._xlabel1        = True
         self._xlabel2        = False
         self._xmintic1       = True
         self._xmintic2       = False
         self._xname          = True
         self._xtic1          = True
-        self._xtic2          = True
-        self._xunits         = False
-        self._xvalue         = False
+        self._xtic2          = False
+        self._xunits         = True
+        self._xvalue         = True
         self._ylabel1        = True
         self._ylabel2        = False
-        self._ymintic1       = False
+        self._ymintic1       = True
         self._ymintic2       = False
-        self._yname          = False
+        self._yname          = True
         self._ytic1          = True
-        self._ytic2          = True
-        self._yunits         = False
-        self._yvalue         = False
+        self._ytic2          = False
+        self._yunits         = True
+        self._yvalue         = True
         self._zname          = False
         self._zunits         = False
         self._zvalue         = False
+
+        self.typeName = "TemplateOptionsUVWG1DMulti"
 
 class TemplateOptionsUVWG1DDUDMulti(TemplateOptions):
     """
@@ -945,7 +958,7 @@ class TemplateOptionsUVWG1DDUDMulti(TemplateOptions):
         self._dataname       = False
         self._file           = False
         self._function       = False
-        self._legend         = False
+        self._legend         = True
         self._line1          = False
         self._line2          = False
         self._line3          = False
@@ -982,6 +995,69 @@ class TemplateOptionsUVWG1DDUDMulti(TemplateOptions):
         self._zname          = False
         self._zunits         = False
         self._zvalue         = False
+
+        self.typeName = "TemplateOptionsUVWG1DDUDMulti"
+
+class TemplateOptionsUVWGMulti_New(TemplateOptions):
+    """
+    Template Options Object for multiple plots on a page.
+    This object is used for plots of all types.
+    """
+    def __init__(self):
+        TemplateOptions.__init__(self)
+        self._box1           = True
+        self._box2           = False
+        self._box3           = False
+        self._box4           = False
+        self._comment1       = False
+        self._comment2       = False
+        self._comment3       = False
+        self._comment4       = False
+        self._crdate         = False            
+        self._crtime         = False
+        self._data           = True
+        self._dataname       = True
+        self._file           = False
+        self._function       = False
+        self._legend         = True
+        self._line1          = False
+        self._line2          = False
+        self._line3          = True
+        self._line4          = True
+        self._logicalmask    = True
+        self._mean           = True
+        self._min            = True
+        self._max            = True
+        self._source         = False  # Still need to decide this one
+        self._title          = True
+        self._tname          = False
+        self._transformation = False   
+        self._tunits         = False
+        self._tvalue         = True
+        self._units          = True
+        self._xlabel1        = True
+        self._xlabel2        = False
+        self._xmintic1       = True
+        self._xmintic2       = False
+        self._xname          = True
+        self._xtic1          = True
+        self._xtic2          = False
+        self._xunits         = True
+        self._xvalue         = True
+        self._ylabel1        = True
+        self._ylabel2        = False
+        self._ymintic1       = True
+        self._ymintic2       = False
+        self._yname          = True
+        self._ytic1          = True
+        self._ytic2          = False
+        self._yunits         = True
+        self._yvalue         = True
+        self._zname          = True
+        self._zunits         = True
+        self._zvalue         = True
+
+        self.typeName = "TemplateOptionsUVWGMulti_New"
 
 class TemplateOptionsUVWG(TemplateOptions):
     """
@@ -1041,6 +1117,8 @@ class TemplateOptionsUVWG(TemplateOptions):
         self._zname          = False
         self._zunits         = False
         self._zvalue         = False
+
+        self.typeName = "TemplateOptionsUVWG"
         
 def setTemplateOptions(template, templateOptions):
     """
