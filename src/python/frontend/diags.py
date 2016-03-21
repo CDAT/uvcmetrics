@@ -62,15 +62,22 @@ def setManualColormap(canvas=None, level=0):
         15:(57.65,43.92,85.88),
         16:(84.31,52.55,93.33)}
 
-    step = 240.0/float(level);
-    currStep = 239;  # max number of levels in a colormap
+    step = 256.0/float(level);
+    currStep = 255;  # max number of levels in a colormap
 
     for i in range(17):  # 17 entries in dataColor
         for j in range(int(step)):
+            #if round(currStep)-j <= 0:
+            if currStep-j < 0:
+                return
             canvas.setcolorcell(currStep-j, dataColor[i][0], dataColor[i][1], dataColor[i][2])
+            #canvas.setcolorcell(round(currStep)-j, dataColor[i][0], dataColor[i][1], dataColor[i][2])
+        #currStep = float(currStep) - step       
         currStep -= int(step)
-
-                            
+    canvas.setcolorcell(1, 0.0, 0.0, 0.0)
+    canvas.setcolorcell(0, 100.0, 100.0, 100.0)
+    
+                                
 def setnum( setname ):
     """extracts the plot set number from the full plot set name, and returns the number.
     The plot set name should begin with the set number, e.g.
@@ -697,19 +704,22 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                         tm.legend.priority = 0
 
                     if vcs.isisofill(rsr.presentation):
-                        setManualColormap(vcanvas2, level=17)
-                        
-                    for i in range(len(var.getAxisIds())):
-                        if var.getAxis(i).isCircular():
-                            # We re-configure the colormap for the difference.
-                            if fname.find('-diff') > 0:
-                                setManualColormap(vcanvas2, level=17)  
-                            else:
-                                # New proposed colormap for polar plots
-                                setManualColormap(vcanvas2, level=17)
+                        vcanvas2.setcolormap("categorical")
+                    else:
+                        vcanvas2.setcolormap("rainbow")                        
+
+                    # Polar Plots:
+                    # for i in range(len(var.getAxisIds())):
+                    #     if var.getAxis(i).isCircular():
+                    #         # We re-configure the colormap for the difference.
+                    #         if fname.find('-diff') > 0:
+                    #             setManualColormap(vcanvas2, level=17)  
+                    #         else:
+                    #             # New proposed colormap for polar plots
+                    #             setManualColormap(vcanvas2, level=17)
                                 
                     # Single plot
-                    plot.vcs_plot(vcanvas, var, rsr.presentation, tm, bg=1,
+                    plot.vcs_plot(vcanvas, var, rsr.presentation, tm, bg=1, title=title,
                                   units=getattr(var, 'units', ''),  yunits=yUnit, yname=yUnit)
                     savePNG = True
                     try:
@@ -728,21 +738,29 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                             print "Axis 0: ", var.getAxis(0)
 
                             if vcs.isisofill(rsr.presentation):
-                                setManualColormap(vcanvas2, level=17)
+                                vcanvas2.setcolormap("categorical")
+                            else:
+                                vcanvas2.setcolormap("rainbow")
+                            
+                            if vcs.isisofill(rsr.presentation):
+                                if title.find(')-(') > 0:
+                                    setManualColormap(vcanvas2, level=17)
+                                else:
+                                    vcanvas2.setcolormap("categorical")
                             
                             # Let's change the colormap of polar maps.
-                            for i in range(len(var.getAxisIds())):
-                                if var.getAxis(i).isCircular():                                    
-                                    # We re-configure the colormap for the difference.
-                                    if fname.find('-diff') > 0:
-                                        setManualColormap(vcanvas2, level=17)                                        
-                                    else:
-                                        # New proposed colormap for polar plots
-                                        setManualColormap(vcanvas2, level=17)
-                                    if adjustedScaleCircularPlot:
-                                        dy = (tm2.data.y2-tm2.data.y1) * 0.095
-                                        tm2.data.y2 -= dy
-                                        #tm2.data.y1 += dy/2.0 
+                            # for i in range(len(var.getAxisIds())):
+                            #     if var.getAxis(i).isCircular():                                    
+                            #         # We re-configure the colormap for the difference.
+                            #         if fname.find('-diff') > 0:
+                            #             setManualColormap(vcanvas2, level=17)                                        
+                            #         else:
+                            #             # New proposed colormap for polar plots
+                            #             setManualColormap(vcanvas2, level=17)
+                            #         if adjustedScaleCircularPlot:
+                            #             dy = (tm2.data.y2-tm2.data.y1) * 0.095
+                            #             tm2.data.y2 -= dy
+                            #             #tm2.data.y1 += dy/2.0 
                                         
                             
                             yUnit = ''                     
@@ -769,7 +787,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                                     tm2.yunits.priority = 1
                                  
                             # Multiple plots on a page:
-                            plot.vcs_plot( vcanvas2, var, rsr.presentation, tm2, bg=1,
+                            plot.vcs_plot( vcanvas2, var, rsr.presentation, tm2, bg=1, title=title,
                                            units=getattr(var, 'units', ''),
                                            yunits=text_ytitle, yname=text_ytitle,
                                            compoundplot=onPage )                            
