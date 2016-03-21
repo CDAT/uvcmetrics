@@ -27,7 +27,7 @@ diags --outputdir ~/tmp/diagout/ --model path=~/metrics_data/cam35_data/,climos=
 echo "set 12"
 diags --outputdir ~/tmp/diagout/ --model path=~/metrics_data/fe11/,climos=yes --obs path=/Users/painter1/metrics_data/obs_data_5.6/,filter="f_startswith('RAOBS')",climos=yes --package AMWG --set 12 --vars T --varopts SanFrancisco_CA
 echo "set 13"
-mkdir ~/tmp/diagout/13
+mkdir -p ~/tmp/diagout/13
 diags --outputdir ~/tmp/diagout/13 --model path=~/metrics_data/cam35_data/,climos=yes --obs path=~/metrics_data/obs_data_5.6/,filter='f_startswith("ISCCPCOSP")' --package AMWG --set 13 --seasons ANN --vars CLISCCP
 echo "set 14"
 diags.py --model path=~/metrics_data/ccsm35_data/,filter='f_startswith("ccsm")',climos=yes --model path=~/metrics_data/cam35_data/,climos=yes --obs path=~/metrics_data/obs_data_5.6/,filter='f_startswith("NCEP")',climos=yes --outputdir ~/tmp/diagout/ --package AMWG --sets 14 --seasons JAN --vars T Z3 --varopts "200 mbar"
@@ -38,12 +38,12 @@ diags.py --model path=~/metrics_data/cam35_data/,climos=yes --obs path=~/metrics
 # Note that the next test uses a special dataset.  At PCMDI you can get it by
 #  sudo mount saigon2:/A-Train_data /A-Train_data
 echo "cloud variables in set 5"
-mkdir ~/tmp/diagout/cosp
+mkdir -p ~/tmp/diagout/cosp
 diags --outputdir ~/tmp/diagout/cosp --model path=/A-Train_data/integration_cosp_cam/amip10yr,filter="f_startswith('cam5_2deg_release_amip.cam2.h0.2005')",climos=no --obs path=~/metrics_data/obs_data_5.6/,filter="f_startswith('CALIPSOCOSP')",climos=yes --package AMWG --sets 5 --seasons ANN --vars CLDTOT_CAL CLDHGH_CAL
 diags --outputdir ~/tmp/diagout/cosp --model path=/A-Train_data/integration_cosp_cam/amip10yr,filter="f_startswith('cam5_2deg')",climos=no --obs path=~/metrics_data/obs_data_5.6/,filter="f_startswith('MODISCOSP')",climos=yes --package AMWG --sets  5 --seasons ANN --vars CLDHGH_TAU1.3_MODIS
 
 echo "Land.  I don't have suitable obs data."
-mkdir ~/tmp/diagout/land
+mkdir -p ~/tmp/diagout/land
 diags --outputdir ~/tmp/diagout/ --model path=~/metrics_data/smaller_testdata/acme_hires_land,climos=no --outputdir ~/tmp/diagout/land --package LMWG --set 1 --vars RAIN
 echo "set 2, only does model data for LHEAT"
 diags --outputdir ~/tmp/diagout/ --model path=~/metrics_data/acme_clm_climo,climos=yes --outputdir ~/tmp/diagout/land --package LMWG --set 2 --vars LHEAT
