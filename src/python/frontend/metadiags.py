@@ -66,11 +66,19 @@ def makeTables(collnum, model_dict, obspath, outpath, pname, outlog):
    cf0 = 'yes' #climo flag
    cf1 = 'yes'
    raw0 = model_dict[model_dict.keys()[0]]['raw']
+   if raw0 != None:
+      ps0 = "--model path=%s,climos='no'" % raw0.root_dir()
    climo0 = model_dict[model_dict.keys()[0]]['climos']
+   if climo0 != None:
+      ps0 = "--model path=%s,climos='yes'" % climo0.root_dir()
    name0 = model_dict[model_dict.keys()[0]].get('name', 'ft0')
    if num_models == 2:
       raw1 = model_dict[model_dict.keys()[1]]['raw']
+      if raw1 != None:
+         ps1 = "--model path=%s,climos='no'" % raw1.root_dir()
       climo1 = model_dict[model_dict.keys()[1]]['climos']
+      if climo1 != None:
+         ps1 = "--model path=%s,climos='yes'" % climo1.root_dir()
       name1 = model_dict[model_dict.keys()[1]].get('name', 'ft1')
 
 
@@ -128,7 +136,7 @@ def makeTables(collnum, model_dict, obspath, outpath, pname, outlog):
             if num_models == 2 and ft1 != None:
                ps1 = '--model path=%s,climos=%s' % (ft1.root_dir(), cf1)
                
-         vstr = v
+         vstr = '--vars ' % v 
          if diags_collection[collnum][v].get('varopts', False) != False:
             aux = diags_collection[collnum][v]['varopts']
 
@@ -148,7 +156,7 @@ def makeTables(collnum, model_dict, obspath, outpath, pname, outlog):
             else:
                auxstr = '--varopts '+a
 
-            cmdline = 'diags.py %s %s %s --table --set %s --prefix set%s --package %s --vars %s %s %s %s --outputdir %s' % (path0str, path1str, obsstr, collnum, collnum, package, vstr, seasonstr, regionstr, auxstr, outpath)
+            cmdline = 'diags.py %s %s %s --table --set %s --prefix set%s --package %s %s %s %s %s --outputdir %s' % (path0str, path1str, obsstr, collnum, collnum, package, vstr, seasonstr, regionstr, auxstr, outpath)
             runcmdline(cmdline, outlog)
          
 def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
@@ -397,7 +405,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
                      print 'DONTRUN: ', cmdline
             else: # different executable; just pass all option key:values as command line options.
                # Look for a cmdline list in the options for this variable.
-               execstr = def_executable # if we've gotten this far, we are just using diags scripts.
+               execstr = diags_collection[collnum].get('exec', def_executable) # should probably NOT be def_executable....
                cmdlineOpts = diags_collection[collnum][v].get('cmdline', False)
                fnamebase = 'set'+collnum
                if cmdlineOpts != False:
@@ -414,11 +422,17 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
                      execstr = execstr+' --fieldname '+ v
                   if 'diagname' in cmdlineOpts:
                      if name0 == None:
-                        execstr = execstr+' --diagname '+ dsname
+                        if dsname == None:
+                           execstr = execstr+' --diagname TEST'
+                        else:
+                           execstr = execstr+' --diagname '+ dsname
                      else:
                         execstr = execstr+' --diagname '+ name0
                   if 'casename' in cmdlineOpts:
-                     execstr = execstr+' --casename '+ dsname
+                     if dsname == None:
+                        execstr = execstr+' --casename TESTCASE'
+                     else:
+                        execstr = execstr+' --casename '+ dsname
                   if 'figurebase' in cmdlineOpts:
                      execstr = execstr+' --figurebase '+ fnamebase
 

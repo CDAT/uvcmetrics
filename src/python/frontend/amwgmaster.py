@@ -20,13 +20,14 @@ from metrics.frontend.defines import *
 # These are special "variables" that we need to skip over when iterating over real variables. 
 # They are usually flags or parameters for the entire collection.
 # Make sure no actual variables have these names, but that shouldn't be a problem.
-collection_special_vars = ['desc', 'preamble', 'regions', 'seasons', 'package', 'options', 'combined', 'imagesonly', 'tables', 'mixed_plots', 'parallel']
+collection_special_vars = ['desc', 'preamble', 'regions', 'seasons', 'package', 'options', 'combined', 'imagesonly', 'tables', 'mixed_plots', 'parallel', 'exec']
 
 #### NEW TIER1B Additions ####
 
 #### NEEDS Better name/description
 diags_collection['tier1b_wind'] = {}
 diags_collection['tier1b_wind']['desc'] = 'Tier1b External Diagnostics - Wind'
+diags_collection['tier1b_wind']['exec'] = 'u850.tcsh'
 diags_collection['tier1b_wind']['package'] = 'AMWG'
 diags_collection['tier1b_wind']['mixed_plots'] = True
 diags_collection['tier1b_wind']['options'] = {'logo':'no'}
@@ -36,6 +37,7 @@ diags_collection['tier1b_wind']['U850'] = {'plottype':'NA', 'cmdline':['obsfilte
 #### NEEDS Better name/description
 diags_collection['tier1b_prect'] = {}
 diags_collection['tier1b_prect']['desc'] = 'Tier1b External Diagnostics - Precipitation'
+diags_collection['tier1b_prect']['exec'] = 'gev.tcsh'
 diags_collection['tier1b_prect']['package'] = 'AMWG'
 diags_collection['tier1b_prect']['mixed_plots'] = True
 diags_collection['tier1b_prect']['options'] = {'logo':'no'}
