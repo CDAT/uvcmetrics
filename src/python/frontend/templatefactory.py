@@ -242,7 +242,7 @@ def build_templates(canvas=None, graphicMethodStrings=None, overlay=None, rows=1
          while tt.yname.x < 0.0015:
              Mt.margins.left *= 1.05
              tt = Mt.get(row=0, column=0, legend='local', font=False)
-             print "yname x = ",tt.yname.x
+             #print "yname x = ",tt.yname.x
              
          M.margins = Mt.margins 
          M.spacing = Mt.spacing
