@@ -577,11 +577,6 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                         tm.xname.priority = 0
                         tm.yname.priority = 0
                         tm.legend.priority = 0
-
-                        print "Yxvsx variable:"
-                        pprint(vars(var))
-                        print var.getAxisList()
-
                         
                         vcanvas.plot(var, 
                                      rsr_presentation, tm, bg=1, title=title,
@@ -640,29 +635,30 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                                 tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)])
                                 #tm2.xname.list()
                                 
-                            print "\n\nPlotting 3\n"                            
-                            
-                            #if yvar.getAxis(0).id == '':
-                            yvar.getAxis(0).id = 'SWCF'
-                            yvar.id = 'SWCF'
-                            yvar.name = 'SWCF'
-                            xvar.getAxis(0).id = 'LWCF'
-                            xvar.id = 'LWCF'
-                            xvar.name = 'LWCF'
-                            
-                            #xvar.getAxis(0).id = 'SWCF'
-
-                            print "Scatter variable x:"
-                            pprint(vars(xvar))
-                            print xvar.getAxisList()
-                            print "Scatter variable y:"
-                            pprint(vars(yvar))  
-                            print yvar.getAxisList()
+                            print "\n\nPlotting 3\n"
                             
                             tm.xname.priority = 1
                             tm.yname.priority = 1
                             tm.ylabel1.priority = 1
                             tm.xlabel1.priority = 1
+                            
+                            # Set Y label for set 11 of plots:
+                            set11Found = False
+                            if hasattr(rsr, 'axax'):
+                                for k in rsr.axax.keys():
+                                    if k.count('SWCF'):
+                                        yLabel = vcs.createtext(Tt_source=tm.yname.texttable,
+                                                                To_source=tm.yname.textorientation)
+                                        yLabel.x = tm.yname.x
+                                        yLabel.y = tm.yname.y
+                                        yLabel.string = ["SWCF"]
+                                        vcanvas.plot(yLabel, bg=1)
+                                        set11Found = True
+                                        break
+                            if set11Found:
+                                xvar.getAxis(0).id = 'LWCF'
+                                xvar.id = 'LWCF'
+                                xvar.name = 'LWCF'
                             
                             # Scatter part from the single plots in set 11
                             vcanvas.plot(xvar, yvar, 
@@ -685,6 +681,18 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                                 tm2.ylabel1.priority = 1
                                 tm2.xlabel1.priority = 1
 
+                                # Set Y label for set 11 of plots:
+                                if hasattr(rsr, 'axax'):
+                                    for k in rsr.axax.keys():
+                                        if k.count('SWCF'):
+                                            yLabel = vcs.createtext(Tt_source=tm2.yname.texttable,
+                                                                    To_source=tm2.yname.textorientation)
+                                            yLabel.x = tm2.yname.x
+                                            yLabel.y = tm2.yname.y
+                                            yLabel.string = ["SWCF"]
+                                            vcanvas2.plot(yLabel, bg=1)
+                                            break                                         
+                                
                                 # This is the scatter plots from the multiplot
                                 vcanvas2.plot(xvar, yvar,
                                               rsr_presentation, tm2, bg=1, title=title,
@@ -764,7 +772,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                             var.getAxis(0).id = 'Latitude'
 
                     # Fix Units for Set 3 plots.
-                    if rsr.title.count('set3') > 0:
+                    if rsr.title.count('set3'):
                         if (getattr(var, 'units', '') == ''):
                             var.units = 'K'
                         if var.getAxis(0).id.count('lat'):
@@ -793,7 +801,24 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                     #             # New proposed colormap for polar plots
                     #             setManualColormap(vcanvas2, level=17)
                                 
-                    # Single plot
+                    
+                    # Set Y label for set 2 of plots:
+                    if (rsr.title.count('HEAT_TRANSPORT')):
+                        yLabel = vcs.createtext(Tt_source=tm.yname.texttable, To_source=tm.yname.textorientation)
+                        yLabel.x = tm.yname.x
+                        yLabel.y = tm.yname.y
+                        yLabel.string = ["Heat Transport"]
+                        vcanvas.plot(yLabel, bg=1)
+
+                    # Set Y label for set 3 of plots:
+                    if rsr.title.count('set3'):
+                        yLabel = vcs.createtext(Tt_source=tm.yname.texttable, To_source=tm.yname.textorientation)
+                        yLabel.x = tm.yname.x
+                        yLabel.y = tm.yname.y
+                        yLabel.string = ["Temperature"]
+                        vcanvas.plot(yLabel, bg=1)
+                        
+                    # Single plot    
                     plot.vcs_plot(vcanvas, var, rsr.presentation, tm, bg=1, title=title,
                                   units=getattr(var, 'units', ''))
                     savePNG = True
@@ -850,9 +875,26 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
 
                             if vcs.isboxfill(rsr.presentation):
                                 vcanvas2.landscape()
-                                    
-                            # Multiple plots on a page:
-                            
+
+                            # Set Y label for set 2 of plots:
+                            if (rsr.title.count('HEAT_TRANSPORT')):
+                                yLabel = vcs.createtext(Tt_source=tm2.yname.texttable,
+                                                        To_source=tm2.yname.textorientation)
+                                yLabel.x = tm2.yname.x
+                                yLabel.y = tm2.yname.y
+                                yLabel.string = ["Heat Transport"]
+                                vcanvas2.plot(yLabel, bg=1)
+
+                            # Set Y label for set 3 of plots:
+                            if rsr.title.count('set3'):
+                                yLabel = vcs.createtext(Tt_source=tm2.yname.texttable,
+                                                        To_source=tm2.yname.textorientation)
+                                yLabel.x = tm2.yname.x
+                                yLabel.y = tm2.yname.y
+                                yLabel.string = ["Temperature"]
+                                vcanvas2.plot(yLabel, bg=1)
+                                
+                            # Multiple plots on a page:                            
                             plot.vcs_plot( vcanvas2, var, rsr.presentation, tm2, bg=1, title=title,
                                            units=getattr(var, 'units', ''), compoundplot=onPage )
 
