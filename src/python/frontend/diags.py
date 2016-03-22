@@ -567,13 +567,26 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                         if hasattr(plot, 'replaceIds'):
                             var = plot.replaceIds(var)
                         tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)] )
+
                     if len(rsr.vars) == 1:
                         #scatter plot for plot set 12
                         subtitle = title
                         print "\n\nPlotting 1\n"
+
+                        # Yxvsx plot from scatter.
+                        tm.xname.priority = 0
+                        tm.yname.priority = 0
+                        tm.legend.priority = 0
+
+                        print "Yxvsx variable:"
+                        pprint(vars(var))
+                        print var.getAxisList()
+
+                        
                         vcanvas.plot(var, 
                                      rsr_presentation, tm, bg=1, title=title,
-                                     units='', source=rsr.source )
+                                     source=rsr.source)
+                                     #units='', source=rsr.source )
                         savePNG = False    
                         #plot the multibox plot
                         try:
@@ -581,14 +594,21 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                                 if hasattr(plot, 'compositeTitle'):
                                     title = plot.compositeTitle
                                 print "\n\nPlotting 2\n"
+                                
+                                tm2.legend.priority = 0
+                                tm2.xname.priority = 0
+                                tm2.yname.priority = 0
+                                # This is the Yxvsx plots from the multiplot
                                 vcanvas2.plot(var,
-                                              rsr_presentation, tm2, bg=1, title=title, 
-                                              units='', source=subtitle )
+                                              rsr_presentation, tm2, bg=1, title=title,
+                                              source=subtitle)
+                                              #units='', source=subtitle )
                                 plotcv2 = True
                                 savePNG = True
                         except vcs.error.vcsError as e:
                             print "ERROR making summary plot:",e
-                            savePNG = True                                              
+                            savePNG = True
+                            
                     elif len(rsr.vars) == 2:
                         if varIndex == 0:
                             #first pass through just save the array                                              
@@ -615,14 +635,40 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                                 tm2.line1.priority = 1                                                   
                                 #tm.line1.list()
                             if hasattr(plot, 'customizeTemplates'):
-                                tm2.xname.list()
+                                #tm2.xname.list()
                                 print "\n\nCustomizing templates\n"
                                 tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)])
-                                tm2.xname.list()
-                            print "\n\nPlotting 3\n"
+                                #tm2.xname.list()
+                                
+                            print "\n\nPlotting 3\n"                            
+                            
+                            #if yvar.getAxis(0).id == '':
+                            yvar.getAxis(0).id = 'SWCF'
+                            yvar.id = 'SWCF'
+                            yvar.name = 'SWCF'
+                            xvar.getAxis(0).id = 'LWCF'
+                            xvar.id = 'LWCF'
+                            xvar.name = 'LWCF'
+                            
+                            #xvar.getAxis(0).id = 'SWCF'
+
+                            print "Scatter variable x:"
+                            pprint(vars(xvar))
+                            print xvar.getAxisList()
+                            print "Scatter variable y:"
+                            pprint(vars(yvar))  
+                            print yvar.getAxisList()
+                            
+                            tm.xname.priority = 1
+                            tm.yname.priority = 1
+                            tm.ylabel1.priority = 1
+                            tm.xlabel1.priority = 1
+                            
+                            # Scatter part from the single plots in set 11
                             vcanvas.plot(xvar, yvar, 
                                          rsr_presentation, tm, bg=1, title=title,
-                                         units='', source=rsr.source ) 
+                                         source=rsr.source ) 
+                                         #units='', source=rsr.source ) 
                             
                         #plot the multibox plot
                         try:
@@ -633,9 +679,17 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                                     title = plot.compositeTitle
                                     
                                 print "\n\nPlotting 4\n"
+                                
+                                tm2.yname.priority =1
+                                tm2.xname.priority =1
+                                tm2.ylabel1.priority = 1
+                                tm2.xlabel1.priority = 1
+
+                                # This is the scatter plots from the multiplot
                                 vcanvas2.plot(xvar, yvar,
-                                              rsr_presentation, tm2, bg=1, title=title, 
-                                              units='', source=subtitle)
+                                              rsr_presentation, tm2, bg=1, title=title,
+                                              source=subtitle)
+                                              #units='', source=subtitle)
                                 plotcv2 = True
                                 #tm2.units.list()
                                 if varIndex+1 == len(rsr.vars):
@@ -700,19 +754,34 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                     #               units=getattr(var, 'units', ''), source=rsr.source)
                     # # vcanvas3.clear()
                     # # vcanvas3.plot(var, rsr.presentation )
-
-                    yUnit = ''
-                    if len(var.getAxisIds()) < 2:
-                        yUnit = getattr(var, 'units', '')                
-
+                                                               
                     # Removing legend from yxvsx plots
                     if vcs.isyxvsx(rsr.presentation):                    
                         tm.legend.priority = 0
+                        # Fix Units for Set 2 plots.
+                        if (getattr(var, 'units', '') == '') and (rsr.title.count('HEAT_TRANSPORT')):
+                            var.units = 'PW'
+                            var.getAxis(0).id = 'Latitude'
 
+                    # Fix Units for Set 3 plots.
+                    if rsr.title.count('set3') > 0:
+                        if (getattr(var, 'units', '') == ''):
+                            var.units = 'K'
+                        if var.getAxis(0).id.count('lat'):
+                            var.getAxis(0).id = 'Latitude'
+
+                    print "===== var ===="
+                    pprint(vars(var))
+
+                    print "\n~~~~~~ RSR ~~~~~~"
+                    pprint(vars(rsr))
+                    
+                    # Changing colormap for isofill plots
                     if vcs.isisofill(rsr.presentation):
                         vcanvas.setcolormap("categorical")
                     else:
-                        vcanvas.setcolormap("rainbow")                        
+                        vcanvas.setcolormap('bl_to_darkred')
+                        #vcanvas.setcolormap("rainbow")                        
 
                     # Polar Plots:
                     # for i in range(len(var.getAxisIds())):
@@ -726,7 +795,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                                 
                     # Single plot
                     plot.vcs_plot(vcanvas, var, rsr.presentation, tm, bg=1, title=title,
-                                  units=getattr(var, 'units', ''),  yunits=yUnit, yname=yUnit)
+                                  units=getattr(var, 'units', ''))
                     savePNG = True
 
                     # Multi-plot
@@ -738,17 +807,14 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                             # plot.vcs_plot( vcanvas2, var, rsr.presentation, tm2, bg=1,
                             #    title=title, units=getattr(var, 'units', ''), 
                             #    source = rsr.source, compoundplot=onPage )                            
-                            from pprint import pprint
-                            print "Presentation = ", rsr.presentation
-                            print "Units = ", getattr(var, 'units', '')                     
-                            pprint(vars(var))
-                            print "Axis Ids: ", var.getAxisIds()
-                            print "Axis 0: ", var.getAxis(0)
 
+                            # Fix colormap for isofill plots.
                             if vcs.isisofill(rsr.presentation):
                                 vcanvas2.setcolormap("categorical")
                             else:
-                                vcanvas2.setcolormap("rainbow")
+                                vcanvas2.setcolormap('bl_to_darkred')
+                                #vcanvas2.setcolormap("rainbow")
+                                
                             # Pre-defined colormaps:
                             # ['AMIP', 'NCAR', 'bl_to_darkred', 'bl_to_drkorang', 'blends',
                             # 'blue_to_grey', 'blue_to_grn', 'blue_to_orange', 'blue_to_orgred',
@@ -776,40 +842,22 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                             #             dy = (tm2.data.y2-tm2.data.y1) * 0.095
                             #             tm2.data.y2 -= dy
                             #             #tm2.data.y1 += dy/2.0 
-                                        
-                            
-                            yUnit = ''                     
-                            if len(var.getAxisIds()) < 2:
-                                yUnit = getattr(var, 'units', '')
-                         
-                            print "Y unit is: ", yUnit
 
-                            text_ytitle = None
+
                             # Removing legend from yxvsx plots
                             if vcs.isyxvsx(rsr.presentation):                    
-                                tm2.legend.priority = 0
-                                if fname.find('-diff') > 0:
-                                    yUnit = 'Difference'
-                                    text_ytitle = vcanvas2.createtext('ytitle',
-                                                                      'default',
-                                                                      'ytitle_textorient',
-                                                                      'defcentup')
-                                    
-                                    #text_ytitle.font = titles_font
-                                    #text_ytitle.height = xytitle_fontht
-                                    text_ytitle.string = yUnit
-                                    tm2.yname.priority = 1
-                                    tm2.yunits.priority = 1
+                                tm2.legend.priority = 0                             
 
                             if vcs.isboxfill(rsr.presentation):
                                 vcanvas2.landscape()
                                     
                             # Multiple plots on a page:
+                            
                             plot.vcs_plot( vcanvas2, var, rsr.presentation, tm2, bg=1, title=title,
-                                           units=getattr(var, 'units', ''),
-                                           yunits=text_ytitle, yname=text_ytitle,
-                                           compoundplot=onPage )                            
+                                           units=getattr(var, 'units', ''), compoundplot=onPage )
+
                             plotcv2 = True
+                            
                     except vcs.error.vcsError as e:
                         print "ERROR making summary plot:",e
                 if var_id_save is not None:
@@ -819,6 +867,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                         for i in range(len(var_id_save)):
                             var[i].id = var_id_save[i]
                 if savePNG:
+                    print "\n====> Saving file: ",fname
                     vcanvas.png( fname, ignore_alpha=True, metadata=provenance_dict() )
 
         if tmmobs[0] is not None:  # If anything was plotted to vcanvas2
