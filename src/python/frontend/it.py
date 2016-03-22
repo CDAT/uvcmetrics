@@ -53,7 +53,7 @@ def return_templates_graphic_methods(canvas1=None, gms=None, ovly=None, onPage=N
             templateOptionsArray.append(ttt)
             templateNameArray.append('uvwg_' + (str(random.random())[2:]))
             
-            ttest = TemplateOptionsUVWG1DMulti()
+            ttest = TemplateOptionsUVWGMulti_New() #TemplateOptionsUVWG1DMulti()
             #ttest.title = False
             graphicMethodObjects, templates = build_templates(canvas1, [gms[i]], [ovly[i]], 1, 1,
                                                               ttest,
@@ -66,7 +66,7 @@ def return_templates_graphic_methods(canvas1=None, gms=None, ovly=None, onPage=N
             gmobs.append(graphicMethodObjects[0])                  
 
             if ovly[i] == 1:  # overlay plot use DUD - only plot the data
-               setTemplateOptions(templates[0], TemplateOptionsUVWG1DDUDMulti())
+               setTemplateOptions(templates[0], TemplateOptionsUVWG1DDUDMulti())               
 
             tmobs.append(templates[0])
 
@@ -77,20 +77,22 @@ def return_templates_graphic_methods(canvas1=None, gms=None, ovly=None, onPage=N
             templateNameArray    = []
 
             templateOptionsArray.append(TemplateOptionsUVWGMultiScatter())
+            #templateOptionsArray.append(TemplateOptionsUVWGMulti_New())
             templateNameArray.append('uvwg_' + (str(random.random())[2:]))
             
             graphicMethodObjects, templates = build_templates(canvas1, [gms[i]], [ovly[i]], 1, 1,
-                                                              TemplateOptionsUVWGMultiScatter(),
+                                                              TemplateOptionsUVWGMulti_New(),
+                                                              #TemplateOptionsUVWGMultiScatter(),
                                                               templateOptionsArray,
                                                               templateNameArray,
                                                               disableLegend=disLegend)
             
             gmobs.append(graphicMethodObjects[0])                  
                   
-            for t in range(len(templates)):
-               if ovly[i] == 1:  # overlay plot use DUD - only plot the data
-                  setTemplateOptions(templates[t], TemplateOptionsUVWGDUDMultiScatter())
-               tmobs.append(templates[t])
+            if ovly[i] == 1:  # overlay plot use DUD - only plot the data
+               setTemplateOptions(templates[0], TemplateOptionsUVWGDUDMultiScatter())
+
+            tmobs.append(templates[0])
          
          elif (gms[i] in ['taylordiagram']):
             tgm = canvas1.createtaylordiagram('taylor_' + (str(random.random())[2:]), 'default')
@@ -158,6 +160,8 @@ def return_templates_graphic_methods(canvas1=None, gms=None, ovly=None, onPage=N
       print "-------------------------------"
       for gmss in gms:
          print "Graphic method: ", gmss
+      print "-------------------------------"
+      print "-------------------------------"
 
       # Multiple plots per page template generation:
       templateOptionsArray = []
@@ -171,16 +175,11 @@ def return_templates_graphic_methods(canvas1=None, gms=None, ovly=None, onPage=N
                #templateOptionsArray.append(TemplateOptionsUVWGMulti())
          elif (gms[i] in ['yxvsx']):            
             if ovly[i]:
-               #templateOptionsArray.append(TemplateOptionsUVWG1DDUDMulti())
-               ntt = TemplateOptionsUVWG1DMulti()
-               ntt.setAllFalse()
-               ntt.data = True
-               ntt.legend = True               
-               templateOptionsArray.append(ntt)
+               templateOptionsArray.append(TemplateOptionsUVWG1DDUDMulti())               
             else:
                templateOptionsArray.append(TemplateOptionsUVWG1DMulti())
          elif (gms[i] in ['scatter']):
-            if ovly[i]:
+            if ovly[i]:               
                templateOptionsArray.append(TemplateOptionsUVWGDUDMultiScatter())
             else:
                templateOptionsArray.append(TemplateOptionsUVWGMultiScatter())
