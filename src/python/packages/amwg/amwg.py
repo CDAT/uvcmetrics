@@ -2228,11 +2228,13 @@ class amwg_plot_set11(amwg_plot_spec):
         """Theis method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
         #pdb.set_trace()
-        tm2.yname.priority=0
-        tm2.xname.priority=0
+        tm2.yname.priority=1
+        tm2.xname.priority=1
+        tm1.yname.priority=1
+        tm1.xname.priority=1
         tm2.title.y=.98
 
-        ly = .96      
+        ly = 0.96      
         xpos = {'model':.15, 'obs':.6}  
         for key in self.ft_ids.keys():
             text = cnvs2.createtext()
