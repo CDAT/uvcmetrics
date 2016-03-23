@@ -170,12 +170,12 @@ def build_templates(canvas=None, graphicMethodStrings=None, overlay=None, rows=1
     if forceAspectRatio:        
         if dx > 2*dy:
             while calcdx(M, rows, columns) > 2*dy:
-                M.margins.left  *= 1.05
-                M.margins.right *= 1.05
+                M.margins.left  += 0.01
+                M.margins.right += 0.01
         elif 2*dy > dx:
             while 2*calcdy(M, rows, columns) > dx:
-                M.margins.top    *= 1.05
-                M.margins.bottom *= 1.05
+                M.margins.top    += 0.01
+                M.margins.bottom += 0.01
 
     # Adjusts margins and vertical spaces to
     # handle title-data or title-(out of box) problems
@@ -197,7 +197,7 @@ def build_templates(canvas=None, graphicMethodStrings=None, overlay=None, rows=1
             titleBelowY2 = title_height + templateBelow.title.y
                         
             while titleBelowY2 > templateAbove.xname.y:
-                Mt.spacing.vertical  *= 1.05
+                Mt.spacing.vertical  += 0.01
                 templateBelow         = Mt.get(row=1, column=0, legend='local', font=False)
                 templateAbove         = Mt.get(row=0, column=0, legend='local', font=False)
                 titleBelowY2          = title_height + templateBelow.title.y
@@ -205,8 +205,8 @@ def build_templates(canvas=None, graphicMethodStrings=None, overlay=None, rows=1
             # Avoiding titles out of bounds
             titleAboveY2 = title_height + templateAbove.title.y
             while titleAboveY2 > 1.0:
-                Mt.margins.top     *= 1.15
-                Mt.margins.bottom  *= 1.15
+                Mt.margins.top     += 0.01
+                Mt.margins.bottom  += 0.01
                 templateAbove       = Mt.get(row=0, column=0, legend='local')
                 titleAboveY2        = title_height + templateAbove.title.y
 
@@ -224,8 +224,8 @@ def build_templates(canvas=None, graphicMethodStrings=None, overlay=None, rows=1
 
             # Avoiding titles out of bounds
             while titley2 > 1.0:
-                Mt.margins.top    *= 1.25
-                Mt.margins.bottom *= 1.25
+                Mt.margins.top    += 0.01
+                Mt.margins.bottom += 0.01
                 tt      = Mt.get(row=0, column=0, legend='local')
                 titley2 = title_height * scaleFactor + tt.title.y
                            
@@ -248,8 +248,8 @@ def build_templates(canvas=None, graphicMethodStrings=None, overlay=None, rows=1
        
         # 0.004 was found by trying-error procedure
         while xnameY < 0.004:
-            Mt.margins.top    *= 1.01
-            Mt.margins.bottom *= 1.01
+            Mt.margins.top    += 0.01
+            Mt.margins.bottom += 0.01
             if rows > 1 :
                 tt = Mt.get(row=rows-1, column=0, legend='local')
             else:
@@ -278,7 +278,7 @@ def build_templates(canvas=None, graphicMethodStrings=None, overlay=None, rows=1
 
             # Avoiding overlay of xnames and data
             while  xnameY < (y2_row1 + 0.01*y2_row1):
-                Mt.spacing.vertical *= 1.01
+                Mt.spacing.vertical += 0.01
                 dy      = calcdy(Mt, rows, columns)
                 y1_row1 = calcy1(Mt, 1, dy, 0.0)
                 y2_row1 = calcy2(y1_row1, dy, 0.0)
@@ -296,8 +296,8 @@ def build_templates(canvas=None, graphicMethodStrings=None, overlay=None, rows=1
         ylabel1X = tt.ylabel1.x
         
         while ylabel1X < 0.0:
-            Mt.margins.left  *= 1.01
-            Mt.margins.right *= 1.01
+            Mt.margins.left  += 0.01
+            Mt.margins.right += 0.01
             tt       = Mt.get(row=0, column=0, legend='local')
             ylabel1X = tt.ylabel1.x
 
@@ -331,7 +331,7 @@ def build_templates(canvas=None, graphicMethodStrings=None, overlay=None, rows=1
          tt = Mt.get(row=0, column=0, legend='local', font=False)
 
          while tt.yname.x < 0.0015:
-             Mt.margins.left *= 1.15
+             Mt.margins.left += 0.05
              tt = Mt.get(row=0, column=0, legend='local', font=False)
              #print "yname x = ",tt.yname.x
              
@@ -357,7 +357,7 @@ def build_templates(canvas=None, graphicMethodStrings=None, overlay=None, rows=1
         ynamex = tt2.yname.x
 
         while ynamex < legendx2:
-            Mt.spacing.horizontal *= 0.05
+            Mt.spacing.horizontal += 0.01
             tt = Mt.get(row=0, column=0, legend='local')
             # takes legend changes in effect...
             delta = float(tt.data.x2 - tt.data.x1)
@@ -376,12 +376,10 @@ def build_templates(canvas=None, graphicMethodStrings=None, overlay=None, rows=1
     # Adjusts legend position
     if mainTemplateOptions.legend:
         Mt = EzTemplate.Multi(rows=rows, columns=columns, legend_direction=legendDirection)
-        Mt.legend.direction   = legendDirection
-        Mt.margins.top        = M.margins.top
-        Mt.margins.bottom     = M.margins.bottom
-        Mt.spacing.vertical   = M.spacing.vertical
-        Mt.spacing.horizontal = M.spacing.horizontal
-
+        Mt.legend.direction = legendDirection
+        Mt.margins          = M.margins
+        Mt.spacing          = M.spacing
+        
         tt = Mt.get(row=0, column=0, legend='local', font=False)
         # takes legend changes in effect...
         delta = float(tt.data.x2 - tt.data.x1)
@@ -391,8 +389,8 @@ def build_templates(canvas=None, graphicMethodStrings=None, overlay=None, rows=1
         legendx2 = posx2
 
         while legendx2 > 0.96:
-            Mt.margins.left  *= 1.085
-            Mt.margins.right *= 1.085
+            Mt.margins.left  += 0.02
+            Mt.margins.right += 0.02
             tt = Mt.get(row=0, column=0, legend='local', font=False)
             # takes legend changes in effect...
             delta = float(tt.data.x2 - tt.data.x1)
@@ -424,8 +422,8 @@ def build_templates(canvas=None, graphicMethodStrings=None, overlay=None, rows=1
         # 0.009 was found empirically
         if math.fabs(tt.mean.y - tt.data.y2) < 0.009:
             while math.fabs(tt.mean.y - tt.data.y2) < 0.009:
-                Mt.margins.top    *= 0.9
-                Mt.margins.bottom *= 0.9
+                Mt.margins.top    += 0.01
+                Mt.margins.bottom += 0.01
                 tt = Mt.get(row=0, column=0, legend='local')
                 tt.scalefont(scaleFactor)
 
@@ -442,7 +440,7 @@ def build_templates(canvas=None, graphicMethodStrings=None, overlay=None, rows=1
             lastTemplate = finalTemplates[-1]
             cpLastTemplate = canvas.createtemplate(lastTemplate.name+'_overlay', lastTemplate.name)
             # Avoiding legend overlaping.
-            cpLastTemplate.legend.y1 *= 1.05
+            cpLastTemplate.legend.y1 += 0.01
             setTemplateOptions(cpLastTemplate, templateOptionsArray[i])
             finalTemplates.append(cpLastTemplate)
             continue
@@ -461,7 +459,8 @@ def build_templates(canvas=None, graphicMethodStrings=None, overlay=None, rows=1
             # Align title
             delta                          = template.data.x2 - template.data.x1
             template.title.x               = template.data.x1 + float(delta)/2.0
-            template.title.y              *= 0.99
+            if rows == 1:
+                template.title.y              *= 0.99
             title_orientation              = vcs.createtextorientation()
             title_orientation.halign       = "center"
             title_orientation.height      *= titleScaleFactor # 100 * deltaY  # default = 14
@@ -469,7 +468,7 @@ def build_templates(canvas=None, graphicMethodStrings=None, overlay=None, rows=1
             
         if mainTemplateOptions.dataname:
             template.dataname.x               = template.data.x1
-            template.dataname.y               = template.data.y2 * 1.011
+            template.dataname.y               = template.data.y2 + 0.01
             dataname_orientation              = vcs.gettextorientation(template.dataname.textorientation)
             dataname_orientation.height      *= 0.98
             template.dataname.textorientation = dataname_orientation
@@ -485,7 +484,8 @@ def build_templates(canvas=None, graphicMethodStrings=None, overlay=None, rows=1
         if mainTemplateOptions.mean:
             # Align Mean
             template.mean.x               = template.title.x
-            template.mean.y              *= 0.99
+            if rows == 1:
+                template.mean.y              *= 0.99
             mean_orientation              = vcs.createtextorientation()
             mean_orientation.halign       = "center"
             #mean_orientation.valign       = "top"
