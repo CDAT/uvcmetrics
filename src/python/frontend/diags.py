@@ -593,6 +593,24 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                                 tm2.legend.priority = 0
                                 tm2.xname.priority = 0
                                 tm2.yname.priority = 0
+                                tm2.dataname.priority = 0
+
+                                # Set 11 Corrections (to move to a proper place)
+                                tm2.data.x1 +=0.015
+                                tm2.data.x2 +=0.015
+                                tm2.box1.x1 +=0.015
+                                tm2.box1.x2 +=0.015
+                                tm2.ytic1.x1 +=0.015
+                                tm2.ytic1.x2 +=0.015
+                                tm2.ytic2.x1 +=0.015
+                                tm2.ytic2.x2 +=0.015
+                                tm2.ylabel1.x +=0.015
+                                tm2.ymintic1.x1 +=0.015
+                                tm2.ymintic1.x2 +=0.015
+                                #tm2.units.x +=0.015
+                                #tm2.title.x += 0.015
+                                tm2.xname.x += 0.015
+                                
                                 # This is the Yxvsx plots from the multiplot
                                 vcanvas2.plot(var,
                                               rsr_presentation, tm2, bg=1, title=title,
@@ -680,6 +698,24 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                                 tm2.xname.priority =1
                                 tm2.ylabel1.priority = 1
                                 tm2.xlabel1.priority = 1
+                                tm2.dataname.priority = 0
+
+                                # Set 11 Corrections (to move to a proper place)
+                                tm2.data.x1 +=0.015
+                                tm2.data.x2 +=0.015
+                                tm2.box1.x1 +=0.015
+                                tm2.box1.x2 +=0.015
+                                tm2.ytic1.x1 +=0.015
+                                tm2.ytic1.x2 +=0.015
+                                tm2.ytic2.x1 +=0.015
+                                tm2.ytic2.x2 +=0.015
+                                tm2.ylabel1.x +=0.015
+                                tm2.ymintic1.x1 +=0.015
+                                tm2.ymintic1.x2 +=0.015
+                                #tm2.units.x +=0.015
+                                #tm2.title.x += 0.015
+                                tm2.xname.x += 0.015
+                                tm2.source.y = tm2.dataname.y + 0.01
 
                                 # Set Y label for set 11 of plots:
                                 if hasattr(rsr, 'axax'):
@@ -779,10 +815,10 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                             var.getAxis(0).id = 'Latitude'
 
                     print "===== var ===="
-                    pprint(vars(var))
+                    #pprint(vars(var))
 
                     print "\n~~~~~~ RSR ~~~~~~"
-                    pprint(vars(rsr))
+                    #pprint(vars(rsr))
                     
                     # Changing colormap for isofill plots
                     if vcs.isisofill(rsr.presentation):
@@ -880,19 +916,42 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                             if (rsr.title.count('HEAT_TRANSPORT')):
                                 yLabel = vcs.createtext(Tt_source=tm2.yname.texttable,
                                                         To_source=tm2.yname.textorientation)
-                                yLabel.x = tm2.yname.x
+                                yLabel.x = tm2.yname.x * 0.97
                                 yLabel.y = tm2.yname.y
                                 yLabel.string = ["Heat Transport"]
                                 vcanvas2.plot(yLabel, bg=1)
+                                tm2.data.x1 +=0.015
+                                tm2.box1.x1 +=0.015
+                                tm2.ytic1.x1 +=0.015
+                                tm2.ytic1.x2 +=0.015
+                                tm2.ylabel1.x +=0.015
+                                tm2.ymintic1.x1 +=0.015
+                                tm2.ymintic1.x2 +=0.015
+                                tm2.title.x += 0.015
+                                tm2.xname.x += 0.015
 
                             # Set Y label for set 3 of plots:
                             if rsr.title.count('set3'):
                                 yLabel = vcs.createtext(Tt_source=tm2.yname.texttable,
                                                         To_source=tm2.yname.textorientation)
-                                yLabel.x = tm2.yname.x
+                                yLabel.x = tm2.yname.x * 0.97
                                 yLabel.y = tm2.yname.y
                                 yLabel.string = ["Temperature"]
                                 vcanvas2.plot(yLabel, bg=1)
+                                tm2.data.x1 +=0.015
+                                tm2.data.x2 +=0.015
+                                tm2.box1.x1 +=0.015
+                                tm2.box1.x2 +=0.015
+                                tm2.ytic1.x1 +=0.015
+                                tm2.ytic1.x2 +=0.015
+                                tm2.ytic2.x1 +=0.015
+                                tm2.ytic2.x2 +=0.015
+                                tm2.ylabel1.x +=0.015
+                                tm2.ymintic1.x1 +=0.015
+                                tm2.ymintic1.x2 +=0.015
+                                #tm2.units.x +=0.015
+                                #tm2.title.x += 0.015
+                                tm2.xname.x += 0.015
                                 
                             # Multiple plots on a page:                            
                             plot.vcs_plot( vcanvas2, var, rsr.presentation, tm2, bg=1, title=title,
