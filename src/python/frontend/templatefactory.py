@@ -205,8 +205,8 @@ def build_templates(canvas=None, graphicMethodStrings=None, overlay=None, rows=1
             # Avoiding titles out of bounds
             titleAboveY2 = title_height + templateAbove.title.y
             while titleAboveY2 > 1.0:
-                Mt.margins.top     *= 1.25
-                Mt.margins.bottom  *= 1.25
+                Mt.margins.top     *= 1.15
+                Mt.margins.bottom  *= 1.15
                 templateAbove       = Mt.get(row=0, column=0, legend='local')
                 titleAboveY2        = title_height + templateAbove.title.y
 
@@ -231,21 +231,6 @@ def build_templates(canvas=None, graphicMethodStrings=None, overlay=None, rows=1
                            
             M.margins = Mt.margins 
             M.spacing = Mt.spacing
-
-    # Adjusts yname position related to the page margins
-    if mainTemplateOptions.yname:
-         Mt         = EzTemplate.Multi(rows=rows, columns=columns, legend_direction=legendDirection)
-         Mt.spacing = M.spacing
-         Mt.margins = M.margins
-         tt = Mt.get(row=0, column=0, legend='local', font=False)
-
-         while tt.yname.x < 0.0015:
-             Mt.margins.left *= 1.05
-             tt = Mt.get(row=0, column=0, legend='local', font=False)
-             #print "yname x = ",tt.yname.x
-             
-         M.margins = Mt.margins 
-         M.spacing = Mt.spacing
 
     # Adjusts the Xname position related to out of page problems
     if mainTemplateOptions.xname:
@@ -303,11 +288,9 @@ def build_templates(canvas=None, graphicMethodStrings=None, overlay=None, rows=1
 
     # Adjusts the Ylabel1 position related to out of page problems
     if mainTemplateOptions.ylabel1:
-        Mt = EzTemplate.Multi(rows=rows, columns=columns, legend_direction=legendDirection)        
-        Mt.margins.top        = M.margins.top
-        Mt.margins.bottom     = M.margins.bottom
-        Mt.spacing.vertical   = M.spacing.vertical
-        Mt.spacing.horizontal = M.spacing.horizontal
+        Mt         = EzTemplate.Multi(rows=rows, columns=columns, legend_direction=legendDirection)        
+        Mt.margins = M.margins
+        Mt.spacing = M.spacing
 
         tt = Mt.get(row=0, column=0, legend='local', font=False)
         ylabel1X = tt.ylabel1.x
@@ -318,59 +301,49 @@ def build_templates(canvas=None, graphicMethodStrings=None, overlay=None, rows=1
             tt       = Mt.get(row=0, column=0, legend='local')
             ylabel1X = tt.ylabel1.x
 
-        M.margins.left  = Mt.margins.left 
-        M.margins.right = Mt.margins.right
-
-    # Adjusts the Ylabel position related to out of page problems
-    if mainTemplateOptions.ylabel1:
-        Mt = EzTemplate.Multi(rows=rows, columns=columns, legend_direction=legendDirection)
-        Mt.legend.direction   = legendDirection
-        Mt.margins.top        = M.margins.top
-        Mt.margins.bottom     = M.margins.bottom
-        Mt.spacing.vertical   = M.spacing.vertical
-        Mt.spacing.horizontal = M.spacing.horizontal
-
-        tt = Mt.get(row=0, column=0, legend='local', font=False)
-        ylabelx = tt.ylabel1.x
- 
-        while ylabelx < 0.05:
-            Mt.margins.left  *= 1.05
-            Mt.margins.right *= 1.05
-            tt      = Mt.get(row=0, column=0, legend='local', font=False)
-            ylabelx = tt.ylabel1.x
-
-        M.margins.left  = Mt.margins.left 
-        M.margins.right = Mt.margins.right
+        M.margins = Mt.margins 
+        M.spacing = Mt.spacing
 
     # Adjusts the Yname position related to out of page problems
-    if mainTemplateOptions.yname:
-        Mt = EzTemplate.Multi(rows=rows, columns=columns, legend_direction=legendDirection)
-        Mt.legend.direction   = legendDirection
-        Mt.margins.top        = M.margins.top
-        Mt.margins.bottom     = M.margins.bottom
-        Mt.spacing.vertical   = M.spacing.vertical
-        Mt.spacing.horizontal = M.spacing.horizontal
+    # if mainTemplateOptions.yname:
+    #     Mt = EzTemplate.Multi(rows=rows, columns=columns, legend_direction=legendDirection)
+    #     Mt.legend.direction = legendDirection
+    #     Mt.margins          = M.margins
+    #     Mt.spacing          = M.spacing
 
-        tt = Mt.get(row=0, column=0, legend='local')
-        ynamex = tt.yname.x
+    #     tt = Mt.get(row=0, column=0, legend='local')
+    #     ynamex = tt.yname.x
         
-        while ynamex < 0.0:
-            Mt.margins.left  *= 1.01
-            Mt.margins.right *= 1.01
-            tt     = Mt.get(row=0, column=0, legend='local')
-            ynamex = tt.yname.x
+    #     while ynamex < 0.0:
+    #         Mt.margins.left  *= 1.01
+    #         Mt.margins.right *= 1.01
+    #         tt     = Mt.get(row=0, column=0, legend='local')
+    #         ynamex = tt.yname.x
 
-        M.margins.left  = Mt.margins.left 
-        M.margins.right = Mt.margins.right
+    #     M.margins.left  = Mt.margins.left 
+    #     M.margins.right = Mt.margins.right
+
+    # Adjusts yname position related to the page margins
+    if mainTemplateOptions.yname:
+         Mt         = EzTemplate.Multi(rows=rows, columns=columns, legend_direction=legendDirection)
+         Mt.spacing = M.spacing
+         Mt.margins = M.margins
+         tt = Mt.get(row=0, column=0, legend='local', font=False)
+
+         while tt.yname.x < 0.0015:
+             Mt.margins.left *= 1.15
+             tt = Mt.get(row=0, column=0, legend='local', font=False)
+             #print "yname x = ",tt.yname.x
+             
+         M.margins = Mt.margins 
+         M.spacing = Mt.spacing
 
     # Adjusts the Yname position related to other plots in the same page
     if mainTemplateOptions.yname and (columns > 1):
         Mt = EzTemplate.Multi(rows=rows, columns=columns, legend_direction=legendDirection)
-        Mt.legend.direction   = legendDirection
-        Mt.margins.top        = M.margins.top
-        Mt.margins.bottom     = M.margins.bottom
-        Mt.spacing.vertical   = M.spacing.vertical
-        Mt.spacing.horizontal = M.spacing.horizontal
+        Mt.legend.direction = legendDirection
+        Mt.margins          = M.margins
+        Mt.spacing          = M.spacing
 
         tt = Mt.get(row=0, column=0, legend='local')
         # takes legend changes in effect...
@@ -396,8 +369,10 @@ def build_templates(canvas=None, graphicMethodStrings=None, overlay=None, rows=1
             tt2    = Mt.get(row=0, column=1, legend='local')
             ynamex = tt2.yname.x
 
-        M.spacing.horizontal = Mt.spacing.horizontal
-
+        #M.spacing.horizontal = Mt.spacing.horizontal
+        M.margins = Mt.margins
+        M.spacing = Mt.spacing
+ 
     # Adjusts legend position
     if mainTemplateOptions.legend:
         Mt = EzTemplate.Multi(rows=rows, columns=columns, legend_direction=legendDirection)

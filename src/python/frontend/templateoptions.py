@@ -955,7 +955,7 @@ class TemplateOptionsUVWG1DMulti(TemplateOptions):
         self._crdate         = False            
         self._crtime         = False
         self._data           = True
-        self._dataname       = True
+        self._dataname       = False
         self._file           = False
         self._function       = False
         self._legend         = True
