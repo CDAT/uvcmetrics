@@ -315,7 +315,7 @@ def run_diags( opts ):
                                 fname = os.path.join(outdir,name)
                      
                             if opts['output']['plots'] == True:
-                                makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package)
+                                makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, setTypeString=snum)
                                 number_diagnostic_plots += 1
 
                             if opts['output']['xml'] == True:
@@ -371,7 +371,7 @@ def run_diags( opts ):
     print "total number of (compound) diagnostic plots generated =", number_diagnostic_plots
 
 
-def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
+def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, setTypeString=None):
     # need to add plot and pacakge for the amwg 11,12 special cases. need to rethink how to deal with that
     # At this loop level we are making one compound plot.  In consists
     # of "single plots", each of which we would normally call "one" plot.
@@ -798,61 +798,65 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                     #               units=getattr(var, 'units', ''), source=rsr.source)
                     # # vcanvas3.clear()
                     # # vcanvas3.plot(var, rsr.presentation )
-                                                               
-                    # Removing legend from yxvsx plots
-                    if vcs.isyxvsx(rsr.presentation):                    
-                        tm.legend.priority = 0
-                        # Fix Units for Set 2 plots.
-                        if (getattr(var, 'units', '') == '') and (rsr.title.count('HEAT_TRANSPORT')):
-                            var.units = 'PW'
-                            var.getAxis(0).id = 'Latitude'
-
-                    # Fix Units for Set 3 plots.
-                    if rsr.title.count('set3'):
-                        if (getattr(var, 'units', '') == ''):
-                            var.units = 'K'
-                        if var.getAxis(0).id.count('lat'):
-                            var.getAxis(0).id = 'Latitude'
 
                     print "===== var ===="
                     #pprint(vars(var))
 
                     print "\n~~~~~~ RSR ~~~~~~"
                     #pprint(vars(rsr))
-                    
-                    # Changing colormap for isofill plots
-                    if vcs.isisofill(rsr.presentation):
-                        vcanvas.setcolormap("categorical")
-                    else:
-                        vcanvas.setcolormap('bl_to_darkred')
-                        #vcanvas.setcolormap("rainbow")                        
 
-                    # Polar Plots:
-                    # for i in range(len(var.getAxisIds())):
-                    #     if var.getAxis(i).isCircular():
-                    #         # We re-configure the colormap for the difference.
-                    #         if fname.find('-diff') > 0:
-                    #             setManualColormap(vcanvas2, level=17)  
-                    #         else:
-                    #             # New proposed colormap for polar plots
-                    #             setManualColormap(vcanvas2, level=17)
-                                
-                    
-                    # Set Y label for set 2 of plots:
-                    if (rsr.title.count('HEAT_TRANSPORT')):
-                        yLabel = vcs.createtext(Tt_source=tm.yname.texttable, To_source=tm.yname.textorientation)
-                        yLabel.x = tm.yname.x
-                        yLabel.y = tm.yname.y
-                        yLabel.string = ["Heat Transport"]
-                        vcanvas.plot(yLabel, bg=1)
+                    # Default colormap
+                    vcanvas.setcolormap('bl_to_darkred')
 
-                    # Set Y label for set 3 of plots:
-                    if rsr.title.count('set3'):
-                        yLabel = vcs.createtext(Tt_source=tm.yname.texttable, To_source=tm.yname.textorientation)
-                        yLabel.x = tm.yname.x
-                        yLabel.y = tm.yname.y
-                        yLabel.string = ["Temperature"]
-                        vcanvas.plot(yLabel, bg=1)
+                    if setTypeString is not None:
+                        # AMWG Diagnostics Plot Set 7
+                        # Polar Countour Plots
+                        if setTypeString == '7':
+                            if vcs.isboxfill(rsr.presentation):
+                                vcanvas.landscape()
+                                #setManualColormap(vcanvas2, level=17)
+                            vcanvas.setcolormap("categorical")
+                        # AMWG Diagnostics Plot Sets 5 and 6
+                        elif setTypeString == '5' or setTypeString == '6':
+                            if vcs.isboxfill(rsr.presentation):
+                                vcanvas.landscape()
+                            vcanvas.setcolormap("categorical")
+
+                        # AMWG Diagnostics Plot Sets 4 or 4a
+                        # Vertical Contour Plots Zonal Means  plots
+                        elif setTypeString == '4' or setTypeString == '4a':
+                            if vcs.isboxfill(rsr.presentation):
+                                vcanvas.landscape()
+                            vcanvas.setcolormap("categorical")
+
+                        # AMWG Diagnostics Plot Set 3
+                        # Line Plots of  Zonal Means
+                        elif setTypeString == '3':
+                            tm.legend.priority = 0
+                            if (getattr(var, 'units', '') == ''):
+                                var.units = 'K'
+                            if var.getAxis(0).id.count('lat'):
+                                var.getAxis(0).id = 'Latitude'
+                            yLabel = vcs.createtext(Tt_source=tm.yname.texttable,
+                                                    To_source=tm.yname.textorientation)
+                            yLabel.x = tm.yname.x
+                            yLabel.y = tm.yname.y
+                            yLabel.string = ["Temperature"]
+                            vcanvas.plot(yLabel, bg=1)
+                            
+                        # AMWG Diagnostics Plot Set 2
+                        # Line Plots of Annual Implied Northward Transport
+                        elif setTypeString == '2':
+                            tm.legend.priority = 0
+                            if getattr(var, 'units', '') == '':
+                                var.units = 'PW'
+                                var.getAxis(0).id = 'Latitude'
+                            yLabel = vcs.createtext(Tt_source=tm.yname.texttable,
+                                                    To_source=tm.yname.textorientation)
+                            yLabel.x = tm.yname.x
+                            yLabel.y = tm.yname.y
+                            yLabel.string = ["Heat Transport"]
+                            vcanvas.plot(yLabel, bg=1)
                         
                     # Single plot    
                     plot.vcs_plot(vcanvas, var, rsr.presentation, tm, bg=1, title=title,
@@ -868,13 +872,6 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                             # plot.vcs_plot( vcanvas2, var, rsr.presentation, tm2, bg=1,
                             #    title=title, units=getattr(var, 'units', ''), 
                             #    source = rsr.source, compoundplot=onPage )                            
-
-                            # Fix colormap for isofill plots.
-                            if vcs.isisofill(rsr.presentation):
-                                vcanvas2.setcolormap("categorical")
-                            else:
-                                vcanvas2.setcolormap('bl_to_darkred')
-                                #vcanvas2.setcolormap("rainbow")
                                 
                             # Pre-defined colormaps:
                             # ['AMIP', 'NCAR', 'bl_to_darkred', 'bl_to_drkorang', 'blends',
@@ -883,80 +880,86 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                             # 'ltbl_to_drkbl', 'rainbow', 'rainbow_no_grn', 'sequential',
                             # 'white_to_blue', 'white_to_green', 'white_to_magenta',
                             # 'white_to_red', 'white_to_yellow']
-                            
-                            # if vcs.isisofill(rsr.presentation):
-                            #     if title.find(')-(') > 0:
-                            #         setManualColormap(vcanvas2, level=17)
-                            #     else:
-                            #         vcanvas2.setcolormap("categorical")
-                            
-                            # Let's change the colormap of polar maps.
-                            # for i in range(len(var.getAxisIds())):
-                            #     if var.getAxis(i).isCircular():                                    
-                            #         # We re-configure the colormap for the difference.
-                            #         if fname.find('-diff') > 0:
-                            #             setManualColormap(vcanvas2, level=17)                                        
-                            #         else:
-                            #             # New proposed colormap for polar plots
-                            #             setManualColormap(vcanvas2, level=17)
-                            #         if adjustedScaleCircularPlot:
-                            #             dy = (tm2.data.y2-tm2.data.y1) * 0.095
-                            #             tm2.data.y2 -= dy
-                            #             #tm2.data.y1 += dy/2.0 
 
+                            #print "\n\n=============== setTypeString= {0} ================\n\n".format(setTypeString)
 
-                            # Removing legend from yxvsx plots
-                            if vcs.isyxvsx(rsr.presentation):                    
-                                tm2.legend.priority = 0                             
+                            # Set canvas colormap back to default color
+                            vcanvas2.setcolormap('bl_to_darkred')
 
-                            if vcs.isboxfill(rsr.presentation):
-                                vcanvas2.landscape()
+                            if setTypeString is not None:
+                                # AMWG Diagnostics Plot Set 7
+                                # Polar Countour Plots
+                                if setTypeString == '7':
+                                    if vcs.isboxfill(rsr.presentation):
+                                        vcanvas2.landscape()
+                                    #setManualColormap(vcanvas2, level=17)
+                                    vcanvas2.setcolormap("categorical")
+                                    if adjustedScaleCircularPlot:
+                                        dy = (tm2.data.y2-tm2.data.y1) * 0.095
+                                        tm2.data.y2 -= dy
+                                        #tm2.data.y1 += dy/2.0
 
-                            # Set Y label for set 2 of plots:
-                            if (rsr.title.count('HEAT_TRANSPORT')):
-                                yLabel = vcs.createtext(Tt_source=tm2.yname.texttable,
-                                                        To_source=tm2.yname.textorientation)
-                                yLabel.x = tm2.yname.x * 0.97
-                                yLabel.y = tm2.yname.y
-                                yLabel.string = ["Heat Transport"]
-                                vcanvas2.plot(yLabel, bg=1)
-                                tm2.data.x1 +=0.015
-                                tm2.box1.x1 +=0.015
-                                tm2.ytic1.x1 +=0.015
-                                tm2.ytic1.x2 +=0.015
-                                tm2.ylabel1.x +=0.015
-                                tm2.ymintic1.x1 +=0.015
-                                tm2.ymintic1.x2 +=0.015
-                                tm2.title.x += 0.015
-                                tm2.xname.x += 0.015
+                                # AMWG Diagnostics Plot Sets 5 and 6
+                                elif setTypeString == '5' or setTypeString == '6':
+                                    if vcs.isboxfill(rsr.presentation):
+                                        vcanvas2.landscape()
+                                    vcanvas2.setcolormap("categorical")
 
-                            # Set Y label for set 3 of plots:
-                            if rsr.title.count('set3'):
-                                yLabel = vcs.createtext(Tt_source=tm2.yname.texttable,
-                                                        To_source=tm2.yname.textorientation)
-                                yLabel.x = tm2.yname.x * 0.97
-                                yLabel.y = tm2.yname.y
-                                yLabel.string = ["Temperature"]
-                                vcanvas2.plot(yLabel, bg=1)
-                                tm2.data.x1 +=0.015
-                                tm2.data.x2 +=0.015
-                                tm2.box1.x1 +=0.015
-                                tm2.box1.x2 +=0.015
-                                tm2.ytic1.x1 +=0.015
-                                tm2.ytic1.x2 +=0.015
-                                tm2.ytic2.x1 +=0.015
-                                tm2.ytic2.x2 +=0.015
-                                tm2.ylabel1.x +=0.015
-                                tm2.ymintic1.x1 +=0.015
-                                tm2.ymintic1.x2 +=0.015
-                                #tm2.units.x +=0.015
-                                #tm2.title.x += 0.015
-                                tm2.xname.x += 0.015
+                                # AMWG Diagnostics Plot Sets 4 or 4a
+                                # Vertical Contour Plots Zonal Means  plots
+                                elif setTypeString == '4' or setTypeString == '4a':
+                                    if vcs.isboxfill(rsr.presentation):
+                                        vcanvas2.landscape()
+                                    vcanvas2.setcolormap("categorical")
+
+                                # AMWG Diagnostics Plot Set 3
+                                # Line Plots of  Zonal Means
+                                elif setTypeString == '3':
+                                    tm2.legend.priority = 0
+                                    yLabel = vcs.createtext(Tt_source=tm2.yname.texttable,
+                                                            To_source=tm2.yname.textorientation)
+                                    yLabel.x = tm2.yname.x * 0.97
+                                    yLabel.y = tm2.yname.y
+                                    yLabel.string = ["Temperature"]
+                                    vcanvas2.plot(yLabel, bg=1)
+                                    tm2.data.x1 +=0.015
+                                    tm2.data.x2 +=0.015
+                                    tm2.box1.x1 +=0.015
+                                    tm2.box1.x2 +=0.015
+                                    tm2.ytic1.x1 +=0.015
+                                    tm2.ytic1.x2 +=0.015
+                                    tm2.ytic2.x1 +=0.015
+                                    tm2.ytic2.x2 +=0.015
+                                    tm2.ylabel1.x +=0.015
+                                    tm2.ymintic1.x1 +=0.015
+                                    tm2.ymintic1.x2 +=0.015
+                                    #tm2.units.x +=0.015
+                                    #tm2.title.x += 0.015
+                                    tm2.xname.x += 0.015
+
+                                # AMWG Diagnostics Plot Set 2
+                                # Line Plots of Annual Implied Northward Transport
+                                elif setTypeString == '2':
+                                    tm2.legend.priority = 0
+                                    yLabel = vcs.createtext(Tt_source=tm2.yname.texttable,
+                                                            To_source=tm2.yname.textorientation)
+                                    yLabel.x = tm2.yname.x * 0.97
+                                    yLabel.y = tm2.yname.y
+                                    yLabel.string = ["Heat Transport"]
+                                    vcanvas2.plot(yLabel, bg=1)
+                                    tm2.data.x1 +=0.015
+                                    tm2.box1.x1 +=0.015
+                                    tm2.ytic1.x1 +=0.015
+                                    tm2.ytic1.x2 +=0.015
+                                    tm2.ylabel1.x +=0.015
+                                    tm2.ymintic1.x1 +=0.015
+                                    tm2.ymintic1.x2 +=0.015
+                                    tm2.title.x += 0.015
+                                    tm2.xname.x += 0.015
                                 
                             # Multiple plots on a page:                            
                             plot.vcs_plot( vcanvas2, var, rsr.presentation, tm2, bg=1, title=title,
-                                           units=getattr(var, 'units', ''), compoundplot=onPage )
-
+                                           units=getattr(var, 'units', ''), compoundplot=onPage )                            
                             plotcv2 = True
                             
                     except vcs.error.vcsError as e:
