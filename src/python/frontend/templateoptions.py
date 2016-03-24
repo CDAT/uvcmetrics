@@ -668,7 +668,7 @@ class TemplateOptionsUVWGMulti(TemplateOptions):
         self._transformation = False   
         self._tunits         = False
         self._tvalue         = False
-        self._units          = False
+        self._units          = True
         self._xlabel1        = False
         self._xlabel2        = False
         self._xmintic1       = False
@@ -772,7 +772,7 @@ class TemplateOptionsUVWGMultiScatter(TemplateOptions):
         self._crdate         = False            
         self._crtime         = False
         self._data           = True
-        self._dataname       = True
+        self._dataname       = False
         self._file           = False
         self._function       = False
         self._legend         = False
