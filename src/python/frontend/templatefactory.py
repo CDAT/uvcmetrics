@@ -528,8 +528,11 @@ def build_templates(canvas=None, graphicMethodStrings=None, overlay=None, rows=1
             template.ylabel1.textorientation = ylabel1_orientation
 
         if mainTemplateOptions.units:
-            template.units.x               = template.data.x2 - (5*14*fontht2norm) # 5 charactes
-            template.units.y               = template.mean.y
+            template.units.x = template.data.x2 - (5*14*fontht2norm) # 5 charactes
+            if mainTemplateOptions.mean:
+                template.units.y = template.mean.y
+            else:
+                template.units.y = template.data.y2 + 0.01
             units_orientation              = vcs.gettextorientation(template.units.textorientation)
             units_orientation.halign       = "left"
             #units_orientation.valign       = "bottom"
