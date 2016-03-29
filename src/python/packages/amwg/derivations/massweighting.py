@@ -140,6 +140,11 @@ def check_compatible_levels( var, pvar, strict=False ):
     """
     vlev = var.getLevel()
     plev = pvar.getLevel()
+    if plev is None and len(pvar.getAxisList())==1:
+        # probably a "special" level axis, e.g. sometimes hybi axis is its own fake
+        # axis with axis[i]==i, its connection to the level axis is implied.
+        # This may come from an error in climatology.py.
+        plev = pvar.getAxis(0)
     # We want plev[0] < var[0] < plev[1] < ... < var[N-1] < plev[N]
     # where var is defined on N levels and plev on N+1 levels.
     # But for now, just check the lengths of the two level arrays:
