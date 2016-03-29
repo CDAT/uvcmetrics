@@ -67,7 +67,7 @@ class Options():
       self._opts['translate'] = True
       self._opts['translations'] = {}
       self._opts['levels'] = None
-      self._opts['parallel'] = False
+      self._opts['parallel'] = None#False
 
       self._opts['output']['compress'] = True
       self._opts['output']['json'] = False
@@ -463,9 +463,11 @@ class Options():
       # Runtime options.
       runopts = parser.add_argument_group('Runtime control')
       #determine parallel mode of execution
-      runopts.add_argument('--parallel', action="store_true",default = False,
-           help="Run in parallel mode by specifying on or off")
-      
+      #runopts.add_argument('--parallel', action="store_true",default = False,
+      #     help="Run in parallel mode by specifying on or off")
+      runopts.add_argument('--parallel', nargs=1,
+           help="Run in parallel mode by specifying mpi or spark")
+            
       if 'climatology' not in progname and 'climatology.py' not in progname:
          runopts.add_argument('--package', '-k', 
             help="The diagnostic package to run against the dataset(s).")
@@ -608,8 +610,10 @@ class Options():
          if args.dsname != None:
             self._opts['dsname'] = args.dsname
 
-      
-      self._opts['parallel'] = args.parallel
+      self._opts['parallel'] = None
+      parallel_mode = args.parallel[0].upper()
+      if parallel_mode in ['MPI', 'SPARK']:
+          self._opts['parallel'] = parallel_mode
 
       # Disable the UVCDAT logo in plots for users (typically metadiags) that know about this option
       if args.no_antialiasing is True:

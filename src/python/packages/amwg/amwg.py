@@ -1727,7 +1727,7 @@ class amwg_plot_set8(amwg_plot_spec):
     name = '8 - Annual Cycle Contour Plots of Zonal Means '
     number = '8'
 
-    def __init__( self, model, obs, varid, seasonid='ANN', region='global', aux=None, levels=None, parallel=False ):
+    def __init__( self, model, obs, varid, seasonid='ANN', region='global', aux=None, levels=None, parallel=None ):
         """filetable1, should be a directory filetable for each model.
         varid is a string, e.g. 'TREFHT'.  The zonal mean is computed for each month. """
 
