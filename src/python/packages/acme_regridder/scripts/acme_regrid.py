@@ -201,6 +201,7 @@ if __name__ == "__main__":
         vars = f.variables.keys()
     axes3d = []
     axes4d = []
+    axes4d_ilev = []
     wgts = None
     area = None
     NVARS = len(vars)
@@ -219,10 +220,16 @@ if __name__ == "__main__":
                     axes3d = dat2.getAxisList()
                 addVariable(fo, V.id, V.typecode(), axes3d, V.attributes, store_bounds=args.store_bounds)
             elif V.rank() == 3:
-                if axes4d == []:
-                    dat2 = cdms2.MV2.array(regdr.regrid(V()))
-                    axes4d = dat2.getAxisList()
-                addVariable(fo, V.id, V.typecode(), axes4d, V.attributes, store_bounds=args.store_bounds)
+                if "ilev" in V.getAxisIds(): # New CLUBB things
+                    if axes4d_ilev == []:
+                        dat2 = cdms2.MV2.array(regdr.regrid(V()))
+                        axes4d_ilev = dat2.getAxisList()
+                    addVariable(fo, V.id, V.typecode(), axes4d_ilev, V.attributes, store_bounds=args.store_bounds)
+                else:
+                    if axes4d == []:
+                        dat2 = cdms2.MV2.array(regdr.regrid(V()))
+                        axes4d = dat2.getAxisList()
+                    addVariable(fo, V.id, V.typecode(), axes4d, V.attributes, store_bounds=args.store_bounds)
             if wgt is None:
                 wgt = True
                 addVariable(fo, "gw", "d", [dat2.getLatitude(), ], [])
