@@ -1766,12 +1766,12 @@ class amwg_plot_set8(amwg_plot_spec):
         if not self.computation_planned:
             self.plan_computation( model, obs, varid, seasonid, levels=levels )
 
-        self.MPI_ENABLED = parallel
+        self.MPI_ENABLED = (parallel == 'MPI')
         if self.MPI_ENABLED:
             self.mpi_init()
             print 'MPI_ENABLED = ', self.MPI_ENABLED
             
-        self.SPARK_ENABLED = True  
+        self.SPARK_ENABLED = (parallel == 'SPARK') 
         if self.SPARK_ENABLED:
             self.spark_init()
             print 'SPARK_ENABLED = ', self.SPARK_ENABLED
@@ -1879,19 +1879,27 @@ class amwg_plot_set8(amwg_plot_spec):
         import socket
         print 'host = ',socket.gethostname(), 'rank = ', self.rank
         
-        slurm_output_file = os.environ['SLURMOUTPUT']
-        XXX = slurm_output_file.split('_')
-        print slurm_output_file
-        print XXX
-        nnodes = int(XXX[2])
-        TEMP_RS_KEYS = self.reduced_variables.keys()[0:3*nnodes]
-        #split the keys of reduced_variables and scatter them        
-        if self.rank is self.master:
-            sublistSize = len(TEMP_RS_KEYS)/self.size#len(self.reduced_variables.keys())/self.size
-            self.all_keys = splitList(TEMP_RS_KEYS, sublistSize)#self.reduced_variables.keys(), sublistSize)
-        else:
-            self.all_keys = None        
-            
+        #timing test mode
+        if 'SLURMOUTPUT' in os.environ.keys():
+            slurm_output_file = os.environ['SLURMOUTPUT']
+            XXX = slurm_output_file.split('_')
+            print slurm_output_file
+            print XXX
+            nnodes = int(XXX[2])
+            TEMP_RS_KEYS = self.reduced_variables.keys()[0:3*nnodes]
+            #split the keys of reduced_variables and scatter them        
+            if self.rank is self.master:
+                sublistSize = len(TEMP_RS_KEYS)/self.size#len(self.reduced_variables.keys())/self.size
+                self.all_keys = splitList(TEMP_RS_KEYS, sublistSize)#self.reduced_variables.keys(), sublistSize)
+            else:
+                self.all_keys = None       
+        else: 
+            if self.rank is self.master:
+                sublistSize = len(self.reduced_variables.keys())/self.size
+                self.all_keys =  splitList(self.reduced_variables.keys(), sublistSize)
+            else:
+                self.all_keys = None        
+                        
         self.local_keys = self.comm.scatter(self.all_keys, root=self.master)
 
         #create xml files and avoid multiple calls to cdscan         
