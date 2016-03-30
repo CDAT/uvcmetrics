@@ -1875,7 +1875,7 @@ class amwg_plot_set8(amwg_plot_spec):
         self.master = 0
         
         import socket
-        print 'host = ',socket.gethostname(), 'rank = ', self.rank
+        print 'host = ',socket.gethostname(), 'size, rank = ', self.size, self.rank
         
         #timing test mode
         if 'SLURMOUTPUT' in os.environ.keys():
