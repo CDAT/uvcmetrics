@@ -261,6 +261,8 @@ def run_diags( opts ):
                      print '--------------------------------- res is not none'
                      # Are we running from metadiags? If so, lets keep the name as simple as possible.
                      if basename == '' and postname == '':
+                        print 'BASENAME: ', basename
+                        print 'POSTNAME: ', postname
                         fname = 'figure-set'+snum+'_'+r_fname+'_'+time+'_'+varid+'_plot'
                         fname = os.path.join(outdir, fname)
                      else:
