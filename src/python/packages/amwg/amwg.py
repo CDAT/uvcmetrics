@@ -1729,9 +1729,7 @@ class amwg_plot_set8(amwg_plot_spec):
 
     def __init__( self, model, obs, varid, seasonid='ANN', region='global', aux=None, levels=None, parallel=None ):
         """filetable1, should be a directory filetable for each model.
-        varid is a string, e.g. 'TREFHT'.  The zonal mean is computed for each month. """
-        print parallel
-        
+        varid is a string, e.g. 'TREFHT'.  The zonal mean is computed for each month. """        
         filetable1, filetable2 = self.getfts(model, obs)
         
         self.season = seasonid          

@@ -2967,40 +2967,43 @@ class reduced_variable(ftrow,basic_id):
         
         #all of these are to satisfy the workers to do connect with the python version of uvcdat for spark
         #this needs to be solved in a different way.
-        os.environ['LD_LIBRARY_PATH']='/opt/nfs/mcenerney1/02_17_16/lib:/opt/nfs/mcenerney1/02_17_16/Externals/lib64:/opt/nfs/mcenerney1/02_17_16/Externals/lib'
-        os.environ['UVCDAT_SETUP_PATH']='/opt/nfs/mcenerney1/02_17_16'
-        os.environ['PYTHONPATH']='/opt/nfs/mcenerney1/02_17_16/lib/python2.7/site-packages:/opt/nfs/mcenerney1/02_17_16/Externals/lib/python2.7/site-packages'
-
-        paths = ['', '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/site-packages/setuptools-17.1.1-py2.7.egg', 
-                 '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/site-packages/singledispatch-3.4.0.3-py2.7.egg', 
-                 '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/site-packages/pyOpenSSL-0.14-py2.7.egg', 
-                 '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/site-packages/pytz-2015.7-py2.7.egg', 
-                 '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/site-packages/setuptools-17.1.1-py2.7.egg', 
-                 '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/site-packages/pip-7.1.0-py2.7.egg', 
-                 '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/site-packages/six-1.9.0-py2.7.egg', 
-                 '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/site-packages/singledispatch-3.4.0.3-py2.7.egg', 
-                 '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/site-packages/cffi-0.8.2-py2.7-linux-x86_64.egg', 
-                 '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/site-packages/cryptography-0.4-py2.7-linux-x86_64.egg', 
-                 '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/site-packages/pyOpenSSL-0.14-py2.7.egg', 
-                 '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/site-packages/MyProxyClient-1.3.0-py2.7.egg', 
-                 '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/site-packages/matplotlib-1.4.3-py2.7-linux-x86_64.egg', 
-                 '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/site-packages/mock-1.3.0-py2.7.egg', 
-                 '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/site-packages/nose-1.3.7-py2.7.egg', 
-                 '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/site-packages/pytz-2015.7-py2.7.egg', 
-                 '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/site-packages/funcsigs-0.4-py2.7.egg', 
-                 '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/site-packages/pbr-1.8.1-py2.7.egg', 
-                 '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/site-packages/windspharm-1.3.x-py2.7.egg', 
-                 '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/site-packages', 
-                 '/opt/nfs/mcenerney1/02_17_16/Externals/lib/python2.7/site-packages', 
-                 '/opt/nfs/mcenerney1', '/opt/nfs/mcenerney1/02_17_16/lib/python27.zip', 
-                 '/opt/nfs/mcenerney1/02_17_16/lib/python2.7', 
-                 '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/plat-linux2', 
-                 '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/lib-tk', 
-                 '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/lib-old', 
-                 '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/lib-dynload']
-        for pth in paths:
-            if not pth in sys.path:
-                sys.path.append(pth)
+        #this kludge is turned off. It's here only because of spark.
+        #a possible way to get around this is the PYSPARK_PYTHON environment variable.
+        if False:
+            os.environ['LD_LIBRARY_PATH']='/opt/nfs/mcenerney1/02_17_16/lib:/opt/nfs/mcenerney1/02_17_16/Externals/lib64:/opt/nfs/mcenerney1/02_17_16/Externals/lib'
+            os.environ['UVCDAT_SETUP_PATH']='/opt/nfs/mcenerney1/02_17_16'
+            os.environ['PYTHONPATH']='/opt/nfs/mcenerney1/02_17_16/lib/python2.7/site-packages:/opt/nfs/mcenerney1/02_17_16/Externals/lib/python2.7/site-packages'
+    
+            paths = ['', '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/site-packages/setuptools-17.1.1-py2.7.egg', 
+                     '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/site-packages/singledispatch-3.4.0.3-py2.7.egg', 
+                     '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/site-packages/pyOpenSSL-0.14-py2.7.egg', 
+                     '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/site-packages/pytz-2015.7-py2.7.egg', 
+                     '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/site-packages/setuptools-17.1.1-py2.7.egg', 
+                     '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/site-packages/pip-7.1.0-py2.7.egg', 
+                     '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/site-packages/six-1.9.0-py2.7.egg', 
+                     '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/site-packages/singledispatch-3.4.0.3-py2.7.egg', 
+                     '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/site-packages/cffi-0.8.2-py2.7-linux-x86_64.egg', 
+                     '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/site-packages/cryptography-0.4-py2.7-linux-x86_64.egg', 
+                     '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/site-packages/pyOpenSSL-0.14-py2.7.egg', 
+                     '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/site-packages/MyProxyClient-1.3.0-py2.7.egg', 
+                     '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/site-packages/matplotlib-1.4.3-py2.7-linux-x86_64.egg', 
+                     '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/site-packages/mock-1.3.0-py2.7.egg', 
+                     '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/site-packages/nose-1.3.7-py2.7.egg', 
+                     '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/site-packages/pytz-2015.7-py2.7.egg', 
+                     '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/site-packages/funcsigs-0.4-py2.7.egg', 
+                     '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/site-packages/pbr-1.8.1-py2.7.egg', 
+                     '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/site-packages/windspharm-1.3.x-py2.7.egg', 
+                     '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/site-packages', 
+                     '/opt/nfs/mcenerney1/02_17_16/Externals/lib/python2.7/site-packages', 
+                     '/opt/nfs/mcenerney1', '/opt/nfs/mcenerney1/02_17_16/lib/python27.zip', 
+                     '/opt/nfs/mcenerney1/02_17_16/lib/python2.7', 
+                     '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/plat-linux2', 
+                     '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/lib-tk', 
+                     '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/lib-old', 
+                     '/opt/nfs/mcenerney1/02_17_16/lib/python2.7/lib-dynload']
+            for pth in paths:
+                if not pth in sys.path:
+                    sys.path.append(pth)
         import socket
         XXX = None
         if COMM:
