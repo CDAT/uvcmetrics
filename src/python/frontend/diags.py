@@ -788,8 +788,10 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                     # fjim.close()
                 else: # 
                     #pdb.set_trace()
+                    # Set canvas colormap back to default color
+                    vcanvas2.setcolormap('bl_to_darkred')
+                    
                     if hasattr(plot, 'customizeTemplates'):
-                        print "\n\nCustomizing Plot 3\n"
                         tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)], var )
                     #vcanvas.plot(var, rsr.presentation, tm, bg=1,
                     #   title=title, units=getattr(var,'units',''), source=rsr.source )
@@ -805,9 +807,6 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                     print "\n~~~~~~ RSR ~~~~~~"
                     #pprint(vars(rsr))
 
-                    # Default colormap
-                    vcanvas.setcolormap('bl_to_darkred')
-
                     print "\n\n===== Plot Number: {0} ========\n\n".format(plot.number)
                     
                     if plot.number is not None:
@@ -818,19 +817,9 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                                 vcanvas.landscape()
                                 #setManualColormap(vcanvas2, level=17)
                             vcanvas.setcolormap("categorical")
-                        # AMWG Diagnostics Plot Sets 5 and 6
-                        elif plot.number == '5' or plot.number == '6':
-                            if vcs.isboxfill(rsr.presentation):
-                                vcanvas.landscape()
-                            vcanvas.setcolormap("categorical")
 
-                        # AMWG Diagnostics Plot Sets 4 or 4a
-                        # Vertical Contour Plots Zonal Means  plots
-                        elif plot.number == '4' or plot.number == '4a':
-                            if vcs.isboxfill(rsr.presentation):
-                                vcanvas.landscape()
-                            vcanvas.setcolormap("categorical")
-                        
+                    print "\n------------ Single Plot source = {0} -----------\n".format(rsr.source)
+                    
                     # Single plot    
                     plot.vcs_plot(vcanvas, var, rsr.presentation, tm, bg=1,
                                   title=title, source=rsr.source)
@@ -856,9 +845,6 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
 
                             #print "\n\n=============== plot.number= {0} ================\n\n".format(plot.number)
 
-                            # Set canvas colormap back to default color
-                            vcanvas2.setcolormap('bl_to_darkred')
-
                             if plot.number is not None:
                                 # AMWG Diagnostics Plot Set 7
                                 # Polar Countour Plots
@@ -872,19 +858,8 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                                         tm2.data.y2 -= dy
                                         #tm2.data.y1 += dy/2.0
 
-                                # AMWG Diagnostics Plot Sets 5 and 6
-                                elif plot.number == '5' or plot.number == '6':
-                                    if vcs.isboxfill(rsr.presentation):
-                                        vcanvas2.landscape()
-                                    vcanvas2.setcolormap("categorical")
-
-                                # AMWG Diagnostics Plot Sets 4 or 4a
-                                # Vertical Contour Plots Zonal Means  plots
-                                elif plot.number == '4' or plot.number == '4a':
-                                    if vcs.isboxfill(rsr.presentation):
-                                        vcanvas2.landscape()
-                                    vcanvas2.setcolormap("categorical")
-                                
+                            print "\n------------ Multi Plot source = {0} -----------\n".format(rsr.source)
+                            tm2.source.priority = 1    
                             # Multiple plots on a page:                            
                             plot.vcs_plot( vcanvas2, var, rsr.presentation, tm2, bg=1,
                                            title=title, source=rsr.source,
