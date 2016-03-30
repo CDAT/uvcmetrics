@@ -444,6 +444,7 @@ def make_filelists(opts):
 
    return files
 
+# This could be better OOP-ized, but I'm a C programmer.
 def process_task(files, setdict, opts, vcanvas, vcanvas2, task, outlog):
    # For now this does NOT do a good job of sharing data on a node. Idealy one core would open
    # a given file and broadcast data needed by other cores working on similar data. That will
@@ -999,7 +1000,7 @@ if __name__ == '__main__':
    if rank == 0:
       if verbosity >= 1:
          print 'Communicators created'
-      tasksets = create_tasksets('amwg', opts)
+      tasksets = create_tasksets(package.lower(), opts)
 
    comm_world.barrier()
 
