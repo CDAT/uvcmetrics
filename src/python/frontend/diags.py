@@ -1,4 +1,4 @@
-#!/home/jccosta/Pessoal/Work/NYU/UV-CDAT/build-uvcdat/install/bin/python
+#!/Users/jccosta/Pessoal/Work/NYU/UV-CDAT/build-uvcdat/install/Library/Frameworks/Python.framework/Versions/2.7/Resources/Python.app/Contents/MacOS/Python
 # Script for running diagnostics.
 # Command-line usage example:
 # diags --model path=path,climos=yes --obs path=path,climos=yes,filter='f_startswith("NCEP")' --vars FLUT T --seasons DJF --region Global --package AMWG --output path
@@ -807,17 +807,6 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                     print "\n~~~~~~ RSR ~~~~~~"
                     #pprint(vars(rsr))
 
-                    print "\n\n===== Plot Number: {0} ========\n\n".format(plot.number)
-                    
-                    if plot.number is not None:
-                        # AMWG Diagnostics Plot Set 7
-                        # Polar Countour Plots
-                        if plot.number == '7':
-                            if vcs.isboxfill(rsr.presentation):
-                                vcanvas.landscape()
-                                #setManualColormap(vcanvas2, level=17)
-                            vcanvas.setcolormap("categorical")
-
                     print "\n------------ Single Plot source = {0} -----------\n".format(rsr.source)
                     
                     # Single plot    
@@ -842,21 +831,6 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                             # 'ltbl_to_drkbl', 'rainbow', 'rainbow_no_grn', 'sequential',
                             # 'white_to_blue', 'white_to_green', 'white_to_magenta',
                             # 'white_to_red', 'white_to_yellow']
-
-                            #print "\n\n=============== plot.number= {0} ================\n\n".format(plot.number)
-
-                            if plot.number is not None:
-                                # AMWG Diagnostics Plot Set 7
-                                # Polar Countour Plots
-                                if plot.number == '7':
-                                    if vcs.isboxfill(rsr.presentation):
-                                        vcanvas2.landscape()
-                                    #setManualColormap(vcanvas2, level=17)
-                                    vcanvas2.setcolormap("categorical")
-                                    if adjustedScaleCircularPlot:
-                                        dy = (tm2.data.y2-tm2.data.y1) * 0.095
-                                        tm2.data.y2 -= dy
-                                        #tm2.data.y1 += dy/2.0
 
                             print "\n------------ Multi Plot source = {0} -----------\n".format(rsr.source)
                             tm2.source.priority = 1    

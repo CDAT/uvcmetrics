@@ -2093,6 +2093,90 @@ class amwg_plot_set7(amwg_plot_spec):
             }
        self.computation_planned = True
        #pdb.set_trace()
+    def customizeTemplates(self, templates, data=None):
+        """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
+        (cnvs1, tm1), (cnvs2, tm2) = templates
+        
+        tm2.yname.priority  = 1
+        tm2.xname.priority  = 1
+        tm1.yname.priority  = 1
+        tm1.xname.priority  = 1
+        tm1.legend.priority = 1
+        tm2.legend.priority = 1
+
+        # Fix units if needed
+        if data is not None:
+            if (getattr(data, 'units', '') == ''):
+                data.units = 'K'
+            if data.getAxis(0).id.count('lat'):
+                data.getAxis(0).id = 'Latitude'
+            if data.getAxis(0).id.count('lon'):
+                data.getAxis(0).id = 'Longitude'
+            elif len(data.getAxisList()) > 1:
+                if data.getAxis(1).id.count('lat'):
+                    data.getAxis(1).id = 'Latitude'
+                if data.getAxis(1).id.count('lon'):
+                    data.getAxis(1).id = 'Longitude'
+
+        #cnvs1.landscape()
+        cnvs1.setcolormap("categorical")
+
+        maxOri                   = cnvs1.gettextorientation(tm1.max.textorientation)
+        meanOri                  = cnvs1.gettextorientation(tm1.mean.textorientation)
+        meanOri.height           = maxOri.height
+        tm1.mean.textorientation = meanOri
+        tm1.mean.y               = tm1.max.y - 0.018
+        tm1.mean.x               = tm1.max.x + 0.044
+        
+        titleOri                  = cnvs1.gettextorientation(tm1.title.textorientation)
+        titleOri.height           = 23
+        tm1.title.textorientation = titleOri
+
+        # #tm1.max.y -= 0.005
+        
+        tm1.source.priority        = 1
+
+        # # We want units at axis names
+        # tm1.units.y       -= 0.01
+        unitsOri                  = cnvs1.gettextorientation(tm1.units.textorientation)
+        unitsOri.height          += 8
+        tm1.units.textorientation = unitsOri
+        tm1.units.priority        = 1
+
+        
+        #cnvs2.landscape()
+        cnvs2.setcolormap("categorical")
+
+        # Adjusting intersection of title and xlabels.
+        dy = (tm2.data.y2-tm2.data.y1) * 0.095
+        tm2.data.y2 -= dy
+        #tm2.data.y1 += dy/2.0
+    
+        maxOri                   = cnvs2.gettextorientation(tm2.max.textorientation)
+        meanOri                  = cnvs2.gettextorientation(tm2.mean.textorientation)
+        meanOri.height           = maxOri.height
+        tm2.mean.textorientation = meanOri
+        #tm2.mean.y              -= 0.001
+        tm2.mean.y               = tm2.max.y - 0.005
+        tm2.mean.x               = tm2.max.x - 0.08
+        #tm2.mean.x               = tm2.max.x + 0.03
+        
+        titleOri                  = cnvs2.gettextorientation(tm2.title.textorientation)
+        titleOri.height           = 12
+        tm2.title.textorientation = titleOri
+        tm2.title.y              -= 0.005
+
+        tm2.max.y -= 0.005
+        
+        tm2.source.priority        = 1
+
+        unitsOri                  = cnvs2.gettextorientation(tm2.units.textorientation)
+        unitsOri.height          += 1
+        tm2.units.textorientation = unitsOri
+        tm2.units.y               = tm2.min.y
+        tm2.units.priority        = 1
+        
+        return tm1, tm2
     def _results(self, newgrid=0):
         #pdb.set_trace()
         results = plot_spec._results(self,newgrid)
