@@ -18,6 +18,7 @@
 # within its bounds.)
 
 # It will be essential that the time axis be present, with a bounds attribute.
+# (However, the output file will also have a climatology attribute on the time axis.)
 # Time averaging will be weighted by the size of the time interval.  Thus, for the noleap calendar
 # with units in days, January would have a weight of 31 relative to the February weight of 28.
 # If units were months, each month would have the same weight.
@@ -114,7 +115,7 @@ def next_tbounds_prescribed_step( red_time_bnds, data_time_bnds, dt ):
     t1t2 = numpy.array([[t0+dt, t1+dt]],dtype=numpy.int32)
     return numpy.concatenate( ( red_time_bnds, t1t2 ), axis=0 )
 
-def initialize_redfile( filen, axisdict, typedict, attdict, varnames, lock=None ):
+def initialize_redfile( filen, axisdict, typedict, attdict, varnames, lock=None, dt=-1 ):
     """Initializes the file containing reduced data.  Input is the filename, axes
     variables representing bounds on axes, and names of variables to be initialized.
     Axes are represented as a dictionary, with items like varname:[timeaxis, lataxis, lonaxis].
@@ -127,9 +128,10 @@ def initialize_redfile( filen, axisdict, typedict, attdict, varnames, lock=None 
     g = cdms2.open( filen, 'w' )
     #t2 = time.time()
     if lock is not None:  lock.release()
-    #print "jfp1 opened",filen,"in",t2-t1,"sec"
     if 'time_bnds' not in varnames:
         addVariable( g, 'time_bnds', typedict['time_bnds'], axisdict['time_bnds'], attdict['time_bnds'] )
+    if 'climatology_bnds' not in varnames and dt==0:
+        addVariable( g, 'climatology_bnds', typedict['time_bnds'], axisdict['time_bnds'], attdict['time_bnds'] )
     for varn in varnames:
         addVariable( g, varn, typedict[varn], axisdict[varn], attdict[varn] )
     addVariable( g, 'time_weights', typedict['time'], [axisdict['time']], [] )
@@ -174,12 +176,12 @@ def initialize_redfile_from_datafile( redfilename, varnames, datafilen, dt=-1, i
         # tb[?] can be expected to be an integer,  red_time 64-bit float.
         timeaxis = cdms2.createAxis( red_time, red_time_bnds, 'time' )
         timeaxis.bounds = 'time_bnds'
-        timeaxis.climatology = 'time_climo'
+        timeaxis.climatology = 'climatology_bnds'
         axisdict['time'] = timeaxis
         typedict['time'] = f['time'].typecode()
         attdict['time'] = { 'bounds':'time_bnds', 'long_name':'climatological_time' }
         if dt==0:
-            attdict['time']['climatology'] = 'time_climo'
+            attdict['time']['climatology'] = 'climatology_bnds'
         if force_double and typedict['time']=='f':
             # I think that time is always double, but let's make sure:
             typedict['time']='d'
@@ -241,19 +243,24 @@ def initialize_redfile_from_datafile( redfilename, varnames, datafilen, dt=-1, i
         attdict['time_bnds'] = {'initialized':'no'}
 
         if dt==0:
-            out_varnames.append('time_climo')
-            axisdict['time_climo'] = [timeaxis,tbndaxis]
-            typedict['time_climo'] = timeaxis.typecode() # always 'd'
-            attdict['time_climo'] = {'initialized':'no'}
+            out_varnames.append('climatology_bnds')
+            axisdict['climatology_bnds'] = [timeaxis,tbndaxis]
+            typedict['climatology_bnds'] = timeaxis.typecode() # always 'd'
+            attdict['climatology_bnds'] = {'initialized':'no'}
 
-    g = initialize_redfile( redfilename, axisdict, typedict, attdict, out_varnames, lock=lock )
+    g = initialize_redfile( redfilename, axisdict, typedict, attdict, out_varnames,
+                            lock=lock, dt=dt )
 
     if timeaxis is not None:
         g['time_bnds'][:] = red_time_bnds
         g['time_bnds'].initialized = 'yes'
         g['time_weights'][:] = numpy.zeros(len(timeaxis))
         g['time_weights'].initialized = 'yes'
-    tb = f.getAxis('time').getBounds()
+    ftime = f.getAxis('time')
+    if hasattr(ftime,'climatology'):
+        tb = f( ftime.climatology ).data
+    else:
+        tb = ftime.getBounds()
     if tb is None:
         tmin = f.getAxis('time')[0]
         tmax = f.getAxis('time')[-1]
@@ -658,14 +665,17 @@ def update_time_avg_from_files( redvars0, redtime_bnds, redtime_wts, filenames,
         if lock is not None:  lock.release()
         #print "jfp3 opened",filen,"in",t2-t1,"sec"
         ftime = f.getAxis('time').clone()  # clone saves it in memory - faster
-        data_tbounds = ftime.getBounds()
+        if hasattr(ftime,'climatology'):
+            data_tbounds = f( ftime.climatology ).data
+        else:
+            data_tbounds = ftime.getBounds()
         # Compute tmin, tmax which represent the range of times for the data we computed with.
         # For regular model output files, these should come from the time bounds.
         # For a climatology file, they should come from the climatology attribute of time.
         if hasattr( ftime,'climatology' ):
-            time_climo = f[ftime.climatology]
-            tmin = min( tmin, time_climo[0][0] )
-            tmax = max( tmax, time_climo[-1][-1] )
+            climatology_bnds = f[ftime.climatology]
+            tmin = min( tmin, climatology_bnds[0][0] )
+            tmax = max( tmax, climatology_bnds[-1][-1] )
         else:
             tmin = min( tmin, data_tbounds[0][0] )
             tmax = max( tmax, data_tbounds[-1][-1] )
@@ -702,7 +712,7 @@ def update_time_avg_from_files( redvars0, redtime_bnds, redtime_wts, filenames,
                 else:
                     print "skipping",redvar.id
             except Exception as e:
-                if varid!='time_climo':  # I know about this one.
+                if varid!='climatology_bnds':  # I know about this one.
                     print "skipping",redvar.id,"due to exception:",
                     print e
                 pass
@@ -719,7 +729,7 @@ def update_time_avg_from_files( redvars0, redtime_bnds, redtime_wts, filenames,
             for g in redfiles:
                 redtime = g.getAxis('time')
                 redtime_wts = g['time_weights']
-                redtime_bnds = g[ g.getAxis('time').bounds ]
+                redtime_bnds = g[ redtime.bounds ]
                 redvars = [ g[varn] for varn in varids ]
                 tbnds = apply( fun_next_tbounds, ( redtime_bnds, data_tbounds ) )
                 update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, tbnds[-1], dt=dt,

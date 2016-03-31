@@ -290,7 +290,7 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
         avmv = mvrs
     else:
         for axis in axes:
-            if axis.getBounds() is None:
+            if axis.getBounds() is None:   # note that axis is not a time axis
                 axis._bounds_ = axis.genGenericBounds()
 
         if weights=='mass' or (hasattr(weights,'shape') and len(weights.shape)==3):
@@ -530,31 +530,10 @@ def reduce2latlon( mv, vid=None ):
     # from the old reduce2latlon, not implemented in reduce2any:
     axes = allAxes( mv )
     for ax in axes:
-        if ax.getBounds() is None and hasattr(ax,'bounds')  and not (hasattr(ax,'_bounds_') and ax._bounds_ is not None):
-            if hasattr(ax,'parent') and ax.parent is not None:
-                ax._bounds_ = ax.parent.variables(ax.bounds)
-    return reduce2any( mv, target_axes=['x','y'], vid=vid )
-
-def reduce_time( mv, vid=None ):
-    """returns the mean of the variable over all axes but time, as a cdms2 variable, i.e. a MV.
-    The input mv is a also cdms2 variable, assumed to be indexed as is usual for CF-compliant
-    variables, i.e. mv(time,lat,lon).  At present, no other axes (e.g. level) are supported.
-    At present mv must depend on all three axes.
-    """
-    if vid is None:   # Note that the averager function returns a variable with meaningless id.
-        #vid = 'reduced_'+mv.id
-        vid = mv.id
-    axes = allAxes( mv )
-    axis_names = [ a.id for a in axes if a.id=='time' ]
-    axes_string = '('+')('.join(axis_names)+')'
-    if len(axes_string)>2:
-        for ax in axes:
-            # The averager insists on bounds.  Sometimes they don't exist, especially for obs.
-            #was if ax.id!='lat' and ax.id!='lon' and not hasattr( ax, 'bounds' ):
-            #if ax.id!='lat' and ax.id!='lon' and (ax.getBounds() is None):
-            if not ax.isLatitude() and not ax.isLongitude() and not ax.isLevel() and\
-                    (ax.getBounds() is None):
-                ax.setBounds( ax.genGenericBounds() )
+        if ax.getBounds() is None and hasattr(ax,'bounds')  and\
+                not (hasattr(ax,'_bounds_') and ax._bounds_ is not None) and\
+                not (ax.isTime() and hasattr(ax,'climatology')):
+            ax.setBounds( ax.genGenericBounds() )
         avmv = averager( mv, axis=axes_string )
     else:
         avmv = mv
@@ -1150,7 +1129,7 @@ def stddev_map(mv1, mv2, obs, recalc=True, constant=.1):
 # This could probably just call reduceAnnTrendRegionLevel() in a loop and calculate the sum
 def reduceAnnTrendRegionSumLevels(mv, region, slevel, elevel, weights=None, vid=None):
    timeax = timeAxis(mv)
-   if timeax is not None and timeax.getBounds() is None:
+   if timeax is not None and timeax.getBounds() is None and not hasattr(timeax,'climatology'):
       timeax._bounds_ = timeax.genGenericBounds()
    if timeax is not None:
       mvsub = select_region(mv, region)
@@ -1194,7 +1173,7 @@ def reduceAnnTrendRegionLevel(mv, region, level, weights=None, vid=None):
       vid = 'reduced_'+mv.id
 
    timeax = timeAxis(mv)
-   if timeax is not None and timeax.getBounds() is None:
+   if timeax is not None and timeax.getBounds() is None and not hasattr(timeax,'climatology'):
       timeax._bounds_ = timeax.genGenericBounds()
    if timeax is not None:
       mvsub = mv(latitude=(region[0], region[1]), longitude=(region[2], region[3]))
@@ -1241,7 +1220,7 @@ def reduceAnnSingle(mv, vid=None):
       vid = 'reduced_'+mv.id
 
    timeax = timeAxis(mv)
-   if timeax is not None and timeax.getBounds() is None:
+   if timeax is not None and timeax.getBounds() is None and not hasattr(timeax,'climatology'):
       timeax._bounds_ = timeax.genGenericBounds()
    if timeax is not None:
       mvann = cdutil.times.YEAR(mv) 
@@ -1269,7 +1248,7 @@ def reduceAnnTrendRegion(mv, region, single=False, weights=None, vid=None):
 #   print 'units coming in: ', mv.units
 #   print 'REGION PASSED TO REDUCEANNTRENDREGION: ', region
    timeax = timeAxis(mv)
-   if timeax is not None and timeax.getBounds() is None:
+   if timeax is not None and timeax.getBounds() is None and not hasattr(timeax,'climatology'):
       timeax._bounds_ = timeax.genGenericBounds()
    if timeax is not None:
       mvsub = select_region(mv, region)
@@ -1338,7 +1317,7 @@ def reduceMonthlyRegion(mv, region, weights=None, vid=None):
    if vid is None:
       vid = 'reduced_'+mv.id
    timeax = timeAxis(mv)
-   if timeax is not None and timeax.getBounds() is None:
+   if timeax is not None and timeax.getBounds() is None and not hasattr(timeax,'climatology'):
       timeax._bounds_ = timeax.genGenericBounds()
    if timeax is not None:
       mvsub = mv(latitude=(region[0], region[1]), longitude=(region[2], region[3]))
@@ -1388,7 +1367,7 @@ def reduceMonthlyTrendRegion(mv, region, weights=None, vid=None):
 
 #   print 'INCOMING VARIABLE ', vid, ' SHAPE: ', mv.shape
    timeax = timeAxis(mv)
-   if timeax is not None and timeax.getBounds() is None:
+   if timeax is not None and timeax.getBounds() is None and not hasattr(timeax,'climatology'):
       timeax._bounds_ = timeax.genGenericBounds()
    if timeax is not None:
       # first, spatially subset
@@ -1439,7 +1418,7 @@ def reduce_time_space_seasonal_regional( mv, season=seasonsyr, region=None, vid=
     axes_string = '('+')('.join(axis_names)+')'
     if len(axes_string)>2:
         for axis in axes:
-            if axis.getBounds() is None:
+            if axis.getBounds() is None and not (axis.isTime() and hasattr(axis,'climatology')):
                 axis._bounds_ = axis.genGenericBounds()
     mvsav = cdutil.averager( mvreg, axis=axes_string )
 
@@ -1510,7 +1489,12 @@ def reduce_time_seasonal( mv, season=seasonsyr, region=None, vid=None ):
     return avmv
 
 def calculate_seasonal_climatology(mv, season):
-
+    """Averages the variable mv within the specified season to produce its climatology, and
+    returns that as a new variable.
+    Note: presently this uses the UV-CDAT function climatology().  If performance is a concern,
+    the best solution is to convert the data to climatology files before running the diagnostics.
+    In the future we may consider replacing climatology() by the functions in inc_reduce.py.
+    """
     # Convert season to a season object if it isn't already
     if season is None or season == 'ANN' or season.seasons[0] == 'ANN':
         season=seasonsyr
@@ -1518,13 +1502,14 @@ def calculate_seasonal_climatology(mv, season):
         season=cdutil.times.Seasons(season)
 
     # print the season the way I want to see it...
-    if type(season.seasons) is list and len(season.seasons)==1:
-        ss = str(season.seasons[0])
-    else:
-        ss = str(season.seasons)
-    if ss=='JFMAMJJASOND':
-        ss = 'ANN'
-#    print "calculating climatology for season : ", ss
+    if False:
+        if type(season.seasons) is list and len(season.seasons)==1:
+            ss = str(season.seasons[0])
+        else:
+            ss = str(season.seasons)
+        if ss=='JFMAMJJASOND':
+            ss = 'ANN'
+        print "calculating climatology for season : ", ss
 
     tax = timeAxis(mv)
     if tax is None:
@@ -1540,7 +1525,7 @@ def calculate_seasonal_climatology(mv, season):
         # The slicers in time.py require getBounds() to work.
         # If it doesn't, we'll have to give it one.
         # Setting the _bounds_ attribute will do it.
-        if tax.getBounds() is None:
+        if tax.getBounds() is None and not hasattr(tax,'climatology'):
             tax._bounds_ = tax.genGenericBounds()
             # Special check necessary for LEGATES obs data, because
             # climatology() won't accept this incomplete specification
