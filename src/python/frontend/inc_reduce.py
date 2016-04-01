@@ -80,6 +80,52 @@ def daybounds( season ):
     dbddic.update( sesdic )
     return dbddic[season]        
 
+def setClimoBounds( time, tfile=None, value=None ):
+    """time is a TransientAxis or FileAxis.  tfile is the open file it came from, value a new value
+    for its bounds.
+    The _bounds_ attribute will be set for future use, as long as the axis is a time axis.
+    This will be set from the provided value if any, otherwise will come from files: from the
+    time.climatology variable if possible; otherwise the regular getBounds() will be called.
+    If both a file and a value are provided, then also the climatology or bounds variables in the
+    file will be set from the provided value."""
+    if not time.isTime():
+        return
+    if value is None and tfile is not None:
+        # Get _bounds_ from tfile.
+        if hasattr( time, 'climatology' ):
+            bounds = tfile( time.climatology )[:,:]
+            if getattr(bounds,'initialized','yes')=='no':
+                time._bounds_ = time.getBounds()
+            else:
+                time._bounds_ = bounds
+        else:
+            time._bounds = time.getBounds()
+    elif value is None:  # tfile is None
+        if hasattr(time,'climatology') and hasattr(time,'parent') and\
+                time.parent.__class__.__name__=='CdmsFile':
+            setClimoBounds( time, time.parent )
+        else:
+            time._bounds_ = time.getBounds()
+    else:   # value is not None
+        # Set _bounds_ from provided value.
+        time.setBounds(value)
+        time._bounds_ = value  # needed to set _bounds_ for FileVariable
+        if tfile is not None:
+            # Set bounds variables in tfile.
+            if hasattr( time, 'climatology' ):
+                f( time.climatology )[:,:] = value
+            if hasattr( time, 'bounds' ):
+                f( time.bounds )[:,:] = value
+        
+    return
+
+def getClimoBounds( time ):
+    """time is a TransientAxis or FileAxis, and setClimoBounds() should have already been
+    called on it.  This function will return its bounds, from the _bounds_ attribute."""
+    if not hasattr( time, '_bounds_' ):
+        setClimoBounds( time )
+    return time._bounds_
+
 def next_tbounds_copyfrom_data( red_time_bnds, data_time_bnds ):
     """This is one of many ways to provide a time interval for the computing a partial time
     reduction of data.  This one works for no real time reduction.  A typical case is that
@@ -122,7 +168,6 @@ def initialize_redfile( filen, axisdict, typedict, attdict, varnames, lock=None,
     Time should always be present as the first axis.
     Note that cdms2 will automatically write the bounds variable if it writes an axis which has bounds.
     """
-    #print "jfp1 about to open",filen
     if lock is not None:  lock.acquire()
     #t1 = time.time()
     g = cdms2.open( filen, 'w' )
@@ -154,13 +199,11 @@ def initialize_redfile_from_datafile( redfilename, varnames, datafilen, dt=-1, i
     # Note: some of the attributes are set appropriately for climatologies, but maybe not for
     # other time reductions.  In particular, c.f. time long_name and varn cell_methods.
     boundless_axes = set([])
-    #print "jfp2 about to open",datafilen
     if lock is not None:  lock.acquire()
     #t1 = time.time()
     f = cdms2.open( datafilen )
     #t2 = time.time()
     if lock is not None:  lock.release()
-    #print "jfp2 opened",datafilen,"in",t2-t1,"sec"
     axisdict = {}
     typedict = {}
     attdict = {}
@@ -175,6 +218,7 @@ def initialize_redfile_from_datafile( redfilename, varnames, datafilen, dt=-1, i
         red_time = [ 0.5*(tb[0]+tb[1]) for tb in red_time_bnds ]
         # tb[?] can be expected to be an integer,  red_time 64-bit float.
         timeaxis = cdms2.createAxis( red_time, red_time_bnds, 'time' )
+        # ... this will set the _bounds_ attribute to red_time_bnds by calline timeaxis.setBounds().
         timeaxis.bounds = 'time_bnds'
         timeaxis.climatology = 'climatology_bnds'
         axisdict['time'] = timeaxis
@@ -267,11 +311,9 @@ def initialize_redfile_from_datafile( redfilename, varnames, datafilen, dt=-1, i
     else:
         tmin = tb[0][0]
         tmax = tb[-1][-1]
-    #print "jfp about to close",f.id
     if lock is not None:  lock.acquire()
     f.close()
     if lock is not None:  lock.release()
-    #print "jfp closed",f.id
     return g, out_varnames, tmin, tmax
 
 def adjust_time_for_climatology( newtime, redtime ):
@@ -288,11 +330,11 @@ def adjust_time_for_climatology( newtime, redtime ):
     # one of its bounds, on the border between two years!  So it's better to use the midpoint
     # between two bounds.
     # Usually we can assume that the time bounds are on monthly borders.  This should be checked, but isn't yet.<<<<
-    timebnds = newtime.getBounds()
+    timebnds = getClimoBounds(newtime)
     midtime = 0.5*(timebnds[0][0]+timebnds[0][1])
     N = math.floor(midtime/365.)   # >>>> assumes noleap calendar, day time units!
     newtime[:] -= N*365               # >>>> assumes noleap calendar, day time units!
-    newtime.setBounds( newtime.getBounds() - N*365 ) # >>>> assumes noleap calendar, day time units!
+    setClimoBounds( newtime, value=(getClimoBounds(newtime) - N*365) ) # >>>> assumes noleap calendar, day time units!
     return newtime
 
 def two_pt_avg( mv1, mv2, i, a2, sw1, sw2, aw2=None, force_scalar_avg=False ):
@@ -477,7 +519,7 @@ def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds, 
     assert( newtime is not None ) # The input data should have a time axis!
     if dt==0:
         newtime = adjust_time_for_climatology( newtime, redtime )
-    newtime_bnds = newtime.getBounds()
+    newtime_bnds = getClimoBounds(newtime)
     # newtime_wts[j,i] is the weight applied to the data at time newtime[j] in computing
     # an average, reduced time for time newtime[ newtime_rti[i] ], 0<=i<2.
     # If newtime_rti[i]<0, that means the weight is 0.
@@ -657,28 +699,18 @@ def update_time_avg_from_files( redvars0, redtime_bnds, redtime_wts, filenames,
     tmin = 1.0e10
     tmax = -1.0e10
     for filen in filenames:
-        #print "jfp3 about to open",filen
         if lock is not None:  lock.acquire()
         #t1 = time.time()
         f = cdms2.open(filen)
         #t2 = time.time()
         if lock is not None:  lock.release()
-        #print "jfp3 opened",filen,"in",t2-t1,"sec"
         ftime = f.getAxis('time').clone()  # clone saves it in memory - faster
-        if hasattr(ftime,'climatology'):
-            data_tbounds = f( ftime.climatology ).data
-        else:
-            data_tbounds = ftime.getBounds()
+        data_tbounds = getClimoBounds(ftime)
         # Compute tmin, tmax which represent the range of times for the data we computed with.
         # For regular model output files, these should come from the time bounds.
         # For a climatology file, they should come from the climatology attribute of time.
-        if hasattr( ftime,'climatology' ):
-            climatology_bnds = f[ftime.climatology]
-            tmin = min( tmin, climatology_bnds[0][0] )
-            tmax = max( tmax, climatology_bnds[-1][-1] )
-        else:
-            tmin = min( tmin, data_tbounds[0][0] )
-            tmax = max( tmax, data_tbounds[-1][-1] )
+        tmin = min( tmin, data_tbounds[0][0] )
+        tmax = max( tmax, data_tbounds[-1][-1] )
         newvard = {}
         redvard = {}
         varids = []
@@ -729,19 +761,16 @@ def update_time_avg_from_files( redvars0, redtime_bnds, redtime_wts, filenames,
             for g in redfiles:
                 redtime = g.getAxis('time')
                 redtime_wts = g['time_weights']
-                redtime_bnds = g[ redtime.bounds ]
+                redtime_bnds = getClimoBounds(redtime)
                 redvars = [ g[varn] for varn in varids ]
                 tbnds = apply( fun_next_tbounds, ( redtime_bnds, data_tbounds ) )
                 update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, tbnds[-1], dt=dt,
                                  new_time_weights=new_time_weights,
                                  force_scalar_avg=force_scalar_avg )
-        #print "jfp about to close",f.id
         if lock is not None:  lock.acquire()
         f.close()
         if lock is not None:  lock.release()
-        #print "jfp closed",f.id
     ttotal = time.time() - ttotal
-    #print "jfp leaving update_time_avg_from_files, ttotal=",ttotal,"tnewvar=",tnewvar
     return tmin, tmax
 
 def test_time_avg( redfilename, varnames, datafilenames ):
