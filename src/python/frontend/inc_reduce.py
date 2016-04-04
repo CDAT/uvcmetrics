@@ -200,7 +200,7 @@ def initialize_redfile_from_datafile( redfilename, varnames, datafilen, dt=-1, i
         except:
             # Probably an axis.  Most of what we're doing here makes no sense for an axis.
             # FWIW, this would get the type name: dtnom = f[varn].dtype('spam').name
-            print "jfp WARNING, averager will ignore axis", varn
+            print "WARNING, averager will ignore axis", varn
             continue
         if dtnom.find('string')==0:
             # We can't handle string variables.
