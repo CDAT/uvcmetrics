@@ -1,4 +1,4 @@
-#!/home/jccosta/Pessoal/Work/NYU/UV-CDAT/build-uvcdat/install/bin/python
+#!/Users/jccosta/Pessoal/Work/NYU/UV-CDAT/build-uvcdat/install/Library/Frameworks/Python.framework/Versions/2.7/Resources/Python.app/Contents/MacOS/Python
 # Script for running diagnostics.
 # Command-line usage example:
 # diags --model path=path,climos=yes --obs path=path,climos=yes,filter='f_startswith("NCEP")' --vars FLUT T --seasons DJF --region Global --package AMWG --output path
@@ -573,10 +573,12 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                         subtitle = title
                         print "\n\nPlotting 1\n"
 
-                        # Yxvsx plot from scatter.
-                        tm.xname.priority = 0
-                        tm.yname.priority = 0
-                        tm.legend.priority = 0
+                        # Specific configuration for set 11 of plots
+                        if plot.number == '11':                        
+                            # Yxvsx plot from scatter.
+                            tm.xname.priority  = 0
+                            tm.yname.priority  = 0
+                            tm.legend.priority = 0
                         
                         vcanvas.plot(var, 
                                      rsr_presentation, tm, bg=1, title=title,
@@ -589,28 +591,30 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                                 if hasattr(plot, 'compositeTitle'):
                                     title = plot.compositeTitle
                                 print "\n\nPlotting 2\n"
-                                
-                                tm2.legend.priority = 0
-                                tm2.xname.priority = 0
-                                tm2.yname.priority = 0
-                                tm2.dataname.priority = 0
 
-                                # Set 11 Corrections (to move to a proper place)
-                                tm2.data.x1 +=0.015
-                                tm2.data.x2 +=0.015
-                                tm2.box1.x1 +=0.015
-                                tm2.box1.x2 +=0.015
-                                tm2.ytic1.x1 +=0.015
-                                tm2.ytic1.x2 +=0.015
-                                tm2.ytic2.x1 +=0.015
-                                tm2.ytic2.x2 +=0.015
-                                tm2.ylabel1.x +=0.015
-                                tm2.ymintic1.x1 +=0.015
-                                tm2.ymintic1.x2 +=0.015
-                                #tm2.units.x +=0.015
-                                #tm2.title.x += 0.015
-                                tm2.xname.x += 0.015
-                                
+                                # Specific configuration for set 11 of plots
+                                if plot.number == '11':                                    
+                                    tm2.legend.priority   = 0
+                                    tm2.xname.priority    = 0
+                                    tm2.yname.priority    = 0
+                                    tm2.dataname.priority = 0
+        
+                                    deltaX            = 0.015
+                                    tm2.data.x1      += deltaX
+                                    tm2.data.x2      += deltaX
+                                    tm2.box1.x1      += deltaX
+                                    tm2.box1.x2      += deltaX
+                                    tm2.ytic1.x1     += deltaX
+                                    tm2.ytic1.x2     += deltaX
+                                    tm2.ytic2.x1     += deltaX
+                                    tm2.ytic2.x2     += deltaX
+                                    tm2.ylabel1.x    += deltaX
+                                    tm2.ymintic1.x1  += deltaX
+                                    tm2.ymintic1.x2  += deltaX
+                                    #tm2.units.x     += deltaX
+                                    #tm2.title.x     += deltaX
+                                    tm2.xname.x      += deltaX
+                                                                    
                                 # This is the Yxvsx plots from the multiplot
                                 vcanvas2.plot(var,
                                               rsr_presentation, tm2, bg=1, title=title,
@@ -649,34 +653,40 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                                 #tm.line1.list()
                             if hasattr(plot, 'customizeTemplates'):
                                 #tm2.xname.list()
-                                print "\n\nCustomizing templates\n"
                                 tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)])
                                 #tm2.xname.list()
                                 
                             print "\n\nPlotting 3\n"
-                            
-                            tm.xname.priority = 1
-                            tm.yname.priority = 1
-                            tm.ylabel1.priority = 1
-                            tm.xlabel1.priority = 1
-                            
-                            # Set Y label for set 11 of plots:
-                            set11Found = False
-                            if hasattr(rsr, 'axax'):
-                                for k in rsr.axax.keys():
-                                    if k.count('SWCF'):
-                                        yLabel = vcs.createtext(Tt_source=tm.yname.texttable,
-                                                                To_source=tm.yname.textorientation)
-                                        yLabel.x = tm.yname.x
-                                        yLabel.y = tm.yname.y
-                                        yLabel.string = ["SWCF"]
-                                        vcanvas.plot(yLabel, bg=1)
-                                        set11Found = True
-                                        break
-                            if set11Found:
-                                xvar.getAxis(0).id = 'LWCF'
-                                xvar.id = 'LWCF'
-                                xvar.name = 'LWCF'
+
+                            # Specific configuration for set 11 of plots
+                            if plot.number == '11':
+                                tm.xname.priority   = 1
+                                tm.yname.priority   = 1
+                                tm.ylabel1.priority = 1
+                                tm.xlabel1.priority = 1
+                                tm.units.priority   = 0
+
+                                yLabel = vcs.createtext(Tt_source=tm.yname.texttable,
+                                                        To_source=tm.yname.textorientation)
+                                yLabel.x      = tm.yname.x
+                                yLabel.y      = tm.yname.y
+                                yLabel.string = ["SWCF (" + yvar.units + ")"]
+                                yLabel.height = 18
+
+                                vcanvas.plot(yLabel, bg=1)
+                                
+                                xLabel = vcs.createtext(Tt_source=tm.xname.texttable,
+                                                        To_source=tm.xname.textorientation)
+                                xLabel.x      = tm.xname.x
+                                xLabel.y      = tm.xname.y
+                                xLabel.string = ["LWCF (" + xvar.units + ")"]
+                                xLabel.height = 18
+                                
+                                vcanvas.plot(xLabel, bg=1)
+
+                                titleOr = vcanvas.gettextorientation(tm.title.textorientation)
+                                titleOr.height += 4
+                                tm.title.textorientation = titleOr
                             
                             # Scatter part from the single plots in set 11
                             vcanvas.plot(xvar, yvar, 
@@ -693,41 +703,67 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                                     title = plot.compositeTitle
                                     
                                 print "\n\nPlotting 4\n"
-                                
-                                tm2.yname.priority =1
-                                tm2.xname.priority =1
-                                tm2.ylabel1.priority = 1
-                                tm2.xlabel1.priority = 1
-                                tm2.dataname.priority = 0
 
-                                # Set 11 Corrections (to move to a proper place)
-                                tm2.data.x1 +=0.015
-                                tm2.data.x2 +=0.015
-                                tm2.box1.x1 +=0.015
-                                tm2.box1.x2 +=0.015
-                                tm2.ytic1.x1 +=0.015
-                                tm2.ytic1.x2 +=0.015
-                                tm2.ytic2.x1 +=0.015
-                                tm2.ytic2.x2 +=0.015
-                                tm2.ylabel1.x +=0.015
-                                tm2.ymintic1.x1 +=0.015
-                                tm2.ymintic1.x2 +=0.015
-                                #tm2.units.x +=0.015
-                                #tm2.title.x += 0.015
-                                tm2.xname.x += 0.015
-                                tm2.source.y = tm2.dataname.y + 0.01
+                                # Specific configuration for set 11 of plots
+                                if plot.number == '11':                                   
+                                    tm2.yname.priority    = 1
+                                    tm2.xname.priority    = 1
+                                    tm2.ylabel1.priority  = 1
+                                    tm2.xlabel1.priority  = 1
+                                    tm2.dataname.priority = 0
+                                    tm2.units.priority    = 0
 
-                                # Set Y label for set 11 of plots:
-                                if hasattr(rsr, 'axax'):
-                                    for k in rsr.axax.keys():
-                                        if k.count('SWCF'):
-                                            yLabel = vcs.createtext(Tt_source=tm2.yname.texttable,
-                                                                    To_source=tm2.yname.textorientation)
-                                            yLabel.x = tm2.yname.x
-                                            yLabel.y = tm2.yname.y
-                                            yLabel.string = ["SWCF"]
-                                            vcanvas2.plot(yLabel, bg=1)
-                                            break                                         
+                                    # Set 11 Corrections (to move to a proper place)
+                                    deltaX            = 0.015
+                                    tm2.data.x1      += deltaX
+                                    tm2.data.x2      += deltaX
+                                    tm2.box1.x1      += deltaX
+                                    tm2.box1.x2      += deltaX
+                                    tm2.ytic1.x1     += deltaX
+                                    tm2.ytic1.x2     += deltaX
+                                    tm2.ytic2.x1     += deltaX
+                                    tm2.ytic2.x2     += deltaX
+                                    tm2.ylabel1.x    += deltaX
+                                    tm2.ymintic1.x1  += deltaX
+                                    tm2.ymintic1.x2  += deltaX
+                                    #tm2.units.x     += deltaX
+                                    #tm2.title.x     += deltaX
+                                    tm2.xname.x      += deltaX
+                                    tm2.source.y      = tm2.dataname.y + 0.01
+
+                                    yLabel = vcs.createtext(Tt_source=tm2.yname.texttable,
+                                                            To_source=tm2.yname.textorientation)
+                                    yLabel.x = tm2.yname.x
+                                    yLabel.y = tm2.yname.y
+                                    yLabel.string = ["SWCF (" + yvar.units + ")"]
+                                    yLabel.height = 9
+                                    
+                                    vcanvas2.plot(yLabel, bg=1)
+
+                                    xLabel = vcs.createtext(Tt_source=tm2.xname.texttable,
+                                                            To_source=tm2.xname.textorientation)
+                                    xLabel.x      = tm2.xname.x
+                                    xLabel.y      = tm2.xname.y
+                                    xLabel.string = ["LWCF (" + xvar.units + ")"]
+                                    xLabel.height = 9
+                                    
+                                    vcanvas2.plot(xLabel, bg=1)
+                                    
+                                    
+                                    # # Set Y label for set 11 of plots:
+                                    # if hasattr(rsr, 'axax'):
+                                    #     for k in rsr.axax.keys():
+                                    #         if k.count('SWCF'):
+                                    #             yLabel = vcs.createtext(Tt_source=tm2.yname.texttable,
+                                    #                                     To_source=tm2.yname.textorientation)
+                                    #             yLabel.x = tm2.yname.x
+                                    #             yLabel.y = tm2.yname.y
+                                    #             ylabelstring  = "SWCF"
+                                    #             #ylabelstring += "("+xvar.units+")"
+                                    #             print "\n\n****** yvar.units = {0}, xvar.units = {1} *******\n".format(yvar.units, xvar.units)
+                                    #             yLabel.string = [ylabelstring]
+                                    #             vcanvas2.plot(yLabel, bg=1)
+                                    #             break                                         
                                 
                                 # This is the scatter plots from the multiplot
                                 vcanvas2.plot(xvar, yvar,
@@ -807,17 +843,6 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                     print "\n~~~~~~ RSR ~~~~~~"
                     #pprint(vars(rsr))
 
-                    print "\n\n===== Plot Number: {0} ========\n\n".format(plot.number)
-                    
-                    if plot.number is not None:
-                        # AMWG Diagnostics Plot Set 7
-                        # Polar Countour Plots
-                        if plot.number == '7':
-                            if vcs.isboxfill(rsr.presentation):
-                                vcanvas.landscape()
-                                #setManualColormap(vcanvas2, level=17)
-                            vcanvas.setcolormap("categorical")
-
                     print "\n------------ Single Plot source = {0} -----------\n".format(rsr.source)
                     
                     # Single plot    
@@ -842,21 +867,6 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                             # 'ltbl_to_drkbl', 'rainbow', 'rainbow_no_grn', 'sequential',
                             # 'white_to_blue', 'white_to_green', 'white_to_magenta',
                             # 'white_to_red', 'white_to_yellow']
-
-                            #print "\n\n=============== plot.number= {0} ================\n\n".format(plot.number)
-
-                            if plot.number is not None:
-                                # AMWG Diagnostics Plot Set 7
-                                # Polar Countour Plots
-                                if plot.number == '7':
-                                    if vcs.isboxfill(rsr.presentation):
-                                        vcanvas2.landscape()
-                                    #setManualColormap(vcanvas2, level=17)
-                                    vcanvas2.setcolormap("categorical")
-                                    if adjustedScaleCircularPlot:
-                                        dy = (tm2.data.y2-tm2.data.y1) * 0.095
-                                        tm2.data.y2 -= dy
-                                        #tm2.data.y1 += dy/2.0
 
                             print "\n------------ Multi Plot source = {0} -----------\n".format(rsr.source)
                             tm2.source.priority = 1    
