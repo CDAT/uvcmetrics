@@ -2657,6 +2657,104 @@ class amwg_plot_set10(amwg_plot_spec, basic_id):
 
         self.computation_planned = True
 
+    def customizeTemplates(self, templates, data=None):
+        """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
+        (cnvs1, tm1), (cnvs2, tm2) = templates
+
+        tm2.yname.priority  = 1
+        tm2.xname.priority  = 1
+        tm1.yname.priority  = 1
+        tm1.xname.priority  = 1
+        tm1.legend.priority = 0
+        tm2.legend.priority = 0
+
+        # Fix units if needed
+        if data is not None:
+            if (getattr(data, 'units', '') == ''):
+                data.units = 'K'
+            if data.getAxis(0).id.count('lat'):
+                data.getAxis(0).id = 'Latitude'
+
+        # Adjust labels and names for single plots
+        yLabel = cnvs1.createtext(Tt_source=tm1.yname.texttable,
+                                  To_source=tm1.yname.textorientation)
+        yLabel.x      = tm1.yname.x - 0.02
+        yLabel.y      = tm1.yname.y
+        yLabel.height = 16
+        if data is not None:
+            yLabel.string  = ["Temperature (" + data.units + ")"]
+        else:
+            yLabel.string  = ["Temperature"]
+        cnvs1.plot(yLabel, bg=1)
+
+        xnameOri                  = cnvs1.gettextorientation(tm1.xname.textorientation)
+        xnameOri.height           = 16.0
+        tm1.xname.textorientation = xnameOri
+        
+        titleOri                  = cnvs1.gettextorientation(tm1.title.textorientation)
+        #titleOri.height           = 20.9
+        tm1.title.textorientation = titleOri
+
+        # sourceOri                  = cnvs1.gettextorientation(tm1.source.textorientation)
+        # sourceOri.height           = 12.5
+        # tm1.source.textorientation = sourceOri
+        # tm1.source.y               = tm1.units.y - 0.01
+        # tm1.source.x               = tm1.data.x1
+
+        # We want units at axis names
+        tm1.units.priority = 0
+
+        # Adjust labels and names for combined plots
+        yLabel = cnvs2.createtext(Tt_source=tm2.yname.texttable,
+                                  To_source=tm2.yname.textorientation)
+        yLabel.x = tm2.yname.x - 0.02
+        yLabel.y = tm2.yname.y
+        if data is not None:
+            yLabel.string  = ["Temperature (" + data.units + ")"]
+        else:
+            yLabel.string  = ["Temperature"]
+        cnvs2.plot(yLabel, bg = 1)
+
+        titleOri                  = cnvs2.gettextorientation(tm2.title.textorientation)
+        #titleOri.height           = 13
+        tm2.title.textorientation = titleOri
+
+        xvaluesOri = cnvs2.gettextorientation(tm2.xvalue.textorientation)
+        xvaluesOri.height -= 5
+        tm2.xvalue.textorientation = xvaluesOri
+        
+        
+        # sourceOri                  = cnvs2.gettextorientation(tm2.source.textorientation)
+        # sourceOri.height           = 9.0
+        # tm2.source.textorientation = sourceOri
+        # tm2.source.y               = tm2.units.y - 0.01
+        # #tm2.source.x               = tm2.data.x1        
+
+        tm2.units.priority = 0
+
+        # print "\n\n==== Menor. yname.x = {0}, yunits.x = {1} ====\n\n".format(tm2.yname.x, tm2.yunits.x)
+        
+        # if tm2.yname.x > (tm2.yunits.x - 0.015):
+        #     print "\n~~~~~~ Adjusting x scale.... ~~~~~~\n"
+        #     deltaX = 0.035
+        
+        #     tm2.data.x1      += deltaX
+        #     tm2.data.x2      += deltaX
+        #     tm2.box1.x1      += deltaX
+        #     tm2.box1.x2      += deltaX
+        #     tm2.ytic1.x1     += deltaX
+        #     tm2.ytic1.x2     += deltaX
+        #     tm2.ytic2.x1     += deltaX
+        #     tm2.ytic2.x2     += deltaX
+        #     tm2.ylabel1.x    += deltaX
+        #     tm2.ymintic1.x1  += deltaX
+        #     tm2.ymintic1.x2  += deltaX
+        #     #tm2.units.x     += deltaX
+        #     #tm2.title.x     += deltaX
+        #     tm2.xname.x      += deltaX        
+        
+        return tm1, tm2
+
     def _results(self,newgrid=0):
         #pdb.set_trace()
         results = plot_spec._results(self, newgrid)
