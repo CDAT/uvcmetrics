@@ -1090,7 +1090,7 @@ class amwg_plot_set4and41(amwg_plot_spec):
         ynameOri                  = cnvs1.gettextorientation(tm1.yname.textorientation)
         ynameOri.height           = 20
         tm1.yname.textorientation = ynameOri
-        tm1.yname.x              -= 0.009
+        tm1.yname.x              -= 0.006
 
         xnameOri                  = cnvs1.gettextorientation(tm1.xname.textorientation)
         xnameOri.height           = 20
@@ -1098,7 +1098,7 @@ class amwg_plot_set4and41(amwg_plot_spec):
         #tm1.xname.y              -= 0.003
 
         meanOri                  = cnvs1.gettextorientation(tm1.mean.textorientation)
-        meanOri.height           = 16
+        meanOri.height           = 15
         tm1.mean.textorientation = meanOri
         tm1.mean.y              -= 0.005
 
@@ -1107,12 +1107,12 @@ class amwg_plot_set4and41(amwg_plot_spec):
         tm1.title.textorientation = titleOri
 
         maxOri                  = cnvs1.gettextorientation(tm1.max.textorientation)
-        maxOri.height           = 16
+        maxOri.height           = 15
         tm1.max.textorientation = maxOri
         tm1.max.y              -= 0.005
 
         minOri                  = cnvs1.gettextorientation(tm1.min.textorientation)
-        minOri.height           = 16
+        minOri.height           = 15
         tm1.min.textorientation = minOri
         #tm1.min.y              -= 0.005
 
@@ -1121,7 +1121,7 @@ class amwg_plot_set4and41(amwg_plot_spec):
         sourceOri                  = cnvs1.gettextorientation(tm1.source.textorientation)
         sourceOri.height           = 11.0
         tm1.source.textorientation = sourceOri
-        tm1.source.y               = tm1.units.y - 0.02
+        tm1.source.y               = tm1.units.y - 0.027
         tm1.source.x               = tm1.data.x1
         tm1.source.priority        = 1
 

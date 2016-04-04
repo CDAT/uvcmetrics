@@ -176,7 +176,7 @@ def build_templates(canvas=None, graphicMethodStrings=None, overlay=None, rows=1
             while 2*calcdy(M, rows, columns) > dx:
                 M.margins.top    += 0.01
                 M.margins.bottom += 0.01
-
+                
     # Adjusts margins and vertical spaces to
     # handle title-data or title-(out of box) problems
     if mainTemplateOptions.title:        
@@ -325,18 +325,17 @@ def build_templates(canvas=None, graphicMethodStrings=None, overlay=None, rows=1
 
     # Adjusts yname position related to the page margins
     if mainTemplateOptions.yname:
-         Mt         = EzTemplate.Multi(rows=rows, columns=columns, legend_direction=legendDirection)
-         Mt.spacing = M.spacing
-         Mt.margins = M.margins
-         tt = Mt.get(row=0, column=0, legend='local', font=False)
+        Mt         = EzTemplate.Multi(rows=rows, columns=columns, legend_direction=legendDirection)
+        Mt.spacing = M.spacing
+        Mt.margins = M.margins
+        tt = Mt.get(row=0, column=0, legend='local', font=False)
 
-         while tt.yname.x < 0.0015:
-             Mt.margins.left += 0.05
-             tt = Mt.get(row=0, column=0, legend='local', font=False)
-             #print "yname x = ",tt.yname.x
+        while tt.yname.x < 0.0015:
+            Mt.margins.left += 0.05
+            tt = Mt.get(row=0, column=0, legend='local', font=False)
              
-         M.margins = Mt.margins 
-         M.spacing = Mt.spacing
+        M.margins = Mt.margins 
+        M.spacing = Mt.spacing
 
     # Adjusts the Yname position related to other plots in the same page
     if mainTemplateOptions.yname and (columns > 1):
@@ -383,21 +382,29 @@ def build_templates(canvas=None, graphicMethodStrings=None, overlay=None, rows=1
         tt = Mt.get(row=0, column=0, legend='local', font=False)
         # takes legend changes in effect...
         delta = float(tt.data.x2 - tt.data.x1)
-        posx2 = tt.legend.x1 + 0.09*delta
-        if posx2 > 1.0:
-            posx2 = tt.legend.x1 + 0.05*delta
-        legendx2 = posx2
 
-        while legendx2 > 0.96:
-            Mt.margins.left  += 0.02
-            Mt.margins.right += 0.02
-            tt = Mt.get(row=0, column=0, legend='local', font=False)
-            # takes legend changes in effect...
-            delta = float(tt.data.x2 - tt.data.x1)
-            posx2 = tt.legend.x1 + 0.09*delta
-            if posx2 > 1.0:
-                posx2 = tt.legend.x1 + 0.06*delta
-            legendx2 = posx2
+        if legendDirection == 'vertical':
+                posx2 = tt.legend.x1 + 0.09*delta
+                if posx2 > 1.0:
+                    posx2 = tt.legend.x1 + 0.05*delta
+                legendx2 = posx2
+
+                while legendx2 > 0.96:
+                    Mt.margins.left  += 0.02
+                    Mt.margins.right += 0.02
+                    tt = Mt.get(row=0, column=0, legend='local', font=False)
+                    # takes legend changes in effect...
+                    delta = float(tt.data.x2 - tt.data.x1)
+                    posx2 = tt.legend.x1 + 0.09*delta
+                    if posx2 > 1.0:
+                        posx2 = tt.legend.x1 + 0.06*delta
+                    legendx2 = posx2
+        elif legendDirection == 'horizontal':
+            # Fix bug where ynames and values are out of bound in display but not in value.
+            Mt.margins.left += 0.025
+            while tt.ylabel1.x < 0.0015:
+                Mt.margins.left += 0.1
+                tt = Mt.get(row=0, column=0, legend='local', font=False)
             
         M.margins.left  = Mt.margins.left
         M.margins.right = Mt.margins.right
@@ -474,12 +481,20 @@ def build_templates(canvas=None, graphicMethodStrings=None, overlay=None, rows=1
             template.dataname.textorientation = dataname_orientation
             
         if mainTemplateOptions.legend:
-            # Adjusting legend position
-            delta = template.data.x2 - template.data.x1
-            posx2 = template.legend.x1 + 0.08*delta
-            if posx2 > 1.0:
-                posx2 = template.legend.x1 + 0.05*delta
-            template.legend.x2 = posx2
+            if legendDirection == 'vertical':
+                # Adjusting legend position
+                delta = template.data.x2 - template.data.x1
+                posx2 = template.legend.x1 + 0.08*delta
+                if posx2 > 1.0:
+                    posx2 = template.legend.x1 + 0.05*delta
+                template.legend.x2 = posx2
+            elif legendDirection == 'horizontal':
+                # Adjusting legend position
+                template.legend.x1 = template.data.x1
+                template.legend.x2 = template.data.x2
+                deltaL = template.legend.y2 - template.legend.y1
+                template.legend.y2 = template.xname.y - 0.03
+                template.legend.y1 = template.legend.y2 - deltaL - 0.01
           
         if mainTemplateOptions.mean:
             # Align Mean
