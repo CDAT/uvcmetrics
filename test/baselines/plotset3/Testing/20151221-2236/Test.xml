@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Site BuildName="(empty)"
+	BuildStamp="20151221-2236-Experimental"
+	Name="(empty)"
+	Generator="ctest-3.4.0"
+	CompilerName=""
+	CompilerVersion=""
+	OSName="Mac OS X"
+	Hostname="mcenerney1ml.llnl.gov"
+	OSRelease="10.10.5"
+	OSVersion="14F27"
+	OSPlatform="x86_64"
+	Is64Bits="1"
+	VendorString="GenuineIntel"
+	VendorID="Intel Corporation"
+	FamilyID="6"
+	ModelID="70"
+	ProcessorCacheSize="32768"
+	NumberOfLogicalCPU="8"
+	NumberOfPhysicalCPU="4"
+	TotalVirtualMemory="1024"
+	TotalPhysicalMemory="16384"
+	LogicalProcessorsPerPhysical="8"
+	ProcessorClockFrequency="2500"
+	>
+	<Testing>
+		<StartDateTime>Dec 21 14:36 PST</StartDateTime>
+		<StartTestTime>1450737394</StartTestTime>
+		<TestList/>
+		<EndDateTime>Dec 21 14:36 PST</EndDateTime>
+		<EndTestTime>1450737394</EndTestTime>
+		<ElapsedMinutes>0</ElapsedMinutes>
+	</Testing>
+</Site>
