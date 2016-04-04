@@ -3609,7 +3609,7 @@ class amwg_plot_set13(amwg_plot_spec):
         ynameOri                  = cnvs1.gettextorientation(tm1.yname.textorientation)
         ynameOri.height           = 16
         tm1.yname.textorientation = ynameOri
-        tm1.yname.x              -= 0.02
+        tm1.yname.x              -= 0.01
 
         xnameOri                  = cnvs1.gettextorientation(tm1.xname.textorientation)
         xnameOri.height           = 16
@@ -3630,7 +3630,7 @@ class amwg_plot_set13(amwg_plot_spec):
         sourceOri                  = cnvs1.gettextorientation(tm1.source.textorientation)
         sourceOri.height           = 11.0
         tm1.source.textorientation = sourceOri
-        tm1.source.y               = tm1.units.y - 0.02
+        tm1.source.y               = tm1.units.y - 0.035
         tm1.source.x               = tm1.data.x1
         tm1.source.priority        = 1
 
