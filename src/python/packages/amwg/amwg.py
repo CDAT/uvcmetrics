@@ -879,7 +879,6 @@ class amwg_plot_set3(amwg_plot_spec,basic_id):
         sourceOri.height           = 9.0
         tm2.source.textorientation = sourceOri
         tm2.source.y               = tm2.units.y - 0.01
-        #tm2.source.x               = tm2.data.x1        
 
         tm2.units.priority = 0
 
@@ -4185,73 +4184,81 @@ class amwg_plot_set15(amwg_plot_spec):
         # ... was self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
         self.computation_planned = True
         #pdb.set_trace()
-    def customizeTemplates(self, templates):
+    def customizeTemplates(self, templates, data=None):
         """Theis method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
  
-        tm1.data.x1 += .05
-        tm1.box1.x1 = tm1.data.x1
+        tm1.data.x1  += .05
+        tm1.box1.x1   = tm1.data.x1
         tm1.legend.x1 = tm1.data.x1
      
-        tm1.yname.x = .05
-        tm1.yname.y = (tm1.data.y1 + tm1.data.y2)/2
-        to = cnvs1.createtextorientation(None, tm1.yname.textorientation)
-        to.angle=-90
-        tm1.yname.textorientation=to 
+        tm1.yname.x               = .05
+        tm1.yname.y               = (tm1.data.y1 + tm1.data.y2)/2
+        to                        = cnvs1.createtextorientation(None, tm1.yname.textorientation)
+        to.angle                  = -90
+        tm1.yname.textorientation = to 
                 
-        tm1.xname.y = tm1.data.y1 - .05
-        delta = tm1.ytic1.x1 - tm1.ytic1.x2
-        tm1.ytic1.x1 = tm1.data.x1
-        tm1.ytic1.x2 = tm1.data.x1 - delta
+        tm1.xname.y   = tm1.data.y1 - .05
+        delta         = tm1.ytic1.x1 - tm1.ytic1.x2
+        tm1.ytic1.x1  = tm1.data.x1
+        tm1.ytic1.x2  = tm1.data.x1 - delta
         tm1.ylabel1.x = tm1.ytic1.x2
 
         tm1.crdate.priority = 0
         tm1.crtime.priority = 0        
 
-        tm2.data.x1 += .05
-        tm2.box1.x1 = tm2.data.x1
-        tm2.data.y1 += .025
-        tm2.data.y2 += .025
-        tm2.box1.y1 = tm2.data.y1
-        tm2.box1.y2 = tm2.data.y2
-        tm2.legend.y1 = tm2.data.y1
-        tm2.legend.y2 = tm2.data.y2
+        #tm2.data.x1 += .05
+        #tm2.box1.x1 = tm2.data.x1
+        #tm2.data.y1 += .025
+        #tm2.data.y2 += .025
+        #tm2.box1.y1 = tm2.data.y1
+        #tm2.box1.y2 = tm2.data.y2
+        #tm2.legend.y1 = tm2.data.y1
+        #tm2.legend.y2 = tm2.data.y2
 
-        tm2.yname.x = .05
-        tm2.yname.y = (tm2.data.y1 + tm2.data.y2)/2
-        to = cnvs2.createtextorientation(None, tm2.yname.textorientation)
-        to.angle=-90
-        tm2.yname.textorientation=to 
+        tm2.yname.x               = .05
+        tm2.yname.y               = (tm2.data.y1 + tm2.data.y2)/2
+        to                        = cnvs2.createtextorientation(None, tm2.yname.textorientation)
+        to.height                 = 10
+        to.angle                  = -90
+        tm2.yname.textorientation = to 
 
-        tm2.xname.x = (tm2.data.x1 + tm2.data.x2)/2
-        tm2.xname.y = tm2.data.y1 - .025
-        #pdb.set_trace()
-        #delta = abs(tm2.ytic1.x1 - tm2.ytic1.x2)
-        tm2.ytic1.x1 = tm2.data.x1
-        tm2.ytic1.x2 = tm2.data.x1 - delta
-        tm2.ytic1.line = 'default'
-        tm2.ylabel1.x = tm2.ytic1.x2
+        tm2.xname.x               = (tm2.data.x1 + tm2.data.x2)/2
+        tm2.xname.y               = tm2.data.y1 - .025
+        to                        = cnvs2.createtextorientation(None, tm2.xname.textorientation)
+        to.height                 = 10
+        tm2.xname.textorientation = to
         
-        delta = abs(tm2.xtic1.y1 - tm2.xtic1.y2)
-        tm2.xtic1.y1 = tm2.data.y1
-        tm2.xtic1.y2 = tm2.xtic1.y1 - delta
-        tm2.xlabel1.y = tm2.xtic1.y2
-        tm2.xtic1.line = 'default'
+        # tm2.ytic1.x1   = tm2.data.x1
+        # tm2.ytic1.x2   = tm2.data.x1 - delta
+        # tm2.ytic1.line = 'default'
+        # tm2.ylabel1.x  = tm2.ytic1.x2
+        
+        # delta          = abs(tm2.xtic1.y1 - tm2.xtic1.y2)
+        # tm2.xtic1.y1   = tm2.data.y1
+        # tm2.xtic1.y2   = tm2.xtic1.y1 - delta
+        # tm2.xlabel1.y  = tm2.xtic1.y2
+        # tm2.xtic1.line = 'default'
+
+        titleOri                  = cnvs2.gettextorientation(tm2.title.textorientation)
+        titleOri.height           = 14
+        tm2.title.textorientation = titleOri
+        tm2.title.y               = tm2.data.y2 + 0.01
         
         for tm in [tm1, tm2]:       
-            #tm.title.priority = 0
-            tm.max.priority = 0
-            tm.min.priority = 0
-            tm.mean.priority = 0
+            #tm.title.priority   = 0
+            tm.max.priority      = 0
+            tm.min.priority      = 0
+            tm.mean.priority     = 0
             tm.dataname.priority = 0
             
             tm.xlabel1.priority = 1 
-            tm.xtic1.priority = 1 
-            tm.yname.priority = 1
-            tm.yname.priority = 1
-            tm.xname.priority = 1
+            tm.xtic1.priority   = 1 
+            tm.yname.priority   = 1
+            tm.yname.priority   = 1
+            tm.xname.priority   = 1
             tm.ylabel1.priority = 1 
-            tm.ytic1.priority = 1  
+            tm.ytic1.priority   = 1  
                         
         
         #pdb.set_trace()
