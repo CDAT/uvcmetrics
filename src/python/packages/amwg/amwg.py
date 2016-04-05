@@ -631,8 +631,12 @@ class amwg_plot_set2(amwg_plot_spec):
         tm1.units.priority = 0
 
         # Grids:
-        tm1.xtic1.y1 = tm1.xtic2.y1
-        tm1.ytic1.x1 = tm1.ytic2.x1
+        tm1.xtic1.y1   = tm1.xtic2.y1
+        tm1.ytic1.x1   = tm1.ytic2.x1
+        line           = cnvs1.createline()
+        line.color     = [(50, 50, 50, 30)]
+        tm1.ytic1.line = line
+        tm1.xtic1.line = line
         
         # Adjust labels and names for combined plots
         yLabel = cnvs2.createtext(Tt_source=tm2.yname.texttable,
@@ -661,8 +665,10 @@ class amwg_plot_set2(amwg_plot_spec):
         tm2.units.priority = 0
 
         # Grids:
-        tm2.xtic1.y1 = tm2.xtic2.y1
-        tm2.ytic1.x1 = tm2.ytic2.x1
+        tm2.xtic1.y1   = tm2.xtic2.y1
+        tm2.ytic1.x1   = tm2.ytic2.x1
+        tm2.ytic1.line = line
+        tm2.xtic1.line = line
         
         tm2.data.x1      += deltaX
         tm2.data.x2      += deltaX
