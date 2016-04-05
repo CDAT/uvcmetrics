@@ -583,7 +583,7 @@ class amwg_plot_set2(amwg_plot_spec):
             }
         self.computation_planned = True
 
-    def customizeTemplates(self, templates, data=None):
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None):
         """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
 
@@ -792,7 +792,7 @@ class amwg_plot_set3(amwg_plot_spec,basic_id):
         self.plot_b = one_line_diff_plot( zvar, z2var, vid )
         self.computation_planned = True
         
-    def customizeTemplates(self, templates, data=None):
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None):
         """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
 
@@ -800,8 +800,8 @@ class amwg_plot_set3(amwg_plot_spec,basic_id):
         tm2.xname.priority  = 1
         tm1.yname.priority  = 1
         tm1.xname.priority  = 1
-        tm1.legend.priority = 0
-        tm2.legend.priority = 0
+        tm1.legend.priority = 1
+        tm2.legend.priority = 1
 
         # Fix units if needed
         if data is not None:
@@ -813,7 +813,7 @@ class amwg_plot_set3(amwg_plot_spec,basic_id):
         # Adjust labels and names for single plots
         yLabel = cnvs1.createtext(Tt_source=tm1.yname.texttable,
                                   To_source=tm1.yname.textorientation)
-        yLabel.x = tm1.yname.x * 0.96
+        yLabel.x = tm1.yname.x - 0.02
         yLabel.y = tm1.yname.y
         if data is not None:
             yLabel.string  = ["Temperature (" + data.units + ")"]
@@ -835,6 +835,25 @@ class amwg_plot_set3(amwg_plot_spec,basic_id):
         tm1.source.textorientation = sourceOri
         tm1.source.y               = tm1.units.y - 0.01
         tm1.source.x               = tm1.data.x1
+
+        tm1.legend.y2 = tm1.legend.y1 + 0.01
+
+        if varIndex is not None:
+            if varIndex > 0:
+                tm1.legend.y1  += 0.05
+                tm1.legend.y2   = tm1.legend.y1 + 0.01
+                if graphicMethod is not None:
+                    line = vcs.createline()
+                    line.width = 2
+                    line.color = ["red"]#, "blue", "salmon", "medium aquamarine", "orange", "chartreuse"]
+                    line.type = ["dash"]#, "dot", "dash-dot", "long-dash", "solid", "dash"]
+                    graphicMethod.line = line
+                data.id = 'obs'
+            else:
+                if type(min(data)) is float:
+                    data.id = 'model'
+                else:
+                    data.id = 'difference'
 
         # We want units at axis names
         tm1.units.priority = 0
@@ -863,21 +882,31 @@ class amwg_plot_set3(amwg_plot_spec,basic_id):
         #tm2.source.x               = tm2.data.x1        
 
         tm2.units.priority = 0
+
+        tm2.legend.y2  = tm2.legend.y1 + 0.01
         
-        tm2.data.x1      += deltaX
-        tm2.data.x2      += deltaX
-        tm2.box1.x1      += deltaX
-        tm2.box1.x2      += deltaX
-        tm2.ytic1.x1     += deltaX
-        tm2.ytic1.x2     += deltaX
-        tm2.ytic2.x1     += deltaX
-        tm2.ytic2.x2     += deltaX
-        tm2.ylabel1.x    += deltaX
-        tm2.ymintic1.x1  += deltaX
-        tm2.ymintic1.x2  += deltaX
-        #tm2.units.x     += deltaX
-        #tm2.title.x     += deltaX
-        tm2.xname.x      += deltaX        
+        if varIndex is not None:
+            if varIndex > 0:
+                tm2.legend.y1 += 0.05
+                tm2.legend.y2  = tm2.legend.y1 + 0.01
+              
+        if varIndex is not None:
+            if varIndex == 0:
+                tm2.data.x1      += deltaX
+                tm2.data.x2      += deltaX
+                tm2.box1.x1      += deltaX
+                tm2.box1.x2      += deltaX
+                tm2.ytic1.x1     += deltaX
+                tm2.ytic1.x2     += deltaX
+                tm2.ytic2.x1     += deltaX
+                tm2.ytic2.x2     += deltaX
+                tm2.ylabel1.x    += deltaX
+                tm2.ymintic1.x1  += deltaX
+                tm2.ymintic1.x2  += deltaX
+                #tm2.units.x     += deltaX
+                #tm2.title.x     += deltaX
+                tm2.xname.x      += deltaX
+                tm2.legend.x1    += deltaX
         
         return tm1, tm2
     
@@ -1061,7 +1090,7 @@ class amwg_plot_set4and41(amwg_plot_spec):
             self.plotall_id: [self.plot1_id, self.plot2_id, self.plot3_id ]
             }
         self.computation_planned = True
-    def customizeTemplates(self, templates, data=None):
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None):
         """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
 
@@ -1524,7 +1553,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
             }
         self.computation_planned = True
 
-    def customizeTemplates(self, templates, data=None):
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None):
         """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
         
@@ -1988,7 +2017,7 @@ class amwg_plot_set6(amwg_plot_spec):
             }
         self.computation_planned = True
 
-    def customizeTemplates(self, templates, data=None):
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None):
         """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
         
@@ -2083,6 +2112,9 @@ class amwg_plot_set6(amwg_plot_spec):
         tm2.source.priority        = 1
 
         tm2.units.priority = 1
+
+        # if varIndex is not None:
+        #     if varIndex == 0:
         
         return tm1, tm2
     
@@ -2196,7 +2228,7 @@ class amwg_plot_set7(amwg_plot_spec):
             }
        self.computation_planned = True
        #pdb.set_trace()
-    def customizeTemplates(self, templates, data=None):
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None):
         """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
         
@@ -2563,7 +2595,7 @@ class amwg_plot_set9(amwg_plot_spec):
         # ...was self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
         self.computation_planned = True
 
-    def customizeTemplates(self, templates, data=None):
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None):
         """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
         
@@ -2760,7 +2792,7 @@ class amwg_plot_set10(amwg_plot_spec, basic_id):
 
         self.computation_planned = True
 
-    def customizeTemplates(self, templates, data=None):
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None):
         """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
 
@@ -2768,8 +2800,8 @@ class amwg_plot_set10(amwg_plot_spec, basic_id):
         tm2.xname.priority  = 1
         tm1.yname.priority  = 1
         tm1.xname.priority  = 1
-        tm1.legend.priority = 0
-        tm2.legend.priority = 0
+        tm1.legend.priority = 1
+        tm2.legend.priority = 1
 
         # Fix units if needed
         if data is not None:
@@ -2804,6 +2836,25 @@ class amwg_plot_set10(amwg_plot_spec, basic_id):
         # tm1.source.y               = tm1.units.y - 0.01
         # tm1.source.x               = tm1.data.x1
 
+        tm1.legend.y2 = tm1.legend.y1 + 0.01
+        
+        if varIndex is not None:
+            if varIndex > 0:
+                tm1.legend.y1  += 0.05
+                tm1.legend.y2   = tm1.legend.y1 + 0.01
+                if graphicMethod is not None:
+                    line = vcs.createline()
+                    line.width = 2
+                    line.color = ["red"]#, "blue", "salmon", "medium aquamarine", "orange", "chartreuse"]
+                    line.type = ["dash"]#, "dot", "dash-dot", "long-dash", "solid", "dash"]
+                    graphicMethod.line = line
+                data.id = 'obs'
+            else:
+                if type(min(data)) is float:
+                    data.id = 'model'
+                else:
+                    data.id = 'difference'
+
         # We want units at axis names
         tm1.units.priority = 0
 
@@ -2835,26 +2886,36 @@ class amwg_plot_set10(amwg_plot_spec, basic_id):
 
         tm2.units.priority = 0
 
-        # print "\n\n==== Menor. yname.x = {0}, yunits.x = {1} ====\n\n".format(tm2.yname.x, tm2.yunits.x)
+        legendOri                  = cnvs2.gettextorientation(tm2.legend.textorientation)
+        legendOri.height           = 8
+        tm2.legend.textorientation = legendOri
+        tm2.legend.y2              = tm2.legend.y1 + 0.01
         
-        # if tm2.yname.x > (tm2.yunits.x - 0.015):
-        #     print "\n~~~~~~ Adjusting x scale.... ~~~~~~\n"
-        #     deltaX = 0.035
+        if varIndex is not None:
+            if varIndex > 0:
+                tm2.legend.y1 += 0.05
+                tm2.legend.y2  = tm2.legend.y1 + 0.01
+
+        if varIndex is not None:
+            if varIndex == 0:
+                deltaX = 0.035
         
-        #     tm2.data.x1      += deltaX
-        #     tm2.data.x2      += deltaX
-        #     tm2.box1.x1      += deltaX
-        #     tm2.box1.x2      += deltaX
-        #     tm2.ytic1.x1     += deltaX
-        #     tm2.ytic1.x2     += deltaX
-        #     tm2.ytic2.x1     += deltaX
-        #     tm2.ytic2.x2     += deltaX
-        #     tm2.ylabel1.x    += deltaX
-        #     tm2.ymintic1.x1  += deltaX
-        #     tm2.ymintic1.x2  += deltaX
-        #     #tm2.units.x     += deltaX
-        #     #tm2.title.x     += deltaX
-        #     tm2.xname.x      += deltaX        
+                tm2.data.x1      += deltaX
+                tm2.data.x2      += deltaX
+                tm2.box1.x1      += deltaX
+                tm2.box1.x2      += deltaX
+                tm2.ytic1.x1     += deltaX
+                tm2.ytic1.x2     += deltaX
+                tm2.ytic2.x1     += deltaX
+                tm2.ytic2.x2     += deltaX
+                tm2.ylabel1.x    += deltaX
+                tm2.ymintic1.x1  += deltaX
+                tm2.ymintic1.x2  += deltaX
+                #tm2.units.x     += deltaX
+                #tm2.title.x     += deltaX
+                tm2.xname.x      += deltaX
+                tm2.legend.x1    += deltaX
+                tm2.legend.x2    += deltaX
         
         return tm1, tm2
 

@@ -1,4 +1,4 @@
-#!/Users/jccosta/Pessoal/Work/NYU/UV-CDAT/build-uvcdat/install/Library/Frameworks/Python.framework/Versions/2.7/Resources/Python.app/Contents/MacOS/Python
+#!/usr/bin/env python
 # Script for running diagnostics.
 # Command-line usage example:
 # diags --model path=path,climos=yes --obs path=path,climos=yes,filter='f_startswith("NCEP")' --vars FLUT T --seasons DJF --region Global --package AMWG --output path
@@ -446,6 +446,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
         if type(resr) is not tuple:
             resr = (resr, None )
         vcanvas.clear()
+
         # ... Thus all members of resr and all variables of rsr will be
         # plotted in the same plot...
         for rsr in resr:
@@ -747,23 +748,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                                     xLabel.string = ["LWCF (" + xvar.units + ")"]
                                     xLabel.height = 9
                                     
-                                    vcanvas2.plot(xLabel, bg=1)
-                                    
-                                    
-                                    # # Set Y label for set 11 of plots:
-                                    # if hasattr(rsr, 'axax'):
-                                    #     for k in rsr.axax.keys():
-                                    #         if k.count('SWCF'):
-                                    #             yLabel = vcs.createtext(Tt_source=tm2.yname.texttable,
-                                    #                                     To_source=tm2.yname.textorientation)
-                                    #             yLabel.x = tm2.yname.x
-                                    #             yLabel.y = tm2.yname.y
-                                    #             ylabelstring  = "SWCF"
-                                    #             #ylabelstring += "("+xvar.units+")"
-                                    #             print "\n\n****** yvar.units = {0}, xvar.units = {1} *******\n".format(yvar.units, xvar.units)
-                                    #             yLabel.string = [ylabelstring]
-                                    #             vcanvas2.plot(yLabel, bg=1)
-                                    #             break                                         
+                                    vcanvas2.plot(xLabel, bg=1)                                                                          
                                 
                                 # This is the scatter plots from the multiplot
                                 vcanvas2.plot(xvar, yvar,
@@ -780,12 +765,20 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                 elif vcs.isvector(rsr.presentation) or rsr.presentation.__class__.__name__=="Gv":
                     strideX = rsr.strideX
                     strideY = rsr.strideY
-                    print "\n\nPlotting 5\n"
-                    # Note that continents=0 is a useful plot option
-                    vcanvas.plot( var[0][::strideY,::strideX],
-                                  var[1][::strideY,::strideX], rsr.presentation, tmobs[ir], bg=1,
-                                  title=title, units=getattr(var,'units',''),
-                                  source=rsr.source )
+                    print "\n\nPlotting 5\n"                    
+
+                    if plot.number == '6':
+                        vcanvas.plot( var[0][::strideY,::strideX],
+                                      var[1][::strideY,::strideX], rsr.presentation, tmobs[ir], bg=1)#,
+                                      #title=title, units=getattr(var,'units',''),
+                                      #source=rsr.source )
+                    else:
+                        # Note that continents=0 is a useful plot option
+                        vcanvas.plot( var[0][::strideY,::strideX],
+                                      var[1][::strideY,::strideX], rsr.presentation, tmobs[ir], bg=1,
+                                      title=title, units=getattr(var,'units',''),
+                                      source=rsr.source )
+                    
                     # the last two lines shouldn't be here.  These (title,units,source)
                     # should come from the contour plot, but that doesn't seem to
                     # have them.
@@ -828,7 +821,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                     vcanvas2.setcolormap('bl_to_darkred')
                     
                     if hasattr(plot, 'customizeTemplates'):
-                        tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)], var )
+                        tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)], var, varIndex, rsr.presentation )
                     #vcanvas.plot(var, rsr.presentation, tm, bg=1,
                     #   title=title, units=getattr(var,'units',''), source=rsr.source )
                     print "\n\nPlotting 8\n"
@@ -837,15 +830,10 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                     # # vcanvas3.clear()
                     # # vcanvas3.plot(var, rsr.presentation )
 
-                    print "===== var ===="
-                    #pprint(vars(var))
-
-                    print "\n~~~~~~ RSR ~~~~~~"
-                    #pprint(vars(rsr))
 
                     print "\n------------ Single Plot source = {0} -----------\n".format(rsr.source)
-                    
-                    # Single plot    
+
+                    # Single plot                    
                     plot.vcs_plot(vcanvas, var, rsr.presentation, tm, bg=1,
                                   title=title, source=rsr.source)
                     savePNG = True
@@ -869,7 +857,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                             # 'white_to_red', 'white_to_yellow']
 
                             print "\n------------ Multi Plot source = {0} -----------\n".format(rsr.source)
-                            tm2.source.priority = 1    
+
                             # Multiple plots on a page:                            
                             plot.vcs_plot( vcanvas2, var, rsr.presentation, tm2, bg=1,
                                            title=title, source=rsr.source,
