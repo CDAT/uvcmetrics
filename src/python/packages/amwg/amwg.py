@@ -4171,7 +4171,7 @@ class amwg_plot_set15(amwg_plot_spec):
                                plotspec(vid = self.plot2_id, 
                                         zvars=[vidObs],   
                                         zfunc = (lambda x: MV2.transpose(x) ),       
-                                        zrangevars={'yrange':[1000., 0.]},                         
+                                        zrangevars={'yrange':[1000., 0.]},
                                         plottype = self.plottype,
                                         title = 'obs',
                                         levels = levels )
@@ -4198,17 +4198,28 @@ class amwg_plot_set15(amwg_plot_spec):
         tm1.box1.x1   = tm1.data.x1
         tm1.legend.x1 = tm1.data.x1
      
-        tm1.yname.x               = .05
+        tm1.yname.x               = .04
         tm1.yname.y               = (tm1.data.y1 + tm1.data.y2)/2
-        to                        = cnvs1.createtextorientation(None, tm1.yname.textorientation)
+        to                        = cnvs1.createtextorientation(None,
+                                                                tm1.yname.textorientation)
         to.angle                  = -90
+        to.height                += 2
         tm1.yname.textorientation = to 
-                
-        tm1.xname.y   = tm1.data.y1 - .05
-        delta         = tm1.ytic1.x1 - tm1.ytic1.x2
-        tm1.ytic1.x1  = tm1.data.x1
-        tm1.ytic1.x2  = tm1.data.x1 - delta
-        tm1.ylabel1.x = tm1.ytic1.x2
+
+        to                        = cnvs1.createtextorientation(None,
+                                                                tm1.xname.textorientation)
+        to.height                += 2
+        tm1.xname.textorientation = to
+        tm1.xname.y               = tm1.data.y1 - .06
+        delta                     = tm1.ytic1.x1 - tm1.ytic1.x2
+        tm1.ytic1.x1              = tm1.data.x1
+        tm1.ytic1.x2              = tm1.data.x1 - delta
+        tm1.ylabel1.x             = tm1.ytic1.x2
+
+        titleOri                  = cnvs1.gettextorientation(tm1.title.textorientation)
+        titleOri.height          += 3
+        tm1.title.textorientation = titleOri
+        tm1.title.y               = tm1.data.y2 + 0.015
 
         tm1.crdate.priority = 0
         tm1.crtime.priority = 0        
