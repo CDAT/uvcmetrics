@@ -888,13 +888,16 @@ class amwg_plot_set3(amwg_plot_spec,basic_id):
 
         tm2.units.priority = 0
 
-        tm2.legend.y2  = tm2.legend.y1 + 0.01
+        tm2.legend.y2              = tm2.legend.y1 + 0.01
+        legendTO                   = cnvs2.createtextorientation(None, tm2.legend.textorientation)
+        legendTO.height            = 10
+        tm2.legend.textorientation = legendTO        
         
         if varIndex is not None:
             if varIndex > 0:
                 tm2.legend.y1 += 0.05
                 tm2.legend.y2  = tm2.legend.y1 + 0.01
-              
+                      
         if varIndex is not None:
             if varIndex == 0:
                 tm2.data.x1      += deltaX
