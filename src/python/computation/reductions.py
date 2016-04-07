@@ -205,8 +205,9 @@ def set_spatial_avg_method( var ):
     # ... weighting_choice() is only valid for atmos, but will probably be ok for other realms.
     return var
 
-def set_mean( mv ):
-    # Set mean attribute of a variable.  Typically this appears in a plot header.
+def set_mean( mv, season=seasonsyr, region=None, gw=None ):
+    """Set mean attribute of a variable.  Typically this appears in a plot header."""
+    if season is None: season=seasonsyr
     weighting = getattr( mv, 'weighting', None )
     if hasattr(mv,'mean') and isinstance(mv.mean,Number):
         mvmean = mv.mean
@@ -216,9 +217,9 @@ def set_mean( mv ):
         # The _filename attribute, or else a lot of data we don't have, is needed to compute
         # mass-based weights.
         try:
-            mv.mean = reduce2scalar( mv, weights='mass' )
+            mv.mean = reduce2scalar( mv, season=season, region=region, gw=gw, weights='mass' )
         except Exception as e:
-            print "ERROR, exception",e,"for variable",mv.id
+            print "ERROR caught by set_mean, exception",e,"for variable",mv.id
     #else: use the VCS default of area weighting
 
 
@@ -284,7 +285,7 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
         weights = getattr( mv, 'weighting', None )
         if not hasattr(mvrs,'filetable') and hasattr(mv,'filetable'):
             mvrs.filetable = mv.filetable
- 
+
     if len(axes_string)<=2:
         avmv = mvrs
     else:
@@ -314,36 +315,63 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
                 klev = klevs[0]
             avweights = mvrs.clone()
 
+            # The variable mv, hence mvrs and avweights may have been expanded in longitude after
+            # the weight array in the filetable was constructed.  This happens for polar plots.
+            # So here we expand the weight array exactly the same way, if we can:
+            if len(klons)>0:
+                ll_lon = latlon_wts.getLongitude()
+                av_lon = avweights.getLongitude()
+                av_lat = avweights.getLatitude()
+                if ll_lon.topology=='circular' and av_lon.topology=='circular' and\
+                        len(ll_lon)<len(av_lon):
+                    latlon_wts = latlon_wts( longitude=( av_lon[0], av_lon[-1] ) )
+                    # For polar plots, latitude is shrunk as well.  I won't put this
+                    # line in a more general location until another case turns up...
+                    latlon_wts = latlon_wts( latitude=( av_lat[0], av_lat[-1] ) )
+
             if len(klats)>0 and len(klons)>0:
                 # We have both latitudes and longitudes
-                for inds in numpy.ndindex(avweights.shape):
-                    ilat = inds[klat]
-                    ilon = inds[klon]
-                    if len(klevs)>0:
-                        ilev = inds[klev]
-                    else:
-                        ilev = -1   # means use the bottom, usually best if there are no levels
-                    avweights[inds] = latlon_wts[ilev,ilat,ilon]
+                if klevs==[0] and klats==[1] and klons==[2] and avweights.shape==latlon_wts.shape:
+                    # avweights and latlon_wts are compatible
+                    numpy.copyto( avweights, latlon_wts ) # avweights[:,:,...]=latlon_wts[:,:,...]
+                else:
+                    # avweights and latlon_wts are structured differently.  This loop is slow.
+                    for inds in numpy.ndindex(avweights.shape):
+                        ilat = inds[klat]
+                        ilon = inds[klon]
+                        if len(klevs)>0:
+                            ilev = inds[klev]
+                        else:
+                            ilev = -1   # means use the bottom, usually best if there are no levels
+                        avweights[inds] = latlon_wts[ilev,ilat,ilon]
             elif len(klats)>0:
                 # We have latitudes, no longitudes.  Normally this means that the longitudes have
                 # been averaged out.
-                for inds in numpy.ndindex(avweights.shape):
-                    ilat = inds[klat]
-                    if len(klevs)>0:
-                        ilev = inds[klev]
-                    else:
-                        ilev = -1   # means use the bottom, usually best if there are no levels
-                    avweights[inds] = numpy.sum( latlon_wts[ilev,ilat,:] )
+                if klevs==[0] and klats==[1] and avweights.shape==latlon_wts.shape:
+                    # avweights and latlon_wts are compatible
+                    numpy.copyto( avweights, latlon_wts ) # avweights[:,:,...]=latlon_wts[:,:,...]
+                else:
+                    for inds in numpy.ndindex(avweights.shape):
+                        ilat = inds[klat]
+                        if len(klevs)>0:
+                            ilev = inds[klev]
+                        else:
+                            ilev = -1   # means use the bottom, usually best if there are no levels
+                        avweights[inds] = numpy.sum( latlon_wts[ilev,ilat,:] )
             elif len(klons)>0:
                 # We have longitudes, no latitudes.  Normally this means that the latitudes have
                 # been averaged out.
-                for inds in numpy.ndindex(avweights.shape):
-                    ilon = inds[klon]
-                    if len(klevs)>0:
-                        ilev = inds[klev]
-                    else:
-                        ilev = -1   # means use the bottom, usually best if there are no levels
-                    avweights[inds] = numpy.sum( latlon_wts[ilev,:,ilon] )
+                if klevs==[0] and klons==[1] and avweights.shape==latlon_wts.shape:
+                    # avweights and latlon_wts are compatible
+                    numpy.copyto( avweights, latlon_wts ) # avweights[:,:,...]=latlon_wts[:,:,...]
+                else:
+                    for inds in numpy.ndindex(avweights.shape):
+                        ilon = inds[klon]
+                        if len(klevs)>0:
+                            ilev = inds[klev]
+                        else:
+                            ilev = -1   # means use the bottom, usually best if there are no levels
+                        avweights[inds] = numpy.sum( latlon_wts[ilev,:,ilon] )
             else:
                 # No latitudes, no longitudes!
                 if len(klevs)>0:
@@ -454,7 +482,7 @@ def reduce2scalar_seasonal_zonal_level( mv, season=seasonsyr, latmin=-90, latmax
         return None
     return reduce2scalar_seasonal_zonal( mvl, season, latmin=latmin, latmax=latmax, vid=vid, gw=gw )
 
-def reduce2scalar( mv, vid=None, gw=None, weights=None ):
+def reduce2scalar( mv, vid=None, gw=None, weights=None, season=seasonsyr, region=None ):
     """averages mv over the full range all axes, to a single scalar.
     Uses the averager module for greater capabilities
     Latitude weights may be provided as 'gw'.  The averager's default is reasonable, however.
@@ -465,7 +493,8 @@ def reduce2scalar( mv, vid=None, gw=None, weights=None ):
     For the moment we expect mv to have lat and lon axes; and if it has no level axis,
     the bottom level, i.e. the last in any level array, lev=levels[-1], will be assumed.
     """
-    return reduce2any( mv, target_axes=[], vid=vid, gw=gw, weights=weights )
+    return reduce2any( mv, target_axes=[], vid=vid, gw=gw, weights=weights, season=season,
+                       region=region )
 
 def reduce2levlat_seasonal( mv, season=seasonsyr, region=None, vid=None ):
     """returns the mean of the variable over all axes but level and latitude, as a cdms2 variable, i.e. a MV.
@@ -1570,7 +1599,6 @@ def select_region(mv, region=None):
         region = interpret_region(region)
 #        print 'region after interpret region:', region
         mvreg = mv(latitude=(region[0], region[1]), longitude=(region[2], region[3]))
-            
     return mvreg
 
 def select_lev( mv, slev ):

@@ -940,8 +940,6 @@ class plot_spec(object):
         return new_id
     def compute(self,newgrid=0):
         return self.results(newgrid)
-    def results(self,newgrid=0):
-        return self._results(newgrid)
 
     def uniquefts(self, ftlist):
         names = []
@@ -1007,6 +1005,8 @@ class plot_spec(object):
         return dups, climo, raw 
 
 
+    def results(self,newgrid=0):
+        return self._results(newgrid)
 # To profile, replace (by name changes) the above results() with the following one:
     def profiled_results(self,newgrid=0):
         if newgrid!=0:
@@ -1242,7 +1242,7 @@ class plot_spec(object):
             else: zid = z.id
             print "INFO no mean attribute in variable",zid,\
                 "; we may compute it in compute_plot_var_value."
-            set_mean( z )
+            set_mean( z, season=getattr(self,'season',None), region=getattr(self,'region',None) )
             if hasattr(z,'mean') and isinstance(z.mean,cdms2.tvariable.TransientVariable) and\
                     z.mean.shape==():
                 # ... adding 0.0 converts a numpy array of shape () to an actual number
