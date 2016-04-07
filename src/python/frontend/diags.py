@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/Users/jccosta/Pessoal/Work/NYU/UV-CDAT/build-uvcdat/install/Library/Frameworks/Python.framework/Versions/2.7/Resources/Python.app/Contents/MacOS/Python
 # Script for running diagnostics.
 # Command-line usage example:
 # diags --model path=path,climos=yes --obs path=path,climos=yes,filter='f_startswith("NCEP")' --vars FLUT T --seasons DJF --region Global --package AMWG --output path
@@ -167,7 +167,7 @@ def run_diags( opts ):
             vcanvas.setantialiasing(0)
         vcanvas2.portrait()
         vcanvas2.setcolormap('bl_to_darkred') #Set the colormap to the NCAR colors
-        LINE = vcanvas.createline('LINE', 'default')
+        LINE = vcanvas.createline('LINE-DIAGS', 'default')
         LINE.width = 3.0
         LINE.type = 'solid'
         LINE.color = 242
@@ -278,177 +278,6 @@ def run_diags( opts ):
                     for aux in varopts:
                         #plot = sclass( modelfts, obsfts, varid, time, region, vvaropts[aux] )
 
-                        # Since Options is a 2nd class (at best) citizen, we have to do something icky like this.
-                        # hoping to change that in a future release. Also, I can see this being useful for amwg set 1.
-                        # (Basically, if we output pre-defined json for the tables they can be trivially sorted)                            
-                        if '5' in snum and package.upper() == 'LMWG' and opts['output']['json'] == True:
-                            plot = sclass( modelfts, obsfts, varid, time, region, vvaropts[aux], jsonflag=True )
-                        else:
-                            if snum == '14' and package.upper() == 'AMWG': #Taylor diagrams
-                                #this is a total kludge so that the list of variables is passed in for processing
-                                plot = sclass( modelfts, obsfts, variables, time, region, vvaropts[aux] )
-                            else:
-                                plot = sclass( modelfts, obsfts, varid, time, region, vvaropts[aux], levels=opts['levels'] )
-
-                        # Do the work (reducing variables, etc)
-                        res = plot.compute(newgrid=-1) # newgrid=0 for original grid, -1 for coarse
-                        # print '************************************ PLOT DONE **********************************'
-                        # print 'type res: ', type(res)
-                        # if type(res) == str:
-                        #     print '------------->Dump this to the file'
-                        #     print res
-                        #     print '------------->Done Dumping'
-
-    # Check for user-supplied times (eg seasons, months, or annual)
-    times = opts.get ('times', None)
-    if times is None or times == []:
-        times = ['ANN']
-        print "Defaulting to time ANN. You can specify times with --seasons/--seasonally, --months/--monthly or --yearly"
-    else:
-        print "Using times=",times
-
-    # See if any variable options were passed in
-    if opts['varopts'] is None:
-        opts['varopts'] = [None]
-
-    # See if regions were passed in
-    regl = []
-    regions = []
-    if opts['regions'] == []:
-        rname = 'Global'
-        regl = [defines.all_regions['Global']]
-        regions = [ rectregion(rname, regl) ]
-    else:
-        rnames = opts['regions']
-        for r in rnames:
-            regl.append(defines.all_regions[r])
-            regions.append(rectregion(r, defines.all_regions[r]))
-    print 'Using regions', regions
-
-
-    number_diagnostic_plots = 0
-
-    dm = diagnostics_menu()                 # dm = diagnostics menu (package), a dict
-
-    # set up some VCS things if we are going to eventually plot things
-    if opts['output']['plots'] == True:
-        vcanvas = vcs.init()
-        vcsx = vcanvas
-        vcanvas.setcolormap('bl_to_darkred') #Set the colormap to the NCAR colors
-        vcanvas2 = vcs.init()
-        vcanvas2.portrait()
-        vcanvas2.setcolormap('bl_to_darkred') #Set the colormap to the NCAR colors
-        LINE = vcanvas.createline('LINE', 'default')
-        LINE.width = 3.0
-        LINE.type = 'solid'
-        LINE.color = 242
-        if opts['output']['logo'] == False:
-            vcanvas.drawlogooff()
-            vcanvas2.drawlogooff()
-    else:
-        # No plots. JSON? XML? NetCDF? etc
-        # do something else
-        print 'Not plotting. Do we need any setup to produce output files?'
-
-    # Initialize our diagnostics package class
-    pclass = dm[package.upper()]()
-    # Find which plotsets the user requested which this package offers:
-    sm = pclass.list_diagnostic_sets()  # sm = plot set menu, a dict
-    if opts['sets'] is None:
-        keys = sm.keys()
-        keys.sort()
-        plotsets = [ keys[1] ]
-        print "plot sets not specified, defaulting to",plotsets[0]
-    else:
-        ps = opts['sets']
-        sndic = { setnum(s):s for s in sm.keys() }   # plot set number:name
-        plotsets = [ sndic[setnum(x)] for x in ps if setnum(x) in sndic ]
-
-    # Ok, start the main loops.
-    for sname in plotsets:
-        print "Working on ",sname," plots"
-
-        snum = sname.strip().split(' ')[0]
-        # instantiate the class
-        sclass = sm[sname]
-
-        # see if the user specified seasons are valid for this diagnostic
-        use_times = list( set(times) & set(pclass.list_seasons()) )
-
-        # Get this list of variables for this set (given these obs/model inputs)
-        print 'opts vars:', opts.get('vars',[])
-        variables = pclass.list_variables( modelfts, obsfts, sname )
-        print 'var list from pclass: ', variables
-        # Get the reduced list of variables possibly specified by the user
-        if opts.get('vars',['ALL'])!=['ALL']:
-            # If the user sepcified variables, use them instead of the complete list
-            variables = list( set(variables) & set(opts.get('vars',[])) )
-            if len(variables)==0 and len(opts.get('vars',[]))>0:
-                print "WARNING: Couldn't find any of the requested variables:",opts['vars']
-                print "among",variables
-                sys.exit(1)
-
-        # AMWG set 1 (the tables) is special cased
-        if (sclass.number == '1' and package.upper() == 'AMWG'):
-            variables = variables[:1]
-            # make tables
-            print 'Making tables'
-            # pass season info, maybe var list, maybe region list?
-        #     continue
-        # if (sclass.number == '5' and package.upper() == 'LMWG'):
-        #     print 'Making tables'
-        #     # pass season info, maybe var list, maybe region list?
-        #     if '5' in snum and package.upper() == 'LMWG' and opts['json'] == True:
-        #         plot = sclass( modelfts, obsfts, varid, time, region, vvaropts[aux], jsonflag=True )
-        #     continue
-
-
-        # Ok, start the next layer of work - seasons and regions
-        # loop over the seasons for this plot
-        for time in use_times:
-            for region in regions:
-                # Get the current region's name, using the class wizardry.
-                region_rect = defines.all_regions[str(region)]
-                r_fname = region_rect.filekey
-                rname = str(region)
-                print 'Region: ', rname
-                print 'Region filename: ', r_fname
-
-                # loop over variables now
-                vcount = len(variables)
-                counter = 0
-                for ivarid, varid in enumerate(variables):
-                    print "Processing variable",varid," in season",time, " in plotset ",sname, " - variable ", counter, "of ", vcount
-                    counter = counter+1
-                    vard = pclass.all_variables( modelfts, obsfts, sname )
-                    plotvar = vard[varid]
-
-                    # Find variable options.  If none were requested, that means "all".
-                    vvaropts = plotvar.varoptions()
-                    if vvaropts is None:
-                        if len(opts['varopts'])>0:
-                            if opts['varopts']!=[None]:
-                                print "WARNING: no variable options are available, but these were requested:", opts['varopts']
-                                print "Continuing as though no variable options were requested."
-                        vvaropts = {None:None}
-                        varopts = [None]
-                    else:
-                        if len(opts['varopts'])==0:
-                            varopts = vvaropts.keys()
-                        else:
-                            if opts['varopts']==[] or opts['varopts']==[None]:
-                                opts['varopts'] = [ None, 'default', ' default' ]
-                            varopts = list( set(vvaropts.keys()) & set(opts['varopts']) )
-                            if varopts==[]:
-                                print "WARNING: requested varopts incompatible with available varopts"
-                                print "requeseted varopts=",opts['varopts']
-                                print "available varopts for variable",varid,"are",vvaropts.keys()
-                                print "No plots will be made."
-
-                    # now, the most inner loop. Looping over sets then seasons then vars then varopts
-                    for aux in varopts:
-                        #plot = sclass( modelfts, obsfts, varid, time, region, vvaropts[aux] )
-                  
                         # Since Options is a 2nd class (at best) citizen, we have to do something icky like this.
                         # hoping to change that in a future release. Also, I can see this being useful for amwg set 1.
                         # (Basically, if we output pre-defined json for the tables they can be trivially sorted)                            
@@ -818,13 +647,13 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                                 tm.line1.y1 = tm.box1.y2
                                 tm.line1.y2 = tm.box1.y1
                                 #pdb.set_trace()
-                                tm.line1.line = 'LINE'
+                                tm.line1.line = 'LINE-DIAGS'
                                 tm.line1.priority = 1
                                 tm2.line1.x1 = tm2.box1.x1
                                 tm2.line1.x2 = tm2.box1.x2
                                 tm2.line1.y1 = tm2.box1.y2
                                 tm2.line1.y2 = tm2.box1.y1
-                                tm2.line1.line = 'LINE'
+                                tm2.line1.line = 'LINE-DIAGS'
                                 tm2.line1.priority = 1                                                   
                                 #tm.line1.list()
                             if hasattr(plot, 'customizeTemplates'):
