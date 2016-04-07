@@ -2304,6 +2304,8 @@ class amwg_plot_set7(amwg_plot_spec):
         tm2.title.y              -= 0.005
 
         tm2.max.y -= 0.005
+
+        tm2.legend.x1 -= 0.01
         
         tm2.source.priority        = 1
 
@@ -2457,6 +2459,111 @@ class amwg_plot_set8(amwg_plot_spec):
             }
         #... was self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
         self.computation_planned = True
+
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None):
+        """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
+        (cnvs1, tm1), (cnvs2, tm2) = templates
+        
+        # tm2.yname.priority  = 1
+        # tm2.xname.priority  = 1
+        # tm1.yname.priority  = 1
+        # tm1.xname.priority  = 1
+        # tm1.legend.priority = 1
+        # tm2.legend.priority = 1
+
+        # Fix units if needed
+        if data is not None:
+            if (getattr(data, 'units', '') == ''):
+                data.units = 'K'
+            if data.getAxis(0).id.count('lat'):
+                data.getAxis(0).id = 'Latitude'
+            if data.getAxis(0).id.count('lon'):
+                data.getAxis(0).id = 'Longitude'
+            elif len(data.getAxisList()) > 1:
+                if data.getAxis(1).id.count('lat'):
+                    data.getAxis(1).id = 'Latitude'
+                if data.getAxis(1).id.count('lon'):
+                    data.getAxis(1).id = 'Longitude'
+
+        #cnvs1.landscape()
+        #cnvs1.setcolormap("categorical")
+
+        # Adjust labels and names for single plots
+        # ynameOri                  = cnvs1.gettextorientation(tm1.yname.textorientation)
+        # ynameOri.height           = 16
+        # tm1.yname.textorientation = ynameOri
+        # #tm1.yname.x              -= 0.009
+
+        # xnameOri                  = cnvs1.gettextorientation(tm1.xname.textorientation)
+        # xnameOri.height           = 16
+        # tm1.xname.textorientation = xnameOri
+        # #tm1.xname.y              -= 0.003
+
+        # meanOri                  = cnvs1.gettextorientation(tm1.mean.textorientation)
+        # meanOri.height           = 14
+        # tm1.mean.textorientation = meanOri
+        # tm1.mean.y              -= 0.005
+
+        # titleOri                  = cnvs1.gettextorientation(tm1.title.textorientation)
+        # titleOri.height           = 22
+        # tm1.title.textorientation = titleOri
+
+        # #tm1.max.y -= 0.005
+        
+        # sourceOri                  = cnvs1.gettextorientation(tm1.source.textorientation)
+        # sourceOri.height           = 11.0
+        # tm1.source.textorientation = sourceOri
+        # tm1.source.y               = tm1.units.y - 0.02
+        # tm1.source.x               = tm1.data.x1
+        # tm1.source.priority        = 1
+
+        # # We want units at axis names
+        # tm1.units.y       -= 0.01
+        # tm1.units.priority = 1
+
+        
+        # #cnvs2.landscape()
+        # #cnvs2.setcolormap("categorical")
+        
+        # # Adjust labels and names for combined plots
+        # ynameOri                  = cnvs2.gettextorientation(tm2.yname.textorientation)
+        # ynameOri.height           = 9
+        # tm2.yname.textorientation = ynameOri
+        # tm2.yname.x              -= 0.009
+
+        # xnameOri                  = cnvs2.gettextorientation(tm2.xname.textorientation)
+        # xnameOri.height           = 9
+        # tm2.xname.textorientation = xnameOri
+        # tm2.xname.y              -= 0.003
+
+        # #meanOri                  = cnvs2.gettextorientation(tm2.mean.textorientation)
+        # #meanOri.height           = 11.5
+        # #tm2.mean.textorientation = meanOri
+        # tm2.mean.y -= 0.005
+
+        # titleOri                  = cnvs2.gettextorientation(tm2.title.textorientation)
+        # titleOri.height           = 11.5
+        # tm2.title.textorientation = titleOri
+
+        # tm2.max.y -= 0.005
+        
+        # sourceOri                  = cnvs2.gettextorientation(tm2.source.textorientation)
+        # sourceOri.height           = 8.0
+        # tm2.source.textorientation = sourceOri
+        # tm2.source.y               = tm2.units.y - 0.01
+        # tm2.source.x               = tm2.data.x1
+        # tm2.source.priority        = 1
+        
+        # legendOri                  = cnvs2.gettextorientation(tm2.legend.textorientation)
+        # legendOri.height          -= 2
+        # tm2.legend.textorientation = legendOri
+        
+        # tm2.units.priority = 1
+
+        tm2.mean.y -= 0.01
+        
+        return tm1, tm2
+    
     def _results(self, newgrid=0):
         #pdb.set_trace()
         results = plot_spec._results(self, newgrid)
