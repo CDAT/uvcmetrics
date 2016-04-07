@@ -2039,7 +2039,7 @@ class amwg_plot_set6(amwg_plot_spec):
         # Fix units if needed
         if data is not None:
             if (getattr(data, 'units', '') == ''):
-                data.units = 'K'
+                data.units = 'N/m^2'
             if data.getAxis(0).id.count('lat'):
                 data.getAxis(0).id = 'Latitude'
             if data.getAxis(0).id.count('lon'):
@@ -3615,7 +3615,7 @@ class amwg_plot_set13(amwg_plot_spec):
             }
         self.computation_planned = True
 
-    def customizeTemplates(self, templates, data=None):
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None):
         """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
         
@@ -4163,7 +4163,7 @@ class amwg_plot_set15(amwg_plot_spec):
         # ... was self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
         self.computation_planned = True
         #pdb.set_trace()
-    def customizeTemplates(self, templates, data=None):
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None):
         """Theis method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
  
