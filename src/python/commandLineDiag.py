@@ -24,4 +24,4 @@ diags --package AMWG --set 14 --model path=$HOME/uvcmetrics_test_data/obs_atmos/
 
 diags --package AMWG --set 14 --model path=$HOME/uvcmetrics_test_data/obs_atmos/,climos=yes --model path=$HOME/uvcmetrics_test_data/cam35_data/,climos=yes  --obs path=$HOME/uvcmetrics_test_data/obs_data/,filter='f_startswith("NCEP")',climos=yes --outputdir $HOME/diagout/ --seasons JAN --plots yes --vars T --varopts "200 mbar"
 
-diags --package AMWG --set 15 --model path=$HOME/uvcmetrics_test_data/cam35_data/,climos=yes --obs path=$HOME/uvcmetrics_test_data/obs_data/,filter='f_startswith("NCEP")',climos=yes --outputdir $HOME/Documents/Climatology/ClimateData/diagout/ --seasons ANN --plots yes --vars T --levels 200.0,210.0,220.0,230.0,240.0,250.0,260.0,270.0,280.0,290.0
+diags --package AMWG --set 15 --model path=$HOME/uvcmetrics_test_data/cam35_data/,climos=yes --obs path=$HOME/uvcmetrics_test_data/obs_data/,filter='f_startswith("NCEP")',climos=yes --outputdir $HOME/diagout/ --seasons ANN --plots yes --vars T --levels 200.0,210.0,220.0,230.0,240.0,250.0,260.0,270.0,280.0,290.0
