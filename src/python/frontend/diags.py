@@ -1,4 +1,4 @@
-#!/Users/jccosta/Pessoal/Work/NYU/UV-CDAT/build-uvcdat/install/Library/Frameworks/Python.framework/Versions/2.7/Resources/Python.app/Contents/MacOS/Python
+#!/usr/bin/env python
 # Script for running diagnostics.
 # Command-line usage example:
 # diags --model path=path,climos=yes --obs path=path,climos=yes,filter='f_startswith("NCEP")' --vars FLUT T --seasons DJF --region Global --package AMWG --output path
@@ -571,7 +571,8 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                     if hasattr(plot, 'customizeTemplates'):
                         if hasattr(plot, 'replaceIds'):
                             var = plot.replaceIds(var)
-                        tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)] )
+                        tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)],
+                                                           var, varIndex, rsr_presentation )
 
                     if len(rsr.vars) == 1:
                         #scatter plot for plot set 12
@@ -588,7 +589,6 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                         vcanvas.plot(var, 
                                      rsr_presentation, tm, bg=1, title=title,
                                      source=rsr.source)
-                                     #units='', source=rsr.source )
                         savePNG = False    
                         #plot the multibox plot
                         try:
@@ -624,7 +624,6 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                                 vcanvas2.plot(var,
                                               rsr_presentation, tm2, bg=1, title=title,
                                               source=subtitle)
-                                              #units='', source=subtitle )
                                 plotcv2 = True
                                 savePNG = True
                         except vcs.error.vcsError as e:
