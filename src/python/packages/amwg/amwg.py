@@ -3175,7 +3175,7 @@ class amwg_plot_set11(amwg_plot_spec):
         self.composite_plotspecs[self.plotall_id] = plotall_id
         self.computation_planned = True
         #pdb.set_trace()
-    def customizeTemplates(self, templates):
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None):
         """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
         #pdb.set_trace()
@@ -3376,38 +3376,91 @@ class amwg_plot_set12(amwg_plot_spec):
         name, units = self.IDsandUnits['axis']
         var.comment1 = name +' (' + units +')'
         return var        
-    def customizeTemplates(self, templates):
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None):
         """Theis method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
-        tm1.legend.priority = 0
-        tm2.legend.priority = 0
+        tm1.legend.priority   = 0
+        tm2.legend.priority   = 0
         tm1.dataname.priority = 0
-        tm1.min.priority= 0
-        tm1.mean.priority = 0
-        tm1.max.priority = 0
-                   
-        #pdb.set_trace()
-        #plot the axes names for the single plot
-        tm1.xname.priority = 1
-        #tm1.xname.x = tm1.data.x1 + .4
-        #tm1.xname.y = tm1.yname.y - .22
-        
-        tm1.comment1.priority = 1
-        #tm1.comment1.x = tm1.data.x2 + .03
-        #tm1.comment1.y = tm1.data.y1 + .25    
-        to = cnvs1.createtextorientation(None, tm1.yname.textorientation)
-        to.angle=-90
-        #tm1.comment1.textorientation=to        
+        tm1.min.priority      = 0
+        tm1.mean.priority     = 0
+        tm1.max.priority      = 0
+        tm1.units.priority    = 0
+        tm2.units.priority    = 0
+        tm1.comment1.priority = 0
+        tm2.comment1.priority = 0
+        tm1.comment2.priority = 0
+        tm2.comment2.priority = 0
+        tm1.comment3.priority = 0
+        tm2.comment3.priority = 0
+        tm1.comment4.priority = 0
+        tm2.comment4.priority = 0
+
+        # Fix units if needed
+        if data is not None:
+            if (getattr(data, 'units', '') == ''):
+                data.units = 'K'
+            if data.getAxis(0).id.count('lat'):
+                data.getAxis(0).id = 'Latitude'
+            if data.getAxis(0).id.count('lon'):
+                data.getAxis(0).id = 'Longitude'
+            elif len(data.getAxisList()) > 1:
+                if data.getAxis(1).id.count('lat'):
+                    data.getAxis(1).id = 'Latitude'
+                if data.getAxis(1).id.count('lon'):
+                    data.getAxis(1).id = 'Longitude'
+
+        yLabel = cnvs1.createtext(Tt_source=tm1.yname.texttable,
+                                  To_source=tm1.yname.textorientation)
+        yLabel.x = tm1.yname.x - 0.02
+        yLabel.y = tm1.yname.y
+        if data is not None:
+            if hasattr(data, 'comment1'):
+                yLabel.string = [data.comment1]
+            else:
+                yLabel.string  = ["Pressure (" + data.units + ")"]
+        else:
+            yLabel.string  = ["Pressure"]
+        yLabel.height = 16
+        cnvs1.plot(yLabel, bg=1)
+
+        tm1.source.y = tm1.data.y2 + 0.01
+
+        xLabelTO                  = cnvs1.gettextorientation(tm1.xname.textorientation)
+        xLabelTO.height           = 16
+        tm1.xname.textorientation = xLabelTO
+        tm1.xname.y              -= 0.01        
+
+
+        # Moving plot for yLabel:
+        deltaX            = 0.015
+        tm2.data.x1      += deltaX
+        tm2.data.x2      += deltaX
+        tm2.box1.x1      += deltaX
+        tm2.box1.x2      += deltaX
+        tm2.ytic1.x1     += deltaX
+        tm2.ytic1.x2     += deltaX
+        tm2.ytic2.x1     += deltaX
+        tm2.ytic2.x2     += deltaX
+        tm2.ylabel1.x    += deltaX
+        tm2.ymintic1.x1  += deltaX
+        tm2.ymintic1.x2  += deltaX
+        #tm2.units.x     += deltaX
+        #tm2.title.x     += deltaX
+        tm2.xname.x      += deltaX
+
         
         #setup the custom legend
         lineTypes = {}
         lineTypes[self.legendTitles[0]] = 'solid'
         lineTypes[self.legendTitles[1]] = 'dot'
         positions = {}
-        positions['solid', tm1]  = [0.05, 0.2], [0.08, .08] 
-        positions['solid', tm2]  =  [.05, .2], [.47, .47]
-        positions['dot', tm1]  = [0.05, 0.2], [0.13, 0.13]  
-        positions['dot', tm2]  = [.05, .2], [.5, .5]
+        positions['solid', tm1]  = [tm1.data.x2 + 0.008, tm1.data.x2 + 0.07], [0.16, .16]
+        #[0.05, 0.2], [0.08, .08] 
+        positions['solid', tm2]  = [tm2.data.x1 + 0.008+deltaX, tm2.data.x1 + 0.07+deltaX], [tm2.data.y1 + 0.01, tm2.data.y1 + 0.01]# [.05, .2], [.47, .47]
+        positions['dot', tm1]  = [tm1.data.x2 + 0.008, tm1.data.x2 + 0.07], [0.24, 0.24]
+        #[0.05, 0.2], [0.13, 0.13]  
+        positions['dot', tm2]  = [tm2.data.x1 + 0.008+deltaX, tm2.data.x1 + 0.07+deltaX], [tm2.data.y1 + 0.05, tm2.data.y1 + 0.05] #[.05, .2], [.5, .5]
    
         #if not self.legendComplete:
         for canvas, tm in templates:
@@ -3422,60 +3475,57 @@ class amwg_plot_set12(amwg_plot_spec):
                 xpos, ypos = positions[lineType, tm]
                 if lineType == 'dot':
                     marker = canvas.createmarker()
-                    marker.size = 7
+                    marker.size = 2
                     marker.x = (numpy.arange(6)*(xpos[1]-xpos[0])/5.+xpos[0]).tolist()
-                    marker.y = [ypos[0],]*6
+                    marker.y = [ypos[0],]*6                    
                     canvas.plot(marker, bg=1)
                     marker.priority = 0
                 else:
                     line = canvas.createline(None, tm.legend.line)
                     line.type = lineType
                     line.x = xpos 
-                    line.y = [ypos, ypos] 
+                    line.y = [ypos, ypos]
                     line.color = 1
                     canvas.plot(line, bg=1)
                 text = canvas.createtext()
                 text.string = filename
-                text.x = xpos[1] + .05
-                text.y = ypos 
-                #text.height = 14
+                # text.x = xpos[1] + .05
+                # text.y = ypos 
+                text.height = 9.5
+                text.x = xpos[0] 
+                text.y = ypos[0] + 0.01 
+
                 canvas.plot(text, bg=1)   
                 self.legendComplete[canvas, tm, filename] = True
   
-                #pdb.set_trace()
 
-        #plot the axes names for the multi plot
-        to = cnvs2.createtextorientation(None, tm2.xname.textorientation)
-        to.height = 10
-        #tm2.xname.textorientation=to 
-        tm2.xname.priority = 1
-        #tm2.xname.x = tm2.data.x1 + .1
-        #tm2.xname.y = tm2.data.y1 - .05
+        yLabel = cnvs2.createtext(Tt_source=tm2.yname.texttable,
+                                  To_source=tm2.yname.textorientation)
+        yLabel.x = tm2.yname.x #- 0.005
+        yLabel.y = tm2.yname.y
+        if data is not None:
+            if hasattr(data, 'comment1'):
+                yLabel.string = [data.comment1]
+            else:
+                yLabel.string  = ["Pressure (" + data.units + ")"]
+        else:
+            yLabel.string  = ["Pressure"]
+        yLabel.height = 9
+        cnvs2.plot(yLabel, bg=1)
+
+        xLabelTO                  = cnvs2.gettextorientation(tm2.xname.textorientation)
+        xLabelTO.height           = 9
+        tm2.xname.textorientation = xLabelTO
+        #tm2.xname.y               = 0.01
+
+        tm2.source.y = tm2.data.y2 + 0.01
+        tm2.title.y -= 0.01
         
-        th=cnvs2.createtextorientation(None, tm2.xlabel1.textorientation)
-        th.height=10
-        #tm2.xlabel1.textorientation = th
-        th=cnvs2.createtextorientation(None, tm2.ylabel1.textorientation)
-        th.height=10
-        #tm2.ylabel1.textorientation = th
-        
-        #pdb.set_trace()        
-        tm2.comment1.priority = 1
-        #tm2.comment1.x = tm2.data.x1 - .075
-        #tm2.comment1.y = tm2.data.y1 + .1
-        to = cnvs2.createtextorientation(None, tm2.yname.textorientation)
-        to.angle=-90
-        to.height=10
-        #tm2.comment1.textorientation=to
-          
-        #tm2.source.x = tm2.ytic1.x1 + .15
-        #tm2.source.y = tm2.data.y2 + .015
         if self.plotCompositeTitle:
             tm2.source.priority = 1
             self.plotCompositeTitle = False
         else:
             tm2.source.priority = 0
-        #pdb.set_trace()
 
         return tm1, tm2
     def _results(self, newgrid=0):
