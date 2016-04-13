@@ -573,18 +573,10 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                             var = plot.replaceIds(var)
                         tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)],
                                                            var, varIndex, rsr_presentation )
-
                     if len(rsr.vars) == 1:
                         #scatter plot for plot set 12
                         subtitle = title
                         print "\n\nPlotting 1\n"
-
-                        # Specific configuration for set 11 of plots
-                        if plot.number == '11':                        
-                            # Yxvsx plot from scatter.
-                            tm.xname.priority  = 0
-                            tm.yname.priority  = 0
-                            tm.legend.priority = 0
                         
                         vcanvas.plot(var, 
                                      rsr_presentation, tm, bg=1, title=title,
@@ -595,31 +587,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                             if tm2 is not None and varIndex+1 == len(rsr.vars):
                                 if hasattr(plot, 'compositeTitle'):
                                     title = plot.compositeTitle
-                                print "\n\nPlotting 2\n"
-
-                                # Specific configuration for set 11 of plots
-                                if plot.number == '11':                                    
-                                    tm2.legend.priority   = 0
-                                    tm2.xname.priority    = 0
-                                    tm2.yname.priority    = 0
-                                    tm2.dataname.priority = 0
-        
-                                    deltaX            = 0.015
-                                    tm2.data.x1      += deltaX
-                                    tm2.data.x2      += deltaX
-                                    tm2.box1.x1      += deltaX
-                                    tm2.box1.x2      += deltaX
-                                    tm2.ytic1.x1     += deltaX
-                                    tm2.ytic1.x2     += deltaX
-                                    tm2.ytic2.x1     += deltaX
-                                    tm2.ytic2.x2     += deltaX
-                                    tm2.ylabel1.x    += deltaX
-                                    tm2.ymintic1.x1  += deltaX
-                                    tm2.ymintic1.x2  += deltaX
-                                    #tm2.units.x     += deltaX
-                                    #tm2.title.x     += deltaX
-                                    tm2.xname.x      += deltaX
-                                                                    
+                                print "\n\nPlotting 2\n"                                                                    
                                 # This is the Yxvsx plots from the multiplot
                                 vcanvas2.plot(var,
                                               rsr_presentation, tm2, bg=1, title=title,
@@ -638,65 +606,17 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                         elif varIndex == 1:
                             #second pass through plot the 2nd variables or next 2 variables
                             yvar = var.flatten()
-                            #pdb.set_trace()
-                            #this is only for amwg plot set 11
-                            if seqhasattr(rsr_presentation, 'overplotline') and rsr_presentation.overplotline:
-                                tm.line1.x1 = tm.box1.x1
-                                tm.line1.x2 = tm.box1.x2
-                                tm.line1.y1 = tm.box1.y2
-                                tm.line1.y2 = tm.box1.y1
-                                #pdb.set_trace()
-                                tm.line1.line = 'LINE-DIAGS'
-                                tm.line1.priority = 1
-                                tm2.line1.x1 = tm2.box1.x1
-                                tm2.line1.x2 = tm2.box1.x2
-                                tm2.line1.y1 = tm2.box1.y2
-                                tm2.line1.y2 = tm2.box1.y1
-                                tm2.line1.line = 'LINE-DIAGS'
-                                tm2.line1.priority = 1                                                   
-                                #tm.line1.list()
                             if hasattr(plot, 'customizeTemplates'):
                                 #tm2.xname.list()
-                                tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)])
-                                #tm2.xname.list()
-                                
-                            print "\n\nPlotting 3\n"
+                                tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)],
+                                                                   [xvar.units, yvar.units], varIndex, rsr_presentation)
 
-                            # Specific configuration for set 11 of plots
-                            if plot.number == '11':
-                                tm.xname.priority   = 1
-                                tm.yname.priority   = 1
-                                tm.ylabel1.priority = 1
-                                tm.xlabel1.priority = 1
-                                tm.units.priority   = 0
-
-                                yLabel = vcs.createtext(Tt_source=tm.yname.texttable,
-                                                        To_source=tm.yname.textorientation)
-                                yLabel.x      = tm.yname.x
-                                yLabel.y      = tm.yname.y
-                                yLabel.string = ["SWCF (" + yvar.units + ")"]
-                                yLabel.height = 18
-
-                                vcanvas.plot(yLabel, bg=1)
-                                
-                                xLabel = vcs.createtext(Tt_source=tm.xname.texttable,
-                                                        To_source=tm.xname.textorientation)
-                                xLabel.x      = tm.xname.x
-                                xLabel.y      = tm.xname.y
-                                xLabel.string = ["LWCF (" + xvar.units + ")"]
-                                xLabel.height = 18
-                                
-                                vcanvas.plot(xLabel, bg=1)
-
-                                titleOr = vcanvas.gettextorientation(tm.title.textorientation)
-                                titleOr.height += 4
-                                tm.title.textorientation = titleOr
+                            print "\n\nPlotting 3\n"                            
                             
                             # Scatter part from the single plots in set 11
                             vcanvas.plot(xvar, yvar, 
                                          rsr_presentation, tm, bg=1, title=title,
                                          source=rsr.source ) 
-                                         #units='', source=rsr.source ) 
                             
                         #plot the multibox plot
                         try:
@@ -707,59 +627,13 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                                     title = plot.compositeTitle
                                     
                                 print "\n\nPlotting 4\n"
-
-                                # Specific configuration for set 11 of plots
-                                if plot.number == '11':                                   
-                                    tm2.yname.priority    = 1
-                                    tm2.xname.priority    = 1
-                                    tm2.ylabel1.priority  = 1
-                                    tm2.xlabel1.priority  = 1
-                                    tm2.dataname.priority = 0
-                                    tm2.units.priority    = 0
-
-                                    # Set 11 Corrections (to move to a proper place)
-                                    deltaX            = 0.015
-                                    tm2.data.x1      += deltaX
-                                    tm2.data.x2      += deltaX
-                                    tm2.box1.x1      += deltaX
-                                    tm2.box1.x2      += deltaX
-                                    tm2.ytic1.x1     += deltaX
-                                    tm2.ytic1.x2     += deltaX
-                                    tm2.ytic2.x1     += deltaX
-                                    tm2.ytic2.x2     += deltaX
-                                    tm2.ylabel1.x    += deltaX
-                                    tm2.ymintic1.x1  += deltaX
-                                    tm2.ymintic1.x2  += deltaX
-                                    #tm2.units.x     += deltaX
-                                    #tm2.title.x     += deltaX
-                                    tm2.xname.x      += deltaX
-                                    tm2.source.y      = tm2.dataname.y + 0.01
-
-                                    yLabel = vcs.createtext(Tt_source=tm2.yname.texttable,
-                                                            To_source=tm2.yname.textorientation)
-                                    yLabel.x = tm2.yname.x
-                                    yLabel.y = tm2.yname.y
-                                    yLabel.string = ["SWCF (" + yvar.units + ")"]
-                                    yLabel.height = 9
-                                    
-                                    vcanvas2.plot(yLabel, bg=1)
-
-                                    xLabel = vcs.createtext(Tt_source=tm2.xname.texttable,
-                                                            To_source=tm2.xname.textorientation)
-                                    xLabel.x      = tm2.xname.x
-                                    xLabel.y      = tm2.xname.y
-                                    xLabel.string = ["LWCF (" + xvar.units + ")"]
-                                    xLabel.height = 9
-                                    
-                                    vcanvas2.plot(xLabel, bg=1)                                                                          
                                 
                                 # This is the scatter plots from the multiplot
                                 vcanvas2.plot(xvar, yvar,
                                               rsr_presentation, tm2, bg=1, title=title,
                                               source=subtitle)
-                                              #units='', source=subtitle)
+                                
                                 plotcv2 = True
-                                #tm2.units.list()
                                 if varIndex+1 == len(rsr.vars):
                                     savePNG = True
                         except vcs.error.vcsError as e:
