@@ -14,16 +14,29 @@ import datetime
 import time
 from metrics.common import store_provenance
 import cdat_info
+try:
+    print "TRYING T IMPORT"
+    import mpi4py
+    has_mpi = True
+    sz = mpi4py.MPI.COMM_WORLD.Get_size()
+    rk = mpi4py.MPI.COMM_WORLD.Get_rank()
+except:
+    has_mpi = False
+    sz = 1
+    rk = 0
 
+print "MPI:",has_mpi
 
 class WeightFileRegridder:
     def __init__(self, weightFile, toRegularGrid=True, fix_bounds=False):
         if isinstance(weightFile, str):
             if not os.path.exists(weightFile):
                 raise Exception("WeightFile %s does not exists" % weightFile)
+            print rk,"trying to open:",weightFile
             wFile = cdms2.open(weightFile)
         else:
             wFile = weightFile
+        print "OPENED IT"
         self.S = wFile("S").filled()
         self.row = wFile("row").filled()-1
         self.col = wFile("col").filled()-1
@@ -125,11 +138,12 @@ def addVariable(f, id, typecode, axes, attributes, store_bounds=False):
 
 if __name__ == "__main__":
     cdms2.setNetcdfClassicFlag(0)
-    cdms2.setNetcdf4Flag(1)
+    #cdms2.setNetcdf4Flag(1)
     cdms2.setNetcdfUseNCSwitchModeFlag(0)
     cdms2.setNetcdfShuffleFlag(0)
     cdms2.setNetcdfDeflateFlag(0)
     cdms2.setNetcdfDeflateLevelFlag(0)
+    print "FLAGGED"
 
     # Create the parser for user input
     parser = argparse.ArgumentParser(
@@ -153,20 +167,33 @@ if __name__ == "__main__":
     parser.add_argument("--fix-esmf-bounds",dest="fix_bounds",action="store_true",default=False,help="fix esmf first and last longitudes being half width")
 
     args = parser.parse_args(sys.argv[1:])
-    #print "AERGS:",args
+    print "AERGS:",args
 
     # Read the weights file
     regdr = WeightFileRegridder(args.weights,True,fix_bounds=args.fix_bounds)
+    print "WEIGHT THINGY"
 
     f = cdms2.open(args.file)
 
+    cdms2.setNetcdfUseParallelFlag(1)
     if args.out is None:
         onm = ".".join(args.file.split(".")[:-1])+"_regrid.nc"
     else:
         onm = args.out
-    #print "Output file:", onm
+    print "Output file:", onm
+    if has_mpi:
+        # Need to make sure file is gone
+        if rk==0:
+            if os.path.exists(onm):
+                os.remove(onm)
+        mpi4py.MPI.COMM_WORLD.Barrier()
+    print rk,"opening",onm
     fo = cdms2.open(onm, "w")
+    if has_mpi:
+        mpi4py.MPI.COMM_WORLD.Barrier()
     store_provenance(fo,script_file_name=__file__)
+    if has_mpi:
+        mpi4py.MPI.COMM_WORLD.Barrier()
     history = ""
     # Ok now let's start by copying the attributes back onto the new file
     for a in f.attributes:
@@ -178,6 +205,8 @@ if __name__ == "__main__":
                     )
                     
     fo.history = history
+    if has_mpi:
+        mpi4py.MPI.COMM_WORLD.Barrier()
     dirnm = os.path.dirname(args.file)
     basenm = os.path.basename(args.file)
     if dirnm == '':  # no dirname using current dir
@@ -185,6 +214,8 @@ if __name__ == "__main__":
     elif dirnm[0] != os.path.sep:
         dirnm = os.path.join(os.getcwd(), dirnm)
     fo.input_file = os.path.join(dirnm, basenm)
+    if has_mpi:
+        mpi4py.MPI.COMM_WORLD.Barrier()
 
     dirnm = os.path.dirname(args.weights)
     basenm = os.path.basename(args.weights)
@@ -193,6 +224,8 @@ if __name__ == "__main__":
     elif dirnm[0] != os.path.sep:
         dirnm = os.path.join(os.getcwd(), dirnm)
     fo.map_file = os.path.join(dirnm, basenm)
+    if has_mpi:
+        mpi4py.MPI.COMM_WORLD.Barrier()
 
     wgt = None
     if args.var is not None:
@@ -207,6 +240,7 @@ if __name__ == "__main__":
     NVARS = len(vars)
     tim_bnds = None
     for i, v in enumerate(vars):
+        print rk,i,v
         V = f[v]
         if V is None:
             print "Will skip", V, "as it does NOT appear to be in file"
@@ -251,8 +285,13 @@ if __name__ == "__main__":
       addVariable(fo, "latitude_bounds", "d", [regdr.lats, tim_bnds], {}, store_bounds=args.store_bounds)
       addVariable(fo, "longitude_bounds", "d", [regdr.lons, tim_bnds], {}, store_bounds=args.store_bounds)
 
+    if has_mpi:
+        mpi4py.MPI.COMM_WORLD.Barrier()
+
     wgts = None
     for i, v in enumerate(vars):
+        if i % sz != rk:
+            continue
         V = f[v]
         if V is None:
             print "Skipping", V, "as it does NOT appear to be in file"
@@ -308,4 +347,6 @@ if __name__ == "__main__":
     if args.store_bounds:
       fo["latitude_bounds"][:]=regdr.lats.getBounds()
       fo["longitude_bounds"][:]=regdr.lons.getBounds()
+    if has_mpi:
+        mpi4py.MPI.COMM_WORLD.Barrier()
     fo.close()
