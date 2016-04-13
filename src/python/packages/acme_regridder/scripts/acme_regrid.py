@@ -174,6 +174,7 @@ if __name__ == "__main__":
     print "WEIGHT THINGY"
 
     f = cdms2.open(args.file)
+    fw = cdms2.open(args.weights)
 
     cdms2.setNetcdfUseParallelFlag(1)
     if args.out is None:
@@ -314,9 +315,8 @@ if __name__ == "__main__":
                 else:
                     dat2 = dat2[0]
                 print "Computing area weights"
-                fw = cdms2.open(args.weights)
                 area = fw("area_b")
-                fw.close()
+                #fw.close()
                 if numpy.allclose(area,0.):
                   print "area is all zeroes computing it for you"
                   area = cdutil.area_weights(dat2)*numpy.pi*4.
