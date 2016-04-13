@@ -849,11 +849,14 @@ class amwg_plot_set3(amwg_plot_spec,basic_id):
                 tm1.legend.y1  += 0.05
                 tm1.legend.y2   = tm1.legend.y1 + 0.01
                 if graphicMethod is not None:
-                    line = vcs.createline()
+                    line = vcs.createline('dash')
                     line.width = 2
                     line.color = ["red"]#, "blue", "salmon", "medium aquamarine", "orange", "chartreuse"]
                     line.type = ["dash"]#, "dot", "dash-dot", "long-dash", "solid", "dash"]
                     graphicMethod.line = line
+                    # The next repeated commands were necessary in Linux.
+                    graphicMethod.linecolor = 242
+                    graphicMethod.linewidth = 2
                 data.id = 'obs'
             else:
                 if type(min(data)) is float:
@@ -888,15 +891,59 @@ class amwg_plot_set3(amwg_plot_spec,basic_id):
 
         tm2.units.priority = 0
 
-        tm2.legend.y2              = tm2.legend.y1 + 0.01
-        legendTO                   = cnvs2.createtextorientation(None, tm2.legend.textorientation)
-        legendTO.height            = 10
-        tm2.legend.textorientation = legendTO        
+        # tm2.legend.y2              = tm2.legend.y1 + 0.01
+        # legendTO                   = cnvs2.createtextorientation(None, tm2.legend.textorientation)
+        # legendTO.height            = 10
+        # tm2.legend.textorientation = legendTO
+
+        tm2.legend.priority = 0
         
+        # if varIndex is not None:
+        #     if varIndex > 0:
+        #         tm2.legend.y1 += 0.05
+        #         tm2.legend.y2  = tm2.legend.y1 + 0.01
+
+        #setup the custom legend
+        lineTypes = []
+        lineTypes.append('solid')
+        lineTypes.append('dash')
+        positions = {}
+        positions['solid', tm2] = [tm2.data.x2 + 0.02+deltaX, tm2.data.x2 + 0.07+deltaX], [tm2.data.y1 + 0.16, tm2.data.y1 + 0.16]
+        positions['dash', tm2]  = [tm2.data.x2 + 0.02, tm2.data.x2 + 0.07], [tm2.data.y1 + 0.24, tm2.data.y1 + 0.24]
+        #positions['dash', tm2]  = [tm2.data.x2 + 0.004+deltaX, tm2.data.x2 + 0.06+deltaX], [tm2.data.y1 + 0.24, tm2.data.y1 + 0.24]
+   
+        #plot the custom legend
+        xpos         = None
+        ypos         = None
+        legendString = data.id
+        lineType     = None
         if varIndex is not None:
-            if varIndex > 0:
-                tm2.legend.y1 += 0.05
-                tm2.legend.y2  = tm2.legend.y1 + 0.01
+            if varIndex == 0:
+                xpos, ypos = positions['solid', tm2]
+                lineType = lineTypes[0]
+            else:
+                xpos, ypos = positions['dash', tm2]
+                lineType = lineTypes[1]
+                
+        line = cnvs2.createline(None, tm2.legend.line)
+        line.type = lineType
+        line.x = xpos
+        line.y = [ypos, ypos]
+
+        if varIndex is not None:
+            if varIndex == 1:
+                line.color = ['red']
+                line.width = 2
+
+        cnvs2.plot(line, bg=1)
+
+        text        = cnvs2.createtext()
+        text.string = data.id
+        text.height = 9.5
+        text.x      = xpos[0] 
+        text.y      = ypos[0] + 0.01 
+
+        cnvs2.plot(text, bg=1) 
                       
         if varIndex is not None:
             if varIndex == 0:
@@ -1588,6 +1635,9 @@ class amwg_plot_set5and6(amwg_plot_spec):
 
         #cnvs1.landscape()
         #cnvs1.setcolormap("categorical")
+        colormap = vcs.matplotlib2vcs('viridis')
+        cnvs1.setcolormap(colormap)
+
 
         # Adjust labels and names for single plots
         ynameOri                  = cnvs1.gettextorientation(tm1.yname.textorientation)
