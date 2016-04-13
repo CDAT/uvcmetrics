@@ -576,7 +576,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                     if len(rsr.vars) == 1:
                         #scatter plot for plot set 12
                         subtitle = title
-                        print "\n\nPlotting 1\n"
+                        print "\nPlotting 1"
                         
                         vcanvas.plot(var, 
                                      rsr_presentation, tm, bg=1, title=title,
@@ -587,7 +587,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                             if tm2 is not None and varIndex+1 == len(rsr.vars):
                                 if hasattr(plot, 'compositeTitle'):
                                     title = plot.compositeTitle
-                                print "\n\nPlotting 2\n"                                                                    
+                                print "\nPlotting 2"                                                                    
                                 # This is the Yxvsx plots from the multiplot
                                 vcanvas2.plot(var,
                                               rsr_presentation, tm2, bg=1, title=title,
@@ -611,7 +611,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                                 tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)],
                                                                    [xvar.units, yvar.units], varIndex, rsr_presentation)
 
-                            print "\n\nPlotting 3\n"                            
+                            print "\nPlotting 3"                            
                             
                             # Scatter part from the single plots in set 11
                             vcanvas.plot(xvar, yvar, 
@@ -626,7 +626,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                                 if hasattr(plot, 'compositeTitle'):
                                     title = plot.compositeTitle
                                     
-                                print "\n\nPlotting 4\n"
+                                print "\nPlotting 4"
                                 
                                 # This is the scatter plots from the multiplot
                                 vcanvas2.plot(xvar, yvar,
@@ -642,7 +642,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                 elif vcs.isvector(rsr.presentation) or rsr.presentation.__class__.__name__=="Gv":
                     strideX = rsr.strideX
                     strideY = rsr.strideY
-                    print "\n\nPlotting 5\n"                    
+                    print "\nPlotting 5"                    
 
                     if plot.number == '6':
                         vcanvas.plot( var[0][::strideY,::strideX],
@@ -661,7 +661,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                     # have them.
                     try:
                         if tm2 is not None:
-                            print "\n\nPlotting 6\n" 
+                            print "\nPlotting 6" 
                             vcanvas2.plot( var[0][::strideY,::strideX],
                                            var[1][::strideY,::strideX],
                                            rsr.presentation, tm2, bg=1,
@@ -682,7 +682,8 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                         vcanvas.setcolormap("bl_to_darkred")
                         print vcanvas.listelements("colormap")
                         print "\n\nCustomizing Plot 2\n"
-                        tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (None, None)], legendTitles=rsr.legendTitles )
+                        tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (None, None)],
+                                                           legendTitles=rsr.legendTitles )
                     print "\n\nPlotting 7\n"
                     vcanvas.plot(var, rsr.presentation, tm, bg=1,
                                  title=title, units=getattr(var,'units',''), source=rsr.source )
@@ -698,17 +699,9 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                     vcanvas2.setcolormap('bl_to_darkred')
                     
                     if hasattr(plot, 'customizeTemplates'):
-                        tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)], var, varIndex, rsr.presentation )
-                    #vcanvas.plot(var, rsr.presentation, tm, bg=1,
-                    #   title=title, units=getattr(var,'units',''), source=rsr.source )
-                    print "\n\nPlotting 8\n"
-                    # plot.vcs_plot(vcanvas, var, rsr.presentation, tm, bg=1, title=title,
-                    #               units=getattr(var, 'units', ''), source=rsr.source)
-                    # # vcanvas3.clear()
-                    # # vcanvas3.plot(var, rsr.presentation )
-
-
-                    print "\n------------ Single Plot source = {0} -----------\n".format(rsr.source)
+                        tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)],
+                                                           var, varIndex, rsr.presentation )
+                    print "\nPlotting 8"
 
                     # Single plot                    
                     plot.vcs_plot(vcanvas, var, rsr.presentation, tm, bg=1,
@@ -718,27 +711,11 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                     # Multi-plot
                     try:
                         if tm2 is not None:
-                            #vcanvas2.plot(var, rsr.presentation, tm2, bg=1,
-                            #   title=title, units=getattr(var,'units',''), source=rsr.source )
-                            print "\n\nPlotting 9\n"
-                            # plot.vcs_plot( vcanvas2, var, rsr.presentation, tm2, bg=1,
-                            #    title=title, units=getattr(var, 'units', ''), 
-                            #    source = rsr.source, compoundplot=onPage )                            
-                                
-                            # Pre-defined colormaps:
-                            # ['AMIP', 'NCAR', 'bl_to_darkred', 'bl_to_drkorang', 'blends',
-                            # 'blue_to_grey', 'blue_to_grn', 'blue_to_orange', 'blue_to_orgred',
-                            # 'brown_to_blue', 'categorical', 'default', 'grn_to_magenta',
-                            # 'ltbl_to_drkbl', 'rainbow', 'rainbow_no_grn', 'sequential',
-                            # 'white_to_blue', 'white_to_green', 'white_to_magenta',
-                            # 'white_to_red', 'white_to_yellow']
-
-                            print "\n------------ Multi Plot source = {0} -----------\n".format(rsr.source)
-
+                            print "\nPlotting 9"
                             # Multiple plots on a page:                            
                             plot.vcs_plot( vcanvas2, var, rsr.presentation, tm2, bg=1,
-                                           title=title, source=rsr.source,
-                                           compoundplot=onPage )                            
+                                           title=title, source=rsr.source)#,
+                                           #compoundplot=onPage )                            
                             plotcv2 = True
                             
                     except vcs.error.vcsError as e:
