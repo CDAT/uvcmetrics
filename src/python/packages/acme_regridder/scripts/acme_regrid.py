@@ -116,6 +116,7 @@ def addAxes(f, axisList, store_bounds = False):
     axes = []
     for ax in axisList:
         if ax.id not in f.listdimension():
+            print rk,"is adding axes:",ax.id
             A = f.createAxis(ax.id, ax[:])
             atts = ax.attributes
             if store_bounds and ax.isLatitude():
@@ -130,12 +131,54 @@ def addAxes(f, axisList, store_bounds = False):
     return axes
 
 
-def addVariable(f, id, typecode, axes, attributes, store_bounds=False):
+def addVariable(f, id, typecode, axes, attributes, store_bounds=False,createVariable = True):
     axes = addAxes(f, axes, store_bounds)
-    V = f.createVariable(id, typecode, axes)
-    for att in attributes:
-        setattr(V, att, attributes[att])
+    if createVariable:
+        print rk,"is  adding",id
+        V = f.createVariable(id, typecode, axes)
+        for att in attributes:
+            setattr(V, att, attributes[att])
 
+def preprocess_variable(V,axes3d,axes4d,axes4d_ilev,wgt,tim_bnds,createVariable):
+        print rk,"prerocess",V.id,"create",createVariable
+        if V is None:
+            print "Will skip", V, "as it does NOT appear to be in file"
+        elif V.id in ["lat", "lon", "area"]:
+            print i, NVARS, "Will skip", V.id, "no longer needed or recomputed"
+        elif "ncol" in V.getAxisIds():
+            print i, NVARS, "Will process:", V.id
+            if V.rank() == 2:
+                if axes3d == []:
+                    dat2 = cdms2.MV2.array(regdr.regrid(V()))
+                    axes3d = dat2.getAxisList()
+                addVariable(fo, V.id, V.typecode(), axes3d, V.attributes, store_bounds=args.store_bounds,createVariable=createVariable)
+            elif V.rank() == 3:
+                if "ilev" in V.getAxisIds(): # New CLUBB things
+                    if axes4d_ilev == []:
+                        dat2 = cdms2.MV2.array(regdr.regrid(V()))
+                        axes4d_ilev = dat2.getAxisList()
+                    addVariable(fo, V.id, V.typecode(), axes4d_ilev, V.attributes, store_bounds=args.store_bounds,createVariable=createVariable)
+                else:
+                    if axes4d == []:
+                        dat2 = cdms2.MV2.array(regdr.regrid(V()))
+                        axes4d = dat2.getAxisList()
+                    addVariable(fo, V.id, V.typecode(), axes4d, V.attributes, store_bounds=args.store_bounds,createVariable=createVariable)
+            if wgt is None:
+                wgt = True
+                addVariable(fo, "gw", "d", [dat2.getLatitude(), ], [],createVariable=createVariable)
+                addVariable(fo, "area", "d",
+                            [dat2.getLatitude(), dat2.getLongitude()],
+                            {"units": "steradian",
+                             "long_name": "solid angle subtended by grid cell",
+                             "standard_name": "cell_area",
+                             "cell_methods": "lat, lon: sum"}
+                            ,createVariable=createVariable)
+        else:
+            print "Will rewrite as is", V.id
+            addVariable(fo, V.id, V.typecode(), V.getAxisList(), V.attributes, store_bounds=args.store_bounds,createVariable=createVariable)
+            if V.id == "time_bnds":
+              tim_bnds = v
+        return axes3d,axes4d,axes4d_ilev,wgt,tim_bnds
 if __name__ == "__main__":
     cdms2.setNetcdfClassicFlag(0)
     #cdms2.setNetcdf4Flag(1)
@@ -240,47 +283,28 @@ if __name__ == "__main__":
     area = None
     NVARS = len(vars)
     tim_bnds = None
+    if "time_bnds" in vars:
+        vars.remove("time_bnds")
+        vars.insert(0,"time_bnds")
     for i, v in enumerate(vars):
         print rk,i,v
         V = f[v]
-        if V is None:
-            print "Will skip", V, "as it does NOT appear to be in file"
-        elif V.id in ["lat", "lon", "area"]:
-            print i, NVARS, "Will skip", V.id, "no longer needed or recomputed"
-        elif "ncol" in V.getAxisIds():
-            print i, NVARS, "Will process:", V.id
-            if V.rank() == 2:
-                if axes3d == []:
-                    dat2 = cdms2.MV2.array(regdr.regrid(V()))
-                    axes3d = dat2.getAxisList()
-                addVariable(fo, V.id, V.typecode(), axes3d, V.attributes, store_bounds=args.store_bounds)
-            elif V.rank() == 3:
-                if "ilev" in V.getAxisIds(): # New CLUBB things
-                    if axes4d_ilev == []:
-                        dat2 = cdms2.MV2.array(regdr.regrid(V()))
-                        axes4d_ilev = dat2.getAxisList()
-                    addVariable(fo, V.id, V.typecode(), axes4d_ilev, V.attributes, store_bounds=args.store_bounds)
-                else:
-                    if axes4d == []:
-                        dat2 = cdms2.MV2.array(regdr.regrid(V()))
-                        axes4d = dat2.getAxisList()
-                    addVariable(fo, V.id, V.typecode(), axes4d, V.attributes, store_bounds=args.store_bounds)
-            if wgt is None:
-                wgt = True
-                addVariable(fo, "gw", "d", [dat2.getLatitude(), ], [])
-                addVariable(fo, "area", "d",
-                            [dat2.getLatitude(), dat2.getLongitude()],
-                            {"units": "steradian",
-                             "long_name": "solid angle subtended by grid cell",
-                             "standard_name": "cell_area",
-                             "cell_methods": "lat, lon: sum"}
-                            )
-        else:
-            print "Will rewrite as is", V.id
-            addVariable(fo, V.id, V.typecode(), V.getAxisList(), V.attributes, store_bounds=args.store_bounds)
-            if V.id == "time_bnds":
-              tim_bnds = V.getAxisList()[-1]
-
+        axes3d,axes4d,axes4_ilev,wgt,tim_bnds = preprocess_variable(V,axes3d,axes4d,axes4d_ilev,wgt,tim_bnds,False)
+        if has_mpi:
+            mpi4py.MPI.COMM_WORLD.Barrier()
+    wgt = None
+    axes3d = []
+    axes4d = []
+    axes4d_ilev = []
+    for i, v in enumerate(vars):
+        print rk,i,v
+        V = f[v]
+        axes3d,axes4d,axes4_ilev,wgt,tim_bnds = preprocess_variable(V,axes3d,axes4d,axes4d_ilev,wgt,tim_bnds,True)
+        if has_mpi:
+            mpi4py.MPI.COMM_WORLD.Barrier()
+    print "OK rk %i is done defing" % rk
+    if has_mpi:
+        mpi4py.MPI.COMM_WORLD.Barrier()
     # latitude and longitude bounds
     if args.store_bounds:
       addVariable(fo, "latitude_bounds", "d", [regdr.lats, tim_bnds], {}, store_bounds=args.store_bounds)
@@ -289,6 +313,11 @@ if __name__ == "__main__":
     if has_mpi:
         mpi4py.MPI.COMM_WORLD.Barrier()
 
+    print "OK rk %i is really done defing" % rk
+    tim_bnds =  f[tim_bnds].getAxisList()[-1]
+    if has_mpi:
+        mpi4py.MPI.COMM_WORLD.Barrier()
+    print "Time bounds done"
     wgts = None
     for i, v in enumerate(vars):
         if i % sz != rk:
@@ -301,8 +330,10 @@ if __name__ == "__main__":
         elif "ncol" in V.getAxisIds():
             print i, NVARS, "Processing:", V.id
             V2 = fo[V.id]
+            print rk,"recovered",V.id
             dat2 = cdms2.MV2.array(regdr.regrid(V()))
             V2[:] = dat2[:].astype(V.typecode())
+            print rk,"saved",V.id
             if wgts is None:
                 print "trying to get weights"
                 wgts = [numpy.sin(x[1]*numpy.pi/180.) -
@@ -343,6 +374,8 @@ if __name__ == "__main__":
                     V2[:] = V[:]
             except Exception, err:
                 print "Variable %s falied with error: %s" % (V2.id, err)
+        if has_mpi:
+            mpi4py.MPI.COMM_WORLD.Barrier()
     # latitude and longitude bounds
     if args.store_bounds:
       fo["latitude_bounds"][:]=regdr.lats.getBounds()
