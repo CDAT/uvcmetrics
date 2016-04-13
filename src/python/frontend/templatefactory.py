@@ -580,8 +580,7 @@ def build_templates(canvas=None, graphicMethodStrings=None, overlay=None, rows=1
         if disableLegend == True:
             template.legend.priority = 0
                 
-        finalTemplates.append(template)
-        print "------ Template built ------\n"
+        finalTemplates.append(template)        
 
     return (graphicMethodObjects, finalTemplates)
 
