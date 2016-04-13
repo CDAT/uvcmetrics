@@ -1635,8 +1635,8 @@ class amwg_plot_set5and6(amwg_plot_spec):
 
         #cnvs1.landscape()
         #cnvs1.setcolormap("categorical")
-        colormap = vcs.matplotlib2vcs('viridis')
-        cnvs1.setcolormap(colormap)
+        #colormap = vcs.matplotlib2vcs('viridis')
+        #cnvs1.setcolormap(colormap)
 
 
         # Adjust labels and names for single plots
