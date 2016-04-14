@@ -1252,7 +1252,29 @@ class amwg_plot_set5(amwg_plot_set5and6):
     normally a world map will be overlaid. """
     name = '5 - Horizontal Contour Plots of Seasonal Means'
     number = '5'
-    
+    def customizeTemplates(self, templates, var=None):
+        """Theis method does what the title says.  It is a hack that will no doubt change as diags changes."""
+        (cnvs1, tm1), (cnvs2, tm2) = templates
+        import pdb
+        if hasattr(var, 'RMSE'):
+            RMSE = round(var.RMSE, 2)
+            CORR = round(var.CORR, 2)
+            textRMSE = cnvs2.createtext()
+            textRMSE.string = 'RMSE = %.3g' % RMSE
+            textRMSE.x = .075
+            textRMSE.y = .005
+            textRMSE.height = 10
+            cnvs2.plot(textRMSE, bg=1)  
+
+            textCORR = cnvs2.createtext()
+            textCORR.string = 'Correlation = %.3g' % CORR
+            textCORR.x = .25
+            textCORR.y = .005
+            textCORR.height = 10
+            cnvs2.plot(textCORR, bg=1)              
+            #pdb.set_trace()
+        
+        return tm1, tm2    
 class amwg_plot_set6(amwg_plot_spec):
     """represents one plot from AMWG Diagnostics Plot Set 6
     This is a vector+contour plot - the contour plot shows magnitudes and the vector plot shows both

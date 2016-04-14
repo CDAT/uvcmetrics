@@ -2386,6 +2386,9 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
             regridded_vars[mv1new.id] = mv1new
     aminusb = mv1new - mv2new
     aminusb.id = 'difference of '+mv1.id
+    import genutil.statistics
+    aminusb.RMSE = float( genutil.statistics.rms(mv1new, mv2new, axis='xy') )
+    aminusb.CORR = float( genutil.statistics.correlation(mv1new, mv2new, axis='xy') )
     if hasattr(mv1,'long_name'):
         aminusb.long_name = 'difference of '+mv1.long_name
     if hasattr(mv1,'units'):  aminusb.units = mv1.units
