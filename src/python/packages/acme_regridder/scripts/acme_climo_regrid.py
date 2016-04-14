@@ -10,13 +10,13 @@ import multiprocessing
 parser = argparse.ArgumentParser(description='Given a directory or list of files regrid them using map files and computes climo on them')
 
 
-parser.add_argument("-f","--files",help="files to regrid and compute climo on",default="*.nc",nargs="*")
+parser.add_argument("-i","--files",help="files to regrid and compute climo on",default="*.nc",nargs="*")
 parser.add_argument("-m","--map-file",help="map file",required=True)
 parser.add_argument("-o","--output",help="output directory",default=None)
 parser.add_argument("-c","--climo",help="name of climo file, leave blank if you do not want to run climo",default=None)
 parser.add_argument("-v","--variables",help="limit operations to these variables",default=None,nargs="*")
 parser.add_argument("-q","--quiet",action="store_true",default=False,help="quiet mode (no output printed to screen)")
-parser.add_argument("-m","--workers",default=int,help="number of workers to use",type=int)
+parser.add_argument("-n","--workers",default=int,help="number of workers to use",type=int)
 
 args =parser.parse_args(sys.argv[1:])
 
