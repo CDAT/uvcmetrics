@@ -318,6 +318,7 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
             # The variable mv, hence mvrs and avweights may have been expanded in longitude after
             # the weight array in the filetable was constructed.  This happens for polar plots.
             # So here we expand the weight array exactly the same way, if we can:
+            # N.B.  It would likely be better to do this with genutil.grower().
             if len(klons)>0:
                 ll_lon = latlon_wts.getLongitude()
                 av_lon = avweights.getLongitude()
@@ -374,15 +375,16 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
                         avweights[inds] = numpy.sum( latlon_wts[ilev,:,ilon] )
             else:
                 # No latitudes, no longitudes!
-                if len(klevs)>0:
-                    ilev = inds[klev]
-                else:
+                if len(klevs)<=0:   # No levels either.
                     # Probably something's wrong, there's basically nothing to do.
                     # But we can go on with something sensible anyway.
                     ilev = -1   # means use the bottom, usually best if there are no levels
                     print "WARNING, computing a mass-weighted average of",mvrs.id,\
                         "with no spatial axes"
-                avweights[inds] = numpy.sum( latlon_wts[ilev,:,:] )
+                else:  # We have only levels
+                    for inds in numpy.ndindex(avweights.shape):
+                        ilev = inds[klev]
+                        avweights[inds] = numpy.sum( latlon_wts[ilev,:,:] )
 
             avmv = averager( mvrs, axis=axes_string, weights=avweights )
 
