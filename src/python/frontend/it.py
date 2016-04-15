@@ -156,14 +156,6 @@ def return_templates_graphic_methods(canvas1=None, gms=None, ovly=None, onPage=N
          for i in range(2):
             templateNameArray.append('UVWG1D_%dof10_'%i + (str(random.random())[2:]))
 
-      # Debug info:
-      print "-------------------------------"
-      print "-------------------------------"
-      for gmss in gms:
-         print "Graphic method: ", gmss
-      print "-------------------------------"
-      print "-------------------------------"
-
       # Multiple plots per page template generation:
       templateOptionsArray = []
       for i in range(len(gms)):

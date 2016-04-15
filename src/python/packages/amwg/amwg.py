@@ -849,11 +849,14 @@ class amwg_plot_set3(amwg_plot_spec,basic_id):
                 tm1.legend.y1  += 0.05
                 tm1.legend.y2   = tm1.legend.y1 + 0.01
                 if graphicMethod is not None:
-                    line = vcs.createline()
+                    line = vcs.createline('dash')
                     line.width = 2
                     line.color = ["red"]#, "blue", "salmon", "medium aquamarine", "orange", "chartreuse"]
                     line.type = ["dash"]#, "dot", "dash-dot", "long-dash", "solid", "dash"]
                     graphicMethod.line = line
+                    # The next repeated commands were necessary in Linux.
+                    graphicMethod.linecolor = 242
+                    graphicMethod.linewidth = 2
                 data.id = 'obs'
             else:
                 if type(min(data)) is float:
@@ -888,15 +891,59 @@ class amwg_plot_set3(amwg_plot_spec,basic_id):
 
         tm2.units.priority = 0
 
-        tm2.legend.y2              = tm2.legend.y1 + 0.01
-        legendTO                   = cnvs2.createtextorientation(None, tm2.legend.textorientation)
-        legendTO.height            = 10
-        tm2.legend.textorientation = legendTO        
+        # tm2.legend.y2              = tm2.legend.y1 + 0.01
+        # legendTO                   = cnvs2.createtextorientation(None, tm2.legend.textorientation)
+        # legendTO.height            = 10
+        # tm2.legend.textorientation = legendTO
+
+        tm2.legend.priority = 0
         
+        # if varIndex is not None:
+        #     if varIndex > 0:
+        #         tm2.legend.y1 += 0.05
+        #         tm2.legend.y2  = tm2.legend.y1 + 0.01
+
+        #setup the custom legend
+        lineTypes = []
+        lineTypes.append('solid')
+        lineTypes.append('dash')
+        positions = {}
+        positions['solid', tm2] = [tm2.data.x2 + 0.02+deltaX, tm2.data.x2 + 0.07+deltaX], [tm2.data.y1 + 0.16, tm2.data.y1 + 0.16]
+        positions['dash', tm2]  = [tm2.data.x2 + 0.02, tm2.data.x2 + 0.07], [tm2.data.y1 + 0.24, tm2.data.y1 + 0.24]
+        #positions['dash', tm2]  = [tm2.data.x2 + 0.004+deltaX, tm2.data.x2 + 0.06+deltaX], [tm2.data.y1 + 0.24, tm2.data.y1 + 0.24]
+   
+        #plot the custom legend
+        xpos         = None
+        ypos         = None
+        legendString = data.id
+        lineType     = None
         if varIndex is not None:
-            if varIndex > 0:
-                tm2.legend.y1 += 0.05
-                tm2.legend.y2  = tm2.legend.y1 + 0.01
+            if varIndex == 0:
+                xpos, ypos = positions['solid', tm2]
+                lineType = lineTypes[0]
+            else:
+                xpos, ypos = positions['dash', tm2]
+                lineType = lineTypes[1]
+                
+        line = cnvs2.createline(None, tm2.legend.line)
+        line.type = lineType
+        line.x = xpos
+        line.y = [ypos, ypos]
+
+        if varIndex is not None:
+            if varIndex == 1:
+                line.color = ['red']
+                line.width = 2
+
+        cnvs2.plot(line, bg=1)
+
+        text        = cnvs2.createtext()
+        text.string = data.id
+        text.height = 9.5
+        text.x      = xpos[0] 
+        text.y      = ypos[0] + 0.01 
+
+        cnvs2.plot(text, bg=1) 
                       
         if varIndex is not None:
             if varIndex == 0:
@@ -1588,6 +1635,9 @@ class amwg_plot_set5and6(amwg_plot_spec):
 
         #cnvs1.landscape()
         #cnvs1.setcolormap("categorical")
+        #colormap = vcs.matplotlib2vcs('viridis')
+        #cnvs1.setcolormap(colormap)
+
 
         # Adjust labels and names for single plots
         ynameOri                  = cnvs1.gettextorientation(tm1.yname.textorientation)
@@ -3178,22 +3228,21 @@ class amwg_plot_set11(amwg_plot_spec):
     def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None):
         """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
-        #pdb.set_trace()
 
-        tm2.yname.priority=1
-        tm2.xname.priority=1
-        tm1.yname.priority=1
-        tm1.xname.priority=1
-        tm2.title.y=.98
+        # tm2.yname.priority = 1
+        # tm2.xname.priority = 1
+        # tm1.yname.priority = 1
+        # tm1.xname.priority = 1
+        tm2.title.y        = 0.98
 
         ly = 0.96      
-        xpos = {'model':.15, 'obs':.6}  
+        xpos = {'model':.19, 'obs':.66}  
         for key in self.ft_ids.keys():
-            text = cnvs2.createtext()
+            text        = cnvs2.createtext()
             text.string = self.ft_ids[key]
-            text.x = xpos[key]
-            text.y = ly
-            text.height = 12
+            text.x      = xpos[key]
+            text.y      = ly
+            text.height = 11
             cnvs2.plot(text, bg=1)  
         
         #horizontal labels
@@ -3204,7 +3253,127 @@ class amwg_plot_set11(amwg_plot_spec):
         
         tv=cnvs2.createtextorientation(None, tm2.ylabel1.textorientation)
         tv.height=8
-        tm2.ylabel1.textorientation = tv    
+        tm2.ylabel1.textorientation = tv
+
+        if varIndex == 0:
+            tm1.xname.priority    = 0
+            tm1.yname.priority    = 0
+            tm1.legend.priority   = 0
+            tm2.legend.priority   = 0
+            tm2.xname.priority    = 0
+            tm2.yname.priority    = 0
+            tm2.dataname.priority = 0
+            # Adjust plot position
+            deltaX = 0.015            
+            if tm2.data.x1 == 0.033:
+                deltaX += 0.015
+            elif tm2.data.x1 == 0.5165:
+                deltaX += 0.015 #0.03            
+            tm2.data.x1      += deltaX            
+            tm2.data.x2      += deltaX
+            tm2.box1.x1      += deltaX
+            tm2.box1.x2      += deltaX
+            tm2.ytic1.x1     += deltaX
+            tm2.ytic1.x2     += deltaX
+            tm2.ytic2.x1     += deltaX
+            tm2.ytic2.x2     += deltaX
+            tm2.ylabel1.x    += deltaX
+            tm2.ymintic1.x1  += deltaX
+            tm2.ymintic1.x2  += deltaX
+            #tm2.units.x      += deltaX
+            tm2.title.x      += deltaX
+            tm2.xname.x      += deltaX
+        elif (varIndex == 1) and (type(data[0]) is str):
+            if seqhasattr(graphicMethod, 'overplotline') and graphicMethod.overplotline:
+                tm1.line1.x1 = tm1.box1.x1
+                tm1.line1.x2 = tm1.box1.x2
+                tm1.line1.y1 = tm1.box1.y2
+                tm1.line1.y2 = tm1.box1.y1
+                #pdb.set_trace()
+                tm1.line1.line = 'LINE-DIAGS' # defined in diags.py
+                tm1.line1.priority = 1
+                tm2.line1.x1 = tm2.box1.x1
+                tm2.line1.x2 = tm2.box1.x2
+                tm2.line1.y1 = tm2.box1.y2
+                tm2.line1.y2 = tm2.box1.y1
+                tm2.line1.line = 'LINE-DIAGS'
+                tm2.line1.priority = 1                                                   
+                #tm.line1.list()
+            
+            tm1.xname.priority   = 1
+            tm1.yname.priority   = 1
+            tm1.ylabel1.priority = 1
+            tm1.xlabel1.priority = 1
+            tm1.units.priority   = 0
+            
+            yLabel = cnvs1.createtext(Tt_source=tm1.yname.texttable,
+                                      To_source=tm1.yname.textorientation)
+            yLabel.x      = tm1.yname.x
+            yLabel.y      = tm1.yname.y
+            if data is not None:
+                yLabel.string = ["SWCF (" + data[1] + ")"]
+            yLabel.height = 18
+            
+            cnvs1.plot(yLabel, bg=1)
+            
+            xLabel = cnvs1.createtext(Tt_source=tm1.xname.texttable,
+                                      To_source=tm1.xname.textorientation)
+            xLabel.x      = tm1.xname.x
+            xLabel.y      = tm1.xname.y
+            if data is not None:
+                xLabel.string = ["LWCF (" + data[0] + ")"]
+            xLabel.height = 18
+            
+            cnvs1.plot(xLabel, bg=1)
+            
+            titleOr                   = cnvs1.gettextorientation(tm1.title.textorientation)
+            titleOr.height           += 4
+            tm1.title.textorientation = titleOr
+
+            tm2.yname.priority    = 1
+            tm2.xname.priority    = 1
+            tm2.ylabel1.priority  = 1
+            tm2.xlabel1.priority  = 1
+            tm2.dataname.priority = 0
+            tm2.units.priority    = 0
+
+            # # Set 11 Corrections (to move to a proper place)
+            # deltaX            = 0.015
+            # print "\n---- varIndex 1, data x1 = {0} ---------".format(tm2.data.x1)
+            # tm2.data.x1      += deltaX
+            # print "\n---- varIndex 1, new data x1 = {0} ---------".format(tm2.data.x1)
+            # tm2.data.x2      += deltaX
+            # tm2.box1.x1      += deltaX
+            # tm2.box1.x2      += deltaX
+            # tm2.ytic1.x1     += deltaX
+            # tm2.ytic1.x2     += deltaX
+            # tm2.ytic2.x1     += deltaX
+            # tm2.ytic2.x2     += deltaX
+            # tm2.ylabel1.x    += deltaX
+            # tm2.ymintic1.x1  += deltaX
+            # tm2.ymintic1.x2  += deltaX
+            # #tm2.units.x      += deltaX
+            # #tm2.title.x      += deltaX
+            # tm2.xname.x      += deltaX
+            # tm2.source.y      = tm2.dataname.y + 0.01
+
+            yLabel = cnvs2.createtext(Tt_source=tm2.yname.texttable,
+                                      To_source=tm2.yname.textorientation)
+            yLabel.x = tm2.yname.x
+            yLabel.y = tm2.yname.y
+            yLabel.string = ["SWCF (" + data[1] + ")"]
+            yLabel.height = 9
+                                    
+            cnvs2.plot(yLabel, bg=1)
+            
+            xLabel = cnvs2.createtext(Tt_source=tm2.xname.texttable,
+                                      To_source=tm2.xname.textorientation)
+            xLabel.x      = tm2.xname.x
+            xLabel.y      = tm2.xname.y
+            xLabel.string = ["LWCF (" + data[0] + ")"]
+            xLabel.height = 9
+            
+            cnvs2.plot(xLabel, bg=1)     
         
         return tm1, tm2    
     
@@ -3456,11 +3625,9 @@ class amwg_plot_set12(amwg_plot_spec):
         lineTypes[self.legendTitles[1]] = 'dot'
         positions = {}
         positions['solid', tm1]  = [tm1.data.x2 + 0.008, tm1.data.x2 + 0.07], [0.16, .16]
-        #[0.05, 0.2], [0.08, .08] 
-        positions['solid', tm2]  = [tm2.data.x1 + 0.008+deltaX, tm2.data.x1 + 0.07+deltaX], [tm2.data.y1 + 0.01, tm2.data.y1 + 0.01]# [.05, .2], [.47, .47]
+        positions['solid', tm2]  = [tm2.data.x1 + 0.008+deltaX, tm2.data.x1 + 0.07+deltaX], [tm2.data.y1 + 0.01, tm2.data.y1 + 0.01]
         positions['dot', tm1]  = [tm1.data.x2 + 0.008, tm1.data.x2 + 0.07], [0.24, 0.24]
-        #[0.05, 0.2], [0.13, 0.13]  
-        positions['dot', tm2]  = [tm2.data.x1 + 0.008+deltaX, tm2.data.x1 + 0.07+deltaX], [tm2.data.y1 + 0.05, tm2.data.y1 + 0.05] #[.05, .2], [.5, .5]
+        positions['dot', tm2]  = [tm2.data.x1 + 0.008+deltaX, tm2.data.x1 + 0.07+deltaX], [tm2.data.y1 + 0.05, tm2.data.y1 + 0.05]
    
         #if not self.legendComplete:
         for canvas, tm in templates:
