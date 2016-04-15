@@ -2300,6 +2300,8 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
     (*) Experimentally, there can be more than two axes if the first axes be trivial, i.e. length is 1.
     If this works out, it should be generalized and reproduced in other aminusb_* functions."""
     ""
+    import pdb
+    #pdb.set_trace()
     global regridded_vars   # experimental for now
     if mv1 is None or mv2 is None:
         print "WARNING, aminusb_2ax missing an input variable."
@@ -2341,7 +2343,19 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
             [ax.id for ax in axes2]
     if len(axes1[0])==len(axes2[0]):
         # Only axis2 differs, there's a better way...
-        return aminusb_ax2( mv1, mv2 )
+        aminusb = aminusb_ax2( mv1, mv2 )
+        
+        #compute rmse and correlations
+        import genutil.statistics, numpy
+        aminusb.RMSE = numpy.infty
+        aminusb.CORR = numpy.infty
+        try:
+            aminusb.RMSE = float( genutil.statistics.rms(mv1new, mv2new, axis='xy') )
+            aminusb.CORR = float( genutil.statistics.correlation(mv1new, mv2new, axis='xy') )
+        except Exception,err:
+            print err, "<<<<<<<<<<<<<<<<<<<"
+
+        return aminusb
     
     if len(axes1[0])<=len(axes2[0]):
 #        if len(axes1[1])<=len(axes2[1]):
@@ -2386,9 +2400,17 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
             regridded_vars[mv1new.id] = mv1new
     aminusb = mv1new - mv2new
     aminusb.id = 'difference of '+mv1.id
-    import genutil.statistics
-    aminusb.RMSE = float( genutil.statistics.rms(mv1new, mv2new, axis='xy') )
-    aminusb.CORR = float( genutil.statistics.correlation(mv1new, mv2new, axis='xy') )
+    
+    #compute rmse and correlations
+    import genutil.statistics, numpy
+    aminusb.RMSE = numpy.infty
+    aminusb.CORR = numpy.infty
+    try:
+        aminusb.RMSE = float( genutil.statistics.rms(mv1new, mv2new, axis='xy') )
+        aminusb.CORR = float( genutil.statistics.correlation(mv1new, mv2new, axis='xy') )
+    except Exception,err:
+        print err, "<<<<<<<<<<<<<<<<<<<"
+
     if hasattr(mv1,'long_name'):
         aminusb.long_name = 'difference of '+mv1.long_name
     if hasattr(mv1,'units'):  aminusb.units = mv1.units
