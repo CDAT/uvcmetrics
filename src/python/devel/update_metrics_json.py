@@ -165,6 +165,7 @@ if 1:
                 E = getattr(p, s + e)
                 if e[-1]=="2":
                     E.priority=0
+                    print "TURNED OFF:",p,s+e
                 if k.lower().find("dud") == -1:
                     E.priority = 1
                 for xy in ["x", "y"]:
