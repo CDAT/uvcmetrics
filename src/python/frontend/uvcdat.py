@@ -490,7 +490,7 @@ class uvc_simple_plotspec():
     
                     try:
                         #changed by Charles on 4/15/16 to support Chris
-                        if varmin<0 and varmax>0:
+                        if varmin<0 and varmax>0 and hasattr(var,"RMSE"):
                             mx = max(-varmin,varmax)
                             levels = [float(v) for v in vcs.mkscale( -mx,mx, nlevels, zero=-1 )]
                         else:
