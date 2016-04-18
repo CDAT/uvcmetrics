@@ -925,7 +925,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
         varid is a string identifying the variable to be plotted, e.g. 'TREFHT'.
         seasonid is a string such as 'DJF'."""
         filetable1, filetable2 = self.getfts(model, obs)
-         
+
         plot_spec.__init__(self,seasonid, regionid)
         self.plottype = 'Isofill'
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid

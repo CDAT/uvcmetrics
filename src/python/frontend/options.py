@@ -199,7 +199,7 @@ class Options():
            for y in x:
                ok = ok and (type(y) in [int, float])
            return ok
-
+  
        try:
            #check if levels is a file containing the actual levels
            f=open(levels, 'r')
@@ -603,6 +603,7 @@ class Options():
          runopts.add_argument('--varopts', nargs='+',
             help="Variable auxillary options")
          #levels for isofill plots
+
          runopts.add_argument('--levels', help="Specify a file name containing a list of levels or the comma delimited levels directly")
          runopts.add_argument('--translate', nargs='?', default='y',
             help="Enable translation for obs sets to datasets. Optional provide a colon separated input to output list e.g. DSVAR1:OBSVAR1")
@@ -740,6 +741,9 @@ class Options():
       if(args.cachepath != None):
          self._opts['cachepath'] = args.cachepath[0]
 
+      if (args.levels) != None:
+          self.processLevels(args.levels)
+    
       # I checked; these are global and it doesn't seem to matter if you import cdms2 multiple times;
       # they are still set after you set them once in the python process.
       if(args.compress != None):
@@ -946,7 +950,7 @@ class Options():
 
          self.listVarOptions(args.package, args.sets, args.vars)
       quit()
-         
+  
       # Make this work in both metadiags and diags.
       if 'climatology' not in progname and 'climatology.py' not in progname:
          if(args.levels):
