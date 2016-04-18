@@ -256,7 +256,7 @@ class uvc_simple_plotspec():
         self.linetypes = linetypes
         self.linecolors = linecolors
         self.levels = levels
-        
+
         # Initial ranges - may later be changed to coordinate with related plots:
         # For each variable named 'v', the i-th member of self.vars, (most often there is just one),
         # varmax[v] is the maximum value of v, varmin[v] is the minimum value of v,
@@ -490,7 +490,7 @@ class uvc_simple_plotspec():
     
                     try:
                         #changed by Charles on 4/15/16 to support Chris
-                        if varmin<0 and varmax>0:
+                        if varmin<0 and varmax>0 and hasattr(var,"RMSE"):
                             mx = max(-varmin,varmax)
                             levels = [float(v) for v in vcs.mkscale( -mx,mx, nlevels, zero=-1 )]
                         else:
@@ -526,7 +526,7 @@ class uvc_simple_plotspec():
                 # passed a tuple value
                 if levels is not None and len(levels)>0:
                     self.presentation.levels = levels
-                    if varmin<0 and varmax>0:
+                    if varmin<0 and varmax>0 and hasattr(var,"RMSE"):
                         self.presentation.fillareacolors=vcs.getcolors(levels,split=1)
                 #nlevels = max(1, len(levels) - 1)
                 #self.presentation.list()

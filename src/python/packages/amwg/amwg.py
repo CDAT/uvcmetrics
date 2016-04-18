@@ -925,7 +925,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
         varid is a string identifying the variable to be plotted, e.g. 'TREFHT'.
         seasonid is a string such as 'DJF'."""
         filetable1, filetable2 = self.getfts(model, obs)
-         
+
         plot_spec.__init__(self,seasonid, regionid)
         self.plottype = 'Isofill'
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
@@ -2440,7 +2440,7 @@ class amwg_plot_set12(amwg_plot_spec):
         var.comment1 = name +' (' + units +')'
         return var        
     def customizeTemplates(self, templates):
-        """Theis method does what the title says.  It is a hack that will no doubt change as diags changes."""
+        """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
         tm1.legend.priority = 0
         tm2.legend.priority = 0
@@ -3225,7 +3225,7 @@ class amwg_plot_set15(amwg_plot_spec):
         # ... was self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
         self.computation_planned = True
         #pdb.set_trace()
-    def customizeTemplates(self, templates):
+    def customizeTemplates(self, templates, var = None):
         """Theis method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
  
