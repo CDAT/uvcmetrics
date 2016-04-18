@@ -318,6 +318,7 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
             # The variable mv, hence mvrs and avweights may have been expanded in longitude after
             # the weight array in the filetable was constructed.  This happens for polar plots.
             # So here we expand the weight array exactly the same way, if we can:
+            # N.B.  It would likely be better to do this with genutil.grower().
             if len(klons)>0:
                 ll_lon = latlon_wts.getLongitude()
                 av_lon = avweights.getLongitude()
@@ -374,15 +375,16 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
                         avweights[inds] = numpy.sum( latlon_wts[ilev,:,ilon] )
             else:
                 # No latitudes, no longitudes!
-                if len(klevs)>0:
-                    ilev = inds[klev]
-                else:
+                if len(klevs)<=0:   # No levels either.
                     # Probably something's wrong, there's basically nothing to do.
                     # But we can go on with something sensible anyway.
                     ilev = -1   # means use the bottom, usually best if there are no levels
                     print "WARNING, computing a mass-weighted average of",mvrs.id,\
                         "with no spatial axes"
-                avweights[inds] = numpy.sum( latlon_wts[ilev,:,:] )
+                else:  # We have only levels
+                    for inds in numpy.ndindex(avweights.shape):
+                        ilev = inds[klev]
+                        avweights[inds] = numpy.sum( latlon_wts[ilev,:,:] )
 
             avmv = averager( mvrs, axis=axes_string, weights=avweights )
 
@@ -2660,7 +2662,8 @@ def run_cdscan( fam, famfiles, cache_path=None ):
         print "ERROR: cdscan terminated with",proc_status
         print 'This is usually fatal. Frequent causes are an extra XML file in the dataset directory'
         print 'or non-CF compliant input files'
-        raise Exception("cdscan failed - %s" %cdscan_line)
+        #raise Exception("cdscan failed - %s" %cdscan_line)
+        return None
     return xml_name
 
 def join_data(*args ):
@@ -2995,12 +2998,14 @@ class reduced_variable(ftrow,basic_id):
                 raise Exception
             if reduced_data is not None and type(reduced_data) is not list:
                 reduced_data._vid = vid
-            reduced_data.weighting = weighting  # needed if we have to average it further later on
+            if reduced_data is not None:
+                reduced_data.weighting = weighting  # needed if we have to average it further later on
             f.close()
         if hasattr(reduced_data,'mask') and reduced_data.mask.all():
             reduced_data = None
-        reduced_data._filename = self._filename
-        reduced_data.filetable = self.filetable
+        if reduced_data is not None:
+            reduced_data._filename = self._filename
+            reduced_data.filetable = self.filetable
         return reduced_data
 
 class rv(reduced_variable):
