@@ -163,6 +163,8 @@ if 1:
         for e in elts:
             for s in ["x", "y"]:
                 E = getattr(p, s + e)
+                if e[-1]=="2":
+                    E.priority=0
                 if k.lower().find("dud") == -1:
                     E.priority = 1
                 for xy in ["x", "y"]:
