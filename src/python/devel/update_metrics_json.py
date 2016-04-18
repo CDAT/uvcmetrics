@@ -79,6 +79,7 @@ if 1:
             p.mean.texttable = p.min.texttable
             p.xname.textorientation = txname
             p.title.y += .01
+            p.title.textorientation = "tex2x"
             p.xname.priority = 0
             p.xname.y = p.box1.y1 - .02
             p.ylabel1.x -= .002

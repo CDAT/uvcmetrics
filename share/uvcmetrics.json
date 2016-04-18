@@ -2748,7 +2748,7 @@
    }, 
    "title": {
     "priority": 1, 
-    "textorientation": "tex6", 
+    "textorientation": "tex2x", 
     "texttable": "default", 
     "x": 0.43000000000000005, 
     "y": 0.985
@@ -4212,7 +4212,7 @@
    }, 
    "title": {
     "priority": 1, 
-    "textorientation": "tex6", 
+    "textorientation": "tex2x", 
     "texttable": "default", 
     "x": 0.43000000000000005, 
     "y": 0.655
@@ -5676,7 +5676,7 @@
    }, 
    "title": {
     "priority": 1, 
-    "textorientation": "tex6", 
+    "textorientation": "tex2x", 
     "texttable": "default", 
     "x": 0.43000000000000005, 
     "y": 0.325
@@ -9702,7 +9702,7 @@
    }, 
    "title": {
     "priority": 0, 
-    "textorientation": "tex6", 
+    "textorientation": "tex2x", 
     "texttable": "default", 
     "x": 0.43000000000000005, 
     "y": 0.985
@@ -11166,7 +11166,7 @@
    }, 
    "title": {
     "priority": 0, 
-    "textorientation": "tex6", 
+    "textorientation": "tex2x", 
     "texttable": "default", 
     "x": 0.43000000000000005, 
     "y": 0.655
@@ -12630,7 +12630,7 @@
    }, 
    "title": {
     "priority": 0, 
-    "textorientation": "tex6", 
+    "textorientation": "tex2x", 
     "texttable": "default", 
     "x": 0.43000000000000005, 
     "y": 0.325
