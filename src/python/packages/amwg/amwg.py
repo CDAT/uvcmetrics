@@ -583,7 +583,7 @@ class amwg_plot_set2(amwg_plot_spec):
             }
         self.computation_planned = True
 
-    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None):
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
         """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
 
@@ -798,7 +798,7 @@ class amwg_plot_set3(amwg_plot_spec,basic_id):
         self.plot_b = one_line_diff_plot( zvar, z2var, vid )
         self.computation_planned = True
         
-    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None):
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
         """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
 
@@ -1145,7 +1145,7 @@ class amwg_plot_set4and41(amwg_plot_spec):
             self.plotall_id: [self.plot1_id, self.plot2_id, self.plot3_id ]
             }
         self.computation_planned = True
-    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None):
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
         """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
 
@@ -1608,7 +1608,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
             }
         self.computation_planned = True
 
-    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None):
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
         """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
         
@@ -2075,7 +2075,7 @@ class amwg_plot_set6(amwg_plot_spec):
             }
         self.computation_planned = True
 
-    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None):
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
         """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
         
@@ -2280,7 +2280,7 @@ class amwg_plot_set7(amwg_plot_spec):
             }
        self.computation_planned = True
        #pdb.set_trace()
-    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None):
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
         """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
         
@@ -2510,7 +2510,7 @@ class amwg_plot_set8(amwg_plot_spec):
         #... was self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
         self.computation_planned = True
 
-    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None):
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
         """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
         
@@ -2754,7 +2754,7 @@ class amwg_plot_set9(amwg_plot_spec):
         # ...was self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
         self.computation_planned = True
 
-    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None):
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
         """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
         
@@ -2951,7 +2951,7 @@ class amwg_plot_set10(amwg_plot_spec, basic_id):
 
         self.computation_planned = True
 
-    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None):
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
         """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
 
@@ -3225,7 +3225,7 @@ class amwg_plot_set11(amwg_plot_spec):
         self.composite_plotspecs[self.plotall_id] = plotall_id
         self.computation_planned = True
         #pdb.set_trace()
-    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None):
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
         """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
 
@@ -3545,7 +3545,7 @@ class amwg_plot_set12(amwg_plot_spec):
         name, units = self.IDsandUnits['axis']
         var.comment1 = name +' (' + units +')'
         return var        
-    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None):
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
         """Theis method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
         tm1.legend.priority   = 0
@@ -3939,7 +3939,7 @@ class amwg_plot_set13(amwg_plot_spec):
             }
         self.computation_planned = True
 
-    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None):
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
         """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
         
@@ -4307,7 +4307,7 @@ class amwg_plot_set14(amwg_plot_spec):
                                         
         self.computation_planned = True
         #pdb.set_trace()
-    def customizeTemplates(self, templates, legendTitles=[]):
+    def customizeTemplates(self, templates, legendTitles=[], var=None):
         """Theis method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs, tm), (cnvs2, tm2) = templates
         #tm.data.x1 = .1
@@ -4487,7 +4487,7 @@ class amwg_plot_set15(amwg_plot_spec):
         # ... was self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
         self.computation_planned = True
         #pdb.set_trace()
-    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None):
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
         """Theis method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
  
