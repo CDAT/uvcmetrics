@@ -88,36 +88,36 @@ class amwg_plot_set1(amwg_plot_spec):
         { 'var':'RESTOM'},
         { 'var':'RESSURF'},
         { 'var':'RESTOA', 'obs':'CERES-EBAF'},
-        { 'var':'RESTOA', 'obs':'ERBE'},
+        #obsolete { 'var':'RESTOA', 'obs':'ERBE'},
         { 'var':'SOLIN', 'obs':'CERES-EBAF'},
-        { 'var':'SOLIN', 'obs':'CERES'},
+        #obsolete { 'var':'SOLIN', 'obs':'CERES'},
         { 'var':'CLDTOT', 'obs':'ISCCP', 'units':'percent' },
         { 'var':'CLDTOT', 'obs':'CLOUDSAT', 'units':'percent' },
         { 'var':'FLDS', 'obs':'ISCCPFD', 'obsprint':'ISCCP'},
         { 'var':'FLNS', 'obs':'ISCCPFD', 'obsprint':'ISCCP'},
         { 'var':'FLUT', 'obs':'CERES-EBAF'},
-        { 'var':'FLUT', 'obs':'CERES'},
-        { 'var':'FLUT', 'obs':'ERBE'},
+        #obsolete { 'var':'FLUT', 'obs':'CERES'},
+        #obsolete { 'var':'FLUT', 'obs':'ERBE'},
         { 'var':'FLUTC', 'obs':'CERES-EBAF'},
-        { 'var':'FLUTC', 'obs':'CERES'},
-        { 'var':'FLUTC', 'obs':'ERBE'},
+        #obsolete { 'var':'FLUTC', 'obs':'CERES'},
+        #obsolete { 'var':'FLUTC', 'obs':'ERBE'},
         { 'var':'FLNT', 'obs':'CAM'},
         { 'var':'FSDS', 'obs':'ISCCPFD', 'obsprint':'ISCCP'},
         { 'var':'FSNS', 'obs':'ISCCPFD', 'obsprint':'ISCCP'},
         { 'var':'FSNS', 'obs':'LARYEA'},
         { 'var':'FSNTOA', 'obs':'CERES-EBAF'},
-        { 'var':'FSNTOA', 'obs':'CERES'},
-        { 'var':'FSNTOA', 'obs':'ERBE'},
+        #obsolete { 'var':'FSNTOA', 'obs':'CERES'},
+        #obsolete { 'var':'FSNTOA', 'obs':'ERBE'},
         { 'var':'FSNTOAC', 'obs':'CERES-EBAF'},
-        { 'var':'FSNTOAC', 'obs':'CERES'},
-        { 'var':'FSNTOAC', 'obs':'ERBE'},
+        #obsolete { 'var':'FSNTOAC', 'obs':'CERES'},
+        #obsolete { 'var':'FSNTOAC', 'obs':'ERBE'},
         { 'var':'FSNT', 'obs':'CAM'},
         { 'var':'LHFLX', 'obs':'JRA25'},
         { 'var':'LHFLX', 'obs':'ERA40'},
         { 'var':'LHFLX', 'obs':'WHOI'},
         { 'var':'LWCF', 'obs':'CERES-EBAF'},
-        { 'var':'LWCF', 'obs':'CERES'},
-        { 'var':'LWCF', 'obs':'ERBE'},
+        #obsolete { 'var':'LWCF', 'obs':'CERES'},
+        #obsolete { 'var':'LWCF', 'obs':'ERBE'},
         { 'var':'PRECT', 'obs':'GPCP'},
         { 'var':'PREH2O', 'obs':'NVAP'},
         { 'var':'PREH2O', 'obs':'AIRS'},
@@ -133,8 +133,8 @@ class amwg_plot_set1(amwg_plot_spec):
         { 'var':'STRESS_MAG', 'obs':'LARYEA'},
         { 'var':'STRESS_MAG', 'obs':'JRA25'},
         { 'var':'SWCF', 'obs':'CERES-EBAF'},
-        { 'var':'SWCF', 'obs':'CERES'},
-        { 'var':'SWCF', 'obs':'ERBE'},
+        #obsolete { 'var':'SWCF', 'obs':'CERES'},
+        #obsolete { 'var':'SWCF', 'obs':'ERBE'},
         { 'var':'AODVIS'},
         { 'var':'AODDUST'},
         { 'var':'SST', 'obs':'HadISST'},
@@ -320,7 +320,11 @@ class amwg_plot_set1(amwg_plot_spec):
                                  reduce2scalar_seasonal_zonal(
                                 x,season,latmin=dom0,latmax=dom1,vid=vid,gw=gw) )
                         )
-                    mean1 = rv1.reduce()
+                    try:
+                        mean1 = rv1.reduce()
+                    except Exception as e:
+                        print "WARNING, exception raised:",e
+                        return -999.000
                 if mean1 is None:
                     return -999.000
                 mean2 = convert_variable( mean1, self.units )

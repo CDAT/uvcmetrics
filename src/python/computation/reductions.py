@@ -290,7 +290,7 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
         avmv = mvrs
     else:
         for axis in axes:
-            if axis.getBounds() is None:
+            if axis.getBounds() is None:   # note that axis is not a time axis
                 axis._bounds_ = axis.genGenericBounds()
 
         if weights=='mass' or (hasattr(weights,'shape') and len(weights.shape)==3):
@@ -318,6 +318,7 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
             # The variable mv, hence mvrs and avweights may have been expanded in longitude after
             # the weight array in the filetable was constructed.  This happens for polar plots.
             # So here we expand the weight array exactly the same way, if we can:
+            # N.B.  It would likely be better to do this with genutil.grower().
             if len(klons)>0:
                 ll_lon = latlon_wts.getLongitude()
                 av_lon = avweights.getLongitude()
@@ -374,15 +375,16 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
                         avweights[inds] = numpy.sum( latlon_wts[ilev,:,ilon] )
             else:
                 # No latitudes, no longitudes!
-                if len(klevs)>0:
-                    ilev = inds[klev]
-                else:
+                if len(klevs)<=0:   # No levels either.
                     # Probably something's wrong, there's basically nothing to do.
                     # But we can go on with something sensible anyway.
                     ilev = -1   # means use the bottom, usually best if there are no levels
                     print "WARNING, computing a mass-weighted average of",mvrs.id,\
                         "with no spatial axes"
-                avweights[inds] = numpy.sum( latlon_wts[ilev,:,:] )
+                else:  # We have only levels
+                    for inds in numpy.ndindex(avweights.shape):
+                        ilev = inds[klev]
+                        avweights[inds] = numpy.sum( latlon_wts[ilev,:,:] )
 
             avmv = averager( mvrs, axis=axes_string, weights=avweights )
 
@@ -530,31 +532,10 @@ def reduce2latlon( mv, vid=None ):
     # from the old reduce2latlon, not implemented in reduce2any:
     axes = allAxes( mv )
     for ax in axes:
-        if ax.getBounds() is None and hasattr(ax,'bounds')  and not (hasattr(ax,'_bounds_') and ax._bounds_ is not None):
-            if hasattr(ax,'parent') and ax.parent is not None:
-                ax._bounds_ = ax.parent.variables(ax.bounds)
-    return reduce2any( mv, target_axes=['x','y'], vid=vid )
-
-def reduce_time( mv, vid=None ):
-    """returns the mean of the variable over all axes but time, as a cdms2 variable, i.e. a MV.
-    The input mv is a also cdms2 variable, assumed to be indexed as is usual for CF-compliant
-    variables, i.e. mv(time,lat,lon).  At present, no other axes (e.g. level) are supported.
-    At present mv must depend on all three axes.
-    """
-    if vid is None:   # Note that the averager function returns a variable with meaningless id.
-        #vid = 'reduced_'+mv.id
-        vid = mv.id
-    axes = allAxes( mv )
-    axis_names = [ a.id for a in axes if a.id=='time' ]
-    axes_string = '('+')('.join(axis_names)+')'
-    if len(axes_string)>2:
-        for ax in axes:
-            # The averager insists on bounds.  Sometimes they don't exist, especially for obs.
-            #was if ax.id!='lat' and ax.id!='lon' and not hasattr( ax, 'bounds' ):
-            #if ax.id!='lat' and ax.id!='lon' and (ax.getBounds() is None):
-            if not ax.isLatitude() and not ax.isLongitude() and not ax.isLevel() and\
-                    (ax.getBounds() is None):
-                ax.setBounds( ax.genGenericBounds() )
+        if ax.getBounds() is None and hasattr(ax,'bounds')  and\
+                not (hasattr(ax,'_bounds_') and ax._bounds_ is not None) and\
+                not (ax.isTime() and hasattr(ax,'climatology')):
+            ax.setBounds( ax.genGenericBounds() )
         avmv = averager( mv, axis=axes_string )
     else:
         avmv = mv
@@ -1150,7 +1131,7 @@ def stddev_map(mv1, mv2, obs, recalc=True, constant=.1):
 # This could probably just call reduceAnnTrendRegionLevel() in a loop and calculate the sum
 def reduceAnnTrendRegionSumLevels(mv, region, slevel, elevel, weights=None, vid=None):
    timeax = timeAxis(mv)
-   if timeax is not None and timeax.getBounds() is None:
+   if timeax is not None and timeax.getBounds() is None and not hasattr(timeax,'climatology'):
       timeax._bounds_ = timeax.genGenericBounds()
    if timeax is not None:
       mvsub = select_region(mv, region)
@@ -1194,7 +1175,7 @@ def reduceAnnTrendRegionLevel(mv, region, level, weights=None, vid=None):
       vid = 'reduced_'+mv.id
 
    timeax = timeAxis(mv)
-   if timeax is not None and timeax.getBounds() is None:
+   if timeax is not None and timeax.getBounds() is None and not hasattr(timeax,'climatology'):
       timeax._bounds_ = timeax.genGenericBounds()
    if timeax is not None:
       mvsub = mv(latitude=(region[0], region[1]), longitude=(region[2], region[3]))
@@ -1241,7 +1222,7 @@ def reduceAnnSingle(mv, vid=None):
       vid = 'reduced_'+mv.id
 
    timeax = timeAxis(mv)
-   if timeax is not None and timeax.getBounds() is None:
+   if timeax is not None and timeax.getBounds() is None and not hasattr(timeax,'climatology'):
       timeax._bounds_ = timeax.genGenericBounds()
    if timeax is not None:
       mvann = cdutil.times.YEAR(mv) 
@@ -1269,7 +1250,7 @@ def reduceAnnTrendRegion(mv, region, single=False, weights=None, vid=None):
 #   print 'units coming in: ', mv.units
 #   print 'REGION PASSED TO REDUCEANNTRENDREGION: ', region
    timeax = timeAxis(mv)
-   if timeax is not None and timeax.getBounds() is None:
+   if timeax is not None and timeax.getBounds() is None and not hasattr(timeax,'climatology'):
       timeax._bounds_ = timeax.genGenericBounds()
    if timeax is not None:
       mvsub = select_region(mv, region)
@@ -1338,7 +1319,7 @@ def reduceMonthlyRegion(mv, region, weights=None, vid=None):
    if vid is None:
       vid = 'reduced_'+mv.id
    timeax = timeAxis(mv)
-   if timeax is not None and timeax.getBounds() is None:
+   if timeax is not None and timeax.getBounds() is None and not hasattr(timeax,'climatology'):
       timeax._bounds_ = timeax.genGenericBounds()
    if timeax is not None:
       mvsub = mv(latitude=(region[0], region[1]), longitude=(region[2], region[3]))
@@ -1388,7 +1369,7 @@ def reduceMonthlyTrendRegion(mv, region, weights=None, vid=None):
 
 #   print 'INCOMING VARIABLE ', vid, ' SHAPE: ', mv.shape
    timeax = timeAxis(mv)
-   if timeax is not None and timeax.getBounds() is None:
+   if timeax is not None and timeax.getBounds() is None and not hasattr(timeax,'climatology'):
       timeax._bounds_ = timeax.genGenericBounds()
    if timeax is not None:
       # first, spatially subset
@@ -1439,7 +1420,7 @@ def reduce_time_space_seasonal_regional( mv, season=seasonsyr, region=None, vid=
     axes_string = '('+')('.join(axis_names)+')'
     if len(axes_string)>2:
         for axis in axes:
-            if axis.getBounds() is None:
+            if axis.getBounds() is None and not (axis.isTime() and hasattr(axis,'climatology')):
                 axis._bounds_ = axis.genGenericBounds()
     mvsav = cdutil.averager( mvreg, axis=axes_string )
 
@@ -1510,7 +1491,12 @@ def reduce_time_seasonal( mv, season=seasonsyr, region=None, vid=None ):
     return avmv
 
 def calculate_seasonal_climatology(mv, season):
-
+    """Averages the variable mv within the specified season to produce its climatology, and
+    returns that as a new variable.
+    Note: presently this uses the UV-CDAT function climatology().  If performance is a concern,
+    the best solution is to convert the data to climatology files before running the diagnostics.
+    In the future we may consider replacing climatology() by the functions in inc_reduce.py.
+    """
     # Convert season to a season object if it isn't already
     if season is None or season == 'ANN' or season.seasons[0] == 'ANN':
         season=seasonsyr
@@ -1518,13 +1504,14 @@ def calculate_seasonal_climatology(mv, season):
         season=cdutil.times.Seasons(season)
 
     # print the season the way I want to see it...
-    if type(season.seasons) is list and len(season.seasons)==1:
-        ss = str(season.seasons[0])
-    else:
-        ss = str(season.seasons)
-    if ss=='JFMAMJJASOND':
-        ss = 'ANN'
-#    print "calculating climatology for season : ", ss
+    if False:
+        if type(season.seasons) is list and len(season.seasons)==1:
+            ss = str(season.seasons[0])
+        else:
+            ss = str(season.seasons)
+        if ss=='JFMAMJJASOND':
+            ss = 'ANN'
+        print "calculating climatology for season : ", ss
 
     tax = timeAxis(mv)
     if tax is None:
@@ -1540,7 +1527,7 @@ def calculate_seasonal_climatology(mv, season):
         # The slicers in time.py require getBounds() to work.
         # If it doesn't, we'll have to give it one.
         # Setting the _bounds_ attribute will do it.
-        if tax.getBounds() is None:
+        if tax.getBounds() is None and not hasattr(tax,'climatology'):
             tax._bounds_ = tax.genGenericBounds()
             # Special check necessary for LEGATES obs data, because
             # climatology() won't accept this incomplete specification
@@ -2300,6 +2287,8 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
     (*) Experimentally, there can be more than two axes if the first axes be trivial, i.e. length is 1.
     If this works out, it should be generalized and reproduced in other aminusb_* functions."""
     ""
+    import pdb
+    #pdb.set_trace()
     global regridded_vars   # experimental for now
     if mv1 is None or mv2 is None:
         print "WARNING, aminusb_2ax missing an input variable."
@@ -2341,7 +2330,19 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
             [ax.id for ax in axes2]
     if len(axes1[0])==len(axes2[0]):
         # Only axis2 differs, there's a better way...
-        return aminusb_ax2( mv1, mv2 )
+        aminusb = aminusb_ax2( mv1, mv2 )
+        
+        #compute rmse and correlations
+        import genutil.statistics, numpy
+        aminusb.RMSE = numpy.infty
+        aminusb.CORR = numpy.infty
+        try:
+            aminusb.RMSE = float( genutil.statistics.rms(mv1, mv2, axis='xy') )
+            aminusb.CORR = float( genutil.statistics.correlation(mv1, mv2, axis='xy') )
+        except Exception,err:
+            print err, "<<<<<<<<<<<<<<<<<<<"
+
+        return aminusb
     
     if len(axes1[0])<=len(axes2[0]):
 #        if len(axes1[1])<=len(axes2[1]):
@@ -2386,6 +2387,17 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
             regridded_vars[mv1new.id] = mv1new
     aminusb = mv1new - mv2new
     aminusb.id = 'difference of '+mv1.id
+    
+    #compute rmse and correlations
+    import genutil.statistics, numpy
+    aminusb.RMSE = numpy.infty
+    aminusb.CORR = numpy.infty
+    try:
+        aminusb.RMSE = float( genutil.statistics.rms(mv1new, mv2new, axis='xy') )
+        aminusb.CORR = float( genutil.statistics.correlation(mv1new, mv2new, axis='xy') )
+    except Exception,err:
+        print err, "<<<<<<<<<<<<<<<<<<<"
+
     if hasattr(mv1,'long_name'):
         aminusb.long_name = 'difference of '+mv1.long_name
     if hasattr(mv1,'units'):  aminusb.units = mv1.units
@@ -2660,7 +2672,8 @@ def run_cdscan( fam, famfiles, cache_path=None ):
         print "ERROR: cdscan terminated with",proc_status
         print 'This is usually fatal. Frequent causes are an extra XML file in the dataset directory'
         print 'or non-CF compliant input files'
-        raise Exception("cdscan failed - %s" %cdscan_line)
+        #raise Exception("cdscan failed - %s" %cdscan_line)
+        return None
     return xml_name
 
 def join_data(*args ):
@@ -2995,12 +3008,14 @@ class reduced_variable(ftrow,basic_id):
                 raise Exception
             if reduced_data is not None and type(reduced_data) is not list:
                 reduced_data._vid = vid
-            reduced_data.weighting = weighting  # needed if we have to average it further later on
+            if reduced_data is not None:
+                reduced_data.weighting = weighting  # needed if we have to average it further later on
             f.close()
         if hasattr(reduced_data,'mask') and reduced_data.mask.all():
             reduced_data = None
-        reduced_data._filename = self._filename
-        reduced_data.filetable = self.filetable
+        if reduced_data is not None:
+            reduced_data._filename = self._filename
+            reduced_data.filetable = self.filetable
         return reduced_data
 
 class rv(reduced_variable):

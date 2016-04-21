@@ -492,9 +492,15 @@ class uvc_simple_plotspec():
                     nlevels = 16
     
                     try:
-                        levels = [float(v) for v in vcs.mkscale( varmin, varmax, nlevels )]
+                        #changed by Charles on 4/15/16 to support Chris
+                        if varmin<0 and varmax>0 and hasattr(var,"RMSE"):
+                            mx = max(-varmin,varmax)
+                            levels = [float(v) for v in vcs.mkscale( -mx,mx, nlevels, zero=-1 )]
+                        else:
+                            levels = [float(v) for v in vcs.mkscale( varmin, varmax, nlevels, zero=1 )]
+
                         # Exceptions occur because mkscale doesn't always work.  E.g. vcs.mkscale(0,1.e35,16)
-                    except RuntimeWarning:
+                    except RuntimeWarning,err:
                         levels = []
                     if levels==[]:
                         ## Here's how to do it with percentiles (clip out large values first).
@@ -523,6 +529,8 @@ class uvc_simple_plotspec():
                 # passed a tuple value
                 if levels is not None and len(levels)>0:
                     self.presentation.levels = levels
+                    if varmin<0 and varmax>0 and hasattr(var,"RMSE"):
+                        self.presentation.fillareacolors=vcs.getcolors(levels,split=1)
                 #nlevels = max(1, len(levels) - 1)
                 #self.presentation.list()
  

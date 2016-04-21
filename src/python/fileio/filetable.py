@@ -443,19 +443,22 @@ class NCAR_filefmt(basic_filefmt):
       if 'time' not in self._dfile.axes:
          return None
       timeax = self._dfile.axes['time']
-      if hasattr( timeax, 'bounds' ):
-         time_bnds_name = timeax.bounds
-         if self._dfile[time_bnds_name] is not None:
-            try:
-                lo = self._dfile[time_bnds_name][0][0]
-                hi = self._dfile[time_bnds_name][-1][1]
-            except Exception as e:
-                print "exception getting time bounds from self._dfile[",time_bnds_name,"]=",\
-                    self._dfile[time_bnds_name]
-                raise e
-         else:
-            lo = timeax[0]
-            hi = timeax[-1]
+      if hasattr( timeax, 'climatology' ) or hasattr( timeax, 'bounds' ):
+          if hasattr( timeax, 'climatology' ):
+              time_bnds_name = timeax.climatology
+          else:
+              time_bnds_name = timeax.bounds
+          if self._dfile[time_bnds_name] is not None:
+              try:
+                  lo = self._dfile[time_bnds_name][0][0]
+                  hi = self._dfile[time_bnds_name][-1][1]
+              except Exception as e:
+                  print "exception getting time bounds from self._dfile[",time_bnds_name,"]=",\
+                      self._dfile[time_bnds_name]
+                  raise e
+          else:
+              lo = timeax[0]
+              hi = timeax[-1]
       else:
          lo = timeax[0]
          hi = timeax[-1]
@@ -598,10 +601,10 @@ class NCAR_climo_filefmt(NCAR_filefmt):
          return season
 
    def get_timerange(self):
-      """ A climo file has no real time range, that is no times t1,t2 for which a variable is
-      defined at times t1<=time<t2.  Instead it has a season.  We'll return the season in
-      place of the time range, and will have to detect it at lookup time.  The season
-      attribute is set to help with that."""
+      """As this is a climatology file, we return the season, not an actual time range.
+      """
+      # If we were to return a time range, it would be the variable named by the :climatology
+      # attribute of the time axis.
       if hasattr(self._dfile,'season'):
          season = self._dfile.season
       else:
@@ -651,14 +654,18 @@ class CF_filefmt(basic_filefmt):
     def get_timerange(self):
        if 'time' not in self._dfile.axes:
           return None
-       if 'bounds' in self._dfile.axes['time'].__dict__:
-          time_bnds_name = self._dfile.axes['time'].bounds
-          lo = self._dfile[time_bnds_name][0][0]
-          hi = self._dfile[time_bnds_name][-1][1]
+       timeax = self._dfile.axes['time']
+       if hasattr(timeax,'climatology') or hasattr(timeax,'bounds'):
+           if hasattr(timeax,'climatology'):
+               time_bnds_name = timeax.climatology
+           else:
+               time_bnds_name = timeax.bounds
+           lo = self._dfile[time_bnds_name][0][0]
+           hi = self._dfile[time_bnds_name][-1][1]
        else:
-          lo = self._dfile.axes['time'][0]
-          hi = self._dfile.axes['time'][-1]
-       units = self._dfile.axes['time'].units
+          lo = timeax[0]
+          hi = timeax[-1]
+       units = timeax.units
        return drange( lo, hi, units )
     def get_latrange( self, lataxis=None ):
        if lataxis is None and 'lat' in self._dfile.axes:
