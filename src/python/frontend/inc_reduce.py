@@ -241,7 +241,14 @@ def initialize_redfile_from_datafile( redfilename, varnames, datafilen, dt=-1, i
         if f[varn] is None:
             print "WARNING,",varn,"was not found in",datafilen
             continue
-        if f[varn].dtype.name.find('string')==0:
+        try:
+            dtnom = f[varn].dtype.name  # works for variables
+        except:
+            # Probably an axis.  Most of what we're doing here makes no sense for an axis.
+            # FWIW, this would get the type name: dtnom = f[varn].dtype('spam').name
+            print "WARNING, averager will ignore axis", varn
+            continue
+        if dtnom.find('string')==0:
             # We can't handle string variables.
             print "jfp WARNING, ignoring string variable",varn
             continue

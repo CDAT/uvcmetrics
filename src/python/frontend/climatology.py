@@ -144,10 +144,10 @@ def reduce_twotimes2one( seasonname, fileout_template, fileout, g, redtime, redt
                     attdict[att] = val
 
             if var.getTime() is None:
-                if hasattr( var, 'axes' ):
+                if len(var.getAxisList())>0:
                     #newvar = cdms2.createVariable( var, id=var.id, axes=var.axes )
                     if var.id not in h.variables:
-                        addVariable( h, var.id, var.typecode(), var.axes, attdict )
+                        addVariable( h, var.id, var.typecode(), var.getAxisList(), attdict )
                 else:
                     ### If we don't call subSlice(), then TransientVariable.__init__() will, and
                     ### it will assume that the result is a TransientVariable with a domain.
@@ -319,7 +319,8 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
                      'SNOWHICE', 'SNOWHLND', 'SOLIN', 'SWCF', 'T', 'TAUX', 'TAUY', 'TGCLDIWP',
                      'TGCLDLWP', 'TMQ', 'TREFHT', 'TS', 'U', 'U10', 'UU', 'V', 'VD01', 'VQ', 'VT',
                      'VU', 'VV', 'WSUB', 'Z3', 'P0', 'time_bnds', 'area', 'hyai', 'hyam', 'hybi',
-                     'hybm', 'lat', 'lon' ]
+                     'hybm']
+        # These were originally on the list, but they're axes: ['lat', 'lon' ]
 
     dt = 0      # specifies climatology file
     redfilenames = []
