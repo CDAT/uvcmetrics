@@ -209,7 +209,7 @@ diags_collection['15']['CLOUD'] = {'plottype': '15', 'obs': ['NSA_1', 'TWP1_1', 
 diags_collection['14'] = {}
 diags_collection['14']['desc'] = 'Taylor Diagram plots '
 diags_collection['14']['seasons'] = ['NA'] # this one is highly special cased anyway
-diags_collection['14']['preamble'] = '<p>Taylor Diagrams were developed by Karl Taylor at PCMDI (<a href="http://www.agu.org/pubs/crossref/2001/2000JD900719.shtml">paper</a>|<a href="http://www-pcmdi.llnl.gov/publications/pdf/55.pdf">tech note</a>) and aim to condense information about variance and RMSE characteristics of a particular model run when compared with observations in a single diagram. The tables summarize the individual metrics for each variable considered including: <ul><br> <li>bias, as absolute percentage difference from observations <li>variance, as a ratio of the observed variance <li>correlation, correlation coefficient with observations </ul><p>'
+diags_collection['14']['preamble'] = '<p>Taylor Diagrams were developed by Karl Taylor at PCMDI (<a href="http://www.agu.org/pubs/crossref/2001/2000JD900719.shtml">paper</a>|<a href="http://www-pcmdi.llnl.gov/publications/pdf/55.pdf">tech note</a>) and aim to condense information about variance and RMSE characteristics of a particular model run when compared with observations in a single diagram. The tables summarize the individual metrics for each variable considered including: <ul><li>bias, as absolute percentage difference from observations</li> <li>variance, as a ratio of the observed variance</li> <li>correlation, correlation coefficient with observations</li> </ul></p>'
 diags_collection['14']['package'] = 'AMWG'
 # *** Collection 3 ***
 diags_collection['3'] = {}
@@ -262,7 +262,7 @@ diags_collection['1']['tables'] = True
 # *** Collection 2 ***
 diags_collection['2'] = {}
 diags_collection['2']['desc'] = 'Line plots of annual implied northward transports.'
-diags_collection['2']['preamble'] = '<p>The computation of the implied northward transports follows the conventions described in the paper by <a href="http://www.cgd.ucar.edu/cas/papers/jclim2001a/transpts.html">Trenberth and Caron (2001)</a>. Their corrections applied to the southern oceans poleward of 30S are not used in the calculations, and the NCEP derived values plotted here are their unadjusted values. Webpage about the NCEP derived data. A plot of the ocean basins used in the calculations.'
+diags_collection['2']['preamble'] = '<p>The computation of the implied northward transports follows the conventions described in the paper by <a href="http://www.cgd.ucar.edu/cas/papers/jclim2001a/transpts.html">Trenberth and Caron (2001)</a>. Their corrections applied to the southern oceans poleward of 30S are not used in the calculations, and the NCEP derived values plotted here are their unadjusted values. Webpage about the NCEP derived data. A plot of the ocean basins used in the calculations.</p>'
 diags_collection['2']['package'] = 'AMWG'
 diags_collection['2']['options'] = {'logo':'no'}
 diags_collection['2']['Atmospheric_Heat'] = {'plottype': '2', 'obs': ['NCEP_1']}

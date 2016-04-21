@@ -16,6 +16,9 @@ to = x.createtextorientation("tex6b","tex6")
 to.height = 6
 to.halign = "center"
 to.valign = "half"
+to = x.createtextorientation("title3","tex6b")
+to.height=10
+
 mean = x.createtextorientation("texmean")
 mean.halign="center"
 txname = x.createtextorientation("xname")
@@ -30,6 +33,12 @@ need3 = True
 if 1:
     for k in P:
         p = x.gettemplate(str(k))
+        for e in elts:
+            for s in ["x", "y"]:
+                E = getattr(p, s + e)
+                if e[-1]=="2":
+                    E.priority=0
+                    print "TURNED OFF:",p,s+e
         for a in dir(p):
             try:
                 g = getattr(p,a)
@@ -73,6 +82,7 @@ if 1:
             p.mean.texttable = p.min.texttable
             p.xname.textorientation = txname
             p.title.y += .01
+            p.title.textorientation = "title3"
             p.xname.priority = 0
             p.xname.y = p.box1.y1 - .02
             p.ylabel1.x -= .002
@@ -163,7 +173,10 @@ if 1:
         for e in elts:
             for s in ["x", "y"]:
                 E = getattr(p, s + e)
-                if k.lower().find("dud") == -1:
+                if e[-1]=="2":
+                    E.priority=0
+                    print "TURNED OFF:",p,s+e
+                elif k.lower().find("dud") == -1:
                     E.priority = 1
                 for xy in ["x", "y"]:
                     if hasattr(E, xy + "1"):
