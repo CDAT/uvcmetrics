@@ -205,7 +205,9 @@ class uvc_simple_plotspec():
     # re presentation (plottype): Yxvsx is a line plot, for Y=Y(X).  It can have one or several lines.
     # Isofill is a contour plot.  To make it polar, set projection=polar.  I'll
     # probably communicate that by passing a name "Isofill_polar".
-    def __init__( self, pvars, presentation, labels=[], title='', source='', ranges=None, overplotline=False, linetypes=['solid'], linecolors=[241], levels=None):
+    def __init__(
+        self, pvars, presentation, labels=[], title='', source='', ranges=None, overplotline=False,
+        linetypes=['solid'], linecolors=[241], levels=None, plotparms=None ):
 
         pvars = [v for v in pvars if v is not None]
         # ... Maybe something else is broken to let None get into pvars.
@@ -256,7 +258,8 @@ class uvc_simple_plotspec():
         self.linetypes = linetypes
         self.linecolors = linecolors
         self.levels = levels
-
+        self.plotparms = plotparms
+        
         # Initial ranges - may later be changed to coordinate with related plots:
         # For each variable named 'v', the i-th member of self.vars, (most often there is just one),
         # varmax[v] is the maximum value of v, varmin[v] is the minimum value of v,
@@ -1173,8 +1176,9 @@ class plot_spec(object):
             if z2ax is not None:
                 line2colors = [ps.z2linecolor]
 
-            #get the levels
-            levels = ps.levels       
+            #get the levels and plot parameters
+            levels = ps.levels
+            plotparms = getattr(ps,'plotparms',None)
                     
             # The following line is getting specific to UV-CDAT, although not any GUI...
             #pdb.set_trace()
@@ -1191,7 +1195,9 @@ class plot_spec(object):
                     plot_type_temp = 'Isofill' #jfp works for moisture transport
             else:
                 plot_type_temp = ps.plottype
-            self.plotspec_values[p] = uvc_simple_plotspec( vars, plot_type_temp, labels, title, ps.source, ranges, overplotline, linetypes, linecolors, levels )
+            self.plotspec_values[p] = uvc_simple_plotspec(
+                vars, plot_type_temp, labels, title, ps.source, ranges, overplotline, linetypes,
+                linecolors, levels, plotparms )
             #print p
             #print self.plotspec_values[p]
         #pdb.set_trace()

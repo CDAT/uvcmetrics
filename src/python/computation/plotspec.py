@@ -136,7 +136,8 @@ class plotspec(basic_id):
         title = None,
         source = '',
         overplotline = False,
-        levels = None
+        levels = None,  # deprecated
+        plotparms = None
         ):
         """Initialize a plotspec (plot specification).  Inputs are an id and plot type,
         and lists of x,y,z variables (as keys in the plotvars dictionary), functions to
@@ -146,6 +147,9 @@ class plotspec(basic_id):
         axes may be specified - e.g. ya to substitute for y in a plot, or ya1 as an addition
         to y in the plot.
         """
+        if plotparms is not None:
+            if 'levels' in plotparms: levels = plotparms['levels']
+            self.plotparms = plotparms
         if type(vid) is tuple:
             # probably this is an id tuple with the first element stripped off
             basic_id.__init__(self,*vid)
@@ -318,24 +322,24 @@ class ps(plotspec):
 #                                vid = yvar.id+" line plot", plottype='Yxvsx' )
 
 class basic_two_line_plot( plotspec ):
-    def __init__( self, zvar, z2var ):
+    def __init__( self, zvar, z2var, plotparms=None ):
         """zvar, z2var should be the actual vertical values (y-axis) of the plots.
         They should already have been reduced to 1-D variables.
         The horizontal axis is the axis of z*var."""
         # plotspec.__init__( self, y1vars=[y1var], y2vars=[y2var],
         #                    vid = y1var.variableid+y2var.variableid+" line plot", plottype='Yxvsx' )
-        plotspec.__init__( self, zvars=[zvar], z2vars=[z2var],
+        plotspec.__init__( self, zvars=[zvar], z2vars=[z2var], plotparms=plotparms,
                            vid = z2var.variableid+z2var.variableid+" line plot", plottype='Yxvsx' )
 
 class one_line_diff_plot( plotspec ):
-    def __init__( self, zvar, z2var, vid ):
+    def __init__( self, zvar, z2var, vid, plotparms=None ):
         """z*var should be the actual vertical values (y-axis) of the plots.
         z*var should already have been reduced to 1-D variables.
         The horizontal axis of the plot is the axis of z*."""
         plotspec.__init__( self,
             zvars=[zvar,z2var],
             zfunc=aminusb_1ax,   # aminusb_1ax(y1,y2)=y1-y2; each y has 1 axis, use min axis
-            vid=vid,
+            vid=vid, plotparms=plotparms,
             plottype='Yxvsx' )
 
 # class contour_plot( plotspec ):

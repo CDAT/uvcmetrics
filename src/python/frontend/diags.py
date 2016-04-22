@@ -242,9 +242,14 @@ def run_diags( opts ):
                   else:
                       if snum == '14' and package.upper() == 'AMWG': #Taylor diagrams
                           #this is a total kludge so that the list of variables is passed in for processing
-                          plot = sclass( modelfts, obsfts, variables, time, region, vvaropts[aux] )
+                          plot = sclass( modelfts, obsfts, variables, time, region, vvaropts[aux],
+                                         plotparms = { 'model':{}, 'obs':{}, 'diff':{} } )
                       else:
-                          plot = sclass( modelfts, obsfts, varid, time, region, vvaropts[aux], levels=opts['levels'] )
+                          plot = sclass( modelfts, obsfts, varid, time, region, vvaropts[aux],
+                                         plotparms = { 'model':{'levels':opts['levels'], 'colormap':'rainbow'},
+                                                       'obs':{'levels':opts['levels'], 'colormap':'rainbow'},
+                                                       'diff':{'levels':None, 'colormap':'bl_to_darkred'} } )
+
 
                   # Do the work (reducing variables, etc)
                   res = plot.compute(newgrid=-1) # newgrid=0 for original grid, -1 for coarse
@@ -472,8 +477,6 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                   special='BIAS'
                if 'CORR_' in vname:
                   special='CORR'
-               print '---> vname:', vname
-               print '---> fnamebase: ', fnamebase
                if special != '':
                   print '--> Special: ', special
                   if ('_1' in vname and '_2' in vname) or '_MAP' in vname.upper():
@@ -643,7 +646,8 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                #vcanvas.plot(var, rsr.presentation, tm, bg=1,
                #   title=title, units=getattr(var,'units',''), source=rsr.source )
                plot.vcs_plot(vcanvas, var, rsr.presentation, tm, bg=1, title=title,
-                  units=getattr(var, 'units', ''), source=rsr.source)
+                             units=getattr(var, 'units', ''), source=rsr.source,
+                             plotparms=getattr(rsr,'plotparms',None) )
 #                                      vcanvas3.clear()
 #                                      vcanvas3.plot(var, rsr.presentation )
                savePNG = True
@@ -653,8 +657,9 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                      #vcanvas2.plot(var, rsr.presentation, tm2, bg=1,
                      #   title=title, units=getattr(var,'units',''), source=rsr.source )
                      plot.vcs_plot( vcanvas2, var, rsr.presentation, tm2, bg=1,
-                        title=title, units=getattr(var, 'units', ''), 
-                        source = rsr.source, compoundplot=onPage )
+                                    title=title, units=getattr(var, 'units', ''), 
+                                    source = rsr.source, compoundplot=onPage,
+                                    plotparms=getattr(rsr,'plotparms',None) )
                      plotcv2 = True
                except vcs.error.vcsError as e:
                   print "ERROR making summary plot:",e
