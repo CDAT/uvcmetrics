@@ -536,6 +536,30 @@ def reduce2latlon( mv, vid=None ):
                 not (hasattr(ax,'_bounds_') and ax._bounds_ is not None) and\
                 not (ax.isTime() and hasattr(ax,'climatology')):
             ax.setBounds( ax.genGenericBounds() )
+            if hasattr(ax,'parent') and ax.parent is not None:
+                ax._bounds_ = ax.parent.variables(ax.bounds)
+    return reduce2any( mv, target_axes=['x','y'], vid=vid )
+
+def reduce_time( mv, vid=None ):
+    """returns the mean of the variable over all axes but time, as a cdms2 variable, i.e. a MV.
+    The input mv is a also cdms2 variable, assumed to be indexed as is usual for CF-compliant
+    variables, i.e. mv(time,lat,lon).  At present, no other axes (e.g. level) are supported.
+    At present mv must depend on all three axes.
+    """
+    if vid is None:   # Note that the averager function returns a variable with meaningless id.
+        #vid = 'reduced_'+mv.id
+        vid = mv.id
+    axes = allAxes( mv )
+    axis_names = [ a.id for a in axes if a.id=='time' ]
+    axes_string = '('+')('.join(axis_names)+')'
+    if len(axes_string)>2:
+        for ax in axes:
+            # The averager insists on bounds.  Sometimes they don't exist, especially for obs.
+            #was if ax.id!='lat' and ax.id!='lon' and not hasattr( ax, 'bounds' ):
+            #if ax.id!='lat' and ax.id!='lon' and (ax.getBounds() is None):
+            if not ax.isLatitude() and not ax.isLongitude() and not ax.isLevel() and\
+                    (ax.getBounds() is None):
+                ax.setBounds( ax.genGenericBounds() )
         avmv = averager( mv, axis=axes_string )
     else:
         avmv = mv
