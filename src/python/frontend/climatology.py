@@ -91,8 +91,11 @@ def reduce_twotimes2one( seasonname, fileout_template, fileout, g, redtime, redt
                          redtime_wts, redvars, lock=None ):
     # This occurs when multiple time units (redtime_bnds) contribute to a single season,
     # as for DJF in "days since 0" units.  We need a final reduction to a single time point.
-    # This is possible (with sensible time bounds) only if a 1-year shift can join the
-    # intervals.
+    # This is possible (with sensible time/climatology bounds) only if a 1-year
+    # shift can join the intervals.
+    # Note that I am using or creating both a bounds and a climatology attribute for the time axis,
+    # because although the climatology attribute is the CF-compliant solution, there is a lot
+    # more infrastructure around which uses the bounds attribute.
     # I can't find a way to shrink a FileVariable, so we need to make a new file:
     outdir = os.path.dirname( os.path.abspath( os.path.expanduser( os.path.expandvars(
                     fileout_template ) ) ) )
@@ -113,6 +116,7 @@ def reduce_twotimes2one( seasonname, fileout_template, fileout, g, redtime, redt
         assert( redtime is not None )
         timeax =  cdms2.createAxis( [newtime], id='time', bounds=newbnds )
         timeax.bounds = 'time_bnds'
+        timeax.climatology = 'climatology_bnds'
         timeax.units = redtime.units
         for att,val in redtime.__dict__.items() :
                 if (att=='_FillValue' or att[0]!='_')\
@@ -120,6 +124,7 @@ def reduce_twotimes2one( seasonname, fileout_template, fileout, g, redtime, redt
                     setattr( timeax, att, val )
         axes = [ timeax, g['time_bnds'].getDomain()[1][0] ]  # time, bnds shapes 1, 2.
         addVariable( h, 'time_bnds', 'd', axes, {} )
+        addVariable( h, 'climatology_bnds', 'd', axes, {} )
 
         #for var in redvars:
         #    # Include the variable's associated weight variable, if any...
@@ -139,10 +144,10 @@ def reduce_twotimes2one( seasonname, fileout_template, fileout, g, redtime, redt
                     attdict[att] = val
 
             if var.getTime() is None:
-                if hasattr( var, 'axes' ):
+                if len(var.getAxisList())>0:
                     #newvar = cdms2.createVariable( var, id=var.id, axes=var.axes )
                     if var.id not in h.variables:
-                        addVariable( h, var.id, var.typecode(), var.axes, attdict )
+                        addVariable( h, var.id, var.typecode(), var.getAxisList(), attdict )
                 else:
                     ### If we don't call subSlice(), then TransientVariable.__init__() will, and
                     ### it will assume that the result is a TransientVariable with a domain.
@@ -195,13 +200,14 @@ def reduce_twotimes2one( seasonname, fileout_template, fileout, g, redtime, redt
         if g00 > g11:
             # We need to make time_bnds contiguous.  If the season consists of contiguous months
             # (that's all we support), this can happen only from the time_bnds crossing a year boundary.
-            # Assume 365-day (noleap) calendar.
+            # Assume 365-day (noleap) calendar. <<<<< This needs to be relaxed <<<<<<
             g00 =  g00 - 365
             g01 =  g01 - 365
         assert( g01==g10 )
         assert( g00<g01 )
         assert( g11>g10 )
         h['time_bnds'].assignValue([[g00,g11]])
+        h['climatology_bnds'].assignValue([[g00,g11]])
         addVariable( h, 'time_weights', 'd', [timeax], {} )
         h['time_weights'][:] = newwt
         h.season = seasonname
@@ -286,11 +292,6 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
         fvarnames = f.variables.keys()
         fattr = f.attributes
         input_global_attributes = {a:fattr[a] for a in fattr if a not in ['Conventions']}
-        climo_history = "climatologies computed by climatology.py"
-        if 'history' in input_global_attributes:
-            input_global_attributes['history'] = input_global_attributes['history'] + climo_history
-        else:
-            input_global_attributes['history'] = climo_history
         if lock is not None:  lock.acquire()
         f.close()
         if lock is not None:  lock.release()
@@ -320,7 +321,8 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
                      'SNOWHICE', 'SNOWHLND', 'SOLIN', 'SWCF', 'T', 'TAUX', 'TAUY', 'TGCLDIWP',
                      'TGCLDLWP', 'TMQ', 'TREFHT', 'TS', 'U', 'U10', 'UU', 'V', 'VD01', 'VQ', 'VT',
                      'VU', 'VV', 'WSUB', 'Z3', 'P0', 'time_bnds', 'area', 'hyai', 'hyam', 'hybi',
-                     'hybm', 'lat', 'lon' ]
+                     'hybm']
+        # These were originally on the list, but they're axes: ['lat', 'lon' ]
 
     dt = 0      # specifies climatology file
     redfilenames = []
@@ -571,7 +573,7 @@ def climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_t
     redtime.long_name = 'climatological time'
     redtime.calendar = calendar
     redtime_wts = g['time_weights']
-    redtime_bnds = g[ g.getAxis('time').bounds ]
+    redtime_bnds = g[ redtime.bounds ]
     redvars = [ g[varn] for varn in out_varnames ]
 
     tmin, tmax = update_time_avg_from_files( redvars, redtime_bnds, redtime_wts, datafilenames2,
@@ -586,7 +588,7 @@ def climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_t
         g = reduce_twotimes2one( seasonname, fileout_template, fileout, g, redtime,
                                  redtime_bnds, redtime_wts, redvars, lock=lock1 )
         redtime = g.getAxis('time')
-        redtime_bnds = g[ g.getAxis('time').bounds ]
+        redtime_bnds = g[ getattr(redtime,'climatology',redtime.bounds) ]
 
     for a in input_global_attributes:
         setattr( g,a, input_global_attributes[a] )
@@ -603,14 +605,19 @@ def climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_t
     # But the CF Conventions, section 7.4 "Climatological Statistics" call for the time units
     # and value to correspond to the original data.  Fix it up here
     # For the time correction, use the lowest time in the data units, and the lowest time in "years since 0" units.
+    # Also, this block is setting the time axis _bounds_ attribute and the variable climatology_bnds.
+    # These things might best be done in inc_reduce.py
     deltat = season_tmin - redtime_bnds[0][0]
     redtime[:] += deltat
     redtime_bnds[:] += deltat
     redtime.units = time_units
     redtime_bnds.units = redtime.units
-    g['time_climo'][:] = [ season_tmin, season_tmax ]
-    g['time_climo'].initialized = 'yes'
-    g['time_climo'].units = g['time'].units
+    if hasattr(redtime,'bounds') and redtime.bounds in g.variables: #jfp
+        g[redtime.bounds][:] = redtime_bnds[:]
+    g['climatology_bnds'][:] = g[redtime.bounds][:]
+    # was g['climatology_bnds'][:] = [ season_tmin, season_tmax ] but that refers to data times, not climo times
+    g['climatology_bnds'].initialized = 'yes'
+    g['climatology_bnds'].units = g['time'].units
     if lock is not None:  lock.acquire()
     g.close()
     if lock is not None:  lock.release()

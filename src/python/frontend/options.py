@@ -1,6 +1,6 @@
 
 ### TODO: Fix compress options (in init or whatever)
-### TODO: Seperate subclasses for datasets vs obs 
+### TODO: Seperate subclasses for datasets vs obs
 
 
 import cdms2, os, logging
@@ -64,7 +64,7 @@ class Options():
       self._opts['varopts' ] = None
       self._opts['sets'] = None
       self._opts['regions'] = []
-      
+
       self._opts['reltime'] = None
       self._opts['cachepath'] = '/tmp'
       self._opts['translate'] = True
@@ -93,7 +93,7 @@ class Options():
    def __getitem__(self, opt):
       return self._opts[opt]
 
-   def __setitem__(self, key, value): 
+   def __setitem__(self, key, value):
       self._opts[key] = value
 
    def get(self, opt, default=None):
@@ -207,7 +207,7 @@ class Options():
            f.close()
        except:
            pass
-       
+
        try:
            #check if levels is a tuple of numbers
            levels = eval(levels)
@@ -217,15 +217,15 @@ class Options():
                    return
        except:
            pass
-       
+
        logging.warning('%s Levels are not specified correctly.', levels)
        logging.critical('They must be a comma delimited (no spaces) list of numbers or a file name that contains the list.')
        quit()
-       
+
    def processModel(self, models):
       self.processDataset('model', models) # the dtype and the dictionary key for it, the data
    def processObs(self, obs):
-      self.processDataset('obs', obs) 
+      self.processDataset('obs', obs)
 
    ###
    ### The next few functions provide the ability to get valid options to the various parameters.
@@ -242,9 +242,12 @@ class Options():
 
    def listSets(self, packageid, key=None):
       # I don't know of a better way to do this. I'd rather have these
-      # defined (perhaps in defines.py) 
+      # defined (perhaps in defines.py)
       # it would clean up a lot of code here, and in amwg/lmwg I think.
-      if packageid.lower() == 'lmwg':
+      if packageid is None:
+         print "ERROR, must specify package to list plot sets"
+         quit()
+      elif packageid.lower() == 'lmwg':
          import metrics.packages.lmwg.lmwg
          pinstance = metrics.packages.lmwg.lmwg.LMWG()
       elif packageid.lower() == 'amwg':
@@ -262,11 +265,17 @@ class Options():
    def listVariables(self, package, setname):
       import metrics.fileio.filetable as ft
       import metrics.fileio.findfiles as fi
+      if setname is None:
+         print "ERROR, must specify plot set to list variables"
+         quit()
       dtree = fi.dirtree_datafiles(self, modelid=0)
       filetable = ft.basic_filetable(dtree, self)
 
       # this needs a filetable probably, or we just define the maximum list of variables somewhere
-      if package.lower() == 'lmwg':
+      if package is None:
+         print "ERROR, must specify package to list variables"
+         quit()
+      elif package.lower() == 'lmwg':
          import metrics.packages.lmwg.lmwg
          pinstance = metrics.packages.lmwg.lmwg.LMWG()
       elif package.lower()=='amwg':
@@ -288,15 +297,24 @@ class Options():
       if vl == []:
          logging.critical('No variable list returned. Is set %s a valid set?',setname[0])
          quit()
-      return 
+      return
 
    def listVarOptions(self, package, setname, varname):
       import metrics.fileio.filetable as ft
       import metrics.fileio.findfiles as fi
+      if setname is None:
+         print "ERROR, must specify plot set to list variable options"
+         quit()
+      if varname is None:
+         print "ERROR, must specify variable to list variable options"
+         quit()
       dtree = fi.dirtree_datafiles(self, modelid=0)
       filetable = ft.basic_filetable(dtree, self)
 
-      if package.lower() == 'lmwg':
+      if package is None:
+         print "ERROR, must specify package to list variable options"
+         quit()
+      elif package.lower() == 'lmwg':
          import metrics.packages.lmwg.lmwg
          pinstance = metrics.packages.lmwg.lmwg.LMWG()
       elif package.lower()=='amwg':
@@ -315,6 +333,8 @@ class Options():
                   vo = vl[v].varoptions()
                   print 'Variable ', v,'in set', setname[0],'from package',package,'at path', self._opts['model'][0]['path'],'has options:'
                   print vo
+               else:
+                  print 'Variable ', v,'in set', setname[0],'from package',package,'at path', self._opts['model'][0]['path'],'has no options.'
 
 
    ###
@@ -329,7 +349,7 @@ class Options():
    #    1) Start/end years are valid and within the range specified
       import metrics.fileio.filetable as ft
       import metrics.fileio.findfiles as fi
-      import metrics.packages.diagnostic_groups 
+      import metrics.packages.diagnostic_groups
       import os
       if len(self._opts['model']) == 0 and len(self._opts['obs']) == 0:
          logging.critical('At least one model or obs set needs describted')
@@ -392,26 +412,30 @@ class Options():
             import metrics.packages.amwg.amwg
          dtree = fi.dirtree_datafiles(self, modelid=0)
          filetable = ft.basic_filetable(dtree, self)
-         dm = metrics.packages.diagnostic_groups.diagnostics_menu()
 
-         pclass = dm[package.upper()]()
-
-         avail_sets = []
-         slist = pclass.list_diagnostic_sets()
-         keys = slist.keys()
-         keys.sort()
-         for k in keys:
-            fields = k.split()
-            avail_sets.append(fields[0])
+#######
+####### This should be modified to look in the master dictionary files...
+#######
+#         dm = metrics.packages.diagnostic_groups.diagnostics_menu()
+#
+#         pclass = dm[package.upper()]()
+#
+#         avail_sets = []
+#         slist = pclass.list_diagnostic_sets()
+#         keys = slist.keys()
+#         keys.sort()
+#         for k in keys:
+#            fields = k.split()
+#            avail_sets.append(fields[0])
 #            for user in args.sets:
 #               if user == fields[0]:
 #                  sets.append(user)
-         sets = self._opts['sets']
-         intersect = list(set(sets)-set(avail_sets))
-         if intersect != []:
-            logging.critical('Collection(s) requested %s', sets)
-            logging.critical('Collection(s) available: %s', avail_sets)
-            quit()
+#         sets = self._opts['sets']
+#         intersect = list(set(sets)-set(avail_sets))
+#         if intersect != []:
+#            logging.critical('Collection(s) requested %s', sets)
+#            logging.critical('Collection(s) available: %s', avail_sets)
+#            quit()
 
    ### Less-verbose help for metadiags.
    def metadiags_help(self):
@@ -457,7 +481,7 @@ class Options():
       print " with information from this run. You'll also need to run the transfer script"
       print " to actually move data over. These options are more fully documented elsewhere"
       return
-      
+
 
    ### Less-verbose help for diags.
    def diags_help(self):
@@ -521,12 +545,12 @@ class Options():
          description=
 """UV-CDAT Climate Modeling Diagnostics
    For additional instructions, see also
-%s""" % help_url, 
+%s""" % help_url,
          usage='%(prog)s [options]',
          formatter_class=argparse.RawDescriptionHelpFormatter,
          epilog=('''\
             Examples:
-            %(prog)s --model path=/path/to/a/dataset,climos=yes --obs path=/path/to/a/obs/set,climos=yes,filter='f_startswith("NCEP")' --package AMWG --coll 4 --vars Z3 --varopts 300 500 
+            %(prog)s --model path=/path/to/a/dataset,climos=yes --obs path=/path/to/a/obs/set,climos=yes,filter='f_startswith("NCEP")' --package AMWG --coll 4 --vars Z3 --varopts 300 500
             is the same as:
             %(prog)s --path /path/to/a/dataset --climos yes --path /path/to/an/obsset --type obs --climos yes --filter 'f_startswith("NCEP")' --package AMWG --coll 4 --vars Z3 --varopts 300 500
 
@@ -535,20 +559,20 @@ class Options():
 
       # Dataset related stuff. All utilities get these.
       pathopts = parser.add_argument_group('Data')
-      pathopts.add_argument('--path', '-p', action='append', 
+      pathopts.add_argument('--path', '-p', action='append',
          help="Path(s) to dataset(s). This is required if the --models/--obs options are not used.")
       pathopts.add_argument('--filters', '-f', action='append',
          help="A filespec filter. This will be applied to the dataset path(s) (--path option) to narrow down file choices.. This is used if --model/--obs options are not.")
       pathopts.add_argument('--type', '-t', action='append', choices=['m','model','o','obs','observation'],
          help="Specifies the type of this dataset. Options are 'model' or 'observation'. This is used if --model/--obs options are not.")
-      pathopts.add_argument('--name', '-n', action='append', 
+      pathopts.add_argument('--name', '-n', action='append',
          help="A short name for this dataset. used to make titles and filenames manageable. This is used if --model/--obs options are not.")
-      pathopts.add_argument('--start', action='append', 
+      pathopts.add_argument('--start', action='append',
          help="Specify a start time in the dataset. This is used if --model/--obs options are not.")
-      pathopts.add_argument('--end', action='append', 
+      pathopts.add_argument('--end', action='append',
          help="Specify an end time in the dataset. This is used if --model/--obs options are not.")
       if 'climatology' not in progname and 'climatology.py' not in progname:
-         pathopts.add_argument('--climo', '--climos', action='append', choices=['no','yes', 'raw','True', 'False'], 
+         pathopts.add_argument('--climo', '--climos', action='append', choices=['no','yes', 'raw','True', 'False'],
             help="Specifies whether this path is raw data or climatologies. This is used if --model/--obs options are not.")
       pathopts.add_argument('--model', '-m', action='append',# nargs=1,
          help="key=value comma delimited list of model options. Options are as follows: path={a path to the data} filter={one or more file filters} name={short name for the dataset} start={starting time for the analysis} end={ending time for the analysis} climo=[yes|no] - is this a set of climatologies or raw data")
@@ -573,19 +597,20 @@ class Options():
       # Runtime options.
       runopts = parser.add_argument_group('Runtime control')
       if 'climatology' not in progname and 'climatology.py' not in progname:
-         runopts.add_argument('--package', '--packages', '-k', 
+         runopts.add_argument('--package', '--packages', '-k',
             help="The diagnostic package to run against the dataset(s).")
-         runopts.add_argument('--sets', '--set', '--colls', '--coll', '-s', nargs='+', 
-            help="The sets within a diagnostic package to run. Multiple sets can be specified.") 
+         runopts.add_argument('--sets', '--set', '--colls', '--coll', '-s', nargs='+',
+            help="The sets within a diagnostic package to run. Multiple sets can be specified.")
          runopts.add_argument('--varopts', nargs='+',
             help="Variable auxillary options")
          #levels for isofill plots
+
          runopts.add_argument('--levels', help="Specify a file name containing a list of levels or the comma delimited levels directly")
          runopts.add_argument('--translate', nargs='?', default='y',
             help="Enable translation for obs sets to datasets. Optional provide a colon separated input to output list e.g. DSVAR1:OBSVAR1")
       if 'metadiags' not in progname and 'metadiags.py' not in progname:
-         runopts.add_argument('--vars', '--var', '-v', nargs='+', 
-            help="Specify variables of interest to process. The default is all variables which can also be specified with the keyword ALL") 
+         runopts.add_argument('--vars', '--var', '-v', nargs='+',
+            help="Specify variables of interest to process. The default is all variables which can also be specified with the keyword ALL")
          runopts.add_argument('--regions', '--region', nargs='+', choices=all_regions.keys(),
             help="Specify a geographical region of interest. Note: Multi-word regions need quoted, e.g. 'Central Canada'")
 
@@ -595,7 +620,7 @@ class Options():
          timeopts.add_argument('--seasons', nargs='+', choices=all_seasons,
             help="Specify which seasons to generate climatoogies for")
          timeopts.add_argument('--years', nargs='+',
-            help="Specify which ears to include when generating climatologies") 
+            help="Specify which ears to include when generating climatologies")
          timeopts.add_argument('--months', nargs='+', choices=all_months,
             help="Specify which months to generate climatologies for")
          timeopts.add_argument('--seasonally', action='store_true',
@@ -604,7 +629,7 @@ class Options():
             help="Produce climatologies for all predefined months")
          timeopts.add_argument('--yearly', action='store_true',
             help="Produce annual climatogolies for all years in the dataset")
-         timeopts.add_argument('--timestart', 
+         timeopts.add_argument('--timestart',
             help="Specify the starting time for the dataset, such as 'months since Jan 2000'")
 
       # Output options. These are universal
@@ -614,8 +639,8 @@ class Options():
          help="Turn off netCDF compression. This can be required for other utilities to be able to process the output files (e.g. parallel netCDF based tools") #no compression, add self state
       outopts.add_argument('--outputdir', '-o',
          help="Directory in which output files will be written." )
-      
-      
+
+
       if 'climatology' not in progname and 'climatology.py' not in progname:
          outopts.add_argument('--plots', choices=['no','yes'],
             help="Specifies whether or not plots should be generated")
@@ -632,9 +657,9 @@ class Options():
       intopts = parser.add_argument_group('Internal-use primarily')
       # a few internal options not likely to be useful to anyone except metadiags
       if 'metadiags' not in progname and 'climatology' not in progname and 'metadiags.py' not in progname and 'climatology.py' not in progname:
-         intopts.add_argument('--prefix', 
+         intopts.add_argument('--prefix',
             help="Specify an output filename prefix to be prepended to all file names created internally. For example --prefix myout might generate myout-PBOT_JAN_GPCP.nc, etc")
-         intopts.add_argument('--postfix', 
+         intopts.add_argument('--postfix',
             help="Specify an output filename postfix to be appended to all file names created internally. For example --postfix _OBS might generate set1-JAN_OBS.nc, etc")
       if 'climatology' not in progname and 'climatology.py' not in progname:
          intopts.add_argument('--generate', '-g', choices=['no','yes'],
@@ -642,11 +667,11 @@ class Options():
 
       if 'metadiags' in progname or 'metadiags.py' in progname:
          metaopts = parser.add_argument_group('Metadiags-specific')
-         metaopts.add_argument('--hostname', 
+         metaopts.add_argument('--hostname',
             help="Specify the hostname of the machine hosting the ACME classic viewer database so we can add this dataset and some metadata there")
          metaopts.add_argument('--updatedb', choices=['no', 'only', 'yes'],
             help="Update the database with output from this run? Yes, no, only update the database (don't run anything. primarily for testing)")
-         metaopts.add_argument('--dsname', 
+         metaopts.add_argument('--dsname',
             help="A unique identifier for the dataset(s). Used by classic viewer to display the data.")
 
       if 'mpidiags' in progname or 'mpidiags.py' in progname:
@@ -677,7 +702,7 @@ class Options():
          parser.print_help()
          quit()
 
-   
+
       ####
       #### This is where we start actually dealing with some options.
       ####
@@ -704,18 +729,21 @@ class Options():
       if args.path != None and (args.model != None or args.obs != None):
          logging.critical('Please do not combine --path and the --model/--obs methods right now')
          quit()
-      
+
       ### Process dataset/obs arguments
       if args.model != None:
          self.processModel(args.model)
       if args.obs != None:
          self.processObs(args.obs)
-            
+
       if(args.path != None):
          self.processPaths(args)
 
       if(args.cachepath != None):
          self._opts['cachepath'] = args.cachepath[0]
+
+      if (args.levels) != None:
+          self.processLevels(args.levels)
 
       # I checked; these are global and it doesn't seem to matter if you import cdms2 multiple times;
       # they are still set after you set them once in the python process.
@@ -825,7 +853,7 @@ class Options():
             self._opts['vars'] = args.vars
          if(args.regions != None):
             self._opts['regions'] = args.regions
-         
+
          # If --yearly is set, then we will add 'ANN' to the list of climatologies
          if(args.yearly == True):
             self._opts['times'].append('ANN')
@@ -882,7 +910,7 @@ class Options():
       if 'package' in args.list or 'packages' in args.list:
          print "Listing available packages:"
          print self.all_packages.keys()
-      
+
       if 'sets' in args.list or 'set' in args.list:
          if args.package == None:
             print "Please specify package before requesting available diags sets"
@@ -892,7 +920,7 @@ class Options():
          keys = sets.keys()
          for k in keys:
             print 'Set',k, ' - ', sets[k]
-            
+
       if 'variables' in args.list or 'vars' in args.list or 'var' in args.list:
          if args.path == None and args.model == None and args.obs == None:
             logging.critical('Must provide a dataset when requesting a variable listing')
@@ -923,7 +951,7 @@ class Options():
 
          self.listVarOptions(args.package, args.sets, args.vars)
       quit()
-         
+
       # Make this work in both metadiags and diags.
       if 'climatology' not in progname and 'climatology.py' not in progname:
          if(args.levels):
@@ -969,7 +997,7 @@ def make_ft_dict(models):
                model_dict[key]['raw'] = models[i]
                model_dict[key]['climos'] = None
             index = index +1
-            
+
    return model_dict
 
 
@@ -988,5 +1016,3 @@ if __name__ == '__main__':
    print dir(modelfts[0])
 
    print modelfts[0].root_dir()
-
-

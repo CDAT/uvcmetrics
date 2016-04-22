@@ -30,7 +30,11 @@ def rhodz_from_hybridlev( PS, P0, hyai, hybi ):
     # value of time).
     # Thus rhodz will depend on lat,lon,level (and time).
     g = AtmConst.g     # 9.80665 m/s2.
-    pint = numpy.zeros( ( hybi.shape[0], PS.shape[1], PS.shape[2] ) )
+    levax = hybi.getLevel()
+    latax = PS.getLatitude()
+    lonax = PS.getLongitude()
+    pintdat = numpy.zeros( ( hybi.shape[0], PS.shape[1], PS.shape[2] ) )
+    pint = cdms2.createVariable( pintdat, axes=[levax,latax,lonax] )
     for k in range(hybi.shape[0]):
 	pint[k,:,:] = hyai[k]*P0 + PS[0,:,:]*hybi[k]
     # ... I don't know how to do this without a loop.
@@ -71,7 +75,8 @@ def rhodz_from_plev( lev, nlev_want, mv ):
         raise DiagError( "ERROR, rhodz_from_plev does not have the right number of levels %, %" %\
                              (len(lev),nlev_want) )
     # I expect lev[0] to be the ground (highest value), lev[-1] to be high (lowest value)
-    lev3d = numpy.zeros( (levc.shape[0], lat.shape[0], lon.shape[0] ))
+    lev3ddat = numpy.zeros( (levc.shape[0], lat.shape[0], lon.shape[0] ))
+    lev3d = cdms2.createVariable( lev3ddat, axes=[levc, lat, lon] )
     for k in range( levc.shape[0] ):
         lev3d[k,:,:] = levc[k]
     if hasattr( lev, '_filename' ):
@@ -136,6 +141,11 @@ def check_compatible_levels( var, pvar, strict=False ):
     """
     vlev = var.getLevel()
     plev = pvar.getLevel()
+    if plev is None and len(pvar.getAxisList())==1:
+        # probably a "special" level axis, e.g. sometimes hybi axis is its own fake
+        # axis with axis[i]==i, its connection to the level axis is implied.
+        # This may come from an error in climatology.py.
+        plev = pvar.getAxis(0)
     # We want plev[0] < var[0] < plev[1] < ... < var[N-1] < plev[N]
     # where var is defined on N levels and plev on N+1 levels.
     # But for now, just check the lengths of the two level arrays:
@@ -180,7 +190,7 @@ def area_times_rhodz( mv, rhodz ):
     grid = mv.getGrid()       # shape is (nlat,nlon).  Time & level are dropped.
     latwgts,lonwgts = grid.getWeights()  # shape is same as grid, nothing is shrunk.
     wtll = numpy.outer(numpy.array(latwgts), numpy.array(lonwgts))
-    wtlll = numpy.copy(rhodz)
+    wtlll = rhodz.clone()
     for k in range( rhodz.shape[0] ):  # k is level index
         wtlll[k,:,:] = rhodz[k,:,:]*wtll
     if wtlll.max()<=0.0:

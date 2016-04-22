@@ -204,7 +204,9 @@ class uvc_simple_plotspec():
     # re presentation (plottype): Yxvsx is a line plot, for Y=Y(X).  It can have one or several lines.
     # Isofill is a contour plot.  To make it polar, set projection=polar.  I'll
     # probably communicate that by passing a name "Isofill_polar".
-    def __init__( self, pvars, presentation, labels=[], title='', source='', ranges=None, overplotline=False, linetypes=['solid'], linecolors=[241], levels=None):
+    def __init__(
+        self, pvars, presentation, labels=[], title='', source='', ranges=None, overplotline=False,
+        linetypes=['solid'], linecolors=[241], levels=None, plotparms=None ):
 
         pvars = [v for v in pvars if v is not None]
         # ... Maybe something else is broken to let None get into pvars.
@@ -255,6 +257,7 @@ class uvc_simple_plotspec():
         self.linetypes = linetypes
         self.linecolors = linecolors
         self.levels = levels
+        self.plotparms = plotparms
         
         # Initial ranges - may later be changed to coordinate with related plots:
         # For each variable named 'v', the i-th member of self.vars, (most often there is just one),
@@ -488,9 +491,15 @@ class uvc_simple_plotspec():
                     nlevels = 16
     
                     try:
-                        levels = [float(v) for v in vcs.mkscale( varmin, varmax, nlevels )]
+                        #changed by Charles on 4/15/16 to support Chris
+                        if varmin<0 and varmax>0 and hasattr(var,"RMSE"):
+                            mx = max(-varmin,varmax)
+                            levels = [float(v) for v in vcs.mkscale( -mx,mx, nlevels, zero=-1 )]
+                        else:
+                            levels = [float(v) for v in vcs.mkscale( varmin, varmax, nlevels, zero=1 )]
+
                         # Exceptions occur because mkscale doesn't always work.  E.g. vcs.mkscale(0,1.e35,16)
-                    except RuntimeWarning:
+                    except RuntimeWarning,err:
                         levels = []
                     if levels==[]:
                         ## Here's how to do it with percentiles (clip out large values first).
@@ -519,6 +528,8 @@ class uvc_simple_plotspec():
                 # passed a tuple value
                 if levels is not None and len(levels)>0:
                     self.presentation.levels = levels
+                    if varmin<0 and varmax>0 and hasattr(var,"RMSE"):
+                        self.presentation.fillareacolors=vcs.getcolors(levels,split=1)
                 #nlevels = max(1, len(levels) - 1)
                 #self.presentation.list()
  
@@ -939,8 +950,6 @@ class plot_spec(object):
         return new_id
     def compute(self,newgrid=0):
         return self.results(newgrid)
-    def results(self,newgrid=0):
-        return self._results(newgrid)
 
     def uniquefts(self, ftlist):
         names = []
@@ -1006,6 +1015,8 @@ class plot_spec(object):
         return dups, climo, raw 
 
 
+    def results(self,newgrid=0):
+        return self._results(newgrid)
 # To profile, replace (by name changes) the above results() with the following one:
     def profiled_results(self,newgrid=0):
         if newgrid!=0:
@@ -1163,8 +1174,9 @@ class plot_spec(object):
             if z2ax is not None:
                 line2colors = [ps.z2linecolor]
 
-            #get the levels
-            levels = ps.levels       
+            #get the levels and plot parameters
+            levels = ps.levels
+            plotparms = getattr(ps,'plotparms',None)
                     
             # The following line is getting specific to UV-CDAT, although not any GUI...
             #pdb.set_trace()
@@ -1181,7 +1193,9 @@ class plot_spec(object):
                     plot_type_temp = 'Isofill' #jfp works for moisture transport
             else:
                 plot_type_temp = ps.plottype
-            self.plotspec_values[p] = uvc_simple_plotspec( vars, plot_type_temp, labels, title, ps.source, ranges, overplotline, linetypes, linecolors, levels )
+            self.plotspec_values[p] = uvc_simple_plotspec(
+                vars, plot_type_temp, labels, title, ps.source, ranges, overplotline, linetypes,
+                linecolors, levels, plotparms )
             #print p
             #print self.plotspec_values[p]
         #pdb.set_trace()
@@ -1240,7 +1254,7 @@ class plot_spec(object):
             else: zid = z.id
             print "No mean attribute in variable",zid,\
                 "; we may compute it in compute_plot_var_value."
-            set_mean( z, season=self.season, region=self.region )
+            set_mean( z, season=getattr(self,'season',None), region=getattr(self,'region',None) )
             if hasattr(z,'mean') and isinstance(z.mean,cdms2.tvariable.TransientVariable) and\
                     z.mean.shape==():
                 # ... adding 0.0 converts a numpy array of shape () to an actual number
