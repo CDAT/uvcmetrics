@@ -747,7 +747,7 @@ def update_time_avg_from_files( redvars0, redtime_bnds, redtime_wts, filenames,
                 else:
                     print "skipping",redvar.id
             except Exception as e:
-                if varid!='time_climo':  # I know about this one.
+                if varid!='climatology_bnds':  # I know about this one.
                     logging.exception("skipping %s due to exception", redvar.id)
                     print e
                 pass
