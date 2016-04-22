@@ -6,7 +6,7 @@ from metrics.common.id import *
 from metrics.packages.diagnostic_groups import *
 from metrics.computation.reductions import *
 from metrics.frontend import *
-import sys, traceback
+import sys, traceback, logging
 
 class derived_var(basic_id):
     def __init__( self, vid, inputs=[], outputs=['output'], func=(lambda: None), special_values=None ):
@@ -77,9 +77,8 @@ class derived_var(basic_id):
         try:
             output = apply( self._func, [ inpdict[inp] for inp in self._inputs ] )
         except TypeError as e:
-            print "In derived_var.derive, _inputs=",self._inputs
-            print "WARNING, derivation function failed.  Probably not enough valid inputs." 
-            print e
+            logging.error("In derived_var.derive, _inputs=%s",self._inputs)
+            logging.exception("Derivation function failed.  Probably not enough valid inputs.")
             return None
         if type(output) is tuple or type(output) is list:
             for o in output:
@@ -253,8 +252,7 @@ class plotspec(basic_id):
             if otherid is None:
                 return cls.dict_id( None, None, None, None, None )
             else:
-                print "ERROR.  Bad input to plotspec.dict_idid(), not a tuple.  Value is"
-                print otherid, type(otherid)
+                logging.error("Bad input to plotspec.dict_idid(), not a tuple. Value is %s, %s", otherid, type(otherid))
                 return None
         if otherid[0]=='rv' and len(otherid)==6 and otherid[5] is None or otherid[5]=='None' or otherid[5]=='':
             otherid = otherid[:5]
@@ -282,7 +280,7 @@ class plotspec(basic_id):
             else:
                 ft2 = otherid[5]
         else:
-            print "ERROR.  Bad input to plotspec.dict_idid(), wrong class slot or wrong length."
+            print logging.error("Bad input to plotspec.dict_idid(), wrong class slot or wrong length.")
             print otherid, type(otherid)
             return None
         return cls.dict_id( varid, varmod, seasonid, ft1, ft2 )

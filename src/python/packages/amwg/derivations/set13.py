@@ -1,4 +1,5 @@
 from cdms2 import MV2
+import logging
 
 def uncompress_fisccp1( fisccp1, isccp_prs, isccp_tau ):
     """Re-dimensions the input variable FISCCP1, to "un-compress" the 49-element iccp_prstau axis
@@ -8,7 +9,7 @@ def uncompress_fisccp1( fisccp1, isccp_prs, isccp_tau ):
     # Charles Doutriaux told me how to use reshape, setAxisList, etc. Any errors are mine. (JfP)
     if fisccp1.units=='mixed':
         # stupid data problem
-        print "WARNING, units of",fisccp1.id,"are mixed, which is nonsense!  Please fix your data."
+        logging.warning("Units of %s are mixed, which is nonsense!  Please fix your data.", fisccp1.id)
         fisccp1.units = '1'
     axes = list(fisccp1.getAxisList())
     alen = [len(ax) for ax in axes]

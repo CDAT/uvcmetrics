@@ -38,7 +38,7 @@
 # >>>> TO DO:
 # Create a suitable time axis when reading climo data without one.
 
-import numpy, cdms2, sys, os, math
+import numpy, cdms2, sys, os, math, logging
 from numbers import Number
 from pprint import pprint
 import time
@@ -78,7 +78,7 @@ def daybounds( season ):
                         [dbddic['JAN'][0][0], dbddic['FEB'][0][1]] ],
                'ANN': [[ dbddic['JAN'][0][0], dbddic['DEC'][0][1] ]] }
     dbddic.update( sesdic )
-    return dbddic[season]        
+    return dbddic[season]
 
 def setClimoBounds( time, tfile=None, value=None ):
     """time is a TransientAxis or FileAxis.  tfile is the open file it came from, value a new value
@@ -116,7 +116,7 @@ def setClimoBounds( time, tfile=None, value=None ):
                 f( time.climatology )[:,:] = value
             if hasattr( time, 'bounds' ):
                 f( time.bounds )[:,:] = value
-        
+
     return
 
 def getClimoBounds( time ):
@@ -239,7 +239,7 @@ def initialize_redfile_from_datafile( redfilename, varnames, datafilen, dt=-1, i
     out_varnames = []
     for varn in varnames:
         if f[varn] is None:
-            print "WARNING,",varn,"was not found in",datafilen
+            logging.warning("%s was not found in %s", varn, datafilen)
             continue
         try:
             dtnom = f[varn].dtype.name  # works for variables
@@ -250,7 +250,7 @@ def initialize_redfile_from_datafile( redfilename, varnames, datafilen, dt=-1, i
             continue
         if dtnom.find('string')==0:
             # We can't handle string variables.
-            print "jfp WARNING, ignoring string variable",varn
+            logging.warning("Ignoring string variable %s", varn)
             continue
         out_varnames.append(varn)
         dataaxes = f[varn].getAxisList()
@@ -285,7 +285,7 @@ def initialize_redfile_from_datafile( redfilename, varnames, datafilen, dt=-1, i
                         attdict[varn]['missing_value'].astype( new_dtype )
 
     for ax in boundless_axes:
-        print "WARNING, axis",ax.id,"has no bounds"
+        logging.warning("Axis %s has no bounds", ax.id)
     if timeaxis is not None:
         tbndaxis = cdms2.createAxis( [0,1], None, 'tbnd' )
 
@@ -331,7 +331,7 @@ def adjust_time_for_climatology( newtime, redtime ):
     newtime.toRelativeTime( redtime.units, redtime.getCalendar() )
     assert( newtime.calendar=='noleap' )
     # btw, newtime.getCalendar()==4113 means newtime.calendar=="noleap"
-    
+
     # We need to adjust the time to be in the year 0, the year we use for climatology calculations.
     # It would be natural to compute the adjustment from newtime[0].  But sometimes it's equal to
     # one of its bounds, on the border between two years!  So it's better to use the midpoint
@@ -505,9 +505,7 @@ def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds, 
             try:
                 assert( var.getDomain()[0][0].isTime() )
             except Exception as e:
-                print "redvars=",redvars
-                print "var=",var
-                print "var.getDomain()=",var.getDomain()
+                logging.exception("redvars=%s, var=%s, var.getDomain()=%s", redvars, var, var.getDomain())
                 raise e
             break
     assert( redtime is not None )
@@ -518,9 +516,7 @@ def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds, 
             try:
                 assert( var.getDomain()[0][0].isTime() )
             except Exception as e:
-                print "newvars=",newvars
-                print "var=",var
-                print "var.getDomain()=",var.getDomain()
+                logging.exception("redvars=%s, var=%s, var.getDomain()=%s", redvars, var, var.getDomain())
                 raise e
             break
     assert( newtime is not None ) # The input data should have a time axis!
@@ -637,7 +633,7 @@ def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds, 
                                 ( redtime_wts[i] + newtime_wts[j,k] )
                         else:
                             #won't work because redvar is a FileVariable
-                            print "WARNING, probably miscomputing average of",redvar.id
+                            logging.warning("Probably miscomputing average of %s", redvar.id)
                             redvar =\
                                 ( redvar*redtime_wts[i] + newvar*newtime_wts[j,k] ) /\
                                 ( redtime_wts[i] + newtime_wts[j,k] )
@@ -751,8 +747,8 @@ def update_time_avg_from_files( redvars0, redtime_bnds, redtime_wts, filenames,
                 else:
                     print "skipping",redvar.id
             except Exception as e:
-                if varid!='climatology_bnds':  # I know about this one.
-                    print "skipping",redvar.id,"due to exception:",
+                if varid!='time_climo':  # I know about this one.
+                    logging.exception("skipping %s due to exception", redvar.id)
                     print e
                 pass
         if len(varids)==0:
@@ -832,10 +828,8 @@ if __name__ == '__main__':
     if len( sys.argv )>=2:
         datafilenames = sys.argv[1:]
     else:
-        datafilenames = ['b30.009.cam2.h0.0600-01.nc','b30.009.cam2.h0.0600-02.nc']        
+        datafilenames = ['b30.009.cam2.h0.0600-01.nc','b30.009.cam2.h0.0600-02.nc']
     redfilename = 'redtest.nc'
     varnames = ['TS', 'PS']
     #test_time_avg( redfilename, varnames, datafilenames )
     test_climos( redfilename, varnames, datafilenames )
-
-

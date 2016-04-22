@@ -4,6 +4,7 @@
 import cdms2
 import sys
 import os
+import logging
 import numpy
 import MV2
 import argparse
@@ -172,7 +173,7 @@ if __name__ == "__main__":
     history += "%s: weights applied via acme_regrid (git commit: %s), " % (
                     str(datetime.datetime.utcnow()), metrics.git.commit,
                     )
-                    
+
     fo.history = history
     dirnm = os.path.dirname(args.file)
     basenm = os.path.basename(args.file)
@@ -299,7 +300,8 @@ if __name__ == "__main__":
                 else:
                     V2[:] = V[:]
             except Exception, err:
-                if not args.quiet: print "Variable %s falied with error: %s" % (V2.id, err)
+                if not args.quiet: logging.exception("Variable %s falied with error: %s", V2.id, err)
+
     # latitude and longitude bounds
     if args.store_bounds:
       fo["latitude_bounds"][:]=regdr.lats.getBounds()

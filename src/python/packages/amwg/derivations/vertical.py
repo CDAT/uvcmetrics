@@ -2,7 +2,7 @@
 
 # Ngl doesn't work yet onoceanonly:
 # import Ngl
-import numpy, cdms2, cdutil, pdb
+import numpy, cdms2, cdutil, pdb, logging
 from unidata import udunits
 
 # constants as in functions_vertical.ncl, lines 5-10:
@@ -36,7 +36,7 @@ def verticalize( T, hyam, hybm, ps, level_src=plvlO ):
     elif isinstance(level_src,cdms2.avariable.AbstractVariable):
         lev_axis = levAxis(level_src)
         if lev_axis==None:
-            print "WARNING, no level axis in",level_src.id
+            logging.warning("No level axis in %s",level_src.id)
             return None
         level_src = lev_axis[:]
     # Convert p0 to match ps.  Later, we'll convert back to mb.  This is faster than

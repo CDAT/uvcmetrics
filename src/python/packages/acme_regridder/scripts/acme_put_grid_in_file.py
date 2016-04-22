@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # PUts grid file info in file
 import cdms2 
-import sys, os
+import sys, os, logging
 import numpy
 import MV2
 import argparse
@@ -79,6 +79,6 @@ if __name__=="__main__":
         print "Storing %s as is" % v
       fo.write(V)
     except Exception,err:
-      print "Error processing: %s\n%s" % (v,err)
+      logging.exception("Error processing: %s\n%s", v, err)
 fo.close()
 print "Done, new file is: %s" % args.out
