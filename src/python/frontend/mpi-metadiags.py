@@ -293,7 +293,7 @@ def get_collections(pname):
                if diags_collection[c][v].get('package', False) != False and diags_collection[c][v]['package'].upper() == pname.upper():
                   colls.append(c)
    return colls
-   
+
 ### These 3 functions are used to add the variables to the database for speeding up
 ### classic view
 def setnum( setname ):

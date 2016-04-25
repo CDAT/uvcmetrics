@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # lots of "diags" runs, for testing
-import sys, getopt, os, subprocess
+import sys, getopt, os, subprocess, logging
 from metrics.frontend.options import Options
 from metrics.fileio.filetable import *
 from metrics.fileio.findfiles import *
@@ -35,9 +35,9 @@ def runcmdline(cmdline, outlog, errlog):
    try:
       retcode = subprocess.check_call(cmdline, stdout=outlog, stderr=errlog, shell=True)
       if retcode < 0:
-         print 'TERMINATE SIGNAL', -retcode
+         logging.warning('TERMINATE SIGNAL %s', -retcode)
    except subprocess.CalledProcessError as e:
-      print '\n\nEXECUTION FAILED FOR ', cmdline,' : ', e
+      logging.exception('\n\nEXECUTION FAILED FOR %s : %s', cmdline, e)
       outlog.write('Command %s failed\n' % cmdline)
       errlog.write('Failing command was: %s\n' % cmdline)
       print 'See '+outpath+'/DIAGS_ERROR.log for details'
@@ -70,7 +70,7 @@ def generatePlots(modelpath, obspath, outpath, pname, sets=None):
          os.mkdir(outpath)
          outlog = open(os.path.join(outpath,'DIAGS_OUTPUT.log'), 'w')
       except: 
-         print 'Couldnt create output log - %s/DIAGS_OUTPUT.log' % outpath
+         logging.critical('Couldnt create output log - %s/DIAGS_OUTPUT.log', outpath)
          quit()
 
    errlog = open(os.path.join(outpath,'DIAGS_ERROR.log'), 'w')
@@ -80,7 +80,7 @@ def generatePlots(modelpath, obspath, outpath, pname, sets=None):
    try:
       os.makedirs(outpath)
    except:
-      print 'Failed to create directory ', outpath
+      logging.error('Failed to create directory %s', outpath)
 
    # Make the plots
    if pname.upper() == 'AMWG':
@@ -305,8 +305,7 @@ if __name__ == '__main__':
    try:
       opts, args = getopt.getopt(sys.argv[1:], 'p:m:v:o:s:d:H:b:',["package=", "model=", "path=", "obs=", "obspath=", "output=", "outpath=", "outputdir=", "sets=", "dsname=", "hostname=", "db="])
    except getopt.GetoptError as err:
-      print 'Error processing command line arguments'
-      print str(err)
+      logging.exception('Error processing command line arguments')
       quit()
 
    for opt, arg in opts:

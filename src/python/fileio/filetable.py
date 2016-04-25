@@ -4,7 +4,7 @@
 #   file_id,  variable_id,  time_range,  lat_range,  lon_range,  level_range
 # subject to change!
 
-import sys, os, cdms2, re
+import sys, os, cdms2, re, logging
 from metrics.frontend.options import Options
 from metrics.common import *
 from pprint import pprint
@@ -45,7 +45,7 @@ class drange:
          return "drange %s to %s"%(self.lo,self.hi)
       else:
          return "drange %s to %s (%s)"%(self.lo,self.hi,self.units)
-       
+
 class ftrow:
     """This class identifies a file and contains the information essential to tell
     whether the file has data we want to graph: a variable and its domain information.
@@ -138,11 +138,11 @@ class basic_filetable(basic_id):
           try:
             options = opts
           except:
-            print 'Could not determine options array in basic_filetable'
+            logging.critical('Could not determine options array in basic_filetable')
             quit()
         self.initialize_idnumber()
         basic_id.__init__( self, self._idnumber, ftid )
-        
+
         self.maxfilewarn = 2  # maximum number of warnings about bad files
 
         self._table = []     # will be built from the filelist, see below
@@ -329,7 +329,7 @@ class basic_filetable(basic_id):
        A filter filefilter may be supplied, to restrict which files will be found.
        For ranges, None means you want all values."""
        if variable not in self._varindex.keys():
-          print 'INFO: couldnt find variable',variable,'in',self,".  If needed, we'll try to compute it."
+          print 'Couldnt find variable',variable,'in',self,".  If needed, we'll try to compute it."
           # print "  variables of",self,"are:",self._varindex.keys()
           return None
        candidates = self._varindex[ variable ]
@@ -402,7 +402,7 @@ class basic_filetable(basic_id):
           return False
        else:
           return True
-            
+
 class basic_filefmt:
     """Children of this class contain methods which support specific file types,
     and are used to build the file table.  Maybe later we'll put here methods
@@ -430,7 +430,7 @@ class NCAR_filefmt(basic_filefmt):
       assert options != None, 'options was null. Where did this get called from?'
 
       self.opts = options
-      
+
 
       #varlist = self.opts._opts['vars']
       # But we can't limit _all_interesting names to varlist!
@@ -443,19 +443,23 @@ class NCAR_filefmt(basic_filefmt):
       if 'time' not in self._dfile.axes:
          return None
       timeax = self._dfile.axes['time']
-      if hasattr( timeax, 'bounds' ):
-         time_bnds_name = timeax.bounds
-         if self._dfile[time_bnds_name] is not None:
-            try:
-                lo = self._dfile[time_bnds_name][0][0]
-                hi = self._dfile[time_bnds_name][-1][1]
-            except Exception as e:
-                print "exception getting time bounds from self._dfile[",time_bnds_name,"]=",\
-                    self._dfile[time_bnds_name]
-                raise e
-         else:
-            lo = timeax[0]
-            hi = timeax[-1]
+
+      if hasattr( timeax, 'climatology' ) or hasattr( timeax, 'bounds' ):
+          if hasattr( timeax, 'climatology' ):
+              time_bnds_name = timeax.climatology
+          else:
+              time_bnds_name = timeax.bounds
+          if self._dfile[time_bnds_name] is not None:
+              try:
+                  lo = self._dfile[time_bnds_name][0][0]
+                  hi = self._dfile[time_bnds_name][-1][1]
+              except Exception as e:
+                  logging.exception("exception getting time bounds from self._dfile[%s]=%s",time_bnds_name,self._dfile[time_bnds_name])
+                  raise e
+          else:
+              lo = timeax[0]
+              hi = timeax[-1]
+
       else:
          lo = timeax[0]
          hi = timeax[-1]
@@ -598,10 +602,10 @@ class NCAR_climo_filefmt(NCAR_filefmt):
          return season
 
    def get_timerange(self):
-      """ A climo file has no real time range, that is no times t1,t2 for which a variable is
-      defined at times t1<=time<t2.  Instead it has a season.  We'll return the season in
-      place of the time range, and will have to detect it at lookup time.  The season
-      attribute is set to help with that."""
+      """As this is a climatology file, we return the season, not an actual time range.
+      """
+      # If we were to return a time range, it would be the variable named by the :climatology
+      # attribute of the time axis.
       if hasattr(self._dfile,'season'):
          season = self._dfile.season
       else:
@@ -651,14 +655,18 @@ class CF_filefmt(basic_filefmt):
     def get_timerange(self):
        if 'time' not in self._dfile.axes:
           return None
-       if 'bounds' in self._dfile.axes['time'].__dict__:
-          time_bnds_name = self._dfile.axes['time'].bounds
-          lo = self._dfile[time_bnds_name][0][0]
-          hi = self._dfile[time_bnds_name][-1][1]
+       timeax = self._dfile.axes['time']
+       if hasattr(timeax,'climatology') or hasattr(timeax,'bounds'):
+           if hasattr(timeax,'climatology'):
+               time_bnds_name = timeax.climatology
+           else:
+               time_bnds_name = timeax.bounds
+           lo = self._dfile[time_bnds_name][0][0]
+           hi = self._dfile[time_bnds_name][-1][1]
        else:
-          lo = self._dfile.axes['time'][0]
-          hi = self._dfile.axes['time'][-1]
-       units = self._dfile.axes['time'].units
+          lo = timeax[0]
+          hi = timeax[-1]
+       units = timeax.units
        return drange( lo, hi, units )
     def get_latrange( self, lataxis=None ):
        if lataxis is None and 'lat' in self._dfile.axes:
@@ -718,24 +726,23 @@ def is_file_bad( dfile, maxwarn ):
         # Maybe these warnings should be supressed if for the time axis of a climo file...
         if not hasattr(ax,'bounds'):
             if len(ax)<=1:
-                print "WARNING, file",dfile.id,"has an axis",axn,"with no bounds."
+                logging.warning("File %s has an axis %s with no bounds",dfile.id, axn)
                 print "As the length is 1, no bounds can be computed."
                 print "Any computation involving this axis is likely to fail."
                 bad = True
                 maxwarn -= 1
             else:
-                print "INFO:  file",dfile.id,"has an axis",axn,"with no bounds."
+                print "File",dfile.id,"has an axis",axn,"with no bounds."
                 print "An attempt will be made to compute bounds, but that is unreliable compared"+\
                     " to bounds provided by the data file."
                 maxwarn -= 1
         if hasattr(ax,'bounds') and ax.bounds not in dfile.variables:
-            print "WARNING, file",dfile.id
-            print "has an axis",axn,"whose bounds",ax.bounds,"do not exist!"
+            logging.warning("File %s has an axis %s whose bounds do not exist!",dfile.id, axn)
             print "This file is not CF-compliant, so calculations involving this axis may well fail."
             bad = True
             maxwarn -= 1
         if hasattr(ax,'_FillValue') and ax._FillValue in ax:
-            print "WARNING, file",dfile.id,"has an axis",axn,"with a missing value"
+            print logging.warning("File %s has an axis %s with a missing value", dfile.id, axn)
             print "This file is not CF-compliant, so calculations involving this axis may well fail."
             bad = True
             maxwarn -= 1
@@ -751,4 +758,3 @@ if __name__ == '__main__':
    datafiles = dirtree_datafiles(o, modelid=0)
    filetable = basic_filetable( datafiles, o)
    print "filetable=", filetable.sort()
-
