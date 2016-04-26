@@ -24,7 +24,7 @@ import metrics.frontend.defines as defines
 from metrics.computation.region import *
 from genutil import *
 from metrics.computation.region_functions import *
-#import debug
+import metrics.common.debug
 
 regridded_vars = {}  # experimental
 
