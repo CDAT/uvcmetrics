@@ -45,6 +45,7 @@ def getCollections(pname):
    return colls
 
 def makeTables(collnum, model_dict, obspath, outpath, pname, outlog):
+   collnum = collnum.lower()
    seasons = diags_collection[collnum].get('seasons', ['ANN'])
    regions = diags_collection[collnum].get('regions', ['Global'])
    vlist = list( set(diags_collection[collnum].keys()) - set(collection_special_vars))
@@ -221,6 +222,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
    # Now, loop over collections.
    for collnum in colls:
       print 'Working on collection ', collnum
+      collnum = collnum.lower()
       # Special case the tables since they are a bit special. (at least amwg)
       if diags_collection[collnum].get('tables', False) != False:
          makeTables(collnum, model_dict, obspath, outpath, pname, outlog)
