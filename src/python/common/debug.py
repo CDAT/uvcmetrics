@@ -4,7 +4,7 @@
 # based on http://stackoverflow.com/questions/242485/starting-python-debugger-automatically-on-error
 
 try:
-    import getpass
+    import getpass, os
     developers = [ 'painter', 'painter1', 'mcenerney1', 'mcenerney1', "shaheen", "shaheen2" ]
     if (getpass.getuser() in developers and os.environ.get("PY_DEBUG_EXCEP",True)!='False')\
             or os.environ.get("PY_DEBUG_EXCEP",False)=='True':
