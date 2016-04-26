@@ -2550,6 +2550,8 @@ class lmwg_plot_set6(lmwg_plot_spec):
       return vlist
 
    def plan_computation(self, model, obs, varid, seasonid, region, aux=None):
+      print 'NOTE: Set 6 requires raw data for all "variables" until we create series of annual average climatologies and'
+      print 'support them'
 
       model_dict = make_ft_dict(model)
 

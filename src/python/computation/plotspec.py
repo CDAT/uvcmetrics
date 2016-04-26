@@ -416,7 +416,7 @@ class level_variable_for_amwg_set5(basic_level_variable):
          '300 mbar level value':300
         """
         opts = {
-            " default":"vertical average", " vertical average":"vertical average",
+            "default":"vertical average", " vertical average":"vertical average",
             "200 mbar":200, "300 mbar":300, "500 mbar":500, "850 mbar":850,
             "200":200, "300":300, "500":500, "850":850,
             }
