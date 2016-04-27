@@ -565,7 +565,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                         if hasattr(plot, 'replaceIds'):
                             var = plot.replaceIds(var)
                         tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)],
-                                                           var, varIndex, rsr_presentation )
+                                                           varIndex, rsr_presentation, var=var )
                     if len(rsr.vars) == 1:
                         #scatter plot for plot set 12
                         subtitle = title
@@ -679,7 +679,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                     
                     if hasattr(plot, 'customizeTemplates'):
                         tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)],
-                                                           var, varIndex, rsr.presentation )
+                                                           varIndex, rsr.presentation, var=var )
                     # Single plot                    
                     plot.vcs_plot(vcanvas, var, rsr.presentation, tm, bg=1,
                                   title=title, source=rsr.source,
