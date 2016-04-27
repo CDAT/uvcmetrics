@@ -577,7 +577,8 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                         try:
                             if tm2 is not None and varIndex+1 == len(rsr.vars):
                                 if hasattr(plot, 'compositeTitle'):
-                                    title = plot.compositeTitle                                                                
+                                    title = plot.compositeTitle
+
                                 # This is the Yxvsx plots from the multiplot
                                 vcanvas2.plot(var,
                                               rsr_presentation, tm2, bg=1, title=title,
@@ -597,7 +598,8 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                             yvar = var.flatten()
                             if hasattr(plot, 'customizeTemplates'):
                                 tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)],
-                                                                   [xvar.units, yvar.units], varIndex, rsr_presentation)                         
+                                                                   [xvar.units, yvar.units], varIndex, rsr_presentation)                            
+                            
                             # Scatter part from the single plots in set 11
                             vcanvas.plot(xvar, yvar, 
                                          rsr_presentation, tm, bg=1, title=title,
@@ -610,7 +612,6 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                                 subtitle = title
                                 if hasattr(plot, 'compositeTitle'):
                                     title = plot.compositeTitle
-                                    
                                 
                                 # This is the scatter plots from the multiplot
                                 vcanvas2.plot(xvar, yvar,
@@ -625,12 +626,11 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                             savePNG = True
                 elif vcs.isvector(rsr.presentation) or rsr.presentation.__class__.__name__=="Gv":
                     strideX = rsr.strideX
-                    strideY = rsr.strideY            
+                    strideY = rsr.strideY
+
                     if plot.number == '6':
                         vcanvas.plot( var[0][::strideY,::strideX],
-                                      var[1][::strideY,::strideX], rsr.presentation, tmobs[ir], bg=1)#,
-                                      #title=title, units=getattr(var,'units',''),
-                                      #source=rsr.source )
+                                      var[1][::strideY,::strideX], rsr.presentation, tmobs[ir], bg=1)
                     else:
                         # Note that continents=0 is a useful plot option
                         vcanvas.plot( var[0][::strideY,::strideX],
@@ -661,7 +661,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                         pass
                     if hasattr(plot, 'customizeTemplates'):
                         vcanvas.setcolormap("bl_to_darkred")
-                        print vcanvas.listelements("colormap")
+
                         tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (None, None)],
                                                            legendTitles=rsr.legendTitles )
                     vcanvas.plot(var, rsr.presentation, tm, bg=1,
@@ -680,7 +680,6 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                     if hasattr(plot, 'customizeTemplates'):
                         tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)],
                                                            var, varIndex, rsr.presentation )
-
                     # Single plot                    
                     plot.vcs_plot(vcanvas, var, rsr.presentation, tm, bg=1,
                                   title=title, source=rsr.source,
@@ -708,7 +707,6 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                         for i in range(len(var_id_save)):
                             var[i].id = var_id_save[i]
                 if savePNG:
-                    print "\n====> Saving file: ",fname
                     vcanvas.png( fname, ignore_alpha=True, metadata=provenance_dict() )
 
         if tmmobs[0] is not None:  # If anything was plotted to vcanvas2
