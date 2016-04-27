@@ -303,7 +303,7 @@ class LMWG(BasicDiagnosticGroup):
         return BasicDiagnosticGroup._all_variables( model, obs, diagnostic_set_name )
 
     def list_diagnostic_sets( self ):
-        psets = lmwg_plot_spec.__subclasses__()
+        psets = lmwg_plot_plan.__subclasses__()
         plot_sets = psets
         for cl in psets:
             plot_sets = plot_sets + cl.__subclasses__()
@@ -354,15 +354,15 @@ def make_ft_dict(models):
 
    return model_dict
             
-class lmwg_plot_spec(plot_spec):
+class lmwg_plot_plan(plot_plan):
     package = LMWG  # Note that this is a class not an object.. 
     albedos = {'VBSA':['FSRVDLN', 'FSDSVDLN'], 'NBSA':['FSRNDLN', 'FSDSNDLN'], 'VWSA':['FSRVI', 'FSDSVI'], 'NWSA':['FSRNI', 'FSDSNI'], 'ASA':['FSR', 'FSDS']}
     @staticmethod
     def _list_variables( model, obs ):
-        return lmwg_plot_spec.package._list_variables( model, obs, "lmwg_plot_spec" )
+        return lmwg_plot_plan.package._list_variables( model, obs, "lmwg_plot_plan" )
     @staticmethod
     def _all_variables( model, obs ):
-        return lmwg_plot_spec.package._all_variables( model, obs, "lmwg_plot_spec" )
+        return lmwg_plot_plan.package._all_variables( model, obs, "lmwg_plot_plan" )
 
 
 ###############################################################################
@@ -384,7 +384,7 @@ class lmwg_plot_spec(plot_spec):
 ### However, the level_vars should *probably* have a separate option for 
 ### difference plots because there would be 20 plots otherwise. 
 ### Perhaps this needs to be a command line option or GUI check box?
-class lmwg_plot_set1(lmwg_plot_spec):
+class lmwg_plot_set1(lmwg_plot_plan):
    varlist = []
    name = '1 - Line plots of annual trends in energy balance, soil water/ice and temperature, runoff, snow water/ice, photosynthesis '
    number = '1'
@@ -395,7 +395,7 @@ class lmwg_plot_set1(lmwg_plot_spec):
 
    def __init__(self, model, obs, varid, seasonid=None, region=None, aux=None, plotparms='ignored'):
       print 'SOILLIQ LEVELS QUESTIONABLE?'
-      plot_spec.__init__(self,seasonid)
+      plot_plan.__init__(self,seasonid)
       self.plottype = 'Yxvsx'
 
       # There should be 0 obs for this, or at least we don't care about any obs.
@@ -444,7 +444,7 @@ class lmwg_plot_set1(lmwg_plot_spec):
 
    @staticmethod
    def _all_variables(model, obs):
-      allvars = lmwg_plot_spec.package._all_variables(model, obs, "lmwg_plot_spec")
+      allvars = lmwg_plot_plan.package._all_variables(model, obs, "lmwg_plot_plan")
       for dv in lmwg_plot_set1._derived_varnames:
          allvars[dv] = basic_plot_variable
       return allvars
@@ -584,7 +584,7 @@ class lmwg_plot_set1(lmwg_plot_spec):
       self.computation_planned = True
 
    def _results(self,newgrid=0):
-      results = plot_spec._results(self,newgrid)
+      results = plot_plan._results(self,newgrid)
       #print 'results: ', results
       if results is None: return None
       return self.plotspec_values[self.plotall_id]
@@ -603,7 +603,7 @@ class lmwg_plot_set1(lmwg_plot_spec):
 
 ###############################################################################
 
-class lmwg_plot_set2(lmwg_plot_spec):
+class lmwg_plot_set2(lmwg_plot_plan):
    varlist = []
    name = '2 - Horizontal contour plots of DJF, MAM, JJA, SON, and ANN means'
    number = '2'
@@ -615,7 +615,7 @@ class lmwg_plot_set2(lmwg_plot_spec):
    def __init__( self, model, obs, varid, seasonid=None, region=None, aux=None,
                  plotparms='ignored' ):
       # common regardless of number of fts
-      plot_spec.__init__(self,seasonid)
+      plot_plan.__init__(self,seasonid)
       self.plottype = 'Isofill'
       if self._seasonid == 'ANN':
          self.season = cdutil.times.Seasons('JFMAMJJASOND')
@@ -638,7 +638,7 @@ class lmwg_plot_set2(lmwg_plot_spec):
 
    @staticmethod
    def _all_variables( model, obs ):
-      allvars = lmwg_plot_spec.package._all_variables( model, obs, "lmwg_plot_spec" )
+      allvars = lmwg_plot_plan.package._all_variables( model, obs, "lmwg_plot_plan" )
 
       if type(obs) is list and len(obs) >= 1 and type(model) is list and len(model) >= 1:
          if 'SCF' in obs[0].list_variables() and 'FSNO' not in allvars and 'FSNO' in model[0].list_variables():
@@ -1332,7 +1332,7 @@ class lmwg_plot_set2(lmwg_plot_spec):
 
    def _results(self,newgrid=0):
       print 'In set 2 results'
-      results = plot_spec._results(self,newgrid)
+      results = plot_plan._results(self,newgrid)
       print 'reduced vars available now: ', self.reduced_variables
       print 'results: ', results
       if results is None: return None
@@ -1346,7 +1346,7 @@ class lmwg_plot_set2(lmwg_plot_spec):
 ###############################################################################
 ###############################################################################
 ### This should be combined with set6. They share lots of common code.
-class lmwg_plot_set3(lmwg_plot_spec):
+class lmwg_plot_set3(lmwg_plot_plan):
    _nonlinear_vars = ['EVAPFRAC', 'ASA', 'VBSA', 'NBSA', 'VWSA', 'NWSA', 'RNET']
    _derived_varnames = ['EVAPFRAC', 'PREC', 'TOTRUNOFF', 'LHEAT', 'ASA', 'VBSA', 'NBSA', 'VWSA', 'NWSA', 'RNET']
    name = '3 - Grouped Line plots of monthly climatology: regional air temperature, precipitation, runoff, snow depth, radiative fluxes, and turbulent fluxes'
@@ -1354,7 +1354,7 @@ class lmwg_plot_set3(lmwg_plot_spec):
    def __init__(self, model, obs, varid, seasonid=None, region=None, aux=None,
                 plotparms='ignored' ):
 
-      plot_spec.__init__(self, seasonid)
+      plot_plan.__init__(self, seasonid)
       self.plottype = 'Yxvsx'
       self.seasons = defines.all_months
       self.season = cdutil.times.Seasons('JFMAMJJASOND')
@@ -2034,7 +2034,7 @@ class lmwg_plot_set3(lmwg_plot_spec):
       self.computation_planned = True
       
    def _results(self, newgrid = 0):
-      results = plot_spec._results(self, newgrid)
+      results = plot_plan._results(self, newgrid)
       if results is None:
          logging.error('No results')
          return None
@@ -2058,7 +2058,7 @@ class lmwg_plot_set3(lmwg_plot_spec):
 ###############################################################################
 ###############################################################################
 
-class lmwg_plot_set5(lmwg_plot_spec):
+class lmwg_plot_set5(lmwg_plot_plan):
    varlist = []
    name = '5 - Tables of annual means'
    number = '5'
@@ -2071,7 +2071,7 @@ class lmwg_plot_set5(lmwg_plot_spec):
                  plotparms='ignored' ):
 #      print 'jsonflag passed in: ', jsonflag
 
-      plot_spec.__init__(self,seasonid)
+      plot_plan.__init__(self,seasonid)
       self.jsonflag = jsonflag
 #      print 'jsonflag passed in: ', jsonflag
       self.plottype = 'Isofill'
@@ -2523,13 +2523,13 @@ class lmwg_plot_set5(lmwg_plot_spec):
 ### This should be combined with set3b. They share lots of common code.     ###
 ###############################################################################
 ###############################################################################
-class lmwg_plot_set6(lmwg_plot_spec):
+class lmwg_plot_set6(lmwg_plot_plan):
    varlist = []
    name = '6 - Group Line plots of annual trends in regional soil water/ice and temperature, runoff, snow water/ice, photosynthesis'
    number = '6'
    def __init__(self, model, obs, varid, seasonid=None, region=None, aux=None,
                 plotparms='ignored' ):
-      plot_spec.__init__(self, seasonid)
+      plot_plan.__init__(self, seasonid)
       self.plottype = 'Yxvsx'
 
       self._var_baseid = '_'.join([varid, 'set6'])
@@ -2832,7 +2832,7 @@ class lmwg_plot_set6(lmwg_plot_spec):
 
 
    def _results(self,newgrid=0):
-      results = plot_spec._results(self,newgrid)
+      results = plot_plan._results(self,newgrid)
       if results is None: 
          logging.warning('No results to plot. This is probably bad')
          return None
@@ -2852,14 +2852,14 @@ class lmwg_plot_set6(lmwg_plot_spec):
 
 
 
-class lmwg_plot_set9(lmwg_plot_spec):
+class lmwg_plot_set9(lmwg_plot_plan):
    name = '9 - Contour plots and statistics for precipitation and temperature. Statistics include DJF, JJA, and ANN biases, and RMSE, correlation and standard deviation of the annual cycle relative to observations'
    number = '9'
 #   print 'set 9 preinit'
    def __init__( self, model, obs, varid, seasonid=None, region=None, aux=None,
                  plotparms='ignored' ):
 
-      plot_spec.__init__(self, seasonid)
+      plot_plan.__init__(self, seasonid)
 
       if seasonid == 'ANN':
          self.season = cdutil.times.Seasons('JFMAMJJASOND')
@@ -3069,7 +3069,7 @@ class lmwg_plot_set9(lmwg_plot_spec):
          self.composite_plotspecs[pname] = [graph1, graph2, map1]
 
    def _results(self, newgrid = 0):
-      results = plot_spec._results(self, newgrid)
+      results = plot_plan._results(self, newgrid)
       if results is None:
          print 'No results'
          return None
@@ -3088,14 +3088,14 @@ class lmwg_plot_set9(lmwg_plot_spec):
 ###   This is not implemented yet                                           ###
 ###############################################################################
 ###############################################################################
-class lmwg_plot_set7(lmwg_plot_spec):
+class lmwg_plot_set7(lmwg_plot_plan):
    name = '7 - Line plots, tables, and maps of RTM river flow and discharge to oceans'
    number = '7'
    def __init__( self, model, obs, varid, seasonid=None, region=None, aux=None,
                  plotparms='ignored' ):
 
       self.tables = False
-      plot_spec.__init__(self, seasonid)
+      plot_plan.__init__(self, seasonid)
       # This needs all months and annual.
 
       self._var_baseid = '_'.join([varid, 'set7'])
@@ -3274,7 +3274,7 @@ class lmwg_plot_set7(lmwg_plot_spec):
             
          return str(strbuf.getvalue())
       else:
-         results = plot_spec._results(self, newgrid)
+         results = plot_plan._results(self, newgrid)
          if results is None:
             logging.warning('No results')
             return None
@@ -3378,7 +3378,7 @@ class lmwg_plot_set7(lmwg_plot_spec):
 ###############################################################################
 ###############################################################################
 
-class lmwg_plot_set4(lmwg_plot_spec):
+class lmwg_plot_set4(lmwg_plot_plan):
     pass
-class lmwg_plot_set8(lmwg_plot_spec):
+class lmwg_plot_set8(lmwg_plot_plan):
     pass

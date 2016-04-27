@@ -92,14 +92,14 @@ class AMWG(BasicDiagnosticGroup):
         return vlist
 
     def list_diagnostic_sets( self ):
-        psets = amwg_plot_spec.__subclasses__()
+        psets = amwg_plot_plan.__subclasses__()
         plot_sets = psets
         for cl in psets:
             plot_sets = plot_sets + cl.__subclasses__()
         return { aps.name:aps for aps in plot_sets if
                  hasattr(aps,'name') and aps.name.find('dummy')<0 }
 
-class amwg_plot_spec(plot_spec):
+class amwg_plot_plan(plot_plan):
     package = AMWG  # Note that this is a class not an object; also not a string.
     # Standard variables are derived variables which are as general-interest as most dataset
     # variables (which soon become reduced variables).  So it makes sense for all plot sets
@@ -308,10 +308,10 @@ class amwg_plot_spec(plot_spec):
         }
     @staticmethod
     def _list_variables( model, obs ):
-        return amwg_plot_spec.package._list_variables( model, obs, "amwg_plot_spec" )
+        return amwg_plot_plan.package._list_variables( model, obs, "amwg_plot_plan" )
     @staticmethod
     def _all_variables( model, obs ):
-        return amwg_plot_spec.package._all_variables( model, obs, "amwg_plot_spec" )
+        return amwg_plot_plan.package._all_variables( model, obs, "amwg_plot_plan" )
     @classmethod
     def stdvar2var( cls, varnom, filetable, season, reduction_function, recurse=True ):
         """From a variable name, a filetable, and a season, this finds the variable name in
@@ -332,7 +332,7 @@ class amwg_plot_spec(plot_spec):
         """
         if filetable is None:
             return None,[],[]
-        #if varnom not in amwg_plot_spec.standard_variables:
+        #if varnom not in amwg_plot_plan.standard_variables:
         if varnom not in cls.standard_variables:
             return None,[],[]
         computable = False
@@ -415,10 +415,10 @@ class amwg_plot_spec(plot_spec):
 from metrics.packages.amwg.amwg1 import *
 
 # plot set classes we need which we haven't done yet:
-class amwg_plot_set4a(amwg_plot_spec):
+class amwg_plot_set4a(amwg_plot_plan):
     pass
 
-class amwg_plot_set2(amwg_plot_spec):
+class amwg_plot_set2(amwg_plot_plan):
     """represents one plot from AMWG Diagnostics Plot Set 2
     Each such plot is a page consisting of two to four plots.  The horizontal
     axis is latitude and the vertical axis is heat or fresh-water transport.
@@ -432,7 +432,7 @@ class amwg_plot_set2(amwg_plot_spec):
         varid is a string identifying the derived variable to be plotted, e.g. 'Ocean_Heat'.
         The seasonid argument will be ignored."""
         filetable1, filetable2 = self.getfts(model, obs)
-        plot_spec.__init__(self,seasonid)
+        plot_plan.__init__(self,seasonid)
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
         self.plottype='Yxvsx'
         vars = self._list_variables(model, obs)
@@ -579,7 +579,7 @@ class amwg_plot_set2(amwg_plot_spec):
         self.computation_planned = True
 
     def _results(self,newgrid=0):
-        results = plot_spec._results(self,newgrid)
+        results = plot_plan._results(self,newgrid)
         if results is None: return None
         psv = self.plotspec_values
         if not('CAM_NCEP_HEAT_TRANSPORT_GLOBAL' in psv.keys()) or\
@@ -595,7 +595,7 @@ class amwg_plot_set2(amwg_plot_spec):
         psv['CAM_NCEP_HEAT_TRANSPORT_INDIAN'].finalize()
         return self.plotspec_values['CAM_NCEP_HEAT_TRANSPORT_ALL']
 
-class amwg_plot_set3(amwg_plot_spec,basic_id):
+class amwg_plot_set3(amwg_plot_plan,basic_id):
     """represents one plot from AMWG Diagnostics Plot Set 3.
     Each such plot is a pair of plots: a 2-line plot comparing model with obs, and
     a 1-line plot of the model-obs difference.  A plot's x-axis is latitude, and
@@ -610,7 +610,7 @@ class amwg_plot_set3(amwg_plot_spec,basic_id):
         """filetable1, filetable2 should be filetables for model and obs.
         varnom is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'."""
         basic_id.__init__(self,varnom,seasonid)
-        plot_spec.__init__(self,seasonid)
+        plot_plan.__init__(self,seasonid)
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
         if regionid=="Global" or regionid=="global" or regionid is None:
             self._regionid="Global"
@@ -630,13 +630,13 @@ class amwg_plot_set3(amwg_plot_spec,basic_id):
     @staticmethod
     def _all_variables( model, obs, use_standard_vars=True ):
         """returns a dict of varname:varobject entries"""
-        allvars = amwg_plot_spec.package._all_variables( model, obs, "amwg_plot_spec" )
+        allvars = amwg_plot_plan.package._all_variables( model, obs, "amwg_plot_plan" )
         if use_standard_vars:
             # Now we add varname:basic_plot_variable for all standard_variables.
             # This needs work because we don't always have the data needed to compute them...
             # BTW when this part is done better, it should (insofar as it's reasonable) be moved to
-            # amwg_plot_spec and shared by all AMWG plot sets.
-            for varname in amwg_plot_spec.standard_variables.keys():
+            # amwg_plot_plan and shared by all AMWG plot sets.
+            for varname in amwg_plot_plan.standard_variables.keys():
                 allvars[varname] = basic_plot_variable
         return allvars
     def plan_computation( self, model, obs, varnom, seasonid, plotparms ):
@@ -693,7 +693,7 @@ class amwg_plot_set3(amwg_plot_spec,basic_id):
         # At the moment this is very specific to plot set 3.  Maybe later I'll use a
         # more general method, to something like what's in plot_data.py, maybe not.
         # later this may be something more specific to the needs of the UV-CDAT GUI
-        results = plot_spec._results(self,newgrid)
+        results = plot_plan._results(self,newgrid)
         if results is None: return None
         zvar = self.plot_a.zvars[0]
         z2var = self.plot_a.z2vars[0]
@@ -736,7 +736,7 @@ class amwg_plot_set3(amwg_plot_spec,basic_id):
         plot_b_val.finalize()
         return [ plot_a_val, plot_b_val ]
 
-class amwg_plot_set4and41(amwg_plot_spec):
+class amwg_plot_set4and41(amwg_plot_plan):
     """represents one plot from AMWG Diagnostics Plot Set 4 or 4a.
     Each such plot is a set of three contour plots: one each for model output, observations, and
     the difference between the two.  A plot's x-axis is latitude and its y-axis is the level,
@@ -756,7 +756,7 @@ class amwg_plot_set4and41(amwg_plot_spec):
         At the moment we assume that data from filetable1 has CAM hybrid levels,
         and data from filetable2 has pressure levels."""
         filetable1, filetable2 = self.getfts(model, obs)
-        plot_spec.__init__(self,seasonid)
+        plot_plan.__init__(self,seasonid)
         self.plottype = 'Isofill'
         if plotparms is None:
             plotparms = { 'model':{'colormap':'rainbow'},
@@ -786,8 +786,8 @@ class amwg_plot_set4and41(amwg_plot_spec):
     @staticmethod
     def _all_variables( model, obs ):
         allvars = {}
-        for varname in amwg_plot_spec.package._list_variables_with_levelaxis(
-            model, obs, "amwg_plot_spec" ):
+        for varname in amwg_plot_plan.package._list_variables_with_levelaxis(
+            model, obs, "amwg_plot_plan" ):
             allvars[varname] = basic_level_variable
         return allvars
     def reduced_variables_press_lev( self, filetable, varid, seasonid, ftno=None,  RF1=None, RF2=None ):
@@ -875,7 +875,7 @@ class amwg_plot_set4and41(amwg_plot_spec):
         self.computation_planned = True
     def _results(self,newgrid=0):
         #pdb.set_trace()
-        results = plot_spec._results(self,newgrid)
+        results = plot_plan._results(self,newgrid)
         if results is None:
             print "WARNING, AMWG plot set 4 found nothing to plot"
             return None
@@ -912,7 +912,7 @@ class amwg_plot_set41(amwg_plot_set4and41):
         --package AMWG --set 41 --vars T --seasons ANN"""
     name = '41 - Horizontal Contour Plots of Meridional Means'
     number = '41'    
-class amwg_plot_set5and6(amwg_plot_spec):
+class amwg_plot_set5and6(amwg_plot_plan):
     """represents one plot from AMWG Diagnostics Plot Sets 5 and 6  <actually only the contours, set 5>
     NCAR has the same menu for both plot sets, and we want to ease the transition from NCAR
     diagnostics to these; so both plot sets will be done together here as well.
@@ -927,7 +927,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
         seasonid is a string such as 'DJF'."""
         filetable1, filetable2 = self.getfts(model, obs)
 
-        plot_spec.__init__(self,seasonid, regionid)
+        plot_plan.__init__(self,seasonid, regionid)
         self.plottype = 'Isofill'
         if plotparms is None:
             plotparms = { 'model':{'colormap':'rainbow'},
@@ -962,10 +962,10 @@ class amwg_plot_set5and6(amwg_plot_spec):
     @staticmethod
     def _all_variables( model, obs, use_standard_vars=True ):
         """returns a dict of varname:varobject entries"""
-        allvars = amwg_plot_spec.package._all_variables( model, obs, "amwg_plot_spec" )
+        allvars = amwg_plot_plan.package._all_variables( model, obs, "amwg_plot_plan" )
         # ...this is what's in the data.  varname:basic_plot_variable
-        for varname in amwg_plot_spec.package._list_variables_with_levelaxis(
-            model, obs, "amwg_plot_spec" ):
+        for varname in amwg_plot_plan.package._list_variables_with_levelaxis(
+            model, obs, "amwg_plot_plan" ):
             allvars[varname] = level_variable_for_amwg_set5
             # ...this didn't add more variables, but changed the variable's class
             # to indicate that you can specify a level for it
@@ -973,8 +973,8 @@ class amwg_plot_set5and6(amwg_plot_spec):
             # Now we add varname:basic_plot_variable for all standard_variables.
             # This needs work because we don't always have the data needed to compute them...
             # BTW when this part is done better, it should (insofar as it's reasonable) be moved to
-            # amwg_plot_spec and shared by all AMWG plot sets.
-            for varname in amwg_plot_spec.standard_variables.keys():
+            # amwg_plot_plan and shared by all AMWG plot sets.
+            for varname in amwg_plot_plan.standard_variables.keys():
                 allvars[varname] = basic_plot_variable
         return allvars
     def plan_computation( self, model, obs, varid, seasonid, aux, plotparms ):
@@ -1226,7 +1226,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
             }
         self.computation_planned = True
     def _results(self,newgrid=0):
-        results = plot_spec._results(self,newgrid)
+        results = plot_plan._results(self,newgrid)
         if results is None: return None
         psv = self.plotspec_values
         if self.plot1_id in psv and self.plot2_id in psv and\
@@ -1271,7 +1271,7 @@ class amwg_plot_set5(amwg_plot_set5and6):
             #pdb.set_trace()
         
         return tm1, tm2    
-class amwg_plot_set6(amwg_plot_spec):
+class amwg_plot_set6(amwg_plot_plan):
     """represents one plot from AMWG Diagnostics Plot Set 6
     This is a vector+contour plot - the contour plot shows magnitudes and the vector plot shows both
     directions and magnitudes.  Unlike NCAR's diagnostics, our AMWG plot set 6 uses a different
@@ -1296,7 +1296,7 @@ class amwg_plot_set6(amwg_plot_spec):
         seasonid is a string such as 'DJF'."""
 
         filetable1, filetable2 = self.getfts(model, obs)
-        plot_spec.__init__(self,seasonid)
+        plot_plan.__init__(self,seasonid)
         if plotparms is None:
             plotparms = { 'model':{'colormap':'rainbow'},
                           'obs':{'colormap':'rainbow'},
@@ -1620,7 +1620,7 @@ class amwg_plot_set6(amwg_plot_spec):
             }
         self.computation_planned = True
     def _results(self,newgrid=0):
-        results = plot_spec._results(self,newgrid)
+        results = plot_plan._results(self,newgrid)
         if results is None: return None
         psv = self.plotspec_values
         # >>>> synchronize_ranges is a bit more complicated because plot1_id,plot2_id aren't
@@ -1643,7 +1643,7 @@ class amwg_plot_set6(amwg_plot_spec):
         return self.plotspec_values[self.plotall_id]
 
 
-class amwg_plot_set7(amwg_plot_spec):
+class amwg_plot_set7(amwg_plot_plan):
     """This represents one plot from AMWG Diagnostics Plot Set 7
     Each graphic is a set of three polar contour plots: model output, observations, and
     the difference between the two.  A plot's x-axis is longitude and its y-axis is the latitude;
@@ -1659,7 +1659,7 @@ class amwg_plot_set7(amwg_plot_spec):
         seasonid is a string such as 'DJF'."""
 
         filetable1, filetable2 = self.getfts(model, obs)
-        plot_spec.__init__(self,seasonid)
+        plot_plan.__init__(self,seasonid)
         self.plottype = 'Isofill_polar'
         if plotparms is None:
             plotparms = { 'model':{'colormap':'rainbow'},
@@ -1684,9 +1684,9 @@ class amwg_plot_set7(amwg_plot_spec):
         return listvars
     @staticmethod
     def _all_variables( model, obs ):
-        allvars = amwg_plot_spec.package._all_variables( model, obs, "amwg_plot_spec" )
-        for varname in amwg_plot_spec.package._list_variables(
-            model, obs, "amwg_plot_spec" ):
+        allvars = amwg_plot_plan.package._all_variables( model, obs, "amwg_plot_plan" )
+        for varname in amwg_plot_plan.package._list_variables(
+            model, obs, "amwg_plot_plan" ):
             allvars[varname] = basic_pole_variable
         return allvars
     def plan_computation( self, model, obs, varid, seasonid, region=None, aux=slice(0,None),
@@ -1739,7 +1739,7 @@ class amwg_plot_set7(amwg_plot_spec):
        #pdb.set_trace()
     def _results(self, newgrid=0):
         #pdb.set_trace()
-        results = plot_spec._results(self,newgrid)
+        results = plot_plan._results(self,newgrid)
         if results is None: return None
         psv = self.plotspec_values
         if self.plot1_id in psv and self.plot2_id in psv and\
@@ -1754,7 +1754,7 @@ class amwg_plot_set7(amwg_plot_spec):
                 v.finalize()
         return self.plotspec_values[self.plotall_id]
 
-class amwg_plot_set8(amwg_plot_spec): 
+class amwg_plot_set8(amwg_plot_plan): 
     """This class represents one plot from AMWG Diagnostics Plot Set 8.
     Each such plot is a set of three contour plots: two for the model output and
     the difference between the two.  A plot's x-axis is time  and its y-axis is latitude.
@@ -1796,7 +1796,7 @@ class amwg_plot_set8(amwg_plot_spec):
             self._regionid=region
         self.region = interpret_region(self._regionid)
         
-        plot_spec.__init__(self, seasonid)
+        plot_plan.__init__(self, seasonid)
         if plotparms is None:
             plotparms = { 'model':{'colormap':'rainbow'},
                           'obs':{'colormap':'rainbow'},
@@ -1896,7 +1896,7 @@ class amwg_plot_set8(amwg_plot_spec):
         self.computation_planned = True
     def _results(self, newgrid=0):
         #pdb.set_trace()
-        results = plot_spec._results(self, newgrid)
+        results = plot_plan._results(self, newgrid)
         if results is None:
             print "WARNING, AMWG plot set 8 found nothing to plot"
             return None
@@ -1912,7 +1912,7 @@ class amwg_plot_set8(amwg_plot_spec):
                 v.finalize()
         return self.plotspec_values[self.plotall_id]
     
-class amwg_plot_set9(amwg_plot_spec): 
+class amwg_plot_set9(amwg_plot_plan): 
     """This class represents one plot from AMWG Diagnostics Plot Set 9.
     Each such plot is a set of three contour plots: two for the model output and
     the difference between the two.  A plot's x-axis is latitude and its y-axis is longitute.
@@ -1954,7 +1954,7 @@ class amwg_plot_set9(amwg_plot_spec):
             self._regionid=regionid
         self.region = interpret_region(regionid)
 
-        plot_spec.__init__(self, seasonid)
+        plot_plan.__init__(self, seasonid)
         self.plottype = 'Isofill'
         if plotparms is None:
             plotparms = { 'model':{'colormap':'rainbow'},
@@ -2048,7 +2048,7 @@ class amwg_plot_set9(amwg_plot_spec):
         self.computation_planned = True
     def _results(self, newgrid=0):
         #pdb.set_trace()
-        results = plot_spec._results(self, newgrid)
+        results = plot_plan._results(self, newgrid)
         if results is None:
             print "WARNING, AMWG plot set 9 found nothing to plot"
             return None
@@ -2063,7 +2063,7 @@ class amwg_plot_set9(amwg_plot_spec):
                 v.finalize()
         return self.plotspec_values[self.plotall_id]
 
-class amwg_plot_set10(amwg_plot_spec, basic_id):
+class amwg_plot_set10(amwg_plot_plan, basic_id):
     """represents one plot from AMWG Diagnostics Plot Set 10.
     The  plot is a plot of 2 curves comparing model with obs.  The x-axis is month of the year and
     its y-axis is the specified variable.  The data presented is a climatological mean - i.e.,
@@ -2083,7 +2083,7 @@ class amwg_plot_set10(amwg_plot_spec, basic_id):
         varid is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'."""
         filetable1, filetable2 = self.getfts(model, obs)
         basic_id.__init__(self, varid, seasonid)
-        plot_spec.__init__(self, seasonid)
+        plot_plan.__init__(self, seasonid)
         self.plottype = 'Yxvsx'
         self.season = cdutil.times.Seasons(self._seasonid)
         ft1id, ft2id = filetable_ids(filetable1, filetable2)
@@ -2150,7 +2150,7 @@ class amwg_plot_set10(amwg_plot_spec, basic_id):
 
     def _results(self,newgrid=0):
         #pdb.set_trace()
-        results = plot_spec._results(self, newgrid)
+        results = plot_plan._results(self, newgrid)
         if results is None: return None
         psv = self.plotspec_values
         #print self.plotspec_values.keys()
@@ -2166,7 +2166,7 @@ class amwg_plot_set10(amwg_plot_spec, basic_id):
         plot_val.finalize()
         return [ plot_val]
     
-class amwg_plot_set11(amwg_plot_spec):
+class amwg_plot_set11(amwg_plot_plan):
     """Example script
     diags.py --model path=$HOME/uvcmetrics_test_data/cam35_data/,climos=yes 
     --obs path=$HOME/uvcmetrics_test_data/obs_data/,filter='f_startswith("CERES-EBAF")',climos=yes 
@@ -2180,7 +2180,7 @@ class amwg_plot_set11(amwg_plot_spec):
         It is is a string, e.g. 'DJF-JJA'. """
         import string
         
-        plot_spec.__init__(self, seasonid)
+        plot_plan.__init__(self, seasonid)
         self.plottype = 'Scatter'
         self._seasonid = seasonid
         self.season = cdutil.times.Seasons(self._seasonid) 
@@ -2335,7 +2335,7 @@ class amwg_plot_set11(amwg_plot_spec):
     
     def _results(self, newgrid=0):
         #pdb.set_trace()
-        results = plot_spec._results(self, newgrid)
+        results = plot_plan._results(self, newgrid)
         if results is None:
             print "WARNING, AMWG plot set 11 found nothing to plot"
             return None
@@ -2351,7 +2351,7 @@ class amwg_plot_set11(amwg_plot_spec):
                 val.presentation.linecolor = val.linecolors[0]
         return self.plotspec_values[self.plotall_id]
     
-class amwg_plot_set12(amwg_plot_spec):
+class amwg_plot_set12(amwg_plot_plan):
     """ Example script: 
         diags.py --model path=$HOME/uvcmetrics_test_data/esg_data/f.e11.F2000C5.f09_f09.control.001/,climos=yes \
         --obs path=$HOME/uvcmetrics_test_data/obs_data/,filter='f_startswith("RAOBS")',climos=yes \
@@ -2378,7 +2378,7 @@ class amwg_plot_set12(amwg_plot_spec):
         
         self.StationData = stationData.stationData(filetable2._filelist.files[0])
         
-        plot_spec.__init__(self, seasonid)
+        plot_plan.__init__(self, seasonid)
         self.plottype = 'Scatter'
         ft1id, ft2id = filetable_ids(filetable1, filetable2)
         self.filetable_ids = [ft1id, ft2id]
@@ -2404,9 +2404,9 @@ class amwg_plot_set12(amwg_plot_spec):
         return listvars
     @staticmethod
     def _all_variables( filetable1, filetable2=None ):
-        allvars = amwg_plot_spec.package._all_variables( filetable1, filetable2, "amwg_plot_spec" )
-        for varname in amwg_plot_spec.package._list_variables(
-            filetable1, filetable2, "amwg_plot_spec" ):
+        allvars = amwg_plot_plan.package._all_variables( filetable1, filetable2, "amwg_plot_plan" )
+        for varname in amwg_plot_plan.package._list_variables(
+            filetable1, filetable2, "amwg_plot_plan" ):
             allvars[varname] = station_id_variable
         return allvars
     def plan_computation( self, model, obs, varid, station, plotparms ):
@@ -2630,7 +2630,7 @@ class amwg_plot_set12(amwg_plot_spec):
             presentation.datawc_x2=ymax     
             return presentation        
         #pdb.set_trace()
-        results = plot_spec._results(self, newgrid)
+        results = plot_plan._results(self, newgrid)
         if results is None:
             print "WARNING, AMWG plot set 12 found nothing to plot"
             return None
@@ -2672,7 +2672,7 @@ class amwg_plot_set12(amwg_plot_spec):
         #pdb.set_trace()
         return psvs
     
-class amwg_plot_set13(amwg_plot_spec):
+class amwg_plot_set13(amwg_plot_plan):
     """represents one plot from AMWG Diagnostics Plot Set 13, Cloud Simulator Histograms.
     Each such plot is a histogram with a numerical value laid over a box.
     At present, the histogram is used to show values of CLISCCP, cloud occurence in percent,
@@ -2684,7 +2684,7 @@ class amwg_plot_set13(amwg_plot_spec):
     #Often data comes from COSP = CFMIP Observation Simulator Package
     name = '13 - Cloud Simulator Histograms'
     number = '13'
-    standard_variables = {  # Note: shadows amwg_plot_spec.standard_variables
+    standard_variables = {  # Note: shadows amwg_plot_plan.standard_variables
         'CLISCCP':[derived_var(
                 vid='CLISCCP', inputs=['FISCCP1','isccp_prs','isccp_tau'], outputs=['CLISCCP'],
                 func=uncompress_fisccp1 )]
@@ -2699,7 +2699,7 @@ class amwg_plot_set13(amwg_plot_spec):
         Region is an instance of the class rectregion (region.py).
         """
         filetable1, filetable2 = self.getfts(model, obs)
-        plot_spec.__init__(self,seasonid)
+        plot_plan.__init__(self,seasonid)
         region = interpret_region(region)
         self.reduced_variables = {}
         self.derived_variables = {}
@@ -2751,8 +2751,8 @@ class amwg_plot_set13(amwg_plot_spec):
         # Now start with variables common to both filetables.  Keep only the ones with 2 axes
         # other than time,lat,lon.  That's because we're going to average over time,lat,lon
         # and display a histogram dependent on (exactly) two remaining axes.
-        for varname in amwg_plot_spec.package._list_variables(
-            [filetable1], [filetable2], "amwg_plot_spec" ):
+        for varname in amwg_plot_plan.package._list_variables(
+            [filetable1], [filetable2], "amwg_plot_plan" ):
             varaxisnames1 = vars1[varname]
             #otheraxes1 = list(set(varaxisnames1) - set(['time','lat','lon']))
             otheraxes1 = list(set(varaxisnames1) -
@@ -2860,7 +2860,7 @@ class amwg_plot_set13(amwg_plot_spec):
         self.computation_planned = True
 
     def _results(self,newgrid=0):
-        results = plot_spec._results(self,newgrid)
+        results = plot_plan._results(self,newgrid)
         if results is None:
             print "WARNING, AMWG plot set 13 found nothing to plot"
             return None
@@ -2878,7 +2878,7 @@ class amwg_plot_set13(amwg_plot_spec):
         return self.plotspec_values[self.plotall_id]
 
 
-class amwg_plot_set14(amwg_plot_spec):
+class amwg_plot_set14(amwg_plot_plan):
     """ Example script
       diags.py --model path=$HOME/amwg_diagnostics/cam35_data/,filter='f_startswith("ccsm")',climos=yes \
     --model path=$HOME/uvcmetrics_test_data/cam35_data/,climos=yes \
@@ -2904,7 +2904,7 @@ class amwg_plot_set14(amwg_plot_spec):
             obsfn   = ft._filelist.files[0]
             self.obsfns = [obsfn]
         self.legendTitles = []
-        plot_spec.__init__(self, seasonid)
+        plot_plan.__init__(self, seasonid)
         self.plottype = 'Taylordiagram'
         self._seasonid = seasonid
         self.season = cdutil.times.Seasons(self._seasonid) 
@@ -2940,12 +2940,12 @@ class amwg_plot_set14(amwg_plot_spec):
         return listvars
     @staticmethod
     def _all_variables( model, obs, use_standard_vars=True ):
-        allvars = amwg_plot_spec.package._all_variables( model, obs, "amwg_plot_spec" )
-        for varname in amwg_plot_spec.package._list_variables_with_levelaxis(
-            model, obs, "amwg_plot_spec" ):
+        allvars = amwg_plot_plan.package._all_variables( model, obs, "amwg_plot_plan" )
+        for varname in amwg_plot_plan.package._list_variables_with_levelaxis(
+            model, obs, "amwg_plot_plan" ):
             allvars[varname] = level_variable_for_amwg_set5
         if use_standard_vars:
-            for varname in amwg_plot_spec.standard_variables.keys():
+            for varname in amwg_plot_plan.standard_variables.keys():
                 allvars[varname] = basic_plot_variable
         return allvars
     def plan_computation( self, model, obs, varid, seasonid, aux, plotparms ):
@@ -3158,7 +3158,7 @@ class amwg_plot_set14(amwg_plot_spec):
         return tm, None
     def _results(self, newgrid=0):
         #pdb.set_trace()
-        results = plot_spec._results(self, newgrid)
+        results = plot_plan._results(self, newgrid)
         if results is None:
             print "WARNING, AMWG plot set 12 found nothing to plot"
             return None
@@ -3171,7 +3171,7 @@ class amwg_plot_set14(amwg_plot_spec):
         #pdb.set_trace()
         return [self.plotspec_values['Taylor']]
 
-class amwg_plot_set15(amwg_plot_spec): 
+class amwg_plot_set15(amwg_plot_plan): 
     """ Example script
     diags.py --model path=$HOME/uvcmetrics_test_data/cam35_data/,climos=yes 
     --obs path=$HOME/uvcmetrics_test_data/obs_data/,filter='f_startswith("NCEP")',climos=yes  
@@ -3202,7 +3202,7 @@ class amwg_plot_set15(amwg_plot_spec):
         self.datatype = ['model', 'obs']
         self.vars = [varid, 'P']
         
-        plot_spec.__init__(self, seasonid)
+        plot_plan.__init__(self, seasonid)
         self.plottype = 'Isofill'
         if plotparms is None:
             plotparms = { 'model':{'colormap':'rainbow'},
@@ -3386,7 +3386,7 @@ class amwg_plot_set15(amwg_plot_spec):
         return tm1, tm2        
     def _results(self, newgrid=0):
         #pdb.set_trace()
-        results = plot_spec._results(self, newgrid)
+        results = plot_plan._results(self, newgrid)
         if results is None:
             print "WARNING, AMWG plot set 15 found nothing to plot"
             return None
