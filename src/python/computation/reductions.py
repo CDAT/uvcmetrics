@@ -24,7 +24,6 @@ import metrics.frontend.defines as defines
 from metrics.computation.region import *
 from genutil import *
 from metrics.computation.region_functions import *
-#import debug
 
 regridded_vars = {}  # experimental
 
@@ -2696,7 +2695,7 @@ def run_cdscan( fam, famfiles, cache_path=None ):
     try:
         path = sys.prefix+'/bin/'
         sys.path.insert(0, path)
-        import cdscan
+        from cdms2 import cdscan
         import shlex
         print 'cdscan command line: ', cdscan_line
         try:

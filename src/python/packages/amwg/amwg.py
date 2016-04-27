@@ -578,6 +578,114 @@ class amwg_plot_set2(amwg_plot_spec):
             }
         self.computation_planned = True
 
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
+        """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
+        (cnvs1, tm1), (cnvs2, tm2) = templates
+
+        tm2.yname.priority  = 1
+        tm2.xname.priority  = 1
+        tm1.yname.priority  = 1
+        tm1.xname.priority  = 1
+        tm1.legend.priority = 0
+        tm2.legend.priority = 0
+
+        # Fix units if needed
+        if data is not None:
+            if (getattr(data, 'units', '') == ''):
+                data.units = 'PW'
+            if data.getAxis(0).id.count('lat'):
+                data.getAxis(0).id = 'Latitude'
+
+        # Adjust labels and names for single plots
+        yLabel = cnvs1.createtext(Tt_source=tm1.yname.texttable,
+                                  To_source=tm1.yname.textorientation)
+        yLabel.x = tm1.yname.x - 0.04
+        yLabel.y = tm1.yname.y
+        if data is not None:
+            yLabel.string  = ["Heat Transport (" + data.units + ")"]
+        else:
+            yLabel.string  = ["Heat Transport"]
+        yLabel.height = 19.9
+        cnvs1.plot(yLabel, bg=1)
+
+        xnameOri                  = cnvs1.gettextorientation(tm1.xname.textorientation)
+        xnameOri.height           = 19.9
+        tm1.xname.textorientation = xnameOri
+        
+        titleOri                  = cnvs1.gettextorientation(tm1.title.textorientation)
+        titleOri.height           = 20.9
+        tm1.title.textorientation = titleOri
+
+        sourceOri                  = cnvs1.gettextorientation(tm1.source.textorientation)
+        sourceOri.height           = 12.5
+        tm1.source.textorientation = sourceOri
+        tm1.source.y               = tm1.units.y - 0.01
+        tm1.source.x               = tm1.data.x1
+
+        # We want units at axis names
+        tm1.units.priority = 0
+
+        # Grids:       
+        tm1.xtic2.y1   = tm1.data.y1
+        tm1.ytic2.x1   = tm1.data.x1
+        tm1.xtic2.y2   = tm1.data.y2
+        tm1.ytic2.x2   = tm1.data.x2
+        line           = cnvs1.createline()
+        line.color     = [(50, 50, 50, 30)]
+        tm1.ytic2.line = line
+        tm1.xtic2.line = line
+        
+        # Adjust labels and names for combined plots
+        yLabel = cnvs2.createtext(Tt_source=tm2.yname.texttable,
+                                  To_source=tm2.yname.textorientation)
+        yLabel.x = tm2.yname.x - 0.005
+        yLabel.y = tm2.yname.y
+        if data is not None:
+            yLabel.string  = ["Heat Transport (" + data.units + ")"]
+        else:
+            yLabel.string  = ["Heat Transport"]
+        yLabel.height = 9.0
+        cnvs2.plot(yLabel, bg = 1)
+
+        deltaX = 0.03
+
+        titleOri                  = cnvs2.gettextorientation(tm2.title.textorientation)
+        titleOri.height           = 11.5
+        tm2.title.textorientation = titleOri
+        
+        sourceOri                  = cnvs2.gettextorientation(tm2.source.textorientation)
+        sourceOri.height           = 9.0
+        tm2.source.textorientation = sourceOri
+        tm2.source.y               = tm2.units.y - 0.01
+        tm2.source.x               = tm2.data.x1 + deltaX       
+
+        tm2.units.priority = 0
+
+        # Grids:
+        tm2.xtic2.y1   = tm2.data.y1
+        tm2.ytic2.x1   = tm2.data.x1
+        tm2.xtic2.y2   = tm2.data.y2
+        tm2.ytic2.x2   = tm2.data.x2
+        tm2.ytic2.line = line
+        tm2.xtic2.line = line
+        
+        tm2.data.x1      += deltaX
+        tm2.data.x2      += deltaX
+        tm2.box1.x1      += deltaX
+        tm2.box1.x2      += deltaX
+        tm2.ytic1.x1     += deltaX
+        tm2.ytic1.x2     += deltaX
+        tm2.ytic2.x1     += deltaX
+        tm2.ytic2.x2     += deltaX
+        tm2.ylabel1.x    += deltaX
+        tm2.ymintic1.x1  += deltaX
+        tm2.ymintic1.x2  += deltaX
+        #tm2.units.x     += deltaX
+        tm2.title.x      += deltaX
+        tm2.xname.x      += deltaX        
+        
+        return tm1, tm2
+
     def _results(self,newgrid=0):
         results = plot_spec._results(self,newgrid)
         if results is None: return None
@@ -689,6 +797,174 @@ class amwg_plot_set3(amwg_plot_spec,basic_id):
         # ... e.g. CLT_DJF_ft1_ft2_diff
         self.plot_b = one_line_diff_plot( zvar, z2var, vid, plotparms=plotparms['diff'] )
         self.computation_planned = True
+        
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
+        """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
+        (cnvs1, tm1), (cnvs2, tm2) = templates
+
+        tm2.yname.priority  = 1
+        tm2.xname.priority  = 1
+        tm1.yname.priority  = 1
+        tm1.xname.priority  = 1
+        tm1.legend.priority = 1
+        tm2.legend.priority = 1
+
+        # Fix units if needed
+        if data is not None:
+            if (getattr(data, 'units', '') == ''):
+                data.units = 'K'
+            if data.getAxis(0).id.count('lat'):
+                data.getAxis(0).id = 'Latitude'
+
+        # Adjust labels and names for single plots
+        yLabel = cnvs1.createtext(Tt_source=tm1.yname.texttable,
+                                  To_source=tm1.yname.textorientation)
+        yLabel.x = tm1.yname.x - 0.02
+        yLabel.y = tm1.yname.y
+        if data is not None:
+            yLabel.string  = ["Temperature (" + data.units + ")"]
+        else:
+            yLabel.string  = ["Temperature"]
+        yLabel.height = 19.9
+        cnvs1.plot(yLabel, bg=1)
+
+        xnameOri                  = cnvs1.gettextorientation(tm1.xname.textorientation)
+        xnameOri.height           = 19.9
+        tm1.xname.textorientation = xnameOri
+        
+        titleOri                  = cnvs1.gettextorientation(tm1.title.textorientation)
+        titleOri.height           = 20.9
+        tm1.title.textorientation = titleOri
+
+        sourceOri                  = cnvs1.gettextorientation(tm1.source.textorientation)
+        sourceOri.height           = 12.5
+        tm1.source.textorientation = sourceOri
+        tm1.source.y               = tm1.units.y - 0.01
+        tm1.source.x               = tm1.data.x1
+
+        tm1.legend.y2 = tm1.legend.y1 + 0.01
+
+        if varIndex is not None:
+            if varIndex > 0:
+                tm1.legend.y1  += 0.05
+                tm1.legend.y2   = tm1.legend.y1 + 0.01
+                if graphicMethod is not None:
+                    line = vcs.createline('dash')
+                    line.width = 2
+                    line.color = ["red"]#, "blue", "salmon", "medium aquamarine", "orange", "chartreuse"]
+                    line.type = ["dash"]#, "dot", "dash-dot", "long-dash", "solid", "dash"]
+                    graphicMethod.line = line
+                    # The next repeated commands were necessary in Linux.
+                    graphicMethod.linecolor = 242
+                    graphicMethod.linewidth = 2
+                data.id = 'obs'
+            else:
+                if type(min(data)) is float:
+                    data.id = 'model'
+                else:
+                    data.id = 'difference'
+
+        # We want units at axis names
+        tm1.units.priority = 0
+
+        # Adjust labels and names for combined plots
+        yLabel = cnvs2.createtext(Tt_source=tm2.yname.texttable,
+                                  To_source=tm2.yname.textorientation)
+        yLabel.x = tm2.yname.x * 0.97
+        yLabel.y = tm2.yname.y
+        if data is not None:
+            yLabel.string  = ["Temperature (" + data.units + ")"]
+        else:
+            yLabel.string  = ["Temperature"]
+        cnvs2.plot(yLabel, bg = 1)
+
+        deltaX = 0.015
+
+        titleOri                  = cnvs2.gettextorientation(tm2.title.textorientation)
+        titleOri.height           = 13
+        tm2.title.textorientation = titleOri
+        
+        sourceOri                  = cnvs2.gettextorientation(tm2.source.textorientation)
+        sourceOri.height           = 9.0
+        tm2.source.textorientation = sourceOri
+        tm2.source.y               = tm2.units.y - 0.01
+
+        tm2.units.priority = 0
+
+        # tm2.legend.y2              = tm2.legend.y1 + 0.01
+        # legendTO                   = cnvs2.createtextorientation(None, tm2.legend.textorientation)
+        # legendTO.height            = 10
+        # tm2.legend.textorientation = legendTO
+
+        tm2.legend.priority = 0
+        
+        # if varIndex is not None:
+        #     if varIndex > 0:
+        #         tm2.legend.y1 += 0.05
+        #         tm2.legend.y2  = tm2.legend.y1 + 0.01
+
+        #setup the custom legend
+        lineTypes = []
+        lineTypes.append('solid')
+        lineTypes.append('dash')
+        positions = {}
+        positions['solid', tm2] = [tm2.data.x2 + 0.02+deltaX, tm2.data.x2 + 0.07+deltaX], [tm2.data.y1 + 0.16, tm2.data.y1 + 0.16]
+        positions['dash', tm2]  = [tm2.data.x2 + 0.02, tm2.data.x2 + 0.07], [tm2.data.y1 + 0.24, tm2.data.y1 + 0.24]
+        #positions['dash', tm2]  = [tm2.data.x2 + 0.004+deltaX, tm2.data.x2 + 0.06+deltaX], [tm2.data.y1 + 0.24, tm2.data.y1 + 0.24]
+   
+        #plot the custom legend
+        xpos         = None
+        ypos         = None
+        legendString = data.id
+        lineType     = None
+        if varIndex is not None:
+            if varIndex == 0:
+                xpos, ypos = positions['solid', tm2]
+                lineType = lineTypes[0]
+            else:
+                xpos, ypos = positions['dash', tm2]
+                lineType = lineTypes[1]
+                
+        line = cnvs2.createline(None, tm2.legend.line)
+        line.type = lineType
+        line.x = xpos
+        line.y = [ypos, ypos]
+
+        if varIndex is not None:
+            if varIndex == 1:
+                line.color = ['red']
+                line.width = 2
+
+        cnvs2.plot(line, bg=1)
+
+        text        = cnvs2.createtext()
+        text.string = data.id
+        text.height = 9.5
+        text.x      = xpos[0] 
+        text.y      = ypos[0] + 0.01 
+
+        cnvs2.plot(text, bg=1) 
+                      
+        if varIndex is not None:
+            if varIndex == 0:
+                tm2.data.x1      += deltaX
+                tm2.data.x2      += deltaX
+                tm2.box1.x1      += deltaX
+                tm2.box1.x2      += deltaX
+                tm2.ytic1.x1     += deltaX
+                tm2.ytic1.x2     += deltaX
+                tm2.ytic2.x1     += deltaX
+                tm2.ytic2.x2     += deltaX
+                tm2.ylabel1.x    += deltaX
+                tm2.ymintic1.x1  += deltaX
+                tm2.ymintic1.x2  += deltaX
+                #tm2.units.x     += deltaX
+                #tm2.title.x     += deltaX
+                tm2.xname.x      += deltaX
+                tm2.legend.x1    += deltaX
+        
+        return tm1, tm2
+    
     def _results(self,newgrid=0):
         # At the moment this is very specific to plot set 3.  Maybe later I'll use a
         # more general method, to something like what's in plot_data.py, maybe not.
@@ -873,6 +1149,97 @@ class amwg_plot_set4and41(amwg_plot_spec):
             self.plotall_id: [self.plot1_id, self.plot2_id, self.plot3_id ]
             }
         self.computation_planned = True
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
+        """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
+        (cnvs1, tm1), (cnvs2, tm2) = templates
+
+        tm2.yname.priority  = 1
+        tm2.xname.priority  = 1
+        tm1.yname.priority  = 1
+        tm1.xname.priority  = 1
+        tm1.legend.priority = 1
+        tm2.legend.priority = 1
+
+        # Fix units if needed
+        if data is not None:
+            if (getattr(data, 'units', '') == ''):
+                data.units = 'K'
+            if data.getAxis(0).id.count('lat'):
+                data.getAxis(0).id = 'Latitude'
+            if len(data.getAxisList()) > 1:
+                if data.getAxis(1).id.count('lat'):
+                    data.getAxis(1).id = 'Latitude'                    
+
+         # Adjust labels and names for single plots
+        ynameOri                  = cnvs1.gettextorientation(tm1.yname.textorientation)
+        ynameOri.height           = 20
+        tm1.yname.textorientation = ynameOri
+        tm1.yname.x              -= 0.006
+
+        xnameOri                  = cnvs1.gettextorientation(tm1.xname.textorientation)
+        xnameOri.height           = 20
+        tm1.xname.textorientation = xnameOri
+ 
+        meanOri                  = cnvs1.gettextorientation(tm1.mean.textorientation)
+        meanOri.height           = 15
+        tm1.mean.textorientation = meanOri
+        tm1.mean.y              -= 0.005
+
+        titleOri                  = cnvs1.gettextorientation(tm1.title.textorientation)
+        titleOri.height           = 23
+        tm1.title.textorientation = titleOri
+
+        maxOri                  = cnvs1.gettextorientation(tm1.max.textorientation)
+        maxOri.height           = 15
+        tm1.max.textorientation = maxOri
+        tm1.max.y              -= 0.005
+
+        minOri                  = cnvs1.gettextorientation(tm1.min.textorientation)
+        minOri.height           = 15
+        tm1.min.textorientation = minOri
+        
+        sourceOri                  = cnvs1.gettextorientation(tm1.source.textorientation)
+        sourceOri.height           = 11.0
+        tm1.source.textorientation = sourceOri
+        tm1.source.y               = tm1.units.y - 0.027
+        tm1.source.x               = tm1.data.x1
+        tm1.source.priority        = 1
+
+        unitsOri                  = cnvs1.gettextorientation(tm1.units.textorientation)
+        unitsOri.height           = 16
+        tm1.units.textorientation = unitsOri
+        tm1.units.y       -= 0.01
+        tm1.units.priority = 1
+
+        # Adjust labels and names for combined plots
+        ynameOri                  = cnvs2.gettextorientation(tm2.yname.textorientation)
+        ynameOri.height           = 10
+        tm2.yname.textorientation = ynameOri
+        tm2.yname.x              -= 0.009
+
+        xnameOri                  = cnvs2.gettextorientation(tm2.xname.textorientation)
+        xnameOri.height           = 10
+        tm2.xname.textorientation = xnameOri
+        tm2.xname.y              -= 0.003
+
+        tm2.mean.y -= 0.005
+
+        titleOri                  = cnvs2.gettextorientation(tm2.title.textorientation)
+        titleOri.height           = 11.5
+        tm2.title.textorientation = titleOri
+
+        tm2.max.y -= 0.005
+        
+        sourceOri                  = cnvs2.gettextorientation(tm2.source.textorientation)
+        sourceOri.height           = 8.0
+        tm2.source.textorientation = sourceOri
+        tm2.source.y               = tm2.units.y - 0.01
+        tm2.source.x               = tm2.data.x1
+        tm2.source.priority        = 1
+
+        tm2.units.priority = 1
+
+        return tm1, tm2
     def _results(self,newgrid=0):
         #pdb.set_trace()
         results = plot_spec._results(self,newgrid)
@@ -1225,6 +1592,96 @@ class amwg_plot_set5and6(amwg_plot_spec):
             self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id ]
             }
         self.computation_planned = True
+
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
+        """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
+        (cnvs1, tm1), (cnvs2, tm2) = templates
+        
+        tm2.yname.priority  = 1
+        tm2.xname.priority  = 1
+        tm1.yname.priority  = 1
+        tm1.xname.priority  = 1
+        tm1.legend.priority = 1
+        tm2.legend.priority = 1
+
+        # Fix units if needed
+        if data is not None:
+            if (getattr(data, 'units', '') == ''):
+                data.units = 'K'
+            if data.getAxis(0).id.count('lat'):
+                data.getAxis(0).id = 'Latitude'
+            if data.getAxis(0).id.count('lon'):
+                data.getAxis(0).id = 'Longitude'
+            elif len(data.getAxisList()) > 1:
+                if data.getAxis(1).id.count('lat'):
+                    data.getAxis(1).id = 'Latitude'
+                if data.getAxis(1).id.count('lon'):
+                    data.getAxis(1).id = 'Longitude'
+
+        #cnvs1.landscape()
+        #cnvs1.setcolormap("categorical")
+        #colormap = vcs.matplotlib2vcs('viridis')
+        #cnvs1.setcolormap(colormap)
+
+        # Adjust labels and names for single plots
+        ynameOri                  = cnvs1.gettextorientation(tm1.yname.textorientation)
+        ynameOri.height           = 16
+        tm1.yname.textorientation = ynameOri
+
+        xnameOri                  = cnvs1.gettextorientation(tm1.xname.textorientation)
+        xnameOri.height           = 16
+        tm1.xname.textorientation = xnameOri
+
+        meanOri                  = cnvs1.gettextorientation(tm1.mean.textorientation)
+        meanOri.height           = 14
+        tm1.mean.textorientation = meanOri
+        tm1.mean.y              -= 0.005
+
+        titleOri                  = cnvs1.gettextorientation(tm1.title.textorientation)
+        titleOri.height           = 22
+        tm1.title.textorientation = titleOri
+       
+        sourceOri                  = cnvs1.gettextorientation(tm1.source.textorientation)
+        sourceOri.height           = 11.0
+        tm1.source.textorientation = sourceOri
+        tm1.source.y               = tm1.units.y - 0.02
+        tm1.source.x               = tm1.data.x1
+        tm1.source.priority        = 1
+
+        # We want units at axis names
+        tm1.units.y       -= 0.01
+        tm1.units.priority = 1
+        
+        # Adjust labels and names for combined plots
+        ynameOri                  = cnvs2.gettextorientation(tm2.yname.textorientation)
+        ynameOri.height           = 9
+        tm2.yname.textorientation = ynameOri
+        tm2.yname.x              -= 0.009
+
+        xnameOri                  = cnvs2.gettextorientation(tm2.xname.textorientation)
+        xnameOri.height           = 9
+        tm2.xname.textorientation = xnameOri
+        tm2.xname.y              -= 0.003
+
+        tm2.mean.y -= 0.005
+
+        titleOri                  = cnvs2.gettextorientation(tm2.title.textorientation)
+        titleOri.height           = 11.5
+        tm2.title.textorientation = titleOri
+
+        tm2.max.y -= 0.005
+        
+        sourceOri                  = cnvs2.gettextorientation(tm2.source.textorientation)
+        sourceOri.height           = 8.0
+        tm2.source.textorientation = sourceOri
+        tm2.source.y               = tm2.units.y - 0.01
+        tm2.source.x               = tm2.data.x1
+        tm2.source.priority        = 1
+
+        tm2.units.priority = 1
+        
+        return tm1, tm2
+        
     def _results(self,newgrid=0):
         results = plot_spec._results(self,newgrid)
         if results is None: return None
@@ -1248,7 +1705,7 @@ class amwg_plot_set5(amwg_plot_set5and6):
     normally a world map will be overlaid. """
     name = '5 - Horizontal Contour Plots of Seasonal Means'
     number = '5'
-    def customizeTemplates(self, templates, var=None):
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
         """Theis method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
         import pdb
@@ -1619,6 +2076,91 @@ class amwg_plot_set6(amwg_plot_spec):
             self.plotall_id: [self.plot1_id, self.plot2_id, self.plot3_id]
             }
         self.computation_planned = True
+
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
+        """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
+        (cnvs1, tm1), (cnvs2, tm2) = templates
+        
+        tm2.yname.priority  = 1
+        tm2.xname.priority  = 1
+        tm1.yname.priority  = 1
+        tm1.xname.priority  = 1
+        tm1.legend.priority = 1
+        tm2.legend.priority = 1
+
+        # Fix units if needed
+        if data is not None:
+            if (getattr(data, 'units', '') == ''):
+                data.units = 'N/m^2'
+            if data.getAxis(0).id.count('lat'):
+                data.getAxis(0).id = 'Latitude'
+            if data.getAxis(0).id.count('lon'):
+                data.getAxis(0).id = 'Longitude'
+            elif len(data.getAxisList()) > 1:
+                if data.getAxis(1).id.count('lat'):
+                    data.getAxis(1).id = 'Latitude'
+                if data.getAxis(1).id.count('lon'):
+                    data.getAxis(1).id = 'Longitude'
+
+        # Adjust labels and names for single plots
+        ynameOri                  = cnvs1.gettextorientation(tm1.yname.textorientation)
+        ynameOri.height           = 16
+        tm1.yname.textorientation = ynameOri
+
+        xnameOri                  = cnvs1.gettextorientation(tm1.xname.textorientation)
+        xnameOri.height           = 16
+        tm1.xname.textorientation = xnameOri
+
+        meanOri                  = cnvs1.gettextorientation(tm1.mean.textorientation)
+        meanOri.height           = 14
+        tm1.mean.textorientation = meanOri
+        tm1.mean.y              -= 0.005
+
+        titleOri                  = cnvs1.gettextorientation(tm1.title.textorientation)
+        titleOri.height           = 22
+        tm1.title.textorientation = titleOri
+        
+        sourceOri                  = cnvs1.gettextorientation(tm1.source.textorientation)
+        sourceOri.height           = 11.0
+        tm1.source.textorientation = sourceOri
+        tm1.source.y               = tm1.units.y - 0.02
+        tm1.source.x               = tm1.data.x1
+        tm1.source.priority        = 1
+
+        # We want units at axis names
+        tm1.units.y       -= 0.01
+        tm1.units.priority = 1
+
+        # Adjust labels and names for combined plots
+        ynameOri                  = cnvs2.gettextorientation(tm2.yname.textorientation)
+        ynameOri.height           = 9
+        tm2.yname.textorientation = ynameOri
+        tm2.yname.x              -= 0.009
+
+        xnameOri                  = cnvs2.gettextorientation(tm2.xname.textorientation)
+        xnameOri.height           = 9
+        tm2.xname.textorientation = xnameOri
+        tm2.xname.y              -= 0.003
+
+        tm2.mean.y -= 0.005
+
+        titleOri                  = cnvs2.gettextorientation(tm2.title.textorientation)
+        titleOri.height           = 11.5
+        tm2.title.textorientation = titleOri
+
+        tm2.max.y -= 0.005
+        
+        sourceOri                  = cnvs2.gettextorientation(tm2.source.textorientation)
+        sourceOri.height           = 8.0
+        tm2.source.textorientation = sourceOri
+        tm2.source.y               = tm2.units.y - 0.01
+        tm2.source.x               = tm2.data.x1
+        tm2.source.priority        = 1
+
+        tm2.units.priority = 1
+        
+        return tm1, tm2
+    
     def _results(self,newgrid=0):
         results = plot_spec._results(self,newgrid)
         if results is None: return None
@@ -1737,6 +2279,84 @@ class amwg_plot_set7(amwg_plot_spec):
             }
        self.computation_planned = True
        #pdb.set_trace()
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
+        """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
+        (cnvs1, tm1), (cnvs2, tm2) = templates
+        
+        tm2.yname.priority  = 1
+        tm2.xname.priority  = 1
+        tm1.yname.priority  = 1
+        tm1.xname.priority  = 1
+        tm1.legend.priority = 1
+        tm2.legend.priority = 1
+
+        # Fix units if needed
+        if data is not None:
+            if (getattr(data, 'units', '') == ''):
+                data.units = 'K'
+            if data.getAxis(0).id.count('lat'):
+                data.getAxis(0).id = 'Latitude'
+            if data.getAxis(0).id.count('lon'):
+                data.getAxis(0).id = 'Longitude'
+            elif len(data.getAxisList()) > 1:
+                if data.getAxis(1).id.count('lat'):
+                    data.getAxis(1).id = 'Latitude'
+                if data.getAxis(1).id.count('lon'):
+                    data.getAxis(1).id = 'Longitude'
+
+        #cnvs1.landscape()
+        cnvs1.setcolormap("categorical")
+
+        maxOri                   = cnvs1.gettextorientation(tm1.max.textorientation)
+        meanOri                  = cnvs1.gettextorientation(tm1.mean.textorientation)
+        meanOri.height           = maxOri.height
+        tm1.mean.textorientation = meanOri
+        tm1.mean.y               = tm1.max.y - 0.018
+        tm1.mean.x               = tm1.max.x + 0.044
+        
+        titleOri                  = cnvs1.gettextorientation(tm1.title.textorientation)
+        titleOri.height           = 23
+        tm1.title.textorientation = titleOri
+       
+        tm1.source.priority        = 1
+
+        # # We want units at axis names
+        unitsOri                  = cnvs1.gettextorientation(tm1.units.textorientation)
+        unitsOri.height          += 8
+        tm1.units.textorientation = unitsOri
+        tm1.units.priority        = 1
+
+        cnvs2.setcolormap("categorical")
+
+        # Adjusting intersection of title and xlabels.
+        dy = (tm2.data.y2-tm2.data.y1) * 0.095
+        tm2.data.y2 -= dy
+    
+        maxOri                   = cnvs2.gettextorientation(tm2.max.textorientation)
+        meanOri                  = cnvs2.gettextorientation(tm2.mean.textorientation)
+        meanOri.height           = maxOri.height
+        tm2.mean.textorientation = meanOri
+        tm2.mean.y               = tm2.max.y - 0.005
+        tm2.mean.x               = tm2.max.x - 0.08
+        
+        titleOri                  = cnvs2.gettextorientation(tm2.title.textorientation)
+        titleOri.height           = 12
+        tm2.title.textorientation = titleOri
+        tm2.title.y              -= 0.005
+
+        tm2.max.y -= 0.005
+
+        tm2.legend.x1 -= 0.01
+        
+        tm2.source.priority        = 1
+
+        unitsOri                  = cnvs2.gettextorientation(tm2.units.textorientation)
+        unitsOri.height          += 1
+        tm2.units.textorientation = unitsOri
+        tm2.units.y               = tm2.min.y
+        tm2.units.priority        = 1
+        
+        return tm1, tm2
     def _results(self, newgrid=0):
         #pdb.set_trace()
         results = plot_spec._results(self,newgrid)
@@ -1894,6 +2514,31 @@ class amwg_plot_set8(amwg_plot_spec):
             }
         #... was self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
         self.computation_planned = True
+
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
+        """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
+        (cnvs1, tm1), (cnvs2, tm2) = templates
+        
+        # Fix units if needed
+        if data is not None:
+            if (getattr(data, 'units', '') == ''):
+                data.units = 'K'
+            if data.getAxis(0).id.count('lat'):
+                data.getAxis(0).id = 'Latitude'
+            if data.getAxis(0).id.count('lon'):
+                data.getAxis(0).id = 'Longitude'
+            elif len(data.getAxisList()) > 1:
+                if data.getAxis(1).id.count('lat'):
+                    data.getAxis(1).id = 'Latitude'
+                if data.getAxis(1).id.count('lon'):
+                    data.getAxis(1).id = 'Longitude'
+                    
+        # Adjust y label position
+        tm2.yname.x = 0.075        
+        tm2.mean.y -= 0.01
+        
+        return tm1, tm2
+    
     def _results(self, newgrid=0):
         #pdb.set_trace()
         results = plot_spec._results(self, newgrid)
@@ -2046,6 +2691,95 @@ class amwg_plot_set9(amwg_plot_spec):
             }
         # ...was self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
         self.computation_planned = True
+
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
+        """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
+        (cnvs1, tm1), (cnvs2, tm2) = templates
+        
+        tm2.yname.priority  = 1
+        tm2.xname.priority  = 1
+        tm1.yname.priority  = 1
+        tm1.xname.priority  = 1
+        tm1.legend.priority = 1
+        tm2.legend.priority = 1
+
+        # Fix units if needed
+        if data is not None:
+            if (getattr(data, 'units', '') == ''):
+                data.units = 'K'
+            if data.getAxis(0).id.count('lat'):
+                data.getAxis(0).id = 'Latitude'
+            if data.getAxis(0).id.count('lon'):
+                data.getAxis(0).id = 'Longitude'
+            elif len(data.getAxisList()) > 1:
+                if data.getAxis(1).id.count('lat'):
+                    data.getAxis(1).id = 'Latitude'
+                if data.getAxis(1).id.count('lon'):
+                    data.getAxis(1).id = 'Longitude'
+
+        # Adjust labels and names for single plots
+        ynameOri                  = cnvs1.gettextorientation(tm1.yname.textorientation)
+        ynameOri.height           = 16
+        tm1.yname.textorientation = ynameOri
+
+        xnameOri                  = cnvs1.gettextorientation(tm1.xname.textorientation)
+        xnameOri.height           = 16
+        tm1.xname.textorientation = xnameOri
+
+        meanOri                  = cnvs1.gettextorientation(tm1.mean.textorientation)
+        meanOri.height           = 14
+        tm1.mean.textorientation = meanOri
+        tm1.mean.y              -= 0.005
+
+        titleOri                  = cnvs1.gettextorientation(tm1.title.textorientation)
+        titleOri.height           = 22
+        tm1.title.textorientation = titleOri
+        
+        sourceOri                  = cnvs1.gettextorientation(tm1.source.textorientation)
+        sourceOri.height           = 11.0
+        tm1.source.textorientation = sourceOri
+        tm1.source.y               = tm1.units.y - 0.02
+        tm1.source.x               = tm1.data.x1
+        tm1.source.priority        = 1
+
+        # We want units at axis names
+        tm1.units.y       -= 0.01
+        tm1.units.priority = 1
+
+        # Adjust labels and names for combined plots
+        ynameOri                  = cnvs2.gettextorientation(tm2.yname.textorientation)
+        ynameOri.height           = 9
+        tm2.yname.textorientation = ynameOri
+        tm2.yname.x              -= 0.009
+
+        xnameOri                  = cnvs2.gettextorientation(tm2.xname.textorientation)
+        xnameOri.height           = 9
+        tm2.xname.textorientation = xnameOri
+        tm2.xname.y              -= 0.003
+
+        tm2.mean.y -= 0.005
+
+        titleOri                  = cnvs2.gettextorientation(tm2.title.textorientation)
+        titleOri.height           = 11.5
+        tm2.title.textorientation = titleOri
+
+        tm2.max.y -= 0.005
+        
+        sourceOri                  = cnvs2.gettextorientation(tm2.source.textorientation)
+        sourceOri.height           = 8.0
+        tm2.source.textorientation = sourceOri
+        tm2.source.y               = tm2.units.y - 0.01
+        tm2.source.x               = tm2.data.x1
+        tm2.source.priority        = 1
+        
+        legendOri                  = cnvs2.gettextorientation(tm2.legend.textorientation)
+        legendOri.height          -= 2
+        tm2.legend.textorientation = legendOri
+        
+        tm2.units.priority = 1
+        
+        return tm1, tm2
+
     def _results(self, newgrid=0):
         #pdb.set_trace()
         results = plot_spec._results(self, newgrid)
@@ -2147,6 +2881,118 @@ class amwg_plot_set10(amwg_plot_spec, basic_id):
 
 
         self.computation_planned = True
+
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
+        """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
+        (cnvs1, tm1), (cnvs2, tm2) = templates
+
+        tm2.yname.priority  = 1
+        tm2.xname.priority  = 1
+        tm1.yname.priority  = 1
+        tm1.xname.priority  = 1
+        tm1.legend.priority = 1
+        tm2.legend.priority = 1
+
+        # Fix units if needed
+        if data is not None:
+            if (getattr(data, 'units', '') == ''):
+                data.units = 'K'
+            if data.getAxis(0).id.count('lat'):
+                data.getAxis(0).id = 'Latitude'
+
+        # Adjust labels and names for single plots
+        yLabel = cnvs1.createtext(Tt_source=tm1.yname.texttable,
+                                  To_source=tm1.yname.textorientation)
+        yLabel.x      = tm1.yname.x - 0.02
+        yLabel.y      = tm1.yname.y
+        yLabel.height = 16
+        if data is not None:
+            yLabel.string  = ["Temperature (" + data.units + ")"]
+        else:
+            yLabel.string  = ["Temperature"]
+        cnvs1.plot(yLabel, bg=1)
+
+        xnameOri                  = cnvs1.gettextorientation(tm1.xname.textorientation)
+        xnameOri.height           = 16.0
+        tm1.xname.textorientation = xnameOri
+        
+        titleOri                  = cnvs1.gettextorientation(tm1.title.textorientation)
+        tm1.title.textorientation = titleOri
+
+        tm1.legend.y2 = tm1.legend.y1 + 0.01
+        
+        if varIndex is not None:
+            if varIndex > 0:
+                tm1.legend.y1  += 0.05
+                tm1.legend.y2   = tm1.legend.y1 + 0.01
+                if graphicMethod is not None:
+                    line = vcs.createline()
+                    line.width = 2
+                    line.color = ["red"]#, "blue", "salmon", "medium aquamarine", "orange", "chartreuse"]
+                    line.type = ["dash"]#, "dot", "dash-dot", "long-dash", "solid", "dash"]
+                    graphicMethod.line = line
+                data.id = 'obs'
+            else:
+                if type(min(data)) is float:
+                    data.id = 'model'
+                else:
+                    data.id = 'difference'
+
+        # We want units at axis names
+        tm1.units.priority = 0
+
+        # Adjust labels and names for combined plots
+        yLabel = cnvs2.createtext(Tt_source=tm2.yname.texttable,
+                                  To_source=tm2.yname.textorientation)
+        yLabel.x = tm2.yname.x - 0.02
+        yLabel.y = tm2.yname.y
+        if data is not None:
+            yLabel.string  = ["Temperature (" + data.units + ")"]
+        else:
+            yLabel.string  = ["Temperature"]
+        cnvs2.plot(yLabel, bg = 1)
+
+        titleOri                  = cnvs2.gettextorientation(tm2.title.textorientation)
+        tm2.title.textorientation = titleOri
+
+        xvaluesOri = cnvs2.gettextorientation(tm2.xvalue.textorientation)
+        xvaluesOri.height -= 5
+        tm2.xvalue.textorientation = xvaluesOri
+        
+        tm2.units.priority = 0
+
+        legendOri                  = cnvs2.gettextorientation(tm2.legend.textorientation)
+        legendOri.height           = 8
+        tm2.legend.textorientation = legendOri
+        tm2.legend.y2              = tm2.legend.y1 + 0.01
+        
+        if varIndex is not None:
+            if varIndex > 0:
+                tm2.legend.y1 += 0.05
+                tm2.legend.y2  = tm2.legend.y1 + 0.01
+
+        if varIndex is not None:
+            if varIndex == 0:
+                deltaX = 0.035
+        
+                tm2.data.x1      += deltaX
+                tm2.data.x2      += deltaX
+                tm2.box1.x1      += deltaX
+                tm2.box1.x2      += deltaX
+                tm2.ytic1.x1     += deltaX
+                tm2.ytic1.x2     += deltaX
+                tm2.ytic2.x1     += deltaX
+                tm2.ytic2.x2     += deltaX
+                tm2.ylabel1.x    += deltaX
+                tm2.ymintic1.x1  += deltaX
+                tm2.ymintic1.x2  += deltaX
+                #tm2.units.x     += deltaX
+                #tm2.title.x     += deltaX
+                tm2.xname.x      += deltaX
+                tm2.legend.x1    += deltaX
+                tm2.legend.x2    += deltaX
+        
+        return tm1, tm2
 
     def _results(self,newgrid=0):
         #pdb.set_trace()
@@ -2302,34 +3148,131 @@ class amwg_plot_set11(amwg_plot_spec):
         self.composite_plotspecs[self.plotall_id] = plotall_id
         self.computation_planned = True
         #pdb.set_trace()
-    def customizeTemplates(self, templates):
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
         """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
-        #pdb.set_trace()
-        tm2.yname.priority=0
-        tm2.xname.priority=0
-        #tm2.title.y=.98
 
-        ly = .96      
-        xpos = {'model':.15, 'obs':.6}  
+        tm2.title.y        = 0.98
+
+        ly = 0.96      
+        xpos = {'model':.19, 'obs':.66}  
         for key in self.ft_ids.keys():
-            text = cnvs2.createtext()
+            text        = cnvs2.createtext()
             text.string = self.ft_ids[key]
-            text.x = xpos[key]
-            text.y = ly
-            text.height = 12
+            text.x      = xpos[key]
+            text.y      = ly
+            text.height = 11
             cnvs2.plot(text, bg=1)  
-      
         
         #horizontal labels
         th=cnvs2.createtextorientation(None, tm2.xlabel1.textorientation)
         th.height=8
         tm2.xlabel1.textorientation = th
-        #vertical labels
-        
+ 
+        #vertical labels       
         tv=cnvs2.createtextorientation(None, tm2.ylabel1.textorientation)
         tv.height=8
-        tm2.ylabel1.textorientation = tv    
+        tm2.ylabel1.textorientation = tv
+
+        if varIndex == 0:
+            tm1.xname.priority    = 0
+            tm1.yname.priority    = 0
+            tm1.legend.priority   = 0
+            tm2.legend.priority   = 0
+            tm2.xname.priority    = 0
+            tm2.yname.priority    = 0
+            tm2.dataname.priority = 0
+            # Adjust plot position
+            deltaX = 0.015            
+            if tm2.data.x1 == 0.033:
+                deltaX += 0.015
+            elif tm2.data.x1 == 0.5165:
+                deltaX += 0.015 #0.03            
+            tm2.data.x1      += deltaX            
+            tm2.data.x2      += deltaX
+            tm2.box1.x1      += deltaX
+            tm2.box1.x2      += deltaX
+            tm2.ytic1.x1     += deltaX
+            tm2.ytic1.x2     += deltaX
+            tm2.ytic2.x1     += deltaX
+            tm2.ytic2.x2     += deltaX
+            tm2.ylabel1.x    += deltaX
+            tm2.ymintic1.x1  += deltaX
+            tm2.ymintic1.x2  += deltaX
+            #tm2.units.x      += deltaX
+            tm2.title.x      += deltaX
+            tm2.xname.x      += deltaX
+        elif (varIndex == 1) and (type(data[0]) is str):
+            if seqhasattr(graphicMethod, 'overplotline') and graphicMethod.overplotline:
+                tm1.line1.x1 = tm1.box1.x1
+                tm1.line1.x2 = tm1.box1.x2
+                tm1.line1.y1 = tm1.box1.y2
+                tm1.line1.y2 = tm1.box1.y1
+                #pdb.set_trace()
+                tm1.line1.line = 'LINE-DIAGS' # defined in diags.py
+                tm1.line1.priority = 1
+                tm2.line1.x1 = tm2.box1.x1
+                tm2.line1.x2 = tm2.box1.x2
+                tm2.line1.y1 = tm2.box1.y2
+                tm2.line1.y2 = tm2.box1.y1
+                tm2.line1.line = 'LINE-DIAGS'
+                tm2.line1.priority = 1                                                   
+                #tm.line1.list()
+            
+            tm1.xname.priority   = 1
+            tm1.yname.priority   = 1
+            tm1.ylabel1.priority = 1
+            tm1.xlabel1.priority = 1
+            tm1.units.priority   = 0
+            
+            yLabel = cnvs1.createtext(Tt_source=tm1.yname.texttable,
+                                      To_source=tm1.yname.textorientation)
+            yLabel.x      = tm1.yname.x
+            yLabel.y      = tm1.yname.y
+            if data is not None:
+                yLabel.string = ["SWCF (" + data[1] + ")"]
+            yLabel.height = 18
+            
+            cnvs1.plot(yLabel, bg=1)
+            
+            xLabel = cnvs1.createtext(Tt_source=tm1.xname.texttable,
+                                      To_source=tm1.xname.textorientation)
+            xLabel.x      = tm1.xname.x
+            xLabel.y      = tm1.xname.y
+            if data is not None:
+                xLabel.string = ["LWCF (" + data[0] + ")"]
+            xLabel.height = 18
+            
+            cnvs1.plot(xLabel, bg=1)
+            
+            titleOr                   = cnvs1.gettextorientation(tm1.title.textorientation)
+            titleOr.height           += 4
+            tm1.title.textorientation = titleOr
+
+            tm2.yname.priority    = 1
+            tm2.xname.priority    = 1
+            tm2.ylabel1.priority  = 1
+            tm2.xlabel1.priority  = 1
+            tm2.dataname.priority = 0
+            tm2.units.priority    = 0
+
+            yLabel = cnvs2.createtext(Tt_source=tm2.yname.texttable,
+                                      To_source=tm2.yname.textorientation)
+            yLabel.x = tm2.yname.x
+            yLabel.y = tm2.yname.y
+            yLabel.string = ["SWCF (" + data[1] + ")"]
+            yLabel.height = 9
+                                    
+            cnvs2.plot(yLabel, bg=1)
+            
+            xLabel = cnvs2.createtext(Tt_source=tm2.xname.texttable,
+                                      To_source=tm2.xname.textorientation)
+            xLabel.x      = tm2.xname.x
+            xLabel.y      = tm2.xname.y
+            xLabel.string = ["LWCF (" + data[0] + ")"]
+            xLabel.height = 9
+            
+            cnvs2.plot(xLabel, bg=1)     
         
         return tm1, tm2    
     
@@ -2501,38 +3444,90 @@ class amwg_plot_set12(amwg_plot_spec):
         name, units = self.IDsandUnits['axis']
         var.comment1 = name +' (' + units +')'
         return var        
-    def customizeTemplates(self, templates):
-        """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
+        """Theis method does what the title says.  It is a hack that will no doubt change as diags changes."""
+
         (cnvs1, tm1), (cnvs2, tm2) = templates
-        tm1.legend.priority = 0
-        tm2.legend.priority = 0
+        tm1.legend.priority   = 0
+        tm2.legend.priority   = 0
         tm1.dataname.priority = 0
-        tm1.min.priority= 0
-        tm1.mean.priority = 0
-        tm1.max.priority = 0
-                   
-        #pdb.set_trace()
-        #plot the axes names for the single plot
-        tm1.xname.priority = 1
-        #tm1.xname.x = tm1.data.x1 + .4
-        #tm1.xname.y = tm1.yname.y - .22
-        
-        tm1.comment1.priority = 1
-        #tm1.comment1.x = tm1.data.x2 + .03
-        #tm1.comment1.y = tm1.data.y1 + .25    
-        to = cnvs1.createtextorientation(None, tm1.yname.textorientation)
-        to.angle=-90
-        #tm1.comment1.textorientation=to        
+        tm1.min.priority      = 0
+        tm1.mean.priority     = 0
+        tm1.max.priority      = 0
+        tm1.units.priority    = 0
+        tm2.units.priority    = 0
+        tm1.comment1.priority = 0
+        tm2.comment1.priority = 0
+        tm1.comment2.priority = 0
+        tm2.comment2.priority = 0
+        tm1.comment3.priority = 0
+        tm2.comment3.priority = 0
+        tm1.comment4.priority = 0
+        tm2.comment4.priority = 0
+
+        # Fix units if needed
+        if data is not None:
+            if (getattr(data, 'units', '') == ''):
+                data.units = 'K'
+            if data.getAxis(0).id.count('lat'):
+                data.getAxis(0).id = 'Latitude'
+            if data.getAxis(0).id.count('lon'):
+                data.getAxis(0).id = 'Longitude'
+            elif len(data.getAxisList()) > 1:
+                if data.getAxis(1).id.count('lat'):
+                    data.getAxis(1).id = 'Latitude'
+                if data.getAxis(1).id.count('lon'):
+                    data.getAxis(1).id = 'Longitude'
+
+        yLabel = cnvs1.createtext(Tt_source=tm1.yname.texttable,
+                                  To_source=tm1.yname.textorientation)
+        yLabel.x = tm1.yname.x - 0.02
+        yLabel.y = tm1.yname.y
+        if data is not None:
+            if hasattr(data, 'comment1'):
+                yLabel.string = [data.comment1]
+            else:
+                yLabel.string  = ["Pressure (" + data.units + ")"]
+        else:
+            yLabel.string  = ["Pressure"]
+        yLabel.height = 16
+        cnvs1.plot(yLabel, bg=1)
+
+        tm1.source.y = tm1.data.y2 + 0.01
+
+        xLabelTO                  = cnvs1.gettextorientation(tm1.xname.textorientation)
+        xLabelTO.height           = 16
+        tm1.xname.textorientation = xLabelTO
+        tm1.xname.y              -= 0.01        
+
+
+        # Moving plot for yLabel:
+        deltaX            = 0.015
+        tm2.data.x1      += deltaX
+        tm2.data.x2      += deltaX
+        tm2.box1.x1      += deltaX
+        tm2.box1.x2      += deltaX
+        tm2.ytic1.x1     += deltaX
+        tm2.ytic1.x2     += deltaX
+        tm2.ytic2.x1     += deltaX
+        tm2.ytic2.x2     += deltaX
+        tm2.ylabel1.x    += deltaX
+        tm2.ymintic1.x1  += deltaX
+        tm2.ymintic1.x2  += deltaX
+        #tm2.units.x     += deltaX
+        #tm2.title.x     += deltaX
+        tm2.xname.x      += deltaX
+
         
         #setup the custom legend
         lineTypes = {}
         lineTypes[self.legendTitles[0]] = 'solid'
         lineTypes[self.legendTitles[1]] = 'dot'
         positions = {}
-        positions['solid', tm1]  = [0.05, 0.2], [0.08, .08] 
-        positions['solid', tm2]  =  [.05, .2], [.47, .47]
-        positions['dot', tm1]  = [0.05, 0.2], [0.13, 0.13]  
-        positions['dot', tm2]  = [.05, .2], [.5, .5]
+        positions['solid', tm1]  = [tm1.data.x2 + 0.008, tm1.data.x2 + 0.07], [0.16, .16]
+        positions['solid', tm2]  = [tm2.data.x1 + 0.008+deltaX, tm2.data.x1 + 0.07+deltaX], [tm2.data.y1 + 0.01, tm2.data.y1 + 0.01]
+        positions['dot', tm1]  = [tm1.data.x2 + 0.008, tm1.data.x2 + 0.07], [0.24, 0.24]
+        positions['dot', tm2]  = [tm2.data.x1 + 0.008+deltaX, tm2.data.x1 + 0.07+deltaX], [tm2.data.y1 + 0.05, tm2.data.y1 + 0.05]
    
         #if not self.legendComplete:
         for canvas, tm in templates:
@@ -2547,60 +3542,54 @@ class amwg_plot_set12(amwg_plot_spec):
                 xpos, ypos = positions[lineType, tm]
                 if lineType == 'dot':
                     marker = canvas.createmarker()
-                    marker.size = 7
+                    marker.size = 2
                     marker.x = (numpy.arange(6)*(xpos[1]-xpos[0])/5.+xpos[0]).tolist()
-                    marker.y = [ypos[0],]*6
+                    marker.y = [ypos[0],]*6                    
                     canvas.plot(marker, bg=1)
                     marker.priority = 0
                 else:
                     line = canvas.createline(None, tm.legend.line)
                     line.type = lineType
                     line.x = xpos 
-                    line.y = [ypos, ypos] 
+                    line.y = [ypos, ypos]
                     line.color = 1
                     canvas.plot(line, bg=1)
                 text = canvas.createtext()
                 text.string = filename
-                text.x = xpos[1] + .05
-                text.y = ypos 
-                #text.height = 14
+                text.height = 9.5
+                text.x = xpos[0] 
+                text.y = ypos[0] + 0.01 
+
                 canvas.plot(text, bg=1)   
                 self.legendComplete[canvas, tm, filename] = True
   
-                #pdb.set_trace()
 
-        #plot the axes names for the multi plot
-        to = cnvs2.createtextorientation(None, tm2.xname.textorientation)
-        to.height = 10
-        #tm2.xname.textorientation=to 
-        tm2.xname.priority = 1
-        #tm2.xname.x = tm2.data.x1 + .1
-        #tm2.xname.y = tm2.data.y1 - .05
+        yLabel = cnvs2.createtext(Tt_source=tm2.yname.texttable,
+                                  To_source=tm2.yname.textorientation)
+        yLabel.x = tm2.yname.x #- 0.005
+        yLabel.y = tm2.yname.y
+        if data is not None:
+            if hasattr(data, 'comment1'):
+                yLabel.string = [data.comment1]
+            else:
+                yLabel.string  = ["Pressure (" + data.units + ")"]
+        else:
+            yLabel.string  = ["Pressure"]
+        yLabel.height = 9
+        cnvs2.plot(yLabel, bg=1)
+
+        xLabelTO                  = cnvs2.gettextorientation(tm2.xname.textorientation)
+        xLabelTO.height           = 9
+        tm2.xname.textorientation = xLabelTO
+
+        tm2.source.y = tm2.data.y2 + 0.01
+        tm2.title.y -= 0.01
         
-        th=cnvs2.createtextorientation(None, tm2.xlabel1.textorientation)
-        th.height=10
-        #tm2.xlabel1.textorientation = th
-        th=cnvs2.createtextorientation(None, tm2.ylabel1.textorientation)
-        th.height=10
-        #tm2.ylabel1.textorientation = th
-        
-        #pdb.set_trace()        
-        tm2.comment1.priority = 1
-        #tm2.comment1.x = tm2.data.x1 - .075
-        #tm2.comment1.y = tm2.data.y1 + .1
-        to = cnvs2.createtextorientation(None, tm2.yname.textorientation)
-        to.angle=-90
-        to.height=10
-        #tm2.comment1.textorientation=to
-          
-        #tm2.source.x = tm2.ytic1.x1 + .15
-        #tm2.source.y = tm2.data.y2 + .015
         if self.plotCompositeTitle:
             tm2.source.priority = 1
             self.plotCompositeTitle = False
         else:
             tm2.source.priority = 0
-        #pdb.set_trace()
 
         return tm1, tm2
     def _results(self, newgrid=0):
@@ -2858,6 +3847,90 @@ class amwg_plot_set13(amwg_plot_spec):
             self.plotall_id: [self.plot1_id, self.plot2_id, self.plot3_id ]
             }
         self.computation_planned = True
+
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
+        """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
+        (cnvs1, tm1), (cnvs2, tm2) = templates
+        
+        tm2.yname.priority  = 1
+        tm2.xname.priority  = 1
+        tm1.yname.priority  = 1
+        tm1.xname.priority  = 1
+        tm1.legend.priority = 1
+        tm2.legend.priority = 1
+
+        # Adjust labels and names for single plots
+        ynameOri                  = cnvs1.gettextorientation(tm1.yname.textorientation)
+        ynameOri.height           = 16
+        tm1.yname.textorientation = ynameOri
+        tm1.yname.x              -= 0.01
+
+        xnameOri                  = cnvs1.gettextorientation(tm1.xname.textorientation)
+        xnameOri.height           = 16
+        tm1.xname.textorientation = xnameOri
+        #tm1.xname.y              -= 0.003
+
+        meanOri                  = cnvs1.gettextorientation(tm1.mean.textorientation)
+        meanOri.height           = 14
+        tm1.mean.textorientation = meanOri
+        tm1.mean.y              -= 0.005
+
+        titleOri                  = cnvs1.gettextorientation(tm1.title.textorientation)
+        titleOri.height           = 22
+        tm1.title.textorientation = titleOri
+
+        tm1.max.y -= 0.005
+        
+        sourceOri                  = cnvs1.gettextorientation(tm1.source.textorientation)
+        sourceOri.height           = 11.0
+        tm1.source.textorientation = sourceOri
+        tm1.source.y               = tm1.units.y - 0.035
+        tm1.source.x               = tm1.data.x1
+        tm1.source.priority        = 1
+
+        # We want units at axis names
+        tm1.units.y       -= 0.01
+        tm1.units.priority = 1
+
+        
+        cnvs2.landscape()
+        # Gray colormap as a request
+        colormap = vcs.matplotlib2vcs("gray")
+        cnvs2.setcolormap(colormap)
+        
+        # Adjust labels and names for combined plots
+        ynameOri                  = cnvs2.gettextorientation(tm2.yname.textorientation)
+        ynameOri.height           = 16
+        tm2.yname.textorientation = ynameOri
+        tm2.yname.x              -= 0.02
+
+        xnameOri                  = cnvs2.gettextorientation(tm2.xname.textorientation)
+        xnameOri.height           = 16
+        tm2.xname.textorientation = xnameOri
+        #tm2.xname.y              -= 0.003
+
+        meanOri                  = cnvs2.gettextorientation(tm2.mean.textorientation)
+        meanOri.height           = 14
+        tm2.mean.textorientation = meanOri
+        tm2.mean.y -= 0.005
+
+        titleOri                  = cnvs2.gettextorientation(tm2.title.textorientation)
+        titleOri.height           = 22
+        tm2.title.textorientation = titleOri
+
+        tm2.max.y -= 0.005
+        
+        sourceOri                  = cnvs2.gettextorientation(tm2.source.textorientation)
+        sourceOri.height           = 11.0
+        tm2.source.textorientation = sourceOri
+        tm2.source.y               = tm2.units.y - 0.02
+        tm2.source.x               = tm2.data.x1
+        tm2.source.priority        = 1
+
+        tm2.units.priority = 1
+        
+        return tm1, tm2
+        
 
     def _results(self,newgrid=0):
         results = plot_spec._results(self,newgrid)
@@ -3120,24 +4193,10 @@ class amwg_plot_set14(amwg_plot_spec):
                                         
         self.computation_planned = True
         #pdb.set_trace()
-    def customizeTemplates(self, templates, legendTitles=[]):
+    def customizeTemplates(self, templates, legendTitles=[], var=None):
         """Theis method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs, tm), (cnvs2, tm2) = templates
-        #tm.data.x1 = .1
-        #tm.data.y1 = .1
-        #tm.data.x2 = .9
-        #tm.data.y2 = .9
-        #pdb.set_trace()
-        #tm.yname.x = tm.yname.x + tm.data.x1/2
-        #tm.xname.y = tm.data.y1 - .05
-        #tm.line1.x1=tm.data.x1
-        #tm.line1.x2=tm.data.x1
-        #tm.line1.y1=.05
-        #tm.line1.y2=.05
         
-        #tm.xlabel1.y = tm.data.y1-.02
-        #tm.xtic1.y1 = tm.data.y1 - .02
-        #tm.xtic1.y2 = tm.data.y1 - .02
         tm.dataname.priority=0
 
         lx = .75
@@ -3154,7 +4213,7 @@ class amwg_plot_set14(amwg_plot_spec):
             text.height = 12
             cnvs.plot(text, bg=1)  
             ly -= .025        
-        #tm.line1.list()
+        
         return tm, None
     def _results(self, newgrid=0):
         #pdb.set_trace()
@@ -3291,7 +4350,7 @@ class amwg_plot_set15(amwg_plot_spec):
                                plotspec(vid = self.plot2_id, 
                                         zvars=[vidObs],   
                                         zfunc = (lambda x: MV2.transpose(x) ),       
-                                        zrangevars={'yrange':[1000., 0.]},                         
+                                        zrangevars={'yrange':[1000., 0.]},
                                         plottype = self.plottype,
                                         title = 'obs',
                                         source = ft2src,
@@ -3312,74 +4371,72 @@ class amwg_plot_set15(amwg_plot_spec):
         # ... was self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
         self.computation_planned = True
         #pdb.set_trace()
-    def customizeTemplates(self, templates, var = None):
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
+
         """Theis method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
  
-        #tm1.data.x1 += .05
-        #tm1.box1.x1 = tm1.data.x1
-        #tm1.legend.x1 = tm1.data.x1
+        tm1.data.x1  += .05
+        tm1.box1.x1   = tm1.data.x1
+        tm1.legend.x1 = tm1.data.x1
      
-        #tm1.yname.x = .05
-        #tm1.yname.y = (tm1.data.y1 + tm1.data.y2)/2
-        to = cnvs1.createtextorientation(None, tm1.yname.textorientation)
-        to.angle=-90
-        #tm1.yname.textorientation=to 
-                
-        #tm1.xname.y = tm1.data.y1 - .05
-        delta = tm1.ytic1.x1 - tm1.ytic1.x2
-        #tm1.ytic1.x1 = tm1.data.x1
-        #tm1.ytic1.x2 = tm1.data.x1 - delta
-        #tm1.ylabel1.x = tm1.ytic1.x2
+        tm1.yname.x               = .04
+        tm1.yname.y               = (tm1.data.y1 + tm1.data.y2)/2
+        to                        = cnvs1.createtextorientation(None,
+                                                                tm1.yname.textorientation)
+        to.angle                  = -90
+        to.height                += 2
+        tm1.yname.textorientation = to 
+
+        to                        = cnvs1.createtextorientation(None,
+                                                                tm1.xname.textorientation)
+        to.height                += 2
+        tm1.xname.textorientation = to
+        tm1.xname.y               = tm1.data.y1 - .06
+        delta                     = tm1.ytic1.x1 - tm1.ytic1.x2
+        tm1.ytic1.x1              = tm1.data.x1
+        tm1.ytic1.x2              = tm1.data.x1 - delta
+        tm1.ylabel1.x             = tm1.ytic1.x2
+
+        titleOri                  = cnvs1.gettextorientation(tm1.title.textorientation)
+        titleOri.height          += 3
+        tm1.title.textorientation = titleOri
+        tm1.title.y               = tm1.data.y2 + 0.015
 
         tm1.crdate.priority = 0
         tm1.crtime.priority = 0        
 
-        #tm2.data.x1 += .05
-        #tm2.box1.x1 = tm2.data.x1
-        #tm2.data.y1 += .025
-        #tm2.data.y2 += .025
-        #tm2.box1.y1 = tm2.data.y1
-        #tm2.box1.y2 = tm2.data.y2
-        #tm2.legend.y1 = tm2.data.y1
-        #tm2.legend.y2 = tm2.data.y2
+        tm2.yname.x               = .05
+        tm2.yname.y               = (tm2.data.y1 + tm2.data.y2)/2
+        to                        = cnvs2.createtextorientation(None, tm2.yname.textorientation)
+        to.height                 = 10
+        to.angle                  = -90
+        tm2.yname.textorientation = to 
 
-        #tm2.yname.x = .05
-        #tm2.yname.y = (tm2.data.y1 + tm2.data.y2)/2
-        to = cnvs2.createtextorientation(None, tm2.yname.textorientation)
-        to.angle=-90
-        #tm2.yname.textorientation=to 
-
-        #tm2.xname.x = (tm2.data.x1 + tm2.data.x2)/2
-        #tm2.xname.y = tm2.data.y1 - .025
-        #pdb.set_trace()
-        #delta = abs(tm2.ytic1.x1 - tm2.ytic1.x2)
-        #tm2.ytic1.x1 = tm2.data.x1
-        #tm2.ytic1.x2 = tm2.data.x1 - delta
-        #tm2.ytic1.line = 'default'
-        #tm2.ylabel1.x = tm2.ytic1.x2
+        tm2.xname.x               = (tm2.data.x1 + tm2.data.x2)/2
+        tm2.xname.y               = tm2.data.y1 - .025
+        to                        = cnvs2.createtextorientation(None, tm2.xname.textorientation)
+        to.height                 = 10
+        tm2.xname.textorientation = to
         
-        delta = abs(tm2.xtic1.y1 - tm2.xtic1.y2)
-        #tm2.xtic1.y1 = tm2.data.y1
-        #tm2.xtic1.y2 = tm2.xtic1.y1 - delta
-        #tm2.xlabel1.y = tm2.xtic1.y2
-        #tm2.xtic1.line = 'default'
+        titleOri                  = cnvs2.gettextorientation(tm2.title.textorientation)
+        titleOri.height           = 14
+        tm2.title.textorientation = titleOri
+        tm2.title.y               = tm2.data.y2 + 0.01
         
         for tm in [tm1, tm2]:       
-            #tm.title.priority = 0
-            tm.max.priority = 0
-            tm.min.priority = 0
-            tm.mean.priority = 0
+            tm.max.priority      = 0
+            tm.min.priority      = 0
+            tm.mean.priority     = 0
             tm.dataname.priority = 0
-            tm.legend.y2 = tm.mean.y
             
             tm.xlabel1.priority = 1 
-            tm.xtic1.priority = 1 
-            tm.yname.priority = 1
-            tm.yname.priority = 1
-            #tm.xname.priority = 1
+            tm.xtic1.priority   = 1 
+            tm.yname.priority   = 1
+            tm.yname.priority   = 1
+            tm.xname.priority   = 1
             tm.ylabel1.priority = 1 
-            tm.ytic1.priority = 1  
+            tm.ytic1.priority   = 1  
                         
         
         #pdb.set_trace()
