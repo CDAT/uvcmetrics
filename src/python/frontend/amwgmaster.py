@@ -420,17 +420,17 @@ diags_collection['8']['PRECT'] = {'plottype': '8', 'obs': ['XA_1', 'GPCP_1']}
 diags_collection['8']['FLUT'] = {'plottype': '8', 'obs': ['ERBE_1', 'CERES2_1', 'CERES_1']}
 diags_collection['8']['U'] = {'plottype': '8', 'obs': ['ECMWF_1', 'NCEP_1', 'JRA25_1', 'ERA40_1'], 'varopts':['200']}
 # *** Collection 4a ***
-diags_collection['41'] = {}
-diags_collection['41']['desc'] = 'Vertical (XZ) contour plots of DJF, JJA and ANN meridional means'
-diags_collection['41']['seasons'] = ['DJF', 'JJA', 'ANN']
-diags_collection['41']['package'] = 'AMWG'
-diags_collection['41']['options'] = {'logo':'no'}
-diags_collection['41']['combined'] = True
-diags_collection['41']['U'] = {'plottype': '41', 'obs': ['ECMWF_1', 'NCEP_1', 'JRA25_1', 'ERA40_1']}
-diags_collection['41']['SHUM'] = {'plottype': '41', 'obs': ['ECMWF_1', 'JRA25_1', 'AIRS_1', 'ERA40_1', 'NCEP_1']}
-diags_collection['41']['RELHUM'] = {'plottype': '41', 'obs': ['ECMWF_1', 'NCEP_1', 'AIRS_1', 'ERA40_1']}
-diags_collection['41']['OMEGA'] = {'plottype': '41', 'obs': ['ECMWF_1', 'NCEP_1', 'JRA25_1', 'ERA40_1']}
-diags_collection['41']['T'] = {'plottype': '41', 'obs': ['NCEP_1', 'JRA25_1', 'ERA40_1', 'ECMWF_1', 'AIRS_1']}
+diags_collection['4a'] = {}
+diags_collection['4a']['desc'] = 'Vertical (XZ) contour plots of DJF, JJA and ANN meridional means'
+diags_collection['4a']['seasons'] = ['DJF', 'JJA', 'ANN']
+diags_collection['4a']['package'] = 'AMWG'
+diags_collection['4a']['options'] = {'logo':'no'}
+diags_collection['4a']['combined'] = True
+diags_collection['4a']['U'] = {'plottype': '41', 'obs': ['ECMWF_1', 'NCEP_1', 'JRA25_1', 'ERA40_1']}
+diags_collection['4a']['SHUM'] = {'plottype': '41', 'obs': ['ECMWF_1', 'JRA25_1', 'AIRS_1', 'ERA40_1', 'NCEP_1']}
+diags_collection['4a']['RELHUM'] = {'plottype': '41', 'obs': ['ECMWF_1', 'NCEP_1', 'AIRS_1', 'ERA40_1']}
+diags_collection['4a']['OMEGA'] = {'plottype': '41', 'obs': ['ECMWF_1', 'NCEP_1', 'JRA25_1', 'ERA40_1']}
+diags_collection['4a']['T'] = {'plottype': '41', 'obs': ['NCEP_1', 'JRA25_1', 'ERA40_1', 'ECMWF_1', 'AIRS_1']}
 
 
 # *** Variables List ***
