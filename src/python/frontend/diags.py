@@ -679,7 +679,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                     
                     if hasattr(plot, 'customizeTemplates'):
                         tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)],
-                                                           varIndex, rsr.presentation, var=var )
+                                                           varIndex=varIndex, graphicMethod=rsr.presentation, var=var )
                     # Single plot                    
                     plot.vcs_plot(vcanvas, var, rsr.presentation, tm, bg=1,
                                   title=title, source=rsr.source,
