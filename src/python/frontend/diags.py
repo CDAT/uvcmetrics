@@ -673,7 +673,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                     # fjim.write(var,id="jim")
                     # fjim.close()
                 else:
-                    #pdb.set_trace()
+                    pdb.set_trace()
                     # Set canvas colormap back to default color
                     vcanvas2.setcolormap('bl_to_darkred')
                     
