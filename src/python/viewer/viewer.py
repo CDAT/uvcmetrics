@@ -13,7 +13,7 @@ import shutil
 
 
 parser = ArgumentParser(description="Generate web pages for viewing UVCMetrics' metadiags output")
-parser.add_argument('path', help="Path to diagnostics output directory", default=".")
+parser.add_argument('path', help="Path to diagnostics output directory", default=".", nargs="?")
 parser.add_argument('--dataset')
 
 # Maps customized plot sets to appropriate class
