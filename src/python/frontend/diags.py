@@ -558,6 +558,8 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                             fname = fnamebase+'.png'
 
                     print "png file name: ",fname
+                    fnamesvg = fname[:-3]+'svg'
+                    print "svg file name: ",fnamesvg
 
                 if vcs.isscatter(rsr.presentation) or (plot.number in ['11', '12'] and package.upper() == 'AMWG'):
                     #pdb.set_trace()
@@ -678,8 +680,9 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                     vcanvas2.setcolormap('bl_to_darkred')
                     
                     if hasattr(plot, 'customizeTemplates'):
-                        tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)],
-                                                           varIndex, rsr.presentation, var=var )
+                        tm, tm2 = plot.customizeTemplates(
+                            [(vcanvas, tm), (vcanvas2, tm2)],
+                            varIndex=varIndex, graphicMethod=rsr.presentation, var=var )
                     # Single plot                    
                     plot.vcs_plot(vcanvas, var, rsr.presentation, tm, bg=1,
                                   title=title, source=rsr.source,
@@ -708,6 +711,8 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                             var[i].id = var_id_save[i]
                 if savePNG:
                     vcanvas.png( fname, ignore_alpha=True, metadata=provenance_dict() )
+                    # vcanvas.svg() doesn't support ignore_alpha or metadata keywords
+                    vcanvas.svg( fnamesvg )
 
         if tmmobs[0] is not None:  # If anything was plotted to vcanvas2
             vname = varid.replace(' ', '_')
@@ -718,12 +723,16 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
             fname = fnamebase+'-combined-diff.png'
         else:
             fname = fnamebase+'-combined.png'
+        fnamesvg = fname[:-3]+'svg'
 
         if vcanvas2.backend.renWin is None:
             print "no data to plot to file2:", fname
         else:
             print "writing png file2:",fname
             vcanvas2.png( fname , ignore_alpha = True, metadata=provenance_dict() )
+            print "writing svg file2: ",fnamesvg
+            # vcanvas2.svg() doesn't support ignore_alpha or metadata keywords
+            vcanvas2.svg( fnamesvg )
 
 if __name__ == '__main__':
     print "UV-CDAT Diagnostics, command-line version"
