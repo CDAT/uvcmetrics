@@ -565,7 +565,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                         if hasattr(plot, 'replaceIds'):
                             var = plot.replaceIds(var)
                         tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)],
-                                                           varIndex, rsr_presentation, var=var )
+                                                           data=var, varIndex=varIndex, graphicMethod=rsr_presentation, var=var )
                     if len(rsr.vars) == 1:
                         #scatter plot for plot set 12
                         subtitle = title
@@ -598,7 +598,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                             yvar = var.flatten()
                             if hasattr(plot, 'customizeTemplates'):
                                 tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)],
-                                                                   [xvar.units, yvar.units], varIndex, rsr_presentation)                            
+                                                                   data=[xvar.units, yvar.units], varIndex=varIndex, graphicMethod=rsr_presentation)                            
                             
                             # Scatter part from the single plots in set 11
                             vcanvas.plot(xvar, yvar, 
@@ -673,12 +673,12 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                     # fjim.write(var,id="jim")
                     # fjim.close()
                 else:
-                    pdb.set_trace()
+                    #pdb.set_trace()
                     # Set canvas colormap back to default color
                     vcanvas2.setcolormap('bl_to_darkred')
                     
                     if hasattr(plot, 'customizeTemplates'):
-                        tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)],
+                        tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)], data=var,
                                                            varIndex=varIndex, graphicMethod=rsr.presentation, var=var )
                     # Single plot                    
                     plot.vcs_plot(vcanvas, var, rsr.presentation, tm, bg=1,
