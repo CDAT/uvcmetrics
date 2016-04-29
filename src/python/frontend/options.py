@@ -604,7 +604,7 @@ class Options():
             help="Variable auxillary options")
          #levels for isofill plots
 
-         runopts.add_argument('--levels', help="Specify a file name containing a list of levels or the comma delimited levels directly")
+         runopts.add_argument('--levels', nargs=1, help="Specify a file name containing a list of levels or the comma delimited levels directly")
          runopts.add_argument('--translate', nargs='?', default='y',
             help="Enable translation for obs sets to datasets. Optional provide a colon separated input to output list e.g. DSVAR1:OBSVAR1")
       if 'metadiags' not in progname and 'metadiags.py' not in progname:
