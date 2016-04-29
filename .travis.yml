@@ -28,5 +28,5 @@ before_script:
 
 script:
     - cmake .
-    - export UVCDAT_ANONYMOUS_LOG False
+    - export UVCDAT_ANONYMOUS_LOG=False
     - ctest -D Experimental
