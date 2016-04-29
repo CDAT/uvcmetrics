@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # First please run:
-# ctest -R diags_test -VV -D Experimental | tee ctest_log.txt
+# ctest -VV -D Experimental | tee ctest_log.txt
 
 # Then check the baselines issues at: https://open.cdash.org/index.php?project=UV-CDAT&display=project
 
