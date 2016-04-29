@@ -21,12 +21,13 @@ before_install:
 
 install:
     - if [ -d build ]; then rm -rf build; fi
+    - cmake .
+    - git log -n2
     - python setup.py install
 
 before_script:
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then export DISPLAY=:99.0 ; sh -e /etc/init.d/xvfb start ; sleep 3 ; fi
 
 script:
-    - cmake .
     - export UVCDAT_ANONYMOUS_LOG=False
     - ctest -D Experimental -VV
