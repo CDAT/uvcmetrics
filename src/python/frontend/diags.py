@@ -639,7 +639,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
             else:
                #pdb.set_trace()
                if hasattr(plot, 'customizeTemplates'):
-                  tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)] )
+                  tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)], var=var )
                #vcanvas.plot(var, rsr.presentation, tm, bg=1,
                #   title=title, units=getattr(var,'units',''), source=rsr.source )
                plot.vcs_plot(vcanvas, var, rsr.presentation, tm, bg=1, title=title,
@@ -649,6 +649,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                savePNG = True
                try:
                   if tm2 is not None:
+                     #pdb.set_trace()
                      #vcanvas2.plot(var, rsr.presentation, tm2, bg=1,
                      #   title=title, units=getattr(var,'units',''), source=rsr.source )
                      plot.vcs_plot( vcanvas2, var, rsr.presentation, tm2, bg=1,
