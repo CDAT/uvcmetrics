@@ -15,7 +15,7 @@ before_install:
   - bash miniconda.sh -b -p $HOME/miniconda
   - conda config --set always_yes yes --set changeps1 no
   - conda update -y -q conda
-  - conda install --yes --channel uvcdat python=2.7 setuptools cdms2 cdutil genutil unidata cdtime vcs uvcdat
+  - conda install -q -y --channel uvcdat python=2.7 setuptools cdms2 cdutil genutil unidata cdtime vcs uvcdat
   # Useful for debugging any issues with conda
   - conda info -a
 
