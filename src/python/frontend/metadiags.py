@@ -2,7 +2,7 @@
 
 
 ### This file converts the dictionary file (in this case amwgmaster2.py) to a series of diags.py commands.
-import sys, getopt, os, subprocess
+import sys, getopt, os, subprocess, logging
 from metrics.frontend.options import Options
 from metrics.frontend.options import make_ft_dict
 from metrics.fileio.filetable import *
@@ -52,11 +52,11 @@ def makeTables(collnum, model_dict, obspath, outpath, pname, outlog):
 
    num_models = len(model_dict.keys())
    if vlist == []:
-      print 'varlist was empty. Assuming all variables.'
+      logging.warning('varlist was empty. Assuming all variables.')
       vlist = ['ALL']
 
    if num_models > 2:
-      print 'Only <=2 models supported for tables'
+      logging.critical('Only <=2 models supported for tables')
       quit()
 
    raw0 = None
@@ -120,10 +120,10 @@ def makeTables(collnum, model_dict, obspath, outpath, pname, outlog):
                cf0 = 'no'
                cf1 = 'no'
                if ft0 == None: 
-                  print 'Variable ', v, 'requires raw data. No raw data provided. Passing'
+                  logging.warning('Variable %s requires raw data. No raw data provided. Passing', v)
                   continue
                if num_models == 2 and ft1 == None:
-                  print 'Variable ', v, 'requires raw data. No second raw dataset provided. Passing on differences'
+                  logging.warning('Variable %s requires raw data. No second raw dataset provided. Passing on differences', v)
                   continue
                ps0 = '--model path=%s,climos=no' % (ft0.root_dir())
                if num_models == 2:
@@ -145,7 +145,7 @@ def makeTables(collnum, model_dict, obspath, outpath, pname, outlog):
       # Ok, variable(s) and varopts ready to go. Get some path strings.
       # Create path strings.
       if ft0 == None:
-         print 'ft0 was none'
+         logging.warning('ft0 was none')
          continue
       else:
          path0str = ps0
@@ -174,7 +174,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
       try:
          os.makedirs(outpath)
       except:
-         print 'Failed to create directory ', outpath
+         logging.exception('Failed to create directory %s', outpath)
 
    try:
       outlog = open(os.path.join(outpath,'DIAGS_OUTPUT.log'), 'w')
@@ -183,7 +183,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
          os.mkdir(outpath)
          outlog = open(os.path.join(outpath,'DIAGS_OUTPUT.log'), 'w')
       except: 
-         print 'Couldnt create output log - %s/DIAGS_OUTPUT.log' % outpath
+         logging.exception('Couldnt create output log - %s/DIAGS_OUTPUT.log', outpath)
          quit()
 
    # Get some paths setup
@@ -246,7 +246,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
             print pname.upper()
             print diags_collection[collnum]['package']
             # skip over this guy
-            print 'Skipping over collection ', collnum
+            logging.warning('Skipping over collection %s', collnum)
             continue
       else:
          if diags_collection[collnum].get('package', False) != False and diags_collection[collnum]['package'].upper() == pname.upper():
@@ -296,11 +296,14 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
             else:
                xmlstr = ''
 
-            if o != 'NA':
+            if o != 'NA' and obspath != None:
                obsfname = diags_obslist[o]['filekey']
                obsstr = '--obs path='+obspath+',climos=yes,filter="f_startswith(\''+obsfname+'\')"' 
                poststr = '--postfix '+obsfname
             else:
+               if o != 'NA':
+                  print 'No observation path provided but this variable/collection combination specifies an obs set.'
+                  print 'Not making a comparison vs observations.'
                obsstr = ''
                poststr = ' --postfix \'\''
 
@@ -377,13 +380,14 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
 
                   if raw != False:
                      if raw0 == None:
-                        print 'No raw dataset provided and this set requires raw data'
+                        logging.critical('No raw dataset provided and this set requires raw data')
                         quit()
                      else:
                         modelpath = raw0.root_dir()
                         cf0 = 'no'
                      if raw1 == None and num_models == 2:
-                        print 'Only one raw dataset provided and this set requires raw data'
+                        logging.critical('2 or more datasets provided, but only one raw dataset provided.')
+                        logging.critical('This variable in this collection requires raw datasets for comparisons')
                         quit()
                      else:
                         modelpath1 = raw1.root_dir()
@@ -402,7 +406,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
                      print 'DONTRUN: ', cmdline
             else: # different executable; just pass all option key:values as command line options.
                # Look for a cmdline list in the options for this variable.
-               execstr = def_executable # if we've gotten this far, we are just using diags scripts.
+               execstr = diags_collection[collnum].get('exec', def_executable) # should probably NOT be def_executable....
                cmdlineOpts = diags_collection[collnum][v].get('cmdline', False)
                fnamebase = 'set'+collnum
                if cmdlineOpts != False:
@@ -419,11 +423,17 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
                      execstr = execstr+' --fieldname '+ v
                   if 'diagname' in cmdlineOpts:
                      if name0 == None:
-                        execstr = execstr+' --diagname '+ dsname
+                        if dsname == None:
+                           execstr = execstr+' --diagname TEST'
+                        else:
+                           execstr = execstr+' --diagname '+ dsname
                      else:
                         execstr = execstr+' --diagname '+ name0
                   if 'casename' in cmdlineOpts:
-                     execstr = execstr+' --casename '+ dsname
+                     if dsname == None:
+                        execstr = execstr+' --casename TESTCASE'
+                     else:
+                        execstr = execstr+' --casename '+ dsname
                   if 'figurebase' in cmdlineOpts:
                      execstr = execstr+' --figurebase '+ fnamebase
 
@@ -444,9 +454,9 @@ def runcmdline(cmdline, outlog):
    try:
       retcode = subprocess.check_call(cmdline, stdout=outlog, stderr=outlog, shell=True)
       if retcode < 0:
-         print 'TERMINATE SIGNAL', -retcode
+         logging.warning('TERMINATE SIGNAL %s', -retcode)
    except subprocess.CalledProcessError as e:
-      print '\n\nEXECUTION FAILED FOR ', cmdline, ':', e
+      logging.exception('\n\nEXECUTION FAILED FOR %s: %s', cmdline, e)
       outlog.write('Command %s failed\n' % cmdline)
       outlog.write('----------------------------------------------')
       print 'See '+outpath+'/DIAGS_OUTPUT.log for details'
@@ -517,7 +527,7 @@ if __name__ == '__main__':
    opts.verifyOptions()
 
    if opts['package'] == None or opts['package'] == '':
-      print "Please specify a package when running metadiags."
+      logging.critical('Please specify a package when running metadiags.')
       quit()
       
    package = opts['package'].upper()
@@ -557,7 +567,7 @@ if __name__ == '__main__':
       obspath = None
 
    # Set some defaults.
-   dbflag = True
+   dbflag = False
    dbonly = False
    xmlflag = True #default to generating xml/netcdf files
    hostname = 'acme-ea.ornl.gov'
@@ -575,7 +585,7 @@ if __name__ == '__main__':
    outpath = opts['output']['outputdir']
    colls = opts['sets']
    if opts['dsname'] == None and dbflag == True:
-      print 'Please provide a dataset name for this dataset for the database with the --dsname option'
+      logging.critical('Please provide a dataset name for this dataset for the database with the --dsname option')
       quit()
    dsname = opts['dsname']
 
@@ -586,7 +596,7 @@ if __name__ == '__main__':
       xmlflag = False
 
    if dbflag == True and dbonly == True and (num_models == 0 or dsname == None or package == None):
-      print 'Please specify --model, --dsname, and --package with the db update option'
+      logging.critical('Please specify --model, --dsname, and --package with the db update option')
       quit()
 
    if dbonly == True:

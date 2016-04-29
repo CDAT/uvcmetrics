@@ -1,5 +1,7 @@
 import vcs, cdms2, random
 import numpy as np
+from templatefactory import *
+from templateoptions import *
 
 
 #######################################################################################################
@@ -7,122 +9,186 @@ import numpy as np
 # Function that creates the templates and graphics methods for the diagnostics plots                  #
 #                                                                                                     #
 #######################################################################################################
-def return_templates_graphic_methods(canvas1=None, gms=None, ovly=None, onPage=None):
+def return_templates_graphic_methods(canvas1=None, gms=None, ovly=None, onPage=None, disLegend=False):
    print "tmpl canvas1,gms,ovly,onPage:", canvas1,gms,ovly,onPage
+   
    if len(gms) == len(ovly): 
 
-      # Create a unique graphics method for each diagnostic display
-      gmobs = []
-      for i in range(len(gms)):  # make sure the graphics method exists
-         if (gms[i] == 'isofill') and ('uvwg' not in canvas1.listelements('isofill')) :
-            gmobs.append( canvas1.createisofill('uvwg_' + (str(random.random())[2:]), 'default') )
-         if (gms[i] == 'isoline') and ('uvwg' not in canvas1.listelements('isoline')) :
-            gmobs.append( canvas1.createisoline('uvwg_' + (str(random.random())[2:]), 'default') )
-         if (gms[i] == 'yxvsx') and ('uvwg' not in canvas1.listelements('yxvsx')) :
-            gmobs.append( canvas1.createyxvsx('uvwg_' + (str(random.random())[2:]), 'default') )
-            if ovly[i] == 0:
-               gmobs[i].linewidth = 1.5
-            else:
-               gmobs[i].linewidth = 2.0
-               gmobs[i].line = 'dash'
-               gmobs[i].linecolor = 242
-         if (gms[i] == 'vector') and ('uvwg' not in canvas1.listelements('vector')) :
-            gmobs.append( canvas1.createvector('uvwg_' + (str(random.random())[2:]), 'default') )
-         if (gms[i] == 'scatter') and ('uvwg' not in canvas1.listelements('scatter')) :
-            gmobs.append( canvas1.createscatter('uvwg_' + (str(random.random())[2:]), 'default') )
-            if ovly[i] == 0:
-               gmobs[i].markersize = 8
-            else:
-               gmobs[i].linewidth = 2.0
-               gmobs[i].linecolor = 242
-               gmobs[i].markersize = 1
-         if (gms[i] == 'taylordiagram'):
-            td = canvas1.createtaylordiagram('taylor_' + (str(random.random())[2:]), 'default')
-            gmobs.append( td )
-            #gmobs[i].addMarker()
-            #gmobs[i].Marker.size = 8
-      # Create a unique template for each diagnostic on a single canvas
-      tmobs = []
-      for i in range(len(gms)):
-          if (gms[i] in ['isofill', 'isoline', 'boxfill', 'vector']):
-             if ovly[i] == 0:     # use full template
-               tmobs.append( canvas1.createtemplate('uvwg_' + (str(random.random())[2:]), 'UVWG') )
-             else:                # overlay plot use DUD - only plot the data
-               tmobs.append( canvas1.createtemplate('uvwg_DUD_' + (str(random.random())[2:]), 'UVWG_DUD') )
-          elif (gms[i] in ['yxvsx', 'scatter']):
-             if ovly[i] == 0:     # use full template
-               tmobs.append( canvas1.createtemplate('uvwg_' + (str(random.random())[2:]), 'UVWG1D') )
-             else:                # overlay plot use DUD - only plot the data
-               tmobs.append( canvas1.createtemplate('uvwg_DUD_' + (str(random.random())[2:]), 'UVWG1D_DUD') )
-          elif (gms[i] in ['taylordiagram']):
-             tmpl = canvas1.createtemplate('taylor_' + (str(random.random())[2:]), 'deftaylor')
-             tmobs.append( tmpl )
+      # Create a unique graphics method and a template for each diagnostic plot
+      gmobs        = []
+      tmobs        = []
 
-      # Create a unique template for each diagnostic for multiple displays on a canvas
-      tmmobs = []
-      ct = 0
       for i in range(len(gms)):
-          # print 'tmpl ******* onPage ', onPage, ' ***** gms[',i,']: ', gms[i],' ***********************'
-          if onPage == 2 and gms[i] in ['yxvsx', 'scatter']:
-             if ovly[i] == 0:     # use full template
-                ct += 1
-                tmmobs.append( canvas1.createtemplate('UVWG1D_%dof2_'%ct + (str(random.random())[2:]), 'UVWG1D_%dof2'%ct) )
-             else:                # overlay plot use DUD - only plot the data
-                tmmobs.append( canvas1.createtemplate('UVWG1D_DUD_%dof2_'%ct + (str(random.random())[2:]), 'UVWG1D_DUD_%dof2'%ct) )
+         if (gms[i] in ['isofill', 'isoline', 'boxfill', 'vector']):
+            graphicMethodObjects = []
+            templates            = []
+            templateOptionsArray = []
+            templateNameArray    = []
 
-          elif onPage <= 3:
-             # We need a UVWG_1of2, UVWG_2of2
-             if ovly[i] == 0:     # use full template
-                ct += 1
-                tmmobs.append( canvas1.createtemplate('UVWG_%dof3_'%ct + (str(random.random())[2:]), 'UVWG_%dof3'%ct) )
-             else:                # overlay plot use DUD - only plot the data
-                tmmobs.append( canvas1.createtemplate('UVWG_DUD_%dof3_'%ct + (str(random.random())[2:]), 'UVWG_DUD_%dof3'%ct) )
-          elif onPage == 4:
-             if ovly[i] == 0:     # use full template
-                ct += 1
-                tmmobs.append( canvas1.createtemplate('UVWG_%dof4_'%ct + (str(random.random())[2:]), 'UVWG_%dof4'%ct) )
-             else:                # overlay plot use DUD - only plot the data
-                tmmobs.append( canvas1.createtemplate('UVWG_DUD_%dof4_'%ct + (str(random.random())[2:]), 'UVWG_DUD_%dof4'%ct) )
-          elif onPage == 5:
-             if ovly[i] == 0:     # use full template
-                ct += 1
-                tmmobs.append( canvas1.createtemplate('UVWG_%dof5_'%ct + (str(random.random())[2:]), 'UVWG_%dof5'%ct) )
-             else:                # overlay plot use DUD - only plot the data
-                tmmobs.append( canvas1.createtemplate('UVWG_DUD_%dof5_'%ct + (str(random.random())[2:]), 'UVWG_DUD_%dof5'%ct) )
-          elif onPage == 6:
-             if ovly[i] == 0:     # use full template
-                ct += 1
-                tmmobs.append( canvas1.createtemplate('UVWG_%dof6_'%ct + (str(random.random())[2:]), 'UVWG_%dof6'%ct) )
-             else:                # overlay plot use DUD - only plot the data
-                tmmobs.append( canvas1.createtemplate('UVWG_DUD_%dof6_'%ct + (str(random.random())[2:]), 'UVWG_DUD_%dof6'%ct) )
-          elif onPage == 7:
-             if ovly[i] == 0:     # use full template
-                ct += 1
-                tmmobs.append( canvas1.createtemplate('UVWG_%dof7_'%ct + (str(random.random())[2:]), 'UVWG_%dof7'%ct) )
-             else:                # overlay plot use DUD - only plot the data
-                tmmobs.append( canvas1.createtemplate('UVWG_DUD_%dof7_'%ct + (str(random.random())[2:]), 'UVWG_DUD_%dof7'%ct) )
-          elif onPage == 8:
-             if ovly[i] == 0:     # use full template
-                ct += 1
-                tmmobs.append( canvas1.createtemplate('UVWG_%dof8_'%ct + (str(random.random())[2:]), 'UVWG_%dof8'%ct) )
-             else:                # overlay plot use DUD - only plot the data
-                tmmobs.append( canvas1.createtemplate('UVWG_DUD_%dof8_'%ct + (str(random.random())[2:]), 'UVWG_DUD_%dof8'%ct) )
-          elif onPage == 9:
-             if ovly[i] == 0:     # use full template
-                ct += 1
-                tmmobs.append( canvas1.createtemplate('UVWG_%dof9_'%ct + (str(random.random())[2:]), 'UVWG_%dof9'%ct) )
-             else:                # overlay plot use DUD - only plot the data
-                tmmobs.append( canvas1.createtemplate('UVWG_DUD_%dof9_'%ct + (str(random.random())[2:]), 'UVWG_DUD_%dof9'%ct) )
-          elif onPage == 10:
-             if ovly[i] == 0:
-                ct += 1
-                tmmobs.append( canvas1.createtemplate('UVWG_%dof10_'%ct + (str(random.random())[2:]), 'UVWG_%dof10'%ct) )
-             else:                # overlay plot use DUD - only plot the data
-                tmmobs.append( canvas1.createtemplate('UVWG_DUD_%dof10_'%ct + (str(random.random())[2:]), 'UVWG_DUD_%dof10'%ct) )
-          else:
-             print 'onpage: ', onPage
-             tmmobs.append(None)  #jfp
-             #return (None, None, None)
+            tt = TemplateOptionsUVWGMulti_New()
+            templateOptionsArray.append(tt)
+            #templateOptionsArray.append(TemplateOptionsUVWGMulti())
+            templateNameArray.append('uvwg_' + (str(random.random())[2:]))
+            
+            graphicMethodObjects, templates = build_templates(canvas1, [gms[i]], [ovly[i]], 1, 1,
+                                                              TemplateOptionsUVWGMulti(),
+                                                              templateOptionsArray,
+                                                              templateNameArray,
+                                                              legendDirection='horizontal',
+                                                              disableLegend=disLegend)
+
+            gmobs.append(graphicMethodObjects[0])                  
+                  
+            if ovly[i] == 1:  # overlay plot use DUD - only plot the data
+               setTemplateOptions(templates[0], TemplateOptionsUVWGDUDMulti())
+
+            tmobs.append(templates[0])
+                  
+         elif (gms[i] in ['yxvsx']):
+            graphicMethodObjects = []
+            templates            = []
+            templateOptionsArray = []
+            templateNameArray    = []
+
+            ttt = TemplateOptionsUVWG1DMulti()
+            templateOptionsArray.append(ttt)
+            templateNameArray.append('uvwg_' + (str(random.random())[2:]))
+            
+            ttest = TemplateOptionsUVWGMulti_New() #TemplateOptionsUVWG1DMulti()
+            #ttest.title = False
+            graphicMethodObjects, templates = build_templates(canvas1, [gms[i]], [ovly[i]], 1, 1,
+                                                              ttest,
+                                                              templateOptionsArray,
+                                                              templateNameArray,
+                                                              forceAspectRatio=False,
+                                                              disableLegend=disLegend)
+
+            
+            gmobs.append(graphicMethodObjects[0])                  
+
+            if ovly[i] == 1:  # overlay plot use DUD - only plot the data
+               setTemplateOptions(templates[0], TemplateOptionsUVWG1DDUDMulti())               
+
+            tmobs.append(templates[0])
+
+         elif (gms[i] in ['scatter']):
+            graphicMethodObjects = []
+            templates            = []
+            templateOptionsArray = []
+            templateNameArray    = []
+
+            templateOptionsArray.append(TemplateOptionsUVWGMultiScatter())
+            #templateOptionsArray.append(TemplateOptionsUVWGMulti_New())
+            templateNameArray.append('uvwg_' + (str(random.random())[2:]))
+            
+            graphicMethodObjects, templates = build_templates(canvas1, [gms[i]], [ovly[i]], 1, 1,
+                                                              TemplateOptionsUVWGMulti_New(),
+                                                              #TemplateOptionsUVWGMultiScatter(),
+                                                              templateOptionsArray,
+                                                              templateNameArray,
+                                                              disableLegend=disLegend)
+            
+            gmobs.append(graphicMethodObjects[0])                  
+                  
+            if ovly[i] == 1:  # overlay plot use DUD - only plot the data
+               setTemplateOptions(templates[0], TemplateOptionsUVWGDUDMultiScatter())
+
+            tmobs.append(templates[0])
+         
+         elif (gms[i] in ['taylordiagram']):
+            tgm = canvas1.createtaylordiagram('taylor_' + (str(random.random())[2:]), 'default')
+            gmobs.append(tgm)
+            tmpl = canvas1.createtemplate('taylor_' + (str(random.random())[2:]), 'deftaylor')
+            tmobs.append(tmpl)
+      
+      rows              = 0
+      columns           = 0
+      tmmobs            = []
+      templateNameArray = []
+
+      # Template Names:
+      if onPage == 1:
+         rows    = 1
+         columns = 1
+      if onPage == 2:
+         rows    = 2
+         columns = 1
+         for i in range(2):
+            templateNameArray.append('UVWG1D_%dof2_'%i + (str(random.random())[2:]))
+      elif onPage == 3:
+         rows    = 3
+         columns = 1
+         for i in range(3):
+            templateNameArray.append('UVWG1D_%dof3_'%i + (str(random.random())[2:]))
+      elif onPage == 4:
+         rows    = 2
+         columns = 2
+         for i in range(2):
+            templateNameArray.append('UVWG1D_%dof4_'%i + (str(random.random())[2:]))
+      elif onPage == 5:
+         rows    = 5
+         columns = 1
+         for i in range(2):
+            templateNameArray.append('UVWG1D_%dof5_'%i + (str(random.random())[2:]))
+      elif onPage == 6:
+         rows    = 3
+         columns = 2
+         for i in range(2):
+            templateNameArray.append('UVWG1D_%dof6_'%i + (str(random.random())[2:]))
+      elif onPage == 7:
+         rows    = 4
+         columns = 2
+         for i in range(2):
+            templateNameArray.append('UVWG1D_%dof7_'%i + (str(random.random())[2:]))
+      elif onPage == 8:
+         rows    = 4
+         columns = 2
+         for i in range(2):
+            templateNameArray.append('UVWG1D_%dof8_'%i + (str(random.random())[2:]))
+      elif onPage == 9:
+         rows    = 5
+         columns = 2
+         for i in range(2):
+            templateNameArray.append('UVWG1D_%dof9_'%i + (str(random.random())[2:]))
+      elif onPage == 10:
+         rows    = 5
+         columns = 2
+         for i in range(2):
+            templateNameArray.append('UVWG1D_%dof10_'%i + (str(random.random())[2:]))
+
+      # Multiple plots per page template generation:
+      templateOptionsArray = []
+      for i in range(len(gms)):
+         if (gms[i] in ['isofill', 'isoline', 'boxfill', 'vector']):
+            if ovly[i]:
+               templateOptionsArray.append(TemplateOptionsUVWGDUDMulti())
+            else:
+               tt = TemplateOptionsUVWGMulti_New()
+               templateOptionsArray.append(tt)
+               #templateOptionsArray.append(TemplateOptionsUVWGMulti())
+         elif (gms[i] in ['yxvsx']):            
+            if ovly[i]:
+               templateOptionsArray.append(TemplateOptionsUVWG1DDUDMulti())               
+            else:
+               templateOptionsArray.append(TemplateOptionsUVWG1DMulti())
+         elif (gms[i] in ['scatter']):
+            if ovly[i]:               
+               templateOptionsArray.append(TemplateOptionsUVWGDUDMultiScatter())
+            else:
+               templateOptionsArray.append(TemplateOptionsUVWGMultiScatter())
+         elif (gms[i] in ['taylordiagram']):
+             templateOptionsArray.append(TemplateOptionsUVWG())             
+            
+      graphicMethodObjects = []
+
+      graphicMethodObjects, tmmobs = build_templates(canvas1, gms, ovly, rows, columns,
+                                                     TemplateOptionsUVWGMulti_New(),
+                                                     templateOptionsArray,
+                                                     templateNameArray,
+                                                     'vertical',
+                                                     forceAspectRatio=False,
+                                                     disableLegend=disLegend)
+               
       return (gmobs, tmobs, tmmobs)
    else:
       return (None, None, None)

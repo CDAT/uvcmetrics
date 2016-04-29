@@ -9,6 +9,7 @@ from   scipy.io import netcdf
 from   scipy    import stats
 from   netCDF4  import Dataset
 import math
+import logging
 import time
 import warnings
 
@@ -26,7 +27,7 @@ if __name__ == "__main__":
    try:
       opts, args = getopt.getopt(sys.argv[1:], "hf:c:d:o:",["fieldname=", "casename=", "case_dir=", "output="])
    except getopt.GetoptError as err:
-      print str(err)
+      logging.error(err)
       print 'Usage:'
       print '--fieldname={fieldname} --casename={casename} --case_dir={case_dir} --output={output}'
       sys.exit(1)

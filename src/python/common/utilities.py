@@ -101,11 +101,6 @@ def hashfile(filename):
 
 provdic = {}
 def provenance_dict( script_file_name=None ):
-    try:
-        import pwd
-        user = pwd.getpwuid(os.getuid())[0]
-    except Exception:
-        user = os.environ.get('LOGNAME', 'unknown')
 
     global provdic
     if len(provdic)>=3:
@@ -122,9 +117,23 @@ def provenance_dict( script_file_name=None ):
         metrics.git.metrics_version,
         metrics.git.commit,
         hashfile(script_file_name))
+    # os.getlogin() fails if this is not a controlling shell, e.g. sometimes
+    # when using mpirun I hit this.
+    try:
+      logname = os.getlogin()
+    except:
+      try:
+         import pwd
+         logname = pwd.getpwuid(os.getuid())[0]
+      except:
+         try: 
+            logname = os.environ.get('LOGNAME', 'unknown')
+         except:
+            print 'Couldnt determine a login name for provenence information'
+            logname = 'unknown-loginname'
     provdic['history'] = "%s: created by %s from path: %s with input command line: %s" % (
                     str(datetime.datetime.utcnow()),
-                    user, os.getcwd(), " ".join(sys.argv)
+                    logname, os.getcwd(), " ".join(sys.argv)
                     )
     return provdic
 

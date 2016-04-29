@@ -10,7 +10,7 @@
 
 # TO DO >>>> run argument: dict of attribute:value to be written out as file global attributes.
 
-import cdms2, math, os
+import cdms2, math, os, logging
 from metrics.fileio.findfiles import *
 from metrics.fileio.filetable import *
 from metrics.computation.reductions import *
@@ -199,7 +199,7 @@ def compute_and_write_climatologies( varkeys, reduced_variables, season, case=''
             if not hasattr( g, attr ):
                 setattr( g, attr, val )
     if firsttime:
-        print "ERROR, no variables found.  Did you specify the right input data?"
+        logging.error("No variables found.  Did you specify the right input data?")
     else:
         g.season = season
         g.close()
@@ -219,7 +219,7 @@ def climo_driver(opts):
     else:
         myvars = list(set(myvars)&set(allvars))
         if len(myvars)<len(opts['vars']):
-            print "WARNING: Some variables are not available.  Computing climatologies for\n",myvars
+            logging.warning("Some variables are not available. Computing climatologies for %s",myvars)
 
     cseasons = opts['times']
     if cseasons == []:
@@ -268,7 +268,7 @@ def climo_driver(opts):
             try:
                os.mkdir(outdir) # processOptions() verifies up to the /climos part, so make /climos now
             except:
-               print 'Could not create outputdir - %s' %outdir
+               logging.exception('Could not create outputdir - %s', outdir)
                quit()
         #rvs,case = compute_and_write_climatologies_keepvars( varkeys, reduced_variables1, season, casename,
         #                                            path=outdir )

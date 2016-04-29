@@ -6,7 +6,7 @@ from metrics.common.id import *
 from metrics.packages.diagnostic_groups import *
 from metrics.computation.reductions import *
 from metrics.frontend import *
-import sys, traceback
+import sys, traceback, logging
 
 class derived_var(basic_id):
     def __init__( self, vid, inputs=[], outputs=['output'], func=(lambda: None), special_values=None ):
@@ -77,9 +77,8 @@ class derived_var(basic_id):
         try:
             output = apply( self._func, [ inpdict[inp] for inp in self._inputs ] )
         except TypeError as e:
-            print "In derived_var.derive, _inputs=",self._inputs
-            print "WARNING, derivation function failed.  Probably not enough valid inputs." 
-            print e
+            logging.error("In derived_var.derive, _inputs=%s",self._inputs)
+            logging.exception("Derivation function failed.  Probably not enough valid inputs.")
             return None
         if type(output) is tuple or type(output) is list:
             for o in output:
@@ -136,7 +135,8 @@ class plotspec(basic_id):
         title = None,
         source = '',
         overplotline = False,
-        levels = None
+        levels = None,  # deprecated
+        plotparms = None
         ):
         """Initialize a plotspec (plot specification).  Inputs are an id and plot type,
         and lists of x,y,z variables (as keys in the plotvars dictionary), functions to
@@ -146,6 +146,9 @@ class plotspec(basic_id):
         axes may be specified - e.g. ya to substitute for y in a plot, or ya1 as an addition
         to y in the plot.
         """
+        if plotparms is not None:
+            if 'levels' in plotparms: levels = plotparms['levels']
+            self.plotparms = plotparms
         if type(vid) is tuple:
             # probably this is an id tuple with the first element stripped off
             basic_id.__init__(self,*vid)
@@ -249,8 +252,7 @@ class plotspec(basic_id):
             if otherid is None:
                 return cls.dict_id( None, None, None, None, None )
             else:
-                print "ERROR.  Bad input to plotspec.dict_idid(), not a tuple.  Value is"
-                print otherid, type(otherid)
+                logging.error("Bad input to plotspec.dict_idid(), not a tuple. Value is %s, %s", otherid, type(otherid))
                 return None
         if otherid[0]=='rv' and len(otherid)==6 and otherid[5] is None or otherid[5]=='None' or otherid[5]=='':
             otherid = otherid[:5]
@@ -278,7 +280,7 @@ class plotspec(basic_id):
             else:
                 ft2 = otherid[5]
         else:
-            print "ERROR.  Bad input to plotspec.dict_idid(), wrong class slot or wrong length."
+            print logging.error("Bad input to plotspec.dict_idid(), wrong class slot or wrong length.")
             print otherid, type(otherid)
             return None
         return cls.dict_id( varid, varmod, seasonid, ft1, ft2 )
@@ -318,24 +320,24 @@ class ps(plotspec):
 #                                vid = yvar.id+" line plot", plottype='Yxvsx' )
 
 class basic_two_line_plot( plotspec ):
-    def __init__( self, zvar, z2var ):
+    def __init__( self, zvar, z2var, plotparms=None ):
         """zvar, z2var should be the actual vertical values (y-axis) of the plots.
         They should already have been reduced to 1-D variables.
         The horizontal axis is the axis of z*var."""
         # plotspec.__init__( self, y1vars=[y1var], y2vars=[y2var],
         #                    vid = y1var.variableid+y2var.variableid+" line plot", plottype='Yxvsx' )
-        plotspec.__init__( self, zvars=[zvar], z2vars=[z2var],
+        plotspec.__init__( self, zvars=[zvar], z2vars=[z2var], plotparms=plotparms,
                            vid = z2var.variableid+z2var.variableid+" line plot", plottype='Yxvsx' )
 
 class one_line_diff_plot( plotspec ):
-    def __init__( self, zvar, z2var, vid ):
+    def __init__( self, zvar, z2var, vid, plotparms=None ):
         """z*var should be the actual vertical values (y-axis) of the plots.
         z*var should already have been reduced to 1-D variables.
         The horizontal axis of the plot is the axis of z*."""
         plotspec.__init__( self,
             zvars=[zvar,z2var],
             zfunc=aminusb_1ax,   # aminusb_1ax(y1,y2)=y1-y2; each y has 1 axis, use min axis
-            vid=vid,
+            vid=vid, plotparms=plotparms,
             plottype='Yxvsx' )
 
 # class contour_plot( plotspec ):
@@ -414,7 +416,7 @@ class level_variable_for_amwg_set5(basic_level_variable):
          '300 mbar level value':300
         """
         opts = {
-            " default":"vertical average", " vertical average":"vertical average",
+            "default":"vertical average", " vertical average":"vertical average",
             "200 mbar":200, "300 mbar":300, "500 mbar":500, "850 mbar":850,
             "200":200, "300":300, "500":500, "850":850,
             }
