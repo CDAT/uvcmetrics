@@ -14,6 +14,7 @@ pth = os.path.join(os.path.dirname(__file__),"..")
 sys.path.append(pth)
 import checkimage
 import argparse, pdb
+print "TEST is using metrics version:",metrics.git.commit,metrics.git.branch,metrics.git.closest_tag
 
 class DiagTest(object):
     def __init__(self, modeldir, obsdir, plotset, filterid, obsid, varid, seasonid, extra_parts=[] ):
