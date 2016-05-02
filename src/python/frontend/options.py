@@ -3,7 +3,7 @@
 ### TODO: Seperate subclasses for datasets vs obs
 
 
-import cdms2, os, logging
+import cdms2, os, logging, pdb
 import metrics.packages as packages
 import argparse, re
 from metrics.frontend.defines import *
@@ -193,14 +193,12 @@ class Options():
                logging.warning('Unknown option %s', k)
          print 'Added set: ', self._opts[dictkey][i]
 
-   def processLevels(self, levels):
-       def checkTypes(x):
-           "allow only ints and floats"
-           ok = True
-           for y in x:
-               ok = ok and (type(y) in [int, float])
-           return ok
+   def processLevels(self, levels, LEVELS):
 
+       #this is a result of having a negative level
+       if levels == []:
+           levels = LEVELS
+           
        try:
            #check if levels is a file containing the actual levels
            f=open(levels, 'r')
@@ -208,19 +206,22 @@ class Options():
            f.close()
        except:
            pass
-
+       
        try:
-           #check if levels is a tuple of numbers
-           levels = eval(levels)
-           if type(levels) is tuple:
-               if checkTypes(levels):
-                   self._opts['levels'] = levels
-                   return
+           #check levels are specified correctly
+           if len(levels) == 1:
+               levels = levels[0]
+               sep = " "
+               if "," in levels:
+                   sep = ","
+               levels = levels.split(sep)
+           self._opts['levels'] = [float(x) for x in levels]
+           return
        except:
            pass
 
        logging.warning('%s Levels are not specified correctly.', levels)
-       logging.critical('They must be a comma delimited (no spaces) list of numbers or a file name that contains the list.')
+       logging.critical('They must be delimited with all commas or all spaces list of numbers or a file name that contains the list.')
        quit()
 
    def processModel(self, models):
@@ -604,7 +605,7 @@ class Options():
             help="Variable auxillary options")
          #levels for isofill plots
 
-         runopts.add_argument('--levels', nargs=1, help="Specify a file name containing a list of levels or the comma delimited levels directly")
+         runopts.add_argument('--levels', nargs='*', help="Specify a file name containing a list of levels or the comma delimited levels directly")
          runopts.add_argument('--translate', nargs='?', default='y',
             help="Enable translation for obs sets to datasets. Optional provide a colon separated input to output list e.g. DSVAR1:OBSVAR1")
       if 'metadiags' not in progname and 'metadiags.py' not in progname:
@@ -678,9 +679,9 @@ class Options():
          paropts.add_argument('--taskspernode',
             help="Specify the maximum number of tasks usable on a given node. Typically this would be set to numcores/node unless memory is an issue")
 
-
       ### Do the work
-      args = parser.parse_args()
+      #args = parser.parse_args()
+      args, extras = parser.parse_known_args()
       if(args.version == 1):
          import metrics.common.utilities
          klist = metrics.common.utilities.provenance_dict().keys()
@@ -742,7 +743,7 @@ class Options():
          self._opts['cachepath'] = args.cachepath[0]
 
       if (args.levels) != None:
-          self.processLevels(args.levels)
+          self.processLevels(args.levels, extras)
 
       # I checked; these are global and it doesn't seem to matter if you import cdms2 multiple times;
       # they are still set after you set them once in the python process.
