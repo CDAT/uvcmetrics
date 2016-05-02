@@ -19,6 +19,7 @@ before_install:
   # Useful for debugging any issues with conda
   - conda info -a
   - conda remove -y -q uvcmetrics
+  - conda update -c uvcdat/label/nightly --show-channel-urls -q -y cdms2
 
 install:
     - if [ -d build ]; then rm -rf build; fi
