@@ -25,6 +25,7 @@ before_install:
 
 install:
     - if [ -d build ]; then rm -rf build; fi
+    - git clean -fd
     - cmake .
     - git log -n2
     - export UVCDAT_ANONYMOUS_LOG=False
