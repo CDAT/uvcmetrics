@@ -713,7 +713,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                     print "WHEN PNGING WE GET :",vcanvas.getantialiasing()
                     vcanvas.png( fname, ignore_alpha=True, metadata=provenance_dict() )
                     # vcanvas.svg() doesn't support ignore_alpha or metadata keywords
-                    #vcanvas.svg( fnamesvg )
+                    vcanvas.svg( fnamesvg )
 
         if tmmobs[0] is not None:  # If anything was plotted to vcanvas2
             vname = varid.replace(' ', '_')
@@ -734,7 +734,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
             vcanvas2.png( fname , ignore_alpha = True, metadata=provenance_dict() )
             print "writing svg file2: ",fnamesvg
             # vcanvas2.svg() doesn't support ignore_alpha or metadata keywords
-            # vcanvas2.svg( fnamesvg )
+            vcanvas2.svg( fnamesvg )
 
 if __name__ == '__main__':
     print "UV-CDAT Diagnostics, command-line version"
