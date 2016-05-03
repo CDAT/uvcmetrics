@@ -70,6 +70,7 @@ class Options():
       self._opts['translate'] = True
       self._opts['translations'] = {}
       self._opts['levels'] = None
+      self._opts['difflevels'] = None #levels for a difference plot
       self._opts['taskspernode'] = None
 
       self._opts['output']['compress'] = True
@@ -606,6 +607,8 @@ class Options():
          #levels for isofill plots
 
          runopts.add_argument('--levels', nargs='*', help="Specify a file name containing a list of levels or the comma delimited levels directly")
+         runopts.add_argument('--difflevels', nargs='*', help="These levels are for a difference plot. Specification is the same as levels.")
+
          runopts.add_argument('--translate', nargs='?', default='y',
             help="Enable translation for obs sets to datasets. Optional provide a colon separated input to output list e.g. DSVAR1:OBSVAR1")
       if 'metadiags' not in progname and 'metadiags.py' not in progname:
@@ -682,6 +685,7 @@ class Options():
       ### Do the work
       #args = parser.parse_args()
       args, extras = parser.parse_known_args()
+
       if(args.version == 1):
          import metrics.common.utilities
          klist = metrics.common.utilities.provenance_dict().keys()
@@ -745,6 +749,9 @@ class Options():
       if (args.levels) != None:
           self.processLevels('levels', args.levels, extras)
 
+      if (args.difflevels) != None:
+          self.processLevels('difflevels', args.difflevels, extras)
+          
       # I checked; these are global and it doesn't seem to matter if you import cdms2 multiple times;
       # they are still set after you set them once in the python process.
       if(args.compress != None):
