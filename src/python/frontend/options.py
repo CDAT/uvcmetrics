@@ -193,11 +193,11 @@ class Options():
                logging.warning('Unknown option %s', k)
          print 'Added set: ', self._opts[dictkey][i]
 
-   def processLevels(self, levels, LEVELS):
+   def processLevels(self, ID, levels, altLEVELS):
 
        #this is a result of having a negative level
        if levels == []:
-           levels = LEVELS
+           levels = altLEVELS
            
        try:
            #check if levels is a file containing the actual levels
@@ -215,7 +215,7 @@ class Options():
                if "," in levels:
                    sep = ","
                levels = levels.split(sep)
-           self._opts['levels'] = [float(x) for x in levels]
+           self._opts[ID] = [float(x) for x in levels]
            return
        except:
            pass
@@ -743,7 +743,7 @@ class Options():
          self._opts['cachepath'] = args.cachepath[0]
 
       if (args.levels) != None:
-          self.processLevels(args.levels, extras)
+          self.processLevels('levels', args.levels, extras)
 
       # I checked; these are global and it doesn't seem to matter if you import cdms2 multiple times;
       # they are still set after you set them once in the python process.
