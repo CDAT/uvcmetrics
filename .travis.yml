@@ -25,6 +25,7 @@ install:
     - if [ -d build ]; then rm -rf build; fi
     - cmake .
     - git log -n2
+    - export UVCDAT_ANONYMOUS_LOG=False
     - python setup.py install
 
 before_script:
