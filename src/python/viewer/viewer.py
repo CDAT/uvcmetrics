@@ -43,7 +43,7 @@ if __name__ == '__main__':
     path = os.path.abspath(path)
     if os.path.basename(path) != "amwg":
         should_continue = raw_input("Viewer only works on metadiags output; did you point to an AMWG directory? y/[n]: ")
-        if should_continue.lower()[0] != "y":
+        if not should_continue or should_continue.lower()[0] != "y":
             print "Exiting."
             import sys
             sys.exit()
@@ -102,6 +102,6 @@ if __name__ == '__main__':
     f.write(index.build())
     f.close()
     should_open = raw_input("Viewer HTML generated at %s/index.html. Would you like to open in a browser? y/[n]: " % path)
-    if should_open.lower()[0] == "y":
+    if should_open and should_open.lower()[0] == "y":
         import webbrowser
         webbrowser.open("file://" + os.path.join(path, "index.html"))

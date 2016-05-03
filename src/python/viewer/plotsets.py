@@ -264,7 +264,7 @@ class PlotSet2(PlotSet):
             obskey = amwgmaster.diags_obslist[obsname]['filekey']
             fkey = amwgmaster.diags_varlist[v]['filekey']
             desc = amwgmaster.diags_varlist[v]['desc']
-            row = ("", desc, [self.plot_name(fkey, obskey)])
+            row = ("", desc, [self.plot_name(v, obskey)])
             rows.append(row)
         return rows
 
