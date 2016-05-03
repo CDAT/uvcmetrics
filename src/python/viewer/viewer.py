@@ -65,15 +65,15 @@ if __name__ == '__main__':
     tier_1b.sort(key=alphanumeric_key)
     tier_1a_links = OrderedDict()
     for plot in tier_1a:
-        tier_1a_links["Plotset %s" % plot] = os.path.join(path, "page-%s.html" % plot)
+        tier_1a_links["Plotset %s" % plot] = "page-%s.html" % plot
     tier_1b_links = OrderedDict()
     for plot in tier_1b:
-        tier_1b_links["Plotset %s" % plot] = os.path.join(path, "page-%s.html" % plot)
+        tier_1b_links["Plotset %s" % plot] = "page-%s.html" % plot
     links = OrderedDict()
-    links["Top Ten"] = os.path.join(path, "page-topten.html")
+    links["Top Ten"] = "page-topten.html"
     links["Tier 1A"] = tier_1a_links
     links["Tier 1B"] = tier_1b_links
-    toolbar = BootstrapNavbar("UVCMetrics AMWG Diagnostics", os.path.join(path, "index.html"), links)
+    toolbar = BootstrapNavbar("UVCMetrics AMWG Diagnostics", "index.html", links)
 
     for x in plots:
         if x == "dontrun":
@@ -90,16 +90,17 @@ if __name__ == '__main__':
         f.write(plotset.build())
         f.close()
 
-    index = PlotIndex(dataset, pages, root=path, toolbar=toolbar)
-    f = open(os.path.join(path, "index.html"), "w")
-    f.write(index.build())
-    f.close()
     # Copy over share/uvcmetrics/viewer
     share_directory = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(get_python_lib()))), "share", "uvcmetrics", "viewer")
     viewer_dir = os.path.join(path, "viewer")
     if os.path.exists(viewer_dir):
         shutil.rmtree(viewer_dir)
     shutil.copytree(share_directory, viewer_dir)
+
+    index = PlotIndex(dataset, pages, root=path, toolbar=toolbar)
+    f = open(os.path.join(path, "index.html"), "w")
+    f.write(index.build())
+    f.close()
     should_open = raw_input("Viewer HTML generated at %s/index.html. Would you like to open in a browser? y/[n]: " % path)
     if should_open.lower()[0] == "y":
         import webbrowser

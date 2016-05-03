@@ -22,13 +22,14 @@ class PlotLink(Link):
     Edit this object to change the links to the plots to have
     special behaviors.
     """
-    def __init__(self, text="Plot", **attrs):
+    def __init__(self, file_path, text="Plot", **attrs):
         self.children = [text]
         self._attrs = attrs
         self._formatted = []
+        self._file_path = file_path
 
     def tagname(self):
-        if os.path.exists(self._attrs["href"]):
+        if os.path.exists(os.path.join(self._file_path, self._attrs["href"])):
             # Format as link
             return "a"
         else:
@@ -41,7 +42,7 @@ class DiagnosticRow(TableRow):
     Edit this object to change the table rows to have
     special behaviors.
     """
-    def __init__(self, var, desc, plot_urls, **args):
+    def __init__(self, var, desc, plot_urls, file_path, **args):
         super(DiagnosticRow, self).__init__(**args)
 
         # Variable ID
@@ -51,7 +52,7 @@ class DiagnosticRow(TableRow):
         self.append_cell(desc)
 
         for url in plot_urls:
-            self.append_cell(PlotLink(href=url))
+            self.append_cell(PlotLink(file_path, href=url))
 
 
 class PlotSet(object):
@@ -94,7 +95,7 @@ class PlotSet(object):
         return "gif"
 
     def plotset_img(self):
-        return os.path.join(self.root_path, "viewer", "img", "SET%s.%s" % (self.plotset, self.plotset_img_extension()))
+        return os.path.join("viewer", "img", "SET%s.%s" % (self.plotset, self.plotset_img_extension()))
 
     def plot_name(self, season, variable, obs, region, option=None):
         if option:
@@ -140,7 +141,7 @@ class PlotSet(object):
                         for season in self.seasons:
                             # If variant is None, it'll use the appropriate version of the plot_name function.
                             plot_name = self.plot_name(season, v, obsname, regionstr, option=variant)
-                            row[2].append(os.path.join(self.root_path, plot_name))
+                            row[2].append(plot_name)
                         rows.append(row)
         return rows
 
@@ -209,7 +210,7 @@ class PlotSet(object):
             for col in self.group_cols(group):
                 header_row.append_cell(col)
             for row in plots:
-                diag_row = DiagnosticRow(row[0], row[1], row[2])
+                diag_row = DiagnosticRow(row[0], row[1], row[2], self.root_path)
                 table.append(diag_row)
         self.post_table(doc, container)
         return doc.build()
@@ -233,7 +234,7 @@ class PlotSet1(PlotSet):
         for region in self.regions:
             row = ('', region, [])
             for s in self.seasons:
-                row[2].append(os.path.join(self.root_path, self.plot_name(s, region)))
+                row[2].append(self.plot_name(s, region))
             rows.append(row)
         return rows
 
@@ -263,7 +264,7 @@ class PlotSet2(PlotSet):
             obskey = amwgmaster.diags_obslist[obsname]['filekey']
             fkey = amwgmaster.diags_varlist[v]['filekey']
             desc = amwgmaster.diags_varlist[v]['desc']
-            row = ("", desc, [os.path.join(self.root_path, self.plot_name(fkey, obskey))])
+            row = ("", desc, [self.plot_name(fkey, obskey)])
             rows.append(row)
         return rows
 
@@ -300,13 +301,13 @@ class PlotSet11(PlotSet):
 
         for key in info:
             if group == 0:
-                row = ("SW/LW Cloud Forcing", key, [os.path.join(self.root_path, self.plot_name("SWCF_LWCF", info[key]))])
+                row = ("SW/LW Cloud Forcing", key, [self.plot_name("SWCF_LWCF", info[key])])
                 rows.append(row)
             else:
                 var = key
                 vardesc = info[var]["desc"]
                 for obs_name, obs_key in info[var]["obslist"].iteritems():
-                    row = (vardesc, obs_name, [os.path.join(self.root_path, self.plot_name(var, obs_key))])
+                    row = (vardesc, obs_name, [self.plot_name(var, obs_key)])
                     rows.append(row)
         return rows
 
@@ -334,7 +335,7 @@ class PlotSet12(PlotSet):
         rows = []
 
         for v in self.vlist:
-            row = ("", v, [os.path.join(self.plot_name(v, c)) for c in self.cols])
+            row = ("", v, [self.plot_name(v, c) for c in self.cols])
             rows.append(row)
         return rows
 
@@ -373,8 +374,8 @@ class PlotSet14(PlotSet):
     def group_rows(self, group):
         if group == 0:
             return [
-                ("Space and Time", [os.path.join(self.root_path, self.plot_name("ANN", "SPACE_TIME"))] + [None] * 4),
-                ("Space Only", [os.path.join(self.root_path, self.plot_name(s, "SPACE")) for s in ["ANN", "DJF", "MAM", "JJA", "SON"]])
+                ("Space and Time", [self.plot_name("ANN", "SPACE_TIME")] + [None] * 4),
+                ("Space Only", [self.plot_name(s, "SPACE") for s in ["ANN", "DJF", "MAM", "JJA", "SON"]])
             ]
         else:
             var_names = ["BIAS", "VAR", "CC"]
@@ -403,7 +404,7 @@ class PlotSet14(PlotSet):
                     if l is None:
                         r.append_cell('')
                     else:
-                        r.append_cell(PlotLink(href=l))
+                        r.append_cell(PlotLink(self.root_path, href=l))
 
         return doc.build()
 
@@ -459,7 +460,7 @@ class PlotIndex(PlotSet):
                 continue
             if setname == "topten":
                 continue
-            tier_1a_plots[setname] = plotset[1]
+            tier_1a_plots[setname] = os.path.relpath(plotset[1], self.root_path)
 
         plot_keys = tier_1a_plots.keys()
         plot_keys.sort(key=alphanumeric_key)
@@ -478,9 +479,13 @@ class PlotIndex(PlotSet):
                 plotset = plot_keys[index]
                 plotset_path = tier_1a_plots[plotset]
                 plotset_link = div_col.append_tag("a", href=plotset_path)
-                plotset_img = os.path.join(os.path.dirname(self.plotset_img()), "SET%s.gif" % plotset)
-                if not os.path.exists(plotset_img):
-                    plotset_img = os.path.join(os.path.dirname(self.plotset_img()), "SET%s.png" % plotset)
+                plotset_img_dir = os.path.dirname(self.plotset_img())
+                plotset_img_path = os.path.join(self.root_path, plotset_img_dir, "SET%s" % plotset)
+                extensions = [".gif", ".png"]
+                for ext in extensions:
+                    if os.path.exists(plotset_img_path + ext):
+                        plotset_img = os.path.join(plotset_img_dir, "SET%s%s" % (plotset, ext))
+                        break
                 plotset_link.append_tag("img", src=plotset_img)
 
     def group_rows(self, group):
@@ -490,7 +495,7 @@ class PlotIndex(PlotSet):
 
         for plotset in self.pages:
             setname = plotset[0]
-            set_to_path[setname] = plotset[1]
+            set_to_path[setname] = os.path.relpath(plotset[1], self.root_path)
 
             if setname.startswith("tier1b_"):
                 tier1b[setname] = setname.split("_")[1]
