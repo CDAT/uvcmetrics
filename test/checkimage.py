@@ -12,7 +12,7 @@ import os.path
 import sys
 import logging
 
-defaultThreshold=10.0
+defaultThreshold=50.0
 
 def image_compare(testImage, baselineImage):
     imageDiff = vtk.vtkImageDifference()
