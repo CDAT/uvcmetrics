@@ -165,6 +165,7 @@ def run_diags( opts ):
         vcanvas2 = vcs.init()
         if opts['output']['antialiasing'] is False:
             vcanvas.setantialiasing(0)
+            vcanvas2.setantialiasing(0)
         vcanvas2.portrait()
         vcanvas2.setcolormap('bl_to_darkred') #Set the colormap to the NCAR colors
         LINE = vcanvas.createline('LINE-DIAGS', 'default')
@@ -709,6 +710,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                         for i in range(len(var_id_save)):
                             var[i].id = var_id_save[i]
                 if savePNG:
+                    print "WHEN PNGING WE GET :",vcanvas.getantialiasing()
                     vcanvas.png( fname, ignore_alpha=True, metadata=provenance_dict() )
                     # vcanvas.svg() doesn't support ignore_alpha or metadata keywords
                     vcanvas.svg( fnamesvg )
@@ -728,6 +730,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
             print "no data to plot to file2:", fname
         else:
             print "writing png file2:",fname
+            print "WHEN PNGING TWO @ @ @ @ @ 2 WE GET :",vcanvas2.getantialiasing()
             vcanvas2.png( fname , ignore_alpha = True, metadata=provenance_dict() )
             print "writing svg file2: ",fnamesvg
             # vcanvas2.svg() doesn't support ignore_alpha or metadata keywords
