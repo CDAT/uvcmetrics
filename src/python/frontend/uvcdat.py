@@ -51,9 +51,9 @@ def _plotdata_run( child_conn, sema, plotspec, filetable1, filetable2, varname, 
     child_conn.send(outfile)
     return outfile
 
-def plotdata_run( plotspec, filetable1, filetable2, varname, seasonname, outputPath, unique_ID, aux=None, newgrid=0 ):
+def plotdata_run( plotplan, filetable1, filetable2, varname, seasonname, outputPath, unique_ID, aux=None, newgrid=0 ):
     """Inputs:
-    plotspec is a plot_spec class to be instantiated
+    plotplan is a plot_plan class to be instantiated
     filetable1 is the model data file table
     fileteable2 is the obs or reference model data file table
     varname is a string representing the variable to be plotted
@@ -61,7 +61,7 @@ def plotdata_run( plotspec, filetable1, filetable2, varname, seasonname, outputP
     aux is an auxiliary option, if any
 
     This function will spawn another process and return it as p, an instance of
-    multiprocessing.Process.  This p will create a plotspec object and run its compute() method.
+    multiprocessing.Process.  This p will create a plotplan object and run its compute() method.
     To check the status of p, call plotdata_status(p) to get a semaphore value (>0 means done).
     To get the computed value, call plotdata_results(p).
     """
@@ -72,15 +72,15 @@ def plotdata_run( plotspec, filetable1, filetable2, varname, seasonname, outputP
     parent_conn, child_conn = Pipe()
     p = Process( target=_plotdata_run,
                  args=(child_conn, sema,
-                       plotspec, filetable1, filetable2, varname, seasonname, outputPath,
+                       plotplan, filetable1, filetable2, varname, seasonname, outputPath,
                        unique_ID, aux, newgrid ) )
     #log.info("initial p=%s"%(p))
-    #outfile=_plotdata_run(plotspec, filetable1, filetable2, varname, seasonname, outputPath,
+    #outfile=_plotdata_run(plotplan, filetable1, filetable2, varname, seasonname, outputPath,
     #                      unique_ID, aux, newgrid)
     #print outfile
     """
     p = Process( target=_plotdata_run,
-                 args=( plotspec, filetable1, filetable2, varname, seasonname, outputPath,
+                 args=( plotplan, filetable1, filetable2, varname, seasonname, outputPath,
                         unique_ID, aux, newgrid ) )
     """
     p.start()
@@ -907,10 +907,10 @@ def _get_plot_data( plot_set_id, filetable1, filetable2, variable, season ):
     
 #>>>>>>>>> I want to put the following class elsewhere, but there's a problem with circular imports >>>>>>>>
 from metrics.packages.diagnostic_groups import *
-class plot_spec(object):
+class plot_plan(object):
     # ...I made this a new-style class so we can call __subclasses__ .
     package=BasicDiagnosticGroup  # Note that this is a class not an object.
-    name = "dummy plot_spec class"  # anything which will get instantiated should have a real plot set name.
+    name = "dummy plot_plan class"  # anything which will get instantiated should have a real plot set name.
     number = '0'    # anything which will get instantiated should have the plot set 'number' which appears in its name
     #                 The number is actually a short string, not a number - e.g. '3' or '4b'.
     def __repr__( self ):
