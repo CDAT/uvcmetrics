@@ -40,7 +40,8 @@ packages = {'metrics': 'src/python',
               'metrics.packages.amwg.derivations': 'src/python/packages/amwg/derivations',
               'metrics.packages.lmwg': 'src/python/packages/lmwg',
               'metrics.packages.acme_regridder': 'src/python/packages/acme_regridder',
-              'metrics.packages.acme_regridder.scripts': 'src/python/packages/acme_regridder/scripts'
+              'metrics.packages.acme_regridder.scripts': 'src/python/packages/acme_regridder/scripts',
+              'metrics.viewer': 'src/python/viewer'
             }
 for d in packages.itervalues():
     shutil.copy("git.py",os.path.join(d,"git.py"))
@@ -62,7 +63,8 @@ setup (name = "metrics",
                    'metrics.packages',
                    'metrics.graphics',
                    'metrics.frontend',
-                   'metrics.computation'
+                   'metrics.computation',
+                   'metrics.viewer'
                    ],
        package_dir = packages,
        scripts = ["src/python/frontend/diags",
@@ -85,8 +87,17 @@ setup (name = "metrics",
                   "src/python/packages/acme_regridder/scripts/acme_regrid.py",
                   "src/python/packages/acme_regridder/scripts/acme_regrid",
                   "src/python/packages/acme_regridder/scripts/acme_climo_regrid.py",
-                  "src/python/packages/acme_regridder/scripts/acme_climo_regrid"],
+                  "src/python/packages/acme_regridder/scripts/acme_climo_regrid",
+                  "src/python/viewer/viewer.py",
+                  "src/python/viewer/viewer"
+                  ],
        data_files = [("share/uvcmetrics",("share/uvcmetrics.json",)),
+                     ("share/uvcmetrics/viewer", ("share/viewer/bootstrap.min.css",
+                                       "share/viewer/bootstrap.min.js",
+                                       "share/viewer/jquery-2.2.3.min.js",
+                                       "share/viewer/viewer.css",
+                                       "share/viewer/viewer.js")),
+                     ("share/uvcmetrics/viewer/img", ["share/viewer/imgs/SET4A.png"] + [os.path.join("share/viewer/imgs", "SET%d.png" % (setnum)) for setnum in range(1, 16)])
                     ],
        include_dirs = [numpy.lib.utils.get_include()],
        ext_modules = [

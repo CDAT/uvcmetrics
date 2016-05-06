@@ -1276,9 +1276,9 @@ class amwg_plot_set41(amwg_plot_set4and41):
         diags --outputdir $HOME/Documents/Climatology/ClimateData/diagout/ 
         --model path=$HOME/uvcmetrics_test_data/cam35_data/,climos=yes 
         --obs path=$HOME/uvcmetrics_test_data/obs_data/,filter="f_startswith('NCEP')",climos=yes 
-        --package AMWG --set 41 --vars T --seasons ANN"""
-    name = '41 - Horizontal Contour Plots of Meridional Means'
-    number = '41'    
+        --package AMWG --set 4A --vars T --seasons ANN"""
+    name = '4A - Horizontal Contour Plots of Meridional Means'
+    number = '4A'
 class amwg_plot_set5and6(amwg_plot_plan):
     """represents one plot from AMWG Diagnostics Plot Sets 5 and 6  <actually only the contours, set 5>
     NCAR has the same menu for both plot sets, and we want to ease the transition from NCAR
