@@ -713,7 +713,7 @@ class Options():
         ### Do the work
         #args = parser.parse_args()
         args, extras = parser.parse_known_args()
-        pdb.set_trace()
+        #pdb.set_trace()
         if(args.version == 1):
            import metrics.common.utilities
            klist = metrics.common.utilities.provenance_dict().keys()
