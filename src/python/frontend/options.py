@@ -115,17 +115,17 @@ class Options():
         for i in range(len(args.path)):
             if args.type != None and len(args.type) >= i:
                if args.type[i] == 'model':
-                  index = mid
-                  key = 'model'
-                  mid = mid + 1
+                   index = mid
+                   key = 'model'
+                   mid = mid + 1
                else:
-                  index = oid
-                  key = 'obs'
-                  oid = oid + 1
+                   index = oid
+                   key = 'obs'
+                   oid = oid + 1
             else: # assume no type == model data
-               index = mid
-               key = 'model'
-               mid = mid + 1
+                index = mid
+                key = 'model'
+                mid = mid + 1
             print 'Updating subentry %d of %d total' % (index, i)
         
         self._opts[key].append({})
@@ -136,34 +136,34 @@ class Options():
         if 'climatology' not in progname and 'climatology.py' not in progname:
            if args.climo != None and len(args.climo) >= i:
               if args.climo[i] in ['True', 'yes', 1]:
-                 self._opts[key][index]['climo'] = True
+                  self._opts[key][index]['climo'] = True
               else:
-                 self._opts[key][index]['climo'] = False
+                  self._opts[key][index]['climo'] = False
            else:
-              self._opts[key][index]['climos'] = True
+               self._opts[key][index]['climos'] = True
         
         if args.name != None and len(args.name) >= i:
-           self._opts[key][index]['name'] = args.name[i]
+            self._opts[key][index]['name'] = args.name[i]
         else:
-           self._opts[key][index]['name'] = None
+            self._opts[key][index]['name'] = None
         
         if args.filters != None and len(args.filters) > i:
-           if args.filters[i] in ['None', 'none', 'no']:
-              self._opts[key][index]['filter'] = None
-           else:
-              self._opts[key][index]['filter'] = args.filters[i]
+            if args.filters[i] in ['None', 'none', 'no']:
+                self._opts[key][index]['filter'] = None
+            else:
+               self._opts[key][index]['filter'] = args.filters[i]
         else:
-           self._opts[key][index]['filter'] = None
+            self._opts[key][index]['filter'] = None
         
         if args.start != None and len(args.start) >= i:
-           self._opts[key][index]['start'] = args.start[i]
+            self._opts[key][index]['start'] = args.start[i]
         else:
-           self._opts[key][index]['start'] = None
+            self._opts[key][index]['start'] = None
         
         if args.end != None and len(args.end) >= i:
-           self._opts[key][index]['end'] = args.end[i]
+            self._opts[key][index]['end'] = args.end[i]
         else:
-           self._opts[key][index]['end'] = None
+            self._opts[key][index]['end'] = None
         print self._opts[key][index]
 
     def processDataset(self, dictkey, data):
@@ -172,26 +172,26 @@ class Options():
         for i in range(len(data)):
             self._opts[dictkey].append({})
             for d in defkeys:
-               self._opts[dictkey][i][d] = None
+                self._opts[dictkey][i][d] = None
             self._opts[dictkey][i]['type'] = dictkey # ensure this one is at least set.
             kvs = data[i].split(',')
             PATTERN = re.compile(r'''((?:[^,"']|"[^"]*"|'[^']*')+)''')
             kvs = PATTERN.split(data[i])[1::2]
             for k in kvs:
-               if '=' not in k:
-                  logging.critical('All options need specified as {option}={value}. No equal sign in option - %s', k)
-                  quit()
-               key, value = k.split('=')
-               if key in defkeys:
-                  if key == 'climo':
-                     if  value in ['True', 'yes', 1]:
-                        self._opts[dictkey][i][key] = True
-                     else:
-                        self._opts[dictkey][i][key] = False
-                  else:
-                     self._opts[dictkey][i][key] = value
-               else:
-                  logging.warning('Unknown option %s', k)
+                if '=' not in k:
+                    logging.critical('All options need specified as {option}={value}. No equal sign in option - %s', k)
+                    quit()
+                key, value = k.split('=')
+                if key in defkeys:
+                    if key == 'climo':
+                        if value in ['True', 'yes', 1]:
+                            self._opts[dictkey][i][key] = True
+                        else:
+                            self._opts[dictkey][i][key] = False
+                    else:
+                        self._opts[dictkey][i][key] = value
+                else:
+                    logging.warning('Unknown option %s', k)
             print 'Added set: ', self._opts[dictkey][i]
 
     def processLevels(self, ID, levels, altLEVELS):
@@ -277,96 +277,96 @@ class Options():
         # defined (perhaps in defines.py)
         # it would clean up a lot of code here, and in amwg/lmwg I think.
         if packageid is None:
-           print "ERROR, must specify package to list plot sets"
-           quit()
+            print "ERROR, must specify package to list plot sets"
+            quit()
         elif packageid.lower() == 'lmwg':
-           import metrics.packages.lmwg.lmwg
-           pinstance = metrics.packages.lmwg.lmwg.LMWG()
+            import metrics.packages.lmwg.lmwg
+            pinstance = metrics.packages.lmwg.lmwg.LMWG()
         elif packageid.lower() == 'amwg':
-           import metrics.packages.amwg.amwg
-           pinstance = metrics.packages.amwg.amwg.AMWG()
+            import metrics.packages.amwg.amwg
+            pinstance = metrics.packages.amwg.amwg.AMWG()
         diags = pinstance.list_diagnostic_sets()
         keys = diags.keys()
         keys.sort()
         sets = {}
         for k in keys:
-           fields = k.split()
-           sets[fields[0]] = ' '.join(fields[2:])
+            fields = k.split()
+            sets[fields[0]] = ' '.join(fields[2:])
         return sets
 
     def listVariables(self, package, setname):
         import metrics.fileio.filetable as ft
         import metrics.fileio.findfiles as fi
         if setname is None:
-           print "ERROR, must specify plot set to list variables"
-           quit()
+            print "ERROR, must specify plot set to list variables"
+            quit()
         dtree = fi.dirtree_datafiles(self, modelid=0)
         filetable = ft.basic_filetable(dtree, self)
         
         # this needs a filetable probably, or we just define the maximum list of variables somewhere
         if package is None:
-           print "ERROR, must specify package to list variables"
-           quit()
+            print "ERROR, must specify package to list variables"
+            quit()
         elif package.lower() == 'lmwg':
-           import metrics.packages.lmwg.lmwg
-           pinstance = metrics.packages.lmwg.lmwg.LMWG()
+            import metrics.packages.lmwg.lmwg
+            pinstance = metrics.packages.lmwg.lmwg.LMWG()
         elif package.lower()=='amwg':
-           import metrics.packages.amwg.amwg
-           pinstance = metrics.packages.amwg.amwg.AMWG()
+            import metrics.packages.amwg.amwg
+            pinstance = metrics.packages.amwg.amwg.AMWG()
         
         slist = pinstance.list_diagnostic_sets()
         keys = slist.keys()
         keys.sort()
         vl = []
         for k in keys:
-           fields = k.split()
-           if setname[0] == fields[0]:
-              vl = slist[k]._list_variables(filetable, filetable)
-              print 'Available variabless for set', setname[0], 'in package', package,'at path', self._opts['model'][0]['path'],':'
-              print vl
-              print 'NOTE: Not all variables make sense for plotting or running diagnostics. Multi-word variable names need enclosed in single quotes:\'word1 word2\''
-              print 'ALL is a valid variable name as well'
+            fields = k.split()
+            if setname[0] == fields[0]:
+                vl = slist[k]._list_variables(filetable, filetable)
+                print 'Available variabless for set', setname[0], 'in package', package,'at path', self._opts['model'][0]['path'],':'
+                print vl
+                print 'NOTE: Not all variables make sense for plotting or running diagnostics. Multi-word variable names need enclosed in single quotes:\'word1 word2\''
+                print 'ALL is a valid variable name as well'
         if vl == []:
-           logging.critical('No variable list returned. Is set %s a valid set?',setname[0])
-           quit()
+            logging.critical('No variable list returned. Is set %s a valid set?',setname[0])
+            quit()
         return
 
     def listVarOptions(self, package, setname, varname):
         import metrics.fileio.filetable as ft
         import metrics.fileio.findfiles as fi
         if setname is None:
-           print "ERROR, must specify plot set to list variable options"
-           quit()
+            print "ERROR, must specify plot set to list variable options"
+            quit()
         if varname is None:
-           print "ERROR, must specify variable to list variable options"
-           quit()
+            print "ERROR, must specify variable to list variable options"
+            quit()
         dtree = fi.dirtree_datafiles(self, modelid=0)
         filetable = ft.basic_filetable(dtree, self)
         
         if package is None:
-           print "ERROR, must specify package to list variable options"
-           quit()
+            print "ERROR, must specify package to list variable options"
+            quit()
         elif package.lower() == 'lmwg':
-           import metrics.packages.lmwg.lmwg
-           pinstance = metrics.packages.lmwg.lmwg.LMWG()
+            import metrics.packages.lmwg.lmwg
+            pinstance = metrics.packages.lmwg.lmwg.LMWG()
         elif package.lower()=='amwg':
-           import metrics.packages.amwg.amwg
-           pinstance = metrics.packages.amwg.amwg.AMWG()
+            import metrics.packages.amwg.amwg
+            pinstance = metrics.packages.amwg.amwg.AMWG()
         
         slist = pinstance.list_diagnostic_sets()
         keys = slist.keys()
         keys.sort()
         for k in keys:
-           fields = k.split()
-           if setname[0] == fields[0]:
-              vl = slist[k]._all_variables(filetable, filetable)
-              for v in varname:
-                 if v in vl.keys():
-                    vo = vl[v].varoptions()
-                    print 'Variable ', v,'in set', setname[0],'from package',package,'at path', self._opts['model'][0]['path'],'has options:'
-                    print vo
-                 else:
-                    print 'Variable ', v,'in set', setname[0],'from package',package,'at path', self._opts['model'][0]['path'],'has no options.'
+            fields = k.split()
+            if setname[0] == fields[0]:
+                vl = slist[k]._all_variables(filetable, filetable)
+                for v in varname:
+                   if v in vl.keys():
+                       vo = vl[v].varoptions()
+                       print 'Variable ', v,'in set', setname[0],'from package',package,'at path', self._opts['model'][0]['path'],'has options:'
+                       print vo
+                   else:
+                       print 'Variable ', v,'in set', setname[0],'from package',package,'at path', self._opts['model'][0]['path'],'has no options.'
 
 
     ###
@@ -384,25 +384,25 @@ class Options():
         import metrics.packages.diagnostic_groups
         import os
         if len(self._opts['model']) == 0 and len(self._opts['obs']) == 0:
-           logging.critical('At least one model or obs set needs describted')
-           quit()
+            logging.critical('At least one model or obs set needs describted')
+            quit()
         if len(self._opts['model']) != 0:
-           for i in range(len(self._opts['model'])):
-              if self._opts['model'][i]['path'] == None or self._opts['model'][i]['path'] == '':
-                 logging.critical('Each dataset must have a path provided')
-                 quit()
-              # check if the path exists
-              if not os.path.exists(self._opts['model'][i]['path']):
-                 logging.critical('Path - %s - does not exist', self._opts['model'][i]['path'])
-                 quit()
+            for i in range(len(self._opts['model'])):
+                if self._opts['model'][i]['path'] == None or self._opts['model'][i]['path'] == '':
+                    logging.critical('Each dataset must have a path provided')
+                    quit()
+                # check if the path exists
+                if not os.path.exists(self._opts['model'][i]['path']):
+                    logging.critical('Path - %s - does not exist', self._opts['model'][i]['path'])
+                    quit()
         if len(self._opts['obs']) != 0:
            for i in range(len(self._opts['obs'])):
-              if self._opts['obs'][i]['path'] == None or self._opts['obs'][i]['path'] == '':
-                 logging.critical('Each dataset must have a path provided')
-                 quit()
-              if not os.path.exists(self._opts['obs'][i]['path']):
-                 logging.critical('Obs Path - %s - does not exist', self._opts['obs'][i]['path'])
-                 quit()
+               if self._opts['obs'][i]['path'] == None or self._opts['obs'][i]['path'] == '':
+                   logging.critical('Each dataset must have a path provided')
+                   quit()
+               if not os.path.exists(self._opts['obs'][i]['path']):
+                   logging.critical('Obs Path - %s - does not exist', self._opts['obs'][i]['path'])
+                   quit()
         #      if(self._opts['package'] == None):
         #         print 'Please specify a package e.g. AMWG, LMWG, etc'
         #         quit()
@@ -411,39 +411,39 @@ class Options():
         # We shouldn't get here anyway. This is primarily in case something gets postpended to the user-specified outputdir
         # in options(). Currently that happens elsewhere, but seems like a raesonable check to keep here anyway.
         if not os.path.exists(self._opts['output']['outputdir']):
-           logging.critical('output directory %s does not exist', self._opts['output']['outputdir'])
-           quit()
+            logging.critical('output directory %s does not exist', self._opts['output']['outputdir'])
+            quit()
         
         if(self._opts['package'] != None):
-           keys = self.all_packages.keys()
-           ukeys = []
-           for k in keys:
-              ukeys.append(k.upper())
+            keys = self.all_packages.keys()
+            ukeys = []
+            for k in keys:
+                ukeys.append(k.upper())
         
-           if self._opts['package'].upper() not in ukeys:
-              logging.critical('Package %s not found in the list of package names - %s', self._opts['package'], self.all_packages.keys())
-              quit()
+            if self._opts['package'].upper() not in ukeys:
+                logging.critical('Package %s not found in the list of package names - %s', self._opts['package'], self.all_packages.keys())
+                quit()
         
         # Should we check for random case too? I suppose.
         if(self._opts['regions'] != []):
-           rlist = []
-           for x in self._opts['regions']:
-              if x in all_regions.keys():
-                 rlist.append(x)
-           rlist.sort()
-           self._opts['regions'].sort()
-           if rlist != self._opts['regions']:
-              logging.critical('Unknown region[s] specified: %s', list(set(self._opts['regions']) - set(rlist)))
-              quit()
+            rlist = []
+            for x in self._opts['regions']:
+                if x in all_regions.keys():
+                    rlist.append(x)
+            rlist.sort()
+            self._opts['regions'].sort()
+            if rlist != self._opts['regions']:
+                logging.critical('Unknown region[s] specified: %s', list(set(self._opts['regions']) - set(rlist)))
+                quit()
         if(self._opts['sets'] != None and self._opts['package'] != None):
-           sets = []
-           package = self._opts['package']
-           if package.lower() == 'lmwg':
-              import metrics.packages.lmwg.lmwg
-           elif package.lower()=='amwg':
-              import metrics.packages.amwg.amwg
-           dtree = fi.dirtree_datafiles(self, modelid=0)
-           filetable = ft.basic_filetable(dtree, self)
+            sets = []
+            package = self._opts['package']
+            if package.lower() == 'lmwg':
+                import metrics.packages.lmwg.lmwg
+            elif package.lower()=='amwg':
+                import metrics.packages.amwg.amwg
+            dtree = fi.dirtree_datafiles(self, modelid=0)
+            filetable = ft.basic_filetable(dtree, self)
 
 #######
 ####### This should be modified to look in the master dictionary files...
@@ -715,24 +715,24 @@ class Options():
         args, extras = parser.parse_known_args()
         pdb.set_trace()
         if(args.version == 1):
-           import metrics.common.utilities
-           klist = metrics.common.utilities.provenance_dict().keys()
-           for k in klist:
-              print '%s - %s' % (k, metrics.common.utilities.provenance_dict()[k])
+            import metrics.common.utilities
+            klist = metrics.common.utilities.provenance_dict().keys()
+            for k in klist:
+                print '%s - %s' % (k, metrics.common.utilities.provenance_dict()[k])
         #         provenance_dict()['version']
         
-           quit()
+            quit()
         if(args.help == 1):
-           if 'metadiags' in progname or 'metadiags.py' in progname:
-              self.metadiags_help()
-           elif 'climatology' in progname or 'climatology.py' in progname:
-              self.climatology_help()
-           else:
-              self.diags_help()
-           quit()
+            if 'metadiags' in progname or 'metadiags.py' in progname:
+                self.metadiags_help()
+            elif 'climatology' in progname or 'climatology.py' in progname:
+                self.climatology_help()
+            else:
+                self.diags_help()
+            quit()
         if(args.extended_help == 1):
-           parser.print_help()
-           quit()
+            parser.print_help()
+            quit()
         
         
         ####
