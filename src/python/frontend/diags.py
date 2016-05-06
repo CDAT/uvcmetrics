@@ -290,7 +290,7 @@ def run_diags( opts ):
                                 plot = sclass( modelfts, obsfts, varid, time, region, vvaropts[aux], 
                                                plotparms = { 'model':{'levels':opts['levels'], 'colormap':'rainbow'},
                                                              'obs':{'levels':opts['levels'], 'colormap':'rainbow'},
-                                                             'diff':{'levels':None, 'colormap':'bl_to_darkred'} } )
+                                                             'diff':{'levels':opts['difflevels'], 'colormap':'bl_to_darkred'} } )
 
                         # Do the work (reducing variables, etc)
                         res = plot.compute(newgrid=-1) # newgrid=0 for original grid, -1 for coarse
