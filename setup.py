@@ -97,7 +97,7 @@ setup (name = "metrics",
                                        "share/viewer/jquery-2.2.3.min.js",
                                        "share/viewer/viewer.css",
                                        "share/viewer/viewer.js")),
-                     ("share/uvcmetrics/viewer/img", ["share/viewer/imgs/SET4a.gif"] + [os.path.join("share/viewer/imgs", "SET%d.%s" % (setnum, "png" if setnum in (13, 15) else "gif")) for setnum in range(1, 16)])
+                     ("share/uvcmetrics/viewer/img", ["share/viewer/imgs/SET4A.png"] + [os.path.join("share/viewer/imgs", "SET%d.png" % (setnum)) for setnum in range(1, 16)])
                     ],
        include_dirs = [numpy.lib.utils.get_include()],
        ext_modules = [

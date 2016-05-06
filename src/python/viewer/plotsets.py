@@ -91,11 +91,8 @@ class PlotSet(object):
         else:
             self.suffix = "model.png"
 
-    def plotset_img_extension(self):
-        return "gif"
-
     def plotset_img(self):
-        return os.path.join("viewer", "img", "SET%s.%s" % (self.plotset, self.plotset_img_extension()))
+        return os.path.join("viewer", "img", "SET%s.png" % (self.plotset.upper()))
 
     def plot_name(self, season, variable, obs, region, option=None):
         if option:
@@ -188,7 +185,7 @@ class PlotSet(object):
         container = doc.append_tag("div", class_="container")
         row = container.append_tag("div", class_="row")
         title = row.append_tag("h1")
-        title.append_tag("img", src=self.plotset_img(), alt="Set %s" % self.plotset)
+        title.append_tag("img", src=self.plotset_img(), width="200px", alt="Set %s" % self.plotset)
         title.append(" %s and OBS Data" % self.dataset)
         subtitle = row.append_tag("h2")
         subtitle.append("Diagnostics Set %s: %s" % (self.plotset, self.desc))
@@ -348,10 +345,6 @@ class PlotSet13(PlotSet12):
         self.vlist = {'Global':'global', 'Tropics (15S-15N)':'tropics', 'NH SubTropics (15N-30N)':'nsubtrop', 'SH SubTropics (30S-15S)':'ssubtrop', 'NH Mid-Latitudes (30N-70N)':'nmidlats', 'SH Mid-Latitudes (70S-30S)':'smidlats', 'NH Polar (70N-90N)':'npole', 'SH Polar (90S-70S)':'spole', 'North Pacific Stratus':'npacstrat', 'South Pacific Stratus':'spacstrat', 'North Pacific':'npacific', 'North Atlantic':'natlantic', 'Warm Pool':'warmpool', 'Central Africa':'cafrica', 'USA':'usa'}
         self.header = 'Region'
 
-    def plotset_img_extension(self):
-        return "png"
-
-
 class PlotSet14(PlotSet):
     def __init__(self, dataset, toolbar=None, root="."):
         super(PlotSet14, self).__init__(dataset, "14", root=root, toolbar=toolbar)
@@ -407,11 +400,6 @@ class PlotSet14(PlotSet):
                         r.append_cell(PlotLink(self.root_path, href=l))
 
         return doc.build()
-
-
-class PlotSet15(PlotSet):
-    def plotset_img_extension(self):
-        return "png"
 
 
 class PlotIndex(PlotSet):
@@ -480,13 +468,8 @@ class PlotIndex(PlotSet):
                 plotset_path = tier_1a_plots[plotset]
                 plotset_link = div_col.append_tag("a", href=plotset_path)
                 plotset_img_dir = os.path.dirname(self.plotset_img())
-                plotset_img_path = os.path.join(self.root_path, plotset_img_dir, "SET%s" % plotset)
-                extensions = [".gif", ".png"]
-                for ext in extensions:
-                    if os.path.exists(plotset_img_path + ext):
-                        plotset_img = os.path.join(plotset_img_dir, "SET%s%s" % (plotset, ext))
-                        break
-                plotset_link.append_tag("img", src=plotset_img)
+                plotset_img_path = os.path.join(self.root_path, plotset_img_dir, "SET%s.png" % plotset.upper())
+                plotset_link.append_tag("img", src=plotset_img_path)
 
     def group_rows(self, group):
         set_to_path = {}

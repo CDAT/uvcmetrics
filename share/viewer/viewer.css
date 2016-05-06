@@ -9,15 +9,16 @@
 }
 
 .img-cell {
-	width: 150px;
-	height: 150px;
+	width: 140px;
+	height: 140px;
+	padding: 10px;
 	margin: auto;
 }
 
 .img-cell > a {
 	display: flex;
-	height: 150px;
-	width: 150px;
+	height: 100%;
+	width: 100%;
 }
 
 .img-cell > a > img {
