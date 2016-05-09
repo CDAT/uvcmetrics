@@ -71,6 +71,7 @@ class Options():
         self._opts['translations'] = {}
         self._opts['levels'] = None
         self._opts['difflevels'] = None #levels for a difference plot
+        self._opts['colormaps'] = {'model': 'rainbow', 'obs': 'rainbow', 'diff': 'bl_to_darkred'}
         self._opts['taskspernode'] = None
         
         self._opts['output']['compress'] = True
@@ -230,34 +231,34 @@ class Options():
     def processObs(self, obs):
         self.processDataset('obs', obs)
       
-    def processColormaps(self, dictkey, data):
-        defkeys = ['start', 'end','filter', 'name', 'climos', 'path', 'type']
-        
-        for i in range(len(data)):
-            self._opts[dictkey].append({})
-            for d in defkeys:
-               self._opts[dictkey][i][d] = None
-            self._opts[dictkey][i]['type'] = dictkey # ensure this one is at least set.
-            kvs = data[i].split(',')
-            PATTERN = re.compile(r'''((?:[^,"']|"[^"]*"|'[^']*')+)''')
-            kvs = PATTERN.split(data[i])[1::2]
-            for k in kvs:
-               if '=' not in k:
-                  logging.critical('All options need specified as {option}={value}. No equal sign in option - %s', k)
-                  quit()
-               key, value = k.split('=')
-               if key in defkeys:
-                  if key == 'climo':
-                     if  value in ['True', 'yes', 1]:
-                        self._opts[dictkey][i][key] = True
-                     else:
-                        self._opts[dictkey][i][key] = False
-                  else:
-                     self._opts[dictkey][i][key] = value
-               else:
-                  logging.warning('Unknown option %s', k)
-            print 'Added set: ', self._opts[dictkey][i]
-
+    def processColormaps(self, ID, colormaps):
+        import vcs, pdb, sys
+        if colormaps == []:
+            return
+        key_value = [cm.split('=') for cm in colormaps]
+        try:
+            for plot_type, colormap in key_value:               
+                #first see if it`s a script that loads a stored colormap
+                try:
+                    #this puts the colormap in the master list of colormaps
+                    vcs.scriptrun(colormap)
+                except:
+                    pass
+                
+                #get colormap from master list
+                if plot_type in self._opts[ID].keys() and colormap in vcs.listelements('colormap'):
+                    self._opts[ID][plot_type] = colormap
+                else:
+                    raise
+                
+            # set obs color map to the models if not specified
+            if self._opts[ID]['model'] != None and self._opts[ID]['obs'] == None:
+                self._opts[ID]['obs'] = self._opts[ID]['model']
+                    
+        except:
+            logging.critical('Invalid color map: '+ colormap)
+            logging.critical('Must be in this list: ' + ', '.join(vcs.listelements('colormap')))
+            sys.exit()
 
    ###
    ### The next few functions provide the ability to get valid options to the various parameters.
@@ -667,7 +668,7 @@ class Options():
             outopts.add_argument('--logo', choices=['no', 'yes']) # intentionally undocumented; meant to be passed via metadiags
             outopts.add_argument('--no-antialiasing', action="store_true",default = False) # intentionally undocumented; meant to be passed via metadiags
             outopts.add_argument('--table', action='store_true') # intentionally undocumented; meant to be passed via metadiags
-            outopts.add_argument('--colormaps', action='append', help="Specify one of 3 colormaps: model, obs or diff")
+            outopts.add_argument('--colormaps', nargs='*', help="Specify one of 3 colormaps: model, obs or diff")
         
         intopts = parser.add_argument_group('Internal-use primarily')
         # a few internal options not likely to be useful to anyone except metadiags
@@ -780,7 +781,10 @@ class Options():
         
         if (args.difflevels) != None:
             self.processLevels('difflevels', args.difflevels, extras)
-            
+
+        if args.colormaps != None:
+            self.processColormaps('colormaps', args.colormaps)
+                   
         # I checked; these are global and it doesn't seem to matter if you import cdms2 multiple times;
         # they are still set after you set them once in the python process.
         if(args.compress != None):
