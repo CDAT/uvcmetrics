@@ -561,28 +561,12 @@ class Options():
    ###
    ### This actually sets up argparse
    ###
-    def processCmdLine(self):
+    def processCmdLine(self, progname, parser):
         # There are 3 sets of command line arguments, depending on what is calling this function.
         # 1) climatology.py - just needs input path (assumes climos=no), output path, and optionally a list of seasons/variables. It can take a dsname too
         # 2) diags-new.py - takes every option
         # 3) meta-diags.py - takes model/path info, plus some extra options.
-        import sys, pdb
-        progname = sys.argv[0]
-        print progname
-        progname = progname.split('/')[-1]
-        parser = argparse.ArgumentParser( add_help=False,
-                                          description="""UV-CDAT Climate Modeling Diagnostics For additional instructions, see also %s""" % help_url,
-                                          usage='%(prog)s [options]',
-                                          formatter_class=argparse.RawDescriptionHelpFormatter,
-                                          epilog=('''\
-              Examples:
-              %(prog)s --model path=/path/to/a/dataset,climos=yes --obs path=/path/to/a/obs/set,climos=yes,filter='f_startswith("NCEP")' --package AMWG --coll 4 --vars Z3 --varopts 300 500
-              is the same as:
-              %(prog)s --path /path/to/a/dataset --climos yes --path /path/to/an/obsset --type obs --climos yes --filter 'f_startswith("NCEP")' --package AMWG --coll 4 --vars Z3 --varopts 300 500
-        
-              --model/--obs or --path can be specified multiple times.
-              '''))
-        
+
         # Dataset related stuff. All utilities get these.
         pathopts = parser.add_argument_group('Data')
         pathopts.add_argument('--path', '-p', action='append',
@@ -707,13 +691,30 @@ class Options():
         
         if 'mpidiags' in progname or 'mpidiags.py' in progname:
             paropts = parser.add_argument_group('Parallel-specific')
-            paropts.add_argument('--taskspernode',
-               help="Specify the maximum number of tasks usable on a given node. Typically this would be set to numcores/node unless memory is an issue")
-        
+            paropts.add_argument('--taskspernode', 
+                                 help="Specify the maximum number of tasks usable on a given node. Typically this would be set to numcores/node unless memory is an issue")
+    def parseCmdLine(self):
         ### Do the work
         #args = parser.parse_args()
+        import sys, pdb
+        progname = sys.argv[0]
+        print progname
+        progname = progname.split('/')[-1]
+        parser = argparse.ArgumentParser( add_help=False,
+                                          description="""UV-CDAT Climate Modeling Diagnostics For additional instructions, see also %s""" % help_url,
+                                          usage='%(prog)s [options]',
+                                          formatter_class=argparse.RawDescriptionHelpFormatter,
+                                          epilog=('''\
+              Examples:
+              %(prog)s --model path=/path/to/a/dataset,climos=yes --obs path=/path/to/a/obs/set,climos=yes,filter='f_startswith("NCEP")' --package AMWG --coll 4 --vars Z3 --varopts 300 500
+              is the same as:
+              %(prog)s --path /path/to/a/dataset --climos yes --path /path/to/an/obsset --type obs --climos yes --filter 'f_startswith("NCEP")' --package AMWG --coll 4 --vars Z3 --varopts 300 500
+        
+              --model/--obs or --path can be specified multiple times.
+              '''))
+        self.processCmdLine(progname, parser)
         args, extras = parser.parse_known_args()
-        pdb.set_trace()
+        #pdb.set_trace()
         if(args.version == 1):
             import metrics.common.utilities
             klist = metrics.common.utilities.provenance_dict().keys()
@@ -741,38 +742,38 @@ class Options():
         
         # First, check for the --list option so we don't have to do as much work if it was passed.
         if(args.list != None):
-           self.listOpts(args)
+            self.listOpts(args)
         
         # First, print all of the provenance information regardless.
         import metrics.common.utilities
         klist = metrics.common.utilities.provenance_dict().keys()
         print 'BEGIN PROVENANCE INFORMATION'
         for k in klist:
-           print '%s - %s' % (k, metrics.common.utilities.provenance_dict()[k])
+            print '%s - %s' % (k, metrics.common.utilities.provenance_dict()[k])
         print 'END PROVENANCE INFORMATION'
         
         # Generally if we've gotten this far, it means no --list was specified. If we don't have
         # at least a path, we should exit.
         if(args.path == None and args.model == None and args.obs == None):
-           logging.critical('Must specify a --path or one of the --model/--obs options, or the --list option')
-           print 'For help, type "diags --help".'
-           quit()
+            logging.critical('Must specify a --path or one of the --model/--obs options, or the --list option')
+            print 'For help, type "diags --help".'
+            quit()
         
         if args.path != None and (args.model != None or args.obs != None):
-           logging.critical('Please do not combine --path and the --model/--obs methods right now')
-           quit()
+            logging.critical('Please do not combine --path and the --model/--obs methods right now')
+            quit()
         
         ### Process dataset/obs arguments
         if args.model != None:
-           self.processModel(args.model)
+            self.processModel(args.model)
         if args.obs != None:
-           self.processObs(args.obs)
+            self.processObs(args.obs)
         
         if(args.path != None):
-           self.processPaths(args)
+            self.processPaths(args)
         
         if(args.cachepath != None):
-           self._opts['cachepath'] = args.cachepath[0]
+            self._opts['cachepath'] = args.cachepath[0]
         
         if (args.levels) != None:
             self.processLevels('levels', args.levels, extras)
@@ -783,214 +784,214 @@ class Options():
         # I checked; these are global and it doesn't seem to matter if you import cdms2 multiple times;
         # they are still set after you set them once in the python process.
         if(args.compress != None):
-           if args.compress == 'no' or args.compress == 'False' or args.compress == 'No':
-              self._opts['output']['compress'] = False
-           else:
-              self._opts['output']['compress'] = True
+            if args.compress == 'no' or args.compress == 'False' or args.compress == 'No':
+                self._opts['output']['compress'] = False
+            else:
+                self._opts['output']['compress'] = True
         
         if self._opts['output']['compress'] == False:
-           print 'Disabling NetCDF compression on output files'
-           cdms2.setNetcdfShuffleFlag(0)
-           cdms2.setNetcdfDeflateFlag(0)
-           cdms2.setNetcdfDeflateLevelFlag(0)
+            print 'Disabling NetCDF compression on output files'
+            cdms2.setNetcdfShuffleFlag(0)
+            cdms2.setNetcdfDeflateFlag(0)
+            cdms2.setNetcdfDeflateLevelFlag(0)
         else:
-           print 'Enabling NetCDF compression on output files'
-           cdms2.setNetcdfShuffleFlag(1)
-           cdms2.setNetcdfDeflateFlag(1)
-           cdms2.setNetcdfDeflateLevelFlag(9)
+            print 'Enabling NetCDF compression on output files'
+            cdms2.setNetcdfShuffleFlag(1)
+            cdms2.setNetcdfDeflateFlag(1)
+            cdms2.setNetcdfDeflateLevelFlag(9)
         
         if 'metadiags' in progname or 'metadiags.py' in progname:
-           if args.hostname != None:
-              self._opts['dbhost'] = args.hostname
-           if args.updatedb != None:
-              self._opts['dbopts'] = args.updatedb
-           if args.dsname != None:
-              self._opts['dsname'] = args.dsname
+            if args.hostname != None:
+                self._opts['dbhost'] = args.hostname
+            if args.updatedb != None:
+                self._opts['dbopts'] = args.updatedb
+            if args.dsname != None:
+                self._opts['dsname'] = args.dsname
         
         
         # Disable the UVCDAT logo in plots for users (typically metadiags) that know about this option
         if 'climatology' not in progname and 'climatology.py' not in progname:
-           if args.logo != None:
-              if args.logo.lower() == 'no' or args.logo == 0:
-                 self._opts['output']['logo'] = False
-           if args.no_antialiasing is True:
-              self._opts['output']['antialiasing'] = False
-           if args.table != None:
-              if args.table == True:
-                 self._opts['output']['table'] = True
-        
-           # A few output arguments.
-           if(args.json != None):
-              if(args.json.lower() == 'no' or args.json == 0):
-                 self._opts['output']['json'] = False
-              else:
-                 self._opts['output']['json'] = True
-           if(args.xml != None):
-              if(args.xml.lower() == 'no' or args.xml == 0):
-                 self._opts['output']['xml'] = False
-              else:
-                 self._opts['output']['xml'] = True
-           if(args.netcdf != None):
-              if(args.netcdf.lower() == 'no' or args.netcdf == 0):
-                 self._opts['output']['netcdf'] = False
-              else:
-                 self._opts['output']['netcdf'] = True
-           if(args.plots != None):
-              if(args.plots.lower() == 'no' or args.plots == 0):
-                 self._opts['output']['plots'] = False
-              else:
-                 self._opts['output']['plots'] = True
-        
-           if(args.generate != None):
-              if(args.generate.lower() == 'no' or args.generate == 0):
-                 self._opts['output']['climos'] = False
-              else:
-                 self._opts['output']['climos'] = True
-           if(args.translate != 'y'):
-              print args.translate
-              print self._opts['translate']
-              quit()
-        
+            if args.logo != None:
+                if args.logo.lower() == 'no' or args.logo == 0:
+                    self._opts['output']['logo'] = False
+            if args.no_antialiasing is True:
+                self._opts['output']['antialiasing'] = False
+            if args.table != None:
+                if args.table == True:
+                    self._opts['output']['table'] = True
+            
+            # A few output arguments.
+            if(args.json != None):
+                if(args.json.lower() == 'no' or args.json == 0):
+                    self._opts['output']['json'] = False
+                else:
+                    self._opts['output']['json'] = True
+            if(args.xml != None):
+                if(args.xml.lower() == 'no' or args.xml == 0):
+                    self._opts['output']['xml'] = False
+                else:
+                    self._opts['output']['xml'] = True
+            if(args.netcdf != None):
+                if(args.netcdf.lower() == 'no' or args.netcdf == 0):
+                    self._opts['output']['netcdf'] = False
+                else:
+                    self._opts['output']['netcdf'] = True
+            if(args.plots != None):
+                if(args.plots.lower() == 'no' or args.plots == 0):
+                    self._opts['output']['plots'] = False
+                else:
+                    self._opts['output']['plots'] = True
+            
+            if(args.generate != None):
+                if(args.generate.lower() == 'no' or args.generate == 0):
+                    self._opts['output']['climos'] = False
+                else:
+                    self._opts['output']['climos'] = True
+            if(args.translate != 'y'):
+                print args.translate
+                print self._opts['translate']
+                quit()
+
         self._opts['verbose'] = args.verbose
         
         # Help create output file names
         if 'metadiags' not in progname and 'climatology' not in progname and 'climatology.py' not in progname and 'metadiags.py' not in progname:
-           if(args.prefix != None):
-              self._opts['output']['prefix'] = args.prefix
-           if(args.postfix != None):
-              self._opts['output']['postfix'] = args.postfix
+            if(args.prefix != None):
+                self._opts['output']['prefix'] = args.prefix
+            if(args.postfix != None):
+                self._opts['output']['postfix'] = args.postfix
         # If an output directory was specified but doesn't exist already, we can throw an error now.
         if(args.outputdir != None):
-           if not os.path.isdir(args.outputdir):
-              logging.critical("Output directory %s does not exist!",args.outputdir)
-              quit()
-           self._opts['output']['outputdir'] = args.outputdir
+            if not os.path.isdir(args.outputdir):
+                logging.critical("Output directory %s does not exist!",args.outputdir)
+                quit()
+            self._opts['output']['outputdir'] = args.outputdir
         
         
         
         if 'climatology' not in progname and 'climatology.py' not in progname:
-           if(args.package != None):
-              self._opts['package'] = args.package
-           if(args.sets != None):
-              self._opts['sets'] = args.sets
-           if(args.varopts != None):
-              self._opts['varopts'] = args.varopts
+            if(args.package != None):
+                self._opts['package'] = args.package
+            if(args.sets != None):
+                self._opts['sets'] = args.sets
+            if(args.varopts != None):
+                self._opts['varopts'] = args.varopts
         
         
         # Timestart assumes a string like "months since 2000". I can't find documentation on
         # toRelativeTime() so I have no idea how to check for valid input
         # This is required for some of the land model sets I've seen
         if 'metadiags' not in progname and 'metadiags.py' not in progname:
-           if(args.timestart != None):
-              self._opts['reltime'] = args.timestart
-           # TODO: Check against an actual list of variables from the set
-           if args.vars != None:
-              self._opts['vars'] = args.vars
-           if(args.regions != None):
-              self._opts['regions'] = args.regions
-        
-           # If --yearly is set, then we will add 'ANN' to the list of climatologies
-           if(args.yearly == True):
-              self._opts['times'].append('ANN')
-        
-           # If --monthly is set, we add all months to the list of climatologies
-           if(args.monthly == True):
-              self._opts['times'].extend(all_months)
-        
-           # If --seasonally is set, we add all the seasons to the list of climatologies
-           if(args.seasonally == True):
-              self._opts['times'].extend(just_seasons)
-        
-           # This allows specific individual months to be added to the list of climatologies
-           if(args.months != None):
-              if(args.monthly == True):
-                 print "Please specify just one of --monthly or --months"
-                 print 'Defaulting to using all months'
-              else:
-                 mlist = [x for x in all_months if x in args.months]
-                 self._opts['times'] = self._opts['times']+mlist
-        
-           # This allows specific individual years to be added to the list of climatologies.
-           # Note: Checkign for valid input is impossible until we look at the dataset
-           # This has to be special cased since typically someone will be saying
-           # "Generate climatologies for seasons for years X, Y, and Z of my dataset"
-           if(args.years != None):
-              if(args.yearly == True):
-                 print "Please specify just one of --yearly or --years"
-                 print 'Defaulting to using all years'
-              else:
-                 self._opts['years'] = args.years
-        
-           if(args.seasons != None):
-              if(args.seasonally == True):
-                 print "Please specify just one of --seasonally or --seasons"
-                 print 'Defaulting to using all seasons'
-              else:
-                 slist = [x for x in all_seasons if x in args.seasons]
-                 self._opts['times'] = self._opts['times']+slist
-              print 'seasons: ', self._opts['times']
+            if(args.timestart != None):
+                self._opts['reltime'] = args.timestart
+            # TODO: Check against an actual list of variables from the set
+            if args.vars != None:
+                self._opts['vars'] = args.vars
+            if(args.regions != None):
+                self._opts['regions'] = args.regions
+            
+            # If --yearly is set, then we will add 'ANN' to the list of climatologies
+            if(args.yearly == True):
+                self._opts['times'].append('ANN')
+            
+            # If --monthly is set, we add all months to the list of climatologies
+            if(args.monthly == True):
+                self._opts['times'].extend(all_months)
+            
+            # If --seasonally is set, we add all the seasons to the list of climatologies
+            if(args.seasonally == True):
+                self._opts['times'].extend(just_seasons)
+            
+            # This allows specific individual months to be added to the list of climatologies
+            if(args.months != None):
+                if(args.monthly == True):
+                    print "Please specify just one of --monthly or --months"
+                    print 'Defaulting to using all months'
+                else:
+                    mlist = [x for x in all_months if x in args.months]
+                    self._opts['times'] = self._opts['times']+mlist
+            
+            # This allows specific individual years to be added to the list of climatologies.
+            # Note: Checkign for valid input is impossible until we look at the dataset
+            # This has to be special cased since typically someone will be saying
+            # "Generate climatologies for seasons for years X, Y, and Z of my dataset"
+            if(args.years != None):
+                if(args.yearly == True):
+                    print "Please specify just one of --yearly or --years"
+                    print 'Defaulting to using all years'
+                else:
+                    self._opts['years'] = args.years
+            
+            if(args.seasons != None):
+                if(args.seasonally == True):
+                    print "Please specify just one of --seasonally or --seasons"
+                    print 'Defaulting to using all seasons'
+                else:
+                    slist = [x for x in all_seasons if x in args.seasons]
+                    self._opts['times'] = self._opts['times']+slist
+                print 'seasons: ', self._opts['times']
 
     def listOpts(self, args):
         print 'LIST - ', args.list
         if 'translation' in args.list or 'translations' in args.list:
-           print "Default variable translations: "
-           self.listTranslations()
+            print "Default variable translations: "
+            self.listTranslations()
         
         if 'regions' in args.list or 'region' in args.list:
-           print "Available geographical regions: ", all_regions.keys()
+            print "Available geographical regions: ", all_regions.keys()
         
         if 'seasons' in args.list or 'season' in args.list:
-           print "Available seasons: ", all_seasons
+            print "Available seasons: ", all_seasons
         
         if 'package' in args.list or 'packages' in args.list:
-           print "Listing available packages:"
-           print self.all_packages.keys()
+            print "Listing available packages:"
+            print self.all_packages.keys()
         
         if 'sets' in args.list or 'set' in args.list:
-           if args.package == None:
-              print "Please specify package before requesting available diags sets"
-              quit()
-           print 'Avaialble sets for package ', args.package, ':'
-           sets = self.listSets(args.package)
-           keys = sets.keys()
-           for k in keys:
-              print 'Set',k, ' - ', sets[k]
+            if args.package == None:
+                print "Please specify package before requesting available diags sets"
+                quit()
+            print 'Avaialble sets for package ', args.package, ':'
+            sets = self.listSets(args.package)
+            keys = sets.keys()
+            for k in keys:
+                print 'Set',k, ' - ', sets[k]
         
         if 'variables' in args.list or 'vars' in args.list or 'var' in args.list:
-           if args.path == None and args.model == None and args.obs == None:
-              logging.critical('Must provide a dataset when requesting a variable listing')
-              quit()
-           else:
-              if args.path == None:
-                 if args.model != None:
-                    self.processModel(args.model)
-                 if args.obs != None:
-                    self.processObs(args.obs)
-              else:
-                 self.processPaths(args)
-        
-           self.listVariables(args.package, args.sets)
+            if args.path == None and args.model == None and args.obs == None:
+                logging.critical('Must provide a dataset when requesting a variable listing')
+                quit()
+            else:
+                if args.path == None:
+                    if args.model != None:
+                        self.processModel(args.model)
+                    if args.obs != None:
+                        self.processObs(args.obs)
+                else:
+                    self.processPaths(args)
+            
+            self.listVariables(args.package, args.sets)
         
         if 'options' in args.list or 'option' in args.list:
-           if args.path == None and args.model == None and args.obs == None:
-              logging.critical('Must provide a dataset when requesting a variable listing')
-              quit()
-           else:
-              if args.path == None:
-                 if args.model != None:
-                    self.processModel(args.model)
-                 if args.obs != None:
-                    self.processObs(args.obs)
-              else:
-                 self.processPaths(args)
-        
-           self.listVarOptions(args.package, args.sets, args.vars)
+            if args.path == None and args.model == None and args.obs == None:
+                logging.critical('Must provide a dataset when requesting a variable listing')
+                quit()
+            else:
+                if args.path == None:
+                    if args.model != None:
+                        self.processModel(args.model)
+                    if args.obs != None:
+                        self.processObs(args.obs)
+                else:
+                    self.processPaths(args)
+            
+            self.listVarOptions(args.package, args.sets, args.vars)
         quit()
         
         # Make this work in both metadiags and diags.
         if 'climatology' not in progname and 'climatology.py' not in progname:
-           if(args.levels):
-              self.processLevels(args.levels)
+            if(args.levels):
+                self.processLevels(args.levels)
 
 ### Helper functions
 
@@ -1000,54 +1001,54 @@ def make_ft_dict(models):
     index = 0
     
     for i in range(len(models)):
-       key = 'model%s' % index
-       if models[i]._name == None: # just add it if it has no name
-          model_dict[key] = {}
-          model_dict[key]['name'] = None
-          if models[i]._climos != 'no': # Assume they are climos unless told otherwise
-             model_dict[key]['climos'] = models[i]
-             model_dict[key]['raw'] = None
-          else:
-             model_dict[key]['climos'] = None
-             model_dict[key]['raw'] = models[i]
-          index = index + 1
-       else: # it has a name. have we seen it already?
-          name = models[i]._name
-          model_names = [model_dict[x]['name'] for x in model_dict.keys()]
-          if name in model_names: # we've seen it before
-             print 'Found %s in model_names weve seen already.' % name
-             for j in model_dict.keys():
-                if model_dict[j]['name'] == name:
-                   if models[i]._climos != 'no':
-                      model_dict[j]['climos'] = models[i]
-                   else:
-                      model_dict[j]['raw'] = models[i]
-          else:
-             model_dict[key] = {}
-             model_dict[key]['name'] = name
-             if models[i]._climos != 'no':
+        key = 'model%s' % index
+        if models[i]._name == None: # just add it if it has no name
+            model_dict[key] = {}
+            model_dict[key]['name'] = None
+            if models[i]._climos != 'no': # Assume they are climos unless told otherwise
                 model_dict[key]['climos'] = models[i]
                 model_dict[key]['raw'] = None
-             else:
-                model_dict[key]['raw'] = models[i]
+            else:
                 model_dict[key]['climos'] = None
-             index = index +1
+                model_dict[key]['raw'] = models[i]
+            index = index + 1
+        else: # it has a name. have we seen it already?
+            name = models[i]._name
+            model_names = [model_dict[x]['name'] for x in model_dict.keys()]
+            if name in model_names: # we've seen it before
+                print 'Found %s in model_names weve seen already.' % name
+                for j in model_dict.keys():
+                    if model_dict[j]['name'] == name:
+                        if models[i]._climos != 'no':
+                            model_dict[j]['climos'] = models[i]
+                        else:
+                            model_dict[j]['raw'] = models[i]
+            else:
+                model_dict[key] = {}
+                model_dict[key]['name'] = name
+                if models[i]._climos != 'no':
+                    model_dict[key]['climos'] = models[i]
+                    model_dict[key]['raw'] = None
+                else:
+                    model_dict[key]['raw'] = models[i]
+                    model_dict[key]['climos'] = None
+                index = index +1
     
     return model_dict
 
 
 if __name__ == '__main__':
 
-   o = Options()
-   o.processCmdLine()
-   from metrics.fileio.findfiles import *
-   print o._opts
-   modelfts = []
-   for i in range(len(o['model'])):
-      modelfts.append(path2filetable(o, modelid=i))
-   model_dict = make_ft_dict(modelfts)
-   for i in model_dict.keys():
-      print 'key: %s - %s' % (i, model_dict[i])
-   print dir(modelfts[0])
-
-   print modelfts[0].root_dir()
+    o = Options()
+    o.parseCmdLine()
+    from metrics.fileio.findfiles import *
+    print o._opts
+    modelfts = []
+    for i in range(len(o['model'])):
+        modelfts.append(path2filetable(o, modelid=i))
+    model_dict = make_ft_dict(modelfts)
+    for i in model_dict.keys():
+        print 'key: %s - %s' % (i, model_dict[i])
+    print dir(modelfts[0])
+    
+    print modelfts[0].root_dir()

@@ -737,7 +737,7 @@ if __name__ == '__main__':
     print "UV-CDAT Diagnostics, command-line version"
     print ' '.join(sys.argv)
     o = Options()
-    o.processCmdLine()
+    o.parseCmdLine()
     o.verifyOptions()
     import pdb
     #pdb.set_trace()
