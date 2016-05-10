@@ -288,9 +288,9 @@ def run_diags( opts ):
                                                plotparms = { 'model':{}, 'obs':{}, 'diff':{} } )
                             else:
                                 plot = sclass( modelfts, obsfts, varid, time, region, vvaropts[aux], 
-                                               plotparms = { 'model':{'levels':opts['levels'], 'colormap':'rainbow'},
-                                                             'obs':{'levels':opts['levels'], 'colormap':'rainbow'},
-                                                             'diff':{'levels':opts['difflevels'], 'colormap':'bl_to_darkred'} } )
+                                               plotparms = { 'model':{'levels':opts['levels'], 'colormap':opts['colormaps']['model']},
+                                                             'obs':{'levels':opts['levels'], 'colormap':opts['colormaps']['obs']},
+                                                             'diff':{'levels':opts['difflevels'], 'colormap':opts['colormaps']['diff']} } )
 
                         # Do the work (reducing variables, etc)
                         res = plot.compute(newgrid=-1) # newgrid=0 for original grid, -1 for coarse
@@ -737,7 +737,7 @@ if __name__ == '__main__':
     print "UV-CDAT Diagnostics, command-line version"
     print ' '.join(sys.argv)
     o = Options()
-    o.processCmdLine()
+    o.parseCmdLine()
     o.verifyOptions()
     import pdb
     #pdb.set_trace()
