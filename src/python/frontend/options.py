@@ -528,7 +528,9 @@ class Options():
         print '4. Which set/collection to run, e.g. "tier1b-so" or 5 or 14'
         print '5. (Optional) The variables of interest, e.g. Z3 TLAI PBOT. The default is ALL variables valid for the package/set/dataset'
         print '6. (Optional) The --obs keyword to describe observation dataset(s)'
-        print '7. (Optional) Variable options such as seasons, regions, and pressure levels\n'
+        print '7. (Optional) Variable options such as seasons, regions, and pressure levels'
+        print '8. (Optional) Levels can be specified for the model, obs and difference.  The model and obs are the same with --levels. The difference is --difflevels.'
+        print '9. (Optional) Colormaps are specified for each plot with --colormaps model=xxx obs=yyy diff=zzz\n'
         print "All input paths (multiple models and/or obs) are specified in a similar fashion."
         print "The argument (--model or --obs) takes one or more comma-separated arguments to"
         print "describe the dataset"
@@ -545,6 +547,8 @@ class Options():
         print 'diags --model path=/path/to/my/data --package AMWG --outputdir . --coll 5'
         print 'A slightly more complicated example:'
         print 'diags --model path=/path/to/my/raw/data,climos=no --package LMWG --outputdir . --coll 2 --seasons DJF SON --vars TLAI'
+        print 'To specify levels use --levels 1,2,3 for the model and obs. Use --difflevels -2,-1,0,1,2 for the difference.'
+        print 'To spcify the colormap use either a valid colormap or a file containing a colormap. To get a list of valid colormaps use --colormaps model=xxx. The valid colormaps will be printed.'
         return
 
     def climatology_help(self):
