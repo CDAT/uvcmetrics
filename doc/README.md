@@ -9,10 +9,11 @@
 
 This is the initial version under the anaconda environment. There are significant features included
 
-1. corrections to the graphical output
-2. specification to levels and difference levels
-3. specification of color maps
-4. the classic viewer
-5. corrections to the mass weighting algorithm
+1. ACME regridder
+2. corrections to the mass weighting algorithm
+3. corrections to the graphical output
+4. specification to levels and difference levels
+5. specification of color maps
+6. the classic viewer
 
 	
