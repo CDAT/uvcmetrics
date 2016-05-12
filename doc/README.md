@@ -7,7 +7,7 @@
 [![Anaconda-Server Badge](https://anaconda.org/uvcdat/uvcmetrics/badges/downloads.svg)](https://anaconda.org/uvcdat/uvcmetrics)
 
 
-This is the initial version under the anaconda environment. There are significant feature included
+This is the initial version under the anaconda environment. There are significant features included
 
 1. corrections to the graphical output
 2. specification to levels and difference levels
