@@ -1012,7 +1012,7 @@ class amwg_plot_set3(amwg_plot_plan,basic_id):
         plot_b_val.finalize()
         return [ plot_a_val, plot_b_val ]
 
-class amwg_plot_set4and41(amwg_plot_plan):
+class amwg_plot_set4and4A(amwg_plot_plan):
     """represents one plot from AMWG Diagnostics Plot Set 4 or 4a.
     Each such plot is a set of three contour plots: one each for model output, observations, and
     the difference between the two.  A plot's x-axis is latitude and its y-axis is the level,
@@ -1024,8 +1024,8 @@ class amwg_plot_set4and41(amwg_plot_plan):
     #name = '4 - Vertical Contour Plots Zonal Means'
     #number = '4'
     reduction_functions = { '4':[reduce2lat_seasonal, reduce2levlat_seasonal], 
-                           '41':[reduce2lon_seasonal, reduce2levlon_seasonal]}
-    rf_ids = { '4': 'levlat', '41': 'levlon'}
+                           '4A':[reduce2lon_seasonal, reduce2levlon_seasonal]}
+    rf_ids = { '4': 'levlat', '4A': 'levlon'}
     def __init__( self, model, obs, varid, seasonid=None, regionid=None, aux=None, plotparms=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'.
@@ -1261,7 +1261,7 @@ class amwg_plot_set4and41(amwg_plot_plan):
                 v.finalize(flip_y=True)
         return self.plotspec_values[self.plotall_id]
 
-class amwg_plot_set4(amwg_plot_set4and41):
+class amwg_plot_set4(amwg_plot_set4and4A):
     """ Define the reduction to be used
     sample script:
     diags --outputdir $HOME/Documents/Climatology/ClimateData/diagout/ 
@@ -1270,7 +1270,7 @@ class amwg_plot_set4(amwg_plot_set4and41):
     --package AMWG --set 4 --vars T --seasons ANN"""
     name = '4 - Vertical Contour Plots Zonal Means'
     number = '4'
-class amwg_plot_set41(amwg_plot_set4and41):
+class amwg_plot_set4A(amwg_plot_set4and4A):
     """ Define the reduction to be used
         sample script:
         diags --outputdir $HOME/Documents/Climatology/ClimateData/diagout/ 

@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 """" In this file the inputs for the test are defined and passed to diags_test.execute"""
 import diags_test
-from metrics.packages.amwg.amwg import amwg_plot_set41
+from metrics.packages.amwg.amwg import amwg_plot_set4A
 
-print amwg_plot_set41.name
+print amwg_plot_set4A.name
 
-test_str = 'Test 41\n'
+test_str = 'Test 4A\n'
 #run this from command line to get the files required
-example = "./diagtest41.py --datadir ~/uvcmetrics_test_data/ --baseline ~/uvcdat-testdata/baselines/metrics/ --keep True"
+example = "./diagtest4.py --datadir ~/uvcmetrics_test_data/ --baseline ~/uvcdat-testdata/baselines/metrics/ --keep True"
 
-plotset = 41
+plotset = '4A'
 #filterid = 'f_contains'
 #obsid = 'NCEP'
 #varid = 'T'
@@ -26,7 +26,7 @@ dt = diags_test.DiagTest( modeldir, obsdir, plotset, filterid, obsid, varid, sea
 
 # Test of graphics (png) file match:
 # This just looks at combined plot, aka summary plot, which is a compound of three plots.
-imagefilename = 'figure-set41_Global_ANN_T_plot-combined.png'
+imagefilename = 'figure-set4A_Global_ANN_T_plot-combined.png'
 imagethreshold = None
 ncfiles = {}
 ncfiles['T_ANN_(1)_cam35_data_smaller.nc'] = ['dv_T_levlon_ANN_ft1_cam35_data_smaller']

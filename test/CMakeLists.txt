@@ -29,13 +29,13 @@ ${metrics_SOURCE_DIR}/test/diagtest04.py
 
 set_tests_properties(diags_test_04 PROPERTIES DEPENDS diags_test_03)
 
-add_test("diags_test_41"
+add_test("diags_test_4A"
 "python"
-${metrics_SOURCE_DIR}/test/diagtest41.py
+${metrics_SOURCE_DIR}/test/diagtest4A.py
 --datadir=${UVCMETRICS_TEST_DATA_DIRECTORY}/
 --baseline=${BASELINE_DIR}/ )
 
-set_tests_properties(diags_test_41 PROPERTIES DEPENDS diags_test_04)
+set_tests_properties(diags_test_4A PROPERTIES DEPENDS diags_test_04)
 
 add_test("diags_test_05"
 "python"
@@ -43,7 +43,7 @@ ${metrics_SOURCE_DIR}/test/diagtest05.py
 --datadir=${UVCMETRICS_TEST_DATA_DIRECTORY}/
 --baseline=${BASELINE_DIR}/ )
 
-set_tests_properties(diags_test_05 PROPERTIES DEPENDS diags_test_41)
+set_tests_properties(diags_test_05 PROPERTIES DEPENDS diags_test_4A)
 
 add_test("diags_test_06"
 "python"

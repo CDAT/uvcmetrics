@@ -82,6 +82,12 @@ def setnum( setname ):
     """extracts the plot set number from the full plot set name, and returns the number.
     The plot set name should begin with the set number, e.g.
        setname = ' 2- Line Plots of Annual Implied Northward Transport'"""
+    
+    #this assumes a dash is in the string as above; the rest of this function is tooooooo complicated
+    if '-' in setname:
+        setname = setname.split('-')[0]
+        return setname.strip()
+        
     mo = re.search( r'\d', setname )   # matches decimal digits
     if mo is None:
         return None
@@ -190,9 +196,10 @@ def run_diags( opts ):
         plotsets = [ keys[1] ]
         logging.warning("plot sets not specified, defaulting to %s",plotsets[0])
     else:
-        ps = opts['sets']
         sndic = { setnum(s):s for s in sm.keys() }   # plot set number:name
-        plotsets = [ sndic[setnum(x)] for x in ps if setnum(x) in sndic ]
+        plotsets = []
+        for ID in opts['sets']:
+            plotsets += [sndic[ID]]
 
     # Ok, start the main loops.
     for sname in plotsets:

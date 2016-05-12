@@ -426,11 +426,11 @@ diags_collection['4a']['seasons'] = ['DJF', 'JJA', 'ANN']
 diags_collection['4a']['package'] = 'AMWG'
 diags_collection['4a']['options'] = {'logo':'no'}
 diags_collection['4a']['combined'] = True
-diags_collection['4a']['U'] = {'plottype': '41', 'obs': ['ECMWF_1', 'NCEP_1', 'JRA25_1', 'ERA40_1']}
-diags_collection['4a']['SHUM'] = {'plottype': '41', 'obs': ['ECMWF_1', 'JRA25_1', 'AIRS_1', 'ERA40_1', 'NCEP_1']}
-diags_collection['4a']['RELHUM'] = {'plottype': '41', 'obs': ['ECMWF_1', 'NCEP_1', 'AIRS_1', 'ERA40_1']}
-diags_collection['4a']['OMEGA'] = {'plottype': '41', 'obs': ['ECMWF_1', 'NCEP_1', 'JRA25_1', 'ERA40_1']}
-diags_collection['4a']['T'] = {'plottype': '41', 'obs': ['NCEP_1', 'JRA25_1', 'ERA40_1', 'ECMWF_1', 'AIRS_1']}
+diags_collection['4a']['U'] = {'plottype': '4A', 'obs': ['ECMWF_1', 'NCEP_1', 'JRA25_1', 'ERA40_1']}
+diags_collection['4a']['SHUM'] = {'plottype': '4A', 'obs': ['ECMWF_1', 'JRA25_1', 'AIRS_1', 'ERA40_1', 'NCEP_1']}
+diags_collection['4a']['RELHUM'] = {'plottype': '4A', 'obs': ['ECMWF_1', 'NCEP_1', 'AIRS_1', 'ERA40_1']}
+diags_collection['4a']['OMEGA'] = {'plottype': '4A', 'obs': ['ECMWF_1', 'NCEP_1', 'JRA25_1', 'ERA40_1']}
+diags_collection['4a']['T'] = {'plottype': '4A', 'obs': ['NCEP_1', 'JRA25_1', 'ERA40_1', 'ECMWF_1', 'AIRS_1']}
 
 
 # *** Variables List ***
