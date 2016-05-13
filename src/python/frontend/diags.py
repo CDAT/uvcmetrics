@@ -196,11 +196,12 @@ def run_diags( opts ):
         plotsets = [ keys[1] ]
         logging.warning("plot sets not specified, defaulting to %s",plotsets[0])
     else:
-        sndic = { setnum(s):s for s in sm.keys() }   # plot set number:name
+        #sndic = { setnum(s):s for s in sm.keys() }   # plot set number:name
+        sndic = {s.number:s for s in sm.keys() }
         plotsets = []
         for ID in opts['sets']:
             plotsets += [sndic[ID]]
-
+    pdb.set_trace()
     # Ok, start the main loops.
     for sname in plotsets:
         print "Working on ",sname," plots"
