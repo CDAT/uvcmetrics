@@ -525,7 +525,7 @@ def postDB(fts, dsname, package, host=None):
 ### The driver part of the script
 if __name__ == '__main__':
    opts = Options()
-   opts.processCmdLine()
+   opts.parseCmdLine()
    opts.verifyOptions()
 
    if opts['package'] == None or opts['package'] == '':
