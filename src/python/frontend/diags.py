@@ -8,7 +8,7 @@
 ###     (Idealy, just specify the exact, complete filename)
 ### Look for speed improvements
 
-import hashlib, os, pickle, sys, os, time, re, pdb, logging
+import metrics, hashlib, os, pickle, sys, os, time, re, pdb, logging
 from metrics import *
 from metrics.fileio.filetable import *
 from metrics.fileio.findfiles import *
@@ -159,7 +159,7 @@ def run_diags( opts ):
 
     number_diagnostic_plots = 0
 
-    dm = diagnostics_menu()                 # dm = diagnostics menu (package), a dict
+    dm = metrics.packages.diagnostic_groups.diagnostics_menu()                 # dm = diagnostics menu (package), a dict
 
     # set up some VCS things if we are going to eventually plot things
     if opts['output']['plots'] == True:
@@ -191,25 +191,17 @@ def run_diags( opts ):
     # Find which plotsets the user requested which this package offers:
     sm = pclass.list_diagnostic_sets()  # sm = plot set menu, a dict
     if opts['sets'] is None:
-        keys = sm.keys()
-        keys.sort()
-        plotsets = [ keys[1] ]
-        logging.warning("plot sets not specified, defaulting to %s",plotsets[0])
-    else:
-        #sndic = { setnum(s):s for s in sm.keys() }   # plot set number:name
-        sndic = {s.number:s for s in sm.keys() }
-        plotsets = []
-        for ID in opts['sets']:
-            plotsets += [sndic[ID]]
-    pdb.set_trace()
+        opts['sets'] = ['1'] 
+        logging.warning("plot sets not specified, defaulting to %s", opts['sets'][0])
+
+#=======================================================================================
     # Ok, start the main loops.
-    for sname in plotsets:
+    for sname, sclass in sm.items():
+        snum = sclass.number
+        if snum not in opts['sets']:
+            continue
         print "Working on ",sname," plots"
-
-        snum = sname.strip().split(' ')[0]
-        # instantiate the class
-        sclass = sm[sname]
-
+        pdb.set_trace()
         # see if the user specified seasons are valid for this diagnostic
         use_times = list( set(times) & set(pclass.list_seasons()) )
 

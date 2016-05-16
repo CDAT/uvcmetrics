@@ -9,6 +9,7 @@
 # eventually.  But this requires less typing and still lets us have a module-level separation
 # between the VCS-knowledgeable stuff and the actual plot specification...
 
+from metrics.packages.amwg import *
 from metrics.packages.amwg.amwg import *
 from metrics.packages.lmwg.lmwg import *
 
