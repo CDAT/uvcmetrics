@@ -8,6 +8,7 @@ from metrics.frontend.options import make_ft_dict
 from metrics.fileio.filetable import *
 from metrics.fileio.findfiles import *
 from metrics.packages.diagnostic_groups import *
+from metrics.levels.plot_surfaces_cons import *
 
 # If not specified on an individual variable, this is the default.
 def_executable = 'diags.py'
