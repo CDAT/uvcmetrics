@@ -1,0 +1,6 @@
+This directory contains files related to making the ncar levels available to the python app.
+In particular metadiags.  The key file is plot_surfaces_cons.py which was derived from 
+plot_surfaces_cons.ncl.  It was created as a copy with the appropriate edit.  The ncl file
+contains lots of other stuff such as model-model comparision levels and other logic which
+has NOT been incorporated.  The next time there is bitching about the levels, the poor 
+sucker to make changes will probaly have to change all of this massive disgusting kludge!
