@@ -8,7 +8,6 @@ from metrics.frontend.options import make_ft_dict
 from metrics.fileio.filetable import *
 from metrics.fileio.findfiles import *
 from metrics.packages.diagnostic_groups import *
-import metrics.graphics.levels.plot_surfaces_cons as ncl_levels
 
 # If not specified on an individual variable, this is the default.
 def_executable = 'diags.py'
@@ -337,7 +336,6 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
                    diags_collection[collnum][v].get('options', False) == False and \
                    diags_collection[collnum][v].get('executable', False) == False: 
                   simple_vars.append(v)
-            pdb.set_trace()
             # I believe all of the lower level plot sets (e.g. in amwg.py or lmwg.py) will ignore a second dataset, IF one is supplied
             # unnecessarily, so pass all available datasets here.
             complex_vars = list(set(obs_vlist) - set(simple_vars))
