@@ -3,6 +3,7 @@
 
 ### This file converts the dictionary file (in this case amwgmaster2.py) to a series of diags.py commands.
 import sys, getopt, os, subprocess, logging
+from argparse import ArgumentParser
 from metrics.frontend.options import Options
 from metrics.frontend.options import make_ft_dict
 from metrics.fileio.filetable import *
@@ -10,7 +11,7 @@ from metrics.fileio.findfiles import *
 from metrics.packages.diagnostic_groups import *
 
 # If not specified on an individual variable, this is the default.
-def_executable = 'diags.py'
+def_executable = 'diags'
 
 # The user specified a package; see what collections are available.
 def getCollections(pname):
@@ -28,19 +29,19 @@ def getCollections(pname):
    # Deal with mixed_plots next
    for c in allcolls:
       if diags_collection[c].get('mixed_plots', False) == True:
-         # mixed_packages requires mixed_plots 
+         # mixed_packages requires mixed_plots
          if diags_collection[c].get('mixed_packages', False) == False:
             # If no package was specified, just assume it is universal
             # Otherwise, see if pname is in the list for this collection
             if diags_collection[c].get('package', False) == False or diags_collection[c]['package'].upper() == pname.upper():
                colls.append(c)
-         else: # mixed packages. need to loop over variables then. if any variable is using this pname then add the package 
+         else: # mixed packages. need to loop over variables then. if any variable is using this pname then add the package
             vlist = list( set(diags_collection[c].keys()) - set(collection_special_vars))
             for v in vlist:
                # This variable has a package
                if diags_collection[c][v].get('package', False) != False and diags_collection[c][v]['package'].upper() == pname.upper():
                   colls.append(c)
-            
+
    print 'The following diagnostic collections appear to be available: %s' %colls
    return colls
 
@@ -138,7 +139,7 @@ def makeTables(collnum, model_dict, obspath, outpath, pname, outlog):
             ps0 = '--model path=%s,climos=%s' % (ft0.root_dir(), cf0)
             if num_models == 2 and ft1 != None:
                ps1 = '--model path=%s,climos=%s' % (ft1.root_dir(), cf1)
-               
+
          vstr = '--vars %s' % v
          if diags_collection[collnum][v].get('varopts', False) != False:
             aux = diags_collection[collnum][v]['varopts']
@@ -159,9 +160,10 @@ def makeTables(collnum, model_dict, obspath, outpath, pname, outlog):
             else:
                auxstr = '--varopts '+a
 
-            cmdline = 'diags.py %s %s %s --table --set %s --prefix set%s --package %s %s %s %s %s --outputdir %s' % (path0str, path1str, obsstr, collnum, collnum, package, vstr, seasonstr, regionstr, auxstr, outpath)
+            cmdline = (def_executable, path0str, path1str, obsstr, "--table", "--set", collnum, "--prefix", "set%s" % collnum, "--package", package, vstr, seasonstr, regionstr, auxstr, "--outputdir", outpath)
+            print "tables"
             runcmdline(cmdline, outlog)
-         
+
 def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
    import os
    # Did the user specify a single collection? If not find out what collections we have
@@ -348,8 +350,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
                   pstr2 = '--model path=%s,climos=%s,type=model' % (modelpath1, cf1)
                else:
                   pstr2 = ''
-               cmdline = 'diags.py %s %s %s %s %s %s %s %s %s %s %s %s %s' % (pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, seasonstr, varstr, outstr, xmlstr, prestr, poststr, regionstr)
-                  
+               cmdline = (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, seasonstr, varstr, outstr, xmlstr, prestr, poststr, regionstr)
                if collnum != 'dontrun':
                   runcmdline(cmdline, outlog)
                else:
@@ -401,7 +402,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
                   else:
                      pstr2 = ''
 
-                  cmdline = 'diags.py %s %s %s %s %s %s %s %s %s %s %s %s %s %s' % (pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, seasonstr, varstr, outstr, xmlstr, prestr, poststr, regionstr, varopts)
+                  cmdline = (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, seasonstr, varstr, outstr, xmlstr, prestr, poststr, regionstr, varopts)
                   if collnum != 'dontrun':
                      runcmdline(cmdline, outlog)
                   else:
@@ -438,30 +439,35 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
                         execstr = execstr+' --casename '+ dsname
                   if 'figurebase' in cmdlineOpts:
                      execstr = execstr+' --figurebase '+ fnamebase
-
                #if diags_collection[collnum][v].get('options', False) != False:
                #   for x in diags_collection[collnum][v]['options'].keys():
                #      cmdline += '--%s %s' % (x, diags_collection[collnum][v][options][x])
-               print 'About to execute: ', execstr
-               runcmdline(execstr, outlog)
-               print 'EXECUTED'
-
-
-                  
+               if execstr != def_executable:
+                  runcmdline([execstr], outlog)
 
    outlog.close()
 
+import multiprocessing
+MAX_PROCS = multiprocessing.cpu_count()
+pid_to_cmd = {}
+active_processes = []
+
+def cmderr(popened):
+   print "Command \n\"%s\"\n failed with code of %d" % (pid_to_cmd[popened.pid], popened.returncode)
+
 def runcmdline(cmdline, outlog):
-   print 'Executing '+cmdline
-   try:
-      retcode = subprocess.check_call(cmdline, stdout=outlog, stderr=outlog, shell=True)
-      if retcode < 0:
-         logging.warning('TERMINATE SIGNAL %s', -retcode)
-   except subprocess.CalledProcessError as e:
-      logging.exception('\n\nEXECUTION FAILED FOR %s: %s', cmdline, e)
-      outlog.write('Command %s failed\n' % cmdline)
-      outlog.write('----------------------------------------------')
-      print 'See '+outpath+'/DIAGS_OUTPUT.log for details'
+   while len(active_processes) >= MAX_PROCS:
+      for i, p in enumerate(active_processes):
+         if p.poll() is not None:
+            active_processes.pop(i)
+            if p.returncode != 0:
+               cmderr(p)
+            else:
+               print '"%s"' % pid_to_cmd[p.pid], "succeeded."
+   cmd = " ".join(cmdline)
+   print '"%s"' % cmd, "begun"
+   active_processes.append(subprocess.Popen(cmd, stdout=outlog, stderr=outlog, shell=True))
+   pid_to_cmd[active_processes[-1].pid] = cmd
 
 
 ### These 3 functions are used to add the variables to the database for speeding up
@@ -495,7 +501,7 @@ def list_vars(ft, package):
         pclass = dm[pname]()
 
         slist = pclass.list_diagnostic_sets()
-        # slist contains "Set 1 - Blah Blah Blah", "Set 2 - Blah Blah Blah", etc 
+        # slist contains "Set 1 - Blah Blah Blah", "Set 2 - Blah Blah Blah", etc
         # now to get all variables, we need to extract just the integer from the slist entries.
         snums = [setnum(x) for x in slist.keys()]
         for s in slist.keys():
@@ -531,7 +537,7 @@ if __name__ == '__main__':
    if opts['package'] == None or opts['package'] == '':
       logging.critical('Please specify a package when running metadiags.')
       quit()
-      
+
    package = opts['package'].upper()
    if package == 'AMWG':
       from metrics.frontend.amwgmaster import *
@@ -603,12 +609,18 @@ if __name__ == '__main__':
 
    if dbonly == True:
       print 'Updating the remote database only...'
-      postDB(fts, dsname, package, host=hostname) 
+      postDB(fts, dsname, package, host=hostname)
       quit()
 
    generatePlots(model_dict, obspath, outpath, package, xmlflag, colls=colls)
 
    if dbflag == True:
       print 'Updating the remote database...'
-      postDB(fts, dsname, package, host=hostname) 
+      postDB(fts, dsname, package, host=hostname)
+   for proc in active_processes:
+      result = proc.wait()
+      if result != 0:
+         cmderr(proc)
+      else:
+         print '"%s"' % pid_to_cmd[proc.pid], "succeeded."
 
