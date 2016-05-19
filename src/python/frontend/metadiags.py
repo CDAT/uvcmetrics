@@ -2,13 +2,13 @@
 
 
 ### This file converts the dictionary file (in this case amwgmaster2.py) to a series of diags.py commands.
-import sys, getopt, os, subprocess, logging
+import sys, getopt, os, subprocess, logging, pdb
 from metrics.frontend.options import Options
 from metrics.frontend.options import make_ft_dict
 from metrics.fileio.filetable import *
 from metrics.fileio.findfiles import *
 from metrics.packages.diagnostic_groups import *
-from metrics.levels.plot_surfaces_cons import *
+import metrics.graphics.levels.plot_surfaces_cons as ncl_levels
 
 # If not specified on an individual variable, this is the default.
 def_executable = 'diags.py'
@@ -337,7 +337,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
                    diags_collection[collnum][v].get('options', False) == False and \
                    diags_collection[collnum][v].get('executable', False) == False: 
                   simple_vars.append(v)
-
+            pdb.set_trace()
             # I believe all of the lower level plot sets (e.g. in amwg.py or lmwg.py) will ignore a second dataset, IF one is supplied
             # unnecessarily, so pass all available datasets here.
             complex_vars = list(set(obs_vlist) - set(simple_vars))
@@ -403,6 +403,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
                      pstr2 = ''
 
                   cmdline = 'diags.py %s %s %s %s %s %s %s %s %s %s %s %s %s %s' % (pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, seasonstr, varstr, outstr, xmlstr, prestr, poststr, regionstr, varopts)
+    
                   if collnum != 'dontrun':
                      runcmdline(cmdline, outlog)
                   else:
