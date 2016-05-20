@@ -453,22 +453,22 @@ pid_to_cmd = {}
 active_processes = []
 
 def cmderr(popened):
-   print "Command \n\"%s\"\n failed with code of %d" % (pid_to_cmd[popened.pid], popened.returncode)
+    print "Command \n\"%s\"\n failed with code of %d" % (pid_to_cmd[popened.pid], popened.returncode)
 
 def runcmdline(cmdline, outlog):
-   while len(active_processes) >= MAX_PROCS:
-      for i, p in enumerate(active_processes):
-         if p.poll() is not None:
-            active_processes.pop(i)
-            if p.returncode != 0:
-               cmderr(p)
-            else:
-               print '"%s"' % pid_to_cmd[p.pid], "succeeded."
-   cmd = " ".join(cmdline)
-   print '"%s"' % cmd, "begun"
-   active_processes.append(subprocess.Popen(cmd, stdout=outlog, stderr=outlog, shell=True))
-   pid_to_cmd[active_processes[-1].pid] = cmd
-
+    while len(active_processes) >= MAX_PROCS:
+        for i, p in enumerate(active_processes):
+            if p.poll() is not None:
+                active_processes.pop(i)
+                if p.returncode != 0:
+                    cmderr(p)
+                else:
+                    print '"%s"' % pid_to_cmd[p.pid], "succeeded. pid=", p.pid
+    cmd = " ".join(cmdline)
+    active_processes.append(subprocess.Popen(cmd, stdout=outlog, stderr=outlog, shell=True))
+    PID = active_processes[-1].pid
+    pid_to_cmd[PID] = cmd
+    print '"%s"' % cmd, "begun pid=", PID
 
 ### These 3 functions are used to add the variables to the database for speeding up
 ### classic view
