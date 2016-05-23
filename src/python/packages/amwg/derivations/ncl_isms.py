@@ -2,7 +2,7 @@
 
 # Support functions like some found in NCL for CAM.
 
-import numpy, cdms2
+import numpy, cdms2, logging
 from numpy import pi, sin
 
 def latAxis( mv ):
@@ -34,7 +34,7 @@ def latRegWgt( lat ):
     diffhi = numpy.all( (lat[1:nlat]-lat[0:nlat-1])<=dlat_hi )
     diff = difflo and diffhi
     if not diff:
-        print "ERROR in latRegWgt: Expecting equally spaced latitudes"
+        logging.error("In latRegWgt: Expecting equally spaced latitudes")
         return err*numpy.ones(nlat)
 
     dlat = abs((lat[2]-lat[1])*rad)*0.5

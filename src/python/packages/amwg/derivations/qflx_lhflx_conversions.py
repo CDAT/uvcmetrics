@@ -20,7 +20,7 @@ def reconcile_energyflux_precip(mv1, mv2, preferred_units=None):
     # assumed to be the preferred units.
     #
     # This function is used by the derived_variable definitions in
-    # amwg_plot_spec's standard_variables (within amwg.py).
+    # amwg_plot_plan's standard_variables (within amwg.py).
     #
     # Author: S.M. Burrows, 9 Feb 2015.
 

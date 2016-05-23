@@ -6,7 +6,7 @@
 # DIAG Set 1 - Tables of global, tropical, and extratropical DJF, JJA, ANN means and RMSE
 
 from pprint import pprint
-from metrics.packages.amwg.amwg import amwg_plot_spec
+from metrics.packages.amwg.amwg import amwg_plot_plan
 from metrics.packages.amwg.derivations.vertical import *
 from metrics.computation.reductions import *
 from metrics.computation.plotspec import *
@@ -72,7 +72,7 @@ def reduced_variables_hybrid_lev( filetable, varid, season, region='Global', fil
     reduced_variables = { v.id():v for v in reduced_varlis }
     return reduced_variables
 
-class amwg_plot_set1(amwg_plot_spec):
+class amwg_plot_set1(amwg_plot_plan):
     name = '1 - Tables of Global, tropical, and extratropical DJF, JJA, ANN means and RMSE'
     number = '1'
     # table row specs:
@@ -271,7 +271,7 @@ class amwg_plot_set1(amwg_plot_spec):
                                  reduce2scalar_seasonal_zonal(
                                 x,season,latmin=dom0,latmax=dom1,vid=vid,gw=gw) ) )
                                       }
-                variable_values = {}  # the following is similar to code in plot_spec._results()
+                variable_values = {}  # the following is similar to code in plot_plan._results()
                 for v,rv1 in reduced_variables.iteritems():
                     value = rv1.reduce(None)
                     variable_values[v] = value  # could be None
@@ -336,7 +336,7 @@ class amwg_plot_set1(amwg_plot_spec):
                 # It's a more complicated calculation, which we can treat as a derived variable.
                 # If it's a standard_variable, we know how to do it...
                 try:
-                    vid,rvs,dvs = amwg_plot_spec.stdvar2var(
+                    vid,rvs,dvs = amwg_plot_plan.stdvar2var(
                         self.var, filetable, self.season, reduction_function=\
                             (lambda x,vid=None,season=self.season,dom0=domrange[0],dom1=domrange[1],gw=gw:
                                  reduce2scalar_seasonal_zonal(
@@ -366,7 +366,8 @@ class amwg_plot_set1(amwg_plot_spec):
             output = [str(self.values[0])]+[self.fpfmt(v) for v in self.values[1:]]
             return '\t'.join(output)
 
-    def __init__( self, model, obssets, varid='ignored', seasonid='ANN', region='Global', aux='ignored', levels='ignored' ):
+    def __init__( self, model, obssets, varid='ignored', seasonid='ANN', region='Global',
+                  aux='ignored', plotparms='ignored' ):
         filetable1, filetable2 = self.getfts(model, obssets)
         # Inputs: filetable1 is the filetable for the test case (model) data.
         # filetable2 is a file table for all obs data.

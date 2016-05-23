@@ -12,3 +12,5 @@ git.py
 RemoteSystemsTempFiles/
 src/python/junk
 src/python/packages/amwg/CharlesMajic
+test/data/*.nc
+test/data/*/*

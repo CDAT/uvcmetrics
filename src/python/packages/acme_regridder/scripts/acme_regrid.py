@@ -4,6 +4,7 @@
 import cdms2
 import sys
 import os
+import logging
 import numpy
 import MV2
 import argparse
@@ -30,10 +31,8 @@ class WeightFileRegridder:
         self.mask_b = wFile("mask_b")
         self.nb = self.mask_b.shape[0]
         if self.mask_b.min() == 1 and self.mask_b.max() == 1:
-            print "No need to maks after"
             self.mask_b = False
         else:
-            print "MX MIN:", self.mask_b.max(), self.mask_b.min()
             self.mask_b = numpy.logical_not(wFile("mask_b").filled())
         self.n_s = self.S.shape[0]
         self.method = wFile.map_method
@@ -82,7 +81,6 @@ class WeightFileRegridder:
             dest_field = metrics.packages.acme_regridder._regrid.apply_weights(
                 input, self.S, self.row, self.col, self.nb)
         if self.mask_b is not False:
-            print "Applying mask_b"
             dest_field = numpy.ma.masked_where(self.mask_b, dest_field)
         if self.regular:
             sh2 = list(sh[:-1])
@@ -151,9 +149,9 @@ if __name__ == "__main__":
                             (default is all variable with 'ncol' dimension")
     parser.add_argument("--store-bounds",dest="store_bounds",action="store_true",default=False,help="store lat/lon bounds information")
     parser.add_argument("--fix-esmf-bounds",dest="fix_bounds",action="store_true",default=False,help="fix esmf first and last longitudes being half width")
+    parser.add_argument("-q","--quiet",action="store_true",default=False,help="quiet mode (no output printed to screen)")
 
     args = parser.parse_args(sys.argv[1:])
-    #print "AERGS:",args
 
     # Read the weights file
     regdr = WeightFileRegridder(args.weights,True,fix_bounds=args.fix_bounds)
@@ -164,7 +162,6 @@ if __name__ == "__main__":
         onm = ".".join(args.file.split(".")[:-1])+"_regrid.nc"
     else:
         onm = args.out
-    #print "Output file:", onm
     fo = cdms2.open(onm, "w")
     store_provenance(fo,script_file_name=__file__)
     history = ""
@@ -176,7 +173,7 @@ if __name__ == "__main__":
     history += "%s: weights applied via acme_regrid (git commit: %s), " % (
                     str(datetime.datetime.utcnow()), metrics.git.commit,
                     )
-                    
+
     fo.history = history
     dirnm = os.path.dirname(args.file)
     basenm = os.path.basename(args.file)
@@ -201,6 +198,7 @@ if __name__ == "__main__":
         vars = f.variables.keys()
     axes3d = []
     axes4d = []
+    axes4d_ilev = []
     wgts = None
     area = None
     NVARS = len(vars)
@@ -208,21 +206,27 @@ if __name__ == "__main__":
     for i, v in enumerate(vars):
         V = f[v]
         if V is None:
-            print "Will skip", V, "as it does NOT appear to be in file"
+            if not args.quiet: print "Will skip", V, "as it does NOT appear to be in file"
         elif V.id in ["lat", "lon", "area"]:
-            print i, NVARS, "Will skip", V.id, "no longer needed or recomputed"
+            if not args.quiet: print i, NVARS, "Will skip", V.id, "no longer needed or recomputed"
         elif "ncol" in V.getAxisIds():
-            print i, NVARS, "Will process:", V.id
+            if not args.quiet: print i, NVARS, "Will process:", V.id
             if V.rank() == 2:
                 if axes3d == []:
                     dat2 = cdms2.MV2.array(regdr.regrid(V()))
                     axes3d = dat2.getAxisList()
                 addVariable(fo, V.id, V.typecode(), axes3d, V.attributes, store_bounds=args.store_bounds)
             elif V.rank() == 3:
-                if axes4d == []:
-                    dat2 = cdms2.MV2.array(regdr.regrid(V()))
-                    axes4d = dat2.getAxisList()
-                addVariable(fo, V.id, V.typecode(), axes4d, V.attributes, store_bounds=args.store_bounds)
+                if "ilev" in V.getAxisIds(): # New CLUBB things
+                    if axes4d_ilev == []:
+                        dat2 = cdms2.MV2.array(regdr.regrid(V()))
+                        axes4d_ilev = dat2.getAxisList()
+                    addVariable(fo, V.id, V.typecode(), axes4d_ilev, V.attributes, store_bounds=args.store_bounds)
+                else:
+                    if axes4d == []:
+                        dat2 = cdms2.MV2.array(regdr.regrid(V()))
+                        axes4d = dat2.getAxisList()
+                    addVariable(fo, V.id, V.typecode(), axes4d, V.attributes, store_bounds=args.store_bounds)
             if wgt is None:
                 wgt = True
                 addVariable(fo, "gw", "d", [dat2.getLatitude(), ], [])
@@ -234,7 +238,7 @@ if __name__ == "__main__":
                              "cell_methods": "lat, lon: sum"}
                             )
         else:
-            print "Will rewrite as is", V.id
+            if not args.quiet: print "Will rewrite as is", V.id
             addVariable(fo, V.id, V.typecode(), V.getAxisList(), V.attributes, store_bounds=args.store_bounds)
             if V.id == "time_bnds":
               tim_bnds = V.getAxisList()[-1]
@@ -248,16 +252,16 @@ if __name__ == "__main__":
     for i, v in enumerate(vars):
         V = f[v]
         if V is None:
-            print "Skipping", V, "as it does NOT appear to be in file"
+            if not args.quiet: print "Skipping", V, "as it does NOT appear to be in file"
         elif V.id in ["lat", "lon", "area"]:
-            print i, NVARS, "Skipping", V.id, "no longer needed or recomputed"
+            if not args.quiet: print i, NVARS, "Skipping", V.id, "no longer needed or recomputed"
         elif "ncol" in V.getAxisIds():
-            print i, NVARS, "Processing:", V.id
+            if not args.quiet: print i, NVARS, "Processing:", V.id
             V2 = fo[V.id]
             dat2 = cdms2.MV2.array(regdr.regrid(V()))
             V2[:] = dat2[:].astype(V.typecode())
             if wgts is None:
-                print "trying to get weights"
+                if not args.quiet: print "trying to get weights"
                 wgts = [numpy.sin(x[1]*numpy.pi/180.) -
                         numpy.sin(x[0]*numpy.pi/180.)
                         for x in dat2.getLatitude().getBounds()]
@@ -267,18 +271,18 @@ if __name__ == "__main__":
                     dat2 = dat2[0, 0]
                 else:
                     dat2 = dat2[0]
-                print "Computing area weights"
+                if not args.quiet: print "Computing area weights"
                 fw = cdms2.open(args.weights)
                 area = fw("area_b")
                 fw.close()
                 if numpy.allclose(area,0.):
-                  print "area is all zeroes computing it for you"
+                  if not args.quiet: print "area is all zeroes computing it for you"
                   area = cdutil.area_weights(dat2)*numpy.pi*4.
                 area = MV2.reshape(area, dat2.shape[-2:])
                 V2 = fo["area"]
                 V2[:] = area[:]
         else:
-            print i, NVARS, "Rewriting as is:", V.id
+            if not args.quiet: print i, NVARS, "Rewriting as is:", V.id
             try:
                 V2 = fo[V.id]
                 if V2.rank() == 0:
@@ -296,7 +300,8 @@ if __name__ == "__main__":
                 else:
                     V2[:] = V[:]
             except Exception, err:
-                print "Variable %s falied with error: %s" % (V2.id, err)
+                if not args.quiet: logging.exception("Variable %s falied with error: %s", V2.id, err)
+
     # latitude and longitude bounds
     if args.store_bounds:
       fo["latitude_bounds"][:]=regdr.lats.getBounds()

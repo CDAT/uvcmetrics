@@ -2,7 +2,7 @@
 
 
 ### This file converts the dictionary file (in this case amwgmaster2.py) to a series of diags.py commands.
-import sys, getopt, os, subprocess
+import sys, getopt, os, subprocess, logging
 from metrics.frontend.options import Options
 from metrics.fileio.filetable import *
 from metrics.fileio.findfiles import *
@@ -63,7 +63,7 @@ def generatePlots(modelpath, obspath, outpath, pname, xmlflag, colls=None):
       try:
          os.makedirs(outpath)
       except:
-         print 'Failed to create directory ', outpath
+         logging.exception('Failed to create directory %s', outpath)
    try:
       outlog = open(os.path.join(outpath,'DIAGS_OUTPUT.log'), 'w')
    except:
@@ -71,7 +71,7 @@ def generatePlots(modelpath, obspath, outpath, pname, xmlflag, colls=None):
          os.mkdir(outpath)
          outlog = open(os.path.join(outpath,'DIAGS_OUTPUT.log'), 'w')
       except: 
-         print 'Couldnt create output log - %s/DIAGS_OUTPUT.log' % outpath
+         logging.exception('Couldnt create output log - %s/DIAGS_OUTPUT.log', outpath)
          quit()
 
    # Now, loop over collections.
@@ -103,7 +103,7 @@ def generatePlots(modelpath, obspath, outpath, pname, xmlflag, colls=None):
          # Check global package
          if diags_collection[collnum].get('package', False) != False and diags_collection[collnum]['package'].upper() != pname.upper():
             # skip over this guy
-            print 'Skipping over collection ', collnum
+            logging.warning('Skipping over collection %s', collnum)
             continue
       else:
          if diags_collection[collnum].get('package', False) != False and diags_collection[collnum]['package'].upper() == pname.upper():
@@ -212,9 +212,9 @@ def runcmdline(cmdline, outlog):
    try:
       retcode = subprocess.check_call(cmdline, stdout=outlog, stderr=outlog, shell=True)
       if retcode < 0:
-         print 'TERMINATE SIGNAL', -retcode
+         logging.warning('TERMINATE SIGNAL %s', -retcode)
    except subprocess.CalledProcessError as e:
-      print '\n\nEXECUTION FAILED FOR ', cmdline, ':', e
+      logging.exception('\n\nEXECUTION FAILED FOR %s: %s', cmdline, e)
       outlog.write('Command %s failed\n' % cmdline)
       outlog.write('----------------------------------------------')
       print 'See '+outpath+'/DIAGS_OUTPUT.log for details'
@@ -290,8 +290,7 @@ if __name__ == '__main__':
    try:
       opts, args = getopt.getopt(sys.argv[1:], 'p:m:v:o:c:d:H:b:h',["package=", "model=", "path=", "obs=", "obspath=", "output=", "outpath=", "outputdir=", "collections=", "colls=", "dsname=", "hostname=", "db=", "figures=", "help"])
    except getopt.GetoptError as err:
-      print 'Error processing command line arguments'
-      print str(err)
+      logging.exception('Error processing command line arguments')
       quit()
 
    for opt, arg in opts:
@@ -332,7 +331,7 @@ if __name__ == '__main__':
 
    # fewer arguments required
    if dbflag == True and dbonly == True and (modelpath == '' or dsname == '' or package == ''):
-      print 'Please specify --model, --dsname, and --package with the db update'
+      logging.critical('Please specify a package when running metadiags.')
       quit()
 
    if helpflag == True or (dbonly == False and (modelpath == '' or obspath == '' or outpath == '' or package == '' or dsname == '')):

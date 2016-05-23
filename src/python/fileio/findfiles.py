@@ -3,7 +3,7 @@
 # The user provides some minimal specification of the data he wants analyzed.
 # Our goal here is to find all the data files which comprise that data.
 
-import hashlib, pickle, operator, os, functools, sys, re, getpass
+import hashlib, pickle, operator, os, functools, sys, re, getpass, logging
 import pprint
 from metrics.common.version import version
 from metrics.common.utilities import *
@@ -328,9 +328,9 @@ class dirtree_datafiles( basic_datafiles ):
                 self.files += [ os.path.join(dirpath,f) for f in filenames if filt(f) ]
         else:   # no more checking, but still could be valid - maybe its a url or something:
             self.files += [root]
-            print "WARNING - candidate data source",self.files[0],"is not a file or directory.  What is it????"
+            logging.warning("Candidate data source is not a file or directory. %s What is it????", self.files[0])
         if len(self.files)<=0:
-            print "WARNING - no files found at",root,"with filter",filt
+            logging.warning("No files found at %s with filter %s",root, filt)
         return self.files
 
     def short_name(self):
