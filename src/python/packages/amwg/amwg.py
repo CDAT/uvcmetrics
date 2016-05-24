@@ -1680,6 +1680,11 @@ class amwg_plot_set5and6(amwg_plot_plan):
 
         tm2.units.priority = 1
         
+        try:
+            #this is for the output of RMSE and CORRELATION
+            tm1, tm2 = self.extraCustomizeTemplates((cnvs1, tm1), (cnvs2, tm2), var=var)
+        except:
+            pass
         return tm1, tm2
         
     def _results(self,newgrid=0):
@@ -1705,9 +1710,9 @@ class amwg_plot_set5(amwg_plot_set5and6):
     normally a world map will be overlaid. """
     name = '5 - Horizontal Contour Plots of Seasonal Means'
     number = '5'
-    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
+    def extraCustomizeTemplates(self, (cnvs1, tm1), (cnvs2, tm2), data=None, varIndex=None, graphicMethod=None, var=None):
         """Theis method does what the title says.  It is a hack that will no doubt change as diags changes."""
-        (cnvs1, tm1), (cnvs2, tm2) = templates
+        #(cnvs1, tm1), (cnvs2, tm2) = templates
         import pdb
         if hasattr(var, 'RMSE'):
             RMSE = round(var.RMSE, 2)
