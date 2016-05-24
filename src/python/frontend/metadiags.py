@@ -460,6 +460,7 @@ def runcmdline(cmdline, outlog):
     
     #print 'length of cmdline = ', len(cmdline)
 
+    #the following is a total KLUDGE
     #there is some sort of memory leak in vcs. 
     #to work around this issue, we opted for a single execution of season & variable
     #isolate season and variable
@@ -471,7 +472,12 @@ def runcmdline(cmdline, outlog):
         #there's extra meaningless junk
         (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, 
          seasonstr, varstr,
-         outstr, xmlstr, prestr, poststr, regionstr, junk) = cmdline        
+         outstr, xmlstr, prestr, poststr, regionstr, junk) = cmdline       
+    finally:
+        #handle the case of a table
+        cmd = " ".join(cmdline)
+        active_processes.append(subprocess.Popen(cmd, stdout=outlog, stderr=outlog, shell=True))
+        return
     seasonstr = seasonstr.split(' ')
     seasonopts = seasonstr[0]
     seasons = seasonstr[1:]
