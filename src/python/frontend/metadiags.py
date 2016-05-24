@@ -473,11 +473,13 @@ def runcmdline(cmdline, outlog):
         (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, 
          seasonstr, varstr,
          outstr, xmlstr, prestr, poststr, regionstr, junk) = cmdline       
-    finally:
-        #handle the case of a table
-        cmd = " ".join(cmdline)
-        active_processes.append(subprocess.Popen(cmd, stdout=outlog, stderr=outlog, shell=True))
-        return
+        
+    #handle the case of a table
+    #cmd = " ".join(cmdline)
+    #active_processes.append(subprocess.Popen(cmd, stdout=outlog, stderr=outlog, shell=True))
+    #print cmdline
+    #return#sys.exit(1)
+    
     seasonstr = seasonstr.split(' ')
     seasonopts = seasonstr[0]
     seasons = seasonstr[1:]
