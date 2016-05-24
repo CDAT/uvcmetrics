@@ -2,7 +2,7 @@
 
 
 ### This file converts the dictionary file (in this case amwgmaster2.py) to a series of diags.py commands.
-import sys, getopt, os, subprocess, logging
+import sys, getopt, os, subprocess, logging, pdb
 from argparse import ArgumentParser
 from metrics.frontend.options import Options
 from metrics.frontend.options import make_ft_dict
@@ -15,35 +15,35 @@ def_executable = 'diags'
 
 # The user specified a package; see what collections are available.
 def getCollections(pname):
-   allcolls = diags_collection.keys()
-   colls = []
-   dm = diagnostics_menu()
-   pclass = dm[pname.upper()]()
-   slist = pclass.list_diagnostic_sets()
-   keys = slist.keys()
-   for k in keys:
-      fields = k.split()
-      colls.append(fields[0])
-
-   # Find all mixed_plots sets that have the user-specified pname
-   # Deal with mixed_plots next
-   for c in allcolls:
-      if diags_collection[c].get('mixed_plots', False) == True:
-         # mixed_packages requires mixed_plots
-         if diags_collection[c].get('mixed_packages', False) == False:
-            # If no package was specified, just assume it is universal
-            # Otherwise, see if pname is in the list for this collection
-            if diags_collection[c].get('package', False) == False or diags_collection[c]['package'].upper() == pname.upper():
-               colls.append(c)
-         else: # mixed packages. need to loop over variables then. if any variable is using this pname then add the package
-            vlist = list( set(diags_collection[c].keys()) - set(collection_special_vars))
-            for v in vlist:
-               # This variable has a package
-               if diags_collection[c][v].get('package', False) != False and diags_collection[c][v]['package'].upper() == pname.upper():
-                  colls.append(c)
-
-   print 'The following diagnostic collections appear to be available: %s' %colls
-   return colls
+    allcolls = diags_collection.keys()
+    colls = []
+    dm = diagnostics_menu()
+    pclass = dm[pname.upper()]()
+    slist = pclass.list_diagnostic_sets()
+    keys = slist.keys()
+    for k in keys:
+        fields = k.split()
+        colls.append(fields[0])
+    
+    # Find all mixed_plots sets that have the user-specified pname
+    # Deal with mixed_plots next
+    for c in allcolls:
+        if diags_collection[c].get('mixed_plots', False) == True:
+            # mixed_packages requires mixed_plots
+            if diags_collection[c].get('mixed_packages', False) == False:
+                # If no package was specified, just assume it is universal
+                # Otherwise, see if pname is in the list for this collection
+                if diags_collection[c].get('package', False) == False or diags_collection[c]['package'].upper() == pname.upper():
+                    colls.append(c)
+            else: # mixed packages. need to loop over variables then. if any variable is using this pname then add the package
+                vlist = list( set(diags_collection[c].keys()) - set(collection_special_vars))
+                for v in vlist:
+                    # This variable has a package
+                    if diags_collection[c][v].get('package', False) != False and diags_collection[c][v]['package'].upper() == pname.upper():
+                        colls.append(c)
+    
+    print 'The following diagnostic collections appear to be available: %s' %colls
+    return colls
 
 def makeTables(collnum, model_dict, obspath, outpath, pname, outlog):
    collnum = collnum.lower()
@@ -219,7 +219,6 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
       cf1 = 'yes'
    else:
       cf1 = 'no'
-
 
    # Now, loop over collections.
    for collnum in colls:
@@ -451,24 +450,57 @@ import multiprocessing
 MAX_PROCS = multiprocessing.cpu_count()
 pid_to_cmd = {}
 active_processes = []
+DIAG_TOTAL = 0
 
 def cmderr(popened):
     print "Command \n\"%s\"\n failed with code of %d" % (pid_to_cmd[popened.pid], popened.returncode)
 
 def runcmdline(cmdline, outlog):
-    while len(active_processes) >= MAX_PROCS:
-        for i, p in enumerate(active_processes):
-            if p.poll() is not None:
-                active_processes.pop(i)
-                if p.returncode != 0:
-                    cmderr(p)
-                else:
-                    print '"%s"' % pid_to_cmd[p.pid], "succeeded. pid=", p.pid
-    cmd = " ".join(cmdline)
-    active_processes.append(subprocess.Popen(cmd, stdout=outlog, stderr=outlog, shell=True))
-    PID = active_processes[-1].pid
-    pid_to_cmd[PID] = cmd
-    print '"%s"' % cmd, "begun pid=", PID
+    global DIAG_TOTAL
+    
+    #print 'length of cmdline = ', len(cmdline)
+
+    #there is some sort of memory leak in vcs. 
+    #to work around this issue, we opted for a single execution of season & variable
+    #isolate season and variable
+    try:
+        (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, 
+         seasonstr, varstr,
+         outstr, xmlstr, prestr, poststr, regionstr) = cmdline
+    except:
+        #there's extra meaningless junk
+        (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, 
+         seasonstr, varstr,
+         outstr, xmlstr, prestr, poststr, regionstr, junk) = cmdline        
+    seasonstr = seasonstr.split(' ')
+    seasonopts = seasonstr[0]
+    seasons = seasonstr[1:]
+    varstr = varstr.split(' ')
+    varopts = varstr[0]
+    vars = varstr[1:]
+    for season in seasons:
+        for var in vars:
+            seasonstr = seasonopts + ' ' + season
+            varstr    = varopts + ' ' + var
+            #build new cmdline          
+            cmdline = (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, 
+                       seasonstr, varstr, 
+                       outstr, xmlstr, prestr, poststr, regionstr)
+            #pdb.set_trace()
+            while len(active_processes) >= MAX_PROCS:
+                for i, p in enumerate(active_processes):
+                    if p.poll() is not None:
+                        active_processes.pop(i)
+                        if p.returncode != 0:
+                            cmderr(p)
+                        else:
+                            print '"%s"' % pid_to_cmd[p.pid], "succeeded. pid=", p.pid
+            cmd = " ".join(cmdline)
+            active_processes.append(subprocess.Popen(cmd, stdout=outlog, stderr=outlog, shell=True))
+            DIAG_TOTAL += 1
+            PID = active_processes[-1].pid
+            pid_to_cmd[PID] = cmd
+            print '"%s"' % cmd, "begun pid=", PID, 'diag_total = ', DIAG_TOTAL
 
 ### These 3 functions are used to add the variables to the database for speeding up
 ### classic view
