@@ -460,55 +460,66 @@ def runcmdline(cmdline, outlog):
     
     #print 'length of cmdline = ', len(cmdline)
 
-    #the following is a total KLUDGE
+    #the following is a total KLUDGE. It's more of a KLUDGE than last time.
+    #I'm not proud of this but I feel threatned if I don't do it.
     #there is some sort of memory leak in vcs. 
     #to work around this issue, we opted for a single execution of season & variable
     #isolate season and variable
-    try:
+    length = len(cmdline)
+    change_cmdline = False
+    if length == 14:
         (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, 
          seasonstr, varstr,
          outstr, xmlstr, prestr, poststr, regionstr) = cmdline
-    except:
-        #there's extra meaningless junk
+        change_cmdline = True
+    elif length == 15:
+        #varopts included
         (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, 
          seasonstr, varstr,
-         outstr, xmlstr, prestr, poststr, regionstr, junk) = cmdline       
+         outstr, xmlstr, prestr, poststr, regionstr, varopts) = cmdline  
+        change_cmdline = True     
         
-    #handle the case of a table
-    #cmd = " ".join(cmdline)
-    #active_processes.append(subprocess.Popen(cmd, stdout=outlog, stderr=outlog, shell=True))
-    #print cmdline
-    #return#sys.exit(1)
-    
-    seasonstr = seasonstr.split(' ')
-    seasonopts = seasonstr[0]
-    seasons = seasonstr[1:]
-    varstr = varstr.split(' ')
-    varopts = varstr[0]
-    vars = varstr[1:]
-    for season in seasons:
-        for var in vars:
-            seasonstr = seasonopts + ' ' + season
-            varstr    = varopts + ' ' + var
-            #build new cmdline          
-            cmdline = (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, 
-                       seasonstr, varstr, 
-                       outstr, xmlstr, prestr, poststr, regionstr)
-            #pdb.set_trace()
-            while len(active_processes) >= MAX_PROCS:
-                for i, p in enumerate(active_processes):
-                    if p.poll() is not None:
-                        active_processes.pop(i)
-                        if p.returncode != 0:
-                            cmderr(p)
-                        else:
-                            print '"%s"' % pid_to_cmd[p.pid], "succeeded. pid=", p.pid
-            cmd = " ".join(cmdline)
-            active_processes.append(subprocess.Popen(cmd, stdout=outlog, stderr=outlog, shell=True))
-            DIAG_TOTAL += 1
-            PID = active_processes[-1].pid
-            pid_to_cmd[PID] = cmd
-            print '"%s"' % cmd, "begun pid=", PID, 'diag_total = ', DIAG_TOTAL
+    CMDLINES = []
+    if change_cmdline:
+        seasonstr = seasonstr.split(' ')
+        seasonopts = seasonstr[0]
+        seasons = seasonstr[1:]
+        varstr = varstr.split(' ')
+        varopts = varstr[0]
+        vars = varstr[1:]
+        for season in seasons:
+            for var in vars:
+                seasonstr = seasonopts + ' ' + season
+                varstr    = varopts + ' ' + var
+                #build new cmdline   
+                if length == 14:       
+                    cmdline = (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, 
+                               seasonstr, varstr, 
+                               outstr, xmlstr, prestr, poststr, regionstr)
+                elif length == 15:
+                    cmdline = (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, 
+                               seasonstr, varstr,
+                               outstr, xmlstr, prestr, poststr, regionstr, varopts)                       
+                #pdb.set_trace()
+                CMDLINES += [cmdline]
+    else:
+        CMDLINES = [cmdline]
+        
+    for cmdline in CMDLINES:
+        while len(active_processes) >= MAX_PROCS:
+            for i, p in enumerate(active_processes):
+                if p.poll() is not None:
+                    active_processes.pop(i)
+                    if p.returncode != 0:
+                        cmderr(p)
+                    else:
+                        print '"%s"' % pid_to_cmd[p.pid], "succeeded. pid=", p.pid
+        cmd = " ".join(cmdline)
+        active_processes.append(subprocess.Popen(cmd, stdout=outlog, stderr=outlog, shell=True))
+        DIAG_TOTAL += 1
+        PID = active_processes[-1].pid
+        pid_to_cmd[PID] = cmd
+        print '"%s"' % cmd, "begun pid=", PID, 'diag_total = ', DIAG_TOTAL
 
 ### These 3 functions are used to add the variables to the database for speeding up
 ### classic view
