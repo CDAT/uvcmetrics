@@ -331,7 +331,7 @@ def run_diags( opts ):
                             if opts['output']['plots'] == True:
                                 makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package)
                                 number_diagnostic_plots += 1
-
+                            
                             if opts['output']['xml'] == True:
                                 # Also, write the nc output files and xml.
                                 # Probably make this a command line option.
@@ -687,6 +687,14 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                     # Set canvas colormap back to default color
                     vcanvas2.setcolormap('bl_to_darkred')
                     
+                    #pdb.set_trace()
+                    displayunits = rsr.displayunits
+                    if displayunits != None:
+                        var_save = var.clone()
+                        scale = udunits(1.0, var.units)
+                        scale = scale.to(displayunits)
+                        var = var*scale.value
+                        var.units = displayunits
                     if hasattr(plot, 'customizeTemplates'):
                         tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)], data=var,
                                                            varIndex=varIndex, graphicMethod=rsr.presentation, var=var )
@@ -710,6 +718,11 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                             
                     except vcs.error.vcsError as e:
                         logging.exception("Making summary plot: %s", e)
+
+                if displayunits != None:
+                    #pdb.set_trace()
+                    var = var_save.clone()
+                    
                 if var_id_save is not None:
                     if type(var_id_save) is str:
                         var.id = var_id_save

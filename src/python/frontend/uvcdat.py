@@ -258,6 +258,7 @@ class uvc_simple_plotspec():
         self.linecolors = linecolors
         self.levels = levels
         self.plotparms = plotparms
+        self.displayunits = displayunits
         
         # Initial ranges - may later be changed to coordinate with related plots:
         # For each variable named 'v', the i-th member of self.vars, (most often there is just one),
@@ -843,6 +844,7 @@ class uvc_simple_plotspec():
                     del ax.filetable
                 except:
                     pass
+            pdb.set_trace()
             writer.write( zax )
             plot_these.append( str(seqgetattr(zax,'id','')) )
         writer.plot_these = ' '.join(plot_these)
