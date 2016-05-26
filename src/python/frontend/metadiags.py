@@ -485,12 +485,12 @@ def runcmdline(cmdline, outlog):
         seasonopts = seasonstr[0]
         seasons = seasonstr[1:]
         varstr = varstr.split(' ')
-        varopts = varstr[0]
+        Varopts = varstr[0]
         vars = varstr[1:]
         for season in seasons:
             for var in vars:
                 seasonstr = seasonopts + ' ' + season
-                varstr    = varopts + ' ' + var
+                varstr    = Varopts + ' ' + var
                 #build new cmdline   
                 if length == 14:       
                     cmdline = (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, 
