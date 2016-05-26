@@ -206,7 +206,7 @@ class uvc_simple_plotspec():
     # probably communicate that by passing a name "Isofill_polar".
     def __init__(
         self, pvars, presentation, labels=[], title='', source='', ranges=None, overplotline=False,
-        linetypes=['solid'], linecolors=[241], levels=None, plotparms=None ):
+        linetypes=['solid'], linecolors=[241], levels=None, plotparms=None, displayunits=None ):
 
         pvars = [v for v in pvars if v is not None]
         # ... Maybe something else is broken to let None get into pvars.
@@ -1179,7 +1179,8 @@ class plot_plan(object):
             #get the levels and plot parameters
             levels = ps.levels
             plotparms = getattr(ps,'plotparms',None)
-                    
+            displayunits = ps.displayunits
+            
             # The following line is getting specific to UV-CDAT, although not any GUI...
             #pdb.set_trace()
             #new kludge added to handle scatter plots, 10/14/14, JMcE
@@ -1197,7 +1198,7 @@ class plot_plan(object):
                 plot_type_temp = ps.plottype
             self.plotspec_values[p] = uvc_simple_plotspec(
                 vars, plot_type_temp, labels, title, ps.source, ranges, overplotline, linetypes,
-                linecolors, levels, plotparms )
+                linecolors, levels, plotparms, displayunits )
             #print p
             #print self.plotspec_values[p]
         #pdb.set_trace()
