@@ -1390,7 +1390,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
                     title = ' '.join([varnom,seasonid,'(1)']),
                     source = ft1src,
                     plotparms = plotparms[src2modobs(ft1src)],
-                    displayunits = None)#'Celsius' )
+                    displayunits = 'Celsius' )
                 all_plotnames.append(self.plot1_id)
             if vid1var is not None:
                 self.single_plotspecs[self.plot1var_id] = plotspec(

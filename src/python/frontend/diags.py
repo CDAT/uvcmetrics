@@ -687,7 +687,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                     # Set canvas colormap back to default color
                     vcanvas2.setcolormap('bl_to_darkred')
                     
-                    #pdb.set_trace()
+                    pdb.set_trace()
                     displayunits = rsr.displayunits
                     if displayunits != None:
                         var_save = var.clone()
@@ -720,8 +720,8 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                         logging.exception("Making summary plot: %s", e)
 
                 if displayunits != None:
-                    #pdb.set_trace()
-                    var = var_save.clone()
+                    pdb.set_trace()
+                    var = var_save#.clone()
                     
                 if var_id_save is not None:
                     if type(var_id_save) is str:
