@@ -833,7 +833,6 @@ class uvc_simple_plotspec():
         writer.source = "UV-CDAT Diagnostics"
         writer.presentation = self.ptype
         plot_these = []
-
         for zax in self.vars:
             try:
                 del zax.filetable  # we'll write var soon, and can't write a filetable
@@ -844,7 +843,6 @@ class uvc_simple_plotspec():
                     del ax.filetable
                 except:
                     pass
-            pdb.set_trace()
             writer.write( zax )
             plot_these.append( str(seqgetattr(zax,'id','')) )
         writer.plot_these = ' '.join(plot_these)

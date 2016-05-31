@@ -260,6 +260,10 @@ class Options():
             logging.critical('Must be in this list: ' + ', '.join(vcs.listelements('colormap')))
             sys.exit()
 
+    def processDisplayunits(self, ID, displayunits):
+        """Check that the units are valid"""
+        self._opts['output'][ID] = displayunits
+        pass
    ###
    ### The next few functions provide the ability to get valid options to the various parameters.
    ###
@@ -694,6 +698,7 @@ class Options():
             outopts.add_argument('--no-antialiasing', action="store_true",default = False) # intentionally undocumented; meant to be passed via metadiags
             outopts.add_argument('--table', action='store_true') # intentionally undocumented; meant to be passed via metadiags
             outopts.add_argument('--colormaps', nargs='*', help="Specify one of 3 colormaps: model, obs or diff")
+            outopts.add_argument('--displayunits', nargs='*', help="Specify units for display")
         
         intopts = parser.add_argument_group('Internal-use primarily')
         # a few internal options not likely to be useful to anyone except metadiags
@@ -809,7 +814,10 @@ class Options():
 
         if args.colormaps != None:
             self.processColormaps('colormaps', args.colormaps)
-                   
+
+        if args.displayunits != None:
+            self.processDisplayunits('displayunits', args.displayunits)
+                               
         # I checked; these are global and it doesn't seem to matter if you import cdms2 multiple times;
         # they are still set after you set them once in the python process.
         if(args.compress != None):

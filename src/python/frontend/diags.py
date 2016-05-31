@@ -329,7 +329,7 @@ def run_diags( opts ):
                                 fname = os.path.join(outdir,name)
                      
                             if opts['output']['plots'] == True:
-                                makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package)
+                                makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=opts['output']['displayunits'][0])
                                 number_diagnostic_plots += 1
                             
                             if opts['output']['xml'] == True:
@@ -385,7 +385,7 @@ def run_diags( opts ):
     print "total number of (compound) diagnostic plots generated =", number_diagnostic_plots
 
 
-def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
+def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=None):
     # need to add plot and pacakge for the amwg 11,12 special cases. need to rethink how to deal with that
     # At this loop level we are making one compound plot.  In consists
     # of "single plots", each of which we would normally call "one" plot.
@@ -687,14 +687,15 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                     # Set canvas colormap back to default color
                     vcanvas2.setcolormap('bl_to_darkred')
                     
-                    pdb.set_trace()
-                    displayunits = rsr.displayunits
+                    #check for units specified for display purposes
                     if displayunits != None:
                         var_save = var.clone()
                         scale = udunits(1.0, var.units)
                         scale = scale.to(displayunits)
                         var = var*scale.value
                         var.units = displayunits
+                        var.id = ''
+                        
                     if hasattr(plot, 'customizeTemplates'):
                         tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)], data=var,
                                                            varIndex=varIndex, graphicMethod=rsr.presentation, var=var )
@@ -720,8 +721,9 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                         logging.exception("Making summary plot: %s", e)
 
                 if displayunits != None:
-                    pdb.set_trace()
-                    var = var_save#.clone()
+                    #restore var before the KLUDGE!!!
+                    var = var_save
+                    rsr.vars[varIndex] = var
                     
                 if var_id_save is not None:
                     if type(var_id_save) is str:
