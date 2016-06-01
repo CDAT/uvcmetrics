@@ -355,10 +355,13 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
                else:
                   print 'DONTRUN: ', cmdline
 
+            # let's save what the defaults are for this plotset
+            g_seasons = g_season
+            g_regions = g_region
             for v in complex_vars:
             # run these individually basically.
-               g_region = diags_collection[collnum][v].get('regions', ['Global'])
-               g_season = diags_collection[collnum][v].get('seasons', ['ANN'])
+               g_region = diags_collection[collnum][v].get('regions', g_regions)
+               g_season = diags_collection[collnum][v].get('seasons', g_seasons)
                g_exec = diags_collection[collnum][v].get('executable', def_executable)
 
                regionstr = '--regions '+' '.join(g_region)
@@ -506,6 +509,8 @@ def runcmdline(cmdline, outlog):
         CMDLINES = [cmdline]
         
     for cmdline in CMDLINES:
+        if " ".join(cmdline).find("PREC")==-1:
+            continue
         while len(active_processes) >= MAX_PROCS:
             for i, p in enumerate(active_processes):
                 if p.poll() is not None:
