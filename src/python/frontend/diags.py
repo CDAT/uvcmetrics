@@ -332,7 +332,6 @@ def run_diags( opts ):
                                 displayunits = None
                                 if 'displayunits' in opts['output'].keys():
                                     displayunits = opts['output']['displayunits'][0]
-                                    print '>>>>>>>>>>>>>>>>>>>>displayunits=', displayunits
                                     
                                 makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=displayunits)
                                 number_diagnostic_plots += 1
