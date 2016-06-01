@@ -452,21 +452,21 @@ class Options():
 
 
         from metrics.graphics.default_levels import default_levels
-        import amwgmaster2
+        import amwgmaster
         if self._opts["levels"] is None:  # User did not specified options, let's auto this
             vr = self._opts["vars"][0]
             if vr in default_levels:
                 self._opts["levels"] = default_levels[vr].get("OBS",{}).get("contours",None)
             else:
-                if vr in amwgmaster2.diags_varlist:
-                    vrlst = amwgmaster2.diags_varlist[vr]
+                if vr in amwgmaster.diags_varlist:
+                    vrlst = amwgmaster.diags_varlist[vr]
                     self._opts["levels"]=default_levels.get(vrlst.get("filekey","OH CRAP"),{}).get("OBS",{}).get("countours",None)
         if self._opts["difflevels"] is None:  # User did not specified options, let's auto this
             vr = self._opts["vars"][0]
             if vr in default_levels:
                 self._opts["difflevels"] = default_levels[vr].get("OBS",{}).get("difference",None)
             else:
-                if vr in amwgmaster2.diags_varlist:
+                if vr in amwgmaster.diags_varlist:
                     vrlst = amwgmaster2.diags_varlist[vr]
                     self._opts["difflevels"]=default_levels.get(vrlst.get("filekey","OH CRAP"),{}).get("OBS",{}).get("difference",None)
 
