@@ -509,8 +509,6 @@ def runcmdline(cmdline, outlog):
         CMDLINES = [cmdline]
         
     for cmdline in CMDLINES:
-        if " ".join(cmdline).find("PREC")==-1:
-            continue
         while len(active_processes) >= MAX_PROCS:
             for i, p in enumerate(active_processes):
                 if p.poll() is not None:
