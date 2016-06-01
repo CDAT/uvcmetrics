@@ -338,6 +338,16 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
                    diags_collection[collnum][v].get('executable', False) == False: 
                   simple_vars.append(v)
 
+            #get the display units
+            #this is a continuation of a KLUDGE to specify units.
+            #it assumes that there is only one variable where the units apply
+            #pdb.set_trace()
+            v=obs_vlist[0]
+            displayunits = diags_collection[collnum][v].get('displayunits', None)
+            displayunits_str = ''
+            if displayunits != None:
+                displayunits_str = "--displayunits " + displayunits
+            
             # I believe all of the lower level plot sets (e.g. in amwg.py or lmwg.py) will ignore a second dataset, IF one is supplied
             # unnecessarily, so pass all available datasets here.
             complex_vars = list(set(obs_vlist) - set(simple_vars))
@@ -349,7 +359,8 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
                   pstr2 = '--model path=%s,climos=%s,type=model' % (modelpath1, cf1)
                else:
                   pstr2 = ''
-               cmdline = (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, seasonstr, varstr, outstr, xmlstr, prestr, poststr, regionstr)
+               cmdline = (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, seasonstr, 
+                          varstr, outstr, xmlstr, prestr, poststr, regionstr, displayunits_str)
                if collnum != 'dontrun':
                   runcmdline(cmdline, outlog)
                else:
@@ -404,7 +415,8 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
                   else:
                      pstr2 = ''
 
-                  cmdline = (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, seasonstr, varstr, outstr, xmlstr, prestr, poststr, regionstr, varopts)
+                  cmdline = (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, seasonstr, 
+                             varstr, outstr, xmlstr, prestr, poststr, regionstr, varopts, displayunits_str)
                   if collnum != 'dontrun':
                      runcmdline(cmdline, outlog)
                   else:
@@ -461,29 +473,27 @@ def cmderr(popened):
 def runcmdline(cmdline, outlog):
     global DIAG_TOTAL
     
-    #print 'length of cmdline = ', len(cmdline)
-
     #the following is a total KLUDGE. It's more of a KLUDGE than last time.
     #I'm not proud of this but I feel threatned if I don't do it.
     #there is some sort of memory leak in vcs. 
     #to work around this issue, we opted for a single execution of season & variable
     #isolate season and variable
     length = len(cmdline)
-    change_cmdline = False
-    if length == 14:
+    split_cmdline = False
+    if length == 15:
         (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, 
          seasonstr, varstr,
-         outstr, xmlstr, prestr, poststr, regionstr) = cmdline
-        change_cmdline = True
-    elif length == 15:
+         outstr, xmlstr, prestr, poststr, regionstr, displayunits_str) = cmdline
+        split_cmdline = True
+    elif length == 16:
         #varopts included
         (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, 
          seasonstr, varstr,
-         outstr, xmlstr, prestr, poststr, regionstr, varopts) = cmdline  
-        change_cmdline = True     
+         outstr, xmlstr, prestr, poststr, regionstr, varopts, displayunits_str) = cmdline  
+        split_cmdline = True     
         
     CMDLINES = []
-    if change_cmdline:
+    if split_cmdline:
         seasonstr = seasonstr.split(' ')
         seasonopts = seasonstr[0]
         seasons = seasonstr[1:]
@@ -495,14 +505,14 @@ def runcmdline(cmdline, outlog):
                 seasonstr = seasonopts + ' ' + season
                 varstr    = Varopts + ' ' + var
                 #build new cmdline   
-                if length == 14:       
+                if length == 15:       
                     cmdline = (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, 
                                seasonstr, varstr, 
-                               outstr, xmlstr, prestr, poststr, regionstr)
-                elif length == 15:
+                               outstr, xmlstr, prestr, poststr, regionstr, displayunits_str)
+                elif length == 16:
                     cmdline = (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, 
                                seasonstr, varstr,
-                               outstr, xmlstr, prestr, poststr, regionstr, varopts)                       
+                               outstr, xmlstr, prestr, poststr, regionstr, varopts, displayunits_str)                       
                 #pdb.set_trace()
                 CMDLINES += [cmdline]
     else:
@@ -541,7 +551,6 @@ def setnum( setname ):
         index2 = mo.start()                    # index of first match
         setnumber = setname[index1:index1+index2]
     return setnumber
-
 def list_vars(ft, package):
     dm = diagnostics_menu()
     vlist = []

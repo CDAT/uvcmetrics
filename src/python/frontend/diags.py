@@ -329,9 +329,14 @@ def run_diags( opts ):
                                 fname = os.path.join(outdir,name)
                      
                             if opts['output']['plots'] == True:
-                                makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package)
+                                displayunits = None
+                                if 'displayunits' in opts['output'].keys():
+                                    displayunits = opts['output']['displayunits'][0]
+                                    print '>>>>>>>>>>>>>>>>>>>>displayunits=', displayunits
+                                    
+                                makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=displayunits)
                                 number_diagnostic_plots += 1
-
+                            
                             if opts['output']['xml'] == True:
                                 # Also, write the nc output files and xml.
                                 # Probably make this a command line option.
@@ -385,7 +390,7 @@ def run_diags( opts ):
     print "total number of (compound) diagnostic plots generated =", number_diagnostic_plots
 
 
-def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
+def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=None):
     # need to add plot and pacakge for the amwg 11,12 special cases. need to rethink how to deal with that
     # At this loop level we are making one compound plot.  In consists
     # of "single plots", each of which we would normally call "one" plot.
@@ -687,6 +692,22 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                     # Set canvas colormap back to default color
                     vcanvas2.setcolormap('bl_to_darkred')
                     
+                    #check for units specified for display purposes
+                    if displayunits != None:
+                        var_save = var.clone()
+                        try:
+                            scale = udunits(1.0, var.units)
+                            scale = scale.to(displayunits).value
+                        except:
+                            try:
+                                scale = float(displayunits)
+                            except:
+                                logging.critical('Invalid display units: '+ displayunits)
+                                sys.exit()                                
+                        var = var*scale
+                        var.units = displayunits
+                        var.id = '' #this was clearer earlier; var=anything makes an id
+                        
                     if hasattr(plot, 'customizeTemplates'):
                         tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)], data=var,
                                                            varIndex=varIndex, graphicMethod=rsr.presentation, var=var )
@@ -710,6 +731,12 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                             
                     except vcs.error.vcsError as e:
                         logging.exception("Making summary plot: %s", e)
+
+                if displayunits != None:
+                    #restore var before the KLUDGE!!!
+                    var = var_save
+                    rsr.vars[varIndex] = var
+                    
                 if var_id_save is not None:
                     if type(var_id_save) is str:
                         var.id = var_id_save

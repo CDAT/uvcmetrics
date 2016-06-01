@@ -1389,8 +1389,9 @@ class amwg_plot_set5and6(amwg_plot_plan):
                     #title = ' '.join([varnom,seasonid,filetable1._strid]) )
                     title = ' '.join([varnom,seasonid,'(1)']),
                     source = ft1src,
-                    plotparms = plotparms[src2modobs(ft1src)] )
+                    plotparms = plotparms[src2modobs(ft1src)])
                 all_plotnames.append(self.plot1_id)
+                
             if vid1var is not None:
                 self.single_plotspecs[self.plot1var_id] = plotspec(
                     vid = ps.dict_idid(vid1var),
@@ -1401,6 +1402,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
                     source = ft1src,
                     plotparms = plotparms[src2modobs(ft1src)] )
                 all_plotnames.append(self.plot1var_id)
+                
         if filetable2 is not None and vid2 is not None:
             self.single_plotspecs[self.plot2_id] = plotspec(
                 vid = ps.dict_idid(vid2),
@@ -1411,6 +1413,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
                 source = ft2src,
                 plotparms = plotparms[src2obsmod(ft2src)] )
             all_plotnames.append(self.plot2_id)
+            
         if filetable1 is not None and filetable2 is not None and vid1 is not None and vid2 is not None:
             self.single_plotspecs[self.plot3_id] = plotspec(
                 vid = ps.dict_id(varnom,'diff',seasonid,filetable1,filetable2),
@@ -1420,6 +1423,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
                 title = ' '.join([varnom,seasonid,'(1)-(2)']),
                 source = ', '.join([ft1src,ft2src]),
                 plotparms = plotparms['diff'] )
+
             all_plotnames.append(self.plot3_id)
         if len(all_plotnames)>0:
             self.composite_plotspecs = {
