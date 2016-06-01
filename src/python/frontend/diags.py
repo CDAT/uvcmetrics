@@ -329,7 +329,12 @@ def run_diags( opts ):
                                 fname = os.path.join(outdir,name)
                      
                             if opts['output']['plots'] == True:
-                                makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=opts['output']['displayunits'][0])
+                                displayunits = None
+                                if 'displayunits' in opts['output'].keys():
+                                    displayunits = opts['output']['displayunits'][0]
+                                    print '>>>>>>>>>>>>>>>>>>>>displayunits=', displayunits
+                                    
+                                makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=displayunits)
                                 number_diagnostic_plots += 1
                             
                             if opts['output']['xml'] == True:
@@ -690,11 +695,18 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
                     #check for units specified for display purposes
                     if displayunits != None:
                         var_save = var.clone()
-                        scale = udunits(1.0, var.units)
-                        scale = scale.to(displayunits)
-                        var = var*scale.value
+                        try:
+                            scale = udunits(1.0, var.units)
+                            scale = scale.to(displayunits).value
+                        except:
+                            try:
+                                scale = float(displayunits)
+                            except:
+                                logging.critical('Invalid display units: '+ displayunits)
+                                sys.exit()                                
+                        var = var*scale
                         var.units = displayunits
-                        var.id = ''
+                        var.id = '' #this was clearer earlier; var=anything makes an id
                         
                     if hasattr(plot, 'customizeTemplates'):
                         tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)], data=var,
