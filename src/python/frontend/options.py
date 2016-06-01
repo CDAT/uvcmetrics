@@ -463,7 +463,7 @@ class Options():
                 self._opts["difflevels"] = default_levels[vr].get("OBS",{}).get("difference",None)
             else:
                 if vr in amwgmaster.diags_varlist:
-                    vrlst = amwgmaster2.diags_varlist[vr]
+                    vrlst = amwgmaster.diags_varlist[vr]
                     self._opts["difflevels"]=default_levels.get(vrlst.get("filekey","OH CRAP"),{}).get("OBS",{}).get("difference",None)
 
 
