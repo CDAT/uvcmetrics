@@ -293,6 +293,7 @@ class amwg_plot_set1(amwg_plot_plan):
                 mean1 = rv1.reduce()
             return mean1
         def mean( self, filetable, filefam=None ):
+
             if filetable is None:
                 return -999.000
             if filefam is not None:
@@ -309,6 +310,7 @@ class amwg_plot_set1(amwg_plot_plan):
                     reduction_function=(lambda x,vid=None: x) ).reduce()
             else:
                 gw = None
+            
             if filetable.find_files( self.var, filefilter=ffilt ):
                 if self.lev is not None:
                     mean1 = self.mean_lev( filetable, ffilt, domrange, gw )

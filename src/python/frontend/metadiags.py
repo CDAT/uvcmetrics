@@ -337,16 +337,6 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
                    diags_collection[collnum][v].get('options', False) == False and \
                    diags_collection[collnum][v].get('executable', False) == False: 
                   simple_vars.append(v)
-
-            #get the display units
-            #this is a continuation of a KLUDGE to specify units.
-            #it assumes that there is only one variable where the units apply
-            #pdb.set_trace()
-            v=obs_vlist[0]
-            displayunits = diags_collection[collnum][v].get('displayunits', None)
-            displayunits_str = ''
-            if displayunits != None:
-                displayunits_str = "--displayunits " + displayunits
             
             # I believe all of the lower level plot sets (e.g. in amwg.py or lmwg.py) will ignore a second dataset, IF one is supplied
             # unnecessarily, so pass all available datasets here.
@@ -360,7 +350,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
                else:
                   pstr2 = ''
                cmdline = (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, seasonstr, 
-                          varstr, outstr, xmlstr, prestr, poststr, regionstr, displayunits_str)
+                          varstr, outstr, xmlstr, prestr, poststr, regionstr)
                if collnum != 'dontrun':
                   runcmdline(cmdline, outlog)
                else:
@@ -416,7 +406,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
                      pstr2 = ''
 
                   cmdline = (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, seasonstr, 
-                             varstr, outstr, xmlstr, prestr, poststr, regionstr, varopts, displayunits_str)
+                             varstr, outstr, xmlstr, prestr, poststr, regionstr, varopts)
                   if collnum != 'dontrun':
                      runcmdline(cmdline, outlog)
                   else:
@@ -480,16 +470,16 @@ def runcmdline(cmdline, outlog):
     #isolate season and variable
     length = len(cmdline)
     split_cmdline = False
-    if length == 15:
+    if length == 14:
         (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, 
          seasonstr, varstr,
-         outstr, xmlstr, prestr, poststr, regionstr, displayunits_str) = cmdline
+         outstr, xmlstr, prestr, poststr, regionstr) = cmdline
         split_cmdline = True
-    elif length == 16:
+    elif length == 15:
         #varopts included
         (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, 
          seasonstr, varstr,
-         outstr, xmlstr, prestr, poststr, regionstr, varopts, displayunits_str) = cmdline  
+         outstr, xmlstr, prestr, poststr, regionstr, varopts) = cmdline
         split_cmdline = True     
         
     CMDLINES = []
@@ -505,14 +495,14 @@ def runcmdline(cmdline, outlog):
                 seasonstr = seasonopts + ' ' + season
                 varstr    = Varopts + ' ' + var
                 #build new cmdline   
-                if length == 15:       
+                if length == 14:       
                     cmdline = (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, 
                                seasonstr, varstr, 
-                               outstr, xmlstr, prestr, poststr, regionstr, displayunits_str)
-                elif length == 16:
+                               outstr, xmlstr, prestr, poststr, regionstr)
+                elif length == 15:
                     cmdline = (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, 
                                seasonstr, varstr,
-                               outstr, xmlstr, prestr, poststr, regionstr, varopts, displayunits_str)                       
+                               outstr, xmlstr, prestr, poststr, regionstr, varopts)                    
                 #pdb.set_trace()
                 CMDLINES += [cmdline]
     else:

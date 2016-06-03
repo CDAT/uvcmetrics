@@ -329,10 +329,7 @@ def run_diags( opts ):
                                 fname = os.path.join(outdir,name)
                      
                             if opts['output']['plots'] == True:
-                                displayunits = None
-                                if 'displayunits' in opts['output'].keys():
-                                    displayunits = opts['output']['displayunits'][0]
-                                    
+                                displayunits = opts.get('displayunits', None)                                    
                                 makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=displayunits)
                                 number_diagnostic_plots += 1
                             
@@ -775,6 +772,7 @@ if __name__ == '__main__':
     o = Options()
     o.parseCmdLine()
     o.verifyOptions()
-    import pdb
+    print o._opts['levels']
+    print o._opts['displayunits']
     #pdb.set_trace()
     run_diags(o)
