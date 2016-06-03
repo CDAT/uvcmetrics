@@ -13,7 +13,7 @@ from metrics.packages.amwg.amwg import *
 from metrics.packages.lmwg.lmwg import *
 
 # Required arguments for a plot are the canvas, variable, graphics method, template.
-def amwg_plot_plan_vcs_plot( self, canvas, var, gm, tm, *args, **kwargs ):
+def amwg_plot_plan_vcs_plot( self, canvas, var, gm, tm, ratio='autot', *args, **kwargs ):
     if 'compoundplot' in kwargs:
         del kwargs['compoundplot']  # confuses VCS
     if 'plotparms' in kwargs and kwargs['plotparms'] is not None:
@@ -99,7 +99,7 @@ def amwg_plot_set13_vcs_plot( self, canvas, var, gm, tm, compoundplot=0, *args, 
         gm.datawc_y1 = tmp
 
     # The ratio="1t" argument gives us squares; default is rectangle.
-    return canvas.plot( var2, gm, tm, ratio="1t", *args, **kwargs )
+    return canvas.plot( var2, gm, tm, ratio="1t", *args, **kwargs ) #ratio="1t",
 
 amwg_plot_set13.vcs_plot = amwg_plot_set13_vcs_plot
 

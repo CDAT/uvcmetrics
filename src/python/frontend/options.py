@@ -463,6 +463,10 @@ class Options():
                 if vr in amwgmaster.diags_varlist:
                     vrlst = amwgmaster.diags_varlist[vr]
                     self._opts["levels"]=default_levels.get(vrlst.get("filekey","OH CRAP"),{}).get("OBS",{}).get("contours",None)
+            if self._opts["levels"] is not None:
+                self._opts["levels"].insert(0,-1.e20)
+                self._opts["levels"].append(1.e20)
+
         if self._opts["difflevels"] is None:  # User did not specified options, let's auto this
             vr = self._opts["vars"][0]
             if vr in default_levels:
@@ -471,6 +475,10 @@ class Options():
                 if vr in amwgmaster.diags_varlist:
                     vrlst = amwgmaster.diags_varlist[vr]
                     self._opts["difflevels"]=default_levels.get(vrlst.get("filekey","OH CRAP"),{}).get("OBS",{}).get("difference",None)
+            if self._opts["difflevels"] is not None:
+                self._opts["difflevels"].insert(0,-1.e20)
+                self._opts["difflevels"].append(1.e20)
+
         if self._opts["displayunits"] is None:  # User did not specified options, let's auto this
             vr = self._opts["vars"][0]
             if vr in default_levels:
