@@ -2166,6 +2166,10 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
             (preferred_units is not None or mv1.units!=mv2.units):
         # Very ad-hoc, but more general would be less safe:
         # BES - set 3 does not seem to call it rv_QFLX. It is set3_QFLX_ft0_climos, so make this just a substring search
+        if mv1.units == "gpm":
+            mv1.units="m"
+        if mv2.units == "gpm":
+            mv2.units="m"
         if mv1.units=='mb':
             mv1.units = 'mbar' # udunits uses mb for something else
         if mv2.units=='mb':
@@ -2210,6 +2214,7 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
             mv1.units = 'mm' # [if 1 kg = 10^6 mm^3 as for water]
         if mv2.units=='kg/m2' and mv1.units=='mm':
             mv2.units = 'mm' # [if 1 kg = 10^6 mm^3 as for water]
+
 
         if preferred_units is None:
             # Look for whichever of mv1.units, mv2.units gives numbers more O(1).
