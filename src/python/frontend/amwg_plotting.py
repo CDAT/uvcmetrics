@@ -20,6 +20,7 @@ def amwg_plot_plan_vcs_plot( self, canvas, var, gm, tm, ratio='autot', *args, **
         plotparms = kwargs['plotparms']
         if 'colormap' in plotparms:
             gm.colormap = plotparms['colormap']
+    kwargs["ratio"] = ratio
     canvas.plot( var, gm, tm, *args, **kwargs )
 
 amwg_plot_plan.vcs_plot = amwg_plot_plan_vcs_plot

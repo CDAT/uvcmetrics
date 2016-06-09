@@ -51,7 +51,7 @@ def find_alternates(fname):
     return results
 
 def check_result_image(fname, baselinefname, threshold = defaultThreshold,
-                       baseline = True, cleanup=True):
+                       baseline = True, cleanup=True, update_baselines = False):
     testImage = image_from_file(fname)
     if testImage is None:
         print "Testing image missing, test failed."
@@ -98,6 +98,11 @@ def check_result_image(fname, baselinefname, threshold = defaultThreshold,
             print "Deleting test image '%s'..."%(fname)
             os.remove(fname)
         return 0
+
+    if update_baselines:
+        import shutil
+        print "Copied %s to %s" % (fname,bestFilename)
+        shutil.copy2(fname,bestFilename)
 
     print "All baselines failed! Lowest error (%f) exceeds threshold (%f)."%(bestDiff, threshold)
 
