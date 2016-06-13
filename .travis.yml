@@ -15,11 +15,11 @@ before_install:
   - conda config --set always_yes yes --set changeps1 no
   - conda update -y -q conda
   - conda install openssl=1.0.2d
-  - conda install -q -y --channel uvcdat python=2.7 setuptools cdms2 cdutil genutil unidata cdtime vcs uvcdat
+  - conda install -q -y --channel uvcdat python=2.7 setuptools cdms2 cdutil genutil unidata cdtime vcs uvcdat matplotlib==1.5.0 cycler
   # Useful for debugging any issues with conda
   - conda info -a
   - conda remove -y -q uvcmetrics
-  - conda update -c uvcdat/label/nightly --show-channel-urls -q -y cdms2
+  - conda update -c uvcdat/label/nightly --show-channel-urls -q -y cdms2 vcs
 
 install:
     - if [ -d build ]; then rm -rf build; fi

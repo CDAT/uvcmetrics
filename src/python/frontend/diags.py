@@ -641,12 +641,12 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
 
                     if plot.number == '6':
                         vcanvas.plot( var[0][::strideY,::strideX],
-                                      var[1][::strideY,::strideX], rsr.presentation, tmobs[ir], bg=1)
+                                      var[1][::strideY,::strideX], rsr.presentation, tmobs[ir], bg=1, ratio="autot")
                     else:
                         # Note that continents=0 is a useful plot option
                         vcanvas.plot( var[0][::strideY,::strideX],
                                       var[1][::strideY,::strideX], rsr.presentation, tmobs[ir], bg=1,
-                                      title=title, units=getattr(var,'units',''),
+                                      title=title, units=getattr(var,'units',''), ratio="autot",
                                       source=rsr.source )
                     
                     # the last two lines shouldn't be here.  These (title,units,source)
@@ -658,6 +658,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
                                            var[1][::strideY,::strideX],
                                            rsr.presentation, tm2, bg=1,
                                            title=title, units=getattr(var,'units',''),
+                                           ratio="autot",
                                            source=rsr.source )
                             # the last two lines shouldn't be here.  These (title,units,source)
                             # should come from the contour plot, but that doesn't seem to

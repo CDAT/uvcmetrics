@@ -119,6 +119,8 @@ def build_templates(canvas=None, graphicMethodStrings=None, overlay=None, rows=1
             graphicMethodObjects.append(
                 canvas.createvector('uvwg_' + (str(random.random())[2:]), 'default')
             )
+            ## kludge because new vectors seem to have HUGE arrows
+            graphicMethodObjects[-1].scale=.03
             
         if (graphicMethodStrings[i] == 'scatter') and ('uvwg' not in canvas.listelements('scatter')) :
             graphicMethodObjects.append(
