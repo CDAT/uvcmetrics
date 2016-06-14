@@ -264,6 +264,7 @@ class Options():
     def processDisplayunits(self, ID, displayunits):
         """Check that the units are valid"""
         self._opts['output'][ID] = displayunits
+        self._opts["displayunits"] = displayunits
         pass
    ###
    ### The next few functions provide the ability to get valid options to the various parameters.

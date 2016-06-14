@@ -773,7 +773,7 @@ if __name__ == '__main__':
     o = Options()
     o.parseCmdLine()
     o.verifyOptions()
-    print o._opts['levels']
-    print o._opts['displayunits']
+    #print o._opts['levels']
+    #print o._opts['displayunits']
     #pdb.set_trace()
     run_diags(o)
