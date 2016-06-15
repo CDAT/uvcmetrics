@@ -691,6 +691,10 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
                     
                     #check for units specified for display purposes
                     if displayunits != None:
+                        if isinstance(displayunits,(list,tuple)):
+                            if len(displayunits)>1:
+                                logging.warning("multiple displayunits not supported at this time, using: %s" % displayunits[0])
+                            displayunits=displayunits[0]
                         var_save = var.clone()
                         try:
                             scale = udunits(1.0, var.units)
@@ -773,7 +777,7 @@ if __name__ == '__main__':
     o = Options()
     o.parseCmdLine()
     o.verifyOptions()
-    print o._opts['levels']
-    print o._opts['displayunits']
+    #print o._opts['levels']
+    #print o._opts['displayunits']
     #pdb.set_trace()
     run_diags(o)
