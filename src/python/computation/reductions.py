@@ -2360,12 +2360,14 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
     if len(axes1[0])==len(axes2[0]):
         # Only axis2 differs, there's a better way...
         aminusb = aminusb_ax2( mv1, mv2 )
-
+        
         #compute rmse and correlations
         import genutil.statistics, numpy
         aminusb.RMSE = numpy.infty
         aminusb.CORR = numpy.infty
         try:
+            aminusb.mv1 = mv1
+            aminusb.mv2 = mv2
             aminusb.RMSE = float( genutil.statistics.rms(mv1, mv2, axis='xy') )
             aminusb.CORR = float( genutil.statistics.correlation(mv1, mv2, axis='xy') )
         except Exception,err:
@@ -2416,12 +2418,13 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
             regridded_vars[mv1new.id] = mv1new
     aminusb = mv1new - mv2new
     aminusb.id = 'difference of '+mv1.id
-
     #compute rmse and correlations
     import genutil.statistics, numpy
     aminusb.RMSE = numpy.infty
     aminusb.CORR = numpy.infty
     try:
+        aminusb.mv1 = mv1new
+        aminusb.mv2 = mv2new
         aminusb.RMSE = float( genutil.statistics.rms(mv1new, mv2new, axis='xy') )
         aminusb.CORR = float( genutil.statistics.correlation(mv1new, mv2new, axis='xy') )
     except Exception,err:

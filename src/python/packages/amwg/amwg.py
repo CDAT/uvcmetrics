@@ -1718,6 +1718,7 @@ class amwg_plot_set5(amwg_plot_set5and6):
         """Theis method does what the title says.  It is a hack that will no doubt change as diags changes."""
         #(cnvs1, tm1), (cnvs2, tm2) = templates
         import pdb
+        pdb.set_trace()
         if hasattr(var, 'RMSE'):
             RMSE = round(var.RMSE, 2)
             CORR = round(var.CORR, 2)

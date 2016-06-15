@@ -85,7 +85,7 @@ class amwg_plot_set1(amwg_plot_plan):
     # This is essentially duplicated in amwgmaster.
 
     table_row_specs = [
-        { 'var':'RESTOM'},
+        { 'var':'T'},#'RESTOM'},
         { 'var':'RESSURF'},
         { 'var':'RESTOA', 'obs':'CERES-EBAF'},
         #obsolete { 'var':'RESTOA', 'obs':'ERBE'},
@@ -240,6 +240,12 @@ class amwg_plot_set1(amwg_plot_plan):
                 return -999.000
             else:
                 return m1-m2
+        def rmse(self, ffilt ):
+            rv1 = reduced_variable(
+                        variableid=self.var, filetable=self.filetable2, season=self.season, filefilter=ffilt,
+                        reduction_function= (lambda x, vid=None: x ) )
+            xxx=rv1.reduce()
+            pdb.set_trace()
         def mean_lev( self, filetable, ffilt, domrange, gw ):
             """compute and return the mean of a reduced variable at a prescribed level.
             The returned mean is an mv (cdms2 TransientVariable) whose data is a scalar."""
@@ -293,7 +299,6 @@ class amwg_plot_set1(amwg_plot_plan):
                 mean1 = rv1.reduce()
             return mean1
         def mean( self, filetable, filefam=None ):
-
             if filetable is None:
                 return -999.000
             if filefam is not None:
@@ -360,6 +365,7 @@ class amwg_plot_set1(amwg_plot_plan):
                     return float(mean2.data)
         def compute(self):
             rowpadded = (self.rowname+10*' ')[:17]
+            self.rmse(self.obs)
             mean1 = self.mean(self.filetable1)
             mean2 = self.mean(self.filetable2,self.obs)
             self.values = ( rowpadded, mean1, mean2, self.diff(mean1,mean2), -999.000 )
