@@ -457,6 +457,7 @@ class Options():
         import amwgmaster, pdb
 
         if self._opts["levels"] is None:  # User did not specified options, let's auto this
+            print "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",self._opts["varopts"]
             vr = self._opts["vars"][0]
             if vr in default_levels:
                 self._opts["levels"] = default_levels[vr].get("OBS",{}).get("contours",None)

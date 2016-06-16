@@ -499,12 +499,13 @@ def runcmdline(cmdline, outlog):
                     cmdline = (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, 
                                seasonstr, varstr, 
                                outstr, xmlstr, prestr, poststr, regionstr)
+                    CMDLINES += [cmdline]
                 elif length == 15:
-                    cmdline = (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, 
-                               seasonstr, varstr,
-                               outstr, xmlstr, prestr, poststr, regionstr, varopts)                    
-                #pdb.set_trace()
-                CMDLINES += [cmdline]
+                    for vo in varopts.split("--varopts")[-1].split():
+                        cmdline = (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, 
+                                   seasonstr, varstr,
+                                   outstr, xmlstr, prestr, poststr, regionstr, "--varopts %s" % vo)                    
+                        CMDLINES += [cmdline]
     else:
         CMDLINES = [cmdline]
         
