@@ -586,7 +586,6 @@ if __name__ == '__main__':
    opts = Options()
    opts.parseCmdLine()
    opts.verifyOptions()
-
    if opts['package'] == None or opts['package'] == '':
       logging.critical('Please specify a package when running metadiags.')
       quit()
@@ -665,6 +664,13 @@ if __name__ == '__main__':
       postDB(fts, dsname, package, host=hostname)
       quit()
 
+   # Kludge to make sure colormaps options are passed to diags
+   # If user changed them
+   for K in diags_collection.keys():
+       tmpDict = diags_collection[K].get("options",{})
+       cmaps = opts._opts["colormaps"]
+       tmpDict["colormaps"]= " ".join([ "%s=%s" % (k,cmaps[k]) for k in cmaps ])
+       diags_collection[K]["options"]=tmpDict
    generatePlots(model_dict, obspath, outpath, package, xmlflag, colls=colls)
 
    if dbflag == True:
