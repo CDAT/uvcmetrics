@@ -458,6 +458,8 @@ class Options():
 
         if self._opts["levels"] is None:  # User did not specified options, let's auto this
             vr = self._opts["vars"][0]
+            if self._opts["varopts"] is not None:
+                vr=vr+"_%s" % self._opts["varopts"][0]
             if vr in default_levels:
                 self._opts["levels"] = default_levels[vr].get("OBS",{}).get("contours",None)
             else:
@@ -470,6 +472,8 @@ class Options():
 
         if self._opts["difflevels"] is None:  # User did not specified options, let's auto this
             vr = self._opts["vars"][0]
+            if self._opts["varopts"] is not None:
+                vr=vr+"_%s" % self._opts["varopts"][0]
             if vr in default_levels:
                 self._opts["difflevels"] = default_levels[vr].get("OBS",{}).get("difference",None)
             else:
@@ -482,6 +486,8 @@ class Options():
 
         if self._opts["displayunits"] is None:  # User did not specified options, let's auto this
             vr = self._opts["vars"][0]
+            if self._opts["varopts"] is not None:
+                vr=vr+"_%s" % self._opts["varopts"][0]
             if vr in default_levels:
                 self._opts["displayunits"] = default_levels[vr].get("displayunits", None)
 
