@@ -85,7 +85,7 @@ class amwg_plot_set1(amwg_plot_plan):
     # This is essentially duplicated in amwgmaster.
 
     table_row_specs = [
-        { 'var':'T'},#'RESTOM'},
+        { 'var':'RESTOM'},
         { 'var':'RESSURF'},
         { 'var':'RESTOA', 'obs':'CERES-EBAF'},
         #obsolete { 'var':'RESTOA', 'obs':'ERBE'},
@@ -150,6 +150,7 @@ class amwg_plot_set1(amwg_plot_plan):
         { 'var':'Z3', 'obs':'NCEP', 'lev':'500', 'units':'hectometer'} 
         ]
 
+    #table_row_specs = [{ 'var':'TS', 'obs':'NCEP'},{ 'var':'RESTOM'},{ 'var':'RESSURF'}]
     # These also appear, in another form, in frontend/defines.py.
     regions = { 'Global':(-90,90),
     #            'Tropics (20S-20N)':(-20,20),
@@ -192,6 +193,7 @@ class amwg_plot_set1(amwg_plot_plan):
     class myrow:
         # represents a row of the output table.  Here's an example of what a table row would look like:
         # TREFHT_LEGATES   298.423             298.950            -0.526         1.148
+        undefined = -999.000
         def __init__( self, filetable1, filetable2, seasonid='ANN', region='Global', var='TREFHT',
                       obs=None, obsprint=None, lev=None, units=None ):
             # inputs are test (model) and control (obs) filetables, a season name (e.g. 'DJF'),
@@ -227,25 +229,22 @@ class amwg_plot_set1(amwg_plot_plan):
                 self.lev = float(lev)
             self.units = units   # The output table doesn't mention units, but they are essential
             #                      because different datasets may use different units.
-
+            self.reduced_variables = {}
+            self.variable_values  = {}
         def fpfmt( self, num ):
             """No standard floating-point format (e,f,g) will do what we need, so this switches between f and e"""
+            if num is self.undefined:
+                return '        '
             if num>10001 or num<-1001:
                 return format(num,"10.4e")
             else:
                 return format(num,"10.3f")
         def diff(self, m1, m2 ):
             """m1-m2 except it uses -999.000 as a missing-value code"""
-            if m1==-999.000 or m2==-999.000:
-                return -999.000
+            if m1 is self.undefined or m2 is self.undefined:
+                return self.undefined#-999.000
             else:
                 return m1-m2
-        def rmse(self, ffilt ):
-            rv1 = reduced_variable(
-                        variableid=self.var, filetable=self.filetable2, season=self.season, filefilter=ffilt,
-                        reduction_function= (lambda x, vid=None: x ) )
-            xxx=rv1.reduce()
-            pdb.set_trace()
         def mean_lev( self, filetable, ffilt, domrange, gw ):
             """compute and return the mean of a reduced variable at a prescribed level.
             The returned mean is an mv (cdms2 TransientVariable) whose data is a scalar."""
@@ -296,11 +295,18 @@ class amwg_plot_set1(amwg_plot_plan):
                     )
                 derived_variables = {}
                 rv1 = reduced_variables[reduced_variables.keys()[0]]
+                
+                #save the reduce variable
+                #VID = rv.dict_id(self.var, self.season, filetable, ffilt)
+                #self.reduced_variables[VID] = rv1
+                
                 mean1 = rv1.reduce()
+                #self.variable_values[VID] = mean1
             return mean1
         def mean( self, filetable, filefam=None ):
+            #pdb.set_trace()
             if filetable is None:
-                return -999.000
+                return self.undefined #-999.000
             if filefam is not None:
                 ffilt = f_climoname(filefam)
             else:
@@ -323,17 +329,29 @@ class amwg_plot_set1(amwg_plot_plan):
                     rv1 = reduced_variable(
                         variableid=self.var, filetable=filetable, season=self.season, filefilter=ffilt,
                         reduction_function=\
-                            (lambda x,vid=None,season=self.season,dom0=domrange[0],dom1=domrange[1],gw=gw:
-                                 reduce2scalar_seasonal_zonal(
-                                x,season,latmin=dom0,latmax=dom1,vid=vid,gw=gw) )
+                            (lambda x, vid=None, season=self.season, dom0=domrange[0], dom1=domrange[1], gw=gw:
+                                 reduce2scalar_seasonal_zonal(x, season, latmin=dom0, latmax=dom1, vid=vid, gw=gw) )
                         )
+                    
+                    #retrieve data for rmse and correlation
+                    rv_rmse = reduced_variable(
+                                variableid=self.var, filetable=filetable, season=self.season, filefilter=ffilt,
+                                reduction_function= (lambda x, vid=None: reduce_time_seasonal( x, self.season, self.region, vid ) ) )
+
+                    #VID = rv.dict_id(self.var, self.season, filetable, ffilt)
+                    if ffilt is None:
+                        self.reduced_variables['model'] = rv_rmse
+                    else:
+                        self.reduced_variables['obs'] = rv_rmse
+                    
                     try:
                         mean1 = rv1.reduce()
+                        #self.variable_values[VID] = mean1
                     except Exception as e:
                         print "WARNING, exception raised:",e
-                        return -999.000
+                        return self.undefined#-999.000
                 if mean1 is None:
-                    return -999.000
+                    return self.undefined#-999.000
                 mean2 = convert_variable( mean1, self.units )
                 if mean2.shape!=():
                     print "WARNING: computed mean",mean2.id,"for table has more than one data point"
@@ -352,23 +370,75 @@ class amwg_plot_set1(amwg_plot_plan):
                     vid = None
                 if vid is None:
                     print "cannot compute mean for",self.var,filetable
-                    return -999.000     # In the NCAR table, this number means 'None'.
+                    return self.undefined#-999.000     # In the NCAR table, this number means 'None'.
                 else:
                     rvvs = {rv.id(): rv.reduce() for rv in rvs }
                     dvv = dvs[0].derive( rvvs )
                     if dvv is None:
-                        return -999.000
+                        return self.undefined#-999.000
                     mean2 = convert_variable( dvv, self.units )
                     if mean2.shape!=():
                         print "WARNING: computed mean",mean2.id,"for table has more than one data point"
                         print mean2
                     return float(mean2.data)
+        def rmse(self ):
+            from metrics.graphics.default_levels import default_levels
+            #pdb.set_trace()
+                                                
+            variable_values = { }
+            
+            for key, rv in self.reduced_variables.items():
+                variable_values[key] = rv.reduce()
+                if False:
+                    if self.var in default_levels.keys():
+                        
+                        displayunits = default_levels[self.var].get('displayunits', None)
+                        if None not in [ displayunits, variable_values[key] ]:
+                            pdb.set_trace()
+                            print displayunits, variable_values[key].units
+                            try:
+                                scale = udunits(1.0, variable_values[key].units)
+                                scale = scale.to(displayunits).value
+                            except:
+                                if variable_values[key].units == 'fraction':
+                                    scale = 100.
+                                    variable_values[key].units = displayunits
+                                elif type(displayunits) is float:
+                                    scale = float(displayunits)
+                                else:
+                                    logging.critical('Invalid display units: '+ displayunits)
+                                    sys.exit()
+                            variable_values[key] = variable_values[key] * scale
+                            
+            RMSE = self.undefined
+            CORR = self.undefined
+            if len(variable_values.keys()) == 2:
+                dv = derived_var(vid='diff', inputs=variable_values.keys(), func=aminusb_2ax)
+                value = dv.derive( variable_values )
+                
+                #if scale is not None:
+                #    value.mv1 = scale*value.mv1
+                #    value.mv2 = scale*value.mv2
+
+                #compute rmse and correlations
+                import genutil.statistics, numpy
+                try:
+                    RMSE = float( genutil.statistics.rms(value.mv1, value.mv2, axis='xy') )
+                    CORR = float( genutil.statistics.correlation(value.mv1, value.mv2, axis='xy') )
+                except Exception,err:
+                    pass
+            return RMSE, CORR            
         def compute(self):
             rowpadded = (self.rowname+10*' ')[:17]
-            self.rmse(self.obs)
             mean1 = self.mean(self.filetable1)
-            mean2 = self.mean(self.filetable2,self.obs)
-            self.values = ( rowpadded, mean1, mean2, self.diff(mean1,mean2), -999.000 )
+            mean2 = self.mean(self.filetable2, self.obs)
+            RMSE, CORR = self.rmse()
+            if RMSE is None:
+                RMSE = '       '
+            if CORR is None:
+                CORR = '       '
+            
+            self.values = ( rowpadded, mean1, mean2, self.diff(mean1,mean2), RMSE, CORR )
             return self.values
         def __repr__(self):
             output = [str(self.values[0])]+[self.fpfmt(v) for v in self.values[1:]]
@@ -395,7 +465,7 @@ class amwg_plot_set1(amwg_plot_plan):
         self.subtitles = [
             ' '.join(['Test Case:',id2str(filetable1._id)])+'\n',
             'Control Case: various observational data\n',
-            'Variable                 Test Case           Obs          Test-Obs          RMSE\n']
+            'Variable                 Test Case           Obs          Test-Obs           RMSE            Correlation\n']
         self.presentation = "text"
 
         self.rows = []
