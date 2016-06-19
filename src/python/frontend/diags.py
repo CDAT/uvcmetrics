@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/home/jccosta/Pessoal/Work/NYU/UV-CDAT/build-uvcdat/install/bin/python
 # Script for running diagnostics.
 # Command-line usage example:
 # diags --model path=path,climos=yes --obs path=path,climos=yes,filter='f_startswith("NCEP")' --vars FLUT T --seasons DJF --region Global --package AMWG --output path
@@ -329,8 +329,14 @@ def run_diags( opts ):
                                 fname = os.path.join(outdir,name)
                      
                             if opts['output']['plots'] == True:
+                                #from pympler.tracker import SummaryTracker
+                                #tracker = SummaryTracker()
+   
                                 makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package)
                                 number_diagnostic_plots += 1
+
+                                #tracker.print_diff()
+
 
                             if opts['output']['xml'] == True:
                                 # Also, write the nc output files and xml.
@@ -382,10 +388,11 @@ def run_diags( opts ):
                                     print 'No data to plot for ', varid, ' ', aux
     vcanvas.close()
     vcanvas2.close()
+    
     print "total number of (compound) diagnostic plots generated =", number_diagnostic_plots
 
 
-def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
+def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):    
     # need to add plot and pacakge for the amwg 11,12 special cases. need to rethink how to deal with that
     # At this loop level we are making one compound plot.  In consists
     # of "single plots", each of which we would normally call "one" plot.
@@ -416,6 +423,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
             ir += 1
     if None in gms:
         logging.warning("Missing a graphics method. gms=%s",gms)
+
     # Now get the templates which correspond to the graphics methods and overlay statuses.
     # tmobs[ir] is the template for plotting a simple plot on a page
     #   which has just one single-plot - that's vcanvas
@@ -437,10 +445,13 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
         #     print "tmpl tmmobs=",[tm.name for tm in tmmobs]
         print '*************************************************'
 
-    # gmmobs provides the correct graphics methods to go with the templates.
+    # gmobs provides the correct graphics methods to go with the templates.
     # Unfortunately, for the moment we have to use rmr.presentation instead
     # (below) because it contains some information such as axis and vector
     # scaling which is not yet done as part of
+    # So, we are deleting gmobs:
+    gmobs = None
+    ovly  = None
 
     vcanvas2.clear()
     plotcv2 = False
@@ -575,7 +586,8 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                         if hasattr(plot, 'replaceIds'):
                             var = plot.replaceIds(var)
                         tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)],
-                                                           data=var, varIndex=varIndex, graphicMethod=rsr_presentation, var=var )
+                                                           data=var, varIndex=varIndex, graphicMethod=rsr_presentation,
+                                                           var=var, iteration=ir )
                     if len(rsr.vars) == 1:
                         #scatter plot for plot set 12
                         subtitle = title
@@ -608,7 +620,8 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                             yvar = var.flatten()
                             if hasattr(plot, 'customizeTemplates'):
                                 tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)],
-                                                                   data=[xvar.units, yvar.units], varIndex=varIndex, graphicMethod=rsr_presentation)                            
+                                                                   data=[xvar.units, yvar.units], varIndex=varIndex,
+                                                                   graphicMethod=rsr_presentation, var=var, iteration=ir)                            
                             
                             # Scatter part from the single plots in set 11
                             vcanvas.plot(xvar, yvar, 
@@ -690,7 +703,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                     if hasattr(plot, 'customizeTemplates'):
                         tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)], data=var,
                                                            varIndex=varIndex, graphicMethod=rsr.presentation, var=var )
-                    # Single plot                    
+                    # Single plot
                     plot.vcs_plot(vcanvas, var, rsr.presentation, tm, bg=1,
                                   title=title, source=rsr.source,
                                   plotparms=getattr(rsr,'plotparms',None) )
@@ -701,7 +714,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                     # Multi-plot
                     try:
                         if tm2 is not None:
-                            # Multiple plots on a page:                            
+                            # Multiple plots on a page:
                             plot.vcs_plot( vcanvas2, var, rsr.presentation, tm2, bg=1,
                                            title=title, source=rsr.source,
                                            plotparms=getattr(rsr,'plotparms',None) )#,
@@ -721,7 +734,11 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package):
                     vcanvas.png( fname, ignore_alpha=True, metadata=provenance_dict() )
                     # vcanvas.svg() doesn't support ignore_alpha or metadata keywords
                     vcanvas.svg( fnamesvg )
-
+            if tm is not None:
+                tm = None
+            if tm2 is not None:
+                tm2 = None
+                
         if tmmobs[0] is not None:  # If anything was plotted to vcanvas2
             vname = varid.replace(' ', '_')
             vname = vname.replace('/', '_')

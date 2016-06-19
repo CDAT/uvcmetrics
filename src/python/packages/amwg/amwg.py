@@ -1603,7 +1603,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
         tm1.xname.priority  = 1
         tm1.legend.priority = 1
         tm2.legend.priority = 1
-
+        
         # Fix units if needed
         if data is not None:
             if (getattr(data, 'units', '') == ''):
@@ -1708,6 +1708,7 @@ class amwg_plot_set5(amwg_plot_set5and6):
     def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
         """Theis method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
+        
         import pdb
         if hasattr(var, 'RMSE'):
             RMSE = round(var.RMSE, 2)
