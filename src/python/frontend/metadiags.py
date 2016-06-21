@@ -45,7 +45,7 @@ def getCollections(pname):
     print 'The following diagnostic collections appear to be available: %s' %colls
     return colls
 
-def makeTables(collnum, model_dict, obspath, outpath, pname, outlog):
+def makeTables(collnum, model_dict, obspath, outpath, pname, outlog, dryrun=False):
    collnum = collnum.lower()
    seasons = diags_collection[collnum].get('seasons', ['ANN'])
    regions = diags_collection[collnum].get('regions', ['Global'])
@@ -161,10 +161,9 @@ def makeTables(collnum, model_dict, obspath, outpath, pname, outlog):
                auxstr = '--varopts '+a
 
             cmdline = (def_executable, path0str, path1str, obsstr, "--table", "--set", collnum, "--prefix", "set%s" % collnum, "--package", package, vstr, seasonstr, regionstr, auxstr, "--outputdir", outpath)
-            print "tables"
-            runcmdline(cmdline, outlog)
+            runcmdline(cmdline, outlog, dryrun)
 
-def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
+def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryrun=False):
    import os
    # Did the user specify a single collection? If not find out what collections we have
    if colls == None:
@@ -226,7 +225,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
       collnum = collnum.lower()
       # Special case the tables since they are a bit special. (at least amwg)
       if diags_collection[collnum].get('tables', False) != False:
-         makeTables(collnum, model_dict, obspath, outpath, pname, outlog)
+         makeTables(collnum, model_dict, obspath, outpath, pname, outlog, dryrun)
          continue
 
       # deal with collection-specific optional arguments
@@ -352,7 +351,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
                cmdline = (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, seasonstr, 
                           varstr, outstr, xmlstr, prestr, poststr, regionstr)
                if collnum != 'dontrun':
-                  runcmdline(cmdline, outlog)
+                  runcmdline(cmdline, outlog, dryrun)
                else:
                   print 'DONTRUN: ', cmdline
 
@@ -408,7 +407,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
                   cmdline = (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, seasonstr, 
                              varstr, outstr, xmlstr, prestr, poststr, regionstr, varopts)
                   if collnum != 'dontrun':
-                     runcmdline(cmdline, outlog)
+                     runcmdline(cmdline, outlog, dryrun)
                   else:
                      print 'DONTRUN: ', cmdline
             else: # different executable; just pass all option key:values as command line options.
@@ -447,7 +446,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
                #   for x in diags_collection[collnum][v]['options'].keys():
                #      cmdline += '--%s %s' % (x, diags_collection[collnum][v][options][x])
                if execstr != def_executable:
-                  runcmdline([execstr], outlog)
+                  runcmdline([execstr], outlog, dryrun)
 
    outlog.close()
 
@@ -460,7 +459,7 @@ DIAG_TOTAL = 0
 def cmderr(popened):
     print "Command \n\"%s\"\n failed with code of %d" % (pid_to_cmd[popened.pid], popened.returncode)
 
-def runcmdline(cmdline, outlog):
+def runcmdline(cmdline, outlog, dryrun=False):
     global DIAG_TOTAL
     
     #the following is a total KLUDGE. It's more of a KLUDGE than last time.
@@ -509,6 +508,11 @@ def runcmdline(cmdline, outlog):
     else:
         CMDLINES = [cmdline]
         
+    if dryrun is not False:
+        for cmd in CMDLINES:
+            print >>dryrun, " ".join(cmd)+" &"
+        return
+
     for cmdline in CMDLINES:
         while len(active_processes) >= MAX_PROCS:
             for i, p in enumerate(active_processes):
@@ -672,7 +676,14 @@ if __name__ == '__main__':
        cmaps = opts._opts["colormaps"]
        tmpDict["colormaps"]= " ".join([ "%s=%s" % (k,cmaps[k]) for k in cmaps ])
        diags_collection[K]["options"]=tmpDict
-   generatePlots(model_dict, obspath, outpath, package, xmlflag, colls=colls)
+   if opts["dryrun"]:
+       fnm = os.path.join(outpath,"metadiags_commands.sh")
+       dryrun = open(fnm,"w")
+       print >> dryrun,"#!/usr/bin/env bash"
+       print "List of commands is in: %s",fnm
+   else:
+       dryrun = False
+   generatePlots(model_dict, obspath, outpath, package, xmlflag, colls=colls,dryrun=dryrun)
 
    if dbflag == True:
       print 'Updating the remote database...'
@@ -684,3 +695,6 @@ if __name__ == '__main__':
       else:
          print '"%s"' % pid_to_cmd[proc.pid], "succeeded."
 
+   if opts["dryrun"]:
+       print >>dryrun,"wait"
+       dryrun.close()
