@@ -685,7 +685,6 @@ if __name__ == '__main__':
 #SBATCH -t 00:30:00
 #SBATCH -J metadiag
 #SBATCH -o metadiags.o%j
-#SBATCH -L SCRATCH,project
 """
 
        print "List of commands is in: %s",fnm
