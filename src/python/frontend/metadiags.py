@@ -679,7 +679,15 @@ if __name__ == '__main__':
    if opts["dryrun"]:
        fnm = os.path.join(outpath,"metadiags_commands.sh")
        dryrun = open(fnm,"w")
-       print >> dryrun,"#!/usr/bin/env bash"
+       print >> dryrun,"#!/usr/bin/env bash -l"
+       print >> dryrun,"""#SBATCH -p debug
+#SBATCH -N 64
+#SBATCH -t 00:30:00
+#SBATCH -J metadiag
+#SBATCH -o metadiags.o%j
+#SBATCH -L SCRATCH,project
+"""
+
        print "List of commands is in: %s",fnm
    else:
        dryrun = False
