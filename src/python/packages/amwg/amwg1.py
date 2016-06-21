@@ -195,7 +195,7 @@ class amwg_plot_set1(amwg_plot_plan):
     class myrow:
         # represents a row of the output table.  Here's an example of what a table row would look like:
         # TREFHT_LEGATES   298.423             298.950            -0.526         1.148
-        undefined = -999.000
+        undefined = -numpy.infty
         def __init__( self, filetable1, filetable2, seasonid='ANN', region='Global', var='TREFHT',
                       obs=None, obsprint=None, lev=None, units=None ):
             # inputs are test (model) and control (obs) filetables, a season name (e.g. 'DJF'),
@@ -383,12 +383,14 @@ class amwg_plot_set1(amwg_plot_plan):
                         print "WARNING: computed mean",mean2.id,"for table has more than one data point"
                         print mean2
                     return float(mean2.data)
-        def rmse(self ):
+        def rmse( self ):
             """ This function computes the rmse and correlation between the model and observations.
             It also scales the data to the units in devel_levels before these computations."""
             from metrics.graphics.default_levels import default_levels
+            from metrics.computation.units import scale_data
+            from metrics.computation.compute_rmse import compute_rmse
             #pdb.set_trace()
-                                                
+                                  
             variable_values = { }
             for key, rv in self.reduced_variables.items():
                 variable_values[key] = rv.reduce()
@@ -396,38 +398,17 @@ class amwg_plot_set1(amwg_plot_plan):
                     #convert to the units specified in the default levels disctionay
                     displayunits = default_levels[self.var].get('displayunits', None)
                     if displayunits is not None and variable_values[key] is not None:
-                        #print displayunits, variable_values[key].units
-                        units = displayunits
-                        try:
-                            scale = udunits(1.0, variable_values[key].units)
-                            scale = scale.to(displayunits).value
-                        except:
-                            if variable_values[key].units == 'fraction':
-                                scale = 100.
-                            else:
-                                try:
-                                    scale = float(displayunits)
-                                    units = 'scaled'
-                                except:
-                                    logging.critical('Invalid display units: '+ displayunits + ' for ' + variable_values[key].units)
-                                    sys.exit()
-                        variable_values[key] = variable_values[key] * scale
-                        variable_values[key].units = units
-                        #pdb.set_trace()
-                            
+                        print displayunits, variable_values[key].units
+                        variable_values[key] = scale_data( displayunits, variable_values[key])  
+
             RMSE = self.undefined
             CORR = self.undefined
             if len(variable_values.keys()) == 2:
                 dv = derived_var(vid='diff', inputs=variable_values.keys(), func=aminusb_2ax)
                 value = dv.derive( variable_values )
-                
-                #compute rmse and correlations
-                import genutil.statistics, numpy
-                try:
-                    RMSE = float( genutil.statistics.rms(value.mv1, value.mv2, axis='xy') )
-                    CORR = float( genutil.statistics.correlation(value.mv1, value.mv2, axis='xy') )
-                except Exception,err:
-                    pass
+                if hasattr(value, 'model') and hasattr(value, 'obs'):
+                    RMSE, CORR = compute_rmse( value.model, value.obs )
+
             return RMSE, CORR            
         def compute(self):
             rowpadded = (self.rowname+10*' ')[:17]

@@ -2366,8 +2366,8 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
         aminusb.RMSE = numpy.infty
         aminusb.CORR = numpy.infty
         try:
-            aminusb.mv1 = mv1
-            aminusb.mv2 = mv2
+            aminusb.model = mv1
+            aminusb.obs   = mv2
             aminusb.RMSE = float( genutil.statistics.rms(mv1, mv2, axis='xy') )
             aminusb.CORR = float( genutil.statistics.correlation(mv1, mv2, axis='xy') )
         except Exception,err:
