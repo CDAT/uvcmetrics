@@ -679,15 +679,19 @@ if __name__ == '__main__':
    if opts["dryrun"]:
        fnm = os.path.join(outpath,"metadiags_commands.sh")
        dryrun = open(fnm,"w")
-       print >> dryrun,"#!/usr/bin/env bash -l"
-       print >> dryrun,"""#SBATCH -p debug
-#SBATCH -N 64
-#SBATCH -t 00:30:00
-#SBATCH -J metadiag
-#SBATCH -o metadiags.o%j
-"""
 
        print "List of commands is in: %s",fnm
+       if opts["sbatch"]>0:
+           print >> dryrun,"#!/usr/bin/env bash"
+           print >> dryrun,"""#SBATCH -p debug
+#SBATCH -N %i
+#SBATCH -t 00:30:00
+#SBATCH -J metadiag
+#SBATCH -o metadiags.o%%j
+
+module use /usr/common/contrib/acme/modulefiles
+module load uvcdat/batch
+""" % (opts["sbatch"])
    else:
        dryrun = False
    generatePlots(model_dict, obspath, outpath, package, xmlflag, colls=colls,dryrun=dryrun)
@@ -703,5 +707,12 @@ if __name__ == '__main__':
          print '"%s"' % pid_to_cmd[proc.pid], "succeeded."
 
    if opts["dryrun"]:
-       print >>dryrun,"wait"
+       if opts["sbatch"]>0:
+           print >>dryrun,"wait"
        dryrun.close()
+   if opts["sbatch"]>0:
+      import subprocess
+      import shlex
+      cmd = "sbatch %s" % fnm
+      print "Commmand:",cmd
+      subprocess.call(shlex.split(cmd))
