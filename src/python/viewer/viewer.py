@@ -10,6 +10,8 @@ import datetime
 from collections import OrderedDict
 from distutils.sysconfig import get_python_lib
 import shutil
+from output_viewer.index import OutputIndex, OutputMenu
+from output_viewer.build import build_viewer
 
 
 parser = ArgumentParser(description="Generate web pages for viewing UVCMetrics' metadiags output")
@@ -25,14 +27,17 @@ special_sets = {
     "13": PlotSet13,
     "14": PlotSet14,
 }
+
 num_then_text = re.compile(r'(\d+)([a-zA-Z]+)?')
+
+
 def alphanumeric_key(v):
     match = num_then_text.match(v)
     if match:
         g = match.groups()
         return int(g[0]), g[1]
     else:
-        return (0, v)
+        return (1e20, v)
 
 
 if __name__ == '__main__':
@@ -62,45 +67,42 @@ if __name__ == '__main__':
     tier_1a = [plot for plot in plots if not plot.startswith("tier1b_") and plot not in ("topten", "dontrun")]
     tier_1b = [plot for plot in plots if plot.startswith("tier1b_")]
     tier_1a.sort(key=alphanumeric_key)
+    print tier_1a
     tier_1b.sort(key=alphanumeric_key)
     tier_1a_links = OrderedDict()
     for plot in tier_1a:
-        tier_1a_links["Plotset %s" % plot] = "page-%s.html" % plot
+        tier_1a_links["Plotset %s" % plot] = "set_%s.html" % plot
     tier_1b_links = OrderedDict()
     for plot in tier_1b:
-        tier_1b_links["Plotset %s" % plot] = "page-%s.html" % plot
-    links = OrderedDict()
-    links["Top Ten"] = "page-topten.html"
-    links["Tier 1A"] = tier_1a_links
-    links["Tier 1B"] = tier_1b_links
-    toolbar = BootstrapNavbar("UVCMetrics AMWG Diagnostics", "index.html", links)
+        tier_1b_links["Plotset %s" % plot] = "set_%s.html" % plot
 
-    for x in plots:
+    top_ten = OutputMenu("Top Ten")
+    top_ten.url = "set_topten.html"
+    tier_1 = OutputMenu("Tier 1A", tier_1a_links)
+    tier_1b = OutputMenu("Tier 1B", tier_1b_links)
+    index = OutputIndex("UVCMetrics", version=dataset, menu=[top_ten, tier_1, tier_1b])
+
+    for x in sorted(plots, key=alphanumeric_key):
         if x == "dontrun":
             continue
         if x in special_sets:
-            plotset = special_sets[x](dataset, root=path, toolbar=toolbar)
+            plotset = special_sets[x](dataset, root=path)
         else:
-            plotset = PlotSet(dataset, x, root=path, toolbar=toolbar)
+            plotset = PlotSet(dataset, x, root=path)
+        print "Building", x
+        index.addPage(plotset.build())
 
-        fname = os.path.join(path, 'page-%s.html' % x)
-
-        pages.append((x, fname))
-        f = open(fname, 'w')
-        f.write(plotset.build())
-        f.close()
-
-    # Copy over share/uvcmetrics/viewer
-    share_directory = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(get_python_lib()))), "share", "uvcmetrics", "viewer")
-    viewer_dir = os.path.join(path, "viewer")
+    # Copy over share/uvcmetrics/viewer/imgs
+    share_directory = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(get_python_lib()))), "share", "uvcmetrics", "viewer", "img")
+    viewer_dir = os.path.join(path, "uvcmetrics_viewer", "img")
     if os.path.exists(viewer_dir):
         shutil.rmtree(viewer_dir)
     shutil.copytree(share_directory, viewer_dir)
 
-    index = PlotIndex(dataset, pages, root=path, toolbar=toolbar)
-    f = open(os.path.join(path, "index.html"), "w")
-    f.write(index.build())
-    f.close()
+    index_file = os.path.join(path, "index.json")
+    index.toJSON(index_file)
+    build_viewer(index_file, diag_name="UVCMetrics")
+
     should_open = raw_input("Viewer HTML generated at %s/index.html. Would you like to open in a browser? y/[n]: " % path)
     if should_open and should_open.lower()[0] == "y":
         import webbrowser

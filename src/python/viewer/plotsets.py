@@ -1,5 +1,5 @@
 from metrics.frontend import amwgmaster
-from metrics.viewer.htmlbuilder import Table, Document, TableRow, Link, HTMLBuilder
+from output_viewer.index import OutputPage, OutputGroup, OutputRow
 import os
 from collections import OrderedDict
 import re
@@ -15,44 +15,6 @@ def alphanumeric_key(v):
                 return int(g[0]), g[1]
             else:
                 return (0, v)
-
-
-class PlotLink(Link):
-    """
-    Edit this object to change the links to the plots to have
-    special behaviors.
-    """
-    def __init__(self, file_path, text="Plot", **attrs):
-        self.children = [text]
-        self._attrs = attrs
-        self._formatted = []
-        self._file_path = file_path
-
-    def tagname(self):
-        if os.path.exists(os.path.join(self._file_path, self._attrs["href"])):
-            # Format as link
-            return "a"
-        else:
-            # Format as span
-            return "span"
-
-
-class DiagnosticRow(TableRow):
-    """
-    Edit this object to change the table rows to have
-    special behaviors.
-    """
-    def __init__(self, var, desc, plot_urls, file_path, **args):
-        super(DiagnosticRow, self).__init__(**args)
-
-        # Variable ID
-        self.append_cell(var)
-
-        # Variable Description
-        self.append_cell(desc)
-
-        for url in plot_urls:
-            self.append_cell(PlotLink(file_path, href=url))
 
 
 class PlotSet(object):
@@ -92,7 +54,7 @@ class PlotSet(object):
             self.suffix = "model.png"
 
     def plotset_img(self):
-        return os.path.join("viewer", "img", "SET%s.png" % (self.plotset.upper()))
+        return os.path.join("uvcmetrics_viewer", "img", "SET%s.png" % (self.plotset.upper()))
 
     def plot_name(self, season, variable, obs, region, option=None):
         if option:
@@ -110,7 +72,7 @@ class PlotSet(object):
 
     def group_cols(self, group):
         seasons = self.seasons if len(self.seasons) != 1 else [""]
-        return ["", self.group_label(group)] + seasons
+        return seasons
 
     def group_rows(self, group):
         rows = []
@@ -134,11 +96,11 @@ class PlotSet(object):
                     regionstr = amwgmaster.all_regions[region].filekey
                     # We also want a row per varopt/postfix
                     for variant in row_variations:
-                        row = (v, amwgmaster.diags_varlist[v]["desc"], [])
+                        row = [v, amwgmaster.diags_varlist[v]["desc"]]
                         for season in self.seasons:
                             # If variant is None, it'll use the appropriate version of the plot_name function.
                             plot_name = self.plot_name(season, v, obsname, regionstr, option=variant)
-                            row[2].append(plot_name)
+                            row.append(plot_name)
                         rows.append(row)
         return rows
 
@@ -154,63 +116,31 @@ class PlotSet(object):
                 return False
         return True
 
-    def scripts(self):
-        return ["viewer/jquery-2.2.3.min.js", "viewer/bootstrap.min.js", "viewer/viewer.js"]
+    def row_title(self, row):
+        return row[0]
 
-    def styles(self):
-        return ["viewer/bootstrap.min.css", "viewer/viewer.css"]
+    def row_description(self, row):
+        return row[1]
 
-    def metas(self):
-        return [{"name": "viewport", "content": "width=device-width, intial-scale=1"}]
-
-    def table_width(self):
-        return "col-sm-12"
-
-    def init_head(self, doc):
-        for script in self.scripts():
-            doc.append_script(script)
-        for style in self.styles():
-            doc.append_style(style)
-        for meta in self.metas():
-            doc.append_meta(meta)
-
-    def post_table(self, doc, container):
-        pass
-
-    def create_doc(self):
-        doc = Document(title="Set %s" % self.plotset)
-        self.init_head(doc)
-        if self.toolbar is not None:
-            doc.append(self.toolbar)
-        container = doc.append_tag("div", class_="container")
-        row = container.append_tag("div", class_="row")
-        title = row.append_tag("h1")
-        title.append_tag("img", src=self.plotset_img(), width="200px", alt="Set %s" % self.plotset)
-        title.append(" %s and OBS Data" % self.dataset)
-        subtitle = row.append_tag("h2")
-        subtitle.append("Diagnostics Set %s: %s" % (self.plotset, self.desc))
-        row.append_tag("hr")
-        preamble = amwgmaster.diags_collection[self.plotset].get('preamble', '')
-        if preamble:
-            b = row.append_tag("b")
-            b.append_formatted(preamble)
-        return doc, container
+    def row_columns(self, row):
+        return row[2:]
 
     def build(self):
-        doc, container = self.create_doc()
-        row = container.append_tag("div", class_="row")
-        col = row.append_tag('div', class_=self.table_width())
-        table = Table(class_="table")
-        col.append(table)
+        page = OutputPage("Set %s" % self.plotset,
+                          icon=self.plotset_img(),
+                          description=self.desc,
+                          short_name="set_%s" % self.plotset
+                          )
+
         for group, plots in self.plots().iteritems():
-            header_row = table.append_header(class_="header_row")
-            for col in self.group_cols(group):
-                header_row.append_cell(col)
+            group_ind = len(page.groups)
+            plot_group = OutputGroup(self.group_label(group), columns=self.group_cols(group))
+            page.addGroup(plot_group)
             for row in plots:
-                diag_row = DiagnosticRow(row[0], row[1], row[2], self.root_path)
-                table.append(diag_row)
-        self.post_table(doc, container)
-        return doc.build()
+                r = OutputRow(self.row_title(row), columns=self.row_columns(row))
+                page.addRow(r, group_ind)
+
+        return page
 
 
 class PlotSet1(PlotSet):
@@ -226,13 +156,17 @@ class PlotSet1(PlotSet):
     def plot_name(self, season, region):
         return "set1_{season}_{region}-table.text".format(season=season, region=amwgmaster.all_regions[region].filekey)
 
+    def row_columns(self, row):
+        return row[1:]
+
     def group_rows(self, group):
         rows = []
         for region in self.regions:
-            row = ('', region, [])
+            row = [region]
             for s in self.seasons:
-                row[2].append(self.plot_name(s, region))
+                row.append(self.plot_name(s, region))
             rows.append(row)
+        print rows
         return rows
 
 
@@ -261,7 +195,7 @@ class PlotSet2(PlotSet):
             obskey = amwgmaster.diags_obslist[obsname]['filekey']
             fkey = amwgmaster.diags_varlist[v]['filekey']
             desc = amwgmaster.diags_varlist[v]['desc']
-            row = ("", desc, [self.plot_name(v, obskey)])
+            row = ("", desc, self.plot_name(v, obskey))
             rows.append(row)
         return rows
 
@@ -298,13 +232,13 @@ class PlotSet11(PlotSet):
 
         for key in info:
             if group == 0:
-                row = ("SW/LW Cloud Forcing", key, [self.plot_name("SWCF_LWCF", info[key])])
+                row = ("SW/LW Cloud Forcing", key, self.plot_name("SWCF_LWCF", info[key]))
                 rows.append(row)
             else:
                 var = key
                 vardesc = info[var]["desc"]
                 for obs_name, obs_key in info[var]["obslist"].iteritems():
-                    row = (vardesc, obs_name, [self.plot_name(var, obs_key)])
+                    row = (vardesc, obs_name, self.plot_name(var, obs_key))
                     rows.append(row)
         return rows
 
@@ -320,7 +254,7 @@ class PlotSet12(PlotSet):
         return [self.header]
 
     def group_cols(self, group):
-        return ["", group] + self.cols
+        return [group] + self.cols
 
     def group_label(self, group):
         return self.header
@@ -332,7 +266,7 @@ class PlotSet12(PlotSet):
         rows = []
 
         for v in self.vlist:
-            row = ("", v, [self.plot_name(v, c) for c in self.cols])
+            row = ["", v] + [self.plot_name(v, c) for c in self.cols]
             rows.append(row)
         return rows
 
@@ -344,6 +278,7 @@ class PlotSet13(PlotSet12):
         self.cols = ['DJF', 'JJA', 'ANN']
         self.vlist = {'Global':'global', 'Tropics (15S-15N)':'tropics', 'NH SubTropics (15N-30N)':'nsubtrop', 'SH SubTropics (30S-15S)':'ssubtrop', 'NH Mid-Latitudes (30N-70N)':'nmidlats', 'SH Mid-Latitudes (70S-30S)':'smidlats', 'NH Polar (70N-90N)':'npole', 'SH Polar (90S-70S)':'spole', 'North Pacific Stratus':'npacstrat', 'South Pacific Stratus':'spacstrat', 'North Pacific':'npacific', 'North Atlantic':'natlantic', 'Warm Pool':'warmpool', 'Central Africa':'cafrica', 'USA':'usa'}
         self.header = 'Region'
+
 
 class PlotSet14(PlotSet):
     def __init__(self, dataset, toolbar=None, root="."):
@@ -357,9 +292,9 @@ class PlotSet14(PlotSet):
 
     def group_cols(self, group):
         if group == 0:
-            return ["", "ANN", "DJF", "MAM", "JJA", "SON"]
+            return ["ANN", "DJF", "MAM", "JJA", "SON"]
         else:
-            return ["", "Bias (%)", "Variance (ratio)", "Correlation Coefficient Tables"]
+            return ["Bias (%)", "Variance (ratio)", "Correlation Coefficient Tables"]
 
     def plot_name(self, season, scope):
         return "set14_{season}_{scope}.png".format(season=season, scope=scope.upper())
@@ -377,129 +312,3 @@ class PlotSet14(PlotSet):
                 ("Space Only", ["set14.METRICS_{}_SPACE.png".format(v) for v in var_names]),
                 ("Time Only", [None, None, "set14.METRICS_CC_SPACE_TIME.png"])
             ]
-
-    def build(self):
-        doc, container = self.create_doc()
-        row = container.append_tag("div", class_="row")
-        divcol = row.append_tag('div', class_="col-sm-6")
-        for group in self.plot_groups():
-            table = Table(class_="table")
-            divcol.append(table)
-
-            header = table.append_header(class_="header_row")
-            for col in self.group_cols(group):
-                header.append_cell(col)
-
-            for row_name, row_links in self.group_rows(group):
-                r = table.append_row()
-                r.append_cell(row_name)
-                for l in row_links:
-                    if l is None:
-                        r.append_cell('')
-                    else:
-                        r.append_cell(PlotLink(self.root_path, href=l))
-
-        return doc.build()
-
-
-class PlotIndex(PlotSet):
-    def __init__(self, dataset, pages, root=None, toolbar=None):
-        self.pages = pages
-        self.plotset = "Index"
-        self.root_path = root
-        self.dataset = dataset
-        self.desc = ""
-        self.toolbar = toolbar
-
-    def plot_groups(self):
-        return [0]
-
-    def group_label(self, group):
-        return ""
-
-    def group_cols(self, group):
-        return ["Set", "Description"]
-
-    def create_doc(self):
-        doc = Document(title="UVCMetrics Diagnostics")
-        self.init_head(doc)
-        if self.toolbar:
-            doc.append(self.toolbar)
-        container = doc.append_tag("div", class_="container")
-        row = container.append_tag('div', class_="row")
-        title = row.append_tag("h1")
-        title.append("UVCMetrics Diagnostics Package")
-        subtitle = row.append_tag("h2")
-        subtitle.append("Data set: %s" % self.dataset)
-        row.append_tag("hr")
-        return doc, container
-
-    def table_width(self):
-        return "col-sm-6"
-
-    def post_table(self, doc, container):
-        row = container.children[1]
-        wrapper_div = row.append_tag('div', class_="col-sm-6 img-links")
-
-        tier_1a_plots = {}
-        for plotset in self.pages:
-            setname = plotset[0]
-            if setname.startswith("tier1b_"):
-                continue
-            if setname == "topten":
-                continue
-            tier_1a_plots[setname] = os.path.relpath(plotset[1], self.root_path)
-
-        plot_keys = tier_1a_plots.keys()
-        plot_keys.sort(key=alphanumeric_key)
-
-        # Break into grid
-        cols = 3
-        rows = int(math.ceil(len(plot_keys) / float(cols)))
-        for r in range(rows):
-            for c in range(cols):
-                div_col = wrapper_div.append_tag('div', class_='img-cell')
-                index = c + r * cols
-                if index >= len(plot_keys):
-                    a = div_col.append_tag("a")
-                    a.append_tag("img")
-                    continue
-                plotset = plot_keys[index]
-                plotset_path = tier_1a_plots[plotset]
-                plotset_link = div_col.append_tag("a", href=plotset_path)
-                plotset_img_dir = os.path.dirname(self.plotset_img())
-                plotset_img_path = os.path.join(self.root_path, plotset_img_dir, "SET%s.png" % plotset.upper())
-                plotset_link.append_tag("img", src=plotset_img_path)
-
-    def group_rows(self, group):
-        set_to_path = {}
-        tier1a = {}
-        tier1b = {}
-
-        for plotset in self.pages:
-            setname = plotset[0]
-            set_to_path[setname] = os.path.relpath(plotset[1], self.root_path)
-
-            if setname.startswith("tier1b_"):
-                tier1b[setname] = setname.split("_")[1]
-            else:
-                tier1a[setname] = setname
-
-        tier1a_keys = tier1a.keys()
-        tier1a_keys.sort(key=alphanumeric_key)
-        rows = []
-
-        for key in tier1a_keys:
-            link = Link(href=set_to_path[key])
-            link.append(amwgmaster.diags_collection[key]["desc"])
-            rows.append((key, link, []))
-
-        tier1b_keys = tier1b.keys()
-        tier1b_keys.sort()
-
-        for key in tier1b_keys:
-            link = Link(href=set_to_path[key])
-            link.append(amwgmaster.diags_collection[key]["desc"])
-            rows.append((key, link, []))
-
-        return rows
