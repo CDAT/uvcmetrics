@@ -682,7 +682,7 @@ if __name__ == '__main__':
 
        print "List of commands is in: %s",fnm
        if opts["sbatch"]>0:
-           print >> dryrun,"#!/usr/bin/env bash"
+           print >> dryrun,"#!/bin/bash"
            print >> dryrun,"""#SBATCH -p debug
 #SBATCH -N %i
 #SBATCH -t 00:30:00
