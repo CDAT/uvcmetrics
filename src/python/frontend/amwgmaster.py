@@ -351,6 +351,7 @@ diags_collection['7']['seasons'] = ['DJF', 'JJA', 'ANN']
 diags_collection['7']['regions'] = ['N_Hemisphere_Land', 'S_Hemisphere_Land']
 diags_collection['7']['package'] = 'AMWG'
 diags_collection['7']['options'] = {'logo':'no'}
+diags_collection['7']['combined'] = True
 diags_collection['7']['PSL'] = {'plottype': '7', 'obs': ['JRA25_1', 'NCEP_1']}
 diags_collection['7']['CLDLOW'] = {'plottype': '7', 'obs': ['ISCCP_1', 'WARREN_1', 'CLOUDSAT_1']}
 diags_collection['7']['TREFHT'] = {'plottype': '7', 'obs': ['WILLMOTT_1']}
