@@ -1,9 +1,10 @@
 from metrics.frontend import amwgmaster
-from output_viewer.index import OutputPage, OutputGroup, OutputRow
+from output_viewer.index import OutputPage, OutputGroup, OutputRow, OutputFile
 import os
 from collections import OrderedDict
 import re
 import math
+import vcs
 
 num_then_text = re.compile(r'(\d+)([a-zA-Z]+)?')
 
@@ -63,6 +64,23 @@ class PlotSet(object):
             fname = "set{plotset}_{season}_{var}_{obs}_{region}-{suffix}".format(plotset=self.plotset, season=season, var=variable, obs=obs, region=region, suffix=self.suffix)
         return fname
 
+    def plot_info(self, season, variable, obs, region, option=None):
+        plot_name = self.plot_name(season, variable, obs, region, option=option)
+        plot_path = os.path.join(self.root_path, plot_name)
+        if os.path.exists(plot_path):
+            if os.path.splitext(plot_path)[1].lower() == ".png":
+                meta = vcs.png_read_metadata(plot_path)
+            else:
+                meta = None
+        else:
+            meta = None
+        if option is not None:
+            name = "{var} ({option}) {season}".format(var=variable, option=option, season=season)
+        else:
+            name = "{var} {season}".format(var=variable, season=season)
+        plot_info = OutputFile(plot_name, meta=meta, title=name)
+        return plot_info
+
     def plot_groups(self):
         return self.obslist
 
@@ -99,8 +117,7 @@ class PlotSet(object):
                         row = [v, amwgmaster.diags_varlist[v]["desc"]]
                         for season in self.seasons:
                             # If variant is None, it'll use the appropriate version of the plot_name function.
-                            plot_name = self.plot_name(season, v, obsname, regionstr, option=variant)
-                            row.append(plot_name)
+                            row.append(self.plot_info(season, v, obsname, regionstr, option=variant))
                         rows.append(row)
         return rows
 
@@ -166,7 +183,6 @@ class PlotSet1(PlotSet):
             for s in self.seasons:
                 row.append(self.plot_name(s, region))
             rows.append(row)
-        print rows
         return rows
 
 

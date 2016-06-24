@@ -67,17 +67,16 @@ if __name__ == '__main__':
     tier_1a = [plot for plot in plots if not plot.startswith("tier1b_") and plot not in ("topten", "dontrun")]
     tier_1b = [plot for plot in plots if plot.startswith("tier1b_")]
     tier_1a.sort(key=alphanumeric_key)
-    print tier_1a
     tier_1b.sort(key=alphanumeric_key)
     tier_1a_links = OrderedDict()
     for plot in tier_1a:
-        tier_1a_links["Plotset %s" % plot] = "set_%s.html" % plot
+        tier_1a_links["Plotset %s" % plot] = "set_%s/index.html" % plot
     tier_1b_links = OrderedDict()
     for plot in tier_1b:
-        tier_1b_links["Plotset %s" % plot] = "set_%s.html" % plot
+        tier_1b_links["Plotset %s" % plot] = "set_%s/index.html" % plot
 
     top_ten = OutputMenu("Top Ten")
-    top_ten.url = "set_topten.html"
+    top_ten.url = "set_topten/index.html"
     tier_1 = OutputMenu("Tier 1A", tier_1a_links)
     tier_1b = OutputMenu("Tier 1B", tier_1b_links)
     index = OutputIndex("UVCMetrics", version=dataset, menu=[top_ten, tier_1, tier_1b])
@@ -89,7 +88,7 @@ if __name__ == '__main__':
             plotset = special_sets[x](dataset, root=path)
         else:
             plotset = PlotSet(dataset, x, root=path)
-        print "Building", x
+        print "Indexing", x
         index.addPage(plotset.build())
 
     # Copy over share/uvcmetrics/viewer/imgs
@@ -101,6 +100,7 @@ if __name__ == '__main__':
 
     index_file = os.path.join(path, "index.json")
     index.toJSON(index_file)
+    print "Building Viewer..."
     build_viewer(index_file, diag_name="UVCMetrics")
 
     should_open = raw_input("Viewer HTML generated at %s/index.html. Would you like to open in a browser? y/[n]: " % path)
