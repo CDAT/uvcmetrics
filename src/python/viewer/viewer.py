@@ -82,7 +82,7 @@ if __name__ == '__main__':
     index = OutputIndex("UVCMetrics", version=dataset, menu=[top_ten, tier_1, tier_1b])
 
     for x in sorted(plots, key=alphanumeric_key):
-        if x == "dontrun":
+        if x == "dontrun" or x == "99":
             continue
         if x in special_sets:
             plotset = special_sets[x](dataset, root=path)
@@ -97,6 +97,12 @@ if __name__ == '__main__':
     if os.path.exists(viewer_dir):
         shutil.rmtree(viewer_dir)
     shutil.copytree(share_directory, viewer_dir)
+
+    # Remove icons that don't exist
+    for page in index.pages:
+        if page.icon and os.path.exists(os.path.join(path, page.icon)):
+            continue
+        page.icon = None
 
     index_file = os.path.join(path, "index.json")
     index.toJSON(index_file)
