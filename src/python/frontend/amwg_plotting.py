@@ -11,6 +11,7 @@
 
 from metrics.packages.amwg.amwg import *
 from metrics.packages.lmwg.lmwg import *
+import numpy
 
 # Required arguments for a plot are the canvas, variable, graphics method, template.
 def amwg_plot_plan_vcs_plot( self, canvas, var, gm, tm, ratio='autot', *args, **kwargs ):
@@ -20,6 +21,12 @@ def amwg_plot_plan_vcs_plot( self, canvas, var, gm, tm, ratio='autot', *args, **
         plotparms = kwargs['plotparms']
         if 'colormap' in plotparms:
             gm.colormap = plotparms['colormap']
+    try:
+        lat = var.getLatitude()
+        if numpy.abs(lat[-1]-lat[0])>150 and ratio=="autot":
+            ratio=None
+    except:
+        pass
     kwargs["ratio"] = ratio
     canvas.plot( var, gm, tm, *args, **kwargs )
 
