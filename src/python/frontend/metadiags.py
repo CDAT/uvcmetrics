@@ -601,6 +601,10 @@ if __name__ == '__main__':
    elif package == 'LMWG':
       from metrics.frontend.lmwgmaster import *
 
+   if opts._opts["custom_specs"] is not None:
+        execfile(opts._opts["custom_specs"])
+        print diags_collection['5']['CLDMED']
+        print diags_obslist
 
    # do a little (post-)processing on the model/obs passed in.
    model_fts = []

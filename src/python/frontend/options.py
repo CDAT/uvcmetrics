@@ -672,11 +672,15 @@ class Options():
             
             runopts.add_argument('--translate', nargs='?', default='y',
                                  help="Enable translation for obs sets to datasets. Optional provide a colon separated input to output list e.g. DSVAR1:OBSVAR1")
+
             if 'metadiags' not in progname and 'metadiags.py' not in progname:
                 runopts.add_argument('--vars', '--var', '-v', nargs='+',
                                      help="Specify variables of interest to process. The default is all variables which can also be specified with the keyword ALL")
                 runopts.add_argument('--regions', '--region', nargs='+', choices=all_regions.keys(),
                                      help="Specify a geographical region of interest. Note: Multi-word regions need quoted, e.g. 'Central Canada'")
+            else: 
+                runopts.add_argument('--custom_specs', default=None,
+                                     help="points to a file that will contain a custom dictionary updation the diags specs, see amwgmaster.py")
 
         timeopts = parser.add_argument_group('Time Options')
         if 'metadiags' not in progname and 'metadiags.py' not in progname:
@@ -846,6 +850,12 @@ class Options():
         if args.displayunits != None:
             self.processDisplayunits('displayunits', args.displayunits)
                                
+        if args.custom_specs is not None:
+            print "Using custom dict"
+            if not os.path.exists(args.custom_specs):
+                raise "Error could not open custom specifications file at: %s" % args.custom_specs
+        self._opts["custom_specs"] = args.custom_specs
+
         # I checked; these are global and it doesn't seem to matter if you import cdms2 multiple times;
         # they are still set after you set them once in the python process.
         if(args.compress != None):
