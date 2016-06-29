@@ -638,15 +638,22 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
                 elif vcs.isvector(rsr.presentation) or rsr.presentation.__class__.__name__=="Gv":
                     strideX = rsr.strideX
                     strideY = rsr.strideY
-
+                    ratio="autot"
+                    try:
+                        lat = var[0].getLatitude()                   
+                        if numpy.abs(lat[-1]-lat[0])>150 and ratio=="autot":
+                            ratio=None
+                    except:
+                        pass
+                    
                     if plot.number == '6':
                         vcanvas.plot( var[0][::strideY,::strideX],
-                                      var[1][::strideY,::strideX], rsr.presentation, tmobs[ir], bg=1, ratio="autot")
+                                      var[1][::strideY,::strideX], rsr.presentation, tmobs[ir], bg=1, ratio=ratio)
                     else:
                         # Note that continents=0 is a useful plot option
                         vcanvas.plot( var[0][::strideY,::strideX],
                                       var[1][::strideY,::strideX], rsr.presentation, tmobs[ir], bg=1,
-                                      title=title, units=getattr(var,'units',''), ratio="autot",
+                                      title=title, units=getattr(var,'units',''), ratio=ratio,
                                       source=rsr.source )
                     
                     # the last two lines shouldn't be here.  These (title,units,source)
@@ -658,7 +665,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
                                            var[1][::strideY,::strideX],
                                            rsr.presentation, tm2, bg=1,
                                            title=title, units=getattr(var,'units',''),
-                                           ratio="autot",
+                                           ratio=ratio,
                                            source=rsr.source )
                             # the last two lines shouldn't be here.  These (title,units,source)
                             # should come from the contour plot, but that doesn't seem to
@@ -734,19 +741,19 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
                     except vcs.error.vcsError as e:
                         logging.exception("Making summary plot: %s", e)
 
-                #restore var before the KLUDGE!!!
-                var = var_save                
-                if hasattr(var, 'model') and hasattr(var, 'obs'):
-                    delattr(var, 'model')
-                    delattr(var, 'obs')
-                rsr.vars[varIndex] = var
-                    
-                if var_id_save is not None:
-                    if type(var_id_save) is str:
-                        var.id = var_id_save
-                    else:
-                        for i in range(len(var_id_save)):
-                            var[i].id = var_id_save[i]
+                    #restore var before the KLUDGE!!!
+                    var = var_save                
+                    if hasattr(var, 'model') and hasattr(var, 'obs'):
+                        delattr(var, 'model')
+                        delattr(var, 'obs')
+                    rsr.vars[varIndex] = var
+                        
+                    if var_id_save is not None:
+                        if type(var_id_save) is str:
+                            var.id = var_id_save
+                        else:
+                            for i in range(len(var_id_save)):
+                                var[i].id = var_id_save[i]
                 if savePNG:
                     print "WHEN PNGING WE GET :",vcanvas.getantialiasing()
                     vcanvas.png( fname, ignore_alpha=True, metadata=provenance_dict() )
