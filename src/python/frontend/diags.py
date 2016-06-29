@@ -690,12 +690,12 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
                     vcanvas2.setcolormap('bl_to_darkred')
                     
                     #check for units specified for display purposes
+                    var_save = var.clone()
                     if displayunits != None:
                         if isinstance(displayunits,(list,tuple)):
                             if len(displayunits)>1:
                                 logging.warning("multiple displayunits not supported at this time, using: %s" % displayunits[0])
                             displayunits=displayunits[0]
-                        var_save = var.clone()
                         try:
                             scale = udunits(1.0, var.units)
                             scale = scale.to(displayunits).value
@@ -712,6 +712,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
                     if hasattr(plot, 'customizeTemplates'):
                         tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)], data=var,
                                                            varIndex=varIndex, graphicMethod=rsr.presentation, var=var )
+
                     # Single plot              
                     plot.vcs_plot(vcanvas, var, rsr.presentation, tm, bg=1,
                                   title=title, source=rsr.source,  
@@ -733,10 +734,12 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
                     except vcs.error.vcsError as e:
                         logging.exception("Making summary plot: %s", e)
 
-                if displayunits != None:
-                    #restore var before the KLUDGE!!!
-                    var = var_save
-                    rsr.vars[varIndex] = var
+                #restore var before the KLUDGE!!!
+                var = var_save                
+                if hasattr(var, 'model') and hasattr(var, 'obs'):
+                    delattr(var, 'model')
+                    delattr(var, 'obs')
+                rsr.vars[varIndex] = var
                     
                 if var_id_save is not None:
                     if type(var_id_save) is str:

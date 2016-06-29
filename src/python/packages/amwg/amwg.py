@@ -1683,7 +1683,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
         tm2.source.priority        = 1
 
         tm2.units.priority = 1
-        
+
         try:
             #this is for the output of RMSE and CORRELATION
             tm1, tm2 = self.extraCustomizeTemplates((cnvs1, tm1), (cnvs2, tm2), var=var)
@@ -1723,12 +1723,11 @@ class amwg_plot_set5(amwg_plot_set5and6):
             from metrics.graphics.default_levels import default_levels
             from metrics.computation.units import scale_data
             from metrics.computation.compute_rmse import compute_rmse    
-            #pdb.set_trace()
             if self.varid in default_levels.keys():
                 #convert to the units specified in the default levels dictionay
                 displayunits = default_levels[self.varid].get('displayunits', None)
                 if displayunits is not None and var.model is not None and var.obs is not None:
-                    print displayunits, var.model.units, var.obs.units
+                    #print displayunits, var.model.units, var.obs.units
                     var.model = scale_data( displayunits, var.model)
                     var.obs   = scale_data( displayunits, var.obs) 
             
@@ -1749,9 +1748,7 @@ class amwg_plot_set5(amwg_plot_set5and6):
             textCORR.y = .005
             textCORR.height = 10
             cnvs2.plot(textCORR, bg=1)              
-            #pdb.set_trace()
-            delattr(var, 'model')
-            delattr(var, 'obs')
+            
         return tm1, tm2  
     def old_extraCustomizeTemplates(self, (cnvs1, tm1), (cnvs2, tm2), data=None, varIndex=None, graphicMethod=None, var=None):
         """Theis method does what the title says.  It is a hack that will no doubt change as diags changes.
