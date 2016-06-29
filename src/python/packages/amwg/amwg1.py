@@ -150,7 +150,9 @@ class amwg_plot_set1(amwg_plot_plan):
         { 'var':'Z3', 'obs':'NCEP', 'lev':'500', 'units':'hectometer'} 
         ]
 
+    #this is a dummy table for testing
     #table_row_specs = [{ 'var':'TS', 'obs':'NCEP'},{ 'var':'RESTOM'},{ 'var':'RESSURF'}]
+    
     # These also appear, in another form, in frontend/defines.py.
     regions = { 'Global':(-90,90),
     #            'Tropics (20S-20N)':(-20,20),
@@ -193,7 +195,7 @@ class amwg_plot_set1(amwg_plot_plan):
     class myrow:
         # represents a row of the output table.  Here's an example of what a table row would look like:
         # TREFHT_LEGATES   298.423             298.950            -0.526         1.148
-        undefined = -999.000
+        undefined = -numpy.infty
         def __init__( self, filetable1, filetable2, seasonid='ANN', region='Global', var='TREFHT',
                       obs=None, obsprint=None, lev=None, units=None ):
             # inputs are test (model) and control (obs) filetables, a season name (e.g. 'DJF'),
@@ -381,63 +383,38 @@ class amwg_plot_set1(amwg_plot_plan):
                         print "WARNING: computed mean",mean2.id,"for table has more than one data point"
                         print mean2
                     return float(mean2.data)
-        def rmse(self ):
+        def rmse( self ):
+            """ This function computes the rmse and correlation between the model and observations.
+            It also scales the data to the units in devel_levels before these computations."""
             from metrics.graphics.default_levels import default_levels
+            from metrics.computation.units import scale_data
+            from metrics.computation.compute_rmse import compute_rmse
             #pdb.set_trace()
-                                                
+                                  
             variable_values = { }
-            
             for key, rv in self.reduced_variables.items():
                 variable_values[key] = rv.reduce()
-                if False:
-                    if self.var in default_levels.keys():
-                        
-                        displayunits = default_levels[self.var].get('displayunits', None)
-                        if None not in [ displayunits, variable_values[key] ]:
-                            pdb.set_trace()
-                            print displayunits, variable_values[key].units
-                            try:
-                                scale = udunits(1.0, variable_values[key].units)
-                                scale = scale.to(displayunits).value
-                            except:
-                                if variable_values[key].units == 'fraction':
-                                    scale = 100.
-                                    variable_values[key].units = displayunits
-                                elif type(displayunits) is float:
-                                    scale = float(displayunits)
-                                else:
-                                    logging.critical('Invalid display units: '+ displayunits)
-                                    sys.exit()
-                            variable_values[key] = variable_values[key] * scale
-                            
+                if self.var in default_levels.keys():
+                    #convert to the units specified in the default levels disctionay
+                    displayunits = default_levels[self.var].get('displayunits', None)
+                    if displayunits is not None and variable_values[key] is not None:
+                        print displayunits, variable_values[key].units
+                        variable_values[key] = scale_data( displayunits, variable_values[key])  
+
             RMSE = self.undefined
             CORR = self.undefined
             if len(variable_values.keys()) == 2:
                 dv = derived_var(vid='diff', inputs=variable_values.keys(), func=aminusb_2ax)
                 value = dv.derive( variable_values )
-                
-                #if scale is not None:
-                #    value.mv1 = scale*value.mv1
-                #    value.mv2 = scale*value.mv2
+                if hasattr(value, 'model') and hasattr(value, 'obs'):
+                    RMSE, CORR = compute_rmse( value.model, value.obs )
 
-                #compute rmse and correlations
-                import genutil.statistics, numpy
-                try:
-                    RMSE = float( genutil.statistics.rms(value.mv1, value.mv2, axis='xy') )
-                    CORR = float( genutil.statistics.correlation(value.mv1, value.mv2, axis='xy') )
-                except Exception,err:
-                    pass
             return RMSE, CORR            
         def compute(self):
             rowpadded = (self.rowname+10*' ')[:17]
             mean1 = self.mean(self.filetable1)
             mean2 = self.mean(self.filetable2, self.obs)
-            RMSE, CORR = self.rmse()
-            if RMSE is None:
-                RMSE = '       '
-            if CORR is None:
-                CORR = '       '
-            
+            RMSE, CORR = self.rmse()            
             self.values = ( rowpadded, mean1, mean2, self.diff(mean1,mean2), RMSE, CORR )
             return self.values
         def __repr__(self):
@@ -461,9 +438,9 @@ class amwg_plot_set1(amwg_plot_plan):
                 region = amwg_plot_set1.regions_reversed.get( region, 'Global' )
         if region is None:
             region = 'Global'
-        self.title = ' '.join(['AMWG Diagnostics Set 1',seasonid,'means',str(region)])+'\n'
+        self.title = ' '.join(['AMWG Diagnostics Set 1', seasonid, 'means', str(region)]) +'\n'
         self.subtitles = [
-            ' '.join(['Test Case:',id2str(filetable1._id)])+'\n',
+            ' '.join(['Test Case:',id2str(filetable1._id)]) +'\n',
             'Control Case: various observational data\n',
             'Variable                 Test Case           Obs          Test-Obs           RMSE            Correlation\n']
         self.presentation = "text"
@@ -471,11 +448,11 @@ class amwg_plot_set1(amwg_plot_plan):
         self.rows = []
         for spec in self.table_row_specs:
             #if spec['var']!='SHFLX': continue # <<<<< for temporary testing <<<<
-            obs = spec.get('obs',None)
+            obs = spec.get('obs', None)
             row = self.myrow( filetable1, filetable2,
                               seasonid=seasonid, region=region, var=spec['var'],
-                              obs=obs, obsprint=spec.get('obsprint',None),
-                              lev=spec.get('lev',None), units=spec.get('units',None) )
+                              obs=obs, obsprint=spec.get('obsprint', None),
+                              lev=spec.get('lev', None), units=spec.get('units', None) )
             row.compute()
             self.rows.append( row )
         self.reduced_variables = {}
@@ -486,7 +463,6 @@ class amwg_plot_set1(amwg_plot_plan):
 
     def __repr__(self):
         return '\n'.join( [self.title]+self.subtitles+[ r.__repr__() for r in self.rows ] )+'\n'
-
     def outfile( self, format="", where="" ):
         """generates the output file name and path"""
         if len(self.title)<=0:
