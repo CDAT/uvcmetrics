@@ -45,123 +45,122 @@ def getCollections(pname):
     print 'The following diagnostic collections appear to be available: %s' %colls
     return colls
 
+
 def makeTables(collnum, model_dict, obspath, outpath, pname, outlog, dryrun=False):
-   collnum = collnum.lower()
-   seasons = diags_collection[collnum].get('seasons', ['ANN'])
-   regions = diags_collection[collnum].get('regions', ['Global'])
-   vlist = list( set(diags_collection[collnum].keys()) - set(collection_special_vars))
-   aux = ['default']
+    collnum = collnum.lower()
+    seasons = diags_collection[collnum].get('seasons', ['ANN'])
+    regions = diags_collection[collnum].get('regions', ['Global'])
+    vlist = list(set(diags_collection[collnum].keys()) - set(collection_special_vars))
+    aux = ['default']
 
-   num_models = len(model_dict.keys())
-   if vlist == []:
-      logging.warning('varlist was empty. Assuming all variables.')
-      vlist = ['ALL']
+    num_models = len(model_dict.keys())
+    if vlist == []:
+        logging.warning('varlist was empty. Assuming all variables.')
+        vlist = ['ALL']
 
-   if num_models > 2:
-      logging.critical('Only <=2 models supported for tables')
-      quit()
+    if num_models > 2:
+        logging.critical('Only <=2 models supported for tables')
+        quit()
 
-   raw0 = None
-   raw1 = None
-   climo0 = None
-   climo1 = None
-   cf0 = 'yes' #climo flag
-   cf1 = 'yes'
-   raw0 = model_dict[model_dict.keys()[0]]['raw']
-   if raw0 != None:
-      ps0 = "--model path=%s,climos='no'" % raw0.root_dir()
+    raw0 = None
+    raw1 = None
+    climo0 = None
+    climo1 = None
+    cf0 = 'yes'  #climo flag
+    cf1 = 'yes'
+    raw0 = model_dict[model_dict.keys()[0]]['raw']
+    if raw0 != None:
+        ps0 = "--model path=%s,climos='no'" % raw0.root_dir()
 
-   climo0 = model_dict[model_dict.keys()[0]]['climos']
-   if climo0 != None:
-      ps0 = "--model path=%s,climos='yes'" % climo0.root_dir()
+    climo0 = model_dict[model_dict.keys()[0]]['climos']
+    if climo0 != None:
+        ps0 = "--model path=%s,climos='yes'" % climo0.root_dir()
 
-   name0 = model_dict[model_dict.keys()[0]].get('name', 'ft0')
-   if num_models == 2:
-      raw1 = model_dict[model_dict.keys()[1]]['raw']
-      if raw1 != None:
-         ps1 = "--model path=%s,climos='no'" % raw1.root_dir()
-      climo1 = model_dict[model_dict.keys()[1]]['climos']
-      if climo1 != None:
-         ps1 = "--model path=%s,climos='yes'" % climo1.root_dir()
-      name1 = model_dict[model_dict.keys()[1]].get('name', 'ft1')
+    name0 = model_dict[model_dict.keys()[0]].get('name', 'ft0')
+    if num_models == 2:
+        raw1 = model_dict[model_dict.keys()[1]]['raw']
+        if raw1 != None:
+            ps1 = "--model path=%s,climos='no'" % raw1.root_dir()
+        climo1 = model_dict[model_dict.keys()[1]]['climos']
+        if climo1 != None:
+            ps1 = "--model path=%s,climos='yes'" % climo1.root_dir()
+        name1 = model_dict[model_dict.keys()[1]].get('name', 'ft1')
 
+    # This assumes no per-variable regions/seasons. .... See if land set 5 cares
+    if 'NA' in seasons:
+        seasonstr = ''
+    else:
+        seasonstr = '--seasons '+' '.join(seasons)
+    regionstr = '--regions '+' '.join(regions)
 
-#   print 'NEED TO SEE IF --REGIONS ARG TO LAND SET 5 REGIONAL CARES'
-   # This assumes no per-variable regions/seasons. .... See if land set 5 cares
-   if 'NA' in seasons:
-      seasonstr = ''
-   else:
-      seasonstr = '--seasons '+' '.join(seasons)
-   regionstr = '--regions '+' '.join(regions)
+    obsstr = ''
+    if obspath != None:
+        obsstr = '--obs path=%s' % obspath
 
-   obsstr = ''
-   if obspath != None:
-      obsstr = '--obs path=%s' % obspath
-
-   for v in vlist:
-      ft0 = (climo0 if climo0 is not None else raw0)
-      ft1 = (climo1 if climo1 is not None else raw1)
-      if ft0 == climo0:
-         cf0 = 'yes'
-      else:
-         cf0 = 'no'
-      if ft1 == climo1:
-         cf1 = 'yes'
-      else:
-         cf1 = 'no'
-      if v == 'ALL':
-         vstr = ''
-      else:
-         ps0 = ''
-         ps1 = ''
-         if diags_collection[collnum][v].get('options', False) != False:
-            optkeys = diags_collection[collnum][v]['options'].keys()
-            if 'requiresraw' in optkeys and diags_collection[collnum][v]['options']['requiresraw'] == True:
-               ft0 = raw0
-               ft1 = raw1
-               cf0 = 'no'
-               cf1 = 'no'
-               if ft0 == None:
-                  logging.warning('Variable %s requires raw data. No raw data provided. Passing', v)
-                  continue
-               if num_models == 2 and ft1 == None:
-                  logging.warning('Variable %s requires raw data. No second raw dataset provided. Passing on differences', v)
-                  continue
-               ps0 = '--model path=%s,climos=no' % (ft0.root_dir())
-               if num_models == 2:
-                  ps1 = '--model path=%s,climos=no' % (ft1.root_dir())
-               # do we also have climos? if so pass both instead.
-               if climo0 != None:
-                  ps0 = '--model path=%s,climos=yes,name=%s --model path=%s,climos=no,name=%s' % (climo0.root_dir(), name0, raw0.root_dir(), name0)
-               if num_models == 2 and climo1 != None:
-                  ps1 = '--model path=%s,climos=yes,name=%s --model path=%s,clmios=no,name=%s' % (climo1.root_dir(), name1, raw1.root_dir(), name1)
-         else:
-            ps0 = '--model path=%s,climos=%s' % (ft0.root_dir(), cf0)
-            if num_models == 2 and ft1 != None:
-               ps1 = '--model path=%s,climos=%s' % (ft1.root_dir(), cf1)
-
-         vstr = '--vars %s' % v
-         if diags_collection[collnum][v].get('varopts', False) != False:
-            aux = diags_collection[collnum][v]['varopts']
-
-      # Ok, variable(s) and varopts ready to go. Get some path strings.
-      # Create path strings.
-      if ft0 == None:
-         logging.warning('ft0 was none')
-         continue
-      else:
-         path0str = ps0
-         path1str = ''
-         if num_models == 2 and ft1 != None:
-            path1str = ps1
-         for a in aux:
-            if a == 'default':
-               auxstr = ''
+    for v in vlist:
+        ft0 = (climo0 if climo0 is not None else raw0)
+        ft1 = (climo1 if climo1 is not None else raw1)
+        if ft0 == climo0:
+            cf0 = 'yes'
+        else:
+            cf0 = 'no'
+        if ft1 == climo1:
+            cf1 = 'yes'
+        else:
+            cf1 = 'no'
+        if v == 'ALL':
+            vstr = ''
+        else:
+            ps0 = ''
+            ps1 = ''
+            if diags_collection[collnum][v].get('options', False) != False:
+                optkeys = diags_collection[collnum][v]['options'].keys()
+                if 'requiresraw' in optkeys and diags_collection[collnum][v]['options']['requiresraw'] == True:
+                    ft0 = raw0
+                    ft1 = raw1
+                    cf0 = 'no'
+                    cf1 = 'no'
+                    if ft0 == None:
+                        logging.warning('Variable %s requires raw data. No raw data provided. Passing', v)
+                        continue
+                    if num_models == 2 and ft1 == None:
+                        logging.warning('Variable %s requires raw data. No second raw dataset provided. Passing on differences', v)
+                        continue
+                    ps0 = '--model path=%s,climos=no' % (ft0.root_dir())
+                    if num_models == 2:
+                        ps1 = '--model path=%s,climos=no' % (ft1.root_dir())
+                    # do we also have climos? if so pass both instead.
+                    if climo0 != None:
+                        ps0 = '--model path=%s,climos=yes,name=%s --model path=%s,climos=no,name=%s' % (climo0.root_dir(), name0, raw0.root_dir(), name0)
+                    if num_models == 2 and climo1 != None:
+                        ps1 = '--model path=%s,climos=yes,name=%s --model path=%s,clmios=no,name=%s' % (climo1.root_dir(), name1, raw1.root_dir(), name1)
             else:
-               auxstr = '--varopts '+a
+                ps0 = '--model path=%s,climos=%s' % (ft0.root_dir(), cf0)
+                if num_models == 2 and ft1 != None:
+                    ps1 = '--model path=%s,climos=%s' % (ft1.root_dir(), cf1)
 
-            cmdline = (def_executable, path0str, path1str, obsstr, "--table", "--set", collnum, "--prefix", "set%s" % collnum, "--package", package, vstr, seasonstr, regionstr, auxstr, "--outputdir", outpath)
-            runcmdline(cmdline, outlog, dryrun)
+            vstr = '--vars %s' % v
+            if diags_collection[collnum][v].get('varopts', False) != False:
+                aux = diags_collection[collnum][v]['varopts']
+
+        # Ok, variable(s) and varopts ready to go. Get some path strings.
+        # Create path strings.
+        if ft0 == None:
+            logging.warning('ft0 was none')
+            continue
+        else:
+            path0str = ps0
+            path1str = ''
+            if num_models == 2 and ft1 != None:
+                path1str = ps1
+            for a in aux:
+                if a == 'default':
+                    auxstr = ''
+                else:
+                    auxstr = '--varopts '+a
+
+                cmdline = (def_executable, path0str, path1str, obsstr, "--table", "--set", collnum, "--prefix", "set%s" % collnum, "--package", package, vstr, seasonstr, regionstr, auxstr, "--outputdir", outpath)
+                runcmdline(cmdline, outlog, dryrun)
 
 def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryrun=False):
    import os
