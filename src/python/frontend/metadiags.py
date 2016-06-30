@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 
-### This file converts the dictionary file (in this case amwgmaster2.py) to a series of diags.py commands.
+# This file converts the dictionary file (in this case amwgmaster2.py) to a series of diags.py commands.
 import sys, getopt, os, subprocess, logging, pdb
 from argparse import ArgumentParser
 from metrics.frontend.options import Options
@@ -456,11 +456,11 @@ def cmderr(popened):
 def runcmdline(cmdline, outlog, dryrun=False):
     global DIAG_TOTAL
 
-    #the following is a total KLUDGE. It's more of a KLUDGE than last time.
-    #I'm not proud of this but I feel threatned if I don't do it.
-    #there is some sort of memory leak in vcs.
-    #to work around this issue, we opted for a single execution of season & variable
-    #isolate season and variable
+    # the following is a total KLUDGE. It's more of a KLUDGE than last time.
+    # I'm not proud of this but I feel threatned if I don't do it.
+    # there is some sort of memory leak in vcs.
+    # to work around this issue, we opted for a single execution of season & variable
+    # isolate season and variable
     length = len(cmdline)
     split_cmdline = False
     if length == 14:
@@ -521,8 +521,8 @@ def runcmdline(cmdline, outlog, dryrun=False):
         pid_to_cmd[PID] = cmd
         print '"%s"' % cmd, "begun pid=", PID, 'diag_total = ', DIAG_TOTAL
 
-### These 3 functions are used to add the variables to the database for speeding up
-### classic view
+# These 3 functions are used to add the variables to the database for speeding up
+# classic view
 def setnum( setname ):
     """extracts the plot set number from the full plot set name, and returns the number.
     The plot set name should begin with the set number, e.g.
@@ -560,8 +560,8 @@ def list_vars(ft, package):
     vlist = list(set(vlist))
     return vlist
 
-### This assumes dsname reflects the combination of datasets (somehow) if >2 datasets are provided
-### Otherwise, the variable list could be off.
+# This assumes dsname reflects the combination of datasets (somehow) if >2 datasets are provided
+# Otherwise, the variable list could be off.
 def postDB(fts, dsname, package, host=None):
     if host == None:
         host = 'localhost:8081'
@@ -579,7 +579,7 @@ def postDB(fts, dsname, package, host=None):
     subprocess.call(command, shell=True)
 
 
-### The driver part of the script
+# The driver part of the script
 if __name__ == '__main__':
     opts = Options()
     opts.parseCmdLine()
@@ -630,7 +630,7 @@ if __name__ == '__main__':
     # Set some defaults.
     dbflag = False
     dbonly = False
-    xmlflag = True #default to generating xml/netcdf files
+    xmlflag = True  #default to generating xml/netcdf files
     hostname = 'acme-ea.ornl.gov'
 
     if opts['dbopts'] == 'no':
@@ -656,11 +656,11 @@ if __name__ == '__main__':
     if opts['output']['xml'] != True:
         xmlflag = False
 
-    if dbflag == True and dbonly == True and (num_models == 0 or dsname == None or package == None):
+    if dbflag is True and dbonly is True and (num_models == 0 or dsname is None or package is None):
         logging.critical('Please specify --model, --dsname, and --package with the db update option')
         quit()
 
-    if dbonly == True:
+    if dbonly is True:
         print 'Updating the remote database only...'
         postDB(fts, dsname, package, host=hostname)
         quit()
