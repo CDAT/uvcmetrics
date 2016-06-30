@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 
-# This file converts the dictionary file (in this case amwgmaster2.py) to a series of diags.py commands.
+# This file converts a dictionary file (like amwgmaster.py or lmwgmaster.py) to a series of diags.py commands.
 import sys, getopt, os, subprocess, logging, pdb
 from argparse import ArgumentParser
 from metrics.frontend.options import Options
