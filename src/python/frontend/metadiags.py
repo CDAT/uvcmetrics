@@ -24,7 +24,7 @@ def getCollections(pname):
     for k in keys:
         fields = k.split()
         colls.append(fields[0])
-    
+
     # Find all mixed_plots sets that have the user-specified pname
     # Deal with mixed_plots next
     for c in allcolls:
@@ -41,7 +41,7 @@ def getCollections(pname):
                     # This variable has a package
                     if diags_collection[c][v].get('package', False) != False and diags_collection[c][v]['package'].upper() == pname.upper():
                         colls.append(c)
-    
+
     print 'The following diagnostic collections appear to be available: %s' %colls
     return colls
 
@@ -121,7 +121,7 @@ def makeTables(collnum, model_dict, obspath, outpath, pname, outlog, dryrun=Fals
                ft1 = raw1
                cf0 = 'no'
                cf1 = 'no'
-               if ft0 == None: 
+               if ft0 == None:
                   logging.warning('Variable %s requires raw data. No raw data provided. Passing', v)
                   continue
                if num_models == 2 and ft1 == None:
@@ -169,7 +169,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
    if colls == None:
       colls = getCollections(pname) #find out which colls are available
 
-   # Create the outpath/{package} directory. options processing should take care of 
+   # Create the outpath/{package} directory. options processing should take care of
    # making sure outpath exists to get this far.
    outpath = os.path.join(outpath,pname.lower())
    if not os.path.isdir(outpath):
@@ -184,7 +184,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
       try:
          os.mkdir(outpath)
          outlog = open(os.path.join(outpath,'DIAGS_OUTPUT.log'), 'w')
-      except: 
+      except:
          logging.exception('Couldnt create output log - %s/DIAGS_OUTPUT.log', outpath)
          quit()
 
@@ -241,7 +241,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
       if diags_collection[collnum].get('package', False) != False and diags_collection[collnum]['package'].upper() == pname.upper():
          if diags_collection[collnum].get('mixed_packages', False) == False:
             packagestr = '--package '+pname
-      
+
       if diags_collection[collnum].get('mixed_packages', False) == False:  #no mixed
          # Check global package
          if diags_collection[collnum].get('package', False) != False and diags_collection[collnum]['package'].upper() != pname.upper():
@@ -254,7 +254,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
          if diags_collection[collnum].get('package', False) != False and diags_collection[collnum]['package'].upper() == pname.upper():
             print 'Processing collection ', collnum
             packagestr = '--package '+pname
-            
+
 
       # Given this collection, see what variables we have for it.
       vlist = list( set(diags_collection[collnum].keys()) - set(collection_special_vars))
@@ -264,7 +264,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
       for v in vlist:
          plotlist.append(diags_collection[collnum][v]['plottype'])
       plotlist = list(set(plotlist))
-         
+
       # Get a list of unique observation sets required for this collection.
       obslist = []
       for v in vlist:
@@ -300,7 +300,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
 
             if o != 'NA' and obspath != None:
                obsfname = diags_obslist[o]['filekey']
-               obsstr = '--obs path='+obspath+',climos=yes,filter="f_startswith(\''+obsfname+'\')"' 
+               obsstr = '--obs path='+obspath+',climos=yes,filter="f_startswith(\''+obsfname+'\')"'
                poststr = '--postfix '+obsfname
             else:
                if o != 'NA':
@@ -318,7 +318,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
                seasonstr = ''
             else:
                seasonstr = '--seasons '+' '.join(g_season)
-               
+
             # set up region str (and later overwrite it if needed)
             g_region = diags_collection[collnum].get('regions', ['Global'])
             if g_region == ['Global']:
@@ -334,9 +334,9 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
                    diags_collection[collnum][v].get('regions', False) == False and \
                    diags_collection[collnum][v].get('varopts', False) == False and \
                    diags_collection[collnum][v].get('options', False) == False and \
-                   diags_collection[collnum][v].get('executable', False) == False: 
+                   diags_collection[collnum][v].get('executable', False) == False:
                   simple_vars.append(v)
-            
+
             # I believe all of the lower level plot sets (e.g. in amwg.py or lmwg.py) will ignore a second dataset, IF one is supplied
             # unnecessarily, so pass all available datasets here.
             complex_vars = list(set(obs_vlist) - set(simple_vars))
@@ -348,7 +348,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
                   pstr2 = '--model path=%s,climos=%s,type=model' % (modelpath1, cf1)
                else:
                   pstr2 = ''
-               cmdline = (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, seasonstr, 
+               cmdline = (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, seasonstr,
                           varstr, outstr, xmlstr, prestr, poststr, regionstr)
                if collnum != 'dontrun':
                   runcmdline(cmdline, outlog, dryrun)
@@ -404,7 +404,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
                   else:
                      pstr2 = ''
 
-                  cmdline = (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, seasonstr, 
+                  cmdline = (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, seasonstr,
                              varstr, outstr, xmlstr, prestr, poststr, regionstr, varopts)
                   if collnum != 'dontrun':
                      runcmdline(cmdline, outlog, dryrun)
@@ -461,26 +461,26 @@ def cmderr(popened):
 
 def runcmdline(cmdline, outlog, dryrun=False):
     global DIAG_TOTAL
-    
+
     #the following is a total KLUDGE. It's more of a KLUDGE than last time.
     #I'm not proud of this but I feel threatned if I don't do it.
-    #there is some sort of memory leak in vcs. 
+    #there is some sort of memory leak in vcs.
     #to work around this issue, we opted for a single execution of season & variable
     #isolate season and variable
     length = len(cmdline)
     split_cmdline = False
     if length == 14:
-        (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, 
+        (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr,
          seasonstr, varstr,
          outstr, xmlstr, prestr, poststr, regionstr) = cmdline
         split_cmdline = True
     elif length == 15:
         #varopts included
-        (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, 
+        (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr,
          seasonstr, varstr,
          outstr, xmlstr, prestr, poststr, regionstr, varopts) = cmdline
-        split_cmdline = True     
-        
+        split_cmdline = True
+
     CMDLINES = []
     if split_cmdline:
         seasonstr = seasonstr.split(' ')
@@ -493,21 +493,21 @@ def runcmdline(cmdline, outlog, dryrun=False):
             for var in vars:
                 seasonstr = seasonopts + ' ' + season
                 varstr    = Varopts + ' ' + var
-                #build new cmdline   
-                if length == 14:       
-                    cmdline = (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, 
-                               seasonstr, varstr, 
+                #build new cmdline
+                if length == 14:
+                    cmdline = (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr,
+                               seasonstr, varstr,
                                outstr, xmlstr, prestr, poststr, regionstr)
                     CMDLINES += [cmdline]
                 elif length == 15:
                     for vo in varopts.split("--varopts")[-1].split():
-                        cmdline = (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, 
+                        cmdline = (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr,
                                    seasonstr, varstr,
-                                   outstr, xmlstr, prestr, poststr, regionstr, "--varopts %s" % vo)                    
+                                   outstr, xmlstr, prestr, poststr, regionstr, "--varopts %s" % vo)
                         CMDLINES += [cmdline]
     else:
         CMDLINES = [cmdline]
-        
+
     if dryrun is not False:
         for cmd in CMDLINES:
             print >>dryrun, " ".join(cmd)+" &"
