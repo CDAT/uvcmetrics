@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 
-
 # This file converts a dictionary file (like amwgmaster.py or lmwgmaster.py) to a series of diags.py commands.
 import sys, getopt, os, subprocess, logging, pdb
 from argparse import ArgumentParser
+from collections import OrderedDict
 from metrics.frontend.options import Options
 from metrics.frontend.options import make_ft_dict
 from metrics.fileio.filetable import *
 from metrics.fileio.findfiles import *
 from metrics.packages.diagnostic_groups import *
+from output_viewer.index import OutputIndex, OutputPage, OutputGroup, OutputRow, OutputFile, OutputMenu
 
 # If not specified on an individual variable, this is the default.
 def_executable = 'diags'
@@ -218,10 +219,18 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
     else:
         cf1 = 'no'
 
+    pages = []
+    menus = []
     # Now, loop over collections.
     for collnum in colls:
         print 'Working on collection ', collnum
+
         collnum = collnum.lower()
+        coll_def = diags_collection[collnum]
+
+        page = OutputPage("Plotset %s" % collnum, columns=coll_def.get("seasons", None), description=coll_def["desc"], icon="amwg_viewer/imgs/SET%s.png" % collnum)
+        pages.append(page)
+
         # Special case the tables since they are a bit special. (at least amwg)
         if diags_collection[collnum].get('tables', False) != False:
             makeTables(collnum, model_dict, obspath, outpath, pname, outlog, dryrun)
@@ -258,24 +267,28 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
         # Given this collection, see what variables we have for it.
         vlist = list( set(diags_collection[collnum].keys()) - set(collection_special_vars))
 
-        # now, see how many plot types we have to deal with
+        # now, see how many plot types we have to deal with and how many obs
         plotlist = []
-        for v in vlist:
-            plotlist.append(diags_collection[collnum][v]['plottype'])
-        plotlist = list(set(plotlist))
-
-        # Get a list of unique observation sets required for this collection.
         obslist = []
         for v in vlist:
+            plotlist.append(diags_collection[collnum][v]['plottype'])
             obslist.extend(diags_collection[collnum][v]['obs'])
-        obslist = list(set(obslist))
+
+        plotlist = list(set(plotlist))
+        obslist = sorted(set(obslist))
 
         # At this point, we have a list of obs for this collection, a list of variables, and a list of plots
         # We need to organize them so that we can loop over obs sets with a fixed plottype and list of variables.
         # Let's build a dictionary for that.
         for p in plotlist:
-            obsvars = {}
+            obsvars = OrderedDict()
             for o in obslist:
+                if collnum not in ("1", "2", "11", "12", "13", "14"):
+                    # Should probably reorder these by description,
+                    # since some descriptions don't sync up with their shortname
+                    group = OutputGroup(diags_obslist[o]["desc"])
+                    page.addGroup(group)
+
                 for v in vlist:
                     if o in diags_collection[collnum][v]['obs'] and diags_collection[collnum][v]['plottype'] == p:
                         if obsvars.get(o, False) == False: # do we have any variables yet?
@@ -286,7 +299,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
                     obsvars[o] = list(set(obsvars[o]))
 
             # ok we have a list of observations and the variables that go with them for this plot type.
-            for o in obsvars.keys():
+            for obs_index, o in enumerate(obsvars.keys()):
                 # Each command line will be an obs set, then list of vars/regions/seasons that are consistent. Start constructing a command line now.
                 cmdline = ''
                 packagestr = ' --package '+pname
@@ -443,6 +456,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
                         runcmdline([execstr], outlog, dryrun)
 
     outlog.close()
+    return menus, pages
 
 import multiprocessing
 MAX_PROCS = multiprocessing.cpu_count()
@@ -649,6 +663,9 @@ if __name__ == '__main__':
         logging.critical('Please provide a dataset name for this dataset for the database with the --dsname option')
         quit()
     dsname = opts['dsname']
+    if dsname is None:
+        import datetime
+        dsname = datetime.date.today().strftime("%Y-%m-%d")
 
     if opts['dbhost'] != None:
         hostname = opts['dbhost']
@@ -690,7 +707,16 @@ module load uvcdat/batch
 """ % (opts["sbatch"])
     else:
         dryrun = False
-    generatePlots(model_dict, obspath, outpath, package, xmlflag, colls=colls,dryrun=dryrun)
+
+    index = OutputIndex("UVCMetrics %s" % package.upper(), version=dsname)
+
+    menus, pages = generatePlots(model_dict, obspath, outpath, package, xmlflag, colls=colls,dryrun=dryrun)
+
+    for page in pages:
+        index.addPage(page)
+
+    index.menu = menus
+    index.toJSON(os.path.join(outpath, package.lower(), "index.json"))
 
     if dbflag is True:
         print 'Updating the remote database...'
