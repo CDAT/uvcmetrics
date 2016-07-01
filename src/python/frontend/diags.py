@@ -789,5 +789,5 @@ if __name__ == '__main__':
     o.verifyOptions()
     #print o._opts['levels']
     #print o._opts['displayunits']
-    #pdb.set_trace()
+    pdb.set_trace()
     run_diags(o)

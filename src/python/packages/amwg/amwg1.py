@@ -453,6 +453,7 @@ class amwg_plot_set1(amwg_plot_plan):
                               seasonid=seasonid, region=region, var=spec['var'],
                               obs=obs, obsprint=spec.get('obsprint', None),
                               lev=spec.get('lev', None), units=spec.get('units', None) )
+            pdb.set_trace()
             row.compute()
             self.rows.append( row )
         self.reduced_variables = {}
