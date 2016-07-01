@@ -3,6 +3,7 @@
 # This file converts a dictionary file (like amwgmaster.py or lmwgmaster.py) to a series of diags.py commands.
 import sys, getopt, os, subprocess, logging, pdb
 from argparse import ArgumentParser
+from functools import partial
 from collections import OrderedDict
 from metrics.frontend.options import Options
 from metrics.frontend.options import make_ft_dict
@@ -221,6 +222,23 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
 
     pages = []
     menus = []
+
+    for group in diags_groups:
+        menus.append(OutputMenu(group, []))
+
+    # Sort the plotsets so they're appended onto the menu in the correct order
+    coll_meta = []
+    for collnum in colls:
+        menu_index = -1
+        index_in_menu = -1
+        for ind, menu in enumerate(menus):
+            if collnum in diags_groups[menu.title]:
+                menu_index = ind
+                index_in_menu = diags_groups[menu.title].index(collnum)
+        coll_meta.append((menu_index, index_in_menu, collnum))
+    coll_meta.sort()
+    colls = [coll[2] for coll in coll_meta]
+
     # Now, loop over collections.
     for collnum in colls:
         print 'Working on collection ', collnum
@@ -228,7 +246,10 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
         collnum = collnum.lower()
         coll_def = diags_collection[collnum]
 
-        page = OutputPage("Plotset %s" % collnum, columns=coll_def.get("seasons", None), description=coll_def["desc"], icon="amwg_viewer/imgs/SET%s.png" % collnum)
+        page = OutputPage("Plotset %s" % collnum, short_name="set_%s" % collnum, columns=coll_def.get("seasons", None), description=coll_def["desc"], icon="amwg_viewer/imgs/SET%s.png" % collnum)
+        for menu in menus:
+            if collnum in diags_groups[menu.title]:
+                menu.addPage(page)
         pages.append(page)
 
         # Special case the tables since they are a bit special. (at least amwg)
@@ -265,7 +286,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
 
 
         # Given this collection, see what variables we have for it.
-        vlist = list( set(diags_collection[collnum].keys()) - set(collection_special_vars))
+        vlist = sorted(list( set(diags_collection[collnum].keys()) - set(collection_special_vars)))
 
         # now, see how many plot types we have to deal with and how many obs
         plotlist = []
@@ -455,6 +476,39 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
                     if execstr != def_executable:
                         runcmdline([execstr], outlog, dryrun)
 
+                # VIEWER Code
+                # Build rows for this group in the index...
+                if collnum not in ("1", "2", "11", "12", "13", "14"):
+                    for var in obsvars[o]:
+                        regions = coll_def[var].get("regions", coll_def.get("regions", ["Global"]))
+                        combined = coll_def[var].get("combined", True)
+                        for region in regions:
+                            varopts = coll_def[var].get("varopts", None)
+                            if varopts is not None:
+                                for option in varopts:
+                                    columns = []
+                                    if region != "Global":
+                                        title = "{var} ({option}, {region})".format(var=var, option=option, region=region)
+                                    else:
+                                        title = "{var} ({option})".format(var=var, option=option)
+                                    for s in coll_def.get("seasons", ["ANN"]):
+                                        fname = "set{plotset}_{season}_{var}_{option}_{obs}_{region}-{image}.png".format(plotset=collnum, season=s, var=var, option=option, obs=diags_obslist[o]["filekey"], region=region, image="combined" if combined else "model")
+                                        f = OutputFile(fname, title="{title} - {season}".format(title=title, season=s))
+                                        columns.append(f)
+                                    row = OutputRow(title, columns)
+                                    page.addRow(row, obs_index)
+                            else:
+                                if region != "Global":
+                                    title = "{var} ({region})".format(var=var, region=region)
+                                else:
+                                    title = var
+                                columns = []
+                                for s in coll_def.get("seasons", ["ANN"]):
+                                    fname = "set{plotset}_{season}_{var}_{obs}_{region}-{image}.png".format(plotset=collnum, season=s, var=var, obs=diags_obslist[o]["filekey"], region=region, image="combined" if combined else "model")
+                                    f = OutputFile(fname, title="{title} - {season}".format(title=title, season=s))
+                                    columns.append(f)
+                                page.addRow(OutputRow(title, columns), obs_index)
+
     outlog.close()
     return menus, pages
 
@@ -464,8 +518,10 @@ pid_to_cmd = {}
 active_processes = []
 DIAG_TOTAL = 0
 
+
 def cmderr(popened):
     print "Command \n\"%s\"\n failed with code of %d" % (pid_to_cmd[popened.pid], popened.returncode)
+
 
 def runcmdline(cmdline, outlog, dryrun=False):
     global DIAG_TOTAL
@@ -488,6 +544,9 @@ def runcmdline(cmdline, outlog, dryrun=False):
         split_cmdline = True
 
     CMDLINES = []
+
+    files = []
+
     if split_cmdline:
         seasonstr = seasonstr.split(' ')
         seasonopts = seasonstr[0]
@@ -498,8 +557,8 @@ def runcmdline(cmdline, outlog, dryrun=False):
         for season in seasons:
             for var in vars:
                 seasonstr = seasonopts + ' ' + season
-                varstr    = Varopts + ' ' + var
-                #build new cmdline
+                varstr = Varopts + ' ' + var
+                # build new cmdline
                 if length == 14:
                     cmdline = (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr,
                                seasonstr, varstr,
@@ -509,7 +568,7 @@ def runcmdline(cmdline, outlog, dryrun=False):
                     for vo in varopts.split("--varopts")[-1].split():
                         cmdline = (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr,
                                    seasonstr, varstr,
-                                   outstr, xmlstr, prestr, poststr, regionstr, "--varopts %s" % vo)
+                                   outstr, xmlstr, prestr, poststr, regionstr, "--varopts", vo)
                         CMDLINES += [cmdline]
     else:
         CMDLINES = [cmdline]

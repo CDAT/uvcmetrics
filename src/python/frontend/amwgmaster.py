@@ -22,6 +22,14 @@ from metrics.frontend.defines import *
 # Make sure no actual variables have these names, but that shouldn't be a problem.
 collection_special_vars = ['desc', 'preamble', 'regions', 'seasons', 'package', 'options', 'combined', 'imagesonly', 'tables', 'mixed_plots', 'parallel', 'exec']
 
+
+# Used by the viewer to group diags sets into menus
+from collections import OrderedDict
+diags_groups = OrderedDict()
+diags_groups["Top Ten"] = ["topten"]
+diags_groups["Classic AMWG Sets"] = ["1", "2", "3", "4", "4a", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15"]
+diags_groups["Tier 1B"] = ["tier1b_clouds", "tier1b_prect", "tier1b_so", "tier1b_wind"]
+
 #### NEW TIER1B Additions ####
 
 #### NEEDS Better name/description
@@ -68,6 +76,7 @@ diags_collection['tier1b_so']['AODVIS'] = {'plottype': '5', 'obs':['AOD_550_1'] 
 diags_collection['tier1b_so']['SURF_WIND'] = {'plottype': '6', 'obs':['NCEP_1'] }
 diags_collection['tier1b_so']['STRESS'] = {'plottype': '6', 'obs':['ERS_1'] }
 diags_collection['tier1b_so']['CLDTOT'] = {'plottype': '9', 'obs':['CLOUDSAT_1'] }
+
 # Tier 1b cloud diagnostics
 diags_collection['tier1b_clouds'] = {}
 diags_collection['tier1b_clouds']['desc'] = 'Tier 1B COSP Cloud Diagnostics (Global)'
@@ -118,7 +127,6 @@ diags_collection['topten']['T'] = {'plottype': '4', 'obs': ['ERAI_1']}
 diags_collection['topten']['SWCF'] = {'plottype': '5', 'obs': ['CERES-EBAF_1']}
 diags_collection['topten']['RELHUM'] = {'plottype': '4', 'obs': ['ERAI_1']}
 
-
 #### "Classic" AMWG Diagnostics
 # *** Collection 11 ***
 diags_collection['11'] = {}
@@ -133,6 +141,7 @@ diags_collection['11']['SST'] = {'plottype':'11', 'obs':['HADISST_1']}
 diags_collection['11']['SWCF'] = {'plottype':'11', 'obs':['ERBE_1']}
 diags_collection['11']['TAUX'] = {'plottype':'11', 'obs':['ERS_1', 'LARYEA_1']}
 diags_collection['11']['TAUY'] = {'plottype':'11', 'obs':['ERS_1', 'LARYEA_1']}
+
 # *** Collection 10 ***
 diags_collection['10'] = {}
 diags_collection['10']['desc'] = 'Annual cycle line plots of global means'
@@ -174,6 +183,7 @@ diags_collection['10']['CLDLOW_VISIR'] = {'plottype': '10', 'obs': ['ISCCP_1'], 
 diags_collection['10']['PRECT'] = {'plottype': '10', 'obs': ['XA_1', 'GPCP_1', 'LEGATES_1', 'TRMM_1', 'SSMI_1']}
 diags_collection['10']['CLDHGH'] = {'plottype': '10', 'obs': ['ISCCP_1']}
 diags_collection['10']['PREH2O'] = {'plottype': '10', 'obs': ['NCEP_1', 'NVAP_1', 'JRA25_1', 'ERA40_1', 'ECMWF_1', 'SSMI_1']}
+
 # *** Collection 13 ***
 # Another special case. Should we treat the station names as Regions perhaps? That would make this pretty easy to not special case
 diags_collection['13'] = {}
@@ -182,6 +192,7 @@ diags_collection['13']['regions'] = ['Global', 'Tropics'] #, .... etc
 diags_collection['13']['package'] = 'AMWG'
 diags_collection['13']['options'] = {'logo':'no'}
 diags_collection['13']['seasons'] = ['DJF', 'JJA', 'ANN']
+
 # *** Collection 12 ***
 diags_collection['12'] = {}
 diags_collection['12']['desc'] = 'Vertical profile plots from 17 selected stations'
@@ -211,6 +222,7 @@ diags_collection['15']['MSE'] = {'plottype': '15', 'obs': ['NSA_1', 'TWP1_1', 'T
 diags_collection['15']['PRECT'] = {'plottype': '15', 'obs': ['SGP_1']}
 diags_collection['15']['TGCLDLWP'] = {'plottype': '15', 'obs': ['TWP1_1', 'TWP3_1', 'NSA_1', 'SGP_1', 'TWP2_1']}
 diags_collection['15']['CLOUD'] = {'plottype': '15', 'obs': ['NSA_1', 'TWP1_1', 'TWP2_1', 'SGP_1', 'TWP3_1']}
+
 # *** Collection 14 ***
 ### This will need some tweaking when set 14 is defined and working.
 diags_collection['14'] = {}
@@ -218,6 +230,7 @@ diags_collection['14']['desc'] = 'Taylor Diagram plots '
 diags_collection['14']['seasons'] = ['NA'] # this one is highly special cased anyway
 diags_collection['14']['preamble'] = '<p>Taylor Diagrams were developed by Karl Taylor at PCMDI (<a href="http://www.agu.org/pubs/crossref/2001/2000JD900719.shtml">paper</a>|<a href="http://www-pcmdi.llnl.gov/publications/pdf/55.pdf">tech note</a>) and aim to condense information about variance and RMSE characteristics of a particular model run when compared with observations in a single diagram. The tables summarize the individual metrics for each variable considered including: <ul><li>bias, as absolute percentage difference from observations</li> <li>variance, as a ratio of the observed variance</li> <li>correlation, correlation coefficient with observations</li> </ul></p>'
 diags_collection['14']['package'] = 'AMWG'
+
 # *** Collection 3 ***
 diags_collection['3'] = {}
 diags_collection['3']['desc'] = 'Line plots of DJF, JJA and ANN zonal means'
@@ -258,6 +271,7 @@ diags_collection['3']['FLNS'] = {'plottype': '3', 'obs': ['ISCCP_1', 'LARYEA_1']
 diags_collection['3']['CLDLOW_VISIR'] = {'plottype': '3', 'obs': ['ISCCP_1'], 'modelvar':'CLDLOW'}
 diags_collection['3']['PRECT'] = {'plottype': '3', 'obs': ['XA_1', 'GPCP_1', 'LEGATES_1', 'TRMM_1', 'SSMI_1']}
 diags_collection['3']['CLDHGH'] = {'plottype': '3', 'obs': ['ISCCP_1', 'CLOUDSAT_1']}
+
 # *** Collection 1 ***
 diags_collection['1'] = {}
 diags_collection['1']['desc'] = 'Tables of ANN, DJF, JJA, global and regional means and RMSE.'
@@ -266,6 +280,7 @@ diags_collection['1']['package'] = 'AMWG'
 diags_collection['1']['options'] = {'logo':'no'}
 diags_collection['1']['regions'] = ['Global', 'Tropics', 'Southern_Extratropics', 'Northern_Extratropics']
 diags_collection['1']['tables'] = True
+
 # *** Collection 2 ***
 diags_collection['2'] = {}
 diags_collection['2']['desc'] = 'Line plots of annual implied northward transports.'
@@ -332,6 +347,7 @@ diags_collection['5']['PRECIP'] = {'plottype': '5', 'obs': ['WILLMOTT_1']}
 diags_collection['5']['FSDSC'] = {'plottype': '5', 'obs': ['ISCCP_1']}
 diags_collection['5']['CLDHGH'] = {'plottype': '5', 'obs': ['ISCCP_1', 'CLOUDSAT_1']}
 diags_collection['5']['PREH2O'] = {'plottype': '5', 'obs': ['NCEP_1', 'NVAP_1', 'JRA25_1', 'ERA40_1', 'MODIS_1', 'ECMWF_1', 'SSMI_1'], 'regions':['Global', 'Tropics']}
+
 # *** Collection 4 ***
 diags_collection['4'] = {}
 diags_collection['4']['desc'] = 'Vertical contour plots of DJF, JJA and ANN zonal means'
@@ -344,6 +360,7 @@ diags_collection['4']['SHUM'] = {'plottype': '4', 'obs': ['ECMWF_1', 'JRA25_1', 
 diags_collection['4']['RELHUM'] = {'plottype': '4', 'obs': ['ECMWF_1', 'NCEP_1', 'AIRS_1', 'ERA40_1']}
 diags_collection['4']['OMEGA'] = {'plottype': '4', 'obs': ['ECMWF_1', 'NCEP_1', 'JRA25_1', 'ERA40_1']}
 diags_collection['4']['T'] = {'plottype': '4', 'obs': ['NCEP_1', 'JRA25_1', 'ERA40_1', 'ECMWF_1', 'AIRS_1']}
+
 # *** Collection 7 ***
 diags_collection['7'] = {}
 diags_collection['7']['desc'] = 'Polar contour and vector plots of DJF, JJA and ANN means'
@@ -385,6 +402,7 @@ diags_collection['7']['CLDHGH_VISIR'] = {'plottype': '7', 'obs': ['ISCCP_1'], 'r
 diags_collection['7']['CLDLOW_VISIR'] = {'plottype': '7', 'obs': ['ISCCP_1'], 'regions':['N_Hemisphere_Land'], 'modelvar':'CLDLOW'}
 diags_collection['7']['CLDMED_VISIR'] = {'plottype': '7', 'obs': ['ISCCP_1'], 'regions':['N_Hemisphere_Land'], 'modelvar':'CLDMED'}
 diags_collection['7']['CLDTOT_VISIR'] = {'plottype': '7', 'obs': ['ISCCP_1'], 'regions':['N_Hemisphere_Land'], 'modelvar':'CLDTOT'}
+
 # *** Collection 6 ***
 diags_collection['6'] = {}
 diags_collection['6']['desc'] = 'Horizontal vector plots of DJF, JJA and ANN means'
@@ -395,6 +413,7 @@ diags_collection['6']['package'] = 'AMWG'
 diags_collection['6']['options'] = {'logo':'no'}
 #diags_collection['6']['SURF_STRESS'] = {'plottype': '6', 'obs': ['NCEP_1', 'JRA25_1', 'LARYEA_1', 'ERS_1']}
 diags_collection['6']['STRESS'] = {'plottype': '6', 'obs': ['NCEP_1', 'JRA25_1', 'LARYEA_1', 'ERS_1']}
+
 # *** Collection 9 ***
 diags_collection['9'] = {}
 diags_collection['9']['desc'] = 'Horizontal contour plots of DJF-JJA differences'
