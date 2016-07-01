@@ -188,6 +188,8 @@ diags_collection['10']['PREH2O'] = {'plottype': '10', 'obs': ['NCEP_1', 'NVAP_1'
 # Another special case. Should we treat the station names as Regions perhaps? That would make this pretty easy to not special case
 diags_collection['13'] = {}
 diags_collection['13']['desc'] = 'ISCCP cloud simulator plots '
+# TODO: Add the rest of the regions here.
+# {'Global':'global', 'Tropics (15S-15N)':'tropics', 'NH SubTropics (15N-30N)':'nsubtrop', 'SH SubTropics (30S-15S)':'ssubtrop', 'NH Mid-Latitudes (30N-70N)':'nmidlats', 'SH Mid-Latitudes (70S-30S)':'smidlats', 'NH Polar (70N-90N)':'npole', 'SH Polar (90S-70S)':'spole', 'North Pacific Stratus':'npacstrat', 'South Pacific Stratus':'spacstrat', 'North Pacific':'npacific', 'North Atlantic':'natlantic', 'Warm Pool':'warmpool', 'Central Africa':'cafrica', 'USA':'usa'}
 diags_collection['13']['regions'] = ['Global', 'Tropics'] #, .... etc
 diags_collection['13']['package'] = 'AMWG'
 diags_collection['13']['options'] = {'logo':'no'}

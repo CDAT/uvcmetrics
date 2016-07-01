@@ -11,6 +11,7 @@ from metrics.fileio.filetable import *
 from metrics.fileio.findfiles import *
 from metrics.packages.diagnostic_groups import *
 from output_viewer.index import OutputIndex, OutputPage, OutputGroup, OutputRow, OutputFile, OutputMenu
+import vcs
 
 # If not specified on an individual variable, this is the default.
 def_executable = 'diags'
@@ -234,7 +235,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
         for ind, menu in enumerate(menus):
             if collnum in diags_groups[menu.title]:
                 menu_index = ind
-                index_in_menu = diags_groups[menu.title].index(collnum)
+                index_in_menu = diags_groups[menu.title].index(collnum.lower())
         coll_meta.append((menu_index, index_in_menu, collnum))
     coll_meta.sort()
     colls = [coll[2] for coll in coll_meta]
@@ -246,7 +247,33 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
         collnum = collnum.lower()
         coll_def = diags_collection[collnum]
 
-        page = OutputPage("Plotset %s" % collnum, short_name="set_%s" % collnum, columns=coll_def.get("seasons", None), description=coll_def["desc"], icon="amwg_viewer/imgs/SET%s.png" % collnum)
+        page = OutputPage("Plotset %s" % collnum, short_name="set_%s" % collnum, columns=coll_def.get("seasons", None), description=coll_def["desc"], icon="amwg_viewer/img/SET%s.png" % collnum)
+
+        if pname.lower() == "amwg":
+            if collnum == "2":
+                page.columns = [""]
+                group = OutputGroup("Annual Implied Northward Transports")
+                page.addGroup(group)
+            elif collnum == "11":
+                page.columns = ["Scatter Plot"]
+                page.addGroup(OutputGroup("Warm Pool Scatter Plot"))
+                page.addGroup(OutputGroup("Annual Cycle on the Equatorial Pacific"))
+            elif collnum == "12":
+                page.columns = ["T", "Q", "H"]
+                group = OutputGroup("Station Name")
+                page.addGroup(group)
+            elif collnum == "13":
+                group = OutputGroup("Region")
+                page.addGroup(group)
+            elif collnum == "14":
+                group = OutputGroup("", columns=["ANN", "DJF", "MAM", "JJA", "SON"])
+                page.addGroup(group)
+                group = OutputGroup("", columns=["Bias (%)", "Variance (ratio)", "Correlation Coefficient Tables"])
+                page.addGroup(group)
+            elif collnum == "topten":
+                group = OutputGroup("Variable", columns=["ANN"])
+                page.addGroup(group)
+
         for menu in menus:
             if collnum in diags_groups[menu.title]:
                 menu.addPage(page)
@@ -314,12 +341,6 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
         for p in plotlist:
             obsvars = OrderedDict()
             for o in obslist:
-                if collnum not in ("2", "11", "12", "13", "14"):
-                    # Should probably reorder these by description,
-                    # since some descriptions don't sync up with their shortname
-                    group = OutputGroup(diags_obslist[o]["desc"])
-                    page.addGroup(group)
-
                 for v in vlist:
                     if o in diags_collection[collnum][v]['obs'] and diags_collection[collnum][v]['plottype'] == p:
                         if obsvars.get(o, False) == False: # do we have any variables yet?
@@ -328,6 +349,13 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
                             obsvars[o].append(v)
                 if obsvars.get(o, False) != False:
                     obsvars[o] = list(set(obsvars[o]))
+
+                if package.lower() == "amwg" and collnum not in ("2", "11", "12", "13", "14", "topten"):
+                    if o in obsvars:
+                        # Should probably reorder these by description,
+                        # since some descriptions don't sync up with their shortname
+                        group = OutputGroup(diags_obslist[o]["desc"])
+                        page.addGroup(group)
 
             # ok we have a list of observations and the variables that go with them for this plot type.
             for obs_index, o in enumerate(obsvars.keys()):
@@ -488,36 +516,91 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
 
                 # VIEWER Code
                 # Build rows for this group in the index...
-                if collnum not in ("2", "11", "12", "13", "14"):
-                    for var in obsvars[o]:
-                        regions = coll_def[var].get("regions", coll_def.get("regions", ["Global"]))
-                        combined = coll_def[var].get("combined", True)
-                        for region in regions:
-                            varopts = coll_def[var].get("varopts", None)
-                            if varopts is not None:
-                                for option in varopts:
-                                    columns = []
+                if package.lower() == "amwg":
+                    if collnum not in ("2", "11", "12", "13", "14"):
+                        for var in obsvars[o]:
+                            regions = coll_def[var].get("regions", coll_def.get("regions", ["Global"]))
+                            combined = coll_def[var].get("combined", True)
+                            for region in regions:
+                                varopts = coll_def[var].get("varopts", None)
+                                if varopts is not None:
+                                    for option in varopts:
+                                        columns = []
+                                        if region != "Global":
+                                            title = "{var} ({option}, {region})".format(var=var, option=option, region=region)
+                                        else:
+                                            title = "{var} ({option})".format(var=var, option=option)
+                                        for s in coll_def.get("seasons", ["ANN"]):
+                                            fname = "set{plotset}_{season}_{var}_{option}_{obs}_{region}-{image}.png".format(plotset=collnum, season=s, var=var, option=option, obs=diags_obslist[o]["filekey"], region=region, image="combined" if combined else "model")
+                                            f = OutputFile(fname, title="{title} - {season}".format(title=title, season=s))
+                                            columns.append(f)
+                                        row = OutputRow(title, columns)
+                                        page.addRow(row, obs_index)
+                                else:
                                     if region != "Global":
-                                        title = "{var} ({option}, {region})".format(var=var, option=option, region=region)
+                                        title = "{var} ({region})".format(var=var, region=region)
                                     else:
-                                        title = "{var} ({option})".format(var=var, option=option)
+                                        title = var
+                                    columns = []
                                     for s in coll_def.get("seasons", ["ANN"]):
-                                        fname = "set{plotset}_{season}_{var}_{option}_{obs}_{region}-{image}.png".format(plotset=collnum, season=s, var=var, option=option, obs=diags_obslist[o]["filekey"], region=region, image="combined" if combined else "model")
+                                        fname = "set{plotset}_{season}_{var}_{obs}_{region}-{image}.png".format(plotset=collnum, season=s, var=var, obs=diags_obslist[o]["filekey"], region=region, image="combined" if combined else "model")
                                         f = OutputFile(fname, title="{title} - {season}".format(title=title, season=s))
                                         columns.append(f)
-                                    row = OutputRow(title, columns)
-                                    page.addRow(row, obs_index)
+                                    if collnum == "topten":
+                                        page.addRow(OutputRow(title, columns), 0)
+                                    else:
+                                        page.addRow(OutputRow(title, columns), obs_index)
+                    elif collnum == "2":
+                        fname = "set2_ANN_{var}_{obs}_Global-combined.png"
+                        for var in obsvars[o]:
+                            f = OutputFile(fname.format(var=var, obs=o), title="Plot")
+                            row = OutputRow(var, columns=[f])
+                            page.addRow(row, 0)
+                    elif collnum == "11":
+                        for var in obsvars[o]:
+                            if var == "SWCF_LWCF":
+                                group = 0
                             else:
-                                if region != "Global":
-                                    title = "{var} ({region})".format(var=var, region=region)
-                                else:
-                                    title = var
-                                columns = []
-                                for s in coll_def.get("seasons", ["ANN"]):
-                                    fname = "set{plotset}_{season}_{var}_{obs}_{region}-{image}.png".format(plotset=collnum, season=s, var=var, obs=diags_obslist[o]["filekey"], region=region, image="combined" if combined else "model")
-                                    f = OutputFile(fname, title="{title} - {season}".format(title=title, season=s))
-                                    columns.append(f)
-                                page.addRow(OutputRow(title, columns), obs_index)
+                                group = 1
+                            obs = diags_obslist[o]["filekey"]
+                            fname = "set11_{var}_{obs}.png".format(var=var, obs=obs)
+                            f = OutputFile(fname)
+                            row = OutputRow("{var} ({obs})".format(var=var, obs=obs), columns=[f])
+                            page.addRow(row, group)
+                    elif collnum == "12":
+                        regions = station_names
+                        for region in regions:
+                            cols = []
+                            for var in ["T", "Q", "H"]:
+                                f = OutputFile("set12_{region}_{var}.png".format(region=region, var=var))
+                                cols.append(f)
+                            row = OutputRow(region, cols)
+                            page.addRow(row, 0)
+
+        if package.lower() == "amwg":
+            # These sets don't have any variables, so they don't run through the normal system.
+            if collnum == "13":
+                regions = coll_def.get("regions", ["Global"])
+                seasons = coll_def.get("seasons", ["ANN"])
+                for region in regions:
+                    cols = []
+                    for season in seasons:
+                        fname = "set13_{region}_{season}.png".format(region=region, season=season)
+                        cols.append(OutputFile(fname))
+                    page.addRow(OutputRow(region, cols), 0)
+            elif collnum == "14":
+                r = OutputRow("Space and Time", columns=[OutputFile("set14_ANN_SPACE_TIME.png")])
+                page.addRow(r, 0)
+                r = OutputRow("Space Only", [OutputFile("set14_{}_SPACE.png".format(s)) for s in ["ANN", "DJF", "MAM", "JJA", "SON"]])
+                page.addRow(r, 0)
+                var_names = ["BIAS", "VAR", "CC"]
+                r = OutputRow("Space and Time", columns=[OutputFile("set14.METRICS_{}_SPACE_TIME.png".format(v)) for v in var_names])
+                page.addRow(r, 1)
+                r = OutputRow("Space Only", columns=[OutputFile("set14.METRICS_{}_SPACE.png".format(v)) for v in var_names])
+                page.addRow(r, 1)
+                r = OutputRow("Time Only", columns=["", "", OutputFile("set14.METRICS_CC_SPACE_TIME.png")])
+                page.addRow(r, 1)
+
 
     outlog.close()
     return menus, pages
@@ -782,6 +865,16 @@ module load uvcdat/batch
     menus, pages = generatePlots(model_dict, obspath, outpath, package, xmlflag, colls=colls,dryrun=dryrun)
 
     for page in pages:
+        # Grab file metadata for every image that exists.
+        for group in page.rows:
+            for row in group:
+                for col in row.columns:
+                    if isinstance(col, OutputFile):
+                        path = os.path.join(outpath, package.lower(), col.path)
+                        if os.path.exists(path):
+                            if os.path.splitext(col.path)[1] == ".png":
+                                col.meta = vcs.png_read_metadata(path)
+
         index.addPage(page)
 
     index.menu = menus
