@@ -255,6 +255,16 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
         # Special case the tables since they are a bit special. (at least amwg)
         if diags_collection[collnum].get('tables', False) != False:
             makeTables(collnum, model_dict, obspath, outpath, pname, outlog, dryrun)
+            group = OutputGroup("Tables")
+            page.addGroup(group)
+            for region in coll_def.get("regions", ["Global"]):
+                columns = []
+                for season in coll_def.get("seasons", ["ANN"]):
+                    fname = "set{plotset}_{season}_{region}-table.text".format(plotset=collnum, season=season, region=region)
+                    file = OutputFile(fname, title="{region} Table ({season})".format(region=region, season=season))
+                    columns.append(file)
+                row = OutputRow("{region} Tables".format(region=region), columns)
+                page.addRow(row, 0)
             continue
 
         # deal with collection-specific optional arguments
@@ -304,7 +314,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
         for p in plotlist:
             obsvars = OrderedDict()
             for o in obslist:
-                if collnum not in ("1", "2", "11", "12", "13", "14"):
+                if collnum not in ("2", "11", "12", "13", "14"):
                     # Should probably reorder these by description,
                     # since some descriptions don't sync up with their shortname
                     group = OutputGroup(diags_obslist[o]["desc"])
@@ -478,7 +488,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
 
                 # VIEWER Code
                 # Build rows for this group in the index...
-                if collnum not in ("1", "2", "11", "12", "13", "14"):
+                if collnum not in ("2", "11", "12", "13", "14"):
                     for var in obsvars[o]:
                         regions = coll_def[var].get("regions", coll_def.get("regions", ["Global"]))
                         combined = coll_def[var].get("combined", True)
