@@ -444,16 +444,34 @@ class amwg_plot_set1(amwg_plot_plan):
             'Control Case: various observational data\n',
             'Variable                 Test Case           Obs          Test-Obs           RMSE            Correlation\n']
         self.presentation = "text"
+        def makeCmd(spec):
+            import sys
+            argv = sys.argv
+            obsind = argv.index('--obs')
+            obspath = argv[obsind+1]
+            obsoption = obspath.split(',')
+            obspath = obsoption[0] + ',filter=' + 'f_startswith("' + spec['obs'] + '"),' + obsoption[1]
+            argv[obsind] = obspath
 
+            modelind = argv.index('--model')
+            varid = '--vars ' + spec['var']
+            argv.insert(modelind, varid)
+            cmd = ' '.join(argv)
+            pdb.set_trace()
         self.rows = []
         for spec in self.table_row_specs:
-            #if spec['var']!='SHFLX': continue # <<<<< for temporary testing <<<<
-            obs = spec.get('obs', None)
-            row = self.myrow( filetable1, filetable2,
-                              seasonid=seasonid, region=region, var=spec['var'],
-                              obs=obs, obsprint=spec.get('obsprint', None),
-                              lev=spec.get('lev', None), units=spec.get('units', None) )
-            pdb.set_trace()
+            if True:
+                if 'obs' in spec.keys():
+                    makeCmd(spec)
+                else:
+                    continue
+            else:
+                #if spec['var']!='SHFLX': continue # <<<<< for temporary testing <<<<
+                obs = spec.get('obs', None)
+                row = self.myrow( filetable1, filetable2,
+                                  seasonid=seasonid, region=region, var=spec['var'],
+                                  obs=obs, obsprint=spec.get('obsprint', None),
+                                  lev=spec.get('lev', None), units=spec.get('units', None) )
             row.compute()
             self.rows.append( row )
         self.reduced_variables = {}
