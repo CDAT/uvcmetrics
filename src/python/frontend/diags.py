@@ -216,6 +216,7 @@ def run_diags( opts ):
         print 'opts vars:', opts.get('vars',[])
         variables = pclass.list_variables( modelfts, obsfts, sname )
         print 'var list from pclass: ', variables
+        #pdb.set_trace()
         # Get the reduced list of variables possibly specified by the user
         if opts.get('vars',['ALL'])!=['ALL']:
             # If the user sepcified variables, use them instead of the complete list
@@ -229,7 +230,7 @@ def run_diags( opts ):
         if (sclass.number == '1' and package.upper() == 'AMWG'):
             variables = variables[:1]
             # make tables
-            print 'Making tables'
+            print 'Making tables', variables
         #     # pass season info, maybe var list, maybe region list?
         #     continue
         # if (sclass.number == '5' and package.upper() == 'LMWG'):
