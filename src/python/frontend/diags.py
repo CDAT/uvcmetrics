@@ -569,6 +569,8 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
                     print "png file name: ",fname
                     fnamesvg = fname[:-3]+'svg'
                     print "svg file name: ",fnamesvg
+                    fnamepdf = fname[:-3]+'pdf'
+                    print "pdf file name: ",fnamepdf
 
                 if vcs.isscatter(rsr.presentation) or (plot.number in ['11', '12'] and package.upper() == 'AMWG'):
                     #pdb.set_trace()
@@ -759,6 +761,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
                     vcanvas.png( fname, ignore_alpha=True, metadata=provenance_dict() )
                     # vcanvas.svg() doesn't support ignore_alpha or metadata keywords
                     vcanvas.svg( fnamesvg )
+                    vcanvas.pdf( fnamepdf)
 
         if tmmobs[0] is not None:  # If anything was plotted to vcanvas2
             vname = varid.replace(' ', '_')
@@ -770,6 +773,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
         else:
             fname = fnamebase+'-combined.png'
         fnamesvg = fname[:-3]+'svg'
+        fnamepdf = fname[:-3]+'pdf'
 
         if vcanvas2.backend.renWin is None:
             print "no data to plot to file2:", fname
@@ -780,6 +784,9 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
             print "writing svg file2: ",fnamesvg
             # vcanvas2.svg() doesn't support ignore_alpha or metadata keywords
             vcanvas2.svg( fnamesvg )
+
+            print "writing pdf file2: ",fnamepdf
+            vcanvas2.pdf( fnamepdf )            
 
 if __name__ == '__main__':
     print "UV-CDAT Diagnostics, command-line version"
