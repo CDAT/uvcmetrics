@@ -849,12 +849,13 @@ class Options():
 
         if args.displayunits != None:
             self.processDisplayunits('displayunits', args.displayunits)
-                               
-        if args.custom_specs is not None:
-            print "Using custom dict"
-            if not os.path.exists(args.custom_specs):
-                raise "Error could not open custom specifications file at: %s" % args.custom_specs
-        self._opts["custom_specs"] = args.custom_specs
+        
+        if "metadiags" in progname:
+            if args.custom_specs is not None:
+                print "Using custom dict"
+                if not os.path.exists(args.custom_specs):
+                    raise "Error could not open custom specifications file at: %s" % args.custom_specs
+            self._opts["custom_specs"] = args.custom_specs
 
         # I checked; these are global and it doesn't seem to matter if you import cdms2 multiple times;
         # they are still set after you set them once in the python process.
