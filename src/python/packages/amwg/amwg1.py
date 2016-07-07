@@ -389,7 +389,6 @@ class amwg_plot_set1(amwg_plot_plan):
             from metrics.graphics.default_levels import default_levels
             from metrics.computation.units import scale_data
             from metrics.computation.compute_rmse import compute_rmse
-            #pdb.set_trace()
                                   
             variable_values = { }
             for key, rv in self.reduced_variables.items():

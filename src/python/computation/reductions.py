@@ -2412,8 +2412,8 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
     aminusb.id = 'difference of '+mv1.id
 
     #save arrays for rmse and correlations KLUDGE!
-    aminusb.model = mv1
-    aminusb.obs   = mv2
+    aminusb.model = mv1new
+    aminusb.obs   = mv2new
 
     if hasattr(mv1,'long_name'):
         aminusb.long_name = 'difference of '+mv1.long_name
