@@ -209,6 +209,20 @@ def run_diags( opts ):
         # instantiate the class
         sclass = sm[sname]
 
+        # AMWG set 1 (the tables) is a special case
+        if (sclass.number == '1' and package.upper() == 'AMWG'):
+            # make tables
+            varid = None
+            #somehow the default is ['ALL']
+            if opts['vars'] != ['ALL']:
+                varid = opts['vars'][0]
+            filter = opts._opts['obs'][0]['filter']
+            obsfilter = None
+            if filter != None:
+                obsfilter  = filter.split('"')[1]
+            plot = sclass( modelfts, obsfts, varid=varid, obsfilter=obsfilter, dryrun=opts['dryrun'])
+            continue
+
         # see if the user specified seasons are valid for this diagnostic
         use_times = list( set(times) & set(pclass.list_seasons()) )
 
@@ -216,7 +230,7 @@ def run_diags( opts ):
         print 'opts vars:', opts.get('vars',[])
         variables = pclass.list_variables( modelfts, obsfts, sname )
         print 'var list from pclass: ', variables
-        #pdb.set_trace()
+        
         # Get the reduced list of variables possibly specified by the user
         if opts.get('vars',['ALL'])!=['ALL']:
             # If the user sepcified variables, use them instead of the complete list
@@ -225,21 +239,6 @@ def run_diags( opts ):
                 logging.critical('Could not find any of the requested variables %s among %s', opts['vars'], variables)
                 print "among",variables
                 sys.exit(1)
-
-        # AMWG set 1 (the tables) is special cased
-        if (sclass.number == '1' and package.upper() == 'AMWG'):
-            variables = variables[:1]
-            # make tables
-            print 'Making tables', variables
-        #     # pass season info, maybe var list, maybe region list?
-        #     continue
-        # if (sclass.number == '5' and package.upper() == 'LMWG'):
-        #     print 'Making tables'
-        # # pass season info, maybe var list, maybe region list?
-        # if '5' in snum and package.upper() == 'LMWG' and opts['json'] == True:
-        #     plot = sclass( modelfts, obsfts, varid, time, region, vvaropts[aux], jsonflag=True )
-        #     continue
-
 
         # Ok, start the next layer of work - seasons and regions
         # loop over the seasons for this plot

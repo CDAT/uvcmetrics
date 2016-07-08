@@ -71,7 +71,29 @@ def reduced_variables_hybrid_lev( filetable, varid, season, region='Global', fil
             reduction_function=rf_PS ) ]
     reduced_variables = { v.id():v for v in reduced_varlis }
     return reduced_variables
+def makeCmds(specs):
+    import sys
+    from copy import copy
+    cmds = []
+    for spec in specs:
+        argv = copy(sys.argv)
+        argv.remove('--dryrun')
+        cmd = ''
+        if 'obs' in spec.keys():
+            obsind = argv.index('--obs')
+            obspath = argv[obsind+1]
+            obsoption = obspath.split(',')
+            filter_startswith_str = "'" + "f_startswith" + '("' + spec['obs'] + '")' + "',"
+            obspath = obsoption[0] + ',filter=' + filter_startswith_str + obsoption[1]
+            argv[obsind+1] = obspath
 
+        modelind = argv.index('--model')
+        varid = '--vars ' + spec['var']
+        argv.insert(modelind, varid)
+        cmd = ' '.join(argv)
+
+        cmds += [cmd]
+    return cmds
 class Row:
     # represents a row of the output table.  Here's an example of what a table row would look like:
     # TREFHT_LEGATES   298.423             298.950            -0.526         1.148
@@ -421,8 +443,8 @@ class amwg_plot_set1(amwg_plot_plan):
            filetable2 = None
         return filetable1, filetable2
 
-    def __init__( self, model, obssets, varid='ignored', seasonid='ANN', region='Global',
-                  aux='ignored', plotparms='ignored' ):
+    def __init__( self, model, obssets, varid=None, obsfilter=None, dryrun=False ,seasonid='ANN', region='Global',
+                  aux='ignored', plotparms='ignored'):
         filetable1, filetable2 = self.getfts(model, obssets)
         # Inputs: filetable1 is the filetable for the test case (model) data.
         # filetable2 is a file table for all obs data.
@@ -444,35 +466,51 @@ class amwg_plot_set1(amwg_plot_plan):
             'Control Case: various observational data\n',
             'Variable                 Test Case           Obs          Test-Obs           RMSE            Correlation\n']
         self.presentation = "text"
-        def makeCmd(spec):
-            import sys
-            argv = sys.argv
-            if 'obs' in spec.keys():
-                obsind = argv.index('--obs')
-                obspath = argv[obsind+1]
-                obsoption = obspath.split(',')
-                obspath = obsoption[0] + ',filter=' + 'f_startswith("' + spec['obs'] + '"),' + obsoption[1]
-                argv[obsind+1] = obspath
 
-            modelind = argv.index('--model')
-            varid = '--vars ' + spec['var']
-            argv.insert(modelind, varid)
-            cmd = ' '.join(argv)
-            pdb.set_trace()
-            return cmd
+        directory = 'amwg1_output'
         self.rows = []
-        for spec in self.table_row_specs:
-            if False:
-                makeCmd(spec)
-            else:
+        if dryrun: #not yet defined
+            cmds = makeCmds(self.table_row_specs)
+            #write them in a file for execution
+            f = open(directory + '/table_commands.sh', 'w')
+            for cmd in cmds:
+                f.write(cmd + '\n')
+            f.close()
+        elif varid is not None:
+            #execute a single row
+            for spec in self.table_row_specs:
+                if varid in spec.values():
+                    #obsfilter may or may not be specified
+                    if obsfilter is None or obsfilter in spec.values():
+                        #lookup lev, obsprint and units
+                        lev=spec.get('lev', None)
+                        obsprint=spec.get('obsprint', None)
+                        units=spec.get('units', None)
+
+                        row = Row(  filetable1, filetable2,
+                                    seasonid=seasonid, region=region, var=varid,
+                                    obs=obsfilter, obsprint=obsprint,lev=lev, units=units )    
+                        row.compute()  
+                        self.rows.append( row )
+                        fn = directory + '/' + varid
+                        if obsfilter != None:
+                            fn += '_' + obsfilter
+                        f=open(fn, 'w')
+                        f.write(str(row))
+                        f.close()
+                        break
+        else:
+            #execute all rows
+            for spec in self.table_row_specs:
                 #if spec['var']!='SHFLX': continue # <<<<< for temporary testing <<<<
                 obs = spec.get('obs', None)
-                row = Row( filetable1, filetable2,
-                                  seasonid=seasonid, region=region, var=spec['var'],
-                                  obs=obs, obsprint=spec.get('obsprint', None),
-                                  lev=spec.get('lev', None), units=spec.get('units', None) )
-            row.compute()
-            self.rows.append( row )
+                row = Row(  filetable1, filetable2,
+                            seasonid=seasonid, region=region, var=spec['var'],
+                            obs=obs, obsprint=spec.get('obsprint', None),
+                            lev=spec.get('lev', None), units=spec.get('units', None) )
+                row.compute()
+                self.rows.append( row )
+                pdb.set_trace()
         self.reduced_variables = {}
         self.derived_variables = {}
         self.variable_values = {}

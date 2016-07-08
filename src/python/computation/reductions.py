@@ -2410,17 +2410,10 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
             regridded_vars[mv1new.id] = mv1new
     aminusb = mv1new - mv2new
     aminusb.id = 'difference of '+mv1.id
-    #compute rmse and correlations
-    import genutil.statistics, numpy
-    aminusb.RMSE = numpy.infty
-    aminusb.CORR = numpy.infty
-    try:
-        aminusb.mv1 = mv1new
-        aminusb.mv2 = mv2new
-        aminusb.RMSE = float( genutil.statistics.rms(mv1new, mv2new, axis='xy') )
-        aminusb.CORR = float( genutil.statistics.correlation(mv1new, mv2new, axis='xy') )
-    except Exception,err:
-        print err, "<<<<<<<<<<<<<<<<<<<"
+
+    #save arrays for rmse and correlations KLUDGE!
+    aminusb.model = mv1new
+    aminusb.obs   = mv2new
 
     if hasattr(mv1,'long_name'):
         aminusb.long_name = 'difference of '+mv1.long_name

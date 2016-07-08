@@ -672,6 +672,9 @@ class Options():
             
             runopts.add_argument('--translate', nargs='?', default='y',
                                  help="Enable translation for obs sets to datasets. Optional provide a colon separated input to output list e.g. DSVAR1:OBSVAR1")
+            runopts.add_argument('--dryrun',
+                                  help="Do not run anything simply store list of commands in file table_commands.sh",
+                                  action="store_true")
             if 'metadiags' not in progname and 'metadiags.py' not in progname:
                 runopts.add_argument('--vars', '--var', '-v', nargs='+',
                                      help="Specify variables of interest to process. The default is all variables which can also be specified with the keyword ALL")
@@ -921,7 +924,7 @@ class Options():
                 print args.translate
                 print self._opts['translate']
                 quit()
-
+            self._opts['dryrun'] = args.dryrun
         self._opts['verbose'] = args.verbose
         
         # Help create output file names
