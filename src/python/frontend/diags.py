@@ -569,6 +569,8 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
                     print "png file name: ",fname
                     fnamesvg = fname[:-3]+'svg'
                     print "svg file name: ",fnamesvg
+                    fnamepdf = fname[:-3]+'pdf'
+                    print "pdf file name: ",fnamepdf
 
                 if vcs.isscatter(rsr.presentation) or (plot.number in ['11', '12'] and package.upper() == 'AMWG'):
                     #pdb.set_trace()
@@ -638,15 +640,22 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
                 elif vcs.isvector(rsr.presentation) or rsr.presentation.__class__.__name__=="Gv":
                     strideX = rsr.strideX
                     strideY = rsr.strideY
-
+                    ratio="autot"
+                    try:
+                        lat = var[0].getLatitude()                   
+                        if numpy.abs(lat[-1]-lat[0])>150 and ratio=="autot":
+                            ratio=None
+                    except:
+                        pass
+                    
                     if plot.number == '6':
                         vcanvas.plot( var[0][::strideY,::strideX],
-                                      var[1][::strideY,::strideX], rsr.presentation, tmobs[ir], bg=1, ratio="autot")
+                                      var[1][::strideY,::strideX], rsr.presentation, tmobs[ir], bg=1, ratio=ratio)
                     else:
                         # Note that continents=0 is a useful plot option
                         vcanvas.plot( var[0][::strideY,::strideX],
                                       var[1][::strideY,::strideX], rsr.presentation, tmobs[ir], bg=1,
-                                      title=title, units=getattr(var,'units',''), ratio="autot",
+                                      title=title, units=getattr(var,'units',''), ratio=ratio,
                                       source=rsr.source )
                     
                     # the last two lines shouldn't be here.  These (title,units,source)
@@ -658,7 +667,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
                                            var[1][::strideY,::strideX],
                                            rsr.presentation, tm2, bg=1,
                                            title=title, units=getattr(var,'units',''),
-                                           ratio="autot",
+                                           ratio=ratio,
                                            source=rsr.source )
                             # the last two lines shouldn't be here.  These (title,units,source)
                             # should come from the contour plot, but that doesn't seem to
@@ -690,12 +699,12 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
                     vcanvas2.setcolormap('bl_to_darkred')
                     
                     #check for units specified for display purposes
+                    var_save = var.clone()
                     if displayunits != None:
                         if isinstance(displayunits,(list,tuple)):
                             if len(displayunits)>1:
                                 logging.warning("multiple displayunits not supported at this time, using: %s" % displayunits[0])
                             displayunits=displayunits[0]
-                        var_save = var.clone()
                         try:
                             scale = udunits(1.0, var.units)
                             scale = scale.to(displayunits).value
@@ -712,6 +721,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
                     if hasattr(plot, 'customizeTemplates'):
                         tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)], data=var,
                                                            varIndex=varIndex, graphicMethod=rsr.presentation, var=var )
+
                     # Single plot              
                     plot.vcs_plot(vcanvas, var, rsr.presentation, tm, bg=1,
                                   title=title, source=rsr.source,  
@@ -733,22 +743,25 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
                     except vcs.error.vcsError as e:
                         logging.exception("Making summary plot: %s", e)
 
-                if displayunits != None:
                     #restore var before the KLUDGE!!!
-                    var = var_save
+                    var = var_save                
+                    if hasattr(var, 'model') and hasattr(var, 'obs'):
+                        delattr(var, 'model')
+                        delattr(var, 'obs')
                     rsr.vars[varIndex] = var
-                    
-                if var_id_save is not None:
-                    if type(var_id_save) is str:
-                        var.id = var_id_save
-                    else:
-                        for i in range(len(var_id_save)):
-                            var[i].id = var_id_save[i]
+                        
+                    if var_id_save is not None:
+                        if type(var_id_save) is str:
+                            var.id = var_id_save
+                        else:
+                            for i in range(len(var_id_save)):
+                                var[i].id = var_id_save[i]
                 if savePNG:
                     print "WHEN PNGING WE GET :",vcanvas.getantialiasing()
                     vcanvas.png( fname, ignore_alpha=True, metadata=provenance_dict() )
                     # vcanvas.svg() doesn't support ignore_alpha or metadata keywords
                     vcanvas.svg( fnamesvg )
+                    vcanvas.pdf( fnamepdf)
 
         if tmmobs[0] is not None:  # If anything was plotted to vcanvas2
             vname = varid.replace(' ', '_')
@@ -760,6 +773,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
         else:
             fname = fnamebase+'-combined.png'
         fnamesvg = fname[:-3]+'svg'
+        fnamepdf = fname[:-3]+'pdf'
 
         if vcanvas2.backend.renWin is None:
             print "no data to plot to file2:", fname
@@ -770,6 +784,9 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
             print "writing svg file2: ",fnamesvg
             # vcanvas2.svg() doesn't support ignore_alpha or metadata keywords
             vcanvas2.svg( fnamesvg )
+
+            print "writing pdf file2: ",fnamepdf
+            vcanvas2.pdf( fnamepdf )            
 
 if __name__ == '__main__':
     print "UV-CDAT Diagnostics, command-line version"
