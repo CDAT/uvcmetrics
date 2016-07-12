@@ -210,6 +210,7 @@ def run_diags( opts ):
         sclass = sm[sname]
 
         # AMWG set 1 (the tables) is a special case
+        #this is another total hack to speedup amwg1.
         if (sclass.number == '1' and package.upper() == 'AMWG'):
             # make tables
             varid = None
@@ -220,7 +221,17 @@ def run_diags( opts ):
             obsfilter = None
             if filter != None:
                 obsfilter  = filter.split('"')[1]
-            plot = sclass( modelfts, obsfts, varid=varid, obsfilter=obsfilter, dryrun=opts['dryrun'])
+
+            computeall = not opts['output']['table']
+            table = sclass( modelfts, obsfts, varid=varid, obsfilter=obsfilter, dryrun=opts['dryrun'], sbatch=opts["sbatch"], computeall=computeall, outdir=outdir)
+        
+            if opts['dryrun'] or varid is not None:
+                continue
+            #read the files and print the table 
+            directory = outdir + '/amwg1_output/'
+            if opts['output']['table']:
+                table.get_data(directory)
+            table.write_plot_data(where=directory, fname=directory+'table_output') 
             continue
 
         # see if the user specified seasons are valid for this diagnostic
@@ -283,7 +294,7 @@ def run_diags( opts ):
                     # now, the most inner loop. Looping over sets then seasons then vars then varopts
                     for aux in varopts:
                         #plot = sclass( modelfts, obsfts, varid, time, region, vvaropts[aux] )
-
+                        
                         # Since Options is a 2nd class (at best) citizen, we have to do something icky like this.
                         # hoping to change that in a future release. Also, I can see this being useful for amwg set 1.
                         # (Basically, if we output pre-defined json for the tables they can be trivially sorted)                            
@@ -345,6 +356,9 @@ def run_diags( opts ):
                                 print "wrote plots",resc.title," to",filenames
 
                         elif res is not None:
+                            ############################################################
+                            # it appears that the rest of this code is unnecessary.
+                            # the hack to speedup amwg1 does not need this. It's simpler.
                             if type(res) is str:
                                 if aux == None:
                                     auxstr = ''

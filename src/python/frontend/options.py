@@ -675,6 +675,11 @@ class Options():
             runopts.add_argument('--dryrun',
                                   help="Do not run anything simply store list of commands in file table_commands.sh",
                                   action="store_true")
+            runopts.add_argument('--sbatch',
+                                  help="Run sbatch with the specified number of nodes",
+                                  default=0,
+                                  type=int,
+                                  )
             if 'metadiags' not in progname and 'metadiags.py' not in progname:
                 runopts.add_argument('--vars', '--var', '-v', nargs='+',
                                      help="Specify variables of interest to process. The default is all variables which can also be specified with the keyword ALL")
@@ -719,7 +724,7 @@ class Options():
                help="Produce XML output files as part of climatology/diags generation")
             outopts.add_argument('--logo', choices=['no', 'yes']) # intentionally undocumented; meant to be passed via metadiags
             outopts.add_argument('--no-antialiasing', action="store_true",default = False) # intentionally undocumented; meant to be passed via metadiags
-            outopts.add_argument('--table', action='store_true') # intentionally undocumented; meant to be passed via metadiags
+            outopts.add_argument('--table', action='store_true', help="used to get data from individual files and create the table.") # intentionally undocumented; meant to be passed via metadiags
             outopts.add_argument('--colormaps', nargs='*', help="Specify one of 3 colormaps: model, obs or diff")
             outopts.add_argument('--displayunits', nargs='*', help="Specify units for display")
         
@@ -925,6 +930,7 @@ class Options():
                 print self._opts['translate']
                 quit()
             self._opts['dryrun'] = args.dryrun
+            self._opts['sbatch'] = args.sbatch
         self._opts['verbose'] = args.verbose
         
         # Help create output file names

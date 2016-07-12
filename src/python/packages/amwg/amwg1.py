@@ -443,13 +443,14 @@ class amwg_plot_set1(amwg_plot_plan):
            filetable2 = None
         return filetable1, filetable2
 
-    def __init__( self, model, obssets, varid=None, obsfilter=None, dryrun=False ,seasonid='ANN', region='Global',
-                  aux='ignored', plotparms='ignored'):
+    def __init__( self, model, obssets, varid=None, obsfilter=None, dryrun=False, sbatch=0, computeall = False,
+                  outdir='./', seasonid='ANN', region='Global', aux='ignored', plotparms='ignored'):
         filetable1, filetable2 = self.getfts(model, obssets)
         # Inputs: filetable1 is the filetable for the test case (model) data.
         # filetable2 is a file table for all obs data.
         # seasonid is a season string, e.g. 'DJF'.  Region is the name of a zonal region, e.g.
         # 'tropics'; the acceptable region names are amwg_plot_set1.regions.keys().
+
         if type(region)==list or type(region)==rectregion:
             # Brian's numerical region, or an instance of the similar rectregion class.
             # Ignore if it doesn't match one we have.
@@ -467,14 +468,26 @@ class amwg_plot_set1(amwg_plot_plan):
             'Variable                 Test Case           Obs          Test-Obs           RMSE            Correlation\n']
         self.presentation = "text"
 
-        directory = 'amwg1_output'
+        directory = outdir + 'amwg1_output'
         self.rows = []
-        if dryrun: #not yet defined
+        if dryrun: 
             cmds = makeCmds(self.table_row_specs)
             #write them in a file for execution
             f = open(directory + '/table_commands.sh', 'w')
+            print "List of commands is in: %s",f
+            if sbatch>0:
+                print >> f, "#!/bin/bash"
+                print >> f, "#SBATCH -p debug"
+                print >> f, "#SBATCH -N %i"% (sbatch)
+                print >> f, "#SBATCH -t 00:30:00"
+                print >> f, "#SBATCH -J diag"
+                print >> f, "#SBATCH -o diags.o%%j"
+
+                print >> f, "module use /usr/common/contrib/acme/modulefiles"
+                print >> f, "module load uvcdat/batch"
             for cmd in cmds:
-                f.write(cmd + '\n')
+                #f.write(cmd + '\n')
+                print >> f, cmd + " &"
             f.close()
         elif varid is not None:
             #execute a single row
@@ -499,7 +512,7 @@ class amwg_plot_set1(amwg_plot_plan):
                         f.write(str(row))
                         f.close()
                         break
-        else:
+        elif computeall:
             #execute all rows
             for spec in self.table_row_specs:
                 #if spec['var']!='SHFLX': continue # <<<<< for temporary testing <<<<
@@ -510,7 +523,7 @@ class amwg_plot_set1(amwg_plot_plan):
                             lev=spec.get('lev', None), units=spec.get('units', None) )
                 row.compute()
                 self.rows.append( row )
-                pdb.set_trace()
+    
         self.reduced_variables = {}
         self.derived_variables = {}
         self.variable_values = {}
@@ -518,7 +531,7 @@ class amwg_plot_set1(amwg_plot_plan):
         self.composite_plotspecs = {}
 
     def __repr__(self):
-        return '\n'.join( [self.title]+self.subtitles+[ r.__repr__() for r in self.rows ] )+'\n'
+        return '\n'.join( [self.title]+self.subtitles+[ r.__repr__() for r in self.rows ] )+'\n' 
     def outfile( self, format="", where="" ):
         """generates the output file name and path"""
         if len(self.title)<=0:
@@ -538,7 +551,11 @@ class amwg_plot_set1(amwg_plot_plan):
         else:
            filename = self.outfile( format, where )
         writer = open( filename, 'w' )
-        writer.write( self.__repr__() )
+        #writer.write( self.__repr__() )
+        #pdb.set_trace()
+        for s in [self.title]+self.subtitles+self.rows:
+            print s
+            writer.write(str(s)+'\n')
         writer.close()
         return filename
     def __len__( self ):
@@ -547,6 +564,19 @@ class amwg_plot_set1(amwg_plot_plan):
     def _results(self, newgrid=0):
         sys.stdout.write( self.__repr__() )
         return self
-            
-
-
+    def get_data(self, directory):
+        """the rows are in files. read them to make the table. """
+        for spec in self.table_row_specs:
+            #pdb.set_trace()
+            var = spec.get('var', '')
+            obs = spec.get('obs', None)
+            fn = var 
+            if obs is not None:
+                fn += '_' + obs
+            try:
+                f = open(directory+fn)
+                line = f.readline()
+                self.rows += [line]
+                f.close()
+            except:
+                print 'no file named', fn          
