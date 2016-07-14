@@ -9,7 +9,7 @@ from metrics.frontend.defines import *
 # They are usually flags or parameters for the entire collection.
 # Make sure no actual variables have these names, but that shouldn't be a problem.
 collection_special_vars = ['desc', 'preamble', 'regions', 'seasons', 'package', 'options', 'combined', 'imagesonly', 'tables', 'mixed_plots', 'parallel']
-
+diags_groups = {}
 ### Collection 1
 diags_collection['1'] = {}
 diags_collection['1']['desc'] = 'Line plots of annual trends in energy balance, soil water/ice and temperature, runoff, snow water/ice, photosynthesis'
