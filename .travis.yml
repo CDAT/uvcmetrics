@@ -15,7 +15,6 @@ before_install:
   - conda install -q -y --channel uvcdat/label/nightly --channel uvcdat uvcdat-nox
   # Useful for debugging any issues with conda
   - conda info -a
-  - conda remove -y -q uvcmetrics
 
 install:
     - if [ -d build ]; then rm -rf build; fi
