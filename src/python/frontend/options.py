@@ -673,7 +673,7 @@ class Options():
             runopts.add_argument('--translate', nargs='?', default='y',
                                  help="Enable translation for obs sets to datasets. Optional provide a colon separated input to output list e.g. DSVAR1:OBSVAR1")
             runopts.add_argument('--dryrun',
-                                  help="Do not run anything simply store list of commands in file table_commands.sh",
+                                  help="Do not run anything simply store list of commands in file table_commands.sh for diags or metadiags_commands.sh for metadiags",
                                   action="store_true")
             runopts.add_argument('--sbatch',
                                   help="Run sbatch with the specified number of nodes",
@@ -750,15 +750,7 @@ class Options():
                                   help="Update the database with output from this run? Yes, no, only update the database (don't run anything. primarily for testing)")
             metaopts.add_argument('--dsname',
                                   help="A unique identifier for the dataset(s). Used by classic viewer to display the data.")
-            metaopts.add_argument('--dryrun',
-                                  help="Do not run anything simply store list of commands in file metadiags_commands.sh",
-                                  action="store_true")
-            metaopts.add_argument('--sbatch',
-                                  help="Run sbatch with the specified number of nodes",
-                                  default=0,
-                                  type=int,
-                                  )
-        
+
         if 'mpidiags' in progname or 'mpidiags.py' in progname:
             paropts = parser.add_argument_group('Parallel-specific')
             paropts.add_argument('--taskspernode', 
@@ -890,13 +882,7 @@ class Options():
                 self._opts['dbopts'] = args.updatedb
             if args.dsname != None:
                 self._opts['dsname'] = args.dsname
-            self._opts['dryrun'] = args.dryrun
-            self._opts['sbatch'] = args.sbatch
-            if args.sbatch>0:
-                self._opts["dryrun"] = True
-       
-        
-        
+                
         # Disable the UVCDAT logo in plots for users (typically metadiags) that know about this option
         if 'climatology' not in progname and 'climatology.py' not in progname:
             if args.logo != None:
@@ -941,6 +927,8 @@ class Options():
                 quit()
             self._opts['dryrun'] = args.dryrun
             self._opts['sbatch'] = args.sbatch
+            if args.sbatch>0:
+                self._opts["dryrun"] = True
         self._opts['verbose'] = args.verbose
         
         # Help create output file names
