@@ -209,6 +209,31 @@ def run_diags( opts ):
         # instantiate the class
         sclass = sm[sname]
 
+        # AMWG set 1 (the tables) is a special case
+        #this is another total hack to speedup amwg1.
+        if (sclass.number == '1' and package.upper() == 'AMWG'):
+            # make tables
+            varid = None
+            #somehow the default is ['ALL']
+            if opts['vars'] != ['ALL']:
+                varid = opts['vars'][0]
+            filter = opts._opts['obs'][0]['filter']
+            obsfilter = None
+            if filter != None:
+                obsfilter  = filter.split('"')[1]
+
+            computeall = not opts['output']['table']
+            table = sclass( modelfts, obsfts, varid=varid, obsfilter=obsfilter, dryrun=opts['dryrun'], sbatch=opts["sbatch"], computeall=computeall, outdir=outdir)
+        
+            if opts['dryrun'] or varid is not None:
+                continue
+            #read the files and print the table 
+            directory = outdir + '/amwg1_output/'
+            if opts['output']['table']:
+                table.get_data(directory)
+            table.write_plot_data(where=directory, fname=directory+'table_output') 
+            continue
+
         # see if the user specified seasons are valid for this diagnostic
         use_times = list( set(times) & set(pclass.list_seasons()) )
 
@@ -216,6 +241,7 @@ def run_diags( opts ):
         print 'opts vars:', opts.get('vars',[])
         variables = pclass.list_variables( modelfts, obsfts, sname )
         print 'var list from pclass: ', variables
+        
         # Get the reduced list of variables possibly specified by the user
         if opts.get('vars',['ALL'])!=['ALL']:
             # If the user sepcified variables, use them instead of the complete list
@@ -224,21 +250,6 @@ def run_diags( opts ):
                 logging.critical('Could not find any of the requested variables %s among %s', opts['vars'], variables)
                 print "among",variables
                 sys.exit(1)
-
-        # AMWG set 1 (the tables) is special cased
-        if (sclass.number == '1' and package.upper() == 'AMWG'):
-            variables = variables[:1]
-            # make tables
-            print 'Making tables'
-        #     # pass season info, maybe var list, maybe region list?
-        #     continue
-        # if (sclass.number == '5' and package.upper() == 'LMWG'):
-        #     print 'Making tables'
-        # # pass season info, maybe var list, maybe region list?
-        # if '5' in snum and package.upper() == 'LMWG' and opts['json'] == True:
-        #     plot = sclass( modelfts, obsfts, varid, time, region, vvaropts[aux], jsonflag=True )
-        #     continue
-
 
         # Ok, start the next layer of work - seasons and regions
         # loop over the seasons for this plot
@@ -283,7 +294,7 @@ def run_diags( opts ):
                     # now, the most inner loop. Looping over sets then seasons then vars then varopts
                     for aux in varopts:
                         #plot = sclass( modelfts, obsfts, varid, time, region, vvaropts[aux] )
-
+                        
                         # Since Options is a 2nd class (at best) citizen, we have to do something icky like this.
                         # hoping to change that in a future release. Also, I can see this being useful for amwg set 1.
                         # (Basically, if we output pre-defined json for the tables they can be trivially sorted)                            
@@ -345,6 +356,9 @@ def run_diags( opts ):
                                 print "wrote plots",resc.title," to",filenames
 
                         elif res is not None:
+                            ############################################################
+                            # it appears that the rest of this code is unnecessary.
+                            # the hack to speedup amwg1 does not need this. It's simpler.
                             if type(res) is str:
                                 if aux == None:
                                     auxstr = ''
@@ -796,5 +810,4 @@ if __name__ == '__main__':
     o.verifyOptions()
     #print o._opts['levels']
     #print o._opts['displayunits']
-    #pdb.set_trace()
     run_diags(o)

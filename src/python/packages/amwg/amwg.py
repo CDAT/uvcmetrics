@@ -1750,31 +1750,6 @@ class amwg_plot_set5(amwg_plot_set5and6):
             cnvs2.plot(textCORR, bg=1)              
             
         return tm1, tm2  
-    def old_extraCustomizeTemplates(self, (cnvs1, tm1), (cnvs2, tm2), data=None, varIndex=None, graphicMethod=None, var=None):
-        """Theis method does what the title says.  It is a hack that will no doubt change as diags changes.
-        It is a total hack. I'm embarassed to be part of it. Please find a better way!!!"""
-        #(cnvs1, tm1), (cnvs2, tm2) = templates
-        import pdb
-        pdb.set_trace()
-        if hasattr(var, 'RMSE'):
-            RMSE = round(var.RMSE, 2)
-            CORR = round(var.CORR, 2)
-            textRMSE = cnvs2.createtext()
-            textRMSE.string = 'RMSE = %.3g' % RMSE
-            textRMSE.x = .075
-            textRMSE.y = .005
-            textRMSE.height = 10
-            cnvs2.plot(textRMSE, bg=1)  
-
-            textCORR = cnvs2.createtext()
-            textCORR.string = 'Correlation = %.3g' % CORR
-            textCORR.x = .25
-            textCORR.y = .005
-            textCORR.height = 10
-            cnvs2.plot(textCORR, bg=1)              
-            #pdb.set_trace()
-        
-        return tm1, tm2    
 class amwg_plot_set6(amwg_plot_plan):
     """represents one plot from AMWG Diagnostics Plot Set 6
     This is a vector+contour plot - the contour plot shows magnitudes and the vector plot shows both

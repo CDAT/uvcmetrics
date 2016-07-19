@@ -569,10 +569,10 @@ class uvc_simple_plotspec():
 
                 vec = self.presentation
 
-                vec.scale = min(vcsx.bgX,vcsx.bgY)/10.
+                #vec.scale = min(vcsx.bgX,vcsx.bgY)/10.
                 # Former scale factor, didn't work on more than one variable.
                 #   That is, 100 workrf for moisture transport, 10 for wind stress:
-                # vec.scale = min(vcsx.bgX,vcsx.bgY)/ 100.
+                vec.scale = min(vcsx.bgX,vcsx.bgY)/ 100.
                 #pdb.set_trace()
                 if hasattr(self.vars[0],'__getitem__') and not hasattr( self.vars[0], '__cdms_internals__'):
                     # generally a tuple of variables - we need 2 variables to describe a vector
@@ -580,7 +580,8 @@ class uvc_simple_plotspec():
                     w = self.vars[0][1]
                     vm = max(abs(v.min()),abs(v.max()))
                     wm = max(abs(w.min()),abs(w.max()))
-                    vec.scale = 100 / math.sqrt( math.sqrt( vm**2 + wm**2 ))
+                    vec.scale = 10 / math.sqrt( math.sqrt( vm**2 + wm**2 ))
+                    print "YREP HERE"
                 else:   # We shouldn't get here, but may as well try to make it work if possible:
                     logging.warning("Trying to make a vector plot without tuples!  Variables involved are:")
                     v = self.vars[0]
