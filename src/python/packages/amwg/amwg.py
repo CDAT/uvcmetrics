@@ -36,7 +36,15 @@ def src2obsmod( src ):
     else:
         typ = 'obs'
     return typ
-
+def get_model_case(filetable):
+    files = filetable._filelist
+    f = cdms2.open(files[0])
+    try:
+        case = f.case
+    except:
+        case = 'not available'
+    f.close()
+    return case
 class AMWG(BasicDiagnosticGroup):
     """This class defines features unique to the AMWG Diagnostics."""
     def __init__(self):
@@ -1293,7 +1301,6 @@ class amwg_plot_set5and6(amwg_plot_plan):
         varid is a string identifying the variable to be plotted, e.g. 'TREFHT'.
         seasonid is a string such as 'DJF'."""
         filetable1, filetable2 = self.getfts(model, obs)
-
         plot_plan.__init__(self,seasonid, regionid)
         self.plottype = 'Isofill'
         if plotparms is None:
@@ -1354,6 +1361,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
     def plan_computation_normal_contours( self, model, obs, varnom, seasonid, aux=None,
                                           plotparms=None ):
         filetable1, filetable2 = self.getfts(model, obs)
+        model_case = get_model_case(filetable1)
         """Set up for a lat-lon contour plot, as in plot set 5.  Data is averaged over all other
         axes."""
         if varnom in filetable1.list_variables():
@@ -1380,6 +1388,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
         except:
             ft2src = ''
         all_plotnames = []
+
         if filetable1 is not None:
             if vid1 is not None:
                 self.single_plotspecs[self.plot1_id] = plotspec(
@@ -1387,7 +1396,8 @@ class amwg_plot_set5and6(amwg_plot_plan):
                     zvars = [vid1],  zfunc = (lambda z: z),
                     plottype = self.plottype,
                     #title = ' '.join([varnom,seasonid,filetable1._strid]) )
-                    title = ' '.join([varnom,seasonid,'(1)']),
+                    header = ' '.join([varnom,seasonid]),
+                    title = 'model: '+model_case,
                     source = ft1src,
                     plotparms = plotparms[src2modobs(ft1src)])
                 all_plotnames.append(self.plot1_id)
@@ -1398,18 +1408,20 @@ class amwg_plot_set5and6(amwg_plot_plan):
                     zvars = [vid1var],  zfunc = (lambda z: z),
                     plottype = self.plottype,
                     #title = ' '.join([varnom,seasonid,filetable1._strid,'variance']) )
-                    title = ' '.join([varnom,seasonid,'1 variance']),
+                    header = ' '.join([varnom,seasonid]),
+                    title = 'model variance: '+model_case,
                     source = ft1src,
                     plotparms = plotparms[src2modobs(ft1src)] )
                 all_plotnames.append(self.plot1var_id)
                 
         if filetable2 is not None and vid2 is not None:
+            filterid = ft2src.split('_')[-1] #recover the filter id: kludge
             self.single_plotspecs[self.plot2_id] = plotspec(
                 vid = ps.dict_idid(vid2),
                 zvars = [vid2],  zfunc = (lambda z: z),
                 plottype = self.plottype,
                 #title = ' '.join([varnom,seasonid,filetable2._strid]) )
-                title = ' '.join([varnom,seasonid,'(2)']),
+                title = 'observation: '+filterid,
                 source = ft2src,
                 plotparms = plotparms[src2obsmod(ft2src)] )
             all_plotnames.append(self.plot2_id)
@@ -1420,7 +1432,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
                 zvars = [vid1,vid2],  zfunc = aminusb_2ax,
                 plottype = self.plottype,
                 #title = ' '.join([varnom,seasonid,filetable1._strid,'-',filetable2._strid]) )
-                title = ' '.join([varnom,seasonid,'(1)-(2)']),
+                title = 'difference',
                 source = ', '.join([ft1src,ft2src]),
                 plotparms = plotparms['diff'] )
 
@@ -1472,6 +1484,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
     def plan_computation_level_surface( self, model, obs, varid, seasonid, aux=None,
                                         plotparms=None ):
         filetable1, filetable2 = self.getfts(model, obs)
+        model_case = get_model_case(filetable1)
         """Set up for a lat-lon contour plot, averaged in other directions - except that if the
         variable to be plotted depend on level, it is not averaged over level.  Instead, the value
         at a single specified pressure level, aux, is used. The units of aux are millbars."""
@@ -1516,7 +1529,8 @@ class amwg_plot_set5and6(amwg_plot_plan):
                 zvars = [vidl1],  zfunc = (lambda z: z),
                 plottype = self.plottype,
                 #title = ' '.join([varid,seasonid,filetable1._strid,'at',str(pselect)]) ) }
-                title = ' '.join([varid,seasonid,'at',str(pselect),'(1)']),
+                header = ' '.join([varid,seasonidk,'at',str(pselect)]),
+                title = 'model: '+ model_case,
                 source = ft1src,
                 plotparms = plotparms[src2modobs(ft1src)] ) }
            
@@ -1573,13 +1587,14 @@ class amwg_plot_set5and6(amwg_plot_plan):
             ft2src = filetable2.source()
         except:
             ft2src = ''
+        filterid = ft2src.split('_')[-1] #recover the filter id: kludge
         self.single_plotspecs[self.plot2_id] = plotspec(
                 #was vid = varid+'_2',
                 vid = ps.dict_idid(vidl2),
                 zvars = [vidl2],  zfunc = (lambda z: z),
                 plottype = self.plottype,
                 #title = ' '.join([varid,seasonid,filetable2._strid,'at',str(pselect)]) )
-                title = ' '.join([varid,seasonid,'at',str(pselect),'(2)']),
+                title = 'observation: '+filterid,
                 source = ft2src,
                 plotparms = plotparms[src2obsmod(ft2src)] )
         self.single_plotspecs[self.plot3_id] = plotspec(
@@ -1588,7 +1603,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
                 zvars = [vidl1,vidl2],  zfunc = aminusb_2ax,
                 plottype = self.plottype,
                 #title = ' '.join([varid,seasonid,filetable1._strid,'-',filetable2._strid,'at',str(pselect)]) )
-                title = ' '.join([varid,seasonid,'at',str(pselect),'(1)-(2)']),
+                title = 'difference',
                 source = ', '.join([ft1src,ft2src]),
                 plotparms = plotparms['diff'] )
 #                zerocontour=-1 )
