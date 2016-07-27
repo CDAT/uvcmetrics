@@ -15,7 +15,8 @@ import vcs
 
 # If not specified on an individual variable, this is the default.
 def_executable = 'diags'
-
+import logging
+logger = logging.getLogger(__name__)
 # The user specified a package; see what collections are available.
 def getCollections(pname):
     allcolls = diags_collection.keys()
@@ -45,8 +46,10 @@ def getCollections(pname):
                     if diags_collection[c][v].get('package', False) != False and diags_collection[c][v]['package'].upper() == pname.upper():
                         colls.append(c)
 
-    print 'The following diagnostic collections appear to be available: %s' %colls
+    message = 'The following diagnostic collections appear to be available: %s' %colls
+    logger.info(message)
     return colls
+
 
 
 def makeTables(collnum, model_dict, obspath, outpath, pname, outlog, dryrun=False):
@@ -242,7 +245,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
 
     # Now, loop over collections.
     for collnum in colls:
-        print 'Working on collection ', collnum
+        logger.info('Working on collection ' +  str(collnum))
 
         collnum = collnum.lower()
         coll_def = diags_collection[collnum]
@@ -298,7 +301,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
         optionsstr = ''
         if diags_collection[collnum].get('options', False) != False:
             # we have a few options
-            print 'Additional command line options to pass to diags.py - ', diags_collection[collnum]['options']
+             logger.info('Additional command line options to pass to diags.py - '+ str(diags_collection[collnum]['options']))
             for k in diags_collection[collnum]['options'].keys():
                 optionsstr = optionsstr + '--%s %s ' % (k, diags_collection[collnum]['options'][k])
 
@@ -311,14 +314,14 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
         if diags_collection[collnum].get('mixed_packages', False) == False:  #no mixed
             # Check global package
             if diags_collection[collnum].get('package', False) != False and diags_collection[collnum]['package'].upper() != pname.upper():
-                print pname.upper()
-                print diags_collection[collnum]['package']
+                logger.info(pname.upper())
+                logger.info(str(diags_collection[collnum]['package']))
                 # skip over this guy
                 logging.warning('Skipping over collection %s', collnum)
                 continue
         else:
             if diags_collection[collnum].get('package', False) != False and diags_collection[collnum]['package'].upper() == pname.upper():
-                print 'Processing collection ', collnum
+                logger.info('Processing collection '+str(collnum))
                 packagestr = '--package '+pname
 
 
@@ -375,8 +378,8 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
                     poststr = '--postfix '+obsfname
                 else:
                     if o != 'NA':
-                        print 'No observation path provided but this variable/collection combination specifies an obs set.'
-                        print 'Not making a comparison vs observations.'
+                        logger.warn('No observation path provided but this variable/collection combination specifies an obs set.')
+                        logger.warn('Not making a comparison vs observations.')
                     obsstr = ''
                     poststr = ' --postfix \'\''
 
@@ -422,7 +425,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
                     if collnum != 'dontrun':
                         runcmdline(cmdline, outlog, dryrun)
                     else:
-                        print 'DONTRUN: ', cmdline
+                        logger.info('DONTRUN: ' + str(cmdline))
 
                 # let's save what the defaults are for this plotset
                 g_seasons = g_season
@@ -477,7 +480,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
                         if collnum != 'dontrun':
                             runcmdline(cmdline, outlog, dryrun)
                         else:
-                            print 'DONTRUN: ', cmdline
+                            logger.info('DONTRUN: ' + str(cmdline))
                 else: # different executable; just pass all option key:values as command line options.
                     # Look for a cmdline list in the options for this variable.
                     execstr = diags_collection[collnum].get('exec', def_executable) # should probably NOT be def_executable....
@@ -487,7 +490,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
                         if 'datadir' in cmdlineOpts:
                             execstr = execstr+' --datadir '+ modelpath
                         if 'obsfilter' in cmdlineOpts:
-                            print 'obsfname: ', obsfname
+                            logger.info('obsfname: '+str(obsfname))
                             execstr = execstr+' --obsfilter '+ obsfname
                         if 'obspath' in cmdlineOpts:
                             execstr = execstr+' --obspath '+ obspath
@@ -613,7 +616,8 @@ DIAG_TOTAL = 0
 
 
 def cmderr(popened):
-    print "Command \n\"%s\"\n failed with code of %d" % (pid_to_cmd[popened.pid], popened.returncode)
+    message = "Command \n\"%s\"\n failed with code of %d" % (pid_to_cmd[popened.pid], popened.returncode)
+    logger.error(str(message))
 
 
 def runcmdline(cmdline, outlog, dryrun=False):
@@ -881,7 +885,7 @@ module load uvcdat/batch
     index.toJSON(os.path.join(outpath, package.lower(), "index.json"))
 
     if dbflag is True:
-        print 'Updating the remote database...'
+        logger.info('Updating the remote database...')
         postDB(fts, dsname, package, host=hostname)
     for proc in active_processes:
         result = proc.wait()

@@ -242,7 +242,7 @@ def run_diags( opts ):
         # Get this list of variables for this set (given these obs/model inputs)
         print 'opts vars:', opts.get('vars',[])
         variables = pclass.list_variables( modelfts, obsfts, sname )
-        print 'var list from pclass: ', variables
+        logger.info('var list from pclass: '+ str(variables))
         
         # Get the reduced list of variables possibly specified by the user
         if opts.get('vars',['ALL'])!=['ALL']:
@@ -261,14 +261,14 @@ def run_diags( opts ):
                 region_rect = defines.all_regions[str(region)]
                 r_fname = region_rect.filekey
                 rname = str(region)
-                logger.info('Region: ' +str(rname))
-                print 'Region filename: ', r_fname
+                logger.info('Region: ' + str(rname))
+                logger.info('Region filename: '+ str(r_fname))
 
                 # loop over variables now
                 vcount = len(variables)
                 counter = 0
                 for ivarid, varid in enumerate(variables):
-                    print "Processing variable",varid," in season",time, " in plotset ",sname, " - variable ", counter, "of ", vcount
+                    logger.info("Processing variable"+ str(varid) +" in season"+ str(time) + " in plotset "+ str(sname) + " - variable " + str(counter) + "of " + str(vcount))
                     counter = counter+1
                     vard = pclass.all_variables( modelfts, obsfts, sname )
                     plotvar = vard[varid]
@@ -355,7 +355,7 @@ def run_diags( opts ):
                                 else:
                                     resc = uvc_composite_plotspec( res )
                                     filenames = resc.write_plot_data("xml-NetCDF", outdir )
-                                print "wrote plots",resc.title," to",filenames
+                                logger.info("wrote plots" + str(resc.title) + " to" + str(filenames))
 
                         elif res is not None:
                             ############################################################
@@ -373,7 +373,7 @@ def run_diags( opts ):
                                 else:
                                     name = basename+'_'+time+'_'+varid+auxstr+'-table.text'
                                 fname = os.path.join(outdir, name)
-                                print 'Creating file -----------------> ', fname
+                                logger.info('Creating file -----------------> '+ str(fname))
                                 f = open(fname, 'w')
                                 f.write(res)
                                 f.close()
@@ -381,7 +381,7 @@ def run_diags( opts ):
                                 # but len(res)==0, probably plot tables
                                 # eventually, education could get rid of the second clause here but I suspect not anytime soon.
                                 if opts['output']['table'] == True or res.__class__.__name__ is 'amwg_plot_set1': 
-                                    print 'IN TABLES'
+                                    logger.info('IN TABLES')
                                     resc = res
                                     if basename == '' and postname == '':
                                         where = outdir
@@ -390,16 +390,19 @@ def run_diags( opts ):
                                         where = ""
                                         name = basename+'_'+time+'_'+r_fname+'-table.text'
                                         fname = os.path.join(outdir,name)
-                                    print '-------> calling write_plot with where: %s, fname: %s' %(where, fname)
+                                    message = '-------> calling write_plot with where: %s, fname: %s' %(where, fname)
+                                    str(message)
+                                    logger.info(message)
 
                                     filenames = resc.write_plot_data("text", where=where, fname=fname)
                                     number_diagnostic_plots += 1
-                                    print "-------> wrote table",resc.title," to",filenames
+                                    logger.info( "-------> wrote table" + str(resc.title) +" to" + str(filenames))
                                 else:
-                                    print 'No data to plot for ', varid, ' ', aux
+                                    logger.info('No data to plot for ' + str(varid) + ' ' + str(aux) )
+
     vcanvas.close()
     vcanvas2.close()
-    print "total number of (compound) diagnostic plots generated =", number_diagnostic_plots
+    logger.info("total number of (compound) diagnostic plots generated =" + str(number_diagnostic_plots))
 
 
 def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=None):
@@ -440,19 +443,19 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
     #   which has the entire compound plot - that's vcanvas2
     gmobs, tmobs, tmmobs = return_templates_graphic_methods( vcanvas, gms, ovly, onPage )
     if 1==1: # optional debugging:
-        print '*************************************************'
-        print "tmpl nsingleplots=",nsingleplots,"nsimpleplots=",nsimpleplots
-        print "tmpl gms=",gms
-        print "tmpl len(res)=",len(res),"ovly=",ovly,"onPage=",onPage
-        print "tmpl gmobs=",gmobs
-        print 'TMOBS/TMMOBS:'
-        print tmobs
-        print tmmobs
+        logger.info('*************************************************')
+        logger.info("tmpl nsingleplots="+ str(nsingleplots) +"nsimpleplots=" + str(nsimpleplots))
+        logger.info("tmpl gms=" + str(gms))
+        logger.info("tmpl len(res)="+ str(len(res)) +"ovly=" + str(ovly) +"onPage=" + str(onPage))
+        logger.info("tmpl gmobs=" + str(gmobs))
+        logger.info('TMOBS/TMMOBS:')
+        logger.info(str(tmobs))
+        logger.info(str(tmobs))
         # if tmobs != None:
         #     print "tmpl tmobs=",[tm.name for tm in tmobs]
         # if tmmobs != None:
         #     print "tmpl tmmobs=",[tm.name for tm in tmmobs]
-        print '*************************************************'
+        logger.info('*************************************************')
 
     # gmmobs provides the correct graphics methods to go with the templates.
     # Unfortunately, for the moment we have to use rmr.presentation instead
@@ -530,7 +533,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
                     #### seasons/vars/setnames/varopts/etc used to create the plot. Otherwise, there is no
                     #### way for classic viewer to know the filename without lots more special casing. 
 
-                    print 'vname: ', vname
+                    logger.info('vname: ' + str(vname))
                     # I *really* hate to do this. Filename should be handled better at a level above diags*.py
                     special = ''
                     if 'RMSE_' in vname:
@@ -542,7 +545,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
                     if 'CORR_' in vname:
                         special='CORR'
                     if special != '':
-                        print '--> Special: ', special
+                        logger.info('--> Special: ' + str(special))
                         if ('_1' in vname and '_2' in vname) or '_MAP' in vname.upper():
                             fname = fnamebase+'-map.png'
                         elif '_1' in vname and '_2' not in vname:
@@ -552,7 +555,8 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
                         elif '_0' in vname and '_1' not in vname:
                             fname = fnamebase+'-ds0.png'
                         else:
-                            logging.warning('Couldnt determine filename; defaulting to just .png. vname: %s, fnamebase: %s', vname, fnamebase)
+                            message = 'Couldnt determine filename; defaulting to just .png. vname: %s, fnamebase: %s', vname, fnamebase
+                            logger.warn(str(message))
                             fname = fnamebase+'.png'
                     elif '_diff' in vname or ('_ft0_' in vname and '_ft1_' in vname) or\
                          ('_ft1_' in vname and '_ft2_' in vname):
@@ -774,7 +778,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
                             for i in range(len(var_id_save)):
                                 var[i].id = var_id_save[i]
                 if savePNG:
-                    print "WHEN PNGING WE GET :",vcanvas.getantialiasing()
+                    logger.info("WHEN PNGING WE GET :"+ str(vcanvas.getantialiasing()))
                     vcanvas.png( fname, ignore_alpha=True, metadata=provenance_dict() )
                     # vcanvas.svg() doesn't support ignore_alpha or metadata keywords
                     vcanvas.svg( fnamesvg )
@@ -793,7 +797,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
         fnamepdf = fname[:-3]+'pdf'
 
         if vcanvas2.backend.renWin is None:
-            print "no data to plot to file2:", fname
+            logger.warn("no data to plot to file2:"+ str(fname))
         else:
             logger.info("writing png file2:" + str(fname))
             logger.info("WHEN PNGING TWO @ @ @ @ @ 2 WE GET :"+ str(vcanvas2.getantialiasing()))
