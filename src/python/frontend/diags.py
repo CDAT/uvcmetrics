@@ -33,6 +33,8 @@ import cProfile
 from metrics.frontend.it import *
 from metrics.computation.region import *
 #import debug
+import logging
+logger = logging.getLogger(__name__)
 
 def setManualColormap(canvas=None, level=0):
     """
@@ -41,7 +43,7 @@ def setManualColormap(canvas=None, level=0):
     for the number of levels is 240.
     """
     if (canvas is None) or ((level==0) or (level>17)):
-        print "Incorrect use of function. One must suply a vcs canvas and the number of levels must be different than 0."
+        logger.error("Incorrect use of function. One must suply a vcs canvas and the number of levels must be different than 0.")
 
     dataColor = {
         0:(100,7.84,57.65),
@@ -136,7 +138,7 @@ def run_diags( opts ):
         times = ['ANN']
         logging.warning("Defaulting to time ANN. You can specify times with --seasons/--seasonally, --months/--monthly or --yearly")
     else:
-        print "Using times=",times
+        logger.info("Using times=" + str(times))
 
     # See if any variable options were passed in
     if opts['varopts'] is None:
@@ -154,7 +156,7 @@ def run_diags( opts ):
         for r in rnames:
             regl.append(defines.all_regions[r])
             regions.append(rectregion(r, defines.all_regions[r]))
-    print 'Using regions', regions
+    logger.info('Using regions'+ str(regions))
 
 
     number_diagnostic_plots = 0
@@ -203,7 +205,7 @@ def run_diags( opts ):
 
     # Ok, start the main loops.
     for sname in plotsets:
-        print "Working on ",sname," plots"
+        logger.info("Working on "+str(sname) + " plots")
 
         snum = sname.strip().split(' ')[0]
         # instantiate the class
@@ -247,8 +249,8 @@ def run_diags( opts ):
             # If the user sepcified variables, use them instead of the complete list
             variables = list( set(variables) & set(opts.get('vars',[])) )
             if len(variables)==0 and len(opts.get('vars',[]))>0:
-                logging.critical('Could not find any of the requested variables %s among %s', opts['vars'], variables)
-                print "among",variables
+                logger.critical('Could not find any of the requested variables %s among %s', opts['vars'], variables)
+                logger.critical("among" + str(variables))
                 sys.exit(1)
 
         # Ok, start the next layer of work - seasons and regions
@@ -259,7 +261,7 @@ def run_diags( opts ):
                 region_rect = defines.all_regions[str(region)]
                 r_fname = region_rect.filekey
                 rname = str(region)
-                print 'Region: ', rname
+                logger.info('Region: ' +str(rname))
                 print 'Region filename: ', r_fname
 
                 # loop over variables now
@@ -321,7 +323,7 @@ def run_diags( opts ):
                         #     print '------------->Done Dumping'
 
                         if res is not None and len(res)>0 and type(res) is not str: # Success, we have some plots to plot
-                            print '--------------------------------- res is not none'
+                            logger.info('--------------------------------- res is not none')
                             # Are we running from metadiags? If so, lets keep the name as simple as possible.
                             if basename == '' and postname == '':
                                 fname = 'figure-set'+snum+'_'+r_fname+'_'+time+'_'+varid+'_plot'
@@ -580,11 +582,12 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
                             logging.warning('Second spot - Couldnt determine filename; defaulting to just .png. vname: %s, fnamebase: %s', vname, fnamebase)
                             fname = fnamebase+'.png'
 
-                    print "png file name: ",fname
+                    logger.info("png file name: " + str(fname))
                     fnamesvg = fname[:-3]+'svg'
-                    print "svg file name: ",fnamesvg
+                    logger.info("svg file name: "+str(fnamesvg))
                     fnamepdf = fname[:-3]+'pdf'
-                    print "pdf file name: ",fnamepdf
+                    logger.info("pdf file name: "+ str(fnamepdf))
+
 
                 if vcs.isscatter(rsr.presentation) or (plot.number in ['11', '12'] and package.upper() == 'AMWG'):
                     #pdb.set_trace()
@@ -781,7 +784,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
             vname = varid.replace(' ', '_')
             vname = vname.replace('/', '_')
 
-        print 'vname in tmmobs: ',vname
+        logger.info("vname in tmmobs: " + str(vname))
         if '_diff' in vname:
             fname = fnamebase+'-combined-diff.png'
         else:
@@ -792,14 +795,14 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
         if vcanvas2.backend.renWin is None:
             print "no data to plot to file2:", fname
         else:
-            print "writing png file2:",fname
-            print "WHEN PNGING TWO @ @ @ @ @ 2 WE GET :",vcanvas2.getantialiasing()
+            logger.info("writing png file2:" + str(fname))
+            logger.info("WHEN PNGING TWO @ @ @ @ @ 2 WE GET :"+ str(vcanvas2.getantialiasing()))
             vcanvas2.png( fname , ignore_alpha = True, metadata=provenance_dict() )
-            print "writing svg file2: ",fnamesvg
+            logger.info("writing svg file2: "+ str(fnamesvg))
             # vcanvas2.svg() doesn't support ignore_alpha or metadata keywords
             vcanvas2.svg( fnamesvg )
 
-            print "writing pdf file2: ",fnamepdf
+            logger.info("writing pdf file2: " + fnamepdf)
             vcanvas2.pdf( fnamepdf )            
 
 if __name__ == '__main__':
