@@ -313,13 +313,13 @@ def run_diags( opts ):
 
                         # Do the work (reducing variables, etc)
                         res = plot.compute(newgrid=-1) # newgrid=0 for original grid, -1 for coarse
+
                         # print '************************************ PLOT DONE **********************************'
                         # print 'type res: ', type(res)
                         # if type(res) == str:
                         #     print '------------->Dump this to the file'
                         #     print res
                         #     print '------------->Done Dumping'
-
                         if res is not None and len(res)>0 and type(res) is not str: # Success, we have some plots to plot
                             print '--------------------------------- res is not none'
                             # Are we running from metadiags? If so, lets keep the name as simple as possible.
@@ -338,7 +338,7 @@ def run_diags( opts ):
                            
                                 name = basename+'_'+time+'_'+varid+auxname+'_'+pname+r_fname
                                 fname = os.path.join(outdir,name)
-                     
+                            
                             if opts['output']['plots'] == True:
                                 displayunits = opts.get('displayunits', None)                                    
                                 makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=displayunits)
@@ -349,8 +349,14 @@ def run_diags( opts ):
                                 # Probably make this a command line option.
                                 if res.__class__.__name__ is 'uvc_composite_plotspec':
                                     resc = res
+                                    resc.title.replace('\n', ' ')
                                     filenames = resc.write_plot_data("xml-NetCDF", outdir )
                                 else:
+                                    #new kludge
+                                    for PLOT in res:
+                                        PLOT.title = PLOT.title.replace('\n', ' ')
+                                        if varid not in PLOT.title and time not in PLOT.title:
+                                            PLOT.title = varid + ' ' + time + ' ' + PLOT.title
                                     resc = uvc_composite_plotspec( res )
                                     filenames = resc.write_plot_data("xml-NetCDF", outdir )
                                 print "wrote plots",resc.title," to",filenames
@@ -479,6 +485,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
             if tmmobs != []:
                 tm2 = tmmobs[ir]
             title = rsr.title
+
             rsr_presentation = rsr.presentation
             for varIndex, var in enumerate(rsr.vars):
                 savePNG = True

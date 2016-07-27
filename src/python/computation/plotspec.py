@@ -138,7 +138,6 @@ class plotspec(basic_id):
         levels = None,  # deprecated
         plotparms = None,
         displayunits = None, #units to be used for display
-        header = None #title for the entire graphic
         ):
         """Initialize a plotspec (plot specification).  Inputs are an id and plot type,
         and lists of x,y,z variables (as keys in the plotvars dictionary), functions to
@@ -224,7 +223,6 @@ class plotspec(basic_id):
         self.overplotline = overplotline
         self.levels = levels
         self.displayunits = displayunits 
-        self.header = header
 
     @classmethod
     def dict_id( cls, varid, varmod, seasonid, ft1, ft2=None, region='' ):

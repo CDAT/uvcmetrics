@@ -1396,9 +1396,9 @@ class amwg_plot_set5and6(amwg_plot_plan):
                     zvars = [vid1],  zfunc = (lambda z: z),
                     plottype = self.plottype,
                     #title = ' '.join([varnom,seasonid,filetable1._strid]) )
-                    header = ' '.join([varnom,seasonid]),
-                    title = 'model: '+model_case,
-                    source = ft1src,
+                    title = varnom + ' ' + seasonid + '\nmodel', # + model_case,
+                    #source = ft1src,
+                    source = model_case,
                     plotparms = plotparms[src2modobs(ft1src)])
                 all_plotnames.append(self.plot1_id)
                 
@@ -1408,9 +1408,9 @@ class amwg_plot_set5and6(amwg_plot_plan):
                     zvars = [vid1var],  zfunc = (lambda z: z),
                     plottype = self.plottype,
                     #title = ' '.join([varnom,seasonid,filetable1._strid,'variance']) )
-                    header = ' '.join([varnom,seasonid]),
-                    title = 'model variance: '+model_case,
-                    source = ft1src,
+                    title = 'model variance: ', #+ model_case,
+                    #source = ft1src,
+                    source = model_case,
                     plotparms = plotparms[src2modobs(ft1src)] )
                 all_plotnames.append(self.plot1var_id)
                 
@@ -1421,8 +1421,9 @@ class amwg_plot_set5and6(amwg_plot_plan):
                 zvars = [vid2],  zfunc = (lambda z: z),
                 plottype = self.plottype,
                 #title = ' '.join([varnom,seasonid,filetable2._strid]) )
-                title = 'observation: '+filterid,
-                source = ft2src,
+                title = 'observation', 
+                #source = ft2src,
+                source = filterid,
                 plotparms = plotparms[src2obsmod(ft2src)] )
             all_plotnames.append(self.plot2_id)
             
@@ -1433,7 +1434,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
                 plottype = self.plottype,
                 #title = ' '.join([varnom,seasonid,filetable1._strid,'-',filetable2._strid]) )
                 title = 'difference',
-                source = ', '.join([ft1src,ft2src]),
+                #source = ', '.join([ft1src,ft2src]),
                 plotparms = plotparms['diff'] )
 
             all_plotnames.append(self.plot3_id)
@@ -1529,9 +1530,8 @@ class amwg_plot_set5and6(amwg_plot_plan):
                 zvars = [vidl1],  zfunc = (lambda z: z),
                 plottype = self.plottype,
                 #title = ' '.join([varid,seasonid,filetable1._strid,'at',str(pselect)]) ) }
-                header = ' '.join([varid,seasonidk,'at',str(pselect)]),
-                title = 'model: '+ model_case,
-                source = ft1src,
+                title = varnom + ' ' + seasonid + '\n model',
+                source = model_case,
                 plotparms = plotparms[src2modobs(ft1src)] ) }
            
         if filetable2 is None:
@@ -1594,8 +1594,8 @@ class amwg_plot_set5and6(amwg_plot_plan):
                 zvars = [vidl2],  zfunc = (lambda z: z),
                 plottype = self.plottype,
                 #title = ' '.join([varid,seasonid,filetable2._strid,'at',str(pselect)]) )
-                title = 'observation: '+filterid,
-                source = ft2src,
+                title = 'observation',
+                source = filterid,
                 plotparms = plotparms[src2obsmod(ft2src)] )
         self.single_plotspecs[self.plot3_id] = plotspec(
                 #was vid = varid+'_diff',
@@ -1604,7 +1604,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
                 plottype = self.plottype,
                 #title = ' '.join([varid,seasonid,filetable1._strid,'-',filetable2._strid,'at',str(pselect)]) )
                 title = 'difference',
-                source = ', '.join([ft1src,ft2src]),
+                #source = ', '.join([ft1src,ft2src]),
                 plotparms = plotparms['diff'] )
 #                zerocontour=-1 )
         self.composite_plotspecs = {

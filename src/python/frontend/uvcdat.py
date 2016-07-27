@@ -260,6 +260,7 @@ class uvc_simple_plotspec():
         self.plotparms = plotparms
         self.displayunits = displayunits
         
+        
         # Initial ranges - may later be changed to coordinate with related plots:
         # For each variable named 'v', the i-th member of self.vars, (most often there is just one),
         # varmax[v] is the maximum value of v, varmin[v] is the minimum value of v,
@@ -1033,7 +1034,7 @@ class plot_plan(object):
         that means a coarser grid, typically from regridding model data to the obs grid.
         In the future regrid>0 will mean regrid everything to the finest grid and regrid<0
         will mean regrid everything to the coarsest grid."""
-        
+
         for v in self.reduced_variables.keys():
             #print v
             value = self.reduced_variables[v].reduce(None)
@@ -1145,7 +1146,7 @@ class plot_plan(object):
                 title = ps.title
             else:
                 title = ' '.join(labels)+' '+self._season_displayid  # do this better later
-                
+            
             #process the ranges if present
             zrange = ps.zrangevars
             z2range = ps.z2rangevars
