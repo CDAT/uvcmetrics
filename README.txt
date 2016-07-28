@@ -6,6 +6,5 @@ diags --model path="/path/to/directory/called/model",climos=yes --obs path="/pat
 
 use following file and create directory called "obs" and "model":
 
-obs : [http://uvcdat.llnl.gov/cdat/sample_data/uvcmetrics/obs/NCEP_ANN_climo.nc](http://uvcdat.llnl.gov/cdat/sample_data/uvcmetrics/obs/NCEP_ANN_climo.nc)
-model: [http://uvcdat.llnl.gov/cdat/sample_data/uvcmetrics/acme_lores_clm_climo/ANN_climo.nc](http://uvcdat.llnl.gov/cdat/sample_data/uvcmetrics/acme_lores_clm_climo/ANN_climo.nc)
-
+obs : http://uvcdat.llnl.gov/cdat/sample_data/uvcmetrics/obs/NCEP_ANN_climo.nc
+model: http://uvcdat.llnl.gov/cdat/sample_data/uvcmetrics/acme_lores_clm_climo/ANN_climo.nc
