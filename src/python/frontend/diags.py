@@ -120,14 +120,14 @@ def run_diags( opts ):
     outdir = opts['output']['outputdir']
     if outdir is None:
         outdir = os.path.join(os.environ['HOME'],"tmp","diagout")
-        logging.warning('Writing output to %s. Override with --outputdir option', outdir)
+        logger.warning('Writing output to %s. Override with --outputdir option', outdir)
     # Partsa of the eventual output filenames
     basename = opts['output']['prefix']
     postname = opts['output']['postfix']
       
     # This should probably be done in verify options()
     if opts['package'] is None:
-        logging.critical('Please specify a package name')
+        logger.critical('Please specify a package name')
         quit()
     else:
         package = opts['package']
@@ -136,7 +136,7 @@ def run_diags( opts ):
     times = opts.get ('times', None)
     if times is None or times == []:
         times = ['ANN']
-        logging.warning("Defaulting to time ANN. You can specify times with --seasons/--seasonally, --months/--monthly or --yearly")
+        logger.warning("Defaulting to time ANN. You can specify times with --seasons/--seasonally, --months/--monthly or --yearly")
     else:
         logger.info("Using times= %s" ,times)
 
@@ -186,7 +186,7 @@ def run_diags( opts ):
     else:
         # No plots. JSON? XML? NetCDF? etc
         # do something else
-        logging.warning('Not plotting. Do we need any setup to produce output files?')
+        logger.warning('Not plotting. Do we need any setup to produce output files?')
 
     # Initialize our diagnostics package class
     pclass = dm[package.upper()]()
@@ -196,7 +196,7 @@ def run_diags( opts ):
         keys = sm.keys()
         keys.sort()
         plotsets = [ keys[1] ]
-        logging.warning("plot sets not specified, defaulting to %s",plotsets[0])
+        logger.warning("plot sets not specified, defaulting to %s",plotsets[0])
     else:
         sndic = { setnum(s):s for s in sm.keys() }   # plot set number:name
         plotsets = []
@@ -434,7 +434,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
             ovly[ir] = 0
             ir += 1
     if None in gms:
-        logging.warning("Missing a graphics method. gms=%s",gms)
+        logger.warning("Missing a graphics method. gms=%s",gms)
     # Now get the templates which correspond to the graphics methods and overlay statuses.
     # tmobs[ir] is the template for plotting a simple plot on a page
     #   which has just one single-plot - that's vcanvas
@@ -618,7 +618,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
                                 plotcv2 = True
                                 savePNG = True
                         except vcs.error.vcsError as e:
-                            logging.exception("Making summary plot: %s", e)
+                            logger.exception("Making summary plot: %s", e)
                             savePNG = True
                     elif len(rsr.vars) == 2:
                         if varIndex == 0:
@@ -654,7 +654,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
                                 if varIndex+1 == len(rsr.vars):
                                     savePNG = True
                         except vcs.error.vcsError as e:
-                            logging.exception("Making summary plot: %s", e)
+                            logger.exception("Making summary plot: %s", e)
                             savePNG = True
                 elif vcs.isvector(rsr.presentation) or rsr.presentation.__class__.__name__=="Gv":
                     strideX = rsr.strideX
@@ -692,7 +692,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
                             # should come from the contour plot, but that doesn't seem to
                             # have them.
                     except vcs.error.vcsError as e:
-                        logging.exception("Making summary plot: %s", e)
+                        logger.exception("Making summary plot: %s", e)
                 elif vcs.istaylordiagram(rsr.presentation):
                     # this is a total hack that is related to the hack in uvdat.py
                     try:
@@ -722,7 +722,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
                     if displayunits != None:
                         if isinstance(displayunits,(list,tuple)):
                             if len(displayunits)>1:
-                                logging.warning("multiple displayunits not supported at this time, using: %s" % displayunits[0])
+                                logger.warning("multiple displayunits not supported at this time, using: %s" % displayunits[0])
                             displayunits=displayunits[0]
                         try:
                             scale = udunits(1.0, var.units)
@@ -731,7 +731,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
                             try:
                                 scale = float(displayunits)
                             except:
-                                logging.critical('Invalid display units: '+ displayunits)
+                                logger.critical('Invalid display units: '+ displayunits)
                                 sys.exit()                                
                         var = var*scale
                         var.units = displayunits
@@ -760,7 +760,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
                             plotcv2 = True
                             
                     except vcs.error.vcsError as e:
-                        logging.exception("Making summary plot: %s", e)
+                        logger.exception("Making summary plot: %s", e)
 
                     #restore var before the KLUDGE!!!
                     var = var_save                
