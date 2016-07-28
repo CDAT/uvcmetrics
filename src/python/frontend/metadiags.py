@@ -12,11 +12,12 @@ from metrics.fileio.findfiles import *
 from metrics.packages.diagnostic_groups import *
 from output_viewer.index import OutputIndex, OutputPage, OutputGroup, OutputRow, OutputFile, OutputMenu
 import vcs
+import logging
+logger = logging.getLogger(__file__)
 
 # If not specified on an individual variable, this is the default.
 def_executable = 'diags'
-import logging
-logger = logging.getLogger(__name__)
+
 # The user specified a package; see what collections are available.
 def getCollections(pname):
     allcolls = diags_collection.keys()
@@ -46,8 +47,8 @@ def getCollections(pname):
                     if diags_collection[c][v].get('package', False) != False and diags_collection[c][v]['package'].upper() == pname.upper():
                         colls.append(c)
 
-    message = 'The following diagnostic collections appear to be available: %s' %colls
-    logger.info(message)
+
+    logger.info('The following diagnostic collections appear to be available: %s' , colls)
     return colls
 
 
@@ -61,11 +62,11 @@ def makeTables(collnum, model_dict, obspath, outpath, pname, outlog, dryrun=Fals
 
     num_models = len(model_dict.keys())
     if vlist == []:
-        logging.warning('varlist was empty. Assuming all variables.')
+        logger.warn('varlist was empty. Assuming all variables.')
         vlist = ['ALL']
 
     if num_models > 2:
-        logging.critical('Only <=2 models supported for tables')
+        logger.critical('Only <=2 models supported for tables')
         quit()
 
     raw0 = None
@@ -127,10 +128,10 @@ def makeTables(collnum, model_dict, obspath, outpath, pname, outlog, dryrun=Fals
                     cf0 = 'no'
                     cf1 = 'no'
                     if ft0 == None:
-                        logging.warning('Variable %s requires raw data. No raw data provided. Passing', v)
+                        logger.warn('Variable %s requires raw data. No raw data provided. Passing', v)
                         continue
                     if num_models == 2 and ft1 == None:
-                        logging.warning('Variable %s requires raw data. No second raw dataset provided. Passing on differences', v)
+                        logger.warn('Variable %s requires raw data. No second raw dataset provided. Passing on differences', v)
                         continue
                     ps0 = '--model path=%s,climos=no' % (ft0.root_dir())
                     if num_models == 2:
@@ -152,7 +153,7 @@ def makeTables(collnum, model_dict, obspath, outpath, pname, outlog, dryrun=Fals
         # Ok, variable(s) and varopts ready to go. Get some path strings.
         # Create path strings.
         if ft0 == None:
-            logging.warning('ft0 was none')
+            logger.warn('ft0 was none')
             continue
         else:
             path0str = ps0
@@ -182,7 +183,8 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
         try:
             os.makedirs(outpath)
         except:
-            logging.exception('Failed to create directory %s', outpath)
+
+            logger.exception('Failed to create directory %s', outpath)
 
     try:
        outlog = open(os.path.join(outpath,'DIAGS_OUTPUT.log'), 'w')
@@ -191,7 +193,8 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
             os.mkdir(outpath)
             outlog = open(os.path.join(outpath,'DIAGS_OUTPUT.log'), 'w')
         except:
-            logging.exception('Couldnt create output log - %s/DIAGS_OUTPUT.log', outpath)
+
+            logger.exception('Couldnt create output log - %s/DIAGS_OUTPUT.log', outpath)
             quit()
 
     # Get some paths setup
@@ -245,7 +248,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
 
     # Now, loop over collections.
     for collnum in colls:
-        logger.info('Working on collection ' +  str(collnum))
+        logger.info('Working on collection %s', collnum)
 
         collnum = collnum.lower()
         coll_def = diags_collection[collnum]
@@ -301,7 +304,8 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
         optionsstr = ''
         if diags_collection[collnum].get('options', False) != False:
             # we have a few options
-             logger.info('Additional command line options to pass to diags.py - '+ str(diags_collection[collnum]['options']))
+
+             logger.info('Additional command line options to pass to diags.py -  %s', diags_collection[collnum]['options'])
             for k in diags_collection[collnum]['options'].keys():
                 optionsstr = optionsstr + '--%s %s ' % (k, diags_collection[collnum]['options'][k])
 
@@ -314,14 +318,17 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
         if diags_collection[collnum].get('mixed_packages', False) == False:  #no mixed
             # Check global package
             if diags_collection[collnum].get('package', False) != False and diags_collection[collnum]['package'].upper() != pname.upper():
-                logger.info(pname.upper())
-                logger.info(str(diags_collection[collnum]['package']))
+                message = pname.upper()
+                logger.info(str(message))
+                message = diags_collection[collnum]['package']
+                logger.info(str(message))
                 # skip over this guy
-                logging.warning('Skipping over collection %s', collnum)
+                logger.warn('Skipping over collection %s', collnum)
                 continue
         else:
             if diags_collection[collnum].get('package', False) != False and diags_collection[collnum]['package'].upper() == pname.upper():
-                logger.info('Processing collection '+str(collnum))
+
+                logger.info('Processing collection %s ', collnum)
                 packagestr = '--package '+pname
 
 
@@ -425,7 +432,8 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
                     if collnum != 'dontrun':
                         runcmdline(cmdline, outlog, dryrun)
                     else:
-                        logger.info('DONTRUN: ' + str(cmdline))
+                        message = cmdline
+                        logger.info('DONTRUN: %s', cmdline)
 
                 # let's save what the defaults are for this plotset
                 g_seasons = g_season
@@ -457,14 +465,14 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
 
                         if raw != False:
                             if raw0 == None:
-                                logging.critical('No raw dataset provided and this set requires raw data')
+                                logger.critical('No raw dataset provided and this set requires raw data')
                                 quit()
                             else:
                                 modelpath = raw0.root_dir()
                                 cf0 = 'no'
                             if raw1 == None and num_models == 2:
-                                logging.critical('2 or more datasets provided, but only one raw dataset provided.')
-                                logging.critical('This variable in this collection requires raw datasets for comparisons')
+                                logger.critical('2 or more datasets provided, but only one raw dataset provided.')
+                                logger.critical('This variable in this collection requires raw datasets for comparisons')
                                 quit()
                             else:
                                 modelpath1 = raw1.root_dir()
@@ -480,7 +488,8 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
                         if collnum != 'dontrun':
                             runcmdline(cmdline, outlog, dryrun)
                         else:
-                            logger.info('DONTRUN: ' + str(cmdline))
+
+                            logger.info('DONTRUN: %s', cmdline)
                 else: # different executable; just pass all option key:values as command line options.
                     # Look for a cmdline list in the options for this variable.
                     execstr = diags_collection[collnum].get('exec', def_executable) # should probably NOT be def_executable....
@@ -616,8 +625,8 @@ DIAG_TOTAL = 0
 
 
 def cmderr(popened):
-    message = "Command \n\"%s\"\n failed with code of %d" % (pid_to_cmd[popened.pid], popened.returncode)
-    logger.error(str(message))
+
+    logger.error("Command \n\"%s\"\n failed with code of %d",  pid_to_cmd[popened.pid], popened.returncode)
 
 
 def runcmdline(cmdline, outlog, dryrun=False):
@@ -683,14 +692,15 @@ def runcmdline(cmdline, outlog, dryrun=False):
                     if p.returncode != 0:
                         cmderr(p)
                     else:
-                        print '"%s"' % pid_to_cmd[p.pid], "succeeded. pid=", p.pid
+                        logger.info("%s succeeded. pid= %s", pid_to_cmd[p.pid], p.pid)
         cmd = " ".join(cmdline)
         active_processes.append(subprocess.Popen(cmd, stdout=outlog, stderr=outlog, shell=True))
         DIAG_TOTAL += 1
         PID = active_processes[-1].pid
         pid_to_cmd[PID] = cmd
-        print '"%s"' % cmd, "begun pid=", PID, 'diag_total = ', DIAG_TOTAL
 
+
+        logger.info("%s begun pid= %s diag_total= %s", cmd, PID, DIAG_TOTAL)
 # These 3 functions are used to add the variables to the database for speeding up
 # classic view
 def setnum( setname ):
@@ -743,9 +753,9 @@ def postDB(fts, dsname, package, host=None):
         vlstr = vlstr+', '.join(vl_tmp)
 
     string = '\'{"variables": "'+str(vl)+'"}\''
-    print 'Variable list: ', string
+    logger.info('Variable list: ' + string)
     command = "echo "+string+' | curl -d @- \'http://'+host+'/exploratory_analysis/dataset_variables/'+dsname+'/\' -H "Accept:application/json" -H "Context-Type:application/json"'
-    print 'Adding variable list to database on ', host
+    logger.info('Adding variable list to database on %s', host)
     subprocess.call(command, shell=True)
 
 
@@ -755,7 +765,7 @@ if __name__ == '__main__':
     opts.parseCmdLine()
     opts.verifyOptions()
     if opts['package'] == None or opts['package'] == '':
-        logging.critical('Please specify a package when running metadiags.')
+        logger.critical('Please specify a package when running metadiags.')
         quit()
 
     package = opts['package'].upper()
@@ -766,8 +776,10 @@ if __name__ == '__main__':
 
     if opts._opts["custom_specs"] is not None:
         execfile(opts._opts["custom_specs"])
-        print diags_collection['5']['CLDMED']
-        print diags_obslist
+        message =  diags_collection['5']['CLDMED']
+        logger.info(str(message))
+        message = diags_obslist
+        logger.info(str(message))
 
     # do a little (post-)processing on the model/obs passed in.
     model_fts = []
@@ -816,7 +828,7 @@ if __name__ == '__main__':
     outpath = opts['output']['outputdir']
     colls = opts['sets']
     if opts['dsname'] == None and dbflag == True:
-        logging.critical('Please provide a dataset name for this dataset for the database with the --dsname option')
+        logger.critical('Please provide a dataset name for this dataset for the database with the --dsname option')
         quit()
     dsname = opts['dsname']
     if dsname is None:
@@ -830,11 +842,11 @@ if __name__ == '__main__':
         xmlflag = False
 
     if dbflag is True and dbonly is True and (num_models == 0 or dsname is None or package is None):
-        logging.critical('Please specify --model, --dsname, and --package with the db update option')
+        logger.critical('Please specify --model, --dsname, and --package with the db update option')
         quit()
 
     if dbonly is True:
-        print 'Updating the remote database only...'
+        logger.info('Updating the remote database only...')
         postDB(fts, dsname, package, host=hostname)
         quit()
 
@@ -849,7 +861,9 @@ if __name__ == '__main__':
         fnm = os.path.join(outpath, "metadiags_commands.sh")
         dryrun = open(fnm, "w")
 
-        print "List of commands is in: %s",fnm
+
+        logger.info("List of commands is in: %s",fnm)
+
         if opts["sbatch"] > 0:
             print >> dryrun, "#!/bin/bash"
             print >> dryrun, """#SBATCH -p debug
@@ -892,7 +906,7 @@ module load uvcdat/batch
         if result != 0:
             cmderr(proc)
         else:
-            print '"%s"' % pid_to_cmd[proc.pid], "succeeded."
+            logger.info("%s succeeded.",pid_to_cmd[proc.pid])
 
     if opts["dryrun"]:
         if opts["sbatch"] > 0:
@@ -901,6 +915,6 @@ module load uvcdat/batch
 
     if opts["sbatch"] > 0:
         import shlex
-        cmd = "sbatch %s" % fnm
-        print "Commmand:", cmd
+        cmd =
+        logger.info("Commmand: sbatch %s",fnm)
         subprocess.call(shlex.split(cmd))

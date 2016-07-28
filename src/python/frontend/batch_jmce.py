@@ -21,6 +21,9 @@ from metrics.packages.amwg.derivations import *
 from metrics.packages.diagnostic_groups import *
 from metrics.frontend.uvcdat import *
 from metrics.frontend.options import *
+import logging
+logger = logging.getLogger(__file__)
+
 from pprint import pprint
 import cProfile
 #print amwg.__file__
@@ -42,7 +45,7 @@ path1 = os.path.join(os.environ["HOME"],  'Documents/Climatology/ClimateData/sim
 path2 = os.path.join(os.environ["HOME"],  'Documents/Climatology/ClimateData/obs/')
 #cmip5 test path2 = os.path.join(os.environ["HOME"],'cmip5/')
 tmppth = os.path.join(os.environ['HOME'], "Documents/Climatology/ClimateData/tmp")
-print tmppth
+logger.info(tmppth)
 #tmppth = os.environ['HOME']
 outpath = os.path.join(os.environ['HOME'],"Documents/Climatology/ClimateData/diagout")
 if not os.path.exists(tmppth):
@@ -69,7 +72,8 @@ opts1._opts['path']={'model':path1}
 opts1._opts['filter']=filt1
 opts1._opts['cachepath']=tmppth
 datafiles1 = dirtree_datafiles( opts1, pathid='model' )
-print "jfp datafiles1 is",datafiles1
+message = "jfp datafiles1 is",datafiles1
+logger.info(str(message))
 #pdb.set_trace()
 filetable1 = datafiles1.setup_filetable( "model" )
 
@@ -93,10 +97,12 @@ for pname,pclass in dm.items():
     if pname!="AMWG":
         continue
     package = pclass()
-    print "jfp pname=",pname
+
+    logger.info("jfp pname= %s",pname)
     #pdb.set_trace()
     sm = package.list_diagnostic_sets()
-    print len(sm)
+    message = len(sm)
+    logger.info(str(message))
     for sname,sclass in sm.items():
         print sclass.name
         #pdb.set_trace()
@@ -110,22 +116,33 @@ for pname,pclass in dm.items():
         #if sclass.name != '8 - Annual Cycle Contour Plots of Zonal Means ':
         #if sclass.name != ' 9- Horizontal Contour Plots of DJF-JJA Differences':
             continue   # for testing, only do one plot set
-        print "jfp sname=",sname
-        print package.list_seasons()
+
+
+        logger.info("jfp sname= %s",sname)
+        message = package.list_seasons()
+        logger.info(str(message))
+
         SEASONS = package.list_seasons() #+ ['DJF-JJA']
         for seasonid in SEASONS:
             #if seasonid != 'DJF':
             #if seasonid != 'DJF-JJA':
             if seasonid != 'ANN':
                 continue # for testing, only do one season
-            print "jfp seasonid=",seasonid
+
+            logger.info("jfp seasonid= %s",seasonid)
+
             variables = package.list_variables( filetable1, filetable2, sname  )
-            print "jfp variables=",variables
+
+            logger.info("jfp variables= %s",variables)
+
             for varid in variables:
                 if varid!='T':
                 #if varid!='gw':
                     continue # for testing, only do one variable
-                print "jfp varid=",varid
+
+
+                logger.info("jfp varid= %s",varid)
+
                 vard = package.all_variables( filetable1, filetable2, sname )
                 var = vard[varid]
                 varopt = var.varoptions()
@@ -138,7 +155,10 @@ for pname,pclass in dm.items():
                 for aux in varopt:
                     #if aux != '850 mbar':
                     #    continue
-                    print aux
+
+                    message = aux
+                    logger.info(str(message))
+
                     if True:   # single process
                         #print filetable2._id
                         plot = sclass( filetable1, filetable2, varid, seasonid, aux )
@@ -151,14 +171,19 @@ for pname,pclass in dm.items():
                         dpoll = 1 # 0.1 is good for set 6, 1 is good for set 4
                         for ipoll in range(10):
                             status = plotdata_status(proc)
-                            print "jfp At",tpoll,"seconds, status=",status
+
+
+                            logger.info("jfp At %s",tpoll,"seconds, status= %s",status)
+
                             if (not status) and ipoll>5:
                                 break
                             time.sleep(dpoll)
                             tpoll += dpoll
                         # plotdata_results will block until the process completes:
                         resf = plotdata_results( proc )  # file name in which results are written
-                        print "jfp results written in",resf
+
+                        logger.info("jfp results written in %s",resf)
+
                         number_diagnostic_plots += 1
                         res = None
                     if res is not None:
@@ -167,7 +192,8 @@ for pname,pclass in dm.items():
                         else:
                             resc = uvc_composite_plotspec( res )
                         number_diagnostic_plots += 1
-                        print "writing resc to",outpath
-                        resc.write_plot_data("xml-NetCDF", outpath )
 
-print "total number of diagnostic plots generated =", number_diagnostic_plots
+                        logger.info("writing resc to %s",outpath)
+
+                        resc.write_plot_data("xml-NetCDF", outpath )
+logger.info("total number of diagnostic plots generated = %s", number_diagnostic_plots)
