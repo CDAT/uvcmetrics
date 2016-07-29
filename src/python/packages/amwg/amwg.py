@@ -1390,8 +1390,9 @@ class amwg_plot_set5and6(amwg_plot_plan):
                     #title = ' '.join([varnom,seasonid,filetable1._strid]) )
                     title = ' '.join([varnom,seasonid,'(1)']),
                     source = ft1src,
-                    plotparms = plotparms[src2modobs(ft1src)] )
+                    plotparms = plotparms[src2modobs(ft1src)])
                 all_plotnames.append(self.plot1_id)
+                
             if vid1var is not None:
                 self.single_plotspecs[self.plot1var_id] = plotspec(
                     vid = ps.dict_idid(vid1var),
@@ -1402,6 +1403,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
                     source = ft1src,
                     plotparms = plotparms[src2modobs(ft1src)] )
                 all_plotnames.append(self.plot1var_id)
+                
         if filetable2 is not None and vid2 is not None:
             self.single_plotspecs[self.plot2_id] = plotspec(
                 vid = ps.dict_idid(vid2),
@@ -1412,6 +1414,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
                 source = ft2src,
                 plotparms = plotparms[src2obsmod(ft2src)] )
             all_plotnames.append(self.plot2_id)
+            
         if filetable1 is not None and filetable2 is not None and vid1 is not None and vid2 is not None:
             self.single_plotspecs[self.plot3_id] = plotspec(
                 vid = ps.dict_id(varnom,'diff',seasonid,filetable1,filetable2),
@@ -1421,6 +1424,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
                 title = ' '.join([varnom,seasonid,'(1)-(2)']),
                 source = ', '.join([ft1src,ft2src]),
                 plotparms = plotparms['diff'] )
+
             all_plotnames.append(self.plot3_id)
         if len(all_plotnames)>0:
             self.composite_plotspecs = {
@@ -1680,7 +1684,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
         tm2.source.priority        = 1
 
         tm2.units.priority = 1
-        
+
         try:
             #this is for the output of RMSE and CORRELATION
             tm1, tm2 = self.extraCustomizeTemplates((cnvs1, tm1), (cnvs2, tm2), var=var)
@@ -1712,12 +1716,26 @@ class amwg_plot_set5(amwg_plot_set5and6):
     name = '5 - Horizontal Contour Plots of Seasonal Means'
     number = '5'
     def extraCustomizeTemplates(self, (cnvs1, tm1), (cnvs2, tm2), data=None, varIndex=None, graphicMethod=None, var=None):
-        """Theis method does what the title says.  It is a hack that will no doubt change as diags changes."""
+        """Theis method does what the title says.  It is a hack that will no doubt change as diags changes.
+        It is a total hack. I'm embarassed to be part of it. Please find a better way!!!"""
         #(cnvs1, tm1), (cnvs2, tm2) = templates
         import pdb
-        if hasattr(var, 'RMSE'):
-            RMSE = round(var.RMSE, 2)
-            CORR = round(var.CORR, 2)
+        if hasattr(var, 'model') and hasattr(var, 'obs'): #these come from aminusb_2ax
+            from metrics.graphics.default_levels import default_levels
+            from metrics.computation.units import scale_data
+            from metrics.computation.compute_rmse import compute_rmse    
+            if self.varid in default_levels.keys():
+                #convert to the units specified in the default levels dictionay
+                displayunits = default_levels[self.varid].get('displayunits', None)
+                if displayunits is not None and var.model is not None and var.obs is not None:
+                    #print displayunits, var.model.units, var.obs.units
+                    var.model = scale_data( displayunits, var.model)
+                    var.obs   = scale_data( displayunits, var.obs) 
+            
+            RMSE, CORR = compute_rmse( var.model, var.obs )
+            
+            RMSE = round(RMSE, 2)
+            CORR = round(CORR, 2)
             textRMSE = cnvs2.createtext()
             textRMSE.string = 'RMSE = %.3g' % RMSE
             textRMSE.x = .075
@@ -1731,9 +1749,8 @@ class amwg_plot_set5(amwg_plot_set5and6):
             textCORR.y = .005
             textCORR.height = 10
             cnvs2.plot(textCORR, bg=1)              
-            #pdb.set_trace()
-        
-        return tm1, tm2    
+            
+        return tm1, tm2  
 class amwg_plot_set6(amwg_plot_plan):
     """represents one plot from AMWG Diagnostics Plot Set 6
     This is a vector+contour plot - the contour plot shows magnitudes and the vector plot shows both

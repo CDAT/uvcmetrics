@@ -73,6 +73,7 @@ class Options():
         self._opts['difflevels'] = None #levels for a difference plot
         self._opts['colormaps'] = {'model': 'rainbow', 'obs': 'rainbow', 'diff': 'bl_to_darkred'}
         self._opts['taskspernode'] = None
+        self._opts["displayunits"] = None
         
         self._opts['output']['compress'] = True
         self._opts['output']['json'] = False
@@ -260,6 +261,11 @@ class Options():
             logging.critical('Must be in this list: ' + ', '.join(vcs.listelements('colormap')))
             sys.exit()
 
+    def processDisplayunits(self, ID, displayunits):
+        """Check that the units are valid"""
+        self._opts['output'][ID] = displayunits
+        self._opts["displayunits"] = displayunits
+        pass
    ###
    ### The next few functions provide the ability to get valid options to the various parameters.
    ###
@@ -448,24 +454,42 @@ class Options():
 
 
         from metrics.graphics.default_levels import default_levels
-        import amwgmaster2
+        import amwgmaster, pdb
+
         if self._opts["levels"] is None:  # User did not specified options, let's auto this
             vr = self._opts["vars"][0]
+            if self._opts["varopts"] is not None:
+                vr=vr+"_%s" % self._opts["varopts"][0]
             if vr in default_levels:
                 self._opts["levels"] = default_levels[vr].get("OBS",{}).get("contours",None)
             else:
-                if vr in amwgmaster2.diags_varlist:
-                    vrlst = amwgmaster2.diags_varlist[vr]
-                    self._opts["levels"]=default_levels.get(vrlst.get("filekey","OH CRAP"),{}).get("OBS",{}).get("countours",None)
+                if vr in amwgmaster.diags_varlist:
+                    vrlst = amwgmaster.diags_varlist[vr]
+                    self._opts["levels"]=default_levels.get(vrlst.get("filekey","OH CRAP"),{}).get("OBS",{}).get("contours",None)
+            if self._opts["levels"] is not None:
+                self._opts["levels"].insert(0,-1.e20)
+                self._opts["levels"].append(1.e20)
+
         if self._opts["difflevels"] is None:  # User did not specified options, let's auto this
             vr = self._opts["vars"][0]
+            if self._opts["varopts"] is not None:
+                vr=vr+"_%s" % self._opts["varopts"][0]
             if vr in default_levels:
                 self._opts["difflevels"] = default_levels[vr].get("OBS",{}).get("difference",None)
             else:
-                if vr in amwgmaster2.diags_varlist:
-                    vrlst = amwgmaster2.diags_varlist[vr]
+                if vr in amwgmaster.diags_varlist:
+                    vrlst = amwgmaster.diags_varlist[vr]
                     self._opts["difflevels"]=default_levels.get(vrlst.get("filekey","OH CRAP"),{}).get("OBS",{}).get("difference",None)
+            if self._opts["difflevels"] is not None:
+                self._opts["difflevels"].insert(0,-1.e20)
+                self._opts["difflevels"].append(1.e20)
 
+        if self._opts["displayunits"] is None:  # User did not specified options, let's auto this
+            vr = self._opts["vars"][0]
+            if self._opts["varopts"] is not None:
+                vr=vr+"_%s" % self._opts["varopts"][0]
+            if vr in default_levels:
+                self._opts["displayunits"] = default_levels[vr].get("displayunits", None)
 
 #######
 ####### This should be modified to look in the master dictionary files...
@@ -648,11 +672,22 @@ class Options():
             
             runopts.add_argument('--translate', nargs='?', default='y',
                                  help="Enable translation for obs sets to datasets. Optional provide a colon separated input to output list e.g. DSVAR1:OBSVAR1")
+            runopts.add_argument('--dryrun',
+                                  help="Do not run anything simply store list of commands in file table_commands.sh for diags or metadiags_commands.sh for metadiags",
+                                  action="store_true")
+            runopts.add_argument('--sbatch',
+                                  help="Run sbatch with the specified number of nodes",
+                                  default=0,
+                                  type=int,
+                                  )
             if 'metadiags' not in progname and 'metadiags.py' not in progname:
                 runopts.add_argument('--vars', '--var', '-v', nargs='+',
                                      help="Specify variables of interest to process. The default is all variables which can also be specified with the keyword ALL")
                 runopts.add_argument('--regions', '--region', nargs='+', choices=all_regions.keys(),
                                      help="Specify a geographical region of interest. Note: Multi-word regions need quoted, e.g. 'Central Canada'")
+            else: 
+                runopts.add_argument('--custom_specs', default=None,
+                                     help="points to a file that will contain a custom dictionary updation the diags specs, see amwgmaster.py")
 
         timeopts = parser.add_argument_group('Time Options')
         if 'metadiags' not in progname and 'metadiags.py' not in progname:
@@ -692,8 +727,9 @@ class Options():
                help="Produce XML output files as part of climatology/diags generation")
             outopts.add_argument('--logo', choices=['no', 'yes']) # intentionally undocumented; meant to be passed via metadiags
             outopts.add_argument('--no-antialiasing', action="store_true",default = False) # intentionally undocumented; meant to be passed via metadiags
-            outopts.add_argument('--table', action='store_true') # intentionally undocumented; meant to be passed via metadiags
+            outopts.add_argument('--table', action='store_true', help="used to get data from individual files and create the table.") # intentionally undocumented; meant to be passed via metadiags
             outopts.add_argument('--colormaps', nargs='*', help="Specify one of 3 colormaps: model, obs or diff")
+            outopts.add_argument('--displayunits', nargs='*', help="Specify units for display")
         
         intopts = parser.add_argument_group('Internal-use primarily')
         # a few internal options not likely to be useful to anyone except metadiags
@@ -714,7 +750,7 @@ class Options():
                                   help="Update the database with output from this run? Yes, no, only update the database (don't run anything. primarily for testing)")
             metaopts.add_argument('--dsname',
                                   help="A unique identifier for the dataset(s). Used by classic viewer to display the data.")
-        
+
         if 'mpidiags' in progname or 'mpidiags.py' in progname:
             paropts = parser.add_argument_group('Parallel-specific')
             paropts.add_argument('--taskspernode', 
@@ -809,7 +845,17 @@ class Options():
 
         if args.colormaps != None:
             self.processColormaps('colormaps', args.colormaps)
-                   
+
+        if args.displayunits != None:
+            self.processDisplayunits('displayunits', args.displayunits)
+        
+        if "metadiags" in progname:
+            if args.custom_specs is not None:
+                print "Using custom dict"
+                if not os.path.exists(args.custom_specs):
+                    raise "Error could not open custom specifications file at: %s" % args.custom_specs
+            self._opts["custom_specs"] = args.custom_specs
+
         # I checked; these are global and it doesn't seem to matter if you import cdms2 multiple times;
         # they are still set after you set them once in the python process.
         if(args.compress != None):
@@ -836,8 +882,7 @@ class Options():
                 self._opts['dbopts'] = args.updatedb
             if args.dsname != None:
                 self._opts['dsname'] = args.dsname
-        
-        
+                
         # Disable the UVCDAT logo in plots for users (typically metadiags) that know about this option
         if 'climatology' not in progname and 'climatology.py' not in progname:
             if args.logo != None:
@@ -880,7 +925,10 @@ class Options():
                 print args.translate
                 print self._opts['translate']
                 quit()
-
+            self._opts['dryrun'] = args.dryrun
+            self._opts['sbatch'] = args.sbatch
+            if args.sbatch>0:
+                self._opts["dryrun"] = True
         self._opts['verbose'] = args.verbose
         
         # Help create output file names

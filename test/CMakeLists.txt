@@ -115,3 +115,10 @@ ${metrics_SOURCE_DIR}/test/diagtest15.py
 --datadir=${UVCMETRICS_TEST_DATA_DIRECTORY}/
 --baseline=${BASELINE_DIR}/ )
 set_tests_properties(diags_test_15 PROPERTIES DEPENDS diags_test_13)
+
+add_test("diags_meta"
+"python"
+${metrics_SOURCE_DIR}/test/diagtest15.py
+--datadir=${UVCMETRICS_TEST_DATA_DIRECTORY}/
+--baseline=${BASELINE_DIR}/ )
+set_tests_properties(diags_meta PROPERTIES DEPENDS diags_test_15)

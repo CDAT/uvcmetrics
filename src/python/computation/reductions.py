@@ -2166,6 +2166,10 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
             (preferred_units is not None or mv1.units!=mv2.units):
         # Very ad-hoc, but more general would be less safe:
         # BES - set 3 does not seem to call it rv_QFLX. It is set3_QFLX_ft0_climos, so make this just a substring search
+        if mv1.units == "gpm":
+            mv1.units="m"
+        if mv2.units == "gpm":
+            mv2.units="m"
         if mv1.units=='mb':
             mv1.units = 'mbar' # udunits uses mb for something else
         if mv2.units=='mb':
@@ -2210,6 +2214,7 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
             mv1.units = 'mm' # [if 1 kg = 10^6 mm^3 as for water]
         if mv2.units=='kg/m2' and mv1.units=='mm':
             mv2.units = 'mm' # [if 1 kg = 10^6 mm^3 as for water]
+
 
         if preferred_units is None:
             # Look for whichever of mv1.units, mv2.units gives numbers more O(1).
@@ -2355,16 +2360,10 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
     if len(axes1[0])==len(axes2[0]):
         # Only axis2 differs, there's a better way...
         aminusb = aminusb_ax2( mv1, mv2 )
-
-        #compute rmse and correlations
-        import genutil.statistics, numpy
-        aminusb.RMSE = numpy.infty
-        aminusb.CORR = numpy.infty
-        try:
-            aminusb.RMSE = float( genutil.statistics.rms(mv1, mv2, axis='xy') )
-            aminusb.CORR = float( genutil.statistics.correlation(mv1, mv2, axis='xy') )
-        except Exception,err:
-            print err, "<<<<<<<<<<<<<<<<<<<"
+        
+        #save arrays for rmse and correlations KLUDGE!
+        aminusb.model = mv1
+        aminusb.obs   = mv2
 
         return aminusb
 
@@ -2412,15 +2411,9 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
     aminusb = mv1new - mv2new
     aminusb.id = 'difference of '+mv1.id
 
-    #compute rmse and correlations
-    import genutil.statistics, numpy
-    aminusb.RMSE = numpy.infty
-    aminusb.CORR = numpy.infty
-    try:
-        aminusb.RMSE = float( genutil.statistics.rms(mv1new, mv2new, axis='xy') )
-        aminusb.CORR = float( genutil.statistics.correlation(mv1new, mv2new, axis='xy') )
-    except Exception,err:
-        print err, "<<<<<<<<<<<<<<<<<<<"
+    #save arrays for rmse and correlations KLUDGE!
+    aminusb.model = mv1new
+    aminusb.obs   = mv2new
 
     if hasattr(mv1,'long_name'):
         aminusb.long_name = 'difference of '+mv1.long_name
