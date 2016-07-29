@@ -1396,7 +1396,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
                     zvars = [vid1],  zfunc = (lambda z: z),
                     plottype = self.plottype,
                     #title = ' '.join([varnom,seasonid,filetable1._strid]) )
-                    title = varnom + ' ' + seasonid + '\nmodel', # + model_case,
+                    title = varnom + ' ' + seasonid + ' model ' + model_case,
                     #source = ft1src,
                     source = model_case,
                     plotparms = plotparms[src2modobs(ft1src)])
@@ -1408,7 +1408,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
                     zvars = [vid1var],  zfunc = (lambda z: z),
                     plottype = self.plottype,
                     #title = ' '.join([varnom,seasonid,filetable1._strid,'variance']) )
-                    title = 'model variance: ', #+ model_case,
+                    title = 'model variance ' + model_case,
                     #source = ft1src,
                     source = model_case,
                     plotparms = plotparms[src2modobs(ft1src)] )
@@ -1421,7 +1421,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
                 zvars = [vid2],  zfunc = (lambda z: z),
                 plottype = self.plottype,
                 #title = ' '.join([varnom,seasonid,filetable2._strid]) )
-                title = 'observation', 
+                title = 'observation ' + filterid, 
                 #source = ft2src,
                 source = filterid,
                 plotparms = plotparms[src2obsmod(ft2src)] )
@@ -1616,6 +1616,24 @@ class amwg_plot_set5and6(amwg_plot_plan):
         """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
         
+
+        #more kludgy than ever before
+        #var seems to be the only way to get the required titles.
+        #I think this was a result of another kludge
+        header = None
+        s = var.title.split(' ')
+        if len(s) == 4:
+            header = s[0] + ' ' + s[1]
+            var.title = s[2]
+            source = s[3]
+        elif len(s) == 2:
+            var.title = s[0]
+            source = s[1]
+        else:
+            source = None
+
+        #pdb.set_trace()
+
         tm2.yname.priority  = 1
         tm2.xname.priority  = 1
         tm1.yname.priority  = 1
@@ -1682,14 +1700,25 @@ class amwg_plot_set5and6(amwg_plot_plan):
         tm2.xname.textorientation = xnameOri
         tm2.xname.y              -= 0.003
 
-        tm2.mean.y -= 0.005
+        #tm2.mean.y -= 0.005
+        tm2.min.x = tm2.data.x2
+        tm2.min.y = tm2.data.y2 + .01
+
+        tm2.mean.y = tm2.min.y  + 0.015
+        tm2.mean.x = tm2.min.x
+
+        #tm2.max.y -= 0.005
+        tm2.max.x = tm2.min.x
+        tm2.max.y = tm2.min.y + 0.03
 
         titleOri                  = cnvs2.gettextorientation(tm2.title.textorientation)
         titleOri.height           = 11.5
         tm2.title.textorientation = titleOri
 
-        tm2.max.y -= 0.005
-        
+
+        tm2.mean.textorientation = tm2.max.textorientation
+        tm2.title.y              = tm2.min.y
+
         sourceOri                  = cnvs2.gettextorientation(tm2.source.textorientation)
         sourceOri.height           = 8.0
         tm2.source.textorientation = sourceOri
@@ -1697,7 +1726,35 @@ class amwg_plot_set5and6(amwg_plot_plan):
         tm2.source.x               = tm2.data.x1
         tm2.source.priority        = 1
 
+        tm2.units.y = tm2.min.y
         tm2.units.priority = 1
+
+        #for some reason the source is not being put on the combined graphic
+        #So I needed to create it from var.title and put it there. The only
+        #reason var is being passed is for some other kludge.
+        if source is not None:
+            text = cnvs2.createtext()
+            text.string = source
+            text.x = tm2.data.x1
+            text.y = tm2.data.y2 + 0.01
+            text.height = 10
+            cnvs2.plot(text, bg=1)  
+        
+        #create the header for the plot    
+        if header is not None:
+            text = cnvs2.createtext()
+            text.string = header
+            text.x = (tm2.data.x1 + tm2.data.x2)/2
+            text.y = tm2.data.y2 + 0.03
+            text.height = 16
+            text.halign = 1
+            cnvs2.plot(text, bg=1)  
+
+        #cleanup the  labels
+        tm2.xlabel1.y -= .004
+        tm2.ylabel1.x -= .004
+        tm2.xname.y -= .004
+        tm2.yname.x -= .004
 
         try:
             #this is for the output of RMSE and CORRELATION
@@ -1751,16 +1808,16 @@ class amwg_plot_set5(amwg_plot_set5and6):
             RMSE = round(RMSE, 2)
             CORR = round(CORR, 2)
             textRMSE = cnvs2.createtext()
-            textRMSE.string = 'RMSE = %.3g' % RMSE
-            textRMSE.x = .075
-            textRMSE.y = .005
+            textRMSE.string = 'RMSE  = %.3g' % RMSE
+            textRMSE.x = tm2.data.x2+.005 #.075
+            textRMSE.y = tm2.data.y1#.005
             textRMSE.height = 10
             cnvs2.plot(textRMSE, bg=1)  
 
             textCORR = cnvs2.createtext()
-            textCORR.string = 'Correlation = %.3g' % CORR
-            textCORR.x = .25
-            textCORR.y = .005
+            textCORR.string = 'CORR = %.3g' % CORR
+            textCORR.x = textRMSE.x #.25
+            textCORR.y = tm2.data.y1 - .015 #.005
             textCORR.height = 10
             cnvs2.plot(textCORR, bg=1)              
             

@@ -270,7 +270,6 @@ def run_diags( opts ):
                     counter = counter+1
                     vard = pclass.all_variables( modelfts, obsfts, sname )
                     plotvar = vard[varid]
-
                     # Find variable options.  If none were requested, that means "all".
                     vvaropts = plotvar.varoptions()
                     if vvaropts is None:
@@ -354,9 +353,10 @@ def run_diags( opts ):
                                 else:
                                     #new kludge
                                     for PLOT in res:
-                                        PLOT.title = PLOT.title.replace('\n', ' ')
-                                        if varid not in PLOT.title and time not in PLOT.title:
-                                            PLOT.title = varid + ' ' + time + ' ' + PLOT.title
+                                        if hasattr(PLOT, 'title'):
+                                            PLOT.title = PLOT.title.replace('\n', ' ')
+                                            if varid not in PLOT.title and time not in PLOT.title:
+                                                PLOT.title = varid + ' ' + time + ' ' + PLOT.title
                                     resc = uvc_composite_plotspec( res )
                                     filenames = resc.write_plot_data("xml-NetCDF", outdir )
                                 print "wrote plots",resc.title," to",filenames
@@ -738,11 +738,10 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
                         var = var*scale
                         var.units = displayunits
                         var.id = '' #this was clearer earlier; var=anything makes an id
-                        
+
                     if hasattr(plot, 'customizeTemplates'):
                         tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)], data=var,
                                                            varIndex=varIndex, graphicMethod=rsr.presentation, var=var )
-
                     # Single plot              
                     plot.vcs_plot(vcanvas, var, rsr.presentation, tm, bg=1,
                                   title=title, source=rsr.source,  
