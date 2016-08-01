@@ -11,6 +11,9 @@
 from metrics.common.utilities import *
 from unidata import udunits
 import numpy
+import logging
+
+logger = logging.getLogger(__file__)
 
 def reconcile_energyflux_precip(mv1, mv2, preferred_units=None):
     # To compare LHFLX and QFLX, need to unify these to a common variables
@@ -51,7 +54,7 @@ def reconcile_energyflux_precip(mv1, mv2, preferred_units=None):
         if mv2.units!=preferred_units:
             mv2 = convert_energyflux_precip(mv2, preferred_units)
     else:
-        print "ERROR: missing units in arguments to reconcile_energyflux_precip."
+        logger.error("missing units in arguments to reconcile_energyflux_precip.")
         exit
 
     return mv1,mv2
@@ -111,7 +114,7 @@ def convert_energyflux_precip(mv, preferred_units):
             s,i = tmp.how(preferred_units)
         except Exception as e:
             # conversion not possible.
-            print "ERROR could not convert from",mv.units,"to",preferred_units
+            logger.error("could not convert from %s to %s" ,mv.units, preferred_units)
             raise e
         if not ( numpy.allclose(s,1.0) and numpy.allclose(i,0.0) ):
             mv = s*mv + i
