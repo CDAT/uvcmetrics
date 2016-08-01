@@ -31,7 +31,9 @@ from metrics.common.utilities import *
 import metrics.frontend.defines as defines
 from metrics.frontend.it import *
 from metrics.computation.region import *
+import logging
 
+logger = logging.getLogger(__file__)
 verbosity = 1
 
 # This script parses {amwg|lmwg}master.py to determine the work to be done.
@@ -710,7 +712,7 @@ def make_plots(res, vcanvas, vcanvas2, varid, fnamebase, outpath, plot, package)
          ovly[ir] = 0
          ir += 1
    if None in gms:
-      print "WARNING, missing a graphics method. gms=",gms
+      logger.warn("missing a graphics method. gms= %s" ,gms)
    # Now get the templates which correspond to the graphics methods and overlay statuses.
    # tmobs[ir] is the template for plotting a simple plot on a page
    #   which has just one single-plot - that's vcanvas
@@ -821,7 +823,7 @@ def make_plots(res, vcanvas, vcanvas2, varid, fnamebase, outpath, plot, package)
                         plotcv2 = True
                         savePNG = True
                   except vcs.error.vcsError as e:
-                     print "ERROR making summary plot:",e
+                     logger.error("ERROR making summary plot: %s",e)
                      savePNG = True                                              
                elif len(rsr.vars) == 2:
                   if varIndex == 0:
@@ -872,7 +874,7 @@ def make_plots(res, vcanvas, vcanvas2, varid, fnamebase, outpath, plot, package)
                         if varIndex+1 == len(rsr.vars):
                            savePNG = True
                   except vcs.error.vcsError as e:
-                     print "ERROR making summary plot:",e
+                     logger.error("error making summary plot: %s",e)
                      savePNG = True
             elif vcs.isvector(rsr.presentation) or rsr.presentation.__class__.__name__=="Gv":
                strideX = rsr.strideX
@@ -896,7 +898,7 @@ def make_plots(res, vcanvas, vcanvas2, varid, fnamebase, outpath, plot, package)
                         # should come from the contour plot, but that doesn't seem to
                         # have them.
                except vcs.error.vcsError as e:
-                  print "ERROR making summary plot:",e
+                  logger.error("error making summary plot: %s", e)
             elif vcs.istaylordiagram(rsr.presentation):
                # this is a total hack that is related to the hack in uvdat.py
                vcanvas.legendTitles = rsr.legendTitles
@@ -932,7 +934,7 @@ def make_plots(res, vcanvas, vcanvas2, varid, fnamebase, outpath, plot, package)
                         source = rsr.source, compoundplot=onPage )
                      plotcv2 = True
                except vcs.error.vcsError as e:
-                  print "ERROR making summary plot:",e
+                  logger.error("error making summary plot: %s", e)
             if var_id_save is not None:
                if type(var_id_save) is str:
                   var.id = var_id_save
@@ -941,7 +943,7 @@ def make_plots(res, vcanvas, vcanvas2, varid, fnamebase, outpath, plot, package)
                      var[i].id = var_id_save[i]
             if savePNG:
                if verbosity >= 2:
-                  print 'ABOUT TO SAVE ', fname
+                  logger.info('ABOUT TO SAVE %s', fname)
                vcanvas.png( fname, ignore_alpha=True, metadata=provenance_dict() )
                if verbosity >= 2:
                   print 'DONE SAVING ', fname

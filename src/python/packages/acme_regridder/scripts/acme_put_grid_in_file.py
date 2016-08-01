@@ -7,6 +7,9 @@ import MV2
 import argparse
 from metrics.common import store_provenance
 
+
+logger = logging.getLogger(__file__)
+
 if __name__=="__main__":
   value = 0
   cdms2.setNetcdfShuffleFlag(value) ## where value is either 0 or 1
@@ -79,6 +82,6 @@ if __name__=="__main__":
         print "Storing %s as is" % v
       fo.write(V)
     except Exception,err:
-      logging.exception("Error processing: %s\n%s", v, err)
+      logger.exception("Error processing: %s\n%s", v, err)
 fo.close()
 print "Done, new file is: %s" % args.out
