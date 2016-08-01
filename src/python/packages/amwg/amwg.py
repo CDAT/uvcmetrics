@@ -647,8 +647,6 @@ class amwg_plot_set2(amwg_plot_plan):
         yLabel.height = 9.0
         cnvs2.plot(yLabel, bg = 1)
 
-        deltaX = 0.03
-
         titleOri                  = cnvs2.gettextorientation(tm2.title.textorientation)
         titleOri.height           = 11.5
         tm2.title.textorientation = titleOri
@@ -657,7 +655,9 @@ class amwg_plot_set2(amwg_plot_plan):
         sourceOri.height           = 9.0
         tm2.source.textorientation = sourceOri
         tm2.source.y               = tm2.units.y - 0.01
-        tm2.source.x               = tm2.data.x1 + deltaX       
+        if varIndex==0:
+            deltaX = 0.03
+            tm2.source.x               = tm2.data.x1 + deltaX       
 
         tm2.units.priority = 0
 
@@ -669,20 +669,21 @@ class amwg_plot_set2(amwg_plot_plan):
         tm2.ytic2.line = line
         tm2.xtic2.line = line
         
-        tm2.data.x1      += deltaX
-        tm2.data.x2      += deltaX
-        tm2.box1.x1      += deltaX
-        tm2.box1.x2      += deltaX
-        tm2.ytic1.x1     += deltaX
-        tm2.ytic1.x2     += deltaX
-        tm2.ytic2.x1     += deltaX
-        tm2.ytic2.x2     += deltaX
-        tm2.ylabel1.x    += deltaX
-        tm2.ymintic1.x1  += deltaX
-        tm2.ymintic1.x2  += deltaX
-        #tm2.units.x     += deltaX
-        tm2.title.x      += deltaX
-        tm2.xname.x      += deltaX        
+        if varIndex==0:
+            tm2.data.x1      += deltaX
+            tm2.data.x2      += deltaX
+            tm2.box1.x1      += deltaX
+            tm2.box1.x2      += deltaX
+            tm2.ytic1.x1     += deltaX
+            tm2.ytic1.x2     += deltaX
+            tm2.ytic2.x1     += deltaX
+            tm2.ytic2.x2     += deltaX
+            tm2.ylabel1.x    += deltaX
+            tm2.ymintic1.x1  += deltaX
+            tm2.ymintic1.x2  += deltaX
+            #tm2.units.x     += deltaX
+            tm2.title.x      += deltaX
+            tm2.xname.x      += deltaX
         
         return tm1, tm2
 
