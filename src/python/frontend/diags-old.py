@@ -575,7 +575,7 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
 
     vcanvas2.close()
     vcanvas.close()
-    logger.info("total number of (compound) diagnostic plots generated = %s", number_diagnostic_plots)
+    print "total number of (compound) diagnostic plots generated = %s", number_diagnostic_plots
 
 if __name__ == '__main__':
    print "UV-CDAT Diagnostics, command-line version"

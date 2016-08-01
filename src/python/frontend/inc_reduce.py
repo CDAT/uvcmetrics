@@ -43,6 +43,10 @@ from numbers import Number
 from pprint import pprint
 import time
 from metrics.packages.acme_regridder.scripts.acme_regrid import addVariable
+import logging
+
+logger = logging.getLogger(__file__)
+
 #import debug
 
 # Silence annoying messages about setting the NetCDF file type.  Also, these three lines will
@@ -745,7 +749,7 @@ def update_time_avg_from_files( redvars0, redtime_bnds, redtime_wts, filenames,
                     newvard[varid] = newvar
                     redvard[varid] = redvar
                 else:
-                    print "skipping",redvar.id
+                    logger.info( "skipping %s",redvar.id )
             except Exception as e:
                 if varid!='climatology_bnds':  # I know about this one.
                     logging.exception("skipping %s due to exception", redvar.id)
@@ -786,12 +790,12 @@ def test_time_avg( redfilename, varnames, datafilenames ):
     init_data_tbounds = data_time.getBounds()[0]
     # N is used to start the intervals off in the right year.  Note that this works only if calendar has a fixed-length year
     N = math.floor(data_time[0]/365.)
-    print "N=",N
-    print "data_time=",data_time, data_time[0]-N*365, data_time[-1]-N*365
-    print "init_data_tbounds=",init_data_tbounds, [init_data_tbounds[0]-N*365,init_data_tbounds[1]-N*365]
+    logger.info("N= %s",N)
+    logger.info("data_time= %s %s %s",data_time, (data_time[0]-N*365), (data_time[-1]-N*365))
+    logger.info("init_data_tbounds= %s %s %s ",init_data_tbounds,[init_data_tbounds[0]-N*365],[init_data_tbounds[1]-N*365])
     init_red_tbounds = numpy.array([[150,240]], dtype=numpy.int32) # example time interval for a single season - not all times
     init_red_tbounds = init_red_tbounds + N*365
-    print "init_red_tbounds=",init_red_tbounds
+    logger.info("init_red_tbounds= %s",init_red_tbounds)
 
     #                              go into time-reduced data if dt=365
     initialize_redfile_from_datafile( redfilename, varnames, datafilenames[0], dt,
@@ -818,11 +822,11 @@ def test_time_avg( redfilename, varnames, datafilenames ):
     redtime_wts = g('time_weights')
     TS = g('TS')
     PS = g('PS')
-    print "redtime=",redtime
-    print "redtime_bnds=",redtime_bnds
-    print "redtime_wts=",redtime_wts
-    print "TS=",TS
-    print "PS=",PS
+    logger.info("redtime= %s",redtime)
+    logger.info("redtime_bnds= %s",redtime_bnds)
+    logger.info("redtime_wts= %s",redtime_wts)
+    logger.info("TS= %s",TS)
+    logger.info("PS= %s",PS)
 
 if __name__ == '__main__':
     if len( sys.argv )>=2:
