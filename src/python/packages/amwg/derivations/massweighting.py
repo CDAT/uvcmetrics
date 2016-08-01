@@ -18,6 +18,9 @@ import logging
 from atmconst import AtmConst
 from unidata import udunits
 
+
+logger = logging.getLogger(__file__)
+
 def rhodz_from_hybridlev( PS, P0, hyai, hybi ):
     """returns a variable rhodz which represents the air mass column density in each cell, assumes
     kg,m,sec,mbar units and 3-D grid lon,lat,level.  The input variables are from CAM."""
@@ -153,11 +156,11 @@ def check_compatible_levels( var, pvar, strict=False ):
     if compatible:
         return 0
     else:
-        print "numbers of levels: ",var.id,":",len(vlev),";",pvar.id,":",len(plev)
+        logger.debug("numbers of levels:  %s : %s ; %s : %s",var.id,len(vlev),pvar.id,len(plev))
         if strict:
-            raise DiagError("ERROR, numbers of levels are not compatible with mass weighting.")
+            logger.error("numbers of levels are not compatible with mass weighting.")
         else:
-            logging.warning("Poor levels for mass weighting, variables %s %s",var.id,pvar.id)
+            logger.warn("Poor levels for mass weighting, variables %s %s",var.id,pvar.id)
             return len(vlev)+1
 
 def rhodz_from_mv( mv ):
@@ -194,7 +197,7 @@ def area_times_rhodz( mv, rhodz ):
     for k in range( rhodz.shape[0] ):  # k is level index
         wtlll[k,:,:] = rhodz[k,:,:]*wtll
     if wtlll.max()<=0.0:
-        print "debug WRONG WRONG WRONG weights wtlll...",wtlll
+        logger.debug("debug WRONG WRONG WRONG weights wtlll... %s",wtlll)
     return wtlll
 
 def mass_weights( mv ):

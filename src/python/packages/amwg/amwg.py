@@ -19,6 +19,9 @@ from unidata import udunits
 import cdutil.times, numpy
 from numbers import Number
 from pprint import pprint
+import logging
+
+logger = logging.getLogger(__file__)
 
 seasonsyr=cdutil.times.Seasons('JFMAMJJASOND')
 
@@ -391,16 +394,16 @@ class amwg_plot_plan(plot_plan):
                 #print "dbg in second round, found",varnom,"computable by",func,"from",inputs
                 break
         if len(rvs)<=0:
-            print "WARNING, no inputs found for",varnom,"in filetable",filetable.id()
-            print "filetable source files=",filetable._filelist[0:10]
-            print "need inputs",svd.inputs()
+            logger.warn("no inputs found for %s in filetable %s",varnom, filetable.id())
+            logger.warn("filetable source files= %s %s",filetable._filelist[0:10])
+            logger.warn("need inputs %s",svd.inputs())
             return None,[],[]
             #raise DiagError( "ERROR, don't have %s, and don't have sufficient data to compute it!"\
             #                     % varnom )
         if not computable:
-            print "DEBUG: standard variable",varnom,"is not computable"
-            print "need inputs",svd.inputs()
-            print "found inputs",[rv.id() for rv in rvs]+[drv.id() for drv in dvs]
+            logger.debug("DEBUG: standard variable %s is not computable", varnom)
+            logger.debug( "need inputs %s" ,svd.inputs())
+            logger.debug("found inputs %s",([rv.id() for rv in rvs]+[drv.id() for drv in dvs]))
             return None,[],[]
         seasonid = season.seasons[0]
         vid = derived_var.dict_id( varnom, '', seasonid, filetable )
@@ -437,9 +440,9 @@ class amwg_plot_set2(amwg_plot_plan):
         self.plottype='Yxvsx'
         vars = self._list_variables(model, obs)
         if varid not in vars:
-            print "In amwg_plot_set2 __init__, ignoring varid input, will compute Ocean_Heat"
+            logger.info("In amwg_plot_set2 __init__, ignoring varid input, will compute Ocean_Heat")
             varid = vars[0]
-        print "Warning: amwg_plot_set2 only uses NCEP obs, and will ignore any other obs specification."
+        logger.warn("amwg_plot_set2 only uses NCEP obs, and will ignore any other obs specification.")
         # TO DO: Although model vs NCEP obs is all that NCAR does, there's no reason why we
         # TO DO: shouldn't support something more general, at least model vs model.
         if not self.computation_planned:
@@ -1363,7 +1366,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
             vid1,vid1var = self.vars_stdvar_normal_contours(
                 filetable1, varnom, seasonid, aux=None )
         else:
-            print "ERROR, variable",varnom,"not found in and cannot be computed from",filetable1
+            logger.error("variable %s not found in and cannot be computed from %s",varnom, filetable1)0
             return None
         if filetable2 is not None and varnom in filetable2.list_variables():
             vid2,vid2var = self.vars_normal_contours(
@@ -1699,7 +1702,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
                 psv[self.plot1_id] is not None and psv[self.plot2_id] is not None:
             psv[self.plot1_id].synchronize_ranges(psv[self.plot2_id])
         else:
-            print "WARNING not synchronizing ranges for",self.plot1_id,"and",self.plot2_id
+            logger.warn("not synchronizing ranges for %s and %s",self.plot1_id, self.plot2_id)
         for key,val in psv.items():
             if type(val) is not list: val=[val]
             for v in val:
@@ -1990,11 +1993,11 @@ class amwg_plot_set6(amwg_plot_plan):
                 if vars1 is None and vars2 is None:
                     raise DiagError("cannot find standard variables in data 2")
             else:
-                print "ERROR, AMWG plot set 6 does not yet support",varid
+                logger.error("AMWG plot set 6 does not yet support %s",varid)
                 return None
         except Exception as e:
-            print "ERROR cannot find suitable standard_variables in data for varid=",varid
-            print "exception is",e
+            logger.error("cannot find suitable standard_variables in data for varid= %s",varid)
+            logger.exception(" %s ", e)
             return None
         reduced_varlis = []
         vardict1 = {'':'nameless_variable'}
@@ -2196,7 +2199,7 @@ class amwg_plot_set6(amwg_plot_plan):
         #    psv[self.plot1_id].synchronize_ranges(psv[self.plot2_id])
         #else:
         #    print "WARNING not synchronizing ranges for",self.plot1_id,"and",self.plot2_id
-        print "WARNING not synchronizing ranges for AMWG plot set 6"
+        logger.warn("not synchronizing ranges for AMWG plot set 6")
         for key,val in psv.items():
             if type(val) is not list and type(val) is not tuple: val=[val]
             for v in val:
@@ -2388,7 +2391,7 @@ class amwg_plot_set7(amwg_plot_plan):
                 psv[self.plot1_id] is not None and psv[self.plot2_id] is not None:
             psv[self.plot1_id].synchronize_ranges(psv[self.plot2_id])
         else:
-            print "WARNING not synchronizing ranges for",self.plot1_id,"and",self.plot2_id
+            logger.error("not synchronizing ranges for %s and %s ",self.plot1_id, self.plot2_id)
         for key,val in psv.items():
             if type(val) is not list: val=[val]
             for v in val:
@@ -2426,7 +2429,7 @@ class amwg_plot_set8(amwg_plot_plan):
         
         self.CONTINUE = self.FT1
         if not self.CONTINUE:
-            print "user must specify a file table"
+            logger.info("user must specify a file table")
             return None
         self.filetables = [filetable1]
         if self.FT2:
@@ -2565,7 +2568,7 @@ class amwg_plot_set8(amwg_plot_plan):
         #pdb.set_trace()
         results = plot_plan._results(self, newgrid)
         if results is None:
-            print "WARNING, AMWG plot set 8 found nothing to plot"
+            logger.warn("AMWG plot set 8 found nothing to plot")
             return None
         psv = self.plotspec_values
         if self.FT2:
@@ -2654,7 +2657,7 @@ class amwg_plot_set9(amwg_plot_plan):
             ft1_valid = ft1 is not None and ft1!=[]    # true iff filetable1 uses hybrid level coordinates
             ft2_valid = ft2 is not None and ft2!=[]    # true iff filetable2 uses hybrid level coordinates
         else:
-            print "ERROR: user must specify 2 data files"
+            logger.error("user must specify 2 data files")
             return None
         if not ft1_valid or not ft2_valid:
             return None
@@ -2806,7 +2809,7 @@ class amwg_plot_set9(amwg_plot_plan):
         #pdb.set_trace()
         results = plot_plan._results(self, newgrid)
         if results is None:
-            print "WARNING, AMWG plot set 9 found nothing to plot"
+            logger.warn("AMWG plot set 9 found nothing to plot")
             return None
         psv = self.plotspec_values
         if self.plot1_id in psv and self.plot2_id in psv and\
@@ -3097,7 +3100,7 @@ class amwg_plot_set11(amwg_plot_plan):
             ft1_valid = ft10 is not None and ft10!=[] and ft11 is not None and ft11!=[] 
             ft2_valid = ft20 is not None and ft20!=[] and ft21 is not None and ft21!=[]  
         else:
-            print "ERROR: user must specify 2 data files"
+            logger.error("user must specify 2 data files")
             return None
         if not ft1_valid or not ft2_valid:
             return None

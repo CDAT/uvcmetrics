@@ -5,6 +5,9 @@
 import numpy, cdms2, cdutil, pdb, logging
 from unidata import udunits
 
+
+
+logger = logging.getLogger(__file__)
 # constants as in functions_vertical.ncl, lines 5-10:
 plvlO = numpy.array([30.,50.,70.,100.,150.,200.,250.,300.,400.,500.,
                      600.,700.,775.,850.,925.,1000.])   # mb
@@ -36,7 +39,7 @@ def verticalize( T, hyam, hybm, ps, level_src=plvlO ):
     elif isinstance(level_src,cdms2.avariable.AbstractVariable):
         lev_axis = levAxis(level_src)
         if lev_axis==None:
-            logging.warning("No level axis in %s",level_src.id)
+            logger.warning("No level axis in %s",level_src.id)
             return None
         level_src = lev_axis[:]
     # Convert p0 to match ps.  Later, we'll convert back to mb.  This is faster than
