@@ -15,6 +15,11 @@ from metrics.common.utilities import *
 from metrics.computation.region import *
 from unidata import udunits
 import cdutil.times, numpy, pdb
+import logging
+
+logger = logging.getLogger(__file__)
+
+
 
 # The following two functions were originally in plot set 4, but I moved them out because they
 # are needed also for plot set 1.
@@ -252,14 +257,14 @@ class Row:
                     mean1 = rv1.reduce()
                     #self.variable_values[VID] = mean1
                 except Exception as e:
-                    print "WARNING, exception raised:",e
+                    logger.exception("%s",e)
                     return self.undefined#-999.000
             if mean1 is None:
                 return self.undefined#-999.000
             mean2 = convert_variable( mean1, self.units )
             if mean2.shape!=():
-                print "WARNING: computed mean",mean2.id,"for table has more than one data point"
-                print mean2
+                logger.warning(" computed mean %s for table has more than one data point",mean2.id )
+                logger.warning("%s",mean2)
             return float(mean2.data)
         else:
             # It's a more complicated calculation, which we can treat as a derived variable.
@@ -273,7 +278,7 @@ class Row:
             except DiagError as e:
                 vid = None
             if vid is None:
-                print "cannot compute mean for",self.var,filetable
+                logger.warning("cannot compute mean for %s %s",self.var,filetable)
                 return self.undefined#-999.000     # In the NCAR table, this number means 'None'.
             else:
                 rvvs = {rv.id(): rv.reduce() for rv in rvs }
@@ -282,8 +287,8 @@ class Row:
                     return self.undefined#-999.000
                 mean2 = convert_variable( dvv, self.units )
                 if mean2.shape!=():
-                    print "WARNING: computed mean",mean2.id,"for table has more than one data point"
-                    print mean2
+                    logger.warning("computed mean %s for table has more than one data point",mean2.id)
+                    logger.warning("%s", mean2)
                 return float(mean2.data)
     def rmse( self ):
         """ This function computes the rmse and correlation between the model and observations.

@@ -11,6 +11,8 @@ import argparse
 import sys
 import shutil
 import os
+import logging
+logger = logging.getLogger(__file__)
 
 class color:
   PURPLE = '\033[95m'
@@ -87,12 +89,11 @@ for i,l in enumerate(lines):
               print "Please answer with yes/no"
         if doit:
           if not os.path.exists(src):
-              print "Error: New baseline: %s%s%s%s does not exists, skipping" % (color.BOLD,color.RED,src,color.END)
-              continue
+              logger.warn("Error: New baseline: %s%s%s%s does not exists, skipping" % (color.BOLD,color.RED,src,color.END))
           else:
               if os.path.exists(dst):
                 os.remove(dst)
               cmd(src,dst)
       else:
         if args.verbosity_level >0:
-          print "would be %s %s%s%s%s to %s%s%s%s" % (cmd_str,color.BOLD,color.BLUE,src,color.END,color.BOLD,color.RED,dst,color.END)
+          logger.warn("would be %s %s%s%s%s to %s%s%s%s" % (cmd_str,color.BOLD,color.BLUE,src,color.END,color.BOLD,color.RED,dst,color.END))

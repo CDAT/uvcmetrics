@@ -25,6 +25,11 @@ from metrics.computation.region import *
 from genutil import *
 from metrics.computation.region_functions import *
 
+import logging
+
+logger = logging.getLogger(__file__)
+
+
 regridded_vars = {}  # experimental
 
 seasonsyr=cdutil.times.Seasons('JFMAMJJASOND')
