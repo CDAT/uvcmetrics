@@ -16,6 +16,7 @@ from metrics.packages.diagnostic_groups import *
 #from metrics.packages.common.diagnostic_groups import *
 from metrics.computation.reductions import *
 from metrics.frontend.uvcdat import *
+from metrics.packages.plotplan import plot_plan
 from metrics.computation.plotspec import *
 import metrics.frontend.defines as defines
 from metrics.packages.lmwg.defines import *

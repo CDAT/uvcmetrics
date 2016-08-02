@@ -8,6 +8,7 @@ from metrics.packages.diagnostic_groups import *
 from metrics.computation.reductions import *
 from metrics.computation.plotspec import *
 from metrics.frontend.uvcdat import *
+from metrics.packages.plotplan import plot_plan
 from metrics.frontend import *
 from metrics.common.id import *
 from metrics.common.utilities import *
@@ -4123,7 +4124,8 @@ class amwg_plot_set14(amwg_plot_plan):
                     RV = reduced_variable( variableid=var, 
                                            filetable=ft, 
                                            season=cdutil.times.Seasons(seasonid), 
-                                           reduction_function=( lambda x, vid=VID_mean, ID=DATAID: MV2.array(x.mean()) ) ) 
+                                           reduction_function=( lambda x, vid=VID_mean, ID=DATAID: MV2.array(reduce2scalar(x)) ) ) 
+#numpy mean() isn't working here           reduction_function=( lambda x, vid=VID_mean, ID=DATAID: MV2.array(x.mean()) ) ) 
                     self.reduced_variables[VID_mean] = RV     
                     
                     #rv for its std
