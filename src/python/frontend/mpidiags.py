@@ -8,10 +8,13 @@ from metrics.frontend.options import make_ft_dict
 from metrics.fileio.filetable import *
 from metrics.fileio.findfiles import *
 from metrics.packages.diagnostic_groups import *
+
+
+logger = logging.getLogger(__file__)
 try:
    from mpi4py import MPI
 except:
-   logging.exception('Couldnt import mpi4py. suggest running metadiags.py instead')
+   logger.exception('Couldnt import mpi4py. suggest running metadiags.py instead')
    sys.exit(1)
 
 
@@ -116,10 +119,10 @@ def makeTables(collnum, model_dict, obspath, outpath, pname, outlog):
                cf0 = 'no'
                cf1 = 'no'
                if ft0 == None: 
-                  logging.warning('Variable %s requires raw data. No raw data provided. Passing', v)
+                  logger.warning('Variable %s requires raw data. No raw data provided. Passing', v)
                   continue
                if num_models == 2 and ft1 == None:
-                  logging.warning('Variable %s requires raw data. No second raw dataset provided. Passing on differences', v)
+                  logger.warning('Variable %s requires raw data. No second raw dataset provided. Passing on differences', v)
                   continue
                ps0 = '--model path=%s,climos=no' % (ft0.root_dir())
                if num_models == 2:
@@ -170,7 +173,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
       try:
          os.makedirs(outpath)
       except:
-         logging.exception('Failed to create directory %s', outpath)
+         logger.exception('Failed to create directory %s', outpath)
 
    try:
       outlog = open(os.path.join(outpath,'DIAGS_OUTPUT.log'), 'w')
@@ -179,7 +182,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
          os.mkdir(outpath)
          outlog = open(os.path.join(outpath,'DIAGS_OUTPUT.log'), 'w')
       except: 
-         logging.exception('Couldnt create output log - %s/DIAGS_OUTPUT.log', outpath)
+         logger.exception('Couldnt create output log - %s/DIAGS_OUTPUT.log', outpath)
          quit()
 
    # Get some paths setup
@@ -216,7 +219,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
 
    # Now, loop over collections.
    for collnum in colls:
-      print 'Working on collection ', collnum
+      logger.info('Working on collection %s', collnum)
       # Special case the tables since they are a bit special. (at least amwg)
       if diags_collection[collnum].get('tables', False) != False:
          makeTables(collnum, model_dict, obspath, outpath, pname, outlog)
@@ -373,13 +376,13 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None):
 
                   if raw != False:
                      if raw0 == None:
-                        logging.critical('No raw dataset provided and this set requires raw data')
+                        logger.critical('No raw dataset provided and this set requires raw data')
                         quit()
                      else:
                         modelpath = raw0.root_dir()
                         cf0 = 'no'
                      if raw1 == None and num_models == 2:
-                        logging.critical('Only one raw dataset provided and this set requires raw data')
+                        logger.critical('Only one raw dataset provided and this set requires raw data')
                         quit()
                      else:
                         modelpath1 = raw1.root_dir()

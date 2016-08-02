@@ -28,6 +28,9 @@ from multiprocessing import Process, Lock
 import cProfile
 from metrics.common.utilities import DiagError, store_provenance
 
+import logging
+logger = logging.getLogger(__file__)
+
 comm = None
 MP = False
 queue = None
@@ -79,7 +82,7 @@ def restrict_to_season( datafilenames, seasonname ):
         for fn in datafilenames:
             MO = re.match( "^.*\.\d\d\d\d-\d\d\.nc$", fn )
             if MO is None:
-                logging.warning('Filename %s did not match, will be ignored.', fn)
+                logger.warn('Filename %s did not match, will be ignored.', fn)
                 continue
             mon = fn[-5:-3]
             if mon in season2nummonth[seasonname]:
@@ -281,12 +284,12 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
         # to do: support arbitrary time units, arbitrary calendar.
         if calendar != 'noleap':
             # didn't use logging.exception because for that, there must be a try-catch block
-            logging.error("So far climos() has only been implemented for the noleap calendar.  Sorry!")
+            logger.error("So far climos() has only been implemented for the noleap calendar.  Sorry!")
             raise Exception("So far climos() has not been implemented for calendar %s."%
                             calendar )
         if time_units.find('days')!=0:
             # didn't use logging.exception because for that, there must be a try-catch block
-            logging.error("So far climos() has only been implemented for time in days.  Sorry!")
+            logger.error("So far climos() has only been implemented for time in days.  Sorry!")
             raise Exception("So far climos() has not been implemented for time in units %s."%
                             time_units )
         fvarnames = f.variables.keys()
@@ -389,7 +392,7 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
                 climo_file_done_mpi( wrotefile, fileout_template, seasonname,
                                      seasons_3mon, filerank, filetag, comm )
                 t2=time.time()
-                print "allseasons, season",seasonname,"time is",t2-t1
+                logger.info("allseasons, season %s ",seasonname,"time is %s",t2-t1)
         else:
             proc = {}
             for seasonname in myseasons:
@@ -414,7 +417,7 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
         t2all=time.time()
         if comm is None:  comm_rank = 0
         else: comm_rank = comm.rank
-        print "For all 1-month seasons on",comm_rank,", time is",t2all-t1all
+        logger.info("For all 1-month seasons on %s",comm_rank,", time is %s",t2all-t1all)
         omit_files = {seasonname:[] for seasonname in seasonnames}
 
         # How would I use omitBySeason here?  It's possible, but some trouble to do.
@@ -447,7 +450,7 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
                 climo_file_done_mpi( wrotefile, fileout_template, seasonname,
                                      seasons_ann, filerank, filetag, comm )
                 t2=time.time()
-                print "allseasons, season",seasonname,"time is",t2-t1
+                logger.info("allseasons, season %s",seasonname,"time is %s",t2-t1)
         else:
             proc = {}
             for seasonname in myseasons:
@@ -475,7 +478,7 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
         t2all=time.time()
         if comm is None:  comm_rank = 0
         else: comm_rank = comm.rank
-        print "For all 3-month seasons on",comm_rank,", time is",t2all-t1all
+        logger.info("For all 3-month seasons on %s",comm_rank,", time is %s",t2all-t1all)
 
         if comm is None or comm.rank==0:
             t1=time.time()
@@ -491,7 +494,7 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
             climo_file_done_mpi( wrotefile, fileout_template, seasonname,
                                  None, filerank, filetag, comm )
             t2=time.time()
-            print "allseasons, season ANN, time is",t2-t1
+            logger.info("allseasons, season ANN, time is %s",t2-t1)
         return
     else:
         # This is the simplest and most flexible way to compute climatologies - directly
@@ -507,7 +510,7 @@ def climos( fileout_template, seasonnames, varnames, datafilenames, omitBySeason
                               input_global_attributes, filerank={}, filetag={},
                               outseasons=None, queue1=None, lock1=lock, comm1=comm )
             t2=time.time()
-            print "season",seasonname,"time is",t2-t1
+            logger.info("season %s",seasonname,"time is %s",t2-t1)
         return
 
 def p_climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_template,
@@ -546,11 +549,11 @@ def climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_t
                       time_units, calendar, dt, force_scalar_avg1,
                       input_global_attributes, filerank={}, filetag={},
                       outseasons=None, queue1=None, lock1=None, comm1=None ):
-    print "doing season",seasonname
+    logger.info("doing season %s" ,seasonname)
     datafilenames = [fn for fn in datafilenames if fn not in omit_files[seasonname]]
     datafilenames2 = restrict_to_season( datafilenames, seasonname )
     if len(datafilenames2)<=0:
-        logging.warning('No input data, skipping season %s', seasonname)
+        logger.warn('No input data, skipping season %s', seasonname)
         return False
     season = daybounds(seasonname)
     # ... assumes noleap calendar, returns time in days.
@@ -673,20 +676,20 @@ if __name__ == '__main__':
             if haveMPI:
                 comm = MPI.COMM_WORLD
             else:
-                logging.error("\nMPI requested but is not available.\n")
+                logger.error("\nMPI requested but is not available.\n")
                 raise DiagError("MPI not available in this build")
         else:
             comm = None
         if args.MP:
             if haveMPI and platform.node().find('rhea')>=0 and not args.bypassChecks:
-                logging.error("\nThis Python was built with MPI and the platform is %s", platform.node())
-                print "This combination is incompatible with the multiprocessing module.\n"
+                logger.error("\nThis Python was built with MPI and the platform is %s", platform.node())
+                logger.warn("This combination is incompatible with the multiprocessing module.\n")
                 MP = False
                 raise DiagError("multiprocessing incompatible with MPI on %s"%platform.node())
             else:
                 MP = args.MP
 
-    print "MP=",MP,"comm=",comm
+    logger.info("MP= %s" ,MP,"comm= %s",comm)
     # experimental code for multiprocessing on one node.  Leave queue=None for no multiprocessing.
     #queue = Queue()
     #MP = False
@@ -712,10 +715,10 @@ if __name__ == '__main__':
             redtime_wts = g('time_weights')
             TS = g('TS')
             PS = g('PS')
-            print "season=",seasname
-            print "redtime=",redtime
-            print "redtime_bnds=",redtime_bnds
-            print "redtime_wts=",redtime_wts
-            print "TS=",TS,TS.shape
+            logger.info("season= %s",seasname)
+            logger.info("redtime= %s",redtime)
+            logger.info("redtime_bnds= %s",redtime_bnds)
+            logger.info("redtime_wts= %s",redtime_wts)
+            logger.info("TS= %s %s",TS,TS.shape)
             #print "PS=",PS,PS.shape
 

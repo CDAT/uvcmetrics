@@ -25,6 +25,11 @@ from metrics.computation.region import *
 from genutil import *
 from metrics.computation.region_functions import *
 
+import logging
+
+logger = logging.getLogger(__file__)
+
+
 regridded_vars = {}  # experimental
 
 seasonsyr=cdutil.times.Seasons('JFMAMJJASOND')
@@ -218,7 +223,7 @@ def set_mean( mv, season=seasonsyr, region=None, gw=None ):
         try:
             mv.mean = reduce2scalar( mv, season=season, region=region, gw=gw, weights='mass' )
         except Exception as e:
-            logging.error("Caught by set_mean, exception %s for variable %s", e, mv.id)
+            logger.error("Caught by set_mean, exception %s for variable %s", e, mv.id)
     #else: use the VCS default of area weighting
 
 
@@ -379,7 +384,7 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
                     # But we can go on with something sensible anyway.
                     ilev = -1   # means use the bottom, usually best if there are no levels
 
-                    logging.warning("Computing a mass-weighted average of %s with no spatial axes",mvrs.id)
+                    logger.warning("Computing a mass-weighted average of %s with no spatial axes",mvrs.id)
                 else:  # We have only levels
                     for inds in numpy.ndindex(avweights.shape):
                         ilev = inds[klev]
@@ -394,11 +399,11 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
             try:
                 avmv = averager( mvrs, axis=axes_string, combinewts=0, weights=weights )
             except AveragerError as e:
-                logging.exception("AveragerError: %s", e)
+                logger.exception("AveragerError: %s", e)
                 raise e
                 return None
             except Exception as e:
-                logging.exception("Exception: %s", e)
+                logger.exception("Exception: %s", e)
                 raise e
                 return None
 
@@ -469,13 +474,13 @@ def reduce2scalar_seasonal_zonal_level( mv, season=seasonsyr, latmin=-90, latmax
     # Check whether mv has pressure levels in mbar as required.  Conversions must be done prior to
     # calling this function because conversion from hybrid levels requires several other variables.
     if not hasattr(levax,'units'):
-        logging.error("In reduce2scalar_seasonal_zonal_level, variable %s has level axis without units!", mv.id)
+        logger.error("In reduce2scalar_seasonal_zonal_level, variable %s has level axis without units!", mv.id)
         return None
     if levax.units=='millibar' or levax.units=='millibars' or levax.units=='mbars' or levax.units=='mb':
         levax.units='mbar'
     elif levax.units!='mbar':
-        logging.error("In reduce2scalar_seasonal_zonal_level, variable %s has level axis units %s !", mv.id, levax.units)
-        print "Level axis units should be 'mbar'."
+        logger.error("In reduce2scalar_seasonal_zonal_level, variable %s has level axis units %s !", mv.id, levax.units)
+        logger.error("Level axis units should be 'mbar'.")
         return None
 
     mvl = select_lev( mv, level )   # mv restricted (approximately) to the specified level
@@ -700,7 +705,7 @@ def ttest_time(mv1, mv2, mv3):
    tax2, tid2 = timeAxis2(mv2new)
    tax3, tid3 = timeAxis2(mv3new)
    if tid1 != tid2:
-      logging.critical('The time axis for mv1 and mv2 are different. This is a significant problem')
+      logger.critical('The time axis for mv1 and mv2 are different. This is a significant problem')
       quit()
 
    # get basic numpy arrays
@@ -795,7 +800,7 @@ def std_3time(mv1, mv2, mv3, constant = 1.):
    mv1, mv2 = reconcile_units(mv1, mv2)
    mv2, mv3 = reconcile_units(mv2, mv3)
    if hasattr(mv1, 'units') and hasattr(mv2, 'units') and mv1.units != mv2.units:
-      logging.warning('STDDEV - Obsset has different units: %s %s', mv1.units, mv2.units)
+      logger.warning('STDDEV - Obsset has different units: %s %s', mv1.units, mv2.units)
    axes1 = mv1.getAxisList()
    axes2 = mv2.getAxisList()
    axes3 = mv3.getAxisList()
@@ -1172,7 +1177,7 @@ def reduceAnnTrendRegionSumLevels(mv, region, slevel, elevel, weights=None, vid=
    levax = levAxis(mvtrend)
 
    if levax is None:
-      logging.error('Variable %s has no level axis', vid)
+      logger.error('Variable %s has no level axis', vid)
       return None
 
    if levax == mvtrend.getAxisList()[0]:
@@ -1183,7 +1188,7 @@ def reduceAnnTrendRegionSumLevels(mv, region, slevel, elevel, weights=None, vid=
       mvvar = cdms2.createVariable(mvtrend[:,slevel:elevel+1,...], copy=1)
       mvsum = MV2.sum(mvvar[...,slevel:elevel+1], axis=1)
    else:
-      logging.error('reduceAnnTrendRegionSumLevels() only supports level axis as 1st or 2nd axis of reduced variable')
+      logger.error('reduceAnnTrendRegionSumLevels() only supports level axis as 1st or 2nd axis of reduced variable')
       return None
 
    mvsum.id = vid
@@ -1218,7 +1223,7 @@ def reduceAnnTrendRegionLevel(mv, region, level, weights=None, vid=None):
    levax = levAxis(mvtrend)
 
    if levax is None:
-      logging.error('Variable %s has no level axis', vid)
+      logger.error('Variable %s has no level axis', vid)
       return None
 
    if levax == mvtrend.getAxisList()[0]:
@@ -1226,7 +1231,7 @@ def reduceAnnTrendRegionLevel(mv, region, level, weights=None, vid=None):
    elif levax == mvtrend.getAxisList()[1]:
       mvvar = cdms2.createVariable(mvtrend[:,level:level+1,...], copy=1)
    else:
-      logging.error('reduceAnnTrendRegionLevel() only supports level axis as 1st or 2nd axis of reduced variable')
+      logger.error('reduceAnnTrendRegionLevel() only supports level axis as 1st or 2nd axis of reduced variable')
       return None
    mvvar = delete_singleton_axis(mvvar, vid=levax.id)
 
@@ -1538,7 +1543,7 @@ def calculate_seasonal_climatology(mv, season):
 
     tax = timeAxis(mv)
     if tax is None:
-        logging.warning("No time axis in %s",mv.id)
+        logger.warning("No time axis in %s",mv.id)
         return mv
     # TODO: how to handle files with missing time axis?
 
@@ -1570,8 +1575,8 @@ def calculate_seasonal_climatology(mv, season):
             mv.setAxis(mv.getAxisIndex(tax.id), tax)
             mvt = season.climatology( mv )
         if mvt is None:
-            logging.warning("Cannot compute climatology for %s, %s",mv.id,season.seasons)
-            logging.warning("...probably there is no data for times in the requested season.")
+            logger.warning("Cannot compute climatology for %s, %s",mv.id,season.seasons)
+            logger.warning("...probably there is no data for times in the requested season.")
             return None
 
     # If the time axis has only one point (as it should by now, if it exists at all),
@@ -1637,7 +1642,7 @@ def select_lev( mv, slev ):
     elif levax == mv.getAxisList()[1]:
         mvs = cdms2.createVariable( mv[:,ig:ig+1,...], copy=1 )
     else:
-        logging.error("select_lev() does not support level axis except as first or second dimensions")
+        logger.error("select_lev() does not support level axis except as first or second dimensions")
         return None
     mvs = delete_singleton_axis(mvs, vid=levax.id)
     return mvs
@@ -2014,11 +2019,11 @@ def varvari( mv, mvclimo ):
     #                 First check our assumptions:
     mvtvd = mv._TransientVariable__domain
     if mvtvd[0][0].id!='time':
-        logging.warning("varvari expects the first axis of mv=%s to be the time axis=",mvtvd[0][0].id)
+        logger.warning("varvari expects the first axis of mv=%s to be the time axis=",mvtvd[0][0].id)
     mvclimotvd = mvclimo._TransientVariable__domain
     if mvtvd[0][0].id=='time' and\
             [ax[0].id for ax in mvtvd[1:]]!=[ax[0].id for ax in mvclimotvd[0:]]:
-        logging.warning("varvari expects mv and mvclimo to have the same non-time axes")
+        logger.warning("varvari expects mv and mvclimo to have the same non-time axes")
         print "mv domain is",mvtvd
         print "mvclimo domain is",mvclimotvd
     #                 Now do the calculation:
@@ -2033,7 +2038,7 @@ def aminusb_ax2( mv1, mv2 ):
     dimension to the second axis of the other.
     The axis used will be the coarsest (fewest points) of the two axes."""
     if hasattr(mv1,'units') and hasattr(mv2,'units') and mv1.units!=mv2.units:
-        logging.warning("aminusb_ax2 is subtracting variables with different units! %s %s",mv1,mv1)
+        logger.warning("aminusb_ax2 is subtracting variables with different units! %s %s",mv1,mv1)
     axes1 = allAxes(mv1)
     axes2 = allAxes(mv2)
     # TO DO: convert, interpolate, etc. as needed to accomodate differing first axes.
@@ -2041,7 +2046,7 @@ def aminusb_ax2( mv1, mv2 ):
     ax1=axes1[0]
     ax2=axes2[0]
     if ax1.shape!=ax2.shape:
-        print logging.error("aminusb_ax2 requires same axes, but shape differs: %s %s",ax1.shape,ax2.shape)
+        print logger.error("aminusb_ax2 requires same axes, but shape differs: %s %s",ax1.shape,ax2.shape)
         print "ax1,ax2"
         return None
     if hasattr(ax1,'units') and hasattr(ax2,'units') and ax1.units!=ax2.units:
@@ -2086,7 +2091,7 @@ def aminusb_ax2( mv1, mv2 ):
             pass
         except Exception:
             if hasattr(aminusb,'mean') and isinstance(aminusb.mean,Number):
-                logging.warning("When computing the difference of %s and %s, the mean of the difference cannot be correctly be computed",mv1.id,mv2.id)
+                logger.warning("When computing the difference of %s and %s, the mean of the difference cannot be correctly be computed",mv1.id,mv2.id)
             del aminusb.mean
 
     return aminusb
@@ -2122,7 +2127,7 @@ def convert_units(mv, units):
       s,i = tmp.how(units)
    except Exception as e:
       # conversion not possible.
-      logging.error("Could not convert from %s to %s",mv.units,units)
+      logger.error("Could not convert from %s to %s",mv.units,units)
       return mv
    if hasattr(mv,'id'):  # yes for TransientVariable, no for udunits
       mvid = mv.id
@@ -2143,10 +2148,10 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
     # First, if there are no units, take a guess.  I'm reluctant to do this because it will surely
     # be wrong sometimes.  But usually it is correct.
     if not hasattr(mv1,'units') or mv1.units == 'none':
-        logging.warning("Variable %s has no units, will use units=1.", getattr(mv1,'id',''))
+        logger.warning("Variable %s has no units, will use units=1.", getattr(mv1,'id',''))
         mv1.units = '1'
     if not hasattr(mv2,'units') or mv2.units == 'none':
-        logging.warning("Variable %s has no units, will use units=1.", getattr(mv2,'id',''))
+        logger.warning("Variable %s has no units, will use units=1.", getattr(mv2,'id',''))
         mv2.units = '1'
 
     # For QFLX and LHFLX variables, call dedicated functions instead.
@@ -2257,7 +2262,7 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
                 s,i = tmp.how(target_units)
             except Exception as e:
                 # conversion not possible.
-                logging.error("Could not convert from %s to %s",mv1.units, target_units)
+                logger.error("Could not convert from %s to %s",mv1.units, target_units)
                 print "units are from variable mv1=",getattr(mv1,'id','(not known)'),"and"
                 if target_units==preferred_units:
                     print "preferred units=",preferred_units
@@ -2280,7 +2285,7 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
                 s,i = tmp.how(target_units)
             except Exception as e:
                 #  conversion not possible
-                logging.error("Could not convert from %s to %s",mv2.units, target_units)
+                logger.error("Could not convert from %s to %s",mv2.units, target_units)
                 print "units are from variable mv2=",getattr(mv2,'id','(not known)'),"and"
                 if target_units==preferred_units:
                     print "preferred units=",preferred_units
@@ -2318,7 +2323,7 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
     #pdb.set_trace()
     global regridded_vars   # experimental for now
     if mv1 is None or mv2 is None:
-        logging.warning("aminusb_2ax missing an input variable.")
+        logger.warning("aminusb_2ax missing an input variable.")
         if mv1 is None:  print "mv1=",mv1
         if mv2 is None:  print "mv2=",mv2
         raise Exception
@@ -2330,7 +2335,7 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
     if axes2 is None:
         axes2 = allAxes(mv2)
     if axes1 is None or axes2 is None:
-        logging.warning("In aminusb_2ax, both axes are None, returning None.")
+        logger.warning("In aminusb_2ax, both axes are None, returning None.")
         return None
 
     # Forget about a trivial extra axis; for now only if it's the first axis:
@@ -2345,17 +2350,17 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
     # all variables with physical meaning depend on lat-lon.  But this can happen, e.g. gw=gw(lat).
     # We can't deal with it here, and almost surely the variable isn't suited for the plot.
     if len(axes1)<2:
-        logging.warning("In aminusb_2ax, mv1=%s doesn't have enough axes. It has %s",mv1.id,axes1)
+        logger.warning("In aminusb_2ax, mv1=%s doesn't have enough axes. It has %s",mv1.id,axes1)
         raise Exception("In aminusb_2ax, mv1 doesn't have enough axes")
     if len(axes2)<2:
-        logging.warning("In aminusb_2ax, mv2=%s doesn't have enough axes. It has %s",mv2.id,axes1)
+        logger.warning("In aminusb_2ax, mv2=%s doesn't have enough axes. It has %s",mv2.id,axes1)
         raise Exception("In aminusb_2ax, mv1 doesn't have enough axes")
 
     if len(axes1)!=2:
-        logging.error("@1, wrong number of axes for aminusb_2ax: %s",len(axes1))
+        logger.error("@1, wrong number of axes for aminusb_2ax: %s",len(axes1))
         print [ax.id for ax in axes1]
     if len(axes2)!=2:
-        logging.error("@2, wrong number of axes for aminusb_2ax: %s",len(axes2))
+        logger.error("@2, wrong number of axes for aminusb_2ax: %s",len(axes2))
         print [ax.id for ax in axes2]
     if len(axes1[0])==len(axes2[0]):
         # Only axis2 differs, there's a better way...
@@ -2373,7 +2378,7 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
             # Interpolate mv2 from axis2 to axis1 in both directions.  Use the CDAT regridder.
             grid1 = mv1.getGrid()
             if grid1 is None:
-                logging.error("When regridding mv2 to mv1, failed to get or generate a grid for mv1")
+                logger.error("When regridding mv2 to mv1, failed to get or generate a grid for mv1")
                 print "mv1 axis names are",[a[0].id for a in mv1._TransientVariable__domain],\
                     " mv2 axis names are",[a[0].id for a in mv2._TransientVariable__domain]
                 print "mv1 axis lengths are",len(axes1[0]),len(axes1[1]),\
@@ -2399,7 +2404,7 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
             # Interpolate mv2 from axis2 to axis1 in both directions.  Use the CDAT regridder.
             grid2 = mv2.getGrid()
             if grid2 is None:
-                logging.error("When regridding mv1 to mv2, failed to get or generate a grid for mv2")
+                logger.error("When regridding mv1 to mv2, failed to get or generate a grid for mv2")
                 print "mv1 axis names are",[a[0].id for a in mv1._TransientVariable__domain],\
                     " mv2 axis names are",[a[0].id for a in mv2._TransientVariable__domain]
                 print "mv1 axis lengths are",len(axes1[0]),len(axes1[1]),\
@@ -2429,7 +2434,7 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
             pass
         except Exception:
             if hasattr(aminusb,'mean') and isinstance(aminusb.mean,Number):
-                logging.warning("When computing the difference of %s and %s the mean of the difference cannot be correctly computed.", mv1.id, mv1.id)
+                logger.warning("When computing the difference of %s and %s the mean of the difference cannot be correctly computed.", mv1.id, mv1.id)
             del aminusb.mean
     return aminusb
 
@@ -2443,7 +2448,7 @@ def aminusb_1ax( mv1, mv2 ):
     """
     mv1, mv2 = reconcile_units( mv1, mv2 )
     if hasattr(mv1,'units') and hasattr(mv2,'units') and mv1.units!=mv2.units:
-        logging.warning("aminusb_1ax1 is subtracting variables with different units! %s, %s",mv1,mv1)
+        logger.warning("aminusb_1ax1 is subtracting variables with different units! %s, %s",mv1,mv1)
     if mv1 is None or mv2 is None: return None
     missing = mv1.get_fill_value()
     axis1 = allAxes(mv1)[0]
@@ -2512,7 +2517,7 @@ def common_axes( mv1, mv2 ):
     axes1 = [a[0] for a in mv1.getDomain()]
     axes2 = [a[0] for a in mv2.getDomain()]
     if len(axes1)!=len(axes2):
-        logging.error("common_axes requires same number of axes in %s and %s",mv1,mv2)
+        logger.error("common_axes requires same number of axes in %s and %s",mv1,mv2)
         return None
     axes3 = []
     for i in range(len(axes1)):
@@ -2540,14 +2545,14 @@ def common_axis( axis1, axis2 ):
         if axis1.isTime() and axis2.isTime():
             axis2.toRelativeTime( units1, axis1.getCalendar() )  #probably will change input argument
         else:
-            logging.error("common_axis does not yet support differing units %s and %s",axis1.units, axis2.units)
+            logger.error("common_axis does not yet support differing units %s and %s",axis1.units, axis2.units)
             return None
     if axis1.isTime() or axis2.isTime():
         if not axis2.isTime() or not axis1.isTime():
-            logging.error("In common_axis, one axis is time, not the other")
+            logger.error("In common_axis, one axis is time, not the other")
             return None
         if not axis1.calendar==axis2.calendar:
-            logging.error("common_axis does not yet support differing calendars.")
+            logger.error("common_axis does not yet support differing calendars.")
         if len(axis1)==1 and len(axis2)==1:
             # There's just one time value, probably from averaging over time.  The time value is meaningless
             # but it would be messy to have two.
@@ -2587,7 +2592,7 @@ def convert_axis( mv, axisold, axisindnew ):
     for k in range(len(axes)):
         if axes[k]==axisold: kold=k
     if kold is None:
-        logging.error("convert_axis cannot find axis %s in variable %s",axisold,mv)
+        logger.error("convert_axis cannot find axis %s in variable %s",axisold,mv)
     if len(axisold)==len(axisnew):
         mv.setAxis( kold, axisnew )
         return
@@ -2678,7 +2683,7 @@ def run_cdscan( fam, famfiles, cache_path=None ):
                 cdscan_line = 'cdscan -q '+'-x '+xml_name+' -e time.units="'+time_units+'" '+\
                     ' '.join(famfiles)
             else:
-                logging.warning("Cannot find time units; will try to continue %s",famfiles[0])
+                logger.warning("Cannot find time units; will try to continue %s",famfiles[0])
                 cdscan_line = 'cdscan -q '+'-x '+xml_name+' -e time.units="'+time_units+'" '+\
                     ' '.join(famfiles)
     try:
@@ -2695,10 +2700,10 @@ def run_cdscan( fam, famfiles, cache_path=None ):
             cdscan_line = shlex.split(cdscan_line)
             cdscan.main(cdscan_line)
         except:
-            logging.error( 'ERROR: cdscan terminated. This is usually fatal. The arguments were:%s\n',
+            logger.error( 'ERROR: cdscan terminated. This is usually fatal. The arguments were:%s\n',
                            cdscan_line )
     except:
-        logging.error( 'importing cdscan failed' )
+        logger.error( 'importing cdscan failed' )
 
     # The old approach was to run cdscan as a separate process:
     #print "cdscan_line=",cdscan_line
@@ -2848,7 +2853,7 @@ class reduced_variable(ftrow,basic_id):
         #else:
         #    self._vid = reduced_var_id      # self._vid is deprecated
         if filetable is None:
-            logging.warning("No filetable specified for reduced_variable instance %s",variableid)
+            logger.warning("No filetable specified for reduced_variable instance %s",variableid)
         self.filetable = filetable
         self._filefilter = filefilter  # used to filter results of search in filetable
         self._file_attributes = {}
@@ -2921,11 +2926,11 @@ class reduced_variable(ftrow,basic_id):
             families = list(set([ famdict[f] for f in files ]))
             families.sort(key=len)  # a shorter name is more likely to be what we want
             if len(families)==0:
-                logging.warning("No data to reduce. files[0]=:%s",files[0])
+                logger.warning("No data to reduce. files[0]=:%s",files[0])
                 return None
             elif len(families)>1:
                 fam = families[0]
-                logging.warning("%s file families found, will use: %s",len(families),fam)
+                logger.warning("%s file families found, will use: %s",len(families),fam)
             else:
                 fam = families[0]
 
@@ -2959,7 +2964,7 @@ class reduced_variable(ftrow,basic_id):
         """
 
         if self.filetable is None:
-            logging.error("No data found for reduced variable %s in %s %s %s %s",self.variableid,self.timerange, self.latrange, self.lonrange, self.levelrange)
+            logger.error("No data found for reduced variable %s in %s %s %s %s",self.variableid,self.timerange, self.latrange, self.lonrange, self.levelrange)
             print "filetable is",self.filetable
             return None
         if vid is None:
@@ -2970,7 +2975,7 @@ class reduced_variable(ftrow,basic_id):
         if filename is None:
             if self.variableid not in self._duvs:
                 # this belongs in a log file:
-                logging.error("No data found for reduced variable %s in %s %s %s %s",self.variableid,self.timerange, self.latrange, self.lonrange, self.levelrange)
+                logger.error("No data found for reduced variable %s in %s %s %s %s",self.variableid,self.timerange, self.latrange, self.lonrange, self.levelrange)
                 print "filetable is",self.filetable
                 return None
             else:
@@ -3005,7 +3010,7 @@ class reduced_variable(ftrow,basic_id):
                 for key,val in duv_inputs.iteritems():
                     # straightforward approaches involving "all" or "in" don't work.
                     if val is None:
-                        logging.warning("missing data; duv_inputs[%s]=%s", key, val)
+                        logger.warning("missing data; duv_inputs[%s]=%s", key, val)
                         return None
                 # Stick the season in duv_inputs.  Region or other GUI parameters could be passed
                 # this way too.  Note that the following line converts a cdutil.times.Seasons object

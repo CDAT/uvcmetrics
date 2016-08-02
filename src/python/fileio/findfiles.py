@@ -16,7 +16,7 @@ from metrics.fileio.filetable import *
 # The __call__() method applies the filter to a single candidate file.
 # You will be able to combine filters by constructing an 'and','or',
 # or 'not' object.
-
+logger = logging.getLogger(__file__)
 class basic_filter:
     def __init__( *args ):
         pass
@@ -328,9 +328,9 @@ class dirtree_datafiles( basic_datafiles ):
                 self.files += [ os.path.join(dirpath,f) for f in filenames if filt(f) ]
         else:   # no more checking, but still could be valid - maybe its a url or something:
             self.files += [root]
-            logging.warning("Candidate data source is not a file or directory. %s What is it????", self.files[0])
+            logger.warning("Candidate data source is not a file or directory. %s What is it????", self.files[0])
         if len(self.files)<=0:
-            logging.warning("No files found at %s with filter %s",root, filt)
+            logger.warning("No files found at %s with filter %s",root, filt)
         return self.files
 
     def short_name(self):

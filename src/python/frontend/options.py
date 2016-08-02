@@ -7,6 +7,9 @@ import cdms2, os, logging, pdb
 import metrics.packages as packages
 import argparse, re
 from metrics.frontend.defines import *
+import logging
+logger = logging.getLogger(__file__)
+
 
 ### This is subject to change, so it is at the top of the file
 help_url="https://acme-climate.atlassian.net/wiki/pages/viewpage.action?pageId=11010895"
@@ -284,7 +287,7 @@ class Options():
         # defined (perhaps in defines.py)
         # it would clean up a lot of code here, and in amwg/lmwg I think.
         if packageid is None:
-            print "ERROR, must specify package to list plot sets"
+            logger.error("must specify package to list plot sets")
             quit()
         elif packageid.lower() == 'lmwg':
             import metrics.packages.lmwg.lmwg
@@ -305,14 +308,14 @@ class Options():
         import metrics.fileio.filetable as ft
         import metrics.fileio.findfiles as fi
         if setname is None:
-            print "ERROR, must specify plot set to list variables"
+            logger.error("must specify plot set to list variables")
             quit()
         dtree = fi.dirtree_datafiles(self, modelid=0)
         filetable = ft.basic_filetable(dtree, self)
         
         # this needs a filetable probably, or we just define the maximum list of variables somewhere
         if package is None:
-            print "ERROR, must specify package to list variables"
+            logger.error("must specify package to list variables")
             quit()
         elif package.lower() == 'lmwg':
             import metrics.packages.lmwg.lmwg
@@ -342,16 +345,16 @@ class Options():
         import metrics.fileio.filetable as ft
         import metrics.fileio.findfiles as fi
         if setname is None:
-            print "ERROR, must specify plot set to list variable options"
+            logger.error("must specify plot set to list variable options")
             quit()
         if varname is None:
-            print "ERROR, must specify variable to list variable options"
+            logger.error("must specify variable to list variable options")
             quit()
         dtree = fi.dirtree_datafiles(self, modelid=0)
         filetable = ft.basic_filetable(dtree, self)
         
         if package is None:
-            print "ERROR, must specify package to list variable options"
+            logger.error("must specify package to list variable options")
             quit()
         elif package.lower() == 'lmwg':
             import metrics.packages.lmwg.lmwg

@@ -11,7 +11,7 @@ import cdms2
 import genutil
 import MV2
 #many of the following are for writing attributes to netcdf
-import cdat_info,cdtime,code,datetime,gc,inspect,os,re,string,sys
+import cdat_info,cdtime, code,datetime,gc,inspect,os,re,string,sys
 # import pytz
 from socket import gethostname
 from string import replace
@@ -19,7 +19,10 @@ from string import replace
 import metrics.packages.amwg.derivations
 from metrics.common import store_provenance
 
+import logging
 
+
+logger = logging.getLogger(__file__)
 
 #Task 1b: create a function that takes PREC_LAND and PRECT_OCN and makes a reservoir estimate from this
 
@@ -150,7 +153,7 @@ def create_precip_PDF_netcdf(mv, model_handle, path=''):
     vid2_m=''.join([variablename,'AMNTPDF'])
     vid3_m='bincenter'
     
-    print "calculating pdf for ",case,variablename
+    logger.info("calculating pdf for %s %s  ",case,variablename)
     #specify bin edges of PDF
     #specify minimum precipitation threshold
     threshold=0.1     # in mm d-1
@@ -158,7 +161,7 @@ def create_precip_PDF_netcdf(mv, model_handle, path=''):
     binedges_input=threshold * bin_increase ** (numpy.arange(0,130))   #these are the bin edges
     [bincenter, output_mapped_freqpdf, output_mapped_amntpdf] = create_amount_freq_PDF(mv,binedges_input, binwidthtype='logarithmic', bincentertype='arithmetic', vid=vid_m, vid2=vid2_m,vid3=vid3_m)
     
-    print "writing pdf file for ",case,version,variablename
+    logger.info("writing pdf file for %s %s %s ",case,version,variablename)
      
     
     outputfilename='_'.join([case,version,variablename,'PDF_climo.nc'])
@@ -328,10 +331,8 @@ def wv_lifetime(prw,prect):
     are also output. The output, 'new_wv_timescale' has units of 'day'
     """
     
-    print "units before conversion"
-    print prect.units
-    print prw.units
-    print " "
+    logger.info("units before conversion \n %s \n %s \n ")
+
     
     #First part recognizes the different units and tries to make them all the same
     target_units_prw='mm'
@@ -368,24 +369,24 @@ def wv_lifetime(prw,prect):
     #remove time axis if the data has three axes
     if len(prect_axes)>=3 and len(prect_axes[0])==1:
         new_prect_axes=prect_axes[1:]
-        print "Shortened prect axes size"
+        logger.info("Shortened prect axes size")
     if len(prw_axes)>=3 and len(prw_axes[0])==1:
         new_prw_axes=prw_axes[1:]
-        print "Shortened prect axes size"
+        logger.info("Shortened prect axes size")
     
     #determine coarsest grid and regrid to that grid
     if prect_grid.shape == prw_grid.shape:
         new_prect=prect
         new_prw=prw
-        print "no need to regrid"
+        logger.info("no need to regrid")
     else:
         if len(new_prect_axes[0])<=len(new_prw_axes[0]):
             new_prect=prect
-            print "PRW grid regridded"
+            logger.info("PRW grid regridded")
             new_prw=prw.regrid(prect_grid,regridTool='esmf',regridMethod='conserve')
         else:
             new_prw=prw
-            print "PRECT grid regridded"
+            logger.info("PRECT grid regridded")
             new_prect=prect.regrid(prw_grid,regridTool='esmf',regridMethod='conserve')
     
     #divide prw with prect to obtain the timescale
