@@ -1366,7 +1366,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
             vid1,vid1var = self.vars_stdvar_normal_contours(
                 filetable1, varnom, seasonid, aux=None )
         else:
-            logger.error("variable %s not found in and cannot be computed from %s",varnom, filetable1)0
+            logger.error("variable %s not found in and cannot be computed from %s",varnom, filetable1)
             return None
         if filetable2 is not None and varnom in filetable2.list_variables():
             vid2,vid2var = self.vars_normal_contours(
