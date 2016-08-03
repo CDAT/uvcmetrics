@@ -8,6 +8,7 @@
 from pprint import pprint
 from metrics.packages.amwg.amwg import amwg_plot_plan
 from metrics.packages.amwg.derivations.vertical import *
+from metrics.packages.plotplan import plot_plan
 from metrics.computation.reductions import *
 from metrics.computation.plotspec import *
 from metrics.fileio.findfiles import *
