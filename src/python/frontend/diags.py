@@ -114,7 +114,7 @@ What this function returns depends on what fmt is.
   (e.g. foo.png,foo.svg)
 """
     if descr is not True:
-        fnamedot = '-'.join(rootname,descr) + '.'
+        fnamedot = '-'.join([rootname,descr]) + '.'
         if type(fmt) is str:
             return fnamedot + fmt
         else:
@@ -137,6 +137,10 @@ What this function returns depends on what fmt is.
 
     print 'vname: ', vname
     # I *really* hate to do this. Filename should be handled better at a level above diags*.py
+    # jfp: whoever wrote that is basically right.  Filenames should be computed in a separate file,
+    # and whatever does i/o (should all be within frontend/) queries the functions there to get
+    # filenames.  They should be based upon actual specifications (e.g. season, obs filename);
+    # we shouldn't try to parse the specs out of lengthy ID strings.
     special = ''
     if 'RMSE_' in vname:
         special='RMSE'
@@ -500,21 +504,6 @@ def run_diags( opts ):
                             # it appears that the rest of this code is unnecessary.
                             # the hack to speedup amwg1 does not need this. It's simpler.
                             if type(res) is str:
-                                """ jfp former fname code:
-                                    if aux == None:
-                                        auxstr = ''
-                                    else:
-                                        auxstr = aux
-                                    if aux != None and aux != '':
-                                        auxstr = '_'+auxstr
-                                    if basename == '' and postname == '':
-                                        name = time+'_'+varid+auxstr+'-table.text'
-                                    else:
-                                        name = basename+'_'+time+'_'+varid+auxstr+'-table.text'
-                                    fname = os.path.join(outdir, name)
-                                    print 'Creating file -----------------> ', fname
-                                    f = open(fname, 'w')
-                                """
                                 f = open( form_filename( form_file_rootname(
                                             'resstring', [varid], 'table', dir=outdir, season=time,
                                                          basen=basename, postn=postname, aux=aux ), 'text' ))
@@ -653,87 +642,25 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
                         var_id_save = seqgetattr(var,'id','')
                         seqsetattr( var,'id','' )
                     else:
-                        #print 'in the else clause.'
-                        #print var
-                        #print type(var)
-
                         vname = var.id.replace(' ', '_')
                         var_id_save = var.id
                         var.id = ''         # If id exists, vcs uses it as a plot title
                         # and if id doesn't exist, the system will create one before plotting!
-
                     vname = vname.replace('/', '_')
-                    #### TODO - Do we need the old style very verbose names here?
-                    #### jfp, my answer: The right way to do it is that all the verbose information
-                    #### useful for file names should be constructed elsewhere, perhaps in a named tuple.
-                    #### The verbose names are formed, basically, by concatenating everything in that
-                    #### tuple.  What we should do here is to form file names by concatenating the
-                    #### most interesting parts of that tuple, whatever they are.  But it's important
-                    #### to use enough so that different plots will almost surely have different names.
-                    #### bes - it is also a requirement that filenames be reconstructable after-the-fact
-                    #### with only the dataset name (the dsname parameter probably) and the combination of
-                    #### seasons/vars/setnames/varopts/etc used to create the plot. Otherwise, there is no
-                    #### way for classic viewer to know the filename without lots more special casing. 
+                else:
+                    vname = ''
+                #### TODO - Do we need the old style very verbose names here?
+                #### jfp, my answer: The right way to do it is that all the verbose information
+                #### useful for file names should be constructed elsewhere, perhaps in a named tuple.
+                #### The verbose names are formed, basically, by concatenating everything in that
+                #### tuple.  What we should do here is to form file names by concatenating the
+                #### most interesting parts of that tuple, whatever they are.  But it's important
+                #### to use enough so that different plots will almost surely have different names.
+                #### bes - it is also a requirement that filenames be reconstructable after-the-fact
+                #### with only the dataset name (the dsname parameter probably) and the combination of
+                #### seasons/vars/setnames/varopts/etc used to create the plot. Otherwise, there is no
+                #### way for classic viewer to know the filename without lots more special casing. 
 
-                    """ jfp former fname computation
-                    print 'vname: ', vname
-                    # I *really* hate to do this. Filename should be handled better at a level above diags*.py
-                    special = ''
-                    if 'RMSE_' in vname:
-                        special='RMSE'
-                    if 'Standard_Deviation' in vname:
-                        special='STDDEV'
-                    if 'BIAS_' in vname:
-                        special='BIAS'
-                    if 'CORR_' in vname:
-                        special='CORR'
-                    if special != '':
-                        print '--> Special: ', special
-                        if ('_1' in vname and '_2' in vname) or '_MAP' in vname.upper():
-                            fname = frnamebase+'-map.png'
-                        elif '_1' in vname and '_2' not in vname:
-                            fname = frnamebase+'-ds1.png'
-                        elif '_2' in vname and '_1' not in vname:
-                            fname = frnamebase+'-ds2.png'
-                        elif '_0' in vname and '_1' not in vname:
-                            fname = frnamebase+'-ds0.png'
-                        else:
-                            logging.warning('Couldnt determine filename; defaulting to just .png. vname: %s, frnamebase: %s', vname, frnamebase)
-                            fname = frnamebase+'.png'
-                    elif '_diff' in vname or ('_ft0_' in vname and '_ft1_' in vname) or\
-                         ('_ft1_' in vname and '_ft2_' in vname):
-                        fname = frnamebase+'-diff.png'
-                    elif '_obs' in vname:
-                        fname = frnamebase+'-obs.png'
-                    else:
-                        if '_ttest' in vname:
-                            if 'ft1' in vname and 'ft2' in vname:
-                                fname = frnamebase+'-model1_model2_ttest.png'
-                            elif 'ft1' in vname and 'ft2' not in vname:
-                                fname = frnamebase+'-model1_ttest.png'
-                            elif 'ft2' in vname and 'ft1' not in vname:
-                                fname = frnamebase+'-model2_ttest.png'
-                        elif '_ft1' in vname and '_ft2' not in vname:
-                            fname = frnamebase+'-model.png'  
-                            # if we had switched to model1 it would affect classic view, etc.
-                        elif '_ft2' in vname and '_ft1' not in vname:
-                            fname = frnamebase+'-model2.png'
-                        elif '_ft0' in vname and '_ft1' not in vname:
-                            fname = frnamebase+'-model0.png'
-                        elif '_ft1' in vname and '_ft2' in vname:
-                            fname = frnamebase+'-model-model2.png'
-                        elif '_fts' in vname: # a special variable; typically like lmwg set3/6 or amwg set 2
-                            fname = frnamebase+'_'+vname.replace('_fts','')+'.png'
-                        else:
-                            logging.warning('Second spot - Couldnt determine filename; defaulting to just .png. vname: %s, frnamebase: %s', vname, frnamebase)
-                            fname = frnamebase+'.png'
-
-                    print "png file name: ",fname
-                    fnamesvg = fname[:-3]+'svg'
-                    print "svg file name: ",fnamesvg
-                    fnamepdf = fname[:-3]+'pdf'
-                    print "pdf file name: ",fnamepdf
-                    """
                 fnamepng,fnamesvg,fnamepdf = form_filename( frnamebase, ('png','svg','pdf'), descr=True, vname=vname )
 
                 if vcs.isscatter(rsr.presentation) or (plot.number in ['11', '12'] and package.upper() == 'AMWG'):
@@ -930,15 +857,6 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
             vname = varid.replace(' ', '_')
             vname = vname.replace('/', '_')
 
-        """ jfp former fname computation:
-        print 'vname in tmmobs: ',vname
-        if '_diff' in vname:
-            fname = frnamebase+'-combined-diff.png'
-        else:
-            fname = frnamebase+'-combined.png'
-        fnamesvg = fname[:-3]+'svg'
-        fnamepdf = fname[:-3]+'pdf'
-        """
         fnamepng,fnamesvg,fnamepdf = form_filename( frnamebase+'-combined', ('png','svg','pdf'),
                                                     descr=True, vname=vname )
 
