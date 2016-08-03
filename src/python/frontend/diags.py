@@ -100,6 +100,56 @@ def setnum( setname ):
         setnumber = setname[index1:index1+index2]
     return setnumber
 
+def form_filename( rootname, fmt, descr='' ):
+    """This information goes into a file name computation, or possibly should go:
+- root name, from form_file_rootname
+- format of output (png,svg,pdf,nc) (not used for rootname, only for full name)
+- descriptive string for uniqueness, e.g. 'model' or 'obs1'.  The user provides this, and it differs from
+  the postname which is used for the rootname computation.
+"""
+    return '-'.join(rootname,descr) + '.' + fmt
+
+def form_file_rootname( plotset, vars, meanings='variable', dir='', filetables=[],
+                   combined=False, season='ANN', basen='', postn='', aux=[], region='Global',
+                   times=None ):
+    """This information goes into a file root name computation, or possibly should go:
+- plot set, a number, e.g. 5, or string, e.g. '4a'.  Or this could be a string identifying some special situation.
+- combined or simple plot
+- filetables (numbers, directory name, model/obs, etc.)
+- season
+- variable names (a name is a core name, e.g. TREFHT, not the extended IDs we use for dictionaries)
+- user-provided basename, postname
+- auxiliary parameters, e.g. level for a level set
+- region
+- time period (if there are time restrictions other than season; not implemented)
+- user-specified directory (if the directory is considered to be part of the filename)
+- output meaning: variable, diff, variance, rmse, etc.
+"""
+# For a first cut at this function, I will simply try to reproduce the present behavior.
+
+    plotset = str(plotset)
+    if plotset==1:
+        fname = 'table_output'
+        return os.path.join( dir, fname )
+
+    if plotset[0] in ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']: # i.e. [str(n) for n in range(10)]
+        # This is a normal plotset.
+        if basen == '' and postn == '':
+            fname = 'figure-set'+plotset+'_'+region+'_'+season+'_'+'_'.join(vars)+'_plot'
+        else:
+            fname = '_'.join( basen, season, '_'.join(vars), '_'.join(aux), postn )
+    elif plotset=='resstring':  # For "type(res) is str".
+        if aux is None or aux==[None] or aux=='':
+            aux = []
+        fname = '_'.join(basen, season, '_'.join(vars), '_'.join(aux)) + '-table.text'
+    elif plotset=='res0':    # For len(res)==0
+        fname = '_'.join(basen, season, region) + '-table.text'
+
+    print "jfp"
+    print "jfp For directory",dir,"formed filename", fname
+    return os.path.join( dir, fname )
+
+
 def run_diags( opts ):
     # Setup filetable arrays
     modelfts = []
@@ -231,7 +281,10 @@ def run_diags( opts ):
             directory = outdir + '/amwg1_output/'
             if opts['output']['table']:
                 table.get_data(directory)
-            table.write_plot_data(where=directory, fname=directory+'table_output') 
+#jfp was            table.write_plot_data(where=directory, fname=directory+'table_output') 
+            table.write_plot_data(where=directory, fname=form_filename( form_file_rootname(
+                        sclass.number, [], 'table'), 'text' ) )
+            # Actually write_plot_data (amwg1.py) ignores this filename and generates its own filename
             continue
 
         # see if the user specified seasons are valid for this diagnostic
@@ -323,9 +376,10 @@ def run_diags( opts ):
                         if res is not None and len(res)>0 and type(res) is not str: # Success, we have some plots to plot
                             print '--------------------------------- res is not none'
                             # Are we running from metadiags? If so, lets keep the name as simple as possible.
+                            """jfp former code:
                             if basename == '' and postname == '':
-                                fname = 'figure-set'+snum+'_'+r_fname+'_'+time+'_'+varid+'_plot'
-                                fname = os.path.join(outdir, fname)
+                                frname = 'figure-set'+snum+'_'+r_fname+'_'+time+'_'+varid+'_plot'
+                                frname = os.path.join(outdir, fname)
                             else:
                                 auxname =''
                                 if aux != 'default' and aux != None and aux != ' default': #?? why ' default'?
@@ -338,10 +392,14 @@ def run_diags( opts ):
                            
                                 name = basename+'_'+time+'_'+varid+auxname+'_'+pname+r_fname
                                 fname = os.path.join(outdir,name)
+                                """
+                            frname = form_file_rootname(
+                                snum, [varid], 'variable', dir=outdir, season=time, basen=basename,
+                                postn=postname, aux=[aux] )
                      
                             if opts['output']['plots'] == True:
                                 displayunits = opts.get('displayunits', None)                                    
-                                makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=displayunits)
+                                makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits=displayunits)
                                 number_diagnostic_plots += 1
                             
                             if opts['output']['xml'] == True:
@@ -349,45 +407,51 @@ def run_diags( opts ):
                                 # Probably make this a command line option.
                                 if res.__class__.__name__ is 'uvc_composite_plotspec':
                                     resc = res
-                                    filenames = resc.write_plot_data("xml-NetCDF", outdir )
                                 else:
                                     resc = uvc_composite_plotspec( res )
-                                    filenames = resc.write_plot_data("xml-NetCDF", outdir )
-                                print "wrote plots",resc.title," to",filenames
+                                filenames = resc.write_plot_data("xml-NetCDF", frname )
+                                print "wrote plot data to",filenames
 
                         elif res is not None:
                             ############################################################
                             # it appears that the rest of this code is unnecessary.
                             # the hack to speedup amwg1 does not need this. It's simpler.
                             if type(res) is str:
-                                if aux == None:
-                                    auxstr = ''
-                                else:
-                                    auxstr = aux
-                                if aux != None and aux != '':
-                                    auxstr = '_'+auxstr
-                                if basename == '' and postname == '':
-                                    name = time+'_'+varid+auxstr+'-table.text'
-                                else:
-                                    name = basename+'_'+time+'_'+varid+auxstr+'-table.text'
-                                fname = os.path.join(outdir, name)
-                                print 'Creating file -----------------> ', fname
-                                f = open(fname, 'w')
+                                """ jfp former fname code:
+                                    if aux == None:
+                                        auxstr = ''
+                                    else:
+                                        auxstr = aux
+                                    if aux != None and aux != '':
+                                        auxstr = '_'+auxstr
+                                    if basename == '' and postname == '':
+                                        name = time+'_'+varid+auxstr+'-table.text'
+                                    else:
+                                        name = basename+'_'+time+'_'+varid+auxstr+'-table.text'
+                                    fname = os.path.join(outdir, name)
+                                    print 'Creating file -----------------> ', fname
+                                    f = open(fname, 'w')
+                                """
+                                f = open( form_filename( form_file_rootname(
+                                            'resstring', [varid], 'table', dir=outdir, season=time,
+                                                         basen=basename, postn=postname, aux=aux ), 'text' ))
                                 f.write(res)
                                 f.close()
                             else:
                                 # but len(res)==0, probably plot tables
                                 # eventually, education could get rid of the second clause here but I suspect not anytime soon.
-                                if opts['output']['table'] == True or res.__class__.__name__ is 'amwg_plot_set1': 
-                                    print 'IN TABLES'
+                                if opts['output']['table'] == True or res.__class__.__name__ is 'amwg_plot_set1':
                                     resc = res
                                     if basename == '' and postname == '':
                                         where = outdir
                                         fname = ""
                                     else:
                                         where = ""
-                                        name = basename+'_'+time+'_'+r_fname+'-table.text'
-                                        fname = os.path.join(outdir,name)
+                                        #jfp former fname code: name = basename+'_'+time+'_'+r_fname+'-table.text'
+                                        #jfp was fname = os.path.join(outdir,name)
+                                        fname = form_filename( form_file_rootname(
+                                            'res0', [], 'table', dir=outdir, season=time,
+                                            basen=basename, region=r_fname ), 'text' )
                                     print '-------> calling write_plot with where: %s, fname: %s' %(where, fname)
 
                                     filenames = resc.write_plot_data("text", where=where, fname=fname)
@@ -400,7 +464,7 @@ def run_diags( opts ):
     print "total number of (compound) diagnostic plots generated =", number_diagnostic_plots
 
 
-def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=None):
+def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits=None):
     # need to add plot and pacakge for the amwg 11,12 special cases. need to rethink how to deal with that
     # At this loop level we are making one compound plot.  In consists
     # of "single plots", each of which we would normally call "one" plot.
@@ -411,7 +475,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
     # We are given the list of results from plot(), the 2 VCS canvases and a filename minus the last bit
     cdms2.setAutoBounds(True)   # makes the VCS-computed means the same as when we
     #                             compute means after calling genGenericBounds().
-    fnamebase = fname
+    frnamebase = frname
     nsingleplots = len(res)
     nsimpleplots = nsingleplots + sum([len(resr)-1 for resr in res if type(resr) is tuple])
     gms = nsimpleplots * [None]
@@ -542,43 +606,43 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
                     if special != '':
                         print '--> Special: ', special
                         if ('_1' in vname and '_2' in vname) or '_MAP' in vname.upper():
-                            fname = fnamebase+'-map.png'
+                            fname = frnamebase+'-map.png'
                         elif '_1' in vname and '_2' not in vname:
-                            fname = fnamebase+'-ds1.png'
+                            fname = frnamebase+'-ds1.png'
                         elif '_2' in vname and '_1' not in vname:
-                            fname = fnamebase+'-ds2.png'
+                            fname = frnamebase+'-ds2.png'
                         elif '_0' in vname and '_1' not in vname:
-                            fname = fnamebase+'-ds0.png'
+                            fname = frnamebase+'-ds0.png'
                         else:
-                            logging.warning('Couldnt determine filename; defaulting to just .png. vname: %s, fnamebase: %s', vname, fnamebase)
-                            fname = fnamebase+'.png'
+                            logging.warning('Couldnt determine filename; defaulting to just .png. vname: %s, frnamebase: %s', vname, frnamebase)
+                            fname = frnamebase+'.png'
                     elif '_diff' in vname or ('_ft0_' in vname and '_ft1_' in vname) or\
                          ('_ft1_' in vname and '_ft2_' in vname):
-                        fname = fnamebase+'-diff.png'
+                        fname = frnamebase+'-diff.png'
                     elif '_obs' in vname:
-                        fname = fnamebase+'-obs.png'
+                        fname = frnamebase+'-obs.png'
                     else:
                         if '_ttest' in vname:
                             if 'ft1' in vname and 'ft2' in vname:
-                                fname = fnamebase+'-model1_model2_ttest.png'
+                                fname = frnamebase+'-model1_model2_ttest.png'
                             elif 'ft1' in vname and 'ft2' not in vname:
-                                fname = fnamebase+'-model1_ttest.png'
+                                fname = frnamebase+'-model1_ttest.png'
                             elif 'ft2' in vname and 'ft1' not in vname:
-                                fname = fnamebase+'-model2_ttest.png'
+                                fname = frnamebase+'-model2_ttest.png'
                         elif '_ft1' in vname and '_ft2' not in vname:
-                            fname = fnamebase+'-model.png'  
+                            fname = frnamebase+'-model.png'  
                             # if we had switched to model1 it would affect classic view, etc.
                         elif '_ft2' in vname and '_ft1' not in vname:
-                            fname = fnamebase+'-model2.png'
+                            fname = frnamebase+'-model2.png'
                         elif '_ft0' in vname and '_ft1' not in vname:
-                            fname = fnamebase+'-model0.png'
+                            fname = frnamebase+'-model0.png'
                         elif '_ft1' in vname and '_ft2' in vname:
-                            fname = fnamebase+'-model-model2.png'
+                            fname = frnamebase+'-model-model2.png'
                         elif '_fts' in vname: # a special variable; typically like lmwg set3/6 or amwg set 2
-                            fname = fnamebase+'_'+vname.replace('_fts','')+'.png'
+                            fname = frnamebase+'_'+vname.replace('_fts','')+'.png'
                         else:
-                            logging.warning('Second spot - Couldnt determine filename; defaulting to just .png. vname: %s, fnamebase: %s', vname, fnamebase)
-                            fname = fnamebase+'.png'
+                            logging.warning('Second spot - Couldnt determine filename; defaulting to just .png. vname: %s, frnamebase: %s', vname, frnamebase)
+                            fname = frnamebase+'.png'
 
                     print "png file name: ",fname
                     fnamesvg = fname[:-3]+'svg'
@@ -783,9 +847,9 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
 
         print 'vname in tmmobs: ',vname
         if '_diff' in vname:
-            fname = fnamebase+'-combined-diff.png'
+            fname = frnamebase+'-combined-diff.png'
         else:
-            fname = fnamebase+'-combined.png'
+            fname = frnamebase+'-combined.png'
         fnamesvg = fname[:-3]+'svg'
         fnamepdf = fname[:-3]+'pdf'
 

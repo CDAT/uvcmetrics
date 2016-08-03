@@ -146,6 +146,12 @@ class uvc_composite_plotspec():
     def outfile( self, format='xml-NetCDF', where=""):
         if len(self.title)<=0:
             fname = 'foo.xml'
+        elif not os.path.isdir(where):
+            # if it's not a directory, it's a filename (probably doesn't exist yet)
+            fname = where
+            if '.xml' not in fname:
+               fname = fname+'.xml'
+            return fname
         else:
             # the title join ends up with two spaces between fields. check for that first, then replace single spaces after.
             fname = (self.title.strip()+'.xml').replace('  ','_').replace(' ','_').replace('/','_')[:115]  # 115 is to constrain file size
@@ -157,6 +163,7 @@ class uvc_composite_plotspec():
     def write_plot_data( self, format="", where="" ):
         """writes plot data to a specified location, usually a file, of the specified format.
         returns a list of files which were created"""
+        print "jfp entering composite write_plot_data for format=",format,"where=",where
         if format=="" or format=="xml" or format=="xml-NetCDF" or format=="xml file":
             format = "xml-NetCDF"
             contents_format = "NetCDF"
@@ -164,7 +171,7 @@ class uvc_composite_plotspec():
             logging.warning("write_plot_data cannot recognize format name %s",format)
             logging.warning("will write a xml file pointing to NetCDF files.")
             format = "xml-NetCDF"
-            conents_format = "NetCDF"
+            contents_format = "NetCDF"
 
         filenames = []
         for p in self.plots:
@@ -798,6 +805,12 @@ class uvc_simple_plotspec():
         """returns a filename for writing out this plot"""
         if len(self.title)<=0:
             fname = 'foo.nc'
+        elif not os.path.isdir(where):
+            # if it's not a directory, it's a filename (probably doesn't exist yet)
+            if where[-3:]=='.nc':
+                return where
+            else:
+                return where+'.nc'
         else:
             # the title join ends up with two spaces between fields. check for that first, then replace single spaces after.
             fname = underscore_join([self.title.strip(),self.source]).replace('  ','_').replace(' ','_').replace('/','_') + '.nc'
@@ -805,6 +818,7 @@ class uvc_simple_plotspec():
         return filename
     def write_plot_data( self, format="", where="" ):
         """Writes the plot's data in the specified file format and to the location given."""
+        print "jfp entering simple write_plot_data for format=",format,"where=",where
         if format=="" or format=="NetCDF" or format=="NetCDF file":
             format = "NetCDF file"
         elif format=="JSON string":
@@ -817,6 +831,7 @@ class uvc_simple_plotspec():
             format = "NetCDF file"
 
         filename = self.outfile( format, where )
+        print "jfp chose filename",filename
 
         if format=="NetCDF file":
             value=0
