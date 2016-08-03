@@ -12,7 +12,7 @@ import sys
 import shutil
 import os
 import logging
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 
 class color:
   PURPLE = '\033[95m'

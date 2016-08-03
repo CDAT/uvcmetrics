@@ -8,7 +8,7 @@ import sys, os, cdms2, re, logging
 from metrics.frontend.options import Options
 from metrics.common import *
 from pprint import pprint
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 
 def parse_climo_filename(filename):
     """Tests whether a filename is in the standard format for a climatology file, e.g.

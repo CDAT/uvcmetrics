@@ -5,7 +5,7 @@ from metrics.frontend.templateoptions import *
 from vtk import vtkTextActor, vtkTextRenderer, vtkTextProperty, vtkPropPicker
 import logging
 
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 # Font Scale Factor for defining font size
 def gaussian(x, mu, sig):
     return np.exp(-np.power(x - mu, 2.) / (2 * np.power(sig, 2.)))

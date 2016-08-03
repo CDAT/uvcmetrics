@@ -27,7 +27,7 @@ import cProfile, time, resource
 from metrics.common import store_provenance
 
 import logging
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 
 
 class climatology_variable( reduced_variable ):

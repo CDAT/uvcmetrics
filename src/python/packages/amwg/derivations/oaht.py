@@ -9,7 +9,7 @@ from ncl_isms import *
 from metrics.common import store_provenance
 
 
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 
 # NCAR gets thse from environment variables!  We have to do it better, but for now, do it worse!
 version = None

@@ -29,7 +29,7 @@ import cProfile
 from metrics.common.utilities import DiagError, store_provenance
 
 import logging
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 
 comm = None
 MP = False

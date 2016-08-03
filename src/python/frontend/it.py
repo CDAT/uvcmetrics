@@ -5,7 +5,7 @@ from templateoptions import *
 
 import logging
 
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 
 
 #######################################################################################################

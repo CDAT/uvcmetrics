@@ -60,7 +60,7 @@ from metrics.frontend.it import *
 from metrics.computation.region import *
 from metrics.frontend.amwg_plotting import *
 import logging
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 def mysort( lis ):
     lis.sort()
     return lis

@@ -2,7 +2,7 @@ from cdms2 import MV2
 import logging
 
 
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 def uncompress_fisccp1( fisccp1, isccp_prs, isccp_tau ):
     """Re-dimensions the input variable FISCCP1, to "un-compress" the 49-element iccp_prstau axis
     into the standard two 7-element axes, isccp_prs and isccp_tau (which should be supplied).

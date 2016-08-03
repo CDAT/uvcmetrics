@@ -1,5 +1,5 @@
 import pdb, logging
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 
 class stationData():
     """ This class support the RAOBS.nc file used for plot set 12. It reads the file and

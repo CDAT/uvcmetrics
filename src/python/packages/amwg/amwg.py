@@ -22,7 +22,7 @@ from numbers import Number
 from pprint import pprint
 import logging
 
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 
 seasonsyr=cdutil.times.Seasons('JFMAMJJASOND')
 

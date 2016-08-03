@@ -7,7 +7,7 @@ from unidata import udunits
 
 
 
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 # constants as in functions_vertical.ncl, lines 5-10:
 plvlO = numpy.array([30.,50.,70.,100.,150.,200.,250.,300.,400.,500.,
                      600.,700.,775.,850.,925.,1000.])   # mb

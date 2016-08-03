@@ -22,7 +22,7 @@ from metrics.packages.diagnostic_groups import *
 from metrics.frontend.uvcdat import *
 from metrics.frontend.options import *
 import logging
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 
 from pprint import pprint
 import cProfile

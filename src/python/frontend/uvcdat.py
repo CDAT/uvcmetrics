@@ -29,6 +29,8 @@ from multiprocessing import Process, Semaphore, Pipe
 import time
 import cdms2
 
+logger = logging.getLogger(__name__)
+
 def _plotdata_run( child_conn, sema, plotspec, filetable1, filetable2, varname, seasonname, outputPath, unique_ID, aux=None, newgrid=0 ):
     #def _plotdata_run(plotspec, filetable1, filetable2, varname, seasonname, outputPath, unique_ID, aux=None ):
     global vcsx
@@ -160,16 +162,16 @@ class uvc_composite_plotspec():
             format = "xml-NetCDF"
             contents_format = "NetCDF"
         else:
-            logging.warning("write_plot_data cannot recognize format name %s",format)
-            logging.warning("will write a xml file pointing to NetCDF files.")
+            logger.warning("write_plot_data cannot recognize format name %s",format)
+            logger.warning("will write a xml file pointing to NetCDF files.")
             format = "xml-NetCDF"
             conents_format = "NetCDF"
 
         filenames = []
         for p in self.plots:
             if type(p) is tuple:
-                logging.error("Cannot write_plot_data on tuple<<<<<<<<<<<<<<<<<")
-                print p
+                logger.error("Cannot write_plot_data on tuple<<<<<<<<<<<<<<<<<")
+                logger.info(p)
                 continue
             filenames += p.write_plot_data( contents_format, where )
 
@@ -179,7 +181,7 @@ class uvc_composite_plotspec():
         writer.write("<plotdata>\n")
         for p in self.plots:
             if type(p) is tuple:
-                logging.error("Again, cannot write_plot_data on tuple<<<<<<<<<<<<<<<<<")
+                logger.error("Again, cannot write_plot_data on tuple<<<<<<<<<<<<<<<<<")
                 continue
             pfn = p.outfile(where)
             writer.write( "<ncfile>"+pfn+"</ncfile>\n" )
@@ -239,7 +241,7 @@ class uvc_simple_plotspec():
             elif presentation == "Taylordiagram":
                 self.presentation = vcsx.createtaylordiagram()
             else:
-                logging.error("uvc_plotspec doesn't recognize presentation %s",presentation)
+                logger.error("uvc_plotspec doesn't recognize presentation %s",presentation)
                 self.presentation = "Isofill"  # try to go on
         else:
             self.presentation = presentation
@@ -513,7 +515,7 @@ class uvc_simple_plotspec():
                         # This cannot be expected to work always, but it's better than doing nothing.
                         amed = numpy.median(self.vars[0]._data)
                         vclip = amed * 1.0e6
-                        logging.warning("Graphics problems, clipping some data at %s",vclip)
+                        logger.warning("Graphics problems, clipping some data at %s",vclip)
                         self.vars[0]._data[ self.vars[0]._data > vclip ] = vclip
                         a = numpy.sort(self.vars[0]._data.flatten())
                         asp = numpy.array_split(a,nlevels)
@@ -580,13 +582,10 @@ class uvc_simple_plotspec():
                     vm = max(abs(v.min()),abs(v.max()))
                     wm = max(abs(w.min()),abs(w.max()))
                     vec.scale = 10 / math.sqrt( math.sqrt( vm**2 + wm**2 ))
-                    print "YREP HERE"
                 else:   # We shouldn't get here, but may as well try to make it work if possible:
-                    logging.warning("Trying to make a vector plot without tuples!  Variables involved are:")
+                    logger.warning("Trying to make a vector plot without tuples!  Variables involved are:")
                     v = self.vars[0]
-                    print "variable",v.id
                     v = self.vars[1]
-                    print "variable",v.id
                 nlats = latAxis(v).shape[0]
                 nlons = lonAxis(w).shape[0]
                 # vector density factor of 32 works for moisture transport, 16 for wind stress
@@ -665,7 +664,7 @@ class uvc_simple_plotspec():
             #self.presentation.list()
             
         else:
-            logging.error("Cannot identify graphics method %s",self.presentation.__class__.__name__)
+            logger.error("Cannot identify graphics method %s",self.presentation.__class__.__name__)
 
     def __repr__(self):
         return ("uvc_plotspec %s: %s\n" % (self.presentation,self.title))
@@ -689,7 +688,7 @@ class uvc_simple_plotspec():
     def synchronize_values( self, pset, suffix_length=0 ):
         """the part of synchronize_ranges for variable values only"""
         if type(self.vars[0]) is tuple:
-            logging.error("Synchronize_values hasn't been implemented for tuples %s",self.vars[0])
+            logger.error("Synchronize_values hasn't been implemented for tuples %s",self.vars[0])
 
         # First, go from the MV (TransientVariable) id attribute to the original variable name.
         # This id attribute has the orginal name (e.g. PS) plus substrings to identify data type,
@@ -737,7 +736,7 @@ class uvc_simple_plotspec():
         """the part of synchronize_ranges for variable values only - except that psets is a list of
         uvc_plotset instances.  Thus we can combine ranges of many variable values."""
         if type(self.vars[0]) is tuple:
-            logging.error("Synchronize_many_values hasn't been implemented for tuples %s",self.vars[0])
+            logger.error("Synchronize_many_values hasn't been implemented for tuples %s",self.vars[0])
         sl = -suffix_length
         if sl==0:
             self_suffix = ""
@@ -774,7 +773,7 @@ class uvc_simple_plotspec():
     def synchronize_axes( self, pset ):
         "the part of synchronize_ranges for axes only"
         if type(self.vars[0]) is tuple:
-            logging.error("Synchronize_axes hasn't been implemented for tuples %s",self.vars[0])
+            logger.error("Synchronize_axes hasn't been implemented for tuples %s",self.vars[0])
         self_suffix = self.vars[0].id[-2:]
         pset_suffix = pset.vars[0].id[-2:]
         var_ids = set([v.id[:-2] for v in self.vars]) & set([v.id[:-2] for v in pset.vars])
@@ -811,8 +810,8 @@ class uvc_simple_plotspec():
         elif format=="JSON file":
             pass
         else:
-            logging.warning("write_plot_data cannot recognize format name %s",format)
-            logging.warning("will write a NetCDF file.")
+            logger.warning("write_plot_data cannot recognize format name %s",format)
+            logger.warning("will write a NetCDF file.")
             format = "NetCDF file"
 
         filename = self.outfile( format, where )
@@ -826,7 +825,7 @@ class uvc_simple_plotspec():
             writer = cdms2.open( filename, 'w' )    # later, choose a better name and a path!
             store_provenance(writer)
         elif format=="JSON file":
-            logging.error("JSON file not implemented yet")
+            logger.error("JSON file not implemented yet")
         elif format=="JSON string":
             return json.dumps(self,cls=DiagsEncoder)
 
@@ -869,7 +868,7 @@ def get_plot_data( plot_set, filetable1, filetable2, variable, season ):
     e.g. 'DJF','ANN','MAR'.
     This is DEPRECATED and AMWG-specific.  It is better to call a method obtained by a call
     of the list_diagnostic_sets() method of BasicDiagnosticGroup and its children such as AMWG."""
-    logging.warning("Deprecated function get_plot_data() has been called.")
+    logger.warning("Deprecated function get_plot_data() has been called.")
     return _get_plot_data( plot_set, filetable1, filetable2, variable, season)
 
 # To profile, replace (by name changes) the above get_plot_data() with the following one:
@@ -902,7 +901,7 @@ def _get_plot_data( plot_set_id, filetable1, filetable2, variable, season ):
     elif plot_set_id=='5':
         return plot_set5( filetable1, filetable2, variable, season )
     else:
-        logging.error("Plot set %s not implemented yet!", plot_set_id)
+        logger.error("Plot set %s not implemented yet!", plot_set_id)
         return None
     
 def diagnostics_template():

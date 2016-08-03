@@ -8,7 +8,7 @@ from metrics.computation.reductions import *
 from metrics.frontend import *
 import sys, traceback, logging
 
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 
 
 class derived_var(basic_id):
@@ -75,7 +75,7 @@ class derived_var(basic_id):
                 self.filetable = var.filetable
         if len(nonevals)>0:
             logger.warning("cannot yet derive %s because missing inputs %s",self._id,nonevals)
-            print "what's available is",inpdict.keys()
+            logger.debug("what's available is %s", inpdict.keys())
             return None
         try:
             output = apply( self._func, [ inpdict[inp] for inp in self._inputs ] )

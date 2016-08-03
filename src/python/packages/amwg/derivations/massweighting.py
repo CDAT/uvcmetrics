@@ -19,7 +19,7 @@ from atmconst import AtmConst
 from unidata import udunits
 
 
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 
 def rhodz_from_hybridlev( PS, P0, hyai, hybi ):
     """returns a variable rhodz which represents the air mass column density in each cell, assumes

@@ -27,7 +27,7 @@ from metrics.computation.region_functions import *
 
 import logging
 
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 
 
 regridded_vars = {}  # experimental
@@ -638,34 +638,34 @@ def ttest_ab(mv1, mv2, constant = .1):
    tax2, tid2 = timeAxis2(mv2new)
 
    if tid1 != tid2:
-      print 'Time axes between the two inputs are not the same.'
+      logger.warning('Time axes between the two inputs are not the same.')
       return
    v1 = mv1new.asma()
    v2 = mv2new.asma()
-   print 'V1:', v1
-   print 'V2:' , v2
-   print v1.max()
-   print v1.min()
-   print v2.max()
-   print v2.min()
-   print 'shapes:'
-   print mv1new.shape
-   print mv2new.shape
-   print 'IDs:'
-   print mv1.id
-   print mv2.id
+   logger.debug('V1: %s', v1)
+   logger.debug('V2: %s', v2)
+   logger.debug(v1.max())
+   logger.debug(v1.min())
+   logger.debug(v2.max())
+   logger.debug(v2.min())
+   logger.debug('shapes:')
+   logger.debug(mv1new.shape)
+   logger.debug(mv2new.shape)
+   logger.debug('IDs:')
+   logger.debug(mv1.id)
+   logger.debug(mv2.id)
 
    import scipy.stats
    prob = mv1new # maybe retain some metadata
 
    t, prob = scipy.stats.ttest_ind(v1, v2, axis=tid1, equal_var=False)
-   print 'prob:', prob
-   print 't: ', t
+   logger.debug('prob: %s', prob)
+   logger.debug('t: %s', t)
    missing = mv1.missing_value
    probnew = MV2.where(MV2.greater(prob, constant), 1, 0) # get rid of the tiny values that are essentially 0
    tnew = MV2.where(MV2.greater(t, constant), 1, 0)
 
-   print '*** TODO This needs some more work probably. Do we return t or prob?'
+   logger.debug('*** TODO This needs some more work probably. Do we return t or prob?')
    return tnew
 
 def ttest_time(mv1, mv2, mv3):
@@ -748,34 +748,32 @@ def ttest_time(mv1, mv2, mv3):
 # Step 3b - Add a 't' axis if it's not there. Does this need done? Should this need done?
 # Step 4 - RMSE
 def rmse_time(mv1, mv2):
-   print mv1.id, '------------> rmse_time - mv1.shape: ', mv1.shape
-   print mv2.id, '------------> rmse_time - mv2.shape: ', mv2.shape
+   logger.debug("%s ------------> rmse_time - mv1.shape: %s", mv1.id, mv1.shape)
+   logger.debug("%s ------------> rmse_time - mv1.shape: %s", mv2.id, mv2.shape)
 
    mv1new, mv2new = regrid_without_obs(mv1, mv2)
-#   print mv1new.shape
-#   print mv2new.shape
-   print 'after regrid: ', mv1new.shape, mv2new.shape
+   logger.debug('after regrid: %s, %s', mv1new.shape, mv2new.shape)
 
    rmse = statistics.rms(mv1new, mv2new, axis='t')
-   print 'min/max:'
-   print rmse.min()
-   print rmse.max()
-   print rmse.shape
+   logger.debug('min/max:')
+   logger.debug(rmse.min())
+   logger.debug(rmse.max())
+   logger.debug(rmse.shape)
    return rmse
 
 def correlation_time(mv1, mv2):
 
-   print 'min/max passed in: ', mv1.min(), mv2.min(), mv1.max(), mv2.max()
+   logger.debug('min/max passed in: %s %s %s %s', mv1.min(), mv2.min(), mv1.max(), mv2.max())
    mv1new, mv2new = regrid_without_obs(mv1, mv2)
-   print 'mv1new/2 shapes: ', mv1new.shape, mv2new.shape
-   print 'new min/max: ', mv1new.min(), mv2new.min(), mv1new.max(), mv2new.max()
+   logger.debug('mv1new/2 shapes: %s %s', mv1new.shape, mv2new.shape)
+   logger.debug('new min/max: %s %s %s %s', mv1new.min(), mv2new.min(), mv1new.max(), mv2new.max())
 
    corr = statistics.correlation(mv1new, mv2new, axis='t')
-   print 'min/max:'
-   print corr.min()
-   print corr.max()
-   print corr.data
-   print 'correlation result shape: ', corr.shape
+   logger.debug('min/max:')
+   logger.debug(corr.min())
+   logger.debug(corr.max())
+   logger.debug(corr.data)
+   logger.debug('correlation result shape: %s.', corr.shape)
    return corr
 
 
@@ -832,7 +830,7 @@ def std_3time(mv1, mv2, mv3, constant = 1.):
       if 'axis' in axes1[i].attributes:
          pass
       else:
-         print 'axis ', axes1[i].id, ' has no axis attribute'
+         logger.warning('axis %s has no axis attribute.', axes1[i].id)
          ### Assuming that is a time axis...
          axes1[i].axis='T'
          flag = True
@@ -844,7 +842,7 @@ def std_3time(mv1, mv2, mv3, constant = 1.):
       if 'axis' in axes2[i].attributes:
          pass
       else:
-         print 'axis ', axes2[i].id, ' has no axis attribute'
+         logger.warning('axis %s has no axis attribute.', axes2[i].id)
          ### Assuming that is a time axis...
          axes2[i].axis='T'
          flag = True
@@ -856,7 +854,7 @@ def std_3time(mv1, mv2, mv3, constant = 1.):
       if 'axis' in axes3[i].attributes:
          pass
       else:
-         print 'axis ', axes3[i].id, ' has no axis attribute, assuming it is a time axis'
+         logger.warning('axis %s has no axis attribute, assuming it is a time axis.', axes3[i].id)
          axes3[i].axis='T'
          flag = True
    if flag==True:
@@ -944,7 +942,7 @@ def regrid_without_obs(mv1, mv2):
       mv2new.setAxisList(axes2)
 
    if timeAxis(mv1new) == None and timeAxis(mv2new) == None:
-      print 'No time axis left for variables. mv1.id: ', mv1new.id, mv1new.shape, 'mv2.id: ', mv2new.id, mv2new.shape
+      logger.warning('No time axis left for variables. mv1.id: %s %s mv2.id: %s %s', mv1new.id, mv1new.shape, mv2new.id, mv2new.shape)
 
    return mv1new, mv2new
 
@@ -955,7 +953,7 @@ def regrid_without_obs(mv1, mv2):
 def regrid_with_obs(mv1, mv2, obs1):
    mv1, mv2 = reconcile_units(mv1, mv2)
    mv1, obs1 = reconcile_units(mv1, obs1)
-   print 'passed in shapes (regrid with units): ', mv1.shape, mv2.shape, obs1.shape
+   logger.debug('passed in shapes (regrid with units): %s %s %s', mv1.shape, mv2.shape, obs1.shape)
 
    axes1 = mv1.getAxisList()
    axes2 = mv2.getAxisList()
@@ -987,7 +985,7 @@ def regrid_with_obs(mv1, mv2, obs1):
    if len(axesobs[idxobs]) > minlat:
       obsnew = obs1.regrid(grid)
 
-   print 'Regridding shapes:', mv1new.shape, mv2new.shape, obsnew.shape
+   logger.debug('Regridding shapes: %s %s %s', mv1new.shape, mv2new.shape, obsnew.shape)
 
    flag = False
    for i in range(len(axes1)):
@@ -1020,9 +1018,9 @@ def regrid_with_obs(mv1, mv2, obs1):
       obsnew.setAxisList(axesobs)
 
    if timeAxis(mv1new) == None and timeAxis(mv2new) == None and timeAxis(obsnew) == None:
-      print 'No time axes left for variables. This is bad.'
+      logger.critical('No time axes left for variables. This is bad.')
 
-   print 'and done shapes: ', mv1new.shape, mv2new.shape, obsnew.shape
+   logger.info('and done shapes: %s %s %s', mv1new.shape, mv2new.shape, obsnew.shape)
    return mv1new, mv2new, obsnew
 
 # Calculate bias between mv1 and mv2. Regrid as appropriate
@@ -1033,9 +1031,9 @@ def regrid_with_obs(mv1, mv2, obs1):
 # Step 4 - prob = ttest(mv1sub, mv2sub)
 # Step 5 -
 def bias_map(mv1, mv2, obs, season, constant=.05, diffmeans=.25): # assumes mv1 is data and mv2 is obs generally.
-   print mv1.id, '----> bias_map - mv1.shape: ', mv1.shape
-   print mv2.id, '----> bias_map - mv2.shape: ', mv2.shape
-   print obs.id, '----> bias_map - obs.shape: ', obs.shape
+   logger.debug("%s ----> bias_map - mv1.shape: %s", mv1.id, mv1.shape)
+   logger.debug("%s ----> bias_map - mv2.shape: %s", mv2.id, mv2.shape)
+   logger.debug("%s ----> bias_map - obs.shape: %s", obs.id, obs.shape)
    mv1new, mv2new, obsnew = regrid_with_obs(mv1, mv2, obs)
 
    bias1 = mv1new - obsnew
@@ -1079,18 +1077,18 @@ def bias_map(mv1, mv2, obs, season, constant=.05, diffmeans=.25): # assumes mv1 
 def rmse_map(mv1, mv2, obs1, recalc=True, constant=.1):
 # for now, recalculating rmse for mv1 vs obs1 and mv2 vs obs2. maybe some day this can be done properly
 
-   print 'MAP IN SHAPES:', mv1.shape, mv2.shape, obs1.shape
+   logger.debug('MAP IN SHAPES: %s %s %s', mv1.shape, mv2.shape, obs1.shape)
    rmse1 = mv1
    rmse2 = mv2
 
    if recalc == True:
       mv1new, mv2new, obsnew = regrid_with_obs(mv1, mv2, obs1)
-      print 'OUT SHAPES:' , mv1new.shape, mv2new.shape, obsnew.shape
+      logger.debug('OUT SHAPES: %s %s %s', mv1new.shape, mv2new.shape, obsnew.shape)
 
       rmse1 = statistics.rms(mv1new, obsnew, axis='t')
       rmse2 = statistics.rms(mv2new, obsnew, axis='t')
 
-   print 'RMSE shapes:', rmse1.shape, rmse2.shape
+   logger.debug('RMSE shapes: %s %s', rmse1.shape, rmse2.shape)
 
 
    diff = rmse2-rmse1
@@ -1099,30 +1097,30 @@ def rmse_map(mv1, mv2, obs1, recalc=True, constant=.1):
    g = MV2.where ( MV2.greater_equal(absdiff, constant), MV2.where(MV2.greater(rmse2, rmse1), 2, 0), 0)
    vsum = b+g
    vmap = MV2.where (MV2.equal(vsum, 0), diff.missing_value, vsum)
-   print 'result shape: ', vmap.shape
+   logger.debug('result shape: %s', vmap.shape)
    return vmap
 
 # Basically the same as rmse_map, but the math is different.
 def correlation_map(mv1, mv2, obs1, recalc=True, constant=.1):
 
-   print 'MAP IN shapes: ', mv1.shape, mv2.shape, obs1.shape
+   logger.debug('MAP IN shapes: %s %s %s', mv1.shape, mv2.shape, obs1.shape)
    corr1 = mv1
    corr2 = mv2
 
    if recalc == True:
       mv1new, mv2new, obsnew = regrid_with_obs(mv1, mv2, obs1)
-      print 'MAP OUT shapes: ', mv1new.shape, mv2new.shape, obsnew.shape
+      logger.debug('MAP OUT shapes: %s %s %s', mv1new.shape, mv2new.shape, obsnew.shape)
 
       corr1 = statistics.correlation(mv1new, obsnew, axis='t')
       corr2 = statistics.correlation(mv2new, obsnew, axis='t')
 
-   print 'CORR SHAPE:' ,corr1.shape, corr2.shape
+   logger.debug('CORR SHAPE: %s %s', corr1.shape, corr2.shape)
    diff = corr2 - corr1
    b = MV2.where(MV2.greater_equal(diff, constant), 1, 0)
    g = MV2.where(MV2.less_equal(diff, -1*constant), -1, 0)
    vsum = b+g
    vmap = MV2.where (MV2.equal(vsum, 0), diff.missing_value, vsum)
-   print 'vmap shape: ', vmap.shape
+   logger.debug('vmap shape: %s', vmap.shape)
 
    return vmap
 
@@ -1342,7 +1340,7 @@ def reduceAnnTrendRegion(mv, region, single=False, weights=None, vid=None):
 
 # Used for lmwg set 3
 def reduceMonthlyRegion(mv, region, weights=None, vid=None):
-   print 'REDUCEMONTHLYREGION STILL NEEDS AREA WEIGHTS ADDED'
+   logger.warning('REDUCEMONTHLYREGION STILL NEEDS AREA WEIGHTS ADDED')
    vals = []
    if vid is None:
       vid = 'reduced_'+mv.id
@@ -1417,7 +1415,7 @@ def reduceMonthlyTrendRegion(mv, region, weights=None, vid=None):
    mvtrend, weights12 = genutil.grower(mvtrend, weightsub)
 
    mvvals = cdutil.averager(mvtrend, axis='xy', weights=weights12)
-   print 'mvvals leaving shape: ', mvvals.shape
+   logger.debug('mvvals leaving shape: %s', mvvals.shape)
 
    mvvals.id = vid
    if hasattr(mv, 'units'): mvvals.units = mv.units # probably needs some help
@@ -1539,7 +1537,7 @@ def calculate_seasonal_climatology(mv, season):
             ss = str(season.seasons)
         if ss=='JFMAMJJASOND':
             ss = 'ANN'
-        print "calculating climatology for season : ", ss
+        logger.debug("calculating climatology for season : %s", ss)
 
     tax = timeAxis(mv)
     if tax is None:
@@ -1805,9 +1803,9 @@ def sum3(mv1, mv2, mv3):
       if mv1.units == mv2.units and mv1.units == mv3.units: #they should
          mv.units = mv1.units
       else:
-         print 'IN SUM3 - - DIFFERENT UNITS'
+         logger.debug('IN SUM3 - - DIFFERENT UNITS')
    else:
-      print 'IN SUM3 - - NO UNITS'
+      logger.debug('IN SUM3 - - NO UNITS')
 
    if hasattr(mv, 'long_name'):
       if mv.long_name == mv1.long_name:
@@ -1851,26 +1849,26 @@ def aminusb_regrid(mv1, mv2):
    if hasattr(mv, 'long_name'):
       if mv.long_name == mv1.long_name:
          mv.long_name = ''
-   print '-------> IN regrid, ids:'
+   logger.debug('-------> IN regrid, ids:')
    if hasattr(mv1, 'id'):
-      print 'mv1.id: ', mv1.id
+      logger.debug('mv1.id: %s', mv1.id)
    else:
-      print 'no id for mv1'
+      logger.warning('no id for mv1')
    if hasattr(mv2, 'id'):
-      print 'mv2.id:' , mv2.id
+      logger.debug('mv2.id: %s' , mv2.id)
    else:
-      print 'no id for mv2'
-   print "Mv1.id:", mv1.id
-   print 'mv2.id:', mv2.id
+      logger.warning('no id for mv2')
+   logger.debug("mv1.id: %s", mv1.id)
+   logger.debug('mv2.id: %s', mv2.id)
    if hasattr(mv1, 'long_name'):
-      print 'mv1 longname: ', mv1.long_name
+      logger.debug('mv1 longname: %s', mv1.long_name)
    if hasattr(mv2, 'long_name'):
-      print 'mv2 longname: ', mv2.long_name
+      logger.debug('mv2 longname: %s', mv2.long_name)
    if hasattr(mv, 'id'):
-      print 'mv returning id: ', mv.id
+      logger.debug('mv returning id: %s', mv.id)
    else:
-      print 'mv returning has no id.'
-   print '<------- out regrid ids'
+      logger.warning('mv returning has no id.')
+   logger.debug('<------- out regrid ids')
    return mv
 
 
@@ -1924,7 +1922,7 @@ def adivb(mv1, mv2):
 def dummy2(mv1, mv2):
    return mv1
 def dummy(mv, vid=None):
-   print '--------> mv shape passed to dummy: ', mv.shape
+   logger.debug('--------> mv shape passed to dummy: %s', mv.shape)
    return mv
 
 def ab_ratio(mv1, mv2):
@@ -1986,8 +1984,8 @@ def evapfrac_special(mv1, mv2, mv3, mv4):
 
 def pminuse(mv1, mv2, mv3, mv4, mv5):
    """ returns precept minus evap transp """
-   print 'mv1 units--------------> ', mv1.units
-   print 'mv3 units--------------> ', mv3.units
+   logger.debug('mv1 units--------------> %s', mv1.units)
+   logger.debug('mv3 units--------------> %s', mv3.units)
    prec = mv1+mv2
 #   prec = convert_units(prec, 'mm')
    et = mv3+mv4+mv5
@@ -2024,8 +2022,8 @@ def varvari( mv, mvclimo ):
     if mvtvd[0][0].id=='time' and\
             [ax[0].id for ax in mvtvd[1:]]!=[ax[0].id for ax in mvclimotvd[0:]]:
         logger.warning("varvari expects mv and mvclimo to have the same non-time axes")
-        print "mv domain is",mvtvd
-        print "mvclimo domain is",mvclimotvd
+        logger.debug("mv domain is %s", mvtvd)
+        logger.debug("mvclimo domain is %s", mvclimotvd)
     #                 Now do the calculation:
     mvdiff = mv - mvclimo
     return atimesb( mvdiff, mvdiff )
@@ -2046,8 +2044,7 @@ def aminusb_ax2( mv1, mv2 ):
     ax1=axes1[0]
     ax2=axes2[0]
     if ax1.shape!=ax2.shape:
-        print logger.error("aminusb_ax2 requires same axes, but shape differs: %s %s",ax1.shape,ax2.shape)
-        print "ax1,ax2"
+        logger.error("aminusb_ax2 requires same axes, but shape differs: %s %s", ax1.shape, ax2.shape)
         return None
     if hasattr(ax1,'units') and hasattr(ax2,'units') and ax1.units!=ax2.units:
         if ax1.units=='mb':
@@ -2262,12 +2259,13 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
                 s,i = tmp.how(target_units)
             except Exception as e:
                 # conversion not possible.
-                logger.error("Could not convert from %s to %s",mv1.units, target_units)
-                print "units are from variable mv1=",getattr(mv1,'id','(not known)'),"and"
-                if target_units==preferred_units:
-                    print "preferred units=",preferred_units
+                logger.error("Could not convert from %s to %s", mv1.units, target_units)
+                if target_units == preferred_units:
+                    pair = ("preferred units=", preferred_units)
                 else:
-                    print "variable mv2=",getattr(mv2,'id','(not known)')
+                    pair = ("variable mv2=", getattr(mv2, 'id', '(not known)'))
+
+                logger.error("units are from variable mv1=%s and %s %s", getattr(mv1, 'id', '(not known)'), pair[0], pair[1])
                 raise e
             if hasattr(mv1,'id'):  # yes for TransientVariable, no for udunits
                 mv1id = mv1.id
@@ -2286,11 +2284,11 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
             except Exception as e:
                 #  conversion not possible
                 logger.error("Could not convert from %s to %s",mv2.units, target_units)
-                print "units are from variable mv2=",getattr(mv2,'id','(not known)'),"and"
                 if target_units==preferred_units:
-                    print "preferred units=",preferred_units
+                    pair = "preferred units=",preferred_units
                 else:
-                    print "variable mv1=",getattr(mv1,'id','(not known)')
+                    pair = "variable mv1=",getattr(mv1,'id','(not known)')
+                logger.error("units are from variable mv2=%s and %s%s", getattr(mv2,'id','(not known)'),pair[0], pair[1])
                 raise e
             if hasattr(mv2,'id'):  # yes for TransientVariable, no for udunits
                 mv2id = mv2.id
@@ -2324,8 +2322,8 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
     global regridded_vars   # experimental for now
     if mv1 is None or mv2 is None:
         logger.warning("aminusb_2ax missing an input variable.")
-        if mv1 is None:  print "mv1=",mv1
-        if mv2 is None:  print "mv2=",mv2
+        if mv1 is None: logger.error("mv1 is None")
+        if mv2 is None: logger.error("mv2 is None")
         raise Exception
         return None
     mv1, mv2 = reconcile_units( mv1, mv2 )
@@ -2358,10 +2356,10 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
 
     if len(axes1)!=2:
         logger.error("@1, wrong number of axes for aminusb_2ax: %s",len(axes1))
-        print [ax.id for ax in axes1]
+        logger.error([ax.id for ax in axes1])
     if len(axes2)!=2:
         logger.error("@2, wrong number of axes for aminusb_2ax: %s",len(axes2))
-        print [ax.id for ax in axes2]
+        logger.error([ax.id for ax in axes2])
     if len(axes1[0])==len(axes2[0]):
         # Only axis2 differs, there's a better way...
         aminusb = aminusb_ax2( mv1, mv2 )
@@ -2379,10 +2377,9 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
             grid1 = mv1.getGrid()
             if grid1 is None:
                 logger.error("When regridding mv2 to mv1, failed to get or generate a grid for mv1")
-                print "mv1 axis names are",[a[0].id for a in mv1._TransientVariable__domain],\
-                    " mv2 axis names are",[a[0].id for a in mv2._TransientVariable__domain]
-                print "mv1 axis lengths are",len(axes1[0]),len(axes1[1]),\
-                    "mv2 axis lengths are",len(axes2[0]),len(axes2[1])
+                logger.debug("mv1 axis names are %s (Lengths: %s %s). mv2 axis names are %s (Lengths: %s %s).",
+                             [a[0].id for a in mv1._TransientVariable__domain], len(axes1[0]), len(axes1[1]),
+                             [a[0].id for a in mv2._TransientVariable__domain], len(axes2[0]), len(axes2[1]))
                 raise Exception("when regridding mv2 to mv1, failed to get or generate a grid for mv1")
             mv2new = mv2.regrid(grid1)
             mv2.regridded = mv2new.id   # a GUI can use this
@@ -2405,10 +2402,9 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
             grid2 = mv2.getGrid()
             if grid2 is None:
                 logger.error("When regridding mv1 to mv2, failed to get or generate a grid for mv2")
-                print "mv1 axis names are",[a[0].id for a in mv1._TransientVariable__domain],\
-                    " mv2 axis names are",[a[0].id for a in mv2._TransientVariable__domain]
-                print "mv1 axis lengths are",len(axes1[0]),len(axes1[1]),\
-                    "mv2 axis lengths are",len(axes2[0]),len(axes2[1])
+                logger.debug("mv1 axis names are %s (Lengths: %s %s). mv2 axis names are %s (Lengths: %s %s).",
+                             [a[0].id for a in mv1._TransientVariable__domain], len(axes1[0]), len(axes1[1]),
+                             [a[0].id for a in mv2._TransientVariable__domain], len(axes2[0]), len(axes2[1]))
                 raise Exception("when regridding mv1 to mv2, failed to get or generate a grid for mv2")
             mv1new = mv1.regrid(grid2,regridTool="regrid2")
             mv1.regridded = mv1new.id   # a GUI can use this
@@ -2695,7 +2691,7 @@ def run_cdscan( fam, famfiles, cache_path=None ):
         sys.path.insert(0, path)
         from cdms2 import cdscan
         import shlex
-        print 'cdscan command line: ', cdscan_line
+        logger.info('cdscan command line: %s', cdscan_line)
         try:
             cdscan_line = shlex.split(cdscan_line)
             cdscan.main(cdscan_line)
@@ -2965,7 +2961,7 @@ class reduced_variable(ftrow,basic_id):
 
         if self.filetable is None:
             logger.error("No data found for reduced variable %s in %s %s %s %s",self.variableid,self.timerange, self.latrange, self.lonrange, self.levelrange)
-            print "filetable is",self.filetable
+            logger.debug("filetable is %s",self.filetable)
             return None
         if vid is None:
             #vid = self._vid      # self._vid is deprecated
@@ -2976,7 +2972,7 @@ class reduced_variable(ftrow,basic_id):
             if self.variableid not in self._duvs:
                 # this belongs in a log file:
                 logger.error("No data found for reduced variable %s in %s %s %s %s",self.variableid,self.timerange, self.latrange, self.lonrange, self.levelrange)
-                print "filetable is",self.filetable
+                logger.debug("filetable is %s",self.filetable)
                 return None
             else:
                 # DUVs (derived unreduced variables) would logically be treated as a separate stage
@@ -3041,10 +3037,8 @@ class reduced_variable(ftrow,basic_id):
                 if not hasattr( taxis, 'filetable'): taxis.filetable = self.filetable
                 reduced_data = self._reduction_function( taxis, vid=vid )
             else:
-                print "Reduce failed to find variable",self.variableid,"in file",filename
-                print "It did find variables",sorted(f.variables.keys())
-                print "and axes",sorted(f.axes.keys())
-                raise Exception
+                logger.error("Reduce failed to find variable %s in file %s. It did find variables %s and axes %s.",
+                             self.variableid, filename, sorted(f.variables.keys()), sorted(f.axes.keys()))
             if reduced_data is not None and type(reduced_data) is not list:
                 reduced_data._vid = vid
             if reduced_data is not None:

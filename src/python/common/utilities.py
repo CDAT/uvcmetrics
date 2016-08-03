@@ -8,7 +8,7 @@ import sys
 import datetime
 import logging
 
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 
 def natural_sort(l): 
     # from http://stackoverflow.com/questions/4836710/does-python-have-a-built-in-function-for-string-natural-sort

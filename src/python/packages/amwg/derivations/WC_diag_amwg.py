@@ -22,7 +22,7 @@ from metrics.common import store_provenance
 import logging
 
 
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 
 #Task 1b: create a function that takes PREC_LAND and PRECT_OCN and makes a reservoir estimate from this
 
@@ -250,7 +250,7 @@ def create_amount_freq_PDF(mv, binedges, binwidthtype=None, bincentertype=None, 
     
     #Count up total first
     counts_index=MV2.greater_equal(mv,0.)
-    print counts_index.shape
+    logger.debug(counts_index.shape)
     data_counts=numpy.zeros((mv.shape))
     data_counts[counts_index]=1.
     counts_total=numpy.sum(data_counts,axis=time_index)

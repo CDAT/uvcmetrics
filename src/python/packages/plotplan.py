@@ -7,6 +7,9 @@ from metrics.computation.reductions import set_mean, regridded_vars
 from metrics.common.utilities import underscore_join, round2
 from metrics.frontend.uvcdat import uvc_simple_plotspec
 
+logger = logging.getLogger(__name__)
+
+
 class plot_plan(object):
     # ...I made this a new-style class so we can call __subclasses__ .
     package=BasicDiagnosticGroup  # Note that this is a class not an object.
@@ -122,7 +125,7 @@ class plot_plan(object):
 # To profile, replace (by name changes) the above results() with the following one:
     def profiled_results(self,newgrid=0):
         if newgrid!=0:
-            logging.error("Haven't implemented profiling with argument")
+            logger.error("Haven't implemented profiling with argument")
         prof = cProfile.Profile()
         returnme = prof.runcall( self._results )
         prof.dump_stats('results_stats')
@@ -137,11 +140,11 @@ class plot_plan(object):
             value = self.reduced_variables[v].reduce(None)
             try:
                 if  len(value.data)<=0:
-                    logging.error("No data for %s",v)
+                    logger.error("No data for %s",v)
             except: # value.data may not exist, or may not accept len()
                 try:
                     if value.size<=0:
-                        logging.error("No data for %s",v)
+                        logger.error("No data for %s",v)
                 except: # value.size may not exist
                     pass
             self.variable_values[v] = value  # could be None
@@ -161,7 +164,7 @@ class plot_plan(object):
                 postponed.append(v)
             else:
                 self.variable_values[v] = value
-        
+
         #print 'postponed', postponed
         for v in postponed:   # Finish up with derived variables
             #print v
@@ -169,9 +172,9 @@ class plot_plan(object):
             #print value.id, value.shape
             self.variable_values[v] = value  # could be None
         varvals = self.variable_values
-        
-        for p,ps in self.single_plotspecs.iteritems():
-            print "plotplan preparing data for",ps._strid, ps.plottype
+
+        for p, ps in self.single_plotspecs.iteritems():
+            logger.info("Plotplan preparing data for %s and %s", ps._strid, ps.plottype)
             #pdb.set_trace()
             try:
                 zax,zrv  = self.compute_plot_var_value( ps, ps.zvars, ps.zfunc )
@@ -184,7 +187,7 @@ class plot_plan(object):
             except Exception as e:
                 if ps._id != plotspec.dict_id( None, None, None, None, None ):
                     # not an empty plot
-                    logging.warning("Cannot compute data for %s due to exception %s %s",ps._strid, e.__class__.__name__, e)
+                    logger.warning("Cannot compute data for %s due to exception %s %s",ps._strid, e.__class__.__name__, e)
                 self.plotspec_values[p] = None
                 continue
             vars = []
@@ -199,7 +202,7 @@ class plot_plan(object):
                 except TypeError:
                     lenzaxdata = 0
                 if lenzaxdata<=0:
-                    logging.warning("No plottable data for %s",getattr(zax,'id',zax))
+                    logger.warning("No plottable data for %s",getattr(zax,'id',zax))
                     continue
                 if hasattr(zax,'regridded') and newgrid!=0:
                     vars.append( regridded_vars[zax.regridded] )
@@ -305,7 +308,7 @@ class plot_plan(object):
         # dispose of any failed plots
         self.plotspec_values = { p:ps for p,ps in self.plotspec_values.items() if ps is not None }
 
-        print 'now composite plot'
+        logger.debug('now composite plot')
         for p,ps in self.composite_plotspecs.iteritems():
             self.plotspec_values[p] = [ self.plotspec_values[sp] for sp in ps if sp in self.plotspec_values ]
             self.plotspec_values[p] = [ self.plotspec_values[sp] for sp in ps if sp in self.plotspec_values ]
@@ -341,21 +344,22 @@ class plot_plan(object):
         zrv = [ vvals[k] for k in zvars ]
 
         if any([a is None for a in zrv]):
-            logging.warning("Cannot compute plot results from zvars=%s",ps.zvars)
-            print "because missing results for",[k for k in ps.zvars if vvals[k] is None]
+            logger.warning("Cannot compute plot results from zvars=%s\nbecause missing results for %s", ps.zvars, [k for k in ps.zvars if vvals[k] is None])
             return None, None
-        z = apply( zfunc, zrv )
-        if hasattr(z,'mask') and z.mask.all():
-            print 'in plotplan.py' # this next line is printed from two different possible places.
-            logging.error("All values of %s are missing!",z.id)
-            return None,None
-        if z is not None and not (hasattr(z,'mean') and isinstance(z.mean,Number)):
+        z = apply(zfunc, zrv)
+        if hasattr(z, 'mask') and z.mask.all():
+            logger.debug("in plotplan.py")
+            logger.error("All values of %s are missing!", z.id)
+            return None, None
+        if z is not None and not (hasattr(z, 'mean') and isinstance(z.mean, Number)):
             # Compute variable's mean.  For mass weighting, it should have already happened in a
             # dimensionality reduction functions.
-            if type(z) is tuple: zid = [zz.id for zz in z]
-            else: zid = z.id
-            print "No mean attribute in variable",zid,\
-                "; we may compute it in compute_plot_var_value."
+            if type(z) is tuple:
+                zid = [zz.id for zz in z]
+            else:
+                zid = z.id
+            logger.warning("No 'mean' attribute in variable %s; we may compute it in compute_plot_var_value.", zid)
+
             set_mean( z, season=getattr(self,'season',None), region=getattr(self,'region',None) )
             if hasattr(z,'mean') and isinstance(z.mean,cdms2.tvariable.TransientVariable) and\
                     z.mean.shape==():

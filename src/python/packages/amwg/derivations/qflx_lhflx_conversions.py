@@ -13,7 +13,7 @@ from unidata import udunits
 import numpy
 import logging
 
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 
 def reconcile_energyflux_precip(mv1, mv2, preferred_units=None):
     # To compare LHFLX and QFLX, need to unify these to a common variables
@@ -35,13 +35,13 @@ def reconcile_energyflux_precip(mv1, mv2, preferred_units=None):
         # First, set preferred_units if needed
         if preferred_units is None:
             if ('_QFLX_' in mv2.id) or ('_QFLX' in mv1.id):
-                print "Setting preferred_units='mm/day'"
+                logger.info("Setting preferred_units='mm/day'")
                 preferred_units='mm/day'
             if ('_LHFLX_' in mv2.id) or ('_LHFLX' in mv1.id):
-                print "Setting preferred_units='W/m^2'"
+                logger.info("Setting preferred_units='W/m^2'")
                 preferred_units='W/m^2'
             if preferred_units is None:
-                print "Setting preferred_units to mv.units=",mv2.units
+                logger.info("Setting preferred_units to mv.units=%s", mv2.units)
                 preferred_units = mv2.units
 
         # syntax correction (just in case)
@@ -78,7 +78,7 @@ def convert_energyflux_precip(mv, preferred_units):
         mv.units = 'mm/day'
     # LHFLX
     if mv.units=="W/m~S~2~N":
-        print "Arbitrarily decided that W/m~S~2~N is W/m^2 for %s" % mv.id
+        logger.info("Arbitrarily decided that W/m~S~2~N is W/m^2 for %s", mv.id)
         mv.units="W/m^2"
 
     if mv.units==preferred_units:

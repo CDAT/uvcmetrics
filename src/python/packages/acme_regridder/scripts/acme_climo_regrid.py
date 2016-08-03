@@ -9,7 +9,7 @@ import multiprocessing
 
 import logging
 
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 
 parser = argparse.ArgumentParser(description='Given a directory or list of files regrid them using map files and computes climo on them')
 
@@ -74,7 +74,7 @@ if args.climo is None:
 print "now computing climo over:",regrid_files
 
 cmd = "climatology --outfile %s --infiles %s --seasons DJF MAM JJA SON ANN --multiprocessing" % (args.climo, " ".join(regrid_files))
-print "Executing climo:",cmd
+print "Executing climo:", cmd
 p = subprocess.Popen(shlex.split(cmd))
 p.wait()
 print "Voila"

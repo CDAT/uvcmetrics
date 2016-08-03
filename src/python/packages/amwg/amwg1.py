@@ -18,7 +18,7 @@ from unidata import udunits
 import cdutil.times, numpy, pdb
 import logging
 
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 
 
 
@@ -32,13 +32,13 @@ def reduced_variables_press_lev( filetable, varid, season, region='Global', file
     """
     season = season2Season(season)
     region = interpret_region(region)
-    print 'region in: ', region
+    logger.debug('region in: %s', region)
     #print " RFs = ", RF1, RF2
-    
+
     if filetable is None:
         return {}
     if rf is None:  # default can't be specified in the args because it depends on season
-        rf = (lambda x,vid=varid,season=season,region=region: RF2(x,season,region,vid)) 
+        rf = (lambda x,vid=varid,season=season,region=region: RF2(x,season,region,vid))
     reduced_varlis = [
         reduced_variable(
             variableid=varid, filetable=filetable, season=season, filefilter=filefilter,
@@ -53,7 +53,7 @@ def reduced_variables_hybrid_lev( filetable, varid, season, region='Global', fil
     rf for the variable varid and rf_PS for PS
     """
     #print 'RFs = ', RF1, RF2
-    
+
     season = season2Season(season)
     region=interpret_region(region)
     if filetable is None:
@@ -205,11 +205,11 @@ class Row:
                 )
             derived_variables = {}
             rv1 = reduced_variables[reduced_variables.keys()[0]]
-            
+
             #save the reduce variable
             #VID = rv.dict_id(self.var, self.season, filetable, ffilt)
             #self.reduced_variables[VID] = rv1
-            
+
             mean1 = rv1.reduce()
             #self.variable_values[VID] = mean1
         return mean1
@@ -231,7 +231,7 @@ class Row:
                 reduction_function=(lambda x,vid=None: x) ).reduce()
         else:
             gw = None
-        
+
         if filetable.find_files( self.var, filefilter=ffilt ):
             if self.lev is not None:
                 mean1 = self.mean_lev( filetable, ffilt, domrange, gw )
@@ -242,7 +242,7 @@ class Row:
                         (lambda x, vid=None, season=self.season, dom0=domrange[0], dom1=domrange[1], gw=gw:
                              reduce2scalar_seasonal_zonal(x, season, latmin=dom0, latmax=dom1, vid=vid, gw=gw) )
                     )
-                
+
                 #retrieve data for rmse and correlation
                 rv_rmse = reduced_variable(
                             variableid=self.var, filetable=filetable, season=self.season, filefilter=ffilt,
@@ -253,7 +253,7 @@ class Row:
                     self.reduced_variables['model'] = rv_rmse
                 else:
                     self.reduced_variables['obs'] = rv_rmse
-                
+
                 try:
                     mean1 = rv1.reduce()
                     #self.variable_values[VID] = mean1
@@ -298,7 +298,7 @@ class Row:
         from metrics.computation.units import scale_data
         from metrics.computation.compute_rmse import compute_rmse
         #pdb.set_trace()
-                              
+
         variable_values = { }
         for key, rv in self.reduced_variables.items():
             variable_values[key] = rv.reduce()
@@ -306,8 +306,8 @@ class Row:
                 #convert to the units specified in the default levels disctionay
                 displayunits = default_levels[self.var].get('displayunits', None)
                 if displayunits is not None and variable_values[key] is not None:
-                    print displayunits, variable_values[key].units
-                    variable_values[key] = scale_data( displayunits, variable_values[key])  
+                    logger.debug("%s, %s", displayunits, variable_values[key].units)
+                    variable_values[key] = scale_data( displayunits, variable_values[key])
 
         RMSE = self.undefined
         CORR = self.undefined
@@ -317,12 +317,12 @@ class Row:
             if hasattr(value, 'model') and hasattr(value, 'obs'):
                 RMSE, CORR = compute_rmse( value.model, value.obs )
 
-        return RMSE, CORR            
+        return RMSE, CORR
     def compute(self):
         rowpadded = (self.rowname+10*' ')[:17]
         mean1 = self.mean(self.filetable1)
         mean2 = self.mean(self.filetable2, self.obs)
-        RMSE, CORR = self.rmse()            
+        RMSE, CORR = self.rmse()
         self.values = ( rowpadded, mean1, mean2, self.diff(mean1,mean2), RMSE, CORR )
         return self.values
     def __repr__(self):
@@ -404,12 +404,12 @@ class amwg_plot_set1(amwg_plot_plan):
         { 'var':'U', 'obs':'JRA25', 'lev':'200'},
         { 'var':'U', 'obs':'NCEP', 'lev':'200'},
         { 'var':'Z3', 'obs':'JRA25', 'lev':'500', 'units':'hectometer'},
-        { 'var':'Z3', 'obs':'NCEP', 'lev':'500', 'units':'hectometer'} 
+        { 'var':'Z3', 'obs':'NCEP', 'lev':'500', 'units':'hectometer'}
         ]
 
     #this is a dummy table for testing
     #table_row_specs = [{ 'var':'TS', 'obs':'NCEP'},{ 'var':'RESTOM'},{ 'var':'RESSURF'}]
-    
+
     # These also appear, in another form, in frontend/defines.py.
     regions = { 'Global':(-90,90),
     #            'Tropics (20S-20N)':(-20,20),
@@ -476,7 +476,7 @@ class amwg_plot_set1(amwg_plot_plan):
 
         directory = outdir + 'amwg1_output'
         self.rows = []
-        if dryrun: 
+        if dryrun:
             cmds = makeCmds(self.table_row_specs)
             #write them in a file for execution
             f = open(directory + '/table_commands.sh', 'w')
@@ -508,8 +508,8 @@ class amwg_plot_set1(amwg_plot_plan):
 
                         row = Row(  filetable1, filetable2,
                                     seasonid=seasonid, region=region, var=varid,
-                                    obs=obsfilter, obsprint=obsprint,lev=lev, units=units )    
-                        row.compute()  
+                                    obs=obsfilter, obsprint=obsprint,lev=lev, units=units )
+                        row.compute()
                         self.rows.append( row )
                         fn = directory + '/' + varid
                         if obsfilter != None:
@@ -529,7 +529,7 @@ class amwg_plot_set1(amwg_plot_plan):
                             lev=spec.get('lev', None), units=spec.get('units', None) )
                 row.compute()
                 self.rows.append( row )
-    
+
         self.reduced_variables = {}
         self.derived_variables = {}
         self.variable_values = {}
@@ -537,7 +537,7 @@ class amwg_plot_set1(amwg_plot_plan):
         self.composite_plotspecs = {}
 
     def __repr__(self):
-        return '\n'.join( [self.title]+self.subtitles+[ r.__repr__() for r in self.rows ] )+'\n' 
+        return '\n'.join( [self.title]+self.subtitles+[ r.__repr__() for r in self.rows ] )+'\n'
     def outfile( self, format="", where="" ):
         """generates the output file name and path"""
         if len(self.title)<=0:
@@ -549,18 +549,18 @@ class amwg_plot_set1(amwg_plot_plan):
     def write_plot_data( self, format="text", where="", fname="" ):
         """writes to the specified location, which may be a directory path or sys.stdout.
         The only allowed format is text"""
-        print 'IN AMWG1 WRITE PLOT'
+        logger.debug('IN AMWG1 WRITE PLOT')
         self.ptype = "text"
         if fname != "":
-           print 'filename was: ', fname
+           logger.debug('filename was: %s', fname)
            filename = fname
         else:
            filename = self.outfile( format, where )
         writer = open( filename, 'w' )
         #writer.write( self.__repr__() )
         #pdb.set_trace()
-        for s in [self.title]+self.subtitles+self.rows:
-            print s
+        for s in [self.title] + self.subtitles + self.rows:
+            logger.debug(s)
             writer.write(str(s)+'\n')
         writer.close()
         return filename
@@ -576,7 +576,7 @@ class amwg_plot_set1(amwg_plot_plan):
             #pdb.set_trace()
             var = spec.get('var', '')
             obs = spec.get('obs', None)
-            fn = var 
+            fn = var
             if obs is not None:
                 fn += '_' + obs
             try:
@@ -585,4 +585,4 @@ class amwg_plot_set1(amwg_plot_plan):
                 self.rows += [line]
                 f.close()
             except:
-                print 'no file named', fn          
+                logger.error('no file named %s', fn)
