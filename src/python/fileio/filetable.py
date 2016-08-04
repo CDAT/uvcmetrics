@@ -728,7 +728,7 @@ def is_file_bad( dfile, maxwarn ):
         if not hasattr(ax,'bounds'):
             if len(ax)<=1:
                 logger.warning("File %s has an axis %s with no bounds",dfile.id, axn)
-                logger.warning"As the length is 1, no bounds can be computed. \n Any computation involving this axis is likely to fail.")
+                logger.warning("As the length is 1, no bounds can be computed. \n Any computation involving this axis is likely to fail.")
 
                 bad = True
                 maxwarn -= 1
