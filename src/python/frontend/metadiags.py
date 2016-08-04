@@ -12,6 +12,7 @@ from metrics.fileio.findfiles import *
 from metrics.packages.diagnostic_groups import *
 from output_viewer.index import OutputIndex, OutputPage, OutputGroup, OutputRow, OutputFile, OutputMenu
 import vcs
+logger = logging.getLogger(__name__)
 
 # If not specified on an individual variable, this is the default.
 def_executable = 'diags'
@@ -45,11 +46,13 @@ def getCollections(pname):
                     if diags_collection[c][v].get('package', False) != False and diags_collection[c][v]['package'].upper() == pname.upper():
                         colls.append(c)
 
-    print 'The following diagnostic collections appear to be available: %s' %colls
+
+    logger.info('The following diagnostic collections appear to be available: %s' , colls)
     return colls
 
 
-def makeTables(collnum, model_dict, obspath, outpath, pname, outlog, dryrun=False):
+
+def makeTables(collnum, model_dict, obspath, outpath, pname, outlogdir, dryrun=False):
     collnum = collnum.lower()
     seasons = diags_collection[collnum].get('seasons', ['ANN'])
     regions = diags_collection[collnum].get('regions', ['Global'])
@@ -58,11 +61,11 @@ def makeTables(collnum, model_dict, obspath, outpath, pname, outlog, dryrun=Fals
 
     num_models = len(model_dict.keys())
     if vlist == []:
-        logging.warning('varlist was empty. Assuming all variables.')
+        logger.warning('varlist was empty. Assuming all variables.')
         vlist = ['ALL']
 
     if num_models > 2:
-        logging.critical('Only <=2 models supported for tables')
+        logger.critical('Only <=2 models supported for tables')
         quit()
 
     raw0 = None
@@ -124,10 +127,10 @@ def makeTables(collnum, model_dict, obspath, outpath, pname, outlog, dryrun=Fals
                     cf0 = 'no'
                     cf1 = 'no'
                     if ft0 == None:
-                        logging.warning('Variable %s requires raw data. No raw data provided. Passing', v)
+                        logger.warning('Variable %s requires raw data. No raw data provided. Passing', v)
                         continue
                     if num_models == 2 and ft1 == None:
-                        logging.warning('Variable %s requires raw data. No second raw dataset provided. Passing on differences', v)
+                        logger.warning('Variable %s requires raw data. No second raw dataset provided. Passing on differences', v)
                         continue
                     ps0 = '--model path=%s,climos=no' % (ft0.root_dir())
                     if num_models == 2:
@@ -149,7 +152,7 @@ def makeTables(collnum, model_dict, obspath, outpath, pname, outlog, dryrun=Fals
         # Ok, variable(s) and varopts ready to go. Get some path strings.
         # Create path strings.
         if ft0 == None:
-            logging.warning('ft0 was none')
+            logger.warning('ft0 was none')
             continue
         else:
             path0str = ps0
@@ -163,10 +166,10 @@ def makeTables(collnum, model_dict, obspath, outpath, pname, outlog, dryrun=Fals
                     auxstr = '--varopts '+a
 
                 cmdline = (def_executable, path0str, path1str, obsstr, "--table", "--set", collnum, "--prefix", "set%s" % collnum, "--package", package, vstr, seasonstr, regionstr, auxstr, "--outputdir", outpath)
-                runcmdline(cmdline, outlog, dryrun)
+                runcmdline(cmdline, outlogdir, dryrun)
 
 
-def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryrun=False):
+def generatePlots(model_dict, obspath, outpath, pname, xmlflag, data_hash, colls=None, dryrun=False):
     import os
     # Did the user specify a single collection? If not find out what collections we have
     if colls == None:
@@ -174,21 +177,20 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
 
     # Create the outpath/{package} directory. options processing should take care of
     # making sure outpath exists to get this far.
-    outpath = os.path.join(outpath,pname.lower())
+    outpath = os.path.join(outpath, pname.lower())
     if not os.path.isdir(outpath):
         try:
             os.makedirs(outpath)
         except:
-            logging.exception('Failed to create directory %s', outpath)
 
-    try:
-       outlog = open(os.path.join(outpath,'DIAGS_OUTPUT.log'), 'w')
-    except:
+            logger.exception('Failed to create directory %s', outpath)
+
+    outlogdir = os.path.join(outpath, "DIAGS_OUTPUT", data_hash)
+    if not os.path.exists(outlogdir):
         try:
-            os.mkdir(outpath)
-            outlog = open(os.path.join(outpath,'DIAGS_OUTPUT.log'), 'w')
-        except:
-            logging.exception('Couldnt create output log - %s/DIAGS_OUTPUT.log', outpath)
+            os.makedirs(outlogdir)
+        except Exception:
+            logger.exception("Couldn't create output log directory- %s/DIAGS_OUTPUT/", outpath)
             quit()
 
     # Get some paths setup
@@ -242,7 +244,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
 
     # Now, loop over collections.
     for collnum in colls:
-        print 'Working on collection ', collnum
+        logger.info('Working on collection %s', collnum)
 
         collnum = collnum.lower()
         coll_def = diags_collection[collnum]
@@ -281,7 +283,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
 
         # Special case the tables since they are a bit special. (at least amwg)
         if diags_collection[collnum].get('tables', False) != False:
-            makeTables(collnum, model_dict, obspath, outpath, pname, outlog, dryrun)
+            makeTables(collnum, model_dict, obspath, outpath, pname, outlogdir, dryrun)
             group = OutputGroup("Tables")
             page.addGroup(group)
             for region in coll_def.get("regions", ["Global"]):
@@ -298,7 +300,8 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
         optionsstr = ''
         if diags_collection[collnum].get('options', False) != False:
             # we have a few options
-            print 'Additional command line options to pass to diags.py - ', diags_collection[collnum]['options']
+
+            logger.debug('Additional command line options to pass to diags.py -  %s', diags_collection[collnum]['options'])
             for k in diags_collection[collnum]['options'].keys():
                 optionsstr = optionsstr + '--%s %s ' % (k, diags_collection[collnum]['options'][k])
 
@@ -311,14 +314,17 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
         if diags_collection[collnum].get('mixed_packages', False) == False:  #no mixed
             # Check global package
             if diags_collection[collnum].get('package', False) != False and diags_collection[collnum]['package'].upper() != pname.upper():
-                print pname.upper()
-                print diags_collection[collnum]['package']
+                message = pname.upper()
+                logger.debug(str(message))
+                message = diags_collection[collnum]['package']
+                logger.debug(str(message))
                 # skip over this guy
-                logging.warning('Skipping over collection %s', collnum)
+                logger.warning('Skipping over collection %s', collnum)
                 continue
         else:
             if diags_collection[collnum].get('package', False) != False and diags_collection[collnum]['package'].upper() == pname.upper():
-                print 'Processing collection ', collnum
+
+                logger.debug('Processing collection %s ', collnum)
                 packagestr = '--package '+pname
 
 
@@ -375,8 +381,8 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
                     poststr = '--postfix '+obsfname
                 else:
                     if o != 'NA':
-                        print 'No observation path provided but this variable/collection combination specifies an obs set.'
-                        print 'Not making a comparison vs observations.'
+                        logger.warning('No observation path provided but this variable/collection combination specifies an obs set.')
+                        logger.warning('Not making a comparison vs observations.')
                     obsstr = ''
                     poststr = ' --postfix \'\''
 
@@ -420,9 +426,10 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
                         pstr2 = ''
                     cmdline = (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, seasonstr, varstr, outstr, xmlstr, prestr, poststr, regionstr)
                     if collnum != 'dontrun':
-                        runcmdline(cmdline, outlog, dryrun)
+                        runcmdline(cmdline, outlogdir, dryrun)
                     else:
-                        print 'DONTRUN: ', cmdline
+                        message = cmdline
+                        logger.debug('DONTRUN: %s', cmdline)
 
                 # let's save what the defaults are for this plotset
                 g_seasons = g_season
@@ -454,14 +461,14 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
 
                         if raw != False:
                             if raw0 == None:
-                                logging.critical('No raw dataset provided and this set requires raw data')
+                                logger.critical('No raw dataset provided and this set requires raw data')
                                 quit()
                             else:
                                 modelpath = raw0.root_dir()
                                 cf0 = 'no'
                             if raw1 == None and num_models == 2:
-                                logging.critical('2 or more datasets provided, but only one raw dataset provided.')
-                                logging.critical('This variable in this collection requires raw datasets for comparisons')
+                                logger.critical('2 or more datasets provided, but only one raw dataset provided.')
+                                logger.critical('This variable in this collection requires raw datasets for comparisons')
                                 quit()
                             else:
                                 modelpath1 = raw1.root_dir()
@@ -475,9 +482,10 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
 
                         cmdline = (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, seasonstr, varstr, outstr, xmlstr, prestr, poststr, regionstr, varopts)
                         if collnum != 'dontrun':
-                            runcmdline(cmdline, outlog, dryrun)
+                            runcmdline(cmdline, outlogdir, dryrun)
                         else:
-                            print 'DONTRUN: ', cmdline
+
+                            logger.debug('DONTRUN: %s', cmdline)
                 else: # different executable; just pass all option key:values as command line options.
                     # Look for a cmdline list in the options for this variable.
                     execstr = diags_collection[collnum].get('exec', def_executable) # should probably NOT be def_executable....
@@ -487,7 +495,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
                         if 'datadir' in cmdlineOpts:
                             execstr = execstr+' --datadir '+ modelpath
                         if 'obsfilter' in cmdlineOpts:
-                            print 'obsfname: ', obsfname
+                            logger.debug('obsfname: '+str(obsfname))
                             execstr = execstr+' --obsfilter '+ obsfname
                         if 'obspath' in cmdlineOpts:
                             execstr = execstr+' --obspath '+ obspath
@@ -512,7 +520,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
                             execstr = execstr+' --figurebase '+ fnamebase
 
                     if execstr != def_executable:
-                        runcmdline([execstr], outlog, dryrun)
+                        runcmdline([execstr], outlogdir, dryrun)
 
                 # VIEWER Code
                 # Build rows for this group in the index...
@@ -602,7 +610,6 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, colls=None, dryr
                 page.addRow(r, 1)
 
 
-    outlog.close()
     return menus, pages
 
 import multiprocessing
@@ -610,13 +617,14 @@ MAX_PROCS = multiprocessing.cpu_count()
 pid_to_cmd = {}
 active_processes = []
 DIAG_TOTAL = 0
-
+spam_file = open(os.devnull, "w")
 
 def cmderr(popened):
-    print "Command \n\"%s\"\n failed with code of %d" % (pid_to_cmd[popened.pid], popened.returncode)
+    logfile = pid_to_cmd[popened.pid].split(" ")[-1]
+    logger.error("Command \n%s\n failed with code of %d. Log file is at %s.", pid_to_cmd[popened.pid], popened.returncode, logfile)
 
 
-def runcmdline(cmdline, outlog, dryrun=False):
+def runcmdline(cmdline, outlogdir, dryrun=False):
     global DIAG_TOTAL
 
     # the following is a total KLUDGE. It's more of a KLUDGE than last time.
@@ -647,21 +655,40 @@ def runcmdline(cmdline, outlog, dryrun=False):
         varstr = varstr.split(' ')
         Varopts = varstr[0]
         vars = varstr[1:]
+        plotset = setstr.split(' ')[-1]
+        pkg = packagestr.split(' ')[-1]
+        region = regionstr.split(' ')[-1]
+
         for season in seasons:
             for var in vars:
                 seasonstr = seasonopts + ' ' + season
                 varstr = Varopts + ' ' + var
                 # build new cmdline
+                obs = poststr.split(" ")[-1]
                 if length == 14:
+                    if regionstr:
+                        fname = "{pkg}_{set}_{obs}_{var}_{season}_{region}.log".format(pkg=pkg, set=plotset, obs=obs, var=var, season=season, region=region)
+                    else:
+                        fname = "{pkg}_{set}_{obs}_{var}_{season}.log".format(pkg=pkg, set=plotset, obs=obs, var=var, season=season)
+
+                    log_file = os.path.join(outlogdir, fname)
+
                     cmdline = (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr,
-                               seasonstr, varstr,
-                               outstr, xmlstr, prestr, poststr, regionstr)
+                               seasonstr, varstr, outstr, xmlstr, prestr, poststr,
+                               regionstr, '--log_level DEBUG ', '--log_file', log_file)
                     CMDLINES += [cmdline]
                 elif length == 15:
                     for vo in varopts.split("--varopts")[-1].split():
+                        if regionstr:
+                            fname = "{pkg}_{set}_{obs}_{var}_{opt}_{season}_{region}.log".format(pkg=pkg, set=plotset, obs=obs, var=var, opt=vo, season=season, region=region)
+                        else:
+                            fname = "{pkg}_{set}_{obs}_{var}_{opt}_{season}.log".format(pkg=pkg, set=plotset, obs=obs, var=var, opt=vo, season=season)
+
+                        log_file = os.path.join(outlogdir, fname)
+
                         cmdline = (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr,
-                                   seasonstr, varstr,
-                                   outstr, xmlstr, prestr, poststr, regionstr, "--varopts", vo)
+                                   seasonstr, varstr, outstr, xmlstr, prestr, poststr,
+                                   regionstr, "--varopts", vo, '--log_level DEBUG ', '--log_file', log_file)
                         CMDLINES += [cmdline]
     else:
         CMDLINES = [cmdline]
@@ -679,14 +706,14 @@ def runcmdline(cmdline, outlog, dryrun=False):
                     if p.returncode != 0:
                         cmderr(p)
                     else:
-                        print '"%s"' % pid_to_cmd[p.pid], "succeeded. pid=", p.pid
+                        logger.info("%s succeeded. pid= %s", pid_to_cmd[p.pid], p.pid)
         cmd = " ".join(cmdline)
-        active_processes.append(subprocess.Popen(cmd, stdout=outlog, stderr=outlog, shell=True))
+        active_processes.append(subprocess.Popen(cmd, stdout=spam_file, stderr=spam_file, shell=True))
         DIAG_TOTAL += 1
         PID = active_processes[-1].pid
         pid_to_cmd[PID] = cmd
-        print '"%s"' % cmd, "begun pid=", PID, 'diag_total = ', DIAG_TOTAL
 
+        logger.info("%s begun pid= %s diag_total= %s", cmd, PID, DIAG_TOTAL)
 # These 3 functions are used to add the variables to the database for speeding up
 # classic view
 def setnum( setname ):
@@ -739,9 +766,9 @@ def postDB(fts, dsname, package, host=None):
         vlstr = vlstr+', '.join(vl_tmp)
 
     string = '\'{"variables": "'+str(vl)+'"}\''
-    print 'Variable list: ', string
+    logger.info('Variable list: ' + string)
     command = "echo "+string+' | curl -d @- \'http://'+host+'/exploratory_analysis/dataset_variables/'+dsname+'/\' -H "Accept:application/json" -H "Context-Type:application/json"'
-    print 'Adding variable list to database on ', host
+    logger.info('Adding variable list to database on %s', host)
     subprocess.call(command, shell=True)
 
 
@@ -751,7 +778,7 @@ if __name__ == '__main__':
     opts.parseCmdLine()
     opts.verifyOptions()
     if opts['package'] == None or opts['package'] == '':
-        logging.critical('Please specify a package when running metadiags.')
+        logger.critical('Please specify a package when running metadiags.')
         quit()
 
     package = opts['package'].upper()
@@ -762,13 +789,17 @@ if __name__ == '__main__':
 
     if opts._opts["custom_specs"] is not None:
         execfile(opts._opts["custom_specs"])
-        print diags_collection['5']['CLDMED']
-        print diags_obslist
+        message = diags_collection['5']['CLDMED']
+        logger.info(str(message))
+        message = diags_obslist
+        logger.info(str(message))
 
     # do a little (post-)processing on the model/obs passed in.
     model_fts = []
+    model_paths = []
     for i in range(len(opts['model'])):
         model_fts.append(path2filetable(opts, modelid=i))
+        model_paths.append(opts['model'][i]["path"])
 
     model_dict = make_ft_dict(model_fts)
 
@@ -812,7 +843,7 @@ if __name__ == '__main__':
     outpath = opts['output']['outputdir']
     colls = opts['sets']
     if opts['dsname'] == None and dbflag == True:
-        logging.critical('Please provide a dataset name for this dataset for the database with the --dsname option')
+        logger.critical('Please provide a dataset name for this dataset for the database with the --dsname option')
         quit()
     dsname = opts['dsname']
     if dsname is None:
@@ -826,11 +857,11 @@ if __name__ == '__main__':
         xmlflag = False
 
     if dbflag is True and dbonly is True and (num_models == 0 or dsname is None or package is None):
-        logging.critical('Please specify --model, --dsname, and --package with the db update option')
+        logger.critical('Please specify --model, --dsname, and --package with the db update option')
         quit()
 
     if dbonly is True:
-        print 'Updating the remote database only...'
+        logger.info('Updating the remote database only...')
         postDB(fts, dsname, package, host=hostname)
         quit()
 
@@ -845,7 +876,8 @@ if __name__ == '__main__':
         fnm = os.path.join(outpath, "metadiags_commands.sh")
         dryrun = open(fnm, "w")
 
-        print "List of commands is in: %s",fnm
+        logger.info("List of commands is in: %s",fnm)
+
         if opts["sbatch"] > 0:
             print >> dryrun, "#!/bin/bash"
             print >> dryrun, """#SBATCH -p debug
@@ -862,7 +894,15 @@ module load uvcdat/batch
 
     index = OutputIndex("UVCMetrics %s" % package.upper(), version=dsname)
 
-    menus, pages = generatePlots(model_dict, obspath, outpath, package, xmlflag, colls=colls,dryrun=dryrun)
+    # Build data_hash from file paths of all input files (models and then obs)
+    import hmac
+    data_path_hmac = hmac.new("uvcmetrics")
+    for path in sorted(model_paths):
+        data_path_hmac.update(path)
+    data_path_hmac.update(obspath)
+    data_hash = data_path_hmac.hexdigest()
+
+    menus, pages = generatePlots(model_dict, obspath, outpath, package, xmlflag, data_hash, colls=colls,dryrun=dryrun)
 
     for page in pages:
         # Grab file metadata for every image that exists.
@@ -881,14 +921,14 @@ module load uvcdat/batch
     index.toJSON(os.path.join(outpath, package.lower(), "index.json"))
 
     if dbflag is True:
-        print 'Updating the remote database...'
+        logger.info('Updating the remote database...')
         postDB(fts, dsname, package, host=hostname)
     for proc in active_processes:
         result = proc.wait()
         if result != 0:
             cmderr(proc)
         else:
-            print '"%s"' % pid_to_cmd[proc.pid], "succeeded."
+            logger.info("%s succeeded.",pid_to_cmd[proc.pid])
 
     if opts["dryrun"]:
         if opts["sbatch"] > 0:
@@ -898,5 +938,8 @@ module load uvcdat/batch
     if opts["sbatch"] > 0:
         import shlex
         cmd = "sbatch %s" % fnm
-        print "Commmand:", cmd
+        logger.info("Commmand: sbatch %s",fnm)
         subprocess.call(shlex.split(cmd))
+
+    # Used to quash stdout/stderr that isn't properly logged by diags.
+    spam_file.close()

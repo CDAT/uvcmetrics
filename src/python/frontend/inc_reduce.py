@@ -43,6 +43,10 @@ from numbers import Number
 from pprint import pprint
 import time
 from metrics.packages.acme_regridder.scripts.acme_regrid import addVariable
+import logging
+
+logger = logging.getLogger(__name__)
+
 #import debug
 
 # Silence annoying messages about setting the NetCDF file type.  Also, these three lines will
@@ -239,18 +243,18 @@ def initialize_redfile_from_datafile( redfilename, varnames, datafilen, dt=-1, i
     out_varnames = []
     for varn in varnames:
         if f[varn] is None:
-            logging.warning("%s was not found in %s", varn, datafilen)
+            logger.warning("%s was not found in %s", varn, datafilen)
             continue
         try:
             dtnom = f[varn].dtype.name  # works for variables
         except:
             # Probably an axis.  Most of what we're doing here makes no sense for an axis.
             # FWIW, this would get the type name: dtnom = f[varn].dtype('spam').name
-            print "WARNING, averager will ignore axis", varn
+            logger.warning("WARNING, averager will ignore axis %s.", varn)
             continue
         if dtnom.find('string')==0:
             # We can't handle string variables.
-            logging.warning("Ignoring string variable %s", varn)
+            logger.warning("Ignoring string variable %s", varn)
             continue
         out_varnames.append(varn)
         dataaxes = f[varn].getAxisList()
@@ -285,7 +289,7 @@ def initialize_redfile_from_datafile( redfilename, varnames, datafilen, dt=-1, i
                         attdict[varn]['missing_value'].astype( new_dtype )
 
     for ax in boundless_axes:
-        logging.warning("Axis %s has no bounds", ax.id)
+        logger.warning("Axis %s has no bounds", ax.id)
     if timeaxis is not None:
         tbndaxis = cdms2.createAxis( [0,1], None, 'tbnd' )
 
@@ -633,7 +637,7 @@ def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds, 
                                 ( redtime_wts[i] + newtime_wts[j,k] )
                         else:
                             #won't work because redvar is a FileVariable
-                            logging.warning("Probably miscomputing average of %s", redvar.id)
+                            logger.warning("Probably miscomputing average of %s", redvar.id)
                             redvar =\
                                 ( redvar*redtime_wts[i] + newvar*newtime_wts[j,k] ) /\
                                 ( redtime_wts[i] + newtime_wts[j,k] )
@@ -670,13 +674,6 @@ def update_time_avg( redvars, redtime_bnds, redtime_wts, newvars, next_tbounds, 
         redvars[iv].initialized = 'yes'
     redtime_wts.initialized = 'yes'
 
-    #print "next_tbounds= ",next_tbounds
-    #print "redtime_bnds=",redtime_bnds[:][:]
-    #print "redtime_wts=",redtime_wts[:][:]
-    #print "newtime_bnds=",newtime_bnds[:][:]
-    #print "newtime_wts=",newtime_wts[:][:]
-    #print "newtime_rti=",newtime_rti[:][:]
-    #print
     return redvars,redtime_wts,redtime
 
 def update_time_avg_from_files( redvars0, redtime_bnds, redtime_wts, filenames,
@@ -745,11 +742,11 @@ def update_time_avg_from_files( redvars0, redtime_bnds, redtime_wts, filenames,
                     newvard[varid] = newvar
                     redvard[varid] = redvar
                 else:
-                    print "skipping",redvar.id
+                    logger.info( "skipping %s",redvar.id )
             except Exception as e:
                 if varid!='climatology_bnds':  # I know about this one.
                     logging.exception("skipping %s due to exception", redvar.id)
-                    print e
+                    logging.exception(e)
                 pass
         if len(varids)==0:
             continue
@@ -786,12 +783,12 @@ def test_time_avg( redfilename, varnames, datafilenames ):
     init_data_tbounds = data_time.getBounds()[0]
     # N is used to start the intervals off in the right year.  Note that this works only if calendar has a fixed-length year
     N = math.floor(data_time[0]/365.)
-    print "N=",N
-    print "data_time=",data_time, data_time[0]-N*365, data_time[-1]-N*365
-    print "init_data_tbounds=",init_data_tbounds, [init_data_tbounds[0]-N*365,init_data_tbounds[1]-N*365]
+    logger.info("N= %s",N)
+    logger.info("data_time= %s %s %s",data_time, (data_time[0]-N*365), (data_time[-1]-N*365))
+    logger.info("init_data_tbounds= %s %s %s ",init_data_tbounds,[init_data_tbounds[0]-N*365],[init_data_tbounds[1]-N*365])
     init_red_tbounds = numpy.array([[150,240]], dtype=numpy.int32) # example time interval for a single season - not all times
     init_red_tbounds = init_red_tbounds + N*365
-    print "init_red_tbounds=",init_red_tbounds
+    logger.info("init_red_tbounds= %s",init_red_tbounds)
 
     #                              go into time-reduced data if dt=365
     initialize_redfile_from_datafile( redfilename, varnames, datafilenames[0], dt,
@@ -818,11 +815,11 @@ def test_time_avg( redfilename, varnames, datafilenames ):
     redtime_wts = g('time_weights')
     TS = g('TS')
     PS = g('PS')
-    print "redtime=",redtime
-    print "redtime_bnds=",redtime_bnds
-    print "redtime_wts=",redtime_wts
-    print "TS=",TS
-    print "PS=",PS
+    logger.info("redtime= %s",redtime)
+    logger.info("redtime_bnds= %s",redtime_bnds)
+    logger.info("redtime_wts= %s",redtime_wts)
+    logger.info("TS= %s",TS)
+    logger.info("PS= %s",PS)
 
 if __name__ == '__main__':
     if len( sys.argv )>=2:

@@ -3,6 +3,10 @@ import numpy as np
 from templatefactory import *
 from templateoptions import *
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 #######################################################################################################
 #                                                                                                     #
@@ -10,7 +14,7 @@ from templateoptions import *
 #                                                                                                     #
 #######################################################################################################
 def return_templates_graphic_methods(canvas1=None, gms=None, ovly=None, onPage=None, disLegend=False):
-   print "tmpl canvas1,gms,ovly,onPage:", canvas1,gms,ovly,onPage
+   logger.info("tmpl canvas1,gms,ovly,onPage: %s %s %s %s", canvas1,gms,ovly,onPage)
    
    if len(gms) == len(ovly): 
 

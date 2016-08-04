@@ -8,6 +8,9 @@ from metrics.computation.reductions import *
 from metrics.frontend import *
 import sys, traceback, logging
 
+logger = logging.getLogger(__name__)
+
+
 class derived_var(basic_id):
     def __init__( self, vid, inputs=[], outputs=['output'], func=(lambda: None), special_values=None ):
         """Arguments:
@@ -71,14 +74,14 @@ class derived_var(basic_id):
             elif hasattr(var,'filetable'):
                 self.filetable = var.filetable
         if len(nonevals)>0:
-            print "cannot yet derive",self._id,"because missing inputs",nonevals
-            print "what's available is",inpdict.keys()
+            logger.warning("cannot yet derive %s because missing inputs %s",self._id,nonevals)
+            logger.debug("what's available is %s", inpdict.keys())
             return None
         try:
             output = apply( self._func, [ inpdict[inp] for inp in self._inputs ] )
         except TypeError as e:
-            logging.error("In derived_var.derive, _inputs=%s",self._inputs)
-            logging.exception("Derivation function failed.  Probably not enough valid inputs.")
+            logger.error("In derived_var.derive, _inputs=%s",self._inputs)
+            logger.exception("Derivation function failed.  Probably not enough valid inputs.")
             return None
         if type(output) is tuple or type(output) is list:
             for o in output:
@@ -254,7 +257,7 @@ class plotspec(basic_id):
             if otherid is None:
                 return cls.dict_id( None, None, None, None, None )
             else:
-                logging.error("Bad input to plotspec.dict_idid(), not a tuple. Value is %s, %s", otherid, type(otherid))
+                logger.error("Bad input to plotspec.dict_idid(), not a tuple. Value is %s, %s", otherid, type(otherid))
                 return None
         if otherid[0]=='rv' and len(otherid)==6 and otherid[5] is None or otherid[5]=='None' or otherid[5]=='':
             otherid = otherid[:5]
@@ -282,8 +285,7 @@ class plotspec(basic_id):
             else:
                 ft2 = otherid[5]
         else:
-            print logging.error("Bad input to plotspec.dict_idid(), wrong class slot or wrong length.")
-            print otherid, type(otherid)
+            logger.error("Bad input to plotspec.dict_idid(), wrong class slot or wrong length. id : %s type: %s",otherid, type(otherid))
             return None
         return cls.dict_id( varid, varmod, seasonid, ft1, ft2 )
 

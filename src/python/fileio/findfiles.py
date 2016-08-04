@@ -16,7 +16,7 @@ from metrics.fileio.filetable import *
 # The __call__() method applies the filter to a single candidate file.
 # You will be able to combine filters by constructing an 'and','or',
 # or 'not' object.
-
+logger = logging.getLogger(__name__)
 class basic_filter:
     def __init__( *args ):
         pass
@@ -178,7 +178,7 @@ class basic_datafiles:
         cache_path = self.opts['cachepath']
         cache_path = os.path.expanduser(cache_path)
         cache_path = os.path.abspath(cache_path)
-        print "cache_path=",cache_path
+        logger.debug("cache_path=%s", cache_path)
         datafile_ls = [ f+'size'+(str(os.path.getsize(f)) if os.path.isfile(f) else '0')+\
                             'mtime'+(str(os.path.getmtime(f)) if os.path.isfile(f) else '0')\
                             for f in self.files ]
@@ -322,15 +322,16 @@ class dirtree_datafiles( basic_datafiles ):
         if os.path.isfile(root):
             self.files += [root]
         elif os.path.isdir(root):
-            for dirpath,dirname,filenames in os.walk(root):
+            for dirpath, dirname, filenames in os.walk(root):
                 dirpath = os.path.expanduser(dirpath)
                 dirpath = os.path.abspath(dirpath)
-                self.files += [ os.path.join(dirpath,f) for f in filenames if filt(f) ]
+                # Skip hidden files and anything that fails the filter.
+                self.files += [ os.path.join(dirpath,f) for f in filenames if filt(f) and f[0] != "." ]
         else:   # no more checking, but still could be valid - maybe its a url or something:
             self.files += [root]
-            logging.warning("Candidate data source is not a file or directory. %s What is it????", self.files[0])
+            logger.warning("Candidate data source is not a file or directory. %s What is it????", self.files[0])
         if len(self.files)<=0:
-            logging.warning("No files found at %s with filter %s",root, filt)
+            logger.warning("No files found at %s with filter %s",root, filt)
         return self.files
 
     def short_name(self):
