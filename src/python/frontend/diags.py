@@ -542,7 +542,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
                         elif '_0' in vname and '_1' not in vname:
                             fname = fnamebase+'-ds0.png'
                         else:
-                            logger.warn('Couldnt determine filename; defaulting to just .png. vname: %s, fnamebase: %s', vname, fnamebase)
+                            logger.warning('Couldnt determine filename; defaulting to just .png. vname: %s, fnamebase: %s', vname, fnamebase)
                             fname = fnamebase+'.png'
                     elif '_diff' in vname or ('_ft0_' in vname and '_ft1_' in vname) or\
                          ('_ft1_' in vname and '_ft2_' in vname):
@@ -783,7 +783,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
         fnamepdf = fname[:-3]+'pdf'
 
         if vcanvas2.backend.renWin is None:
-            logger.warn("no data to plot to file2: %s",fname)
+            logger.warning("no data to plot to file2: %s",fname)
         else:
             logger.info("writing png file2: %s", fname)
             logger.info("WHEN PNGING TWO @ @ @ @ @ 2 WE GET : %s", vcanvas2.getantialiasing())

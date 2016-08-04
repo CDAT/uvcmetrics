@@ -192,7 +192,7 @@ def standardize_and_check_cloud_variable( var ):
             tau_axis = a
     if prs_axis is None:
         logger.debug("axes of %s are %s.", var.id, [a.id for a in axes])
-        logger.errror( "Cloud variable %s doesn't have a prs axis"%var.id )
+        logger.error( "Cloud variable %s doesn't have a prs axis"%var.id )
     if tau_axis is None:
         logger.debug("axes of %s are %s.", var.id, [a.id for a in axes])
         logger.error( "Cloud variable %s doesn't have a tau axis"%var.id )

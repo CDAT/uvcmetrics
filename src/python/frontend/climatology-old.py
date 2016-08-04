@@ -223,7 +223,7 @@ def climo_driver(opts):
     else:
         myvars = list(set(myvars)&set(allvars))
         if len(myvars)<len(opts['vars']):
-            logger.warn("Some variables are not available. Computing climatologies for %s",myvars)
+            logger.warning("Some variables are not available. Computing climatologies for %s",myvars)
 
     cseasons = opts['times']
     if cseasons == []:

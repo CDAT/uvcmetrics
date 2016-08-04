@@ -61,7 +61,7 @@ def makeTables(collnum, model_dict, obspath, outpath, pname, outlogdir, dryrun=F
 
     num_models = len(model_dict.keys())
     if vlist == []:
-        logger.warn('varlist was empty. Assuming all variables.')
+        logger.warning('varlist was empty. Assuming all variables.')
         vlist = ['ALL']
 
     if num_models > 2:
@@ -127,10 +127,10 @@ def makeTables(collnum, model_dict, obspath, outpath, pname, outlogdir, dryrun=F
                     cf0 = 'no'
                     cf1 = 'no'
                     if ft0 == None:
-                        logger.warn('Variable %s requires raw data. No raw data provided. Passing', v)
+                        logger.warning('Variable %s requires raw data. No raw data provided. Passing', v)
                         continue
                     if num_models == 2 and ft1 == None:
-                        logger.warn('Variable %s requires raw data. No second raw dataset provided. Passing on differences', v)
+                        logger.warning('Variable %s requires raw data. No second raw dataset provided. Passing on differences', v)
                         continue
                     ps0 = '--model path=%s,climos=no' % (ft0.root_dir())
                     if num_models == 2:
@@ -152,7 +152,7 @@ def makeTables(collnum, model_dict, obspath, outpath, pname, outlogdir, dryrun=F
         # Ok, variable(s) and varopts ready to go. Get some path strings.
         # Create path strings.
         if ft0 == None:
-            logger.warn('ft0 was none')
+            logger.warning('ft0 was none')
             continue
         else:
             path0str = ps0
@@ -319,7 +319,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, data_hash, colls
                 message = diags_collection[collnum]['package']
                 logger.debug(str(message))
                 # skip over this guy
-                logger.warn('Skipping over collection %s', collnum)
+                logger.warning('Skipping over collection %s', collnum)
                 continue
         else:
             if diags_collection[collnum].get('package', False) != False and diags_collection[collnum]['package'].upper() == pname.upper():
@@ -381,8 +381,8 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, data_hash, colls
                     poststr = '--postfix '+obsfname
                 else:
                     if o != 'NA':
-                        logger.warn('No observation path provided but this variable/collection combination specifies an obs set.')
-                        logger.warn('Not making a comparison vs observations.')
+                        logger.warning('No observation path provided but this variable/collection combination specifies an obs set.')
+                        logger.warning('Not making a comparison vs observations.')
                     obsstr = ''
                     poststr = ' --postfix \'\''
 

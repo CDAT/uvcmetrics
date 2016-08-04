@@ -395,9 +395,9 @@ class amwg_plot_plan(plot_plan):
                 #print "dbg in second round, found",varnom,"computable by",func,"from",inputs
                 break
         if len(rvs)<=0:
-            logger.warn("no inputs found for %s in filetable %s",varnom, filetable.id())
-            logger.warn("filetable source files= %s %s",filetable._filelist[0:10])
-            logger.warn("need inputs %s",svd.inputs())
+            logger.warning("no inputs found for %s in filetable %s",varnom, filetable.id())
+            logger.warning("filetable source files= %s %s",filetable._filelist[0:10])
+            logger.warning("need inputs %s",svd.inputs())
             return None,[],[]
             #raise DiagError( "ERROR, don't have %s, and don't have sufficient data to compute it!"\
             #                     % varnom )
@@ -443,7 +443,7 @@ class amwg_plot_set2(amwg_plot_plan):
         if varid not in vars:
             logger.info("In amwg_plot_set2 __init__, ignoring varid input, will compute Ocean_Heat")
             varid = vars[0]
-        logger.warn("amwg_plot_set2 only uses NCEP obs, and will ignore any other obs specification.")
+        logger.warning("amwg_plot_set2 only uses NCEP obs, and will ignore any other obs specification.")
         # TO DO: Although model vs NCEP obs is all that NCAR does, there's no reason why we
         # TO DO: shouldn't support something more general, at least model vs model.
         if not self.computation_planned:
@@ -1704,7 +1704,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
                 psv[self.plot1_id] is not None and psv[self.plot2_id] is not None:
             psv[self.plot1_id].synchronize_ranges(psv[self.plot2_id])
         else:
-            logger.warn("not synchronizing ranges for %s and %s",self.plot1_id, self.plot2_id)
+            logger.warning("not synchronizing ranges for %s and %s",self.plot1_id, self.plot2_id)
         for key,val in psv.items():
             if type(val) is not list: val=[val]
             for v in val:
@@ -2201,7 +2201,7 @@ class amwg_plot_set6(amwg_plot_plan):
         #    psv[self.plot1_id].synchronize_ranges(psv[self.plot2_id])
         #else:
         #    print "WARNING not synchronizing ranges for",self.plot1_id,"and",self.plot2_id
-        logger.warn("not synchronizing ranges for AMWG plot set 6")
+        logger.warning("not synchronizing ranges for AMWG plot set 6")
         for key,val in psv.items():
             if type(val) is not list and type(val) is not tuple: val=[val]
             for v in val:
@@ -2570,7 +2570,7 @@ class amwg_plot_set8(amwg_plot_plan):
         #pdb.set_trace()
         results = plot_plan._results(self, newgrid)
         if results is None:
-            logger.warn("AMWG plot set 8 found nothing to plot")
+            logger.warning("AMWG plot set 8 found nothing to plot")
             return None
         psv = self.plotspec_values
         if self.FT2:
@@ -2811,7 +2811,7 @@ class amwg_plot_set9(amwg_plot_plan):
         #pdb.set_trace()
         results = plot_plan._results(self, newgrid)
         if results is None:
-            logger.warn("AMWG plot set 9 found nothing to plot")
+            logger.warning("AMWG plot set 9 found nothing to plot")
             return None
         psv = self.plotspec_values
         if self.plot1_id in psv and self.plot2_id in psv and\

@@ -7,7 +7,7 @@ class stationData():
     def __init__(self, obsDataFile):
         import cdms2
         if obsDataFile.find('RAOBS.nc')<0:
-            logger.warn("We usually get station data from RAOBS.nc.  This data file is %s",obsDataFile)
+            logger.warning("We usually get station data from RAOBS.nc.  This data file is %s",obsDataFile)
 
         f=cdms2.open(obsDataFile)
         self.KEYS = f.listvariables() 

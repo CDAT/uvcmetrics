@@ -82,7 +82,7 @@ def restrict_to_season( datafilenames, seasonname ):
         for fn in datafilenames:
             MO = re.match( "^.*\.\d\d\d\d-\d\d\.nc$", fn )
             if MO is None:
-                logger.warn('Filename %s did not match, will be ignored.', fn)
+                logger.warning('Filename %s did not match, will be ignored.', fn)
                 continue
             mon = fn[-5:-3]
             if mon in season2nummonth[seasonname]:
@@ -553,7 +553,7 @@ def climo_one_season( seasonname, datafilenames, omit_files, varnames, fileout_t
     datafilenames = [fn for fn in datafilenames if fn not in omit_files[seasonname]]
     datafilenames2 = restrict_to_season( datafilenames, seasonname )
     if len(datafilenames2)<=0:
-        logger.warn('No input data, skipping season %s', seasonname)
+        logger.warning('No input data, skipping season %s', seasonname)
         return False
     season = daybounds(seasonname)
     # ... assumes noleap calendar, returns time in days.
@@ -683,7 +683,7 @@ if __name__ == '__main__':
         if args.MP:
             if haveMPI and platform.node().find('rhea')>=0 and not args.bypassChecks:
                 logger.error("\nThis Python was built with MPI and the platform is %s", platform.node())
-                logger.warn("This combination is incompatible with the multiprocessing module.\n")
+                logger.warning("This combination is incompatible with the multiprocessing module.\n")
                 MP = False
                 raise DiagError("multiprocessing incompatible with MPI on %s"%platform.node())
             else:

@@ -330,7 +330,7 @@ class basic_filetable(basic_id):
        A filter filefilter may be supplied, to restrict which files will be found.
        For ranges, None means you want all values."""
        if variable not in self._varindex.keys():
-          logger.warn('Couldnt find variable %s in %s. If needed, we will try to compute it', variable, self)
+          logger.warning('Couldnt find variable %s in %s. If needed, we will try to compute it', variable, self)
           # print "  variables of",self,"are:",self._varindex.keys()
           return None
        candidates = self._varindex[ variable ]
@@ -728,12 +728,12 @@ def is_file_bad( dfile, maxwarn ):
         if not hasattr(ax,'bounds'):
             if len(ax)<=1:
                 logger.warning("File %s has an axis %s with no bounds",dfile.id, axn)
-                logger.warn("As the length is 1, no bounds can be computed. \n Any computation involving this axis is likely to fail.")
+                logger.warning"As the length is 1, no bounds can be computed. \n Any computation involving this axis is likely to fail.")
 
                 bad = True
                 maxwarn -= 1
             else:
-                logger.warn("file %s has an axis %s with no bounds.  An attempt will be made to compute bounds, but that is unreliable compared to bounds provided by the data file",dfile.id,axn)
+                logger.warning("file %s has an axis %s with no bounds.  An attempt will be made to compute bounds, but that is unreliable compared to bounds provided by the data file",dfile.id,axn)
                 maxwarn -= 1
         if hasattr(ax,'bounds') and ax.bounds not in dfile.variables:
             logger.warning("File %s has an axis %s whose bounds do not exist! This file is not CF-compliant, so calculations involving this axis may well fail. ",dfile.id, axn)

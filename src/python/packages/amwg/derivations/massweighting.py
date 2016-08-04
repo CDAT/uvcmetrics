@@ -160,7 +160,7 @@ def check_compatible_levels( var, pvar, strict=False ):
         if strict:
             logger.error("numbers of levels are not compatible with mass weighting.")
         else:
-            logger.warn("Poor levels for mass weighting, variables %s %s",var.id,pvar.id)
+            logger.warning("Poor levels for mass weighting, variables %s %s",var.id,pvar.id)
             return len(vlev)+1
 
 def rhodz_from_mv( mv ):

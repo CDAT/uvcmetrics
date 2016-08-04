@@ -132,7 +132,7 @@ def provenance_dict( script_file_name=None ):
          try: 
             logname = os.environ.get('LOGNAME', 'unknown')
          except:
-            logger.exeption('Couldnt determine a login name for provenence information')
+            logger.exception('Couldn\'t determine a login name for provenence information')
             logname = 'unknown-loginname'
     provdic['history'] = "%s: created by %s from path: %s with input command line: %s" % (
                     str(datetime.datetime.utcnow()),
