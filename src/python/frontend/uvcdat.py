@@ -144,14 +144,14 @@ class uvc_composite_plotspec():
         for p in self.plots:
             p.finalize()
     def outfile( self, format='xml-NetCDF', where=""):
-        if len(self.title)<=0:
-            fname = 'foo.xml'
-        elif not os.path.isdir(where):
+        if not os.path.isdir(where):
             # if it's not a directory, it's a filename (probably doesn't exist yet)
             fname = where
             if '.xml' not in fname:
                fname = fname+'.xml'
             return fname
+        elif len(self.title)<=0:
+            fname = 'foo.xml'
         else:
             # the title join ends up with two spaces between fields. check for that first, then replace single spaces after.
             fname = (self.title.strip()+'.xml').replace('  ','_').replace(' ','_').replace('/','_')[:115]  # 115 is to constrain file size
@@ -163,7 +163,6 @@ class uvc_composite_plotspec():
     def write_plot_data( self, format="", where="" ):
         """writes plot data to a specified location, usually a file, of the specified format.
         returns a list of files which were created"""
-        print "jfp entering composite write_plot_data for format=",format,"where=",where
         if format=="" or format=="xml" or format=="xml-NetCDF" or format=="xml file":
             format = "xml-NetCDF"
             contents_format = "NetCDF"
@@ -254,6 +253,8 @@ class uvc_simple_plotspec():
         ## elif presentation == "":
         ##     self.presentation = vcsx.create
         self.vars = pvars # vars[i] is either a cdms2 variable or a tuple of variables
+        self._vars = self.vars[:]  #jfp, testing.  The : makes it a copy of the list.
+        # >>>> TO DO: COPY THE VARIABLE NOT THE LIST.  THEN FIND WHO IS CHANGING THE VARIABLE!!!!! <<<<
         self.labels = labels
         self.title = title
         self.source = source
@@ -803,9 +804,7 @@ class uvc_simple_plotspec():
         
     def outfile( self, format="", where="" ):
         """returns a filename for writing out this plot"""
-        if len(self.title)<=0:
-            fname = 'foo.nc'
-        elif not os.path.isdir(where):
+        if not os.path.isdir(where):
             # if it's not a directory, it's a filename (probably incomplete and probably doesn't exist yet)
             if where[-3:]=='.nc':
                 return where
@@ -816,6 +815,8 @@ class uvc_simple_plotspec():
                 else:
                     varn = self.vars[0].id
                 return form_filename( where, 'nc', True, self.vars[0].id )
+        elif len(self.title)<=0:
+            fname = 'foo.nc'
         else:
             # the title join ends up with two spaces between fields. check for that first, then replace single spaces after.
             fname = underscore_join([self.title.strip(),self.source]).replace('  ','_').replace(' ','_').replace('/','_') + '.nc'
@@ -823,7 +824,6 @@ class uvc_simple_plotspec():
         return filename
     def write_plot_data( self, format="", where="" ):
         """Writes the plot's data in the specified file format and to the location given."""
-        print "jfp entering simple write_plot_data for format=",format,"where=",where
         if format=="" or format=="NetCDF" or format=="NetCDF file":
             format = "NetCDF file"
         elif format=="JSON string":
@@ -836,7 +836,6 @@ class uvc_simple_plotspec():
             format = "NetCDF file"
 
         filename = self.outfile( format, where )
-        print "jfp chose filename",filename
 
         if format=="NetCDF file":
             value=0

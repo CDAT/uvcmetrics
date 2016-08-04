@@ -4244,7 +4244,7 @@ class amwg_plot_set14(amwg_plot_plan):
         #pdb.set_trace()
         results = plot_plan._results(self, newgrid)
         if results is None:
-            print "WARNING, AMWG plot set 12 found nothing to plot"
+            print "WARNING, AMWG plot set 14 found nothing to plot"
             return None
         psv = self.plotspec_values
         v=psv['Taylor']
@@ -4253,6 +4253,7 @@ class amwg_plot_set14(amwg_plot_plan):
         v.legendTitles = []
         v.finalize()
         #pdb.set_trace()
+vars[0].id
         return [self.plotspec_values['Taylor']]
 
 class amwg_plot_set15(amwg_plot_plan): 

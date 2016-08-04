@@ -233,8 +233,6 @@ def form_file_rootname( plotset, vars, meanings='variable', dir='', filetables=[
     elif plotset=='res0':    # For len(res)==0
         fname = '_'.join(basen, season, region) + '-table.text'
 
-    print "jfp"
-    print "jfp For directory",dir,"formed filename", fname
     return os.path.join( dir, fname )
 
 
@@ -463,23 +461,7 @@ def run_diags( opts ):
                         if res is not None and len(res)>0 and type(res) is not str: # Success, we have some plots to plot
                             print '--------------------------------- res is not none'
                             # Are we running from metadiags? If so, lets keep the name as simple as possible.
-                            """jfp former code:
-                            if basename == '' and postname == '':
-                                frname = 'figure-set'+snum+'_'+r_fname+'_'+time+'_'+varid+'_plot'
-                                frname = os.path.join(outdir, fname)
-                            else:
-                                auxname =''
-                                if aux != 'default' and aux != None and aux != ' default': #?? why ' default'?
-                                    auxname = '_'+aux
-                                # don't add an extra underscore unnecessarily
-                                if postname != '':
-                                    pname = postname+'_'
-                                else:
-                                    pname = ''
-                           
-                                name = basename+'_'+time+'_'+varid+auxname+'_'+pname+r_fname
-                                fname = os.path.join(outdir,name)
-                                """
+
                             frname = form_file_rootname(
                                 snum, [varid], 'variable', dir=outdir, season=time, basen=basename,
                                 postn=postname, aux=[aux] )
@@ -663,6 +645,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
 
                 fnamepng,fnamesvg,fnamepdf = form_filename( frnamebase, ('png','svg','pdf'), descr=True, vname=vname )
 
+                # Beginning of section for building plots; this depends on the plot set!
                 if vcs.isscatter(rsr.presentation) or (plot.number in ['11', '12'] and package.upper() == 'AMWG'):
                     #pdb.set_trace()
                     if hasattr(plot, 'customizeTemplates'):
@@ -833,21 +816,23 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
                             
                     except vcs.error.vcsError as e:
                         logging.exception("Making summary plot: %s", e)
-
                     #restore var before the KLUDGE!!!
                     var = var_save                
-                    if hasattr(var, 'model') and hasattr(var, 'obs'):
-                        delattr(var, 'model')
-                        delattr(var, 'obs')
-                    rsr.vars[varIndex] = var
-                        
-                    if var_id_save is not None:
-                        if type(var_id_save) is str:
-                            var.id = var_id_save
-                        else:
-                            for i in range(len(var_id_save)):
-                                var[i].id = var_id_save[i]
-                if savePNG:
+
+                # End of section for building plots
+
+                if hasattr(var, 'model') and hasattr(var, 'obs'):
+                    delattr(var, 'model')
+                    delattr(var, 'obs')
+                rsr.vars[varIndex] = var
+
+                if var_id_save is not None:
+                    if type(var_id_save) is str:
+                        var.id = var_id_save
+                    else:
+                        for i in range(len(var_id_save)):
+                            var[i].id = var_id_save[i]
+            if savePNG:
                     vcanvas.png( fnamepng, ignore_alpha=True, metadata=provenance_dict() )
                     # vcanvas.svg() doesn't support ignore_alpha or metadata keywords
                     vcanvas.svg( fnamesvg )
