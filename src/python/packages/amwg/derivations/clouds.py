@@ -7,6 +7,9 @@
 import numpy, cdms2
 from genutil import averager
 from metrics.common.utilities import *
+import logging
+
+logger = logging.getLogger(__name__)
 
 def reduce_prs_tau( mv, vid=None ):
     """Input is a transient variable.  Dimensions isccp_prs, isccp_tau are reduced - but not
@@ -100,7 +103,7 @@ def cloud_regrid_to_std( mv ):
 
     prs_axis,tau_axis = prs_tau_axes( mv )
     if prs_axis is None or tau_axis is None:
-        raise DiagError("Cloud variable %s is missing a prs or tau axis"%mv.id)
+        logger.error("Cloud variable %s is missing a prs or tau axis"%mv.id)
     val = numpy.zeros((len(cloud_prs_bounds),len(cloud_tau_bounds)))
     if prs_axis[0]>prs_axis[-1]:
         ipd = 0  # index for data prs axis
@@ -129,8 +132,8 @@ def cloud_regrid_to_std( mv ):
         for its,ts in enumerate(cloud_tau_bounds): # standard tau bounds
             if pd>ps[0] or pd<ps[1] or td<ts[0] or td>ts[1]:
                 # The current data prs,tau isn't in the standard bin.  We're confused.
-                print "trouble; pd=",pd,"td=",td,"ps[0:2]=",ps[0:2],"ts[0:2]=",ts[0:2]
-                raise DiagError("Cloud prs,tau point isn't where expected.  Cannot handle these cloud axes.")
+                logger.debug("trouble; pd=%s, td=%s, ps[0:2]=%s, ts[0:2]=%s", pd, td, ps[0:2], ts[0:2])
+                logger.error("Cloud prs,tau point isn't where expected.  Cannot handle these cloud axes.")
             if (ipd+dipd in ripd and prs_axis[ipd+dipd]<ps[1])\
                     and (itd+ditd in ritd and tau_axis[itd+ditd]>ts[1]):
                 # Separately along each axis, the next data prs,tau is in a different cell.
@@ -178,8 +181,8 @@ def standardize_and_check_cloud_variable( var ):
     domain = var.getDomain()
     axes = [a[0] for a in domain]
     if len(axes)!=2:
-        print "axes of",var.id,"are",[a.id for a in axes]
-        raise DiagError( "Cloud variable %s has %i axes, should have 2 axes"%(var.id,len(axes)) )
+        logger.debug("axes of %s are %s", var.id, [a.id for a in axes])
+        logger.error( "Cloud variable %s has %i axes, should have 2 axes"%(var.id,len(axes)) )
     prs_axis = None
     tau_axis = None
     for a in axes:
@@ -188,29 +191,29 @@ def standardize_and_check_cloud_variable( var ):
         if a.id.find('tau')>=0:
             tau_axis = a
     if prs_axis is None:
-        print "axes of",var.id,"are",[a.id for a in axes]
-        raise DiagError( "Cloud variable %s doesn't have a prs axis"%var.id )
+        logger.debug("axes of %s are %s.", var.id, [a.id for a in axes])
+        logger.error( "Cloud variable %s doesn't have a prs axis"%var.id )
     if tau_axis is None:
-        print "axes of",var.id,"are",[a.id for a in axes]
-        raise DiagError( "Cloud variable %s doesn't have a tau axis"%var.id )
+        logger.debug("axes of %s are %s.", var.id, [a.id for a in axes])
+        logger.error( "Cloud variable %s doesn't have a tau axis"%var.id )
     if len(prs_axis)!=7:
-        print "axes of",var.id,"are",[a.id for a in axes]
-        raise DiagError( "Cloud variable %s has prs axis %s of length %i, should be 7"%(var.id,prs_axis.id,len(prs_axis)) )
+        logger.debug("axes of %s are %s", var.id, [a.id for a in axes])
+        logger.error( "Cloud variable %s has prs axis %s of length %i, should be 7"%(var.id,prs_axis.id,len(prs_axis)) )
     if len(tau_axis)!=6:
-        print "axes of",var.id,"are",[a.id for a in axes]
-        raise DiagError( "Cloud variable %s has tau axis %s of length %i, should be 6"%(var.id,tau_axis.id,len(tau_axis)) )
+        logger.debug("axes of %s are %s.", var.id, [a.id for a in axes])
+        logger.error( "Cloud variable %s has tau axis %s of length %i, should be 6"%(var.id,tau_axis.id,len(tau_axis)) )
     for i in range(7):
         j = i
         if prs_axis[j]>cloud_prs_bounds[i][0] or prs_axis[j]<cloud_prs_bounds[i][1]:
-            print "axes of",var.id,"are",[a.id for a in axes]
-            raise DiagError( ("Cloud variable %s prs axis %s has a %i-th value %f"%(var.id,prs_axis.id,i,prs_axis[i])
+            logger.debug("axes of %s are %s.", var.id, [a.id for a in axes])
+            logger.error( ("Cloud variable %s prs axis %s has a %i-th value %f"%(var.id,prs_axis.id,i,prs_axis[i])
                               +"\n which does not fall within the standard bounds [%s,%s]")%
                              (cloud_prs_bounds[i][0],cloud_prs_bounds[i][1]) )
     for i in range(6):
         j = i
         if tau_axis[j]<cloud_tau_bounds[i][0] or tau_axis[j]>cloud_tau_bounds[i][1]:
-            print "axes of",var.id,"are",[a.id for a in axes]
-            raise DiagError( ("Cloud variable %s tau axis %s has a %i-th value %f"%(var.id,tau_axis.id,i,tau_axis[i])
+            logger.debug("axes of %s are %s.", var.id, [a.id for a in axes])
+            logger.error( ("Cloud variable %s tau axis %s has a %i-th value %f"%(var.id,tau_axis.id,i,tau_axis[i])
                               +"\n which does not fall within the standard bounds [%s,%s]")%
                              (cloud_tau_bounds[i][0],cloud_tau_bounds[i][1]) )
 

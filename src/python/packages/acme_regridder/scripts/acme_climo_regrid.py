@@ -7,6 +7,10 @@ import shlex
 import cdms2
 import multiprocessing
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 parser = argparse.ArgumentParser(description='Given a directory or list of files regrid them using map files and computes climo on them')
 
 
@@ -43,7 +47,8 @@ for f in files:
         fi = cdms2.open(f)
         fi.close()
     except:
-        if not args.quiet: print "Could not open file %s -- skipping" % f
+        if not args.quiet:
+            logger.error("Could not open file %s -- skipping" % f)
         continue
     fout = f
     if args.output is not None:
@@ -69,7 +74,7 @@ if args.climo is None:
 print "now computing climo over:",regrid_files
 
 cmd = "climatology --outfile %s --infiles %s --seasons DJF MAM JJA SON ANN --multiprocessing" % (args.climo, " ".join(regrid_files))
-print "Executing climo:",cmd
+print "Executing climo:", cmd
 p = subprocess.Popen(shlex.split(cmd))
 p.wait()
 print "Voila"

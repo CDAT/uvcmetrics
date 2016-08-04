@@ -6,6 +6,9 @@ import hashlib
 import os
 import sys
 import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 
 def natural_sort(l): 
     # from http://stackoverflow.com/questions/4836710/does-python-have-a-built-in-function-for-string-natural-sort
@@ -129,7 +132,7 @@ def provenance_dict( script_file_name=None ):
          try: 
             logname = os.environ.get('LOGNAME', 'unknown')
          except:
-            print 'Couldnt determine a login name for provenence information'
+            logger.exception('Couldn\'t determine a login name for provenence information')
             logname = 'unknown-loginname'
     provdic['history'] = "%s: created by %s from path: %s with input command line: %s" % (
                     str(datetime.datetime.utcnow()),
