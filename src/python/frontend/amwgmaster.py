@@ -592,44 +592,42 @@ diags_varlist['CLDMED_CAL'] = {'desc': 'Middle-Level Cloud Cover from CALIPSO (d
 diags_varlist['CLDHGH_CAL'] = {'desc': 'High-Level Cloud Cover from CALIPSO (determined from clouds at pressures < 440 hPa with scattering ratios (SR) > 5)'}
 
 # *** Observation sets ***
-diags_obslist['CRU_1'] = {'filekey': 'CRU', 'desc': 'IPCC/CRU Climatology 1961-90'}
-diags_obslist['HadISST_1'] = {'filekey': 'HadISST', 'desc': 'HadISST/OI.v2 (Climatology) 1982-2001'}
-diags_obslist['HadISST_PD_1'] = {'filekey': 'HadISST_PD', 'desc': 'HadISST/OI.v2 (Present Day) 1999-2008'}
 diags_obslist['HadISST_PI_1'] = {'filekey': 'HadISST_PI', 'desc': 'HadISST/OI.v2 (Pre-Indust) 1870-1900'}
 diags_obslist['LEGATES_1'] = {'filekey': 'LEGATES', 'desc': 'Legates and Willmott 1920-80'}
 diags_obslist['WILLMOTT_1'] = {'filekey': 'WILLMOTT', 'desc': 'Willmott and Matsuura 1950-99'}
-# Missing MERRA
+diags_obslist['GPCP_1'] = {'filekey': 'GPCP', 'desc': 'GPCP 1979-2003'}
+diags_obslist['TRMM_1'] = {'filekey': 'TRMM', 'desc': 'TRMM (3B43) 1998-Feb2004 - Tropics'}
+diags_obslist['PRECL_1'] = {'filekey': 'PRECL', 'desc': 'PREC/L (CMAP) 1948-2001'}
+diags_obslist['XA_1'] = {'filekey': 'XA', 'desc': 'CMAP (Xie-Arkin) 1979-98'}
+diags_obslist['CERES2_1'] = {'filekey': 'CERES2', 'desc': 'CERES2 March 2000-October 2005'}
+diags_obslist['CERES_1'] = {'filekey': 'CERES', 'desc': 'CERES 2000-2003'}
+diags_obslist['ERBE_1'] = {'filekey': 'ERBE', 'desc': 'ERBE Feb1985-Apr1989'}
 diags_obslist['ERA40_1'] = {'filekey': 'ERA40', 'desc': 'ERA40 Reanalysis 1980-2001'}
-diags_obslist['ERAI_1'] = {'filekey': 'ERAI', 'desc': 'ERA Interim Reanalysis'}
+diags_obslist['ECMWF_1'] = {'filekey': 'ECMWF', 'desc': 'ECMWF Reanalysis 1979-93'}
+diags_obslist['NCEP_1'] = {'filekey': 'NCEP', 'desc': 'NCEP Reanalysis 1979-98'}
 diags_obslist['JRA25_1'] = {'filekey': 'JRA25', 'desc': 'JRA25 Reanalysis 1979-04'}
 diags_obslist['AIRS_1'] = {'filekey': 'AIRS', 'desc': 'AIRS IR Sounder 2002-06'}
-diags_obslist['ERS_1'] = {'filekey': 'ERS', 'desc': 'ERS Scatterometer 1992-2000'}
 diags_obslist['NVAP_1'] = {'filekey': 'NVAP', 'desc': 'NVAP 1988-1999'}
-diags_obslist['WHOI_1'] = {'filekey': 'WHOI', 'desc': 'Woods Hole OAFLUX 1958-2006'}
-diags_obslist['GPCP_1'] = {'filekey': 'GPCP', 'desc': 'GPCP 1979-2003'}
-diags_obslist['PRECL_1'] = {'filekey': 'PRECL', 'desc': 'PREC/L (CMAP) 1948-2001'}
-# Missing UWisc
 diags_obslist['SSMI_1'] = {'filekey': 'SSMI', 'desc': 'SSM/I (Wentz) 1987-2000'}
-diags_obslist['TRMM_1'] = {'filekey': 'TRMM', 'desc': 'TRMM (3B43) 1998-Feb2004 - Tropics'}
+diags_obslist['WHOI_1'] = {'filekey': 'WHOI', 'desc': 'Woods Hole OAFLUX 1958-2006'}
 diags_obslist['LARYEA_1'] = {'filekey': 'LARYEA', 'desc': 'Large-Yeager 1984-2004'}
-diags_obslist['CERES-EBAF_1'] = {'filekey': 'CERES-EBAF', 'desc': 'CERES-EBAF'}
-diags_obslist['ERBE_1'] = {'filekey': 'ERBE', 'desc': 'ERBE Feb1985-Apr1989'}
-# Missing ISCCP FD
-# Missing ISCCP D2
 diags_obslist['ISCCP_1'] = {'filekey': 'ISCCP', 'desc': 'ISCCP D1 Daytime Jul1983-Sep2001'}
 diags_obslist['WARREN_1'] = {'filekey': 'WARREN', 'desc': 'Warren Cloud Surface OBS'}
 diags_obslist['CLOUDSAT_1'] = {'filekey': 'CLOUDSAT', 'desc': 'CLOUDSAT (Radar+Lidar) Sep2006-Nov2008'}
+diags_obslist['MODIS_1'] = {'filekey': 'MODIS', 'desc': 'MODIS Mar2000-Aug2004'}
+
+diags_obslist['CRU_1'] = {'filekey': 'CRU', 'desc': 'IPCC/CRU Climatology 1961-90'}
+diags_obslist['HadISST_1'] = {'filekey': 'HadISST', 'desc': 'HadISST/OI.v2 (Climatology) 1982-2001'}
+diags_obslist['HadISST_PD_1'] = {'filekey': 'HadISST_PD', 'desc': 'HadISST/OI.v2 (Present Day) 1999-2008'}
+diags_obslist['ERAI_1'] = {'filekey': 'ERAI', 'desc': 'ERA Interim Reanalysis'}
+diags_obslist['ERS_1'] = {'filekey': 'ERS', 'desc': 'ERS Scatterometer 1992-2000'}
+diags_obslist['CERES-EBAF_1'] = {'filekey': 'CERES-EBAF', 'desc': 'CERES-EBAF'}
 diags_obslist['CALIPSO_1'] = {'filekey': 'CALIPSO', 'desc': 'CALIPSO GOCCP 2007-2010'}
 
 # Just sort alphabetically for now...
 diags_obslist['AOD_550_1'] = {'filekey': 'sat', 'desc': 'AOD Data'}
-diags_obslist['CERES2_1'] = {'filekey': 'CERES2', 'desc': 'CERES2 March 2000-October 2005'}
-diags_obslist['CERES_1'] = {'filekey': 'CERES', 'desc': 'CERES 2000-2003'}
-diags_obslist['ECMWF_1'] = {'filekey': 'ECMWF', 'desc': 'ECMWF Reanalysis 1979-93'}
 diags_obslist['MISR_1'] = {'filekey': 'MISR', 'desc': 'MISR Mar2000-Nov2009'}
-diags_obslist['MODIS_1'] = {'filekey': 'MODIS', 'desc': 'MODIS Mar2000-Aug2004'}
 diags_obslist['NA_1'] = {'filekey': 'N/A', 'desc': 'NA'}
-diags_obslist['NCEP_1'] = {'filekey': 'NCEP', 'desc': 'NCEP Reanalysis 1979-98'}
 diags_obslist['NSA_1'] = {'filekey': 'NSA', 'desc': 'North Slope of Alaska (NSA)'}
 diags_obslist['RAOBS_1'] = {'filekey': 'RAOBS', 'desc':'raobs station data'}
 diags_obslist['SGP_1'] = {'filekey': 'SGP', 'desc': 'Southern Great Plains (SGP)'}
@@ -638,7 +636,12 @@ diags_obslist['TWP1_1'] = {'filekey': 'TWP1', 'desc': 'Tropical Western Pacific-
 diags_obslist['TWP2_1'] = {'filekey': 'TWP2', 'desc': 'Tropical Western Pacific--Region 2 (TWP2)'}
 diags_obslist['TWP3_1'] = {'filekey': 'TWP3', 'desc': 'Tropical Western Pacific--Region 3 (TWP3)'}
 diags_obslist['uwind'] = {'filekey':'uwind850', 'desc': 'U (850mb)'}
-diags_obslist['XA_1'] = {'filekey': 'XA', 'desc': 'CMAP (Xie-Arkin) 1979-98'}
+
+# Missing datasets from current AMWG:
+# MERRA
+# UWisc
+# ISCCP FD
+# ISCCP D2
 
 
 # Code testing collection. These will not be run but will generate the command line for testing/verification

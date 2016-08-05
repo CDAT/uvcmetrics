@@ -46,7 +46,6 @@ def getCollections(pname):
                     if diags_collection[c][v].get('package', False) != False and diags_collection[c][v]['package'].upper() == pname.upper():
                         colls.append(c)
 
-
     logger.info('The following diagnostic collections appear to be available: %s' , colls)
     return colls
 
@@ -329,7 +328,13 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, data_hash, colls
 
 
         # Given this collection, see what variables we have for it.
-        vlist = sorted(list( set(diags_collection[collnum].keys()) - set(collection_special_vars)))
+        vlist = []
+        special = set(collection_special_vars)
+        for k in diags_collection[collnum].keys():
+            if k in special:
+                continue
+            else:
+                vlist.append(k)
 
         # now, see how many plot types we have to deal with and how many obs
         plotlist = []
@@ -339,29 +344,25 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, data_hash, colls
             obslist.extend(diags_collection[collnum][v]['obs'])
 
         plotlist = list(set(plotlist))
-        obslist = sorted(set(obslist))
 
         # At this point, we have a list of obs for this collection, a list of variables, and a list of plots
         # We need to organize them so that we can loop over obs sets with a fixed plottype and list of variables.
         # Let's build a dictionary for that.
         for p in plotlist:
-            obsvars = OrderedDict()
-            for o in obslist:
+            obsvars = OrderedDict([(key, []) for key in diags_obslist])
+
+            for o in diags_obslist:
                 for v in vlist:
                     if o in diags_collection[collnum][v]['obs'] and diags_collection[collnum][v]['plottype'] == p:
-                        if obsvars.get(o, False) == False: # do we have any variables yet?
-                            obsvars[o] = [v] # nope, make a new array and add this variable
-                        else:
+                        if v not in obsvars[o]:
                             obsvars[o].append(v)
-                if obsvars.get(o, False) != False:
-                    obsvars[o] = list(set(obsvars[o]))
 
-                if package.lower() == "amwg" and collnum not in ("2", "11", "12", "13", "14", "topten"):
-                    if o in obsvars:
-                        # Should probably reorder these by description,
-                        # since some descriptions don't sync up with their shortname
-                        group = OutputGroup(diags_obslist[o]["desc"])
-                        page.addGroup(group)
+            for o in diags_obslist:
+                if len(obsvars[o]) == 0:
+                    del obsvars[o]
+                else:
+                    group = OutputGroup(diags_obslist[o]["desc"])
+                    page.addGroup(group)
 
             # ok we have a list of observations and the variables that go with them for this plot type.
             for obs_index, o in enumerate(obsvars.keys()):
