@@ -825,46 +825,15 @@ if __name__ == '__main__':
     else:
         obspath = None
 
-    # Set some defaults.
-    dbflag = False
-    dbonly = False
-    xmlflag = True  #default to generating xml/netcdf files
-    hostname = 'acme-ea.ornl.gov'
-
-    if opts['dbopts'] == 'no':
-        dbflag = False
-        dbonly = False
-    elif opts['dbopts'] == 'only':
-        dbflag = True
-        dbonly = True
-    elif opts['dbopts'] == 'yes':
-        dbflag = True
-        dbonly = False
-
     outpath = opts['output']['outputdir']
     colls = opts['sets']
-    if opts['dsname'] == None and dbflag == True:
-        logger.critical('Please provide a dataset name for this dataset for the database with the --dsname option')
-        quit()
+
     dsname = opts['dsname']
     if dsname is None:
         import datetime
         dsname = datetime.date.today().strftime("%Y-%m-%d")
 
-    if opts['dbhost'] != None:
-        hostname = opts['dbhost']
-
-    if opts['output']['xml'] != True:
-        xmlflag = False
-
-    if dbflag is True and dbonly is True and (num_models == 0 or dsname is None or package is None):
-        logger.critical('Please specify --model, --dsname, and --package with the db update option')
-        quit()
-
-    if dbonly is True:
-        logger.info('Updating the remote database only...')
-        postDB(fts, dsname, package, host=hostname)
-        quit()
+    hostname = opts["dbhost"]
 
     # Kludge to make sure colormaps options are passed to diags
     # If user changed them
@@ -892,6 +861,8 @@ module load uvcdat/batch
 """ % (opts["sbatch"])
     else:
         dryrun = False
+
+    xmlflag = opts["output"]["xml"]
 
     index = OutputIndex("UVCMetrics %s" % package.upper(), version=dsname)
 
@@ -921,9 +892,6 @@ module load uvcdat/batch
     index.menu = menus
     index.toJSON(os.path.join(outpath, package.lower(), "index.json"))
 
-    if dbflag is True:
-        logger.info('Updating the remote database...')
-        postDB(fts, dsname, package, host=hostname)
     for proc in active_processes:
         result = proc.wait()
         if result != 0:
@@ -939,8 +907,12 @@ module load uvcdat/batch
     if opts["sbatch"] > 0:
         import shlex
         cmd = "sbatch %s" % fnm
-        logger.info("Commmand: sbatch %s",fnm)
+        logger.info("Commmand: sbatch %s", fnm)
         subprocess.call(shlex.split(cmd))
+
+    if opts["do_upload"]:
+        upload_path = os.path.join(outpath, package.lower())
+        subprocess.call(["upload_output", "--server", hostname, upload_path])
 
     # Used to quash stdout/stderr that isn't properly logged by diags.
     spam_file.close()
