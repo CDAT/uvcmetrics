@@ -13,7 +13,7 @@ from metrics.computation.plotspec import plotspec, derived_var
 from metrics.common.version import version
 from metrics.common.utilities import *
 from metrics.packages.amwg.derivations import *
-from metrics.frontend.diags import form_filename
+from metrics.frontend.form_filenames import form_filename
 from pprint import pprint
 import cProfile
 import json
@@ -813,6 +813,7 @@ class uvc_simple_plotspec():
                     varn = self.vars[0][0].id
                 else:
                     varn = self.vars[0].id
+                if len(self.vars)>1:  where = where+'-combined'
                 return form_filename( where, 'nc', True, self.vars[0].id )
         elif len(self.title)<=0:
             fname = 'foo.nc'

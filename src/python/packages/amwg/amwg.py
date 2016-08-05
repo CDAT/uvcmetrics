@@ -4256,7 +4256,6 @@ class amwg_plot_set14(amwg_plot_plan):
         v.legendTitles = []
         v.finalize()
         #pdb.set_trace()
-vars[0].id
         return [self.plotspec_values['Taylor']]
 
 class amwg_plot_set15(amwg_plot_plan): 
