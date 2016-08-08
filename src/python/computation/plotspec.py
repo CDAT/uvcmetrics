@@ -140,7 +140,8 @@ class plotspec(basic_id):
         overplotline = False,
         levels = None,  # deprecated
         plotparms = None,
-        displayunits = None #units to be used for display
+        displayunits = None, #units to be used for display,
+        more_id=None         # more information to identify the plot
         ):
         """Initialize a plotspec (plot specification).  Inputs are an id and plot type,
         and lists of x,y,z variables (as keys in the plotvars dictionary), functions to
@@ -225,7 +226,8 @@ class plotspec(basic_id):
         self.source = source
         self.overplotline = overplotline
         self.levels = levels
-        self.displayunits = displayunits 
+        self.displayunits = displayunits
+        self.more_id = more_id
 
     @classmethod
     def dict_id( cls, varid, varmod, seasonid, ft1, ft2=None, region='' ):

@@ -318,6 +318,7 @@ def run_diags( opts ):
 
                         # Do the work (reducing variables, etc)
                         res = plot.compute(newgrid=-1) # newgrid=0 for original grid, -1 for coarse
+                        # typically res is a list of uvc_simple_plotspec.  But an item might be a tuple.
 
                         if res is not None and len(res)>0 and type(res) is not str: # Success, we have some plots to plot
                             logger.info('--------------------------------- res is not none')
@@ -325,7 +326,7 @@ def run_diags( opts ):
 
                             frname = form_file_rootname(
                                 snum, [varid], 'variable', dir=outdir, season=time, basen=basename,
-                                postn=postname, aux=[aux] )
+                                postn=postname, region=r_fname, aux=[aux] )
                      
                             if opts['output']['plots'] == True:
                                 displayunits = opts.get('displayunits', None)                                    
@@ -349,7 +350,8 @@ def run_diags( opts ):
                             if type(res) is str:
                                 f = open( form_filename( form_file_rootname(
                                             'resstring', [varid], 'table', dir=outdir, season=time,
-                                                         basen=basename, postn=postname, aux=aux ), 'text' ))
+                                                         basen=basename, postn=postname, region=r_fname, aux=aux ),
+                                                         'text' ))
                                 f.write(res)
                                 f.close()
                             else:
@@ -439,9 +441,13 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
     for r,resr in enumerate(res):
         if resr is None:
             continue
-
         if type(resr) is not tuple:
+            more_id = resr.more_id
             resr = (resr, None )
+        else:
+            more_id = None
+        print "jfp"
+        print "jfp in makeplots, more_id=",more_id
         vcanvas.clear()
         # ... Thus all members of resr and all variables of rsr will be
         # plotted in the same plot...
@@ -499,7 +505,8 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
                 #### seasons/vars/setnames/varopts/etc used to create the plot. Otherwise, there is no
                 #### way for classic viewer to know the filename without lots more special casing. 
 
-                fnamepng,fnamesvg,fnamepdf = form_filename( frnamebase, ('png','svg','pdf'), descr=True, vname=vname )
+                fnamepng,fnamesvg,fnamepdf = form_filename( frnamebase, ('png','svg','pdf'), descr=True,
+                                                            vname=vname, more_id=more_id )
 
                 # Beginning of section for building plots; this depends on the plot set!
                 if vcs.isscatter(rsr.presentation) or (plot.number in ['11', '12'] and package.upper() == 'AMWG'):
@@ -698,8 +705,8 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
             vname = varid.replace(' ', '_')
             vname = vname.replace('/', '_')
 
-        fnamepng,fnamesvg,fnamepdf = form_filename( frnamebase+'-combined', ('png','svg','pdf'),
-                                                    descr=True, vname=vname )
+        fnamepng,fnamesvg,fnamepdf = form_filename( frnamebase, ('png','svg','pdf'),
+                                                    descr=True, vname=vname, more_id='combined' )
 
         if vcanvas2.backend.renWin is None:
             logger.warning("no data to plot to file2: %s", fnamepng)

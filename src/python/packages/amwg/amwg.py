@@ -543,6 +543,7 @@ class amwg_plot_set2(amwg_plot_plan):
                 plottype = self.plottype,
                 title = 'CAM and NCEP HEAT_TRANSPORT GLOBAL',
                 source = ft1src,
+                more_id = 'Global',
                 plotparms = plotparms[src2modobs(ft1src)] ),
             'CAM_NCEP_HEAT_TRANSPORT_PACIFIC': plotspec(
                 vid='CAM_NCEP_HEAT_TRANSPORT_PACIFIC',
@@ -553,6 +554,7 @@ class amwg_plot_set2(amwg_plot_plan):
                 plottype = self.plottype,
                 title = 'CAM and NCEP HEAT_TRANSPORT PACIFIC',
                 source = ft1src,
+                more_id = 'Pacific',
                 plotparms = plotparms[src2modobs(ft1src)] ),
             'CAM_NCEP_HEAT_TRANSPORT_ATLANTIC': plotspec(
                 vid='CAM_NCEP_HEAT_TRANSPORT_ATLANTIC',
@@ -563,6 +565,7 @@ class amwg_plot_set2(amwg_plot_plan):
                 plottype = self.plottype ,
                 title = 'CAM and NCEP HEAT_TRANSPORT ATLANTIC',
                 source = ft1src,
+                more_id = 'Atlantic',
                 plotparms = plotparms[src2modobs(ft1src)] ),
             'CAM_NCEP_HEAT_TRANSPORT_INDIAN': plotspec(
                 vid='CAM_NCEP_HEAT_TRANSPORT_INDIAN',
@@ -573,6 +576,7 @@ class amwg_plot_set2(amwg_plot_plan):
                 plottype = self.plottype,
                 title = 'CAM and NCEP HEAT_TRANSPORT INDIAN',
                 source = ft1src,
+                more_id = 'Indian',
                 plotparms = plotparms[src2modobs(ft1src)] ),
             }
         self.composite_plotspecs = {

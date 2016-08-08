@@ -214,7 +214,8 @@ class uvc_simple_plotspec():
     # probably communicate that by passing a name "Isofill_polar".
     def __init__(
         self, pvars, presentation, labels=[], title='', source='', ranges=None, overplotline=False,
-        linetypes=['solid'], linecolors=[241], levels=None, plotparms=None, displayunits=None ):
+        linetypes=['solid'], linecolors=[241], levels=None, plotparms=None, displayunits=None,
+        more_id=None ):
 
         pvars = [v for v in pvars if v is not None]
         # ... Maybe something else is broken to let None get into pvars.
@@ -312,6 +313,8 @@ class uvc_simple_plotspec():
                         for ax in var.getDomain()[:] if ax is not None
                     }
         self.finalized = False
+        self.more_id = more_id
+
     def make_ranges(self, var):
 
         if 'xrange' in self.ranges.keys():
@@ -814,7 +817,7 @@ class uvc_simple_plotspec():
                 else:
                     varn = self.vars[0].id
                 if len(self.vars)>1:  where = where+'-combined'
-                return form_filename( where, 'nc', True, self.vars[0].id )
+                return form_filename( where, 'nc', True, self.vars[0].id, more_id=self.more_id )
         elif len(self.title)<=0:
             fname = 'foo.nc'
         else:

@@ -280,7 +280,9 @@ class plot_plan(object):
                 line2colors = [ps.z2linecolor]
 
             #get the levels and plot parameters
-            levels = ps.levels
+            levels = ps.levels  # deprecated
+            more_id = ps.more_id
+            print "jfp in plot_plan._results, more_id=",more_id
             plotparms = getattr(ps,'plotparms',None)
                     
             # The following line is getting specific to UV-CDAT, although not any GUI...
@@ -300,7 +302,7 @@ class plot_plan(object):
                 plot_type_temp = ps.plottype
             self.plotspec_values[p] = uvc_simple_plotspec(
                 vars, plot_type_temp, labels, title, ps.source, ranges, overplotline, linetypes,
-                linecolors, levels, plotparms )
+                linecolors, levels=levels, more_id=more_id, plotparms=plotparms )
             #print p
             #print self.plotspec_values[p]
         #pdb.set_trace()

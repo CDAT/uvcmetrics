@@ -1,7 +1,7 @@
 import logging, os
 logger = logging.getLogger(__name__)
 
-def form_filename( rootname, fmt, descr='', vname='',  ):
+def form_filename( rootname, fmt, descr='', vname='', more_id='' ):
     """This information goes into a file name computation, or possibly should go:
 - root name, from form_file_rootname
 - format of output (png,svg,pdf,nc).
@@ -14,8 +14,9 @@ What this function returns depends on what fmt is.
   If a tuple of strings (e.g. 'png','svg'), we will will return the corresponding tuple of filenames.
   (e.g. foo.png,foo.svg)
 """
+    if more_id is None: more_id=''
     if descr is not True:
-        fnamedot = '-'.join([rootname,descr]) + '.'
+        fnamedot = '-'.join([rootname,more_id,descr]) + '.'
         if type(fmt) is str:
             return fnamedot + fmt
         else:
@@ -42,9 +43,8 @@ What this function returns depends on what fmt is.
     # and whatever does i/o (should all be within frontend/) queries the functions there to get
     # filenames.  They should be based upon actual specifications (e.g. season, obs filename);
     # we shouldn't try to parse the specs out of lengthy ID strings.
+    rootname='-'.join([rootname,more_id])
     special = ''
-    print "jfp"
-    print "jfp vname=",vname
     if 'RMSE_' in vname:
         special='RMSE'
     if 'Standard_Deviation' in vname:
@@ -96,7 +96,6 @@ What this function returns depends on what fmt is.
             logging.warning('Second spot - Couldnt determine filename; defaulting to just .png. vname: %s, rootname: %s', vname, rootname)
             fnamedot = rootname+'.'
 
-    print "jfp fnamedot=",fnamedot
     if type(fmt) is str:
         return fnamedot + fmt
     else:
