@@ -11,6 +11,9 @@
 from metrics.common.utilities import *
 from unidata import udunits
 import numpy
+import logging
+
+logger = logging.getLogger(__name__)
 
 def reconcile_energyflux_precip(mv1, mv2, preferred_units=None):
     # To compare LHFLX and QFLX, need to unify these to a common variables
@@ -32,13 +35,13 @@ def reconcile_energyflux_precip(mv1, mv2, preferred_units=None):
         # First, set preferred_units if needed
         if preferred_units is None:
             if ('_QFLX_' in mv2.id) or ('_QFLX' in mv1.id):
-                print "Setting preferred_units='mm/day'"
+                logger.info("Setting preferred_units='mm/day'")
                 preferred_units='mm/day'
             if ('_LHFLX_' in mv2.id) or ('_LHFLX' in mv1.id):
-                print "Setting preferred_units='W/m^2'"
+                logger.info("Setting preferred_units='W/m^2'")
                 preferred_units='W/m^2'
             if preferred_units is None:
-                print "Setting preferred_units to mv.units=",mv2.units
+                logger.info("Setting preferred_units to mv.units=%s", mv2.units)
                 preferred_units = mv2.units
 
         # syntax correction (just in case)
@@ -51,7 +54,7 @@ def reconcile_energyflux_precip(mv1, mv2, preferred_units=None):
         if mv2.units!=preferred_units:
             mv2 = convert_energyflux_precip(mv2, preferred_units)
     else:
-        print "ERROR: missing units in arguments to reconcile_energyflux_precip."
+        logger.error("missing units in arguments to reconcile_energyflux_precip.")
         exit
 
     return mv1,mv2
@@ -73,6 +76,10 @@ def convert_energyflux_precip(mv, preferred_units):
         mv.units='W/m^2'
     if mv.units=='mm/d':
         mv.units = 'mm/day'
+    # LHFLX
+    if mv.units=="W/m~S~2~N":
+        logger.info("Arbitrarily decided that W/m~S~2~N is W/m^2 for %s", mv.id)
+        mv.units="W/m^2"
 
     if mv.units==preferred_units:
         return mv
@@ -107,7 +114,7 @@ def convert_energyflux_precip(mv, preferred_units):
             s,i = tmp.how(preferred_units)
         except Exception as e:
             # conversion not possible.
-            print "ERROR could not convert from",mv.units,"to",preferred_units
+            logger.error("could not convert from %s to %s" ,mv.units, preferred_units)
             raise e
         if not ( numpy.allclose(s,1.0) and numpy.allclose(i,0.0) ):
             mv = s*mv + i

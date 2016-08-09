@@ -3,7 +3,9 @@ import EzTemplate
 import numpy as np
 from metrics.frontend.templateoptions import *
 from vtk import vtkTextActor, vtkTextRenderer, vtkTextProperty, vtkPropPicker
+import logging
 
+logger = logging.getLogger(__name__)
 # Font Scale Factor for defining font size
 def gaussian(x, mu, sig):
     return np.exp(-np.power(x - mu, 2.) / (2 * np.power(sig, 2.)))
@@ -41,24 +43,24 @@ def calcy2(y1, dy, yl):
 def debugInfoFunc(graphicMethodStrings=None, overlay=None, rows=1, columns=1,
                   mainTemplateOptions=None, templateOptionsArray=None, templateNameArray=None,
                   legendDirection='vertical', forceAspectRatio=False, onlyData=False):
-    print "===================================================================="
-    print "============================= Debug Info ==========================="
-    print "===================================================================="
+    #print "===================================================================="
+    #print "============================= Debug Info ==========================="
+    #print "===================================================================="
 
     if graphicMethodStrings != None:
         for i in range(len(graphicMethodStrings)):
-            print "graphicMethodString: ",graphicMethodStrings[i]
+            logger.debug("graphicMethodString: %s",graphicMethodStrings[i])
     if overlay != None:
         for i in range(len(overlay)):
-            print "overlay: ",overlay[i]
-    print "rows = {0}, columns = {1}".format(rows, columns)
-    print "Main template options type: ",mainTemplateOptions.typeName
+            logger.debug("overlay: %s", overlay[i])
+    logger.debug("rows = {0}, columns = {1}".format(rows, columns))
+    logger.debug("Main template options type: %s", mainTemplateOptions.typeName)
     if templateOptionsArray != None:
         for i in range(len(templateOptionsArray)):
-            print "template option array item: ",templateOptionsArray[i].typeName
-    print "legend direction: ",legendDirection
-    print "force aspect ration: ",forceAspectRatio
-    print "onlyData: ",onlyData
+            logger.debug("template option array item: %s", templateOptionsArray[i].typeName)
+    logger.debug("legend direction: %s", legendDirection)
+    logger.debug("force aspect ration: %s", forceAspectRatio)
+    logger.debug("onlyData: %s", onlyData)
     
             
 #######################################################################################################
@@ -119,6 +121,8 @@ def build_templates(canvas=None, graphicMethodStrings=None, overlay=None, rows=1
             graphicMethodObjects.append(
                 canvas.createvector('uvwg_' + (str(random.random())[2:]), 'default')
             )
+            ## kludge because new vectors seem to have HUGE arrows
+            graphicMethodObjects[-1].scale=.03
             
         if (graphicMethodStrings[i] == 'scatter') and ('uvwg' not in canvas.listelements('scatter')) :
             graphicMethodObjects.append(

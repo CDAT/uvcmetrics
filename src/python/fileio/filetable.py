@@ -8,6 +8,7 @@ import sys, os, cdms2, re, logging
 from metrics.frontend.options import Options
 from metrics.common import *
 from pprint import pprint
+logger = logging.getLogger(__name__)
 
 def parse_climo_filename(filename):
     """Tests whether a filename is in the standard format for a climatology file, e.g.
@@ -138,7 +139,7 @@ class basic_filetable(basic_id):
           try:
             options = opts
           except:
-            logging.critical('Could not determine options array in basic_filetable')
+            logger.critical('Could not determine options array in basic_filetable')
             quit()
         self.initialize_idnumber()
         basic_id.__init__( self, self._idnumber, ftid )
@@ -329,7 +330,7 @@ class basic_filetable(basic_id):
        A filter filefilter may be supplied, to restrict which files will be found.
        For ranges, None means you want all values."""
        if variable not in self._varindex.keys():
-          print 'Couldnt find variable',variable,'in',self,".  If needed, we'll try to compute it."
+          logger.warning('Couldnt find variable %s in %s. If needed, we will try to compute it', variable, self)
           # print "  variables of",self,"are:",self._varindex.keys()
           return None
        candidates = self._varindex[ variable ]
@@ -454,7 +455,7 @@ class NCAR_filefmt(basic_filefmt):
                   lo = self._dfile[time_bnds_name][0][0]
                   hi = self._dfile[time_bnds_name][-1][1]
               except Exception as e:
-                  logging.exception("exception getting time bounds from self._dfile[%s]=%s",time_bnds_name,self._dfile[time_bnds_name])
+                  logger.exception("exception getting time bounds from self._dfile[%s]=%s",time_bnds_name,self._dfile[time_bnds_name])
                   raise e
           else:
               lo = timeax[0]
@@ -726,28 +727,25 @@ def is_file_bad( dfile, maxwarn ):
         # Maybe these warnings should be supressed if for the time axis of a climo file...
         if not hasattr(ax,'bounds'):
             if len(ax)<=1:
-                logging.warning("File %s has an axis %s with no bounds",dfile.id, axn)
-                print "As the length is 1, no bounds can be computed."
-                print "Any computation involving this axis is likely to fail."
+                logger.warning("File %s has an axis %s with no bounds",dfile.id, axn)
+                logger.warning("As the length is 1, no bounds can be computed. \n Any computation involving this axis is likely to fail.")
+
                 bad = True
                 maxwarn -= 1
             else:
-                print "File",dfile.id,"has an axis",axn,"with no bounds."
-                print "An attempt will be made to compute bounds, but that is unreliable compared"+\
-                    " to bounds provided by the data file."
+                logger.warning("file %s has an axis %s with no bounds.  An attempt will be made to compute bounds, but that is unreliable compared to bounds provided by the data file",dfile.id,axn)
                 maxwarn -= 1
         if hasattr(ax,'bounds') and ax.bounds not in dfile.variables:
-            logging.warning("File %s has an axis %s whose bounds do not exist!",dfile.id, axn)
-            print "This file is not CF-compliant, so calculations involving this axis may well fail."
+            logger.warning("File %s has an axis %s whose bounds do not exist! This file is not CF-compliant, so calculations involving this axis may well fail. ",dfile.id, axn)
+
             bad = True
             maxwarn -= 1
         if hasattr(ax,'_FillValue') and ax._FillValue in ax:
-            print logging.warning("File %s has an axis %s with a missing value", dfile.id, axn)
-            print "This file is not CF-compliant, so calculations involving this axis may well fail."
+            logger.warning("File %s has an axis %s with a missing value. This file is not CF-compliant, so calculations involving this axis may well fail.", dfile.id, axn)
             bad = True
             maxwarn -= 1
         if maxwarn<=0:
-            print "There will be no more bad data warnings from constructing this filetable."
+            logger.warning("There will be no more bad data warnings from constructing this filetable.")
             break
     return bad, maxwarn
 

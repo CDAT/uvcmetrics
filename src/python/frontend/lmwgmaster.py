@@ -1,4 +1,7 @@
 ### See master-README for description of this file.
+import logging
+
+__logger__ = logging.getLogger(__name__)
 
 diags_varlist = {}
 diags_collection = {}
@@ -9,7 +12,7 @@ from metrics.frontend.defines import *
 # They are usually flags or parameters for the entire collection.
 # Make sure no actual variables have these names, but that shouldn't be a problem.
 collection_special_vars = ['desc', 'preamble', 'regions', 'seasons', 'package', 'options', 'combined', 'imagesonly', 'tables', 'mixed_plots', 'parallel']
-
+diags_groups = {}
 ### Collection 1
 diags_collection['1'] = {}
 diags_collection['1']['desc'] = 'Line plots of annual trends in energy balance, soil water/ice and temperature, runoff, snow water/ice, photosynthesis'
@@ -480,7 +483,7 @@ diags_varlist['AODVIS'] = {'desc': 'Aerosol optical depth'}
 diags_varlist['FSNTOAC'] = {'desc': 'TOA clearsky net SW flux (Northern)'}
 
 
-print 'ToDO: Clarify when to use CMC_SNOW and CMC_SME'
+__logger__.warning('ToDO: Clarify when to use CMC_SNOW and CMC_SME')
 diags_obslist['CMC_SNOW_1'] = {'filekey':'CMC_SNOWD', 'desc':'CMC Snow Depth'}
 diags_obslist['CMC_SWE_1'] = {'filekey':'CMC_SWE', 'desc':'CMC Snow/Water Equivalent Depth'}
 diags_obslist['FOSTERDAVY_1'] = {'filekey':'FOSTERDAVY', 'desc':'Foster-Davy'}

@@ -60,3 +60,21 @@ def convert_variable( var, target_units ):
     var.units = target_units
     return var
 
+def scale_data(units, data):
+    """This function is used to change scale to the units found in default_levels. """
+    try:
+        scale = udunits(1.0, data.units)
+        scale = scale.to(units).value 
+    except:
+        if data.units == 'fraction':
+            scale = 100.
+        else:
+            try:
+                scale = float(units)
+                units = 'scaled'
+            except:
+                logging.critical('Invalid display units: '+ units + ' for ' + data.units)
+                sys.exit()
+    data = scale*data 
+    data.units = units
+    return data                                              

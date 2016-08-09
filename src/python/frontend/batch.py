@@ -20,6 +20,11 @@ from metrics.frontend.options import *
 from pprint import pprint
 import cProfile
 
+import logging
+logger = logging.getLogger(__name__)
+
+
+
 rootpath = os.path.join(os.environ["HOME"],"metrics_data")
 #path1 = os.path.join(rootpath,'cam_output/b30.009.cam2.h0.06.xml')
 #path1 = os.path.join(rootpath,'cam_output/')
@@ -70,7 +75,7 @@ for pname,pclass in dm.items():
     #if pname!="LMWG":
         continue
     package = pclass()
-    print "jfp pname=",pname
+    logger.info("jfp pname= %s" ,pname)
     sm = package.list_diagnostic_sets()
     for sname,sclass in sm.items():
         #if sclass.name != ' 2 - Line Plots of Annual Implied Northward Transport':
@@ -81,19 +86,20 @@ for pname,pclass in dm.items():
         #if sclass.name != '2 - Horizontal contour plots of DJF, MAM, JJA, SON, and ANN means':
         #if sclass.name[:2] != '6 ':
             continue   # for testing, only do one plot set
-        print "jfp sclass.name=",sclass.name
+        logger.info("jfp sclass.name= %s" , sclass.name)
         for seasonid in package.list_seasons():
             #if seasonid != 'DJF':
             if seasonid != 'ANN':
                 continue # for testing, only do one season
-            print "jfp seasonid=",seasonid
+            logger.info("jfp seasonid= %s", seasonid)
             variables = package.list_variables( filetable1, filetable2, sname  )
-            print "jfp variables=",variables
+            message = variables
+            logger.info("jfp variables= %s",message)
             for varid in variables:
                 if varid!='T':
                 #if varid!='gw':
                     continue # for testing, only do one variable
-                print "jfp varid=",varid
+                logger.info("jfp varid= %s", varid)
                 vard = package.all_variables( filetable1, filetable2, sname )
                 #print "jfp vard keys=",mysort(vard.keys())
                 var = vard[varid]
@@ -115,14 +121,14 @@ for pname,pclass in dm.items():
                         dpoll = 1 # 0.1 is good for set 6, 1 is good for set 4
                         for ipoll in range(10):
                             status = plotdata_status(proc)
-                            print "jfp At",tpoll,"seconds, status=",status
+                            logger.info("jfp At %s seconds, status= %s " ,tpoll, status)
                             if (not status) and ipoll>5:
                                 break
                             time.sleep(dpoll)
                             tpoll += dpoll
                         # plotdata_results will block until the process completes:
                         resf = plotdata_results( proc )  # file name in which results are written
-                        print "jfp results written in",resf
+                        logger.info("jfp results written in %s", resf)
                         number_diagnostic_plots += 1
                         res = None
                     if res is not None:
@@ -131,7 +137,7 @@ for pname,pclass in dm.items():
                         else:
                             resc = uvc_composite_plotspec( res )
                         number_diagnostic_plots += 1
-                        print "writing resc to",outpath
+                        logger.info("writing resc to %s",outpath)
                         resc.write_plot_data("xml-NetCDF", outpath )
 
-print "total number of diagnostic plots generated =", number_diagnostic_plots
+logger.info("total number of diagnostic plots generated = %s", number_diagnostic_plots)

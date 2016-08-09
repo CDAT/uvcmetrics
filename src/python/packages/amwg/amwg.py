@@ -8,6 +8,7 @@ from metrics.packages.diagnostic_groups import *
 from metrics.computation.reductions import *
 from metrics.computation.plotspec import *
 from metrics.frontend.uvcdat import *
+from metrics.packages.plotplan import plot_plan
 from metrics.frontend import *
 from metrics.common.id import *
 from metrics.common.utilities import *
@@ -19,6 +20,9 @@ from unidata import udunits
 import cdutil.times, numpy
 from numbers import Number
 from pprint import pprint
+import logging
+
+logger = logging.getLogger(__name__)
 
 seasonsyr=cdutil.times.Seasons('JFMAMJJASOND')
 
@@ -391,16 +395,16 @@ class amwg_plot_plan(plot_plan):
                 #print "dbg in second round, found",varnom,"computable by",func,"from",inputs
                 break
         if len(rvs)<=0:
-            print "WARNING, no inputs found for",varnom,"in filetable",filetable.id()
-            print "filetable source files=",filetable._filelist[0:10]
-            print "need inputs",svd.inputs()
+            logger.warning("no inputs found for %s in filetable %s",varnom, filetable.id())
+            logger.warning("filetable source files= %s %s",filetable._filelist[0:10])
+            logger.warning("need inputs %s",svd.inputs())
             return None,[],[]
             #raise DiagError( "ERROR, don't have %s, and don't have sufficient data to compute it!"\
             #                     % varnom )
         if not computable:
-            print "DEBUG: standard variable",varnom,"is not computable"
-            print "need inputs",svd.inputs()
-            print "found inputs",[rv.id() for rv in rvs]+[drv.id() for drv in dvs]
+            logger.debug("DEBUG: standard variable %s is not computable", varnom)
+            logger.debug( "need inputs %s" ,svd.inputs())
+            logger.debug("found inputs %s",([rv.id() for rv in rvs]+[drv.id() for drv in dvs]))
             return None,[],[]
         seasonid = season.seasons[0]
         vid = derived_var.dict_id( varnom, '', seasonid, filetable )
@@ -437,9 +441,9 @@ class amwg_plot_set2(amwg_plot_plan):
         self.plottype='Yxvsx'
         vars = self._list_variables(model, obs)
         if varid not in vars:
-            print "In amwg_plot_set2 __init__, ignoring varid input, will compute Ocean_Heat"
+            logger.info("In amwg_plot_set2 __init__, ignoring varid input, will compute Ocean_Heat")
             varid = vars[0]
-        print "Warning: amwg_plot_set2 only uses NCEP obs, and will ignore any other obs specification."
+        logger.warning("amwg_plot_set2 only uses NCEP obs, and will ignore any other obs specification.")
         # TO DO: Although model vs NCEP obs is all that NCAR does, there's no reason why we
         # TO DO: shouldn't support something more general, at least model vs model.
         if not self.computation_planned:
@@ -647,8 +651,6 @@ class amwg_plot_set2(amwg_plot_plan):
         yLabel.height = 9.0
         cnvs2.plot(yLabel, bg = 1)
 
-        deltaX = 0.03
-
         titleOri                  = cnvs2.gettextorientation(tm2.title.textorientation)
         titleOri.height           = 11.5
         tm2.title.textorientation = titleOri
@@ -657,7 +659,9 @@ class amwg_plot_set2(amwg_plot_plan):
         sourceOri.height           = 9.0
         tm2.source.textorientation = sourceOri
         tm2.source.y               = tm2.units.y - 0.01
-        tm2.source.x               = tm2.data.x1 + deltaX       
+        if varIndex==0:
+            deltaX = 0.03
+            tm2.source.x               = tm2.data.x1 + deltaX       
 
         tm2.units.priority = 0
 
@@ -669,20 +673,21 @@ class amwg_plot_set2(amwg_plot_plan):
         tm2.ytic2.line = line
         tm2.xtic2.line = line
         
-        tm2.data.x1      += deltaX
-        tm2.data.x2      += deltaX
-        tm2.box1.x1      += deltaX
-        tm2.box1.x2      += deltaX
-        tm2.ytic1.x1     += deltaX
-        tm2.ytic1.x2     += deltaX
-        tm2.ytic2.x1     += deltaX
-        tm2.ytic2.x2     += deltaX
-        tm2.ylabel1.x    += deltaX
-        tm2.ymintic1.x1  += deltaX
-        tm2.ymintic1.x2  += deltaX
-        #tm2.units.x     += deltaX
-        tm2.title.x      += deltaX
-        tm2.xname.x      += deltaX        
+        if varIndex==0:
+            tm2.data.x1      += deltaX
+            tm2.data.x2      += deltaX
+            tm2.box1.x1      += deltaX
+            tm2.box1.x2      += deltaX
+            tm2.ytic1.x1     += deltaX
+            tm2.ytic1.x2     += deltaX
+            tm2.ytic2.x1     += deltaX
+            tm2.ytic2.x2     += deltaX
+            tm2.ylabel1.x    += deltaX
+            tm2.ymintic1.x1  += deltaX
+            tm2.ymintic1.x2  += deltaX
+            #tm2.units.x     += deltaX
+            tm2.title.x      += deltaX
+            tm2.xname.x      += deltaX
         
         return tm1, tm2
 
@@ -1363,7 +1368,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
             vid1,vid1var = self.vars_stdvar_normal_contours(
                 filetable1, varnom, seasonid, aux=None )
         else:
-            print "ERROR, variable",varnom,"not found in and cannot be computed from",filetable1
+            logger.error("variable %s not found in and cannot be computed from %s",varnom, filetable1)
             return None
         if filetable2 is not None and varnom in filetable2.list_variables():
             vid2,vid2var = self.vars_normal_contours(
@@ -1389,8 +1394,9 @@ class amwg_plot_set5and6(amwg_plot_plan):
                     #title = ' '.join([varnom,seasonid,filetable1._strid]) )
                     title = ' '.join([varnom,seasonid,'(1)']),
                     source = ft1src,
-                    plotparms = plotparms[src2modobs(ft1src)] )
+                    plotparms = plotparms[src2modobs(ft1src)])
                 all_plotnames.append(self.plot1_id)
+                
             if vid1var is not None:
                 self.single_plotspecs[self.plot1var_id] = plotspec(
                     vid = ps.dict_idid(vid1var),
@@ -1401,6 +1407,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
                     source = ft1src,
                     plotparms = plotparms[src2modobs(ft1src)] )
                 all_plotnames.append(self.plot1var_id)
+                
         if filetable2 is not None and vid2 is not None:
             self.single_plotspecs[self.plot2_id] = plotspec(
                 vid = ps.dict_idid(vid2),
@@ -1411,6 +1418,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
                 source = ft2src,
                 plotparms = plotparms[src2obsmod(ft2src)] )
             all_plotnames.append(self.plot2_id)
+            
         if filetable1 is not None and filetable2 is not None and vid1 is not None and vid2 is not None:
             self.single_plotspecs[self.plot3_id] = plotspec(
                 vid = ps.dict_id(varnom,'diff',seasonid,filetable1,filetable2),
@@ -1420,6 +1428,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
                 title = ' '.join([varnom,seasonid,'(1)-(2)']),
                 source = ', '.join([ft1src,ft2src]),
                 plotparms = plotparms['diff'] )
+
             all_plotnames.append(self.plot3_id)
         if len(all_plotnames)>0:
             self.composite_plotspecs = {
@@ -1679,7 +1688,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
         tm2.source.priority        = 1
 
         tm2.units.priority = 1
-        
+
         try:
             #this is for the output of RMSE and CORRELATION
             tm1, tm2 = self.extraCustomizeTemplates((cnvs1, tm1), (cnvs2, tm2), var=var)
@@ -1695,7 +1704,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
                 psv[self.plot1_id] is not None and psv[self.plot2_id] is not None:
             psv[self.plot1_id].synchronize_ranges(psv[self.plot2_id])
         else:
-            print "WARNING not synchronizing ranges for",self.plot1_id,"and",self.plot2_id
+            logger.warning("not synchronizing ranges for %s and %s",self.plot1_id, self.plot2_id)
         for key,val in psv.items():
             if type(val) is not list: val=[val]
             for v in val:
@@ -1711,12 +1720,26 @@ class amwg_plot_set5(amwg_plot_set5and6):
     name = '5 - Horizontal Contour Plots of Seasonal Means'
     number = '5'
     def extraCustomizeTemplates(self, (cnvs1, tm1), (cnvs2, tm2), data=None, varIndex=None, graphicMethod=None, var=None):
-        """Theis method does what the title says.  It is a hack that will no doubt change as diags changes."""
+        """Theis method does what the title says.  It is a hack that will no doubt change as diags changes.
+        It is a total hack. I'm embarassed to be part of it. Please find a better way!!!"""
         #(cnvs1, tm1), (cnvs2, tm2) = templates
         import pdb
-        if hasattr(var, 'RMSE'):
-            RMSE = round(var.RMSE, 2)
-            CORR = round(var.CORR, 2)
+        if hasattr(var, 'model') and hasattr(var, 'obs'): #these come from aminusb_2ax
+            from metrics.graphics.default_levels import default_levels
+            from metrics.computation.units import scale_data
+            from metrics.computation.compute_rmse import compute_rmse    
+            if self.varid in default_levels.keys():
+                #convert to the units specified in the default levels dictionay
+                displayunits = default_levels[self.varid].get('displayunits', None)
+                if displayunits is not None and var.model is not None and var.obs is not None:
+                    #print displayunits, var.model.units, var.obs.units
+                    var.model = scale_data( displayunits, var.model)
+                    var.obs   = scale_data( displayunits, var.obs) 
+            
+            RMSE, CORR = compute_rmse( var.model, var.obs )
+            
+            RMSE = round(RMSE, 2)
+            CORR = round(CORR, 2)
             textRMSE = cnvs2.createtext()
             textRMSE.string = 'RMSE = %.3g' % RMSE
             textRMSE.x = .075
@@ -1730,9 +1753,8 @@ class amwg_plot_set5(amwg_plot_set5and6):
             textCORR.y = .005
             textCORR.height = 10
             cnvs2.plot(textCORR, bg=1)              
-            #pdb.set_trace()
-        
-        return tm1, tm2    
+            
+        return tm1, tm2  
 class amwg_plot_set6(amwg_plot_plan):
     """represents one plot from AMWG Diagnostics Plot Set 6
     This is a vector+contour plot - the contour plot shows magnitudes and the vector plot shows both
@@ -1973,11 +1995,11 @@ class amwg_plot_set6(amwg_plot_plan):
                 if vars1 is None and vars2 is None:
                     raise DiagError("cannot find standard variables in data 2")
             else:
-                print "ERROR, AMWG plot set 6 does not yet support",varid
+                logger.error("AMWG plot set 6 does not yet support %s",varid)
                 return None
         except Exception as e:
-            print "ERROR cannot find suitable standard_variables in data for varid=",varid
-            print "exception is",e
+            logger.error("cannot find suitable standard_variables in data for varid= %s",varid)
+            logger.exception(" %s ", e)
             return None
         reduced_varlis = []
         vardict1 = {'':'nameless_variable'}
@@ -2179,7 +2201,7 @@ class amwg_plot_set6(amwg_plot_plan):
         #    psv[self.plot1_id].synchronize_ranges(psv[self.plot2_id])
         #else:
         #    print "WARNING not synchronizing ranges for",self.plot1_id,"and",self.plot2_id
-        print "WARNING not synchronizing ranges for AMWG plot set 6"
+        logger.warning("not synchronizing ranges for AMWG plot set 6")
         for key,val in psv.items():
             if type(val) is not list and type(val) is not tuple: val=[val]
             for v in val:
@@ -2371,7 +2393,7 @@ class amwg_plot_set7(amwg_plot_plan):
                 psv[self.plot1_id] is not None and psv[self.plot2_id] is not None:
             psv[self.plot1_id].synchronize_ranges(psv[self.plot2_id])
         else:
-            print "WARNING not synchronizing ranges for",self.plot1_id,"and",self.plot2_id
+            logger.error("not synchronizing ranges for %s and %s ",self.plot1_id, self.plot2_id)
         for key,val in psv.items():
             if type(val) is not list: val=[val]
             for v in val:
@@ -2409,7 +2431,7 @@ class amwg_plot_set8(amwg_plot_plan):
         
         self.CONTINUE = self.FT1
         if not self.CONTINUE:
-            print "user must specify a file table"
+            logger.info("user must specify a file table")
             return None
         self.filetables = [filetable1]
         if self.FT2:
@@ -2548,7 +2570,7 @@ class amwg_plot_set8(amwg_plot_plan):
         #pdb.set_trace()
         results = plot_plan._results(self, newgrid)
         if results is None:
-            print "WARNING, AMWG plot set 8 found nothing to plot"
+            logger.warning("AMWG plot set 8 found nothing to plot")
             return None
         psv = self.plotspec_values
         if self.FT2:
@@ -2637,7 +2659,7 @@ class amwg_plot_set9(amwg_plot_plan):
             ft1_valid = ft1 is not None and ft1!=[]    # true iff filetable1 uses hybrid level coordinates
             ft2_valid = ft2 is not None and ft2!=[]    # true iff filetable2 uses hybrid level coordinates
         else:
-            print "ERROR: user must specify 2 data files"
+            logger.error("user must specify 2 data files")
             return None
         if not ft1_valid or not ft2_valid:
             return None
@@ -2789,7 +2811,7 @@ class amwg_plot_set9(amwg_plot_plan):
         #pdb.set_trace()
         results = plot_plan._results(self, newgrid)
         if results is None:
-            print "WARNING, AMWG plot set 9 found nothing to plot"
+            logger.warning("AMWG plot set 9 found nothing to plot")
             return None
         psv = self.plotspec_values
         if self.plot1_id in psv and self.plot2_id in psv and\
@@ -3080,7 +3102,7 @@ class amwg_plot_set11(amwg_plot_plan):
             ft1_valid = ft10 is not None and ft10!=[] and ft11 is not None and ft11!=[] 
             ft2_valid = ft20 is not None and ft20!=[] and ft21 is not None and ft21!=[]  
         else:
-            print "ERROR: user must specify 2 data files"
+            logger.error("user must specify 2 data files")
             return None
         if not ft1_valid or not ft2_valid:
             return None
@@ -4114,7 +4136,8 @@ class amwg_plot_set14(amwg_plot_plan):
                     RV = reduced_variable( variableid=var, 
                                            filetable=ft, 
                                            season=cdutil.times.Seasons(seasonid), 
-                                           reduction_function=( lambda x, vid=VID_mean, ID=DATAID: MV2.array(x.mean()) ) ) 
+                                           reduction_function=( lambda x, vid=VID_mean, ID=DATAID: MV2.array(reduce2scalar(x)) ) ) 
+#numpy mean() isn't working here           reduction_function=( lambda x, vid=VID_mean, ID=DATAID: MV2.array(x.mean()) ) ) 
                     self.reduced_variables[VID_mean] = RV     
                     
                     #rv for its std

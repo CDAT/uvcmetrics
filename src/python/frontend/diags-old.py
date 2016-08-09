@@ -59,7 +59,8 @@ import cProfile
 from metrics.frontend.it import *
 from metrics.computation.region import *
 from metrics.frontend.amwg_plotting import *
-
+import logging
+logger = logging.getLogger(__name__)
 def mysort( lis ):
     lis.sort()
     return lis
@@ -130,7 +131,7 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
         seasons = ['ANN']
         logging.warning("Defaulting to season ANN. You can specify season with --seasons/--seasonally, --months/--monthly or --yearly otherwise")
     else:
-        print "using seasons=",seasons
+        logger.info("using seasons= %s",seasons)
     if opts['varopts'] is None:
         opts['varopts'] = [None]
 
@@ -181,7 +182,7 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
             rname = opts['regions'][0]
         region = rectregion( rname, regl )
         for sname in plotsets:
-            print "plot set",sname
+            logger.info( "plot set %s",sname)
             snum = sname.strip().split(' ')[0]
 
             sclass = sm[sname]
@@ -200,7 +201,7 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                 for ivarid, varid in enumerate(variables):
                     if snum == '14' and ivarid >= 1: #Taylor diagrams
                        continue
-                    print "variable",varid,"season",seasonid
+                    logger.info( "variable %s season %s",varid,seasonid)
                     vard = pclass.all_variables( modelfts, obsfts, sname )
                     plotvar = vard[varid]
 
@@ -209,8 +210,8 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                     if vvaropts is None:
                         if len(opts['varopts'])>0:
                             if opts['varopts']!=[None]:
-                                logging.warning("No variable options are available, but these were requested: %s", opts['varopts'])
-                                print "Continuing as though no variable options were requested."
+                                logger.warning("No variable options are available, but these were requested: %s", opts['varopts'])
+                                logger.info("Continuing as though no variable options were requested.")
                         vvaropts = {None:None}
                         varopts = [None]
                     else:
@@ -221,9 +222,9 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                                 opts['varopts'] = [ None, 'default', ' default' ]
                             varopts = list( set(vvaropts.keys()) & set(opts['varopts']) )
                             if varopts==[]:
-                                logging.warning("Requested varopts incompatible with available varopts requested varopts= %s",opts['varopts'])
-                                logging.warning("Available varopts for variable %s are %s", varid, vvaropts.keys())
-                                print "No plots will be made."
+                                logger.warning("Requested varopts incompatible with available varopts requested varopts= %s",opts['varopts'])
+                                logger.warning("Available varopts for variable %s are %s", varid, vvaropts.keys())
+                                logger.info("No plots will be made.")
 
                     for aux in varopts:
                         # Since Options is a 2nd class (at best) citizen, we have to do something icky like this.
@@ -289,12 +290,12 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                                 #   which has the entire compound plot - that's vcanvas2
                                 gmobs, tmobs, tmmobs = return_templates_graphic_methods( vcanvas, gms, ovly, onPage )
                                 if 1: # optional debugging:
-                                    print "tmpl nsingleplots=",nsingleplots,"nsimpleplots=",nsimpleplots
-                                    print "tmpl gms=",gms
-                                    print "tmpl len(res)=",len(res),"ovly=",ovly,"onPage=",onPage
-                                    print "tmpl gmobs=",gmobs
-                                    print "tmpl tmobs=",[tm.name for tm in tmobs]
-                                    print "tmpl tmmobs=",[tm.name for tm in tmmobs]
+                                    logger.debug( "tmpl nsingleplots= %s nsimpleplots= %s",nsingleplots,nsimpleplots)
+                                    logger.debug("tmpl gms= %s",gms)
+                                    logger.debug("tmpl len(res)= %s ovly= %s onPage= %s ",len(res),ovly,onPage)
+                                    logger.debug("tmpl gmobs= %s",gmobs)
+                                    logger.debug("tmpl tmobs= %s",[tm.name for tm in tmobs])
+                                    logger.debug("tmpl tmmobs= %s",[tm.name for tm in tmmobs])
                                 
                                 # gmmobs provides the correct graphics methods to go with the templates.
                                 # Unfortunately, for the moment we have to use rmr.presentation instead
@@ -337,7 +338,7 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                                            else:
                                                lenvar =len(var)
                                            if lenvar<=1:
-                                               print "Won't plot short variable",var.id,var.shape
+                                               logger.debug("Won't plot short variable %s %s ",var.id,var.shape)
                                                continue
                                            savePNG = True
                                            seqsetattr(var,'title',title)
@@ -378,11 +379,11 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                                                    fname = fname+postname
                                                fname+='.png'
                                                if basename is None and postname is None:
-                                                   print "writing png file0",fname
+                                                   logger.info("writing png file0 %s",fname)
                                                else:
-                                                   print "writing png file1",fname,"for",vname
+                                                   logger.info("writing png file1 %s for %s",fname, vname)
                                                if len(fname)>255:
-                                                   print "file name too long",fname
+                                                   logger.error("file name too long %s",fname)
                                                #rsr_presentation.script("jeff.json")   #example of writing a json file
 
                                            if vcs.isscatter(rsr.presentation) or plot.number in ['11', '12']: 
@@ -540,7 +541,7 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                                else:
                                    resc = uvc_composite_plotspec( res )
                                    filenames = resc.write_plot_data("xml-NetCDF", outdir )
-                               print "wrote plots",resc.title," to",filenames
+                               logger.info("wrote plots %s to %s",resc.title,filenames)
                             if opts['output']['plots']==True:
                                 if savePNG and tmmobs[0] is not None and plotcv2==True:  # If anything was plotted to vcanvas2
                                     # Why check for 3 things?  The whole structure of diags.py is messed up
@@ -561,7 +562,7 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                                              pname = postname+'_diff'
                                              # Note postname will have the obsfile key and things like _NP
                                        fname = outdir+'/'+basename+'_'+region_filekey+'_'+seasonid+'_'+varid+pname+'-combined.png'
-                                       print "writing png file2",fname
+                                       logger.info("writing png file2 %s",fname)
                                     vcanvas2.png( fname , ignore_alpha = True, metadata=provenance_dict() )
                                     number_diagnostic_plots += 1
                         elif res is not None:
@@ -570,11 +571,11 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                                 resc = res
                                 filenames = resc.write_plot_data("text", outdir)
                                 number_diagnostic_plots += 1
-                                print "wrote table",resc.title," to",filenames
+                                logger.info("wrote table %s to %s ",resc.title,filenames)
 
     vcanvas2.close()
     vcanvas.close()
-    print "total number of (compound) diagnostic plots generated =", number_diagnostic_plots
+    print "total number of (compound) diagnostic plots generated = %s", number_diagnostic_plots
 
 if __name__ == '__main__':
    print "UV-CDAT Diagnostics, command-line version"

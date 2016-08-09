@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # Calls the evd package in r to compute gev paramater estimates.
 # Uses MPI 
-
+import logging
 import numpy
 from   scipy.io import netcdf
 from   netCDF4  import Dataset
@@ -10,6 +10,9 @@ import math
 import time
 import rpy2
 import rpy2.robjects as robjects
+
+
+logger = logging.getLogger(__name__)
 
 
 #Parse options
@@ -100,10 +103,10 @@ if __name__ == "__main__":
 #   rank = comm.Get_rank()
 #   size = comm.Get_size()
 
-   print('rank, size: ', rank, size)
+   logger.info('rank, size: %s, %s', rank, size)
 
    if rank == 0:
-       print casename, fieldname, file_name
+       logger.debug(casename, fieldname, file_name)
 
    ntime, nlat, nlon = numpy.zeros(1), numpy.zeros(1), numpy.zeros(1)
    chunk_size = numpy.zeros(1)
@@ -126,13 +129,13 @@ if __name__ == "__main__":
    begin_index = rank * chunk_size
    end_index   = begin_index + chunk_size
 
-   print "rank, begin_index, end_indexm chunk_size: ", rank, begin_index, end_index, chunk_size
+   logging.debug("rank, begin_index, end_index, chunk_size: %s, %s, %s, %s", rank, begin_index, end_index, chunk_size)
 
    local_field = numpy.zeros((ntime, nlat, chunk_size))
-       
+
    local_field = field[:,:,begin_index:end_index]
 
-   print "rank: ", rank, " file read!, time taken: ", str(time.clock()-t0)
+   logging.debug("rank: %s file read!, time taken: %s", rank, str(time.clock()-t0))
 
    r = numpy.zeros(ntime)
 
@@ -168,7 +171,7 @@ if __name__ == "__main__":
               local_field_cov_matrix[:, :, j, i] = x[7]
    
           if rank == 0 and j == 0 and i%20 == 0:
-              print 'lon %s of %s, lat %s of %s ' %( i, nlon, j, nlat)
+              logger.debug('lon %s of %s, lat %s of %s ', i, nlon, j, nlat)
 #              print 'gev_params: ', local_field_gev_params[:, j, i]
 #              print 'gev_se: ', local_field_gev_errors[:, j, i]
 
@@ -188,7 +191,7 @@ if __name__ == "__main__":
 #                   '.gevfit.daily.'  + \
 #                   fieldname + '.nc'
 
-       print outfile
+       logger.debug(outfile)
 
        f_write = Dataset(outfile, 'w')
 
@@ -266,9 +269,9 @@ if __name__ == "__main__":
 
               cov_matrix[:, :, :, begin_index:end_index] = temp_cov
 
-              print 'Received data from process: ', i
+              logger.info('Received data from process: %s', i)
 
-       print 'outfile: ', outfile, ' written!'
+       logger.info('outfile: %s written!', outfile)
        import cdms2, vcs
        f = cdms2.open(outfile, 'r')
        mu_var = f('mu')
@@ -282,7 +285,7 @@ if __name__ == "__main__":
        pngfile = output + '/' + figbase + 'gevfit-daily-'+fieldname+'.png'
        v.png(pngfile)
        v.close()
-       print 'wrote ',pngfile
+       logger.info('wrote %s', pngfile)
 
 
        f_write.close()
