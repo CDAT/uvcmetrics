@@ -2345,8 +2345,9 @@ class amwg_plot_set7(amwg_plot_plan):
         titleOri.height           = 23
         tm1.title.textorientation = titleOri
        
-        tm1.source.priority        = 1
-
+        tm1.source.priority       = 1
+        tm1.source.y              = tm1.mean.y - 0.02
+            
         # # We want units at axis names
         unitsOri                  = cnvs1.gettextorientation(tm1.units.textorientation)
         unitsOri.height          += 8
@@ -2356,8 +2357,8 @@ class amwg_plot_set7(amwg_plot_plan):
         cnvs2.setcolormap("categorical")
 
         # Adjusting intersection of title and xlabels.
-        dy = (tm2.data.y2-tm2.data.y1) * 0.095
-        tm2.data.y2 -= dy
+        dy                        = (tm2.data.y2-tm2.data.y1) * 0.095
+        tm2.data.y2              -= dy
     
         maxOri                   = cnvs2.gettextorientation(tm2.max.textorientation)
         meanOri                  = cnvs2.gettextorientation(tm2.mean.textorientation)
@@ -2371,11 +2372,11 @@ class amwg_plot_set7(amwg_plot_plan):
         tm2.title.textorientation = titleOri
         tm2.title.y              -= 0.005
 
-        tm2.max.y -= 0.005
+        tm2.max.y                -= 0.005
 
-        tm2.legend.x1 -= 0.01
+        tm2.legend.x1            -= 0.01
         
-        tm2.source.priority        = 1
+        tm2.source.priority       = 1
 
         unitsOri                  = cnvs2.gettextorientation(tm2.units.textorientation)
         unitsOri.height          += 1
