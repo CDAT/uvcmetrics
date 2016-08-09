@@ -1645,7 +1645,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
         tm1.xname.priority  = 1
         tm1.legend.priority = 1
         tm2.legend.priority = 1
-        tm2.legend.offset+=.005  # move labels a bit to right
+        tm2.legend.offset+=.008  # move labels a bit to right
 
         # Fix units if needed
         if data is not None:
