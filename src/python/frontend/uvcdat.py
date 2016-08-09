@@ -346,6 +346,12 @@ class uvc_simple_plotspec():
         # interim test here and below.  Once all the is* functions work, I should
         # drop the tests on self.presentation.__class__.__name__ :
         #pdb.set_trace()
+        #  We want missing value to be white
+        try:
+            self.presentation.missing = "grey"
+        except:
+            #  Some presentation do not have missing attribute
+            pass
         if vcs.isscatter(self.presentation):
             #ylabel, xlabel = string.split(self.title, ' vs ')
             #in the case of scatter plots there are 2 variables packed together
