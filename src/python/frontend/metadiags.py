@@ -46,7 +46,6 @@ def getCollections(pname):
                     if diags_collection[c][v].get('package', False) != False and diags_collection[c][v]['package'].upper() == pname.upper():
                         colls.append(c)
 
-
     logger.info('The following diagnostic collections appear to be available: %s' , colls)
     return colls
 
@@ -329,7 +328,13 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, data_hash, colls
 
 
         # Given this collection, see what variables we have for it.
-        vlist = sorted(list( set(diags_collection[collnum].keys()) - set(collection_special_vars)))
+        vlist = []
+        special = set(collection_special_vars)
+        for k in diags_collection[collnum].keys():
+            if k in special:
+                continue
+            else:
+                vlist.append(k)
 
         # now, see how many plot types we have to deal with and how many obs
         plotlist = []
@@ -339,29 +344,25 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, data_hash, colls
             obslist.extend(diags_collection[collnum][v]['obs'])
 
         plotlist = list(set(plotlist))
-        obslist = sorted(set(obslist))
 
         # At this point, we have a list of obs for this collection, a list of variables, and a list of plots
         # We need to organize them so that we can loop over obs sets with a fixed plottype and list of variables.
         # Let's build a dictionary for that.
         for p in plotlist:
-            obsvars = OrderedDict()
-            for o in obslist:
+            obsvars = OrderedDict([(key, []) for key in diags_obslist])
+
+            for o in diags_obslist:
                 for v in vlist:
                     if o in diags_collection[collnum][v]['obs'] and diags_collection[collnum][v]['plottype'] == p:
-                        if obsvars.get(o, False) == False: # do we have any variables yet?
-                            obsvars[o] = [v] # nope, make a new array and add this variable
-                        else:
+                        if v not in obsvars[o]:
                             obsvars[o].append(v)
-                if obsvars.get(o, False) != False:
-                    obsvars[o] = list(set(obsvars[o]))
 
-                if package.lower() == "amwg" and collnum not in ("2", "11", "12", "13", "14", "topten"):
-                    if o in obsvars:
-                        # Should probably reorder these by description,
-                        # since some descriptions don't sync up with their shortname
-                        group = OutputGroup(diags_obslist[o]["desc"])
-                        page.addGroup(group)
+            for o in diags_obslist:
+                if len(obsvars[o]) == 0:
+                    del obsvars[o]
+                else:
+                    group = OutputGroup(diags_obslist[o]["desc"])
+                    page.addGroup(group)
 
             # ok we have a list of observations and the variables that go with them for this plot type.
             for obs_index, o in enumerate(obsvars.keys()):
@@ -824,46 +825,15 @@ if __name__ == '__main__':
     else:
         obspath = None
 
-    # Set some defaults.
-    dbflag = False
-    dbonly = False
-    xmlflag = True  #default to generating xml/netcdf files
-    hostname = 'acme-ea.ornl.gov'
-
-    if opts['dbopts'] == 'no':
-        dbflag = False
-        dbonly = False
-    elif opts['dbopts'] == 'only':
-        dbflag = True
-        dbonly = True
-    elif opts['dbopts'] == 'yes':
-        dbflag = True
-        dbonly = False
-
     outpath = opts['output']['outputdir']
     colls = opts['sets']
-    if opts['dsname'] == None and dbflag == True:
-        logger.critical('Please provide a dataset name for this dataset for the database with the --dsname option')
-        quit()
+
     dsname = opts['dsname']
     if dsname is None:
         import datetime
         dsname = datetime.date.today().strftime("%Y-%m-%d")
 
-    if opts['dbhost'] != None:
-        hostname = opts['dbhost']
-
-    if opts['output']['xml'] != True:
-        xmlflag = False
-
-    if dbflag is True and dbonly is True and (num_models == 0 or dsname is None or package is None):
-        logger.critical('Please specify --model, --dsname, and --package with the db update option')
-        quit()
-
-    if dbonly is True:
-        logger.info('Updating the remote database only...')
-        postDB(fts, dsname, package, host=hostname)
-        quit()
+    hostname = opts["dbhost"]
 
     # Kludge to make sure colormaps options are passed to diags
     # If user changed them
@@ -891,6 +861,8 @@ module load uvcdat/batch
 """ % (opts["sbatch"])
     else:
         dryrun = False
+
+    xmlflag = opts["output"]["xml"]
 
     index = OutputIndex("UVCMetrics %s" % package.upper(), version=dsname)
 
@@ -920,9 +892,6 @@ module load uvcdat/batch
     index.menu = menus
     index.toJSON(os.path.join(outpath, package.lower(), "index.json"))
 
-    if dbflag is True:
-        logger.info('Updating the remote database...')
-        postDB(fts, dsname, package, host=hostname)
     for proc in active_processes:
         result = proc.wait()
         if result != 0:
@@ -938,8 +907,12 @@ module load uvcdat/batch
     if opts["sbatch"] > 0:
         import shlex
         cmd = "sbatch %s" % fnm
-        logger.info("Commmand: sbatch %s",fnm)
+        logger.info("Commmand: sbatch %s", fnm)
         subprocess.call(shlex.split(cmd))
+
+    if opts["do_upload"]:
+        upload_path = os.path.join(outpath, package.lower())
+        subprocess.call(["upload_output", "--server", hostname, upload_path])
 
     # Used to quash stdout/stderr that isn't properly logged by diags.
     spam_file.close()

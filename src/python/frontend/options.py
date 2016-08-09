@@ -95,10 +95,9 @@ class Options():
         self._opts['logging']['level'] = logging.ERROR
         self._opts['logging']['file'] = None
 
-        self._opts['dbhost'] = None
-        # Change the default here to not update the metadiags database on the Classic Viewer server
-        self._opts['dbopts'] = 'no'
+        self._opts['dbhost'] = "https://diags-viewer.llnl.gov"
         self._opts['dsname'] = None
+        self._opts['do_upload'] = False
 
    # Some short cut getter/setters
     def __getitem__(self, opt):
@@ -577,7 +576,7 @@ class Options():
         print " raw dataset data when required (e.g. if nonlinear calculations are performed)\n"
         print  "Frequently used optional arguments:"
         print "--colls - Specify which collection(s) to run. "
-        print "--updatedb (and --hostname and --dsname) - Update the classic viewer database"
+        print "--hostname and --dsname - Update the classic viewer database"
         print " with information from this run. You'll also need to run the transfer script"
         print " to actually move data over. These options are more fully documented elsewhere"
         return
@@ -775,9 +774,7 @@ class Options():
         if 'metadiags' in progname or 'metadiags.py' in progname:
             metaopts = parser.add_argument_group('Metadiags-specific')
             metaopts.add_argument('--hostname',
-                                  help="Specify the hostname of the machine hosting the ACME classic viewer database so we can add this dataset and some metadata there")
-            metaopts.add_argument('--updatedb', choices=['no', 'only', 'yes'],
-                                  help="Update the database with output from this run? Yes, no, only update the database (don't run anything. primarily for testing)")
+                                  help="Specify the hostname of the machine hosting the Diagnostics Viewer. Requires you to have initialized your Diagnostics Viewer credentials by doing `login_viewer [server_name] --user $USERNAME.`")
             metaopts.add_argument('--dsname',
                                   help="A unique identifier for the dataset(s). Used by classic viewer to display the data.")
 
@@ -917,8 +914,7 @@ class Options():
         if 'metadiags' in progname or 'metadiags.py' in progname:
             if args.hostname != None:
                 self._opts['dbhost'] = args.hostname
-            if args.updatedb != None:
-                self._opts['dbopts'] = args.updatedb
+                self._opts['do_upload'] = True
             if args.dsname != None:
                 self._opts['dsname'] = args.dsname
 
