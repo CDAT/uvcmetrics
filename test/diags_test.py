@@ -106,7 +106,10 @@ class DiagTest(object):
         proc = subprocess.Popen([self.diagstr], shell=True)
         proc_status = proc.wait()
         if proc_status!=0: 
-            raise DiagError("diags run failed")
+            proc = subprocess.Popen([self.diagstr], shell=True)
+            proc_status = proc.wait()
+            if proc_status!=0: 
+                raise DiagError("diags run failed")
     
         if self.keep:
             print "save ", imagefilename, ncfiles.keys()

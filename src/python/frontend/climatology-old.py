@@ -26,6 +26,10 @@ from metrics.frontend.options import *
 import cProfile, time, resource
 from metrics.common import store_provenance
 
+import logging
+logger = logging.getLogger(__name__)
+
+
 class climatology_variable( reduced_variable ):
     def __init__(self,varname,filetable,seasonname='ANN'):
         self.seasonname = seasonname
@@ -106,12 +110,12 @@ def compute_and_write_climatologies_keepvars( varkeys, reduced_variables, season
                     case = var._file_attributes['case']+'_'
                     break
 
-    print "writing climatology file for",case,variant,season
+    logger.info("writing climatology file for %s %s %s ",case,variant,season)
     if variant!='':
         variant = variant+'_'
-    print 'case: ',case
-    print 'variant: ', variant
-    print 'season: ', season
+    logger.info('case: %s',case)
+    logger.info('variant: %s', variant)
+    logger.info('season: %s', season)
     filename = case + variant + season + "_climo.nc"
     # ...actually we want to write this to a full directory structure like
     #    root/institute/model/realm/run_name/season/
@@ -189,7 +193,7 @@ def compute_and_write_climatologies( varkeys, reduced_variables, season, case=''
             # ...actually we want to write this to a full directory structure like
             #    root/institute/model/realm/run_name/season/
 
-        print "writing",key,"in climatology file",filename
+        logger.info("writing %s",key,"in climatology file %s",filename)
         varval.id = var.variableid
         varval.reduced_variable=varval.id
         if hasattr(var,'units'):
@@ -199,7 +203,7 @@ def compute_and_write_climatologies( varkeys, reduced_variables, season, case=''
             if not hasattr( g, attr ):
                 setattr( g, attr, val )
     if firsttime:
-        logging.error("No variables found.  Did you specify the right input data?")
+        logger.error("No variables found.  Did you specify the right input data?")
     else:
         g.season = season
         g.close()
@@ -219,11 +223,11 @@ def climo_driver(opts):
     else:
         myvars = list(set(myvars)&set(allvars))
         if len(myvars)<len(opts['vars']):
-            logging.warning("Some variables are not available. Computing climatologies for %s",myvars)
+            logger.warning("Some variables are not available. Computing climatologies for %s",myvars)
 
     cseasons = opts['times']
     if cseasons == []:
-       print 'Defaulting to all seasons'
+       logger.info('Defaulting to all seasons')
        cseasons = ['ANN','DJF','MAM','JJA','SON',
                    'JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC']
     
@@ -233,7 +237,7 @@ def climo_driver(opts):
     case = ''
 
     for season in cseasons:
-        print 'Processing ', season
+        logger.info('Processing %s', season)
 
         reduced_variables1 = { var+'_'+season:climatology_variable(var,filetable1,season)
                                for var in myvars }
@@ -257,18 +261,18 @@ def climo_driver(opts):
         casename = ''
         if opts['model'][0]['name'] != None:
            casename = opts['model'][0]['name']
-           print 'Using ', casename,' as dataset name'
+           logger.info('Using %s', casename,' as dataset name')
         if opts['output']['outputdir'] is not None and opts['output']['outputdir']!='':
             outdir = opts['output']['outputdir']
         else:
             outdir = ''
         outdir = os.path.join(outdir, 'climos')
-        print 'casename: ', casename
+        logger.info('casename: %s', casename)
         if not os.path.isdir(outdir):
             try:
                os.mkdir(outdir) # processOptions() verifies up to the /climos part, so make /climos now
             except:
-               logging.exception('Could not create outputdir - %s', outdir)
+               logger.exception('Could not create outputdir - %s', outdir)
                quit()
         #rvs,case = compute_and_write_climatologies_keepvars( varkeys, reduced_variables1, season, casename,
         #                                            path=outdir )

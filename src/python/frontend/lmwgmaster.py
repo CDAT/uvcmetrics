@@ -1,4 +1,7 @@
 ### See master-README for description of this file.
+import logging
+
+__logger__ = logging.getLogger(__name__)
 
 diags_varlist = {}
 diags_collection = {}
@@ -480,7 +483,7 @@ diags_varlist['AODVIS'] = {'desc': 'Aerosol optical depth'}
 diags_varlist['FSNTOAC'] = {'desc': 'TOA clearsky net SW flux (Northern)'}
 
 
-print 'ToDO: Clarify when to use CMC_SNOW and CMC_SME'
+__logger__.warning('ToDO: Clarify when to use CMC_SNOW and CMC_SME')
 diags_obslist['CMC_SNOW_1'] = {'filekey':'CMC_SNOWD', 'desc':'CMC Snow Depth'}
 diags_obslist['CMC_SWE_1'] = {'filekey':'CMC_SWE', 'desc':'CMC Snow/Water Equivalent Depth'}
 diags_obslist['FOSTERDAVY_1'] = {'filekey':'FOSTERDAVY', 'desc':'Foster-Davy'}
