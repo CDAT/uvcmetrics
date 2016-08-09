@@ -41,8 +41,8 @@ What this function returns depends on what fmt is.
     # I *really* hate to do this. Filename should be handled better at a level above diags*.py
     # jfp: whoever wrote that is basically right.  Filenames should be computed in a separate file,
     # and whatever does i/o (should all be within frontend/) queries the functions there to get
-    # filenames.  They should be based upon actual specifications (e.g. season, obs filename);
-    # we shouldn't try to parse the specs out of lengthy ID strings.
+    # filenames. (That much is implemented now.)  They should be based upon actual specifications
+    # (e.g. season, obs filename); we shouldn't try to parse the specs out of lengthy ID strings.
     rootname='-'.join([rootname,more_id])
     special = ''
     if 'RMSE_' in vname:
@@ -66,8 +66,8 @@ What this function returns depends on what fmt is.
         else:
             logging.warning('Couldnt determine filename; defaulting to just .png. vname: %s, rootname: %s', vname, rootname)
             fnamedot = rootname+'.'
-    elif '_diff' in vname or ('_ft0_' in vname and '_ft1_' in vname) or\
-         ('_ft1_' in vname and '_ft2_' in vname):
+    elif '_diff' in vname or ' diff' in vname or "Difference" in vname or\
+            ('_ft0_' in vname and '_ft1_' in vname) or ('_ft1_' in vname and '_ft2_' in vname):
         fnamedot = rootname+'-diff.'
     elif rootname[-9:]=='-combined':  # descr has really already been supplied by being stuck in the rootname
         fnamedot = rootname+'.'

@@ -256,8 +256,6 @@ class uvc_simple_plotspec():
         ## elif presentation == "":
         ##     self.presentation = vcsx.create
         self.vars = pvars # vars[i] is either a cdms2 variable or a tuple of variables
-        self._vars = self.vars[:]  #jfp, testing.  The : makes it a copy of the list.
-        # >>>> TO DO: COPY THE VARIABLE NOT THE LIST.  THEN FIND WHO IS CHANGING THE VARIABLE!!!!! <<<<
         self.labels = labels
         self.title = title
         self.source = source

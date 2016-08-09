@@ -282,7 +282,6 @@ class plot_plan(object):
             #get the levels and plot parameters
             levels = ps.levels  # deprecated
             more_id = ps.more_id
-            print "jfp in plot_plan._results, more_id=",more_id
             plotparms = getattr(ps,'plotparms',None)
                     
             # The following line is getting specific to UV-CDAT, although not any GUI...

@@ -9,6 +9,8 @@
 ### Look for speed improvements
 
 import hashlib, os, pickle, sys, os, time, re, pdb, logging
+print "jfp"
+print "jfp running this python:",sys.executable
 from metrics import *
 from metrics.fileio.filetable import *
 from metrics.fileio.findfiles import *
@@ -446,8 +448,6 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
             resr = (resr, None )
         else:
             more_id = None
-        print "jfp"
-        print "jfp in makeplots, more_id=",more_id
         vcanvas.clear()
         # ... Thus all members of resr and all variables of rsr will be
         # plotted in the same plot...
