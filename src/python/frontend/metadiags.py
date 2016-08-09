@@ -12,6 +12,8 @@ from metrics.fileio.findfiles import *
 from metrics.packages.diagnostic_groups import *
 from output_viewer.index import OutputIndex, OutputPage, OutputGroup, OutputRow, OutputFile, OutputMenu
 import vcs
+import tempfile
+
 logger = logging.getLogger(__name__)
 
 # If not specified on an individual variable, this is the default.
@@ -616,9 +618,10 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, data_hash, colls
 import multiprocessing
 MAX_PROCS = multiprocessing.cpu_count()
 pid_to_cmd = {}
+pid_to_tmpfile = {}
 active_processes = []
 DIAG_TOTAL = 0
-spam_file = open(os.devnull, "w")
+
 
 def cmderr(popened):
     logfile = pid_to_cmd[popened.pid].split(" ")[-1]
@@ -708,10 +711,23 @@ def runcmdline(cmdline, outlogdir, dryrun=False):
                         cmderr(p)
                     else:
                         logger.info("%s succeeded. pid= %s", pid_to_cmd[p.pid], p.pid)
+                    cmd = pid_to_cmd[p.pid]
+                    tmpfile = pid_to_tmpfile[p.pid]
+                    f = open(tmpfile.name, 'r')
+                    output = f.read()
+                    log_file = cmd.split(" ")[-1]
+                    with open(log_file, "a") as log:
+                        log.write("\n\n\nSTDOUT and STDERR\n\n")
+                        log.write(output)
+                    f.close()
+                    tmpfile.close()
+                    del pid_to_tmpfile[p.pid]
         cmd = " ".join(cmdline)
-        active_processes.append(subprocess.Popen(cmd, stdout=spam_file, stderr=spam_file, shell=True))
+        tmpfile = tempfile.NamedTemporaryFile()
+        active_processes.append(subprocess.Popen(cmd, stdout=tmpfile, stderr=tmpfile, shell=True))
         DIAG_TOTAL += 1
         PID = active_processes[-1].pid
+        pid_to_tmpfile[PID] = tmpfile
         pid_to_cmd[PID] = cmd
 
         logger.info("%s begun pid= %s diag_total= %s", cmd, PID, DIAG_TOTAL)
