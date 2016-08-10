@@ -3219,6 +3219,11 @@ class amwg_plot_set11(amwg_plot_plan):
             tm2.xname.priority    = 0
             tm2.yname.priority    = 0
             tm2.dataname.priority = 0
+            
+            # Adjust source position
+            tm1.source.priority   = 1
+            tm1.source.y          = tm1.data.y2 + 0.02
+            
             # Adjust plot position
             deltaX = 0.015            
             if tm2.data.x1 == 0.033:
