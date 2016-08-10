@@ -2565,6 +2565,12 @@ class amwg_plot_set8(amwg_plot_plan):
         tm2.yname.x = 0.075        
         tm2.mean.y -= 0.01
         
+        
+        # Adjust source position
+        tm1.source.priority = 1
+        tm1.source.y = tm1.max.y - 0.02
+        
+        
         return tm1, tm2
     
     def _results(self, newgrid=0):
