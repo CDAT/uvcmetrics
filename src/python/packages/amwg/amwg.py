@@ -4421,13 +4421,12 @@ class amwg_plot_set15(amwg_plot_plan):
         self.computation_planned = True
         #pdb.set_trace()
     def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
-
-        """Theis method does what the title says.  It is a hack that will no doubt change as diags changes."""
+        """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
  
-        tm1.data.x1  += .05
-        tm1.box1.x1   = tm1.data.x1
-        tm1.legend.x1 = tm1.data.x1
+        tm1.data.x1              += .05
+        tm1.box1.x1               = tm1.data.x1
+        tm1.legend.x1             = tm1.data.x1
      
         tm1.yname.x               = .04
         tm1.yname.y               = (tm1.data.y1 + tm1.data.y2)/2
@@ -4446,14 +4445,18 @@ class amwg_plot_set15(amwg_plot_plan):
         tm1.ytic1.x1              = tm1.data.x1
         tm1.ytic1.x2              = tm1.data.x1 - delta
         tm1.ylabel1.x             = tm1.ytic1.x2
+        
+        # Adjust source position for tm1 plots
+        tm1.source.priority       = 1
+        tm1.source.y              = tm1.data.y2 + 0.045
 
         titleOri                  = cnvs1.gettextorientation(tm1.title.textorientation)
         titleOri.height          += 3
         tm1.title.textorientation = titleOri
         tm1.title.y               = tm1.data.y2 + 0.015
 
-        tm1.crdate.priority = 0
-        tm1.crtime.priority = 0        
+        tm1.crdate.priority       = 0
+        tm1.crtime.priority       = 0        
 
         tm2.yname.x               = .05
         tm2.yname.y               = (tm2.data.y1 + tm2.data.y2)/2
