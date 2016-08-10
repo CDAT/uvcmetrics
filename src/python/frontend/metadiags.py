@@ -929,6 +929,3 @@ module load uvcdat/batch
     if opts["do_upload"]:
         upload_path = os.path.join(outpath, package.lower())
         subprocess.call(["upload_output", "--server", hostname, upload_path])
-
-    # Used to quash stdout/stderr that isn't properly logged by diags.
-    spam_file.close()
