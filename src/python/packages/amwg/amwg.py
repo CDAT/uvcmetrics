@@ -1622,6 +1622,15 @@ class amwg_plot_set5and6(amwg_plot_plan):
         (cnvs1, tm1), (cnvs2, tm2) = templates
         
 
+        # Lat lon?
+        if 150 < graphicMethod.datawc_y2-graphicMethod.datawc_y1 < 190:
+            graphicMethod.datawc_y2 = 90
+            graphicMethod.datawc_y1 = -90
+            graphicMethod.datawc_x2 = 360
+            graphicMethod.datawc_x1 = 0
+        cnvs1.scriptrun("/home/doutriaux1/beautify/plot_set_5.json")
+        # UNtil Jonathas fixes this, we simply figure out the template number to get from what Jonathas gave us
+        tm2 = cnvs1.gettemplate("plotset5_0_x_%s" % (tm2.name.split("_")[2]))
         #more kludgy than ever before
         #var seems to be the only way to get the required titles.
         #I think this was a result of another kludge
@@ -1639,13 +1648,9 @@ class amwg_plot_set5and6(amwg_plot_plan):
 
         #pdb.set_trace()
 
-        tm2.yname.priority  = 1
-        tm2.xname.priority  = 1
         tm1.yname.priority  = 1
         tm1.xname.priority  = 1
         tm1.legend.priority = 1
-        tm2.legend.priority = 1
-        tm2.legend.offset+=.008  # move labels a bit to right
 
         # Fix units if needed
         if data is not None:
@@ -1695,46 +1700,6 @@ class amwg_plot_set5and6(amwg_plot_plan):
         tm1.units.y       -= 0.01
         tm1.units.priority = 1
         
-        # Adjust labels and names for combined plots
-        ynameOri                  = cnvs2.gettextorientation(tm2.yname.textorientation)
-        ynameOri.height           = 9
-        tm2.yname.textorientation = ynameOri
-        tm2.yname.x              -= 0.009
-
-        xnameOri                  = cnvs2.gettextorientation(tm2.xname.textorientation)
-        xnameOri.height           = 9
-        tm2.xname.textorientation = xnameOri
-        tm2.xname.y              -= 0.003
-
-        #tm2.mean.y -= 0.005
-        tm2.min.x = tm2.data.x2
-        tm2.min.y = tm2.data.y2 + .01
-
-        tm2.mean.y = tm2.min.y  + 0.015
-        tm2.mean.x = tm2.min.x
-
-        #tm2.max.y -= 0.005
-        tm2.max.x = tm2.min.x
-        tm2.max.y = tm2.min.y + 0.03
-
-        titleOri                  = cnvs2.gettextorientation(tm2.title.textorientation)
-        titleOri.height           = 11.5
-        tm2.title.textorientation = titleOri
-
-
-        tm2.mean.textorientation = tm2.max.textorientation
-        tm2.title.y              = tm2.min.y
-
-        sourceOri                  = cnvs2.gettextorientation(tm2.source.textorientation)
-        sourceOri.height           = 8.0
-        tm2.source.textorientation = sourceOri
-        tm2.source.y               = tm2.units.y - 0.01
-        tm2.source.x               = tm2.data.x1
-        tm2.source.priority        = 1
-
-        tm2.units.y = tm2.min.y
-        tm2.units.priority = 1
-
         #for some reason the source is not being put on the combined graphic
         #So I needed to create it from var.title and put it there. The only
         #reason var is being passed is for some other kludge.
@@ -1756,16 +1721,10 @@ class amwg_plot_set5and6(amwg_plot_plan):
             text.halign = 1
             cnvs2.plot(text, bg=1)  
 
-        #cleanup the  labels
-        tm2.xlabel1.y -= .004
-        tm2.ylabel1.x -= .004
-        tm2.xname.y -= .004
-        tm2.yname.x -= .004
-
         try:
             #this is for the output of RMSE and CORRELATION
             tm1, tm2 = self.extraCustomizeTemplates((cnvs1, tm1), (cnvs2, tm2), var=var)
-        except:
+        except Exception,err:
             pass
         return tm1, tm2
         
@@ -1785,6 +1744,22 @@ class amwg_plot_set5and6(amwg_plot_plan):
                 v.finalize()
         return self.plotspec_values[self.plotall_id]
 
+def get_textobject(t,att,text):
+    obj = vcs.createtext(Tt_source=getattr(t,att).texttable,To_source=getattr(t,att).textorientation)
+    obj.string = [text]
+    obj.x = [getattr(t,att).x]
+    obj.y = [getattr(t,att).y]
+    return obj
+def get_format(value):
+    v = abs(value)
+    if v<10E-2:
+        fmt="%.3g"
+    elif v<10000:
+        fmt = "%.2f"
+    else:
+        fmt="%.5g"
+    return fmt % value
+
 class amwg_plot_set5(amwg_plot_set5and6):
     """represents one plot from AMWG Diagnostics Plot Set 5
     Each contour plot is a set of three contour plots: one each for model output, observations, and
@@ -1793,10 +1768,9 @@ class amwg_plot_set5(amwg_plot_set5and6):
     name = '5 - Horizontal Contour Plots of Seasonal Means'
     number = '5'
     def extraCustomizeTemplates(self, (cnvs1, tm1), (cnvs2, tm2), data=None, varIndex=None, graphicMethod=None, var=None):
-        """Theis method does what the title says.  It is a hack that will no doubt change as diags changes.
+        """This method does what the title says.  It is a hack that will no doubt change as diags changes.
         It is a total hack. I'm embarassed to be part of it. Please find a better way!!!"""
         #(cnvs1, tm1), (cnvs2, tm2) = templates
-        import pdb
         if hasattr(var, 'model') and hasattr(var, 'obs'): #these come from aminusb_2ax
             from metrics.graphics.default_levels import default_levels
             from metrics.computation.units import scale_data
@@ -1808,26 +1782,43 @@ class amwg_plot_set5(amwg_plot_set5and6):
                     #print displayunits, var.model.units, var.obs.units
                     var.model = scale_data( displayunits, var.model)
                     var.obs   = scale_data( displayunits, var.obs) 
-            
+
             RMSE, CORR = compute_rmse( var.model, var.obs )
-            
             RMSE = round(RMSE, 2)
             CORR = round(CORR, 2)
-            textRMSE = cnvs2.createtext()
-            textRMSE.string = 'RMSE  = %.3g' % RMSE
-            textRMSE.x = tm2.data.x2+.005 #.075
-            textRMSE.y = tm2.data.y1#.005
-            textRMSE.height = 10
-            cnvs2.plot(textRMSE, bg=1)  
+            lst = ["min","max","comment1","comment2"]
+        else:
+            lst = ["min","max"]
 
-            textCORR = cnvs2.createtext()
-            textCORR.string = 'CORR = %.3g' % CORR
-            textCORR.x = textRMSE.x #.25
-            textCORR.y = tm2.data.y1 - .015 #.005
-            textCORR.height = 10
-            cnvs2.plot(textCORR, bg=1)              
-            
+
+        x=cnvs2
+        t = tm2
+        mean = get_textobject(t,"mean","Mean   %.2f" % var.mean)
+        exts = x.gettextextent(mean)
+        x.plot(mean)
+        for att in lst:
+            nmin = get_textobject(t,att,"some text")
+            if att in ["min","max"]:
+                nmin.string=att.capitalize()
+            elif att == "comment1":
+                nmin.string=["RMSE"]
+            elif att == "comment2":
+                nmin.string=["CORR"]
+            x.plot(nmin)
+            to=x.createtextorientation(source=nmin.To_name)
+            to.halign="right"
+            nmin=vcs.createtext(To_source=to.name,Tt_source=nmin.Tt_name) 
+            if att in ["min","max"]:
+                nmin.string=[get_format(getattr(numpy.ma,att)(var.asma()))]
+            elif att == "comment1":
+                nmin.string=[ get_format(RMSE)]
+            elif att == "comment2":
+                nmin.string=[get_format(CORR)]
+            nmin.x=[exts[0][1]]
+            x.plot(nmin)
+
         return tm1, tm2  
+
 class amwg_plot_set6(amwg_plot_plan):
     """represents one plot from AMWG Diagnostics Plot Set 6
     This is a vector+contour plot - the contour plot shows magnitudes and the vector plot shows both

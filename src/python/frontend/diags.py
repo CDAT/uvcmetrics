@@ -662,12 +662,12 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
                         pass
 
                     if plot.number == '6':
-                        vcanvas.plot( var[0][::strideY,::strideX],
-                                      var[1][::strideY,::strideX], rsr.presentation, tmobs[ir], bg=1, ratio=ratio)
+                        vcanvas.plot( var[0](longitude=(-10,370))[::strideY,::strideX],
+                                      var[1](longitude=(-10,370))[::strideY,::strideX], rsr.presentation, tmobs[ir], bg=1, ratio=ratio)
                     else:
                         # Note that continents=0 is a useful plot option
-                        vcanvas.plot( var[0][::strideY,::strideX],
-                                      var[1][::strideY,::strideX], rsr.presentation, tmobs[ir], bg=1,
+                        vcanvas.plot( var[0](longitude=(-10,370))[::strideY,::strideX],
+                                      var[1](longitude=(-10,370))[::strideY,::strideX], rsr.presentation, tmobs[ir], bg=1,
                                       title=title, units=getattr(var,'units',''), ratio=ratio,
                                       source=rsr.source )
 
@@ -676,8 +676,8 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
                     # have them.
                     try:
                         if tm2 is not None:
-                            vcanvas2.plot( var[0][::strideY,::strideX],
-                                           var[1][::strideY,::strideX],
+                            vcanvas2.plot( var[0](longitude=(-10,370))[::strideY,::strideX],
+                                           var[1](longitude=(-10,370))[::strideY,::strideX],
                                            rsr.presentation, tm2, bg=1,
                                            title=title, units=getattr(var,'units',''),
                                            ratio=ratio,
@@ -736,7 +736,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
                                                            varIndex=varIndex, graphicMethod=rsr.presentation, var=var )
 
                     # Single plot
-                    plot.vcs_plot(vcanvas, var, rsr.presentation, tm, bg=1,
+                    plot.vcs_plot(vcanvas, var(longitude=(-10,370)), rsr.presentation, tm, bg=1,
                                   title=title, source=rsr.source,
                                   plotparms=getattr(rsr,'plotparms',None) )
 #                                      vcanvas3.clear()
@@ -747,7 +747,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
                     try:
                         if tm2 is not None:
                             # Multiple plots on a page:
-                            plot.vcs_plot( vcanvas2, var, rsr.presentation, tm2, bg=1,
+                            plot.vcs_plot( vcanvas2, var(longitude=(-10,370)), rsr.presentation, tm2, bg=1,
                                            title=title, source=rsr.source,
                                            plotparms=getattr(rsr,'plotparms',None))#,
                                            #compoundplot=onPage )
