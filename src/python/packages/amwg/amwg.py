@@ -379,6 +379,8 @@ class amwg_plot_plan(plot_plan):
             for ivn in invarnoms:
                 if ivn in svd.special_orders and svd.special_orders[ivn]=='dontreduce':
                     # The computation requires the full variable, not the usual reduced form.
+                    # Note that we're not yet handling this case for recursive calculations (the
+                    # next loop below), because we have no need, hence no test case.
                     rv = reduced_variable( variableid=ivn, filetable=filetable, season=season,
                                            reduction_function=(lambda x,vid:x) )
                 else:
