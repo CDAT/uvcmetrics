@@ -1,6 +1,8 @@
 # Derived variables which are simple to compute, but a bit too much to wrap in a lambda expression.
 
 import numpy, logging
+import cdms2
+from metrics.computation.reductions import aminusb, aplusb, adivb
 
 def albedo( SOLIN, FSNTOA ):
     """TOA (top-of-atmosphere) albedo, (SOLIN-FSNTOA)/FSNTOA"""
@@ -17,7 +19,10 @@ def tropopause_temperature( T ):
     lev = T.getLevel()
     lev1 = numpy.searchsorted( lev, 50., 'left' )
     lev2 = numpy.searchsorted( lev, 250., 'right' )
-    tpt = numpy.amin( T[0,lev1:lev2,:,:], 1 )   # amin understands masks; I've checked
+    # Find minumum along the level axis, for each lat,lon.  Time is fixed at index 0.
+    tpt = cdms2.createVariable( numpy.amin( T[0,lev1:lev2,:,:], 0 ),   # amin understands masks; I've checked
+                                axes=[T.getLatitude(),T.getLongitude()] )
+    tpt.units = T.units
     return tpt
 
 def mask_by( var, maskvar, lo=None, hi=None ):
