@@ -14,9 +14,6 @@ import dateparser
 from numbers import Number
 import datetime
 from unidata import udunits
-from metrics.packages.amwg.derivations import press2alt
-from metrics.packages.amwg.derivations.massweighting import *
-from metrics.packages.amwg.derivations import qflx_lhflx_conversions as flxconv
 from metrics.fileio.filetable import *
 from metrics.computation.units import *
 #from climo_test import cdutil_climatology
@@ -201,6 +198,7 @@ def set_spatial_avg_method( var ):
     Sets the attribute var.weighting to a string specifying how to compute spatial averages.
     At present the default is area weighting (the averager() default), and the only other
     possibility is mass weighting."""
+    from metrics.packages.amwg.derivations.massweighting import weighting_choice
     # Don't change the spatial average method if it has already been set.
     # Then set it to the default, and then check to see whether there's anything about the variable
     # which calls for a non-default method.
@@ -1687,6 +1685,7 @@ def heightvar( mv ):
     and whose values are the heights corresponding to the pressure levels found
     as the lev axis of mv.  Levels will be converted to millibars.
     heights are returned in km"""
+    from metrics.packages.amwg.derivations import press2alt
     if mv is None: return None
     lev_axis = levAxis(mv)
     heights = 0.001 * press2alt.press2alt( pressures_in_mb(lev_axis) )  # 1000 m = 1 km
@@ -2150,6 +2149,10 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
     if not hasattr(mv2,'units') or mv2.units == 'none':
         logger.warning("Variable %s has no units, will use units=1.", getattr(mv2,'id',''))
         mv2.units = '1'
+    if hasattr(mv1,'units') and mv1.units == 'dimensionless':
+        mv1.units = '1'
+    if hasattr(mv2,'units') and mv2.units == 'dimensionless':
+        mv2.units = '1'
 
     # For QFLX and LHFLX variables, call dedicated functions instead.
     # TODO: The conditions for calling this function could perhaps be
@@ -2159,6 +2162,7 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
     if hasattr(mv1, 'id') and hasattr(mv2, 'id'):
         if mv1.id.find('_QFLX_')>=0 or mv1.id.find('_LHFLX_')>=0 or mv2.id.find('_QFLX_')>=0 \
                 or mv2.id.find('_LHFLX_')>=0 or (mv1.units=='kg/m2/s' and mv2.units=='mm/day'):
+            from metrics.packages.amwg.derivations import qflx_lhflx_conversions as flxconv
             mv1,mv2 = flxconv.reconcile_energyflux_precip(mv1, mv2, preferred_units)
             return mv1, mv2
 
@@ -2959,9 +2963,17 @@ class reduced_variable(ftrow,basic_id):
         circularity!
         """
 
+        from metrics.packages.amwg.derivations.massweighting import weighting_choice
         if self.filetable is None:
-            logger.error("No data found for reduced variable %s in %s %s %s %s",self.variableid,self.timerange, self.latrange, self.lonrange, self.levelrange)
-            logger.debug("filetable is %s",self.filetable)
+            if self.variableid[-4:]=='_var':
+                # This is a variance; requires climatology variance files which are rarely computed.
+                logger.debug("No data found for reduced variable %s in %s %s %s %s",self.variableid,
+                             self.timerange, self.latrange, self.lonrange, self.levelrange)
+                logger.debug("filetable is %s",self.filetable)
+            else:
+                logger.error("No data found for reduced variable %s in %s %s %s %s",self.variableid,
+                             self.timerange, self.latrange, self.lonrange, self.levelrange)
+                logger.debug("filetable is %s",self.filetable)
             return None
         if vid is None:
             #vid = self._vid      # self._vid is deprecated
@@ -2970,9 +2982,16 @@ class reduced_variable(ftrow,basic_id):
         filename = self.get_variable_file( self.variableid )
         if filename is None:
             if self.variableid not in self._duvs:
-                # this belongs in a log file:
-                logger.error("No data found for reduced variable %s in %s %s %s %s",self.variableid,self.timerange, self.latrange, self.lonrange, self.levelrange)
-                logger.debug("filetable is %s",self.filetable)
+                if self.variableid[-4:]=='_var':
+                    # This is a variance; requires climatology variance files which are rarely computed.
+                    logger.debug("No data found for reduced variable %s in %s %s %s %s",self.variableid,
+                                 self.timerange, self.latrange, self.lonrange, self.levelrange)
+                    logger.debug("filetable is %s",self.filetable)
+                else:
+                    # this belongs in a log file:
+                    logger.error("No data found for reduced variable %s in %s %s %s %s",self.variableid,
+                                 self.timerange, self.latrange, self.lonrange, self.levelrange)
+                    logger.debug("filetable is %s",self.filetable)
                 return None
             else:
                 # DUVs (derived unreduced variables) would logically be treated as a separate stage
@@ -3024,6 +3043,7 @@ class reduced_variable(ftrow,basic_id):
                 var._filename = self._filename
                 weighting = weighting_choice(var)
                 if weighting=='mass':
+                    from metrics.packages.amwg.derivations.massweighting import mass_weights
                     if 'mass' not in self.filetable.weights:
                         self.filetable.weights['mass'] = mass_weights( var )
                 if os.path.basename(filename)[0:5]=='CERES':

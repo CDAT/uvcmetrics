@@ -7,6 +7,7 @@ from press2alt import *
 from vertical import *
 from masks import *
 from set13 import *
+from simple_vars import *
 from clouds import *
 from WC_diag_amwg import *
 import WC_diag_amwg
