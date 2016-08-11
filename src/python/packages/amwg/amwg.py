@@ -152,7 +152,7 @@ class amwg_plot_plan(plot_plan):
                 vid='EP', inputs=['QFLX','PRECT'], outputs=['EP'],
                 func=aminusb )],
         'TTRP':[derived_var(       # tropopause temperature (at first time)
-                vid='TTRP', inputs=['T'], outputs=['TTRP'],
+                vid='TTRP', inputs=['T'], outputs=['TTRP'], special_orders={'T':'dontreduce'},
                 func=tropopause_temperature )],
         'LWCFSRF':[derived_var(    # Surface LW Cloud Forcing
                 vid='LWCFSRF', inputs=['FLNSC','FLNS'], outputs=['LWCFSRF'],
@@ -377,9 +377,13 @@ class amwg_plot_plan(plot_plan):
         if computable:
             #print "dbg",varnom,"is computable by",func,"from..."
             for ivn in invarnoms:
-                #print "dbg   computing reduced variable from input variableid=ivn=",ivn
-                rv = reduced_variable( variableid=ivn, filetable=filetable, season=season,
-                                       reduction_function=reduction_function )
+                if ivn in svd.special_orders and svd.special_orders[ivn]=='dontreduce':
+                    # The computation requires the full variable, not the usual reduced form.
+                    rv = reduced_variable( variableid=ivn, filetable=filetable, season=season,
+                                           reduction_function=(lambda x,vid:x) )
+                else:
+                    rv = reduced_variable( variableid=ivn, filetable=filetable, season=season,
+                                           reduction_function=reduction_function )
                 #print "dbg   adding reduced variable rv=",rv
                 rvs.append(rv)
 
@@ -394,7 +398,7 @@ class amwg_plot_plan(plot_plan):
             # level of recursion before giving up.  This is enough to do a real computation
             # plus some variable renamings via standard_variables.
             # Once we have a real system for handling name synonyms, this loop can probably
-            # be dispensed with.  If we well never have such a system, then the above loop
+            # be dispensed with.  If we will never have such a system, then the above loop
             # can be dispensed with.
             for svd in cls.standard_variables[varnom]:  # loop over ways to compute varnom
                 invarnoms = svd.inputs()
