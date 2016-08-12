@@ -114,7 +114,7 @@ def build_templates(canvas=None, graphicMethodStrings=None, overlay=None, rows=1
                 graphicMethodObjects[i].linewidth = 1.5
             else:
                 graphicMethodObjects[i].linewidth = 2.0
-                graphicMethodObjects[i].line = 'dash'
+                graphicMethodObjects[i].linetype = 'dash'
                 graphicMethodObjects[i].linecolor = 242
                 
         if (graphicMethodStrings[i] == 'vector') and ('uvwg' not in canvas.listelements('vector')) :
