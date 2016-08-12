@@ -2101,22 +2101,10 @@ def convert_units(mv, units):
    if mv.units == units or mv.units == 'none':
       return mv
    if mv.units=='gC/m^2/s' and units == 'PgC/y': # land set 5 table stuff.
-      # The area is taken care of, but need to convert grams to petagrams and seconds to years
-#      print 'mv max in: ', mv.max()
-#      print 'multiplying by ', 60*60*24*365, 'and dividing by ', 1.0e15
       mv = mv * (60*60*24*365)
       mv = mv / (1.0e15)
-#      print 'new max: ', mv.max()
       mv.units = units
       return mv
-#   if mv.units == 'proportion':
-#      mv.units = '1'
-#   if mv.units == 'fraction':
-#      mv.units = '1'
-#   if units == 'proportion':
-#      units = 1
-#   if units = 'fraction':
-#      units = 1
 
    tmp = udunits(1.0,mv.units)
    try:
@@ -2148,10 +2136,6 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
         mv1.units = '1'
     if not hasattr(mv2,'units') or mv2.units == 'none':
         logger.warning("Variable %s has no units, will use units=1.", getattr(mv2,'id',''))
-        mv2.units = '1'
-    if hasattr(mv1,'units') and mv1.units == 'dimensionless':
-        mv1.units = '1'
-    if hasattr(mv2,'units') and mv2.units == 'dimensionless':
         mv2.units = '1'
 
     # For QFLX and LHFLX variables, call dedicated functions instead.
@@ -2192,9 +2176,9 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
             mv2.units = '1'
         if mv2.units == '(0-1)':   # as in ERAI obs
             mv2.units = '1'
-        if mv1.units == 'fraction':
+        if mv1.units == 'fraction' or mv1.units=='dimensionless':
             mv1.units = '1'
-        if mv2.units == 'fraction':
+        if mv2.units == 'fraction' or mv2.units=='dimensionless':
             mv2.units = '1'
         if mv1.units == 'mixed':  # could mean anything...
             mv1.units = '1'       #... maybe this will work
