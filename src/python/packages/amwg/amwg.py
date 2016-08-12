@@ -1774,7 +1774,11 @@ class amwg_plot_set5(amwg_plot_set5and6):
 
         x=cnvs2
         t = tm2
-        mean = get_textobject(t,"mean","Mean   %.2f" % var.mean)
+        try:
+            mean_val = float(var.mean)
+        except Exception,err:
+            mean_val = numpy.ma.mean(var.asma())
+        mean = get_textobject(t,"mean","Mean   %.2f" % mean_val)
         exts = x.gettextextent(mean)
         x.plot(mean)
         for att in lst:
