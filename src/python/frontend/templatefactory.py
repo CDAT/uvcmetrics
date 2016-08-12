@@ -1,6 +1,6 @@
 import vcs, cdms2, random, math
-import EzTemplate
 import numpy as np
+from vcsaddons import *
 from metrics.frontend.templateoptions import *
 from vtk import vtkTextActor, vtkTextRenderer, vtkTextProperty, vtkPropPicker
 import logging
