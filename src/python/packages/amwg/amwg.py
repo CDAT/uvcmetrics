@@ -2184,7 +2184,8 @@ class amwg_plot_set6(amwg_plot_plan):
         tm2.source.x               = tm2.data.x1
         tm2.source.priority        = 1
 
-        tm2.units.priority = 1
+        tm2.units.priority         = 1
+        tm2.legend.offset         += 0.011
         
         return tm1, tm2
     
@@ -2375,6 +2376,7 @@ class amwg_plot_set7(amwg_plot_plan):
         tm2.max.y                -= 0.005
 
         tm2.legend.x1            -= 0.01
+        tm2.legend.offset        += 0.013
         
         tm2.source.priority       = 1
 
@@ -2809,6 +2811,7 @@ class amwg_plot_set9(amwg_plot_plan):
         legendOri                  = cnvs2.gettextorientation(tm2.legend.textorientation)
         legendOri.height          -= 2
         tm2.legend.textorientation = legendOri
+        tm2.legend.offset         += 0.01
         
         tm2.units.priority = 1
         
@@ -4475,6 +4478,7 @@ class amwg_plot_set15(amwg_plot_plan):
         titleOri.height           = 14
         tm2.title.textorientation = titleOri
         tm2.title.y               = tm2.data.y2 + 0.01
+        tm2.legend.offset        += 0.01
         
         for tm in [tm1, tm2]:       
             tm.max.priority      = 0

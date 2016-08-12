@@ -625,14 +625,8 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
                             yvar = var.flatten()
                             if hasattr(plot, 'customizeTemplates'):
                                 tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)],
-#<<<<<<< HEAD
                                                                    data=[xvar.units, yvar.units], varIndex=varIndex,
                                                                    graphicMethod=rsr_presentation, var=var, iteration=ir)                            
-                            
-#=======
-#                                                                   data=[xvar.units, yvar.units], varIndex=varIndex, graphicMethod=rsr_presentation)
-
-#>>>>>>> master
                             # Scatter part from the single plots in set 11
                             vcanvas.plot(xvar, yvar,
                                          rsr_presentation, tm, bg=1, title=title,

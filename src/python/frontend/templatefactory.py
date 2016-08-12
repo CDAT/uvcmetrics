@@ -423,9 +423,9 @@ def build_templates(canvas=None, graphicMethodStrings=None, overlay=None, rows=1
                     posx2 = tt.legend.x1 + 0.05*delta
                 legendx2 = posx2
 
-                while legendx2 > 0.96:
-                    Mt.margins.left  += 0.02
-                    Mt.margins.right += 0.02
+                while legendx2 > 0.955:
+                    Mt.margins.left  += 0.01
+                    Mt.margins.right += 0.01
                     del tt
                     tt = Mt.get(row=0, column=0, legend='local', font=False)
                     # takes legend changes in effect...
@@ -527,6 +527,7 @@ def build_templates(canvas=None, graphicMethodStrings=None, overlay=None, rows=1
             
         if mainTemplateOptions.legend:
             if legendDirection == 'vertical':
+                template.legend.offset += 0.0095
                 # Adjusting legend position
                 delta = template.data.x2 - template.data.x1
                 posx2 = template.legend.x1 + 0.08*delta
