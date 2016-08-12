@@ -6,6 +6,7 @@
 # Several code segments in reductions.py still need to be brought over to here.
 
 from unidata import udunits
+import logging
 
 # Each key of the following dictionary is a unit not supported by udunits; or (e.g. 'mb')
 # supported only with a meaning differing from that conventional in climate science.
@@ -53,9 +54,27 @@ def convert_variable( var, target_units ):
     try:
         s,o = udunits(1.0,var.units).how(target_units)
     except TypeError as e:
-        print "WARNING, could not convert units from",var.units,"to",target_units
+        logging.warning("Could not convert units from %s to %s",var.units,target_units)
         return var
     var = s*var + o
     var.units = target_units
     return var
 
+def scale_data(units, data):
+    """This function is used to change scale to the units found in default_levels. """
+    try:
+        scale = udunits(1.0, data.units)
+        scale = scale.to(units).value 
+    except:
+        if data.units == 'fraction':
+            scale = 100.
+        else:
+            try:
+                scale = float(units)
+                units = 'scaled'
+            except:
+                logging.critical('Invalid display units: '+ units + ' for ' + data.units)
+                sys.exit()
+    data = scale*data 
+    data.units = units
+    return data                                              

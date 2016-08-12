@@ -8,6 +8,7 @@ from metrics.packages.diagnostic_groups import *
 from metrics.computation.reductions import *
 from metrics.computation.plotspec import *
 from metrics.frontend.uvcdat import *
+from metrics.packages.plotplan import plot_plan
 from metrics.frontend import *
 from metrics.common.id import *
 from metrics.common.utilities import *
@@ -19,8 +20,26 @@ from unidata import udunits
 import cdutil.times, numpy
 from numbers import Number
 from pprint import pprint
+import logging
+
+logger = logging.getLogger(__name__)
 
 seasonsyr=cdutil.times.Seasons('JFMAMJJASOND')
+
+def src2modobs( src ):
+    """guesses whether the source string is for model or obs, prefer model"""
+    if src.find('obs')>=0:
+        typ = 'obs'
+    else:
+        typ = 'model'
+    return typ
+def src2obsmod( src ):
+    """guesses whether the source string is for model or obs, prefer obs"""
+    if src.find('model')>=0:
+        typ = 'model'
+    else:
+        typ = 'obs'
+    return typ
 
 class AMWG(BasicDiagnosticGroup):
     """This class defines features unique to the AMWG Diagnostics."""
@@ -77,14 +96,14 @@ class AMWG(BasicDiagnosticGroup):
         return vlist
 
     def list_diagnostic_sets( self ):
-        psets = amwg_plot_spec.__subclasses__()
+        psets = amwg_plot_plan.__subclasses__()
         plot_sets = psets
         for cl in psets:
             plot_sets = plot_sets + cl.__subclasses__()
         return { aps.name:aps for aps in plot_sets if
                  hasattr(aps,'name') and aps.name.find('dummy')<0 }
 
-class amwg_plot_spec(plot_spec):
+class amwg_plot_plan(plot_plan):
     package = AMWG  # Note that this is a class not an object; also not a string.
     # Standard variables are derived variables which are as general-interest as most dataset
     # variables (which soon become reduced variables).  So it makes sense for all plot sets
@@ -293,10 +312,10 @@ class amwg_plot_spec(plot_spec):
         }
     @staticmethod
     def _list_variables( model, obs ):
-        return amwg_plot_spec.package._list_variables( model, obs, "amwg_plot_spec" )
+        return amwg_plot_plan.package._list_variables( model, obs, "amwg_plot_plan" )
     @staticmethod
     def _all_variables( model, obs ):
-        return amwg_plot_spec.package._all_variables( model, obs, "amwg_plot_spec" )
+        return amwg_plot_plan.package._all_variables( model, obs, "amwg_plot_plan" )
     @classmethod
     def stdvar2var( cls, varnom, filetable, season, reduction_function, recurse=True ):
         """From a variable name, a filetable, and a season, this finds the variable name in
@@ -317,7 +336,7 @@ class amwg_plot_spec(plot_spec):
         """
         if filetable is None:
             return None,[],[]
-        #if varnom not in amwg_plot_spec.standard_variables:
+        #if varnom not in amwg_plot_plan.standard_variables:
         if varnom not in cls.standard_variables:
             return None,[],[]
         computable = False
@@ -376,16 +395,16 @@ class amwg_plot_spec(plot_spec):
                 #print "dbg in second round, found",varnom,"computable by",func,"from",inputs
                 break
         if len(rvs)<=0:
-            print "WARNING, no inputs found for",varnom,"in filetable",filetable.id()
-            print "filetable source files=",filetable._filelist[0:10]
-            print "need inputs",svd.inputs()
+            logger.warning("no inputs found for %s in filetable %s",varnom, filetable.id())
+            logger.warning("filetable source files= %s %s",filetable._filelist[0:10])
+            logger.warning("need inputs %s",svd.inputs())
             return None,[],[]
             #raise DiagError( "ERROR, don't have %s, and don't have sufficient data to compute it!"\
             #                     % varnom )
         if not computable:
-            print "DEBUG: standard variable",varnom,"is not computable"
-            print "need inputs",svd.inputs()
-            print "found inputs",[rv.id() for rv in rvs]+[drv.id() for drv in dvs]
+            logger.debug("DEBUG: standard variable %s is not computable", varnom)
+            logger.debug( "need inputs %s" ,svd.inputs())
+            logger.debug("found inputs %s",([rv.id() for rv in rvs]+[drv.id() for drv in dvs]))
             return None,[],[]
         seasonid = season.seasons[0]
         vid = derived_var.dict_id( varnom, '', seasonid, filetable )
@@ -400,10 +419,10 @@ class amwg_plot_spec(plot_spec):
 from metrics.packages.amwg.amwg1 import *
 
 # plot set classes we need which we haven't done yet:
-class amwg_plot_set4a(amwg_plot_spec):
+class amwg_plot_set4a(amwg_plot_plan):
     pass
 
-class amwg_plot_set2(amwg_plot_spec):
+class amwg_plot_set2(amwg_plot_plan):
     """represents one plot from AMWG Diagnostics Plot Set 2
     Each such plot is a page consisting of two to four plots.  The horizontal
     axis is latitude and the vertical axis is heat or fresh-water transport.
@@ -412,30 +431,30 @@ class amwg_plot_set2(amwg_plot_spec):
     """
     name = '2 - Line Plots of Annual Implied Northward Transport'
     number = '2'
-    def __init__( self, model, obs, varid, seasonid=None, region=None, aux=None, levels=None ):
+    def __init__( self, model, obs, varid, seasonid=None, region=None, aux=None, plotparms=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the derived variable to be plotted, e.g. 'Ocean_Heat'.
         The seasonid argument will be ignored."""
         filetable1, filetable2 = self.getfts(model, obs)
-        plot_spec.__init__(self,seasonid)
+        plot_plan.__init__(self,seasonid)
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
         self.plottype='Yxvsx'
         vars = self._list_variables(model, obs)
         if varid not in vars:
-            print "In amwg_plot_set2 __init__, ignoring varid input, will compute Ocean_Heat"
+            logger.info("In amwg_plot_set2 __init__, ignoring varid input, will compute Ocean_Heat")
             varid = vars[0]
-        print "Warning: amwg_plot_set2 only uses NCEP obs, and will ignore any other obs specification."
+        logger.warning("amwg_plot_set2 only uses NCEP obs, and will ignore any other obs specification.")
         # TO DO: Although model vs NCEP obs is all that NCAR does, there's no reason why we
         # TO DO: shouldn't support something more general, at least model vs model.
         if not self.computation_planned:
-            self.plan_computation( model, obs, varid, seasonid )
+            self.plan_computation( model, obs, varid, seasonid, plotparms )
     @staticmethod
     def _list_variables( model, obs ):
         return ['Ocean_Heat']
     @staticmethod
     def _all_variables( model, obs ):
         return { vn:basic_plot_variable for vn in amwg_plot_set2._list_variables( model, obs ) }
-    def plan_computation( self, model, obs, varid, seasonid ):
+    def plan_computation( self, model, obs, varid, seasonid, plotparms ):
         filetable1, filetable2 = self.getfts(model, obs)
         # CAM variables needed for heat transport: (SOME ARE SUPERFLUOUS <<<<<<)
         # FSNS, FLNS, FLUT, FSNTOA, FLNT, FSNT, SHFLX, LHFLX,
@@ -517,64 +536,44 @@ class amwg_plot_set2(amwg_plot_spec):
         self.single_plotspecs = {
             'CAM_NCEP_HEAT_TRANSPORT_GLOBAL': plotspec(
                 vid='CAM_NCEP_HEAT_TRANSPORT_GLOBAL',
-                # x1vars=['FSNS_ANN_latlon_1'], x1func=latvar,
-                # y1vars=['CAM_HEAT_TRANSPORT_ALL_1' ],
-                # y1func=(lambda y: y[3]),
-                # x2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2'], x2func=(lambda x: x[0]),
-                # y2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2' ],
-                # y2func=(lambda y: y[1][3]),
                 zvars=['CAM_HEAT_TRANSPORT_ALL_1' ],
                 zfunc=(lambda y: y[3]),
                 z2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2'],
                 z2func=(lambda z: z[1][3]),
                 plottype = self.plottype,
                 title = 'CAM and NCEP HEAT_TRANSPORT GLOBAL',
-                source = ft1src ),
+                source = ft1src,
+                plotparms = plotparms[src2modobs(ft1src)] ),
             'CAM_NCEP_HEAT_TRANSPORT_PACIFIC': plotspec(
                 vid='CAM_NCEP_HEAT_TRANSPORT_PACIFIC',
-                # x1vars=['FSNS_ANN_latlon_1'], x1func=latvar,
-                # y1vars=['CAM_HEAT_TRANSPORT_ALL_1' ],
-                # y1func=(lambda y: y[0]),
-                # x2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2'], x2func=(lambda x: x[0]),
-                # y2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2' ],
-                # y2func=(lambda y: y[1][0]),
                 zvars=['CAM_HEAT_TRANSPORT_ALL_1' ],
                 zfunc=(lambda y: y[0]),
                 z2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2' ],
                 z2func=(lambda y: y[1][0]),
                 plottype = self.plottype,
                 title = 'CAM and NCEP HEAT_TRANSPORT PACIFIC',
-                source = ft1src ),
+                source = ft1src,
+                plotparms = plotparms[src2modobs(ft1src)] ),
             'CAM_NCEP_HEAT_TRANSPORT_ATLANTIC': plotspec(
                 vid='CAM_NCEP_HEAT_TRANSPORT_ATLANTIC',
-                # x1vars=['FSNS_ANN_latlon_1'], x1func=latvar,
-                # y1vars=['CAM_HEAT_TRANSPORT_ALL_1' ],
-                # y1func=(lambda y: y[0]),
-                # x2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2'], x2func=(lambda x: x[0]),
-                # y2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2' ],
-                # y2func=(lambda y: y[1][1]),
                 zvars=['CAM_HEAT_TRANSPORT_ALL_1' ],
                 zfunc=(lambda y: y[1]),
                 z2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2' ],
                 z2func=(lambda y: y[1][1]),
                 plottype = self.plottype ,
                 title = 'CAM and NCEP HEAT_TRANSPORT ATLANTIC',
-                source = ft1src ),
+                source = ft1src,
+                plotparms = plotparms[src2modobs(ft1src)] ),
             'CAM_NCEP_HEAT_TRANSPORT_INDIAN': plotspec(
                 vid='CAM_NCEP_HEAT_TRANSPORT_INDIAN',
-                # x1vars=['FSNS_ANN_latlon_1'], x1func=latvar,
-                # y1vars=['CAM_HEAT_TRANSPORT_ALL_1' ],
-                # y1func=(lambda y: y[0]),
-                # x2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2'], x2func=(lambda x: x[0]),
-                # y2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2' ],
-                # y2func=(lambda y: y[1][2]),
                 zvars=['CAM_HEAT_TRANSPORT_ALL_1' ],
                 zfunc=(lambda y: y[2]),
                 z2vars=['NCEP_OBS_HEAT_TRANSPORT_ALL_2' ],
                 z2func=(lambda y: y[1][2]),
                 plottype = self.plottype,
                 title = 'CAM and NCEP HEAT_TRANSPORT INDIAN',
-                source = ft1src ),
+                source = ft1src,
+                plotparms = plotparms[src2modobs(ft1src)] ),
             }
         self.composite_plotspecs = {
             'CAM_NCEP_HEAT_TRANSPORT_ALL':
@@ -583,8 +582,117 @@ class amwg_plot_set2(amwg_plot_spec):
             }
         self.computation_planned = True
 
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
+        """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
+        (cnvs1, tm1), (cnvs2, tm2) = templates
+
+        tm2.yname.priority  = 1
+        tm2.xname.priority  = 1
+        tm1.yname.priority  = 1
+        tm1.xname.priority  = 1
+        tm1.legend.priority = 0
+        tm2.legend.priority = 0
+
+        # Fix units if needed
+        if data is not None:
+            if (getattr(data, 'units', '') == ''):
+                data.units = 'PW'
+            if data.getAxis(0).id.count('lat'):
+                data.getAxis(0).id = 'Latitude'
+
+        # Adjust labels and names for single plots
+        yLabel = cnvs1.createtext(Tt_source=tm1.yname.texttable,
+                                  To_source=tm1.yname.textorientation)
+        yLabel.x = tm1.yname.x - 0.04
+        yLabel.y = tm1.yname.y
+        if data is not None:
+            yLabel.string  = ["Heat Transport (" + data.units + ")"]
+        else:
+            yLabel.string  = ["Heat Transport"]
+        yLabel.height = 19.9
+        cnvs1.plot(yLabel, bg=1)
+
+        xnameOri                  = cnvs1.gettextorientation(tm1.xname.textorientation)
+        xnameOri.height           = 19.9
+        tm1.xname.textorientation = xnameOri
+        
+        titleOri                  = cnvs1.gettextorientation(tm1.title.textorientation)
+        titleOri.height           = 20.9
+        tm1.title.textorientation = titleOri
+
+        sourceOri                  = cnvs1.gettextorientation(tm1.source.textorientation)
+        sourceOri.height           = 12.5
+        tm1.source.textorientation = sourceOri
+        tm1.source.y               = tm1.units.y - 0.01
+        tm1.source.x               = tm1.data.x1
+
+        # We want units at axis names
+        tm1.units.priority = 0
+
+        # Grids:       
+        tm1.xtic2.y1   = tm1.data.y1
+        tm1.ytic2.x1   = tm1.data.x1
+        tm1.xtic2.y2   = tm1.data.y2
+        tm1.ytic2.x2   = tm1.data.x2
+        line           = cnvs1.createline()
+        line.color     = [(50, 50, 50, 30)]
+        tm1.ytic2.line = line
+        tm1.xtic2.line = line
+        
+        # Adjust labels and names for combined plots
+        yLabel = cnvs2.createtext(Tt_source=tm2.yname.texttable,
+                                  To_source=tm2.yname.textorientation)
+        yLabel.x = tm2.yname.x - 0.005
+        yLabel.y = tm2.yname.y
+        if data is not None:
+            yLabel.string  = ["Heat Transport (" + data.units + ")"]
+        else:
+            yLabel.string  = ["Heat Transport"]
+        yLabel.height = 9.0
+        cnvs2.plot(yLabel, bg = 1)
+
+        titleOri                  = cnvs2.gettextorientation(tm2.title.textorientation)
+        titleOri.height           = 11.5
+        tm2.title.textorientation = titleOri
+        
+        sourceOri                  = cnvs2.gettextorientation(tm2.source.textorientation)
+        sourceOri.height           = 9.0
+        tm2.source.textorientation = sourceOri
+        tm2.source.y               = tm2.units.y - 0.01
+        if varIndex==0:
+            deltaX = 0.03
+            tm2.source.x               = tm2.data.x1 + deltaX       
+
+        tm2.units.priority = 0
+
+        # Grids:
+        tm2.xtic2.y1   = tm2.data.y1
+        tm2.ytic2.x1   = tm2.data.x1
+        tm2.xtic2.y2   = tm2.data.y2
+        tm2.ytic2.x2   = tm2.data.x2
+        tm2.ytic2.line = line
+        tm2.xtic2.line = line
+        
+        if varIndex==0:
+            tm2.data.x1      += deltaX
+            tm2.data.x2      += deltaX
+            tm2.box1.x1      += deltaX
+            tm2.box1.x2      += deltaX
+            tm2.ytic1.x1     += deltaX
+            tm2.ytic1.x2     += deltaX
+            tm2.ytic2.x1     += deltaX
+            tm2.ytic2.x2     += deltaX
+            tm2.ylabel1.x    += deltaX
+            tm2.ymintic1.x1  += deltaX
+            tm2.ymintic1.x2  += deltaX
+            #tm2.units.x     += deltaX
+            tm2.title.x      += deltaX
+            tm2.xname.x      += deltaX
+        
+        return tm1, tm2
+
     def _results(self,newgrid=0):
-        results = plot_spec._results(self,newgrid)
+        results = plot_plan._results(self,newgrid)
         if results is None: return None
         psv = self.plotspec_values
         if not('CAM_NCEP_HEAT_TRANSPORT_GLOBAL' in psv.keys()) or\
@@ -600,7 +708,7 @@ class amwg_plot_set2(amwg_plot_spec):
         psv['CAM_NCEP_HEAT_TRANSPORT_INDIAN'].finalize()
         return self.plotspec_values['CAM_NCEP_HEAT_TRANSPORT_ALL']
 
-class amwg_plot_set3(amwg_plot_spec,basic_id):
+class amwg_plot_set3(amwg_plot_plan,basic_id):
     """represents one plot from AMWG Diagnostics Plot Set 3.
     Each such plot is a pair of plots: a 2-line plot comparing model with obs, and
     a 1-line plot of the model-obs difference.  A plot's x-axis is latitude, and
@@ -610,11 +718,12 @@ class amwg_plot_set3(amwg_plot_spec,basic_id):
     # Here, the plotspec contains the variables themselves.
     name = '3 - Line Plots of  Zonal Means'
     number = '3'
-    def __init__( self, model, obs, varnom, seasonid=None, regionid=None, aux=None, levels=None ):
+    def __init__( self, model, obs, varnom, seasonid=None, regionid=None, aux=None,
+                  plotparms=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varnom is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'."""
         basic_id.__init__(self,varnom,seasonid)
-        plot_spec.__init__(self,seasonid)
+        plot_plan.__init__(self,seasonid)
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
         if regionid=="Global" or regionid=="global" or regionid is None:
             self._regionid="Global"
@@ -623,7 +732,7 @@ class amwg_plot_set3(amwg_plot_spec,basic_id):
         self.region = interpret_region(regionid)
 
         if not self.computation_planned:
-            self.plan_computation( model, obs, varnom, seasonid )
+            self.plan_computation( model, obs, varnom, seasonid, plotparms )
     @staticmethod
     def _list_variables( model, obs ):
         """returns a list of variable names"""
@@ -634,16 +743,16 @@ class amwg_plot_set3(amwg_plot_spec,basic_id):
     @staticmethod
     def _all_variables( model, obs, use_standard_vars=True ):
         """returns a dict of varname:varobject entries"""
-        allvars = amwg_plot_spec.package._all_variables( model, obs, "amwg_plot_spec" )
+        allvars = amwg_plot_plan.package._all_variables( model, obs, "amwg_plot_plan" )
         if use_standard_vars:
             # Now we add varname:basic_plot_variable for all standard_variables.
             # This needs work because we don't always have the data needed to compute them...
             # BTW when this part is done better, it should (insofar as it's reasonable) be moved to
-            # amwg_plot_spec and shared by all AMWG plot sets.
-            for varname in amwg_plot_spec.standard_variables.keys():
+            # amwg_plot_plan and shared by all AMWG plot sets.
+            for varname in amwg_plot_plan.standard_variables.keys():
                 allvars[varname] = basic_plot_variable
         return allvars
-    def plan_computation( self, model, obs, varnom, seasonid ):
+    def plan_computation( self, model, obs, varnom, seasonid, plotparms ):
         filetable1, filetable2 = self.getfts(model, obs)
 
         if varnom in filetable1.list_variables():
@@ -687,17 +796,185 @@ class amwg_plot_set3(amwg_plot_spec,basic_id):
 
         #self.reduced_variables[varnom+'_2'] = z2var
         #z2var._vid = varnom+'_2'      # _vid is deprecated
-        self.plot_a = basic_two_line_plot( zvar, z2var )
+        self.plot_a = basic_two_line_plot( zvar, z2var, plotparms=plotparms['model'] )
         ft1id,ft2id = filetable_ids(filetable1,filetable2)
         vid = '_'.join([self._id[0],self._id[1],ft1id,ft2id,'diff'])
         # ... e.g. CLT_DJF_ft1_ft2_diff
-        self.plot_b = one_line_diff_plot( zvar, z2var, vid )
+        self.plot_b = one_line_diff_plot( zvar, z2var, vid, plotparms=plotparms['diff'] )
         self.computation_planned = True
+        
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
+        """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
+        (cnvs1, tm1), (cnvs2, tm2) = templates
+
+        tm2.yname.priority  = 1
+        tm2.xname.priority  = 1
+        tm1.yname.priority  = 1
+        tm1.xname.priority  = 1
+        tm1.legend.priority = 1
+        tm2.legend.priority = 1
+
+        # Fix units if needed
+        if data is not None:
+            if (getattr(data, 'units', '') == ''):
+                data.units = 'K'
+            if data.getAxis(0).id.count('lat'):
+                data.getAxis(0).id = 'Latitude'
+
+        # Adjust labels and names for single plots
+        yLabel = cnvs1.createtext(Tt_source=tm1.yname.texttable,
+                                  To_source=tm1.yname.textorientation)
+        yLabel.x = tm1.yname.x - 0.02
+        yLabel.y = tm1.yname.y
+        if data is not None:
+            yLabel.string  = ["Temperature (" + data.units + ")"]
+        else:
+            yLabel.string  = ["Temperature"]
+        yLabel.height = 19.9
+        cnvs1.plot(yLabel, bg=1)
+
+        xnameOri                  = cnvs1.gettextorientation(tm1.xname.textorientation)
+        xnameOri.height           = 19.9
+        tm1.xname.textorientation = xnameOri
+        
+        titleOri                  = cnvs1.gettextorientation(tm1.title.textorientation)
+        titleOri.height           = 20.9
+        tm1.title.textorientation = titleOri
+
+        sourceOri                  = cnvs1.gettextorientation(tm1.source.textorientation)
+        sourceOri.height           = 12.5
+        tm1.source.textorientation = sourceOri
+        tm1.source.y               = tm1.units.y - 0.01
+        tm1.source.x               = tm1.data.x1
+
+        tm1.legend.y2 = tm1.legend.y1 + 0.01
+
+        if varIndex is not None:
+            if varIndex > 0:
+                tm1.legend.y1  += 0.05
+                tm1.legend.y2   = tm1.legend.y1 + 0.01
+                if graphicMethod is not None:
+                    line = vcs.createline('dash')
+                    line.width = 2
+                    line.color = ["red"]#, "blue", "salmon", "medium aquamarine", "orange", "chartreuse"]
+                    line.type = ["dash"]#, "dot", "dash-dot", "long-dash", "solid", "dash"]
+                    graphicMethod.line = line
+                    # The next repeated commands were necessary in Linux.
+                    graphicMethod.linecolor = 242
+                    graphicMethod.linewidth = 2
+                data.id = 'obs'
+            else:
+                if type(min(data)) is float:
+                    data.id = 'model'
+                else:
+                    data.id = 'difference'
+
+        # We want units at axis names
+        tm1.units.priority = 0
+
+        # Adjust labels and names for combined plots
+        yLabel = cnvs2.createtext(Tt_source=tm2.yname.texttable,
+                                  To_source=tm2.yname.textorientation)
+        yLabel.x = tm2.yname.x * 0.97
+        yLabel.y = tm2.yname.y
+        if data is not None:
+            yLabel.string  = ["Temperature (" + data.units + ")"]
+        else:
+            yLabel.string  = ["Temperature"]
+        cnvs2.plot(yLabel, bg = 1)
+
+        deltaX = 0.015
+
+        titleOri                  = cnvs2.gettextorientation(tm2.title.textorientation)
+        titleOri.height           = 13
+        tm2.title.textorientation = titleOri
+        
+        sourceOri                  = cnvs2.gettextorientation(tm2.source.textorientation)
+        sourceOri.height           = 9.0
+        tm2.source.textorientation = sourceOri
+        tm2.source.y               = tm2.units.y - 0.01
+
+        tm2.units.priority = 0
+
+        # tm2.legend.y2              = tm2.legend.y1 + 0.01
+        # legendTO                   = cnvs2.createtextorientation(None, tm2.legend.textorientation)
+        # legendTO.height            = 10
+        # tm2.legend.textorientation = legendTO
+
+        tm2.legend.priority = 0
+        
+        # if varIndex is not None:
+        #     if varIndex > 0:
+        #         tm2.legend.y1 += 0.05
+        #         tm2.legend.y2  = tm2.legend.y1 + 0.01
+
+        #setup the custom legend
+        lineTypes = []
+        lineTypes.append('solid')
+        lineTypes.append('dash')
+        positions = {}
+        positions['solid', tm2] = [tm2.data.x2 + 0.02+deltaX, tm2.data.x2 + 0.07+deltaX], [tm2.data.y1 + 0.16, tm2.data.y1 + 0.16]
+        positions['dash', tm2]  = [tm2.data.x2 + 0.02, tm2.data.x2 + 0.07], [tm2.data.y1 + 0.24, tm2.data.y1 + 0.24]
+        #positions['dash', tm2]  = [tm2.data.x2 + 0.004+deltaX, tm2.data.x2 + 0.06+deltaX], [tm2.data.y1 + 0.24, tm2.data.y1 + 0.24]
+   
+        #plot the custom legend
+        xpos         = None
+        ypos         = None
+        legendString = data.id
+        lineType     = None
+        if varIndex is not None:
+            if varIndex == 0:
+                xpos, ypos = positions['solid', tm2]
+                lineType = lineTypes[0]
+            else:
+                xpos, ypos = positions['dash', tm2]
+                lineType = lineTypes[1]
+                
+        line = cnvs2.createline(None, tm2.legend.line)
+        line.type = lineType
+        line.x = xpos
+        line.y = [ypos, ypos]
+
+        if varIndex is not None:
+            if varIndex == 1:
+                line.color = ['red']
+                line.width = 2
+
+        cnvs2.plot(line, bg=1)
+
+        text        = cnvs2.createtext()
+        text.string = data.id
+        text.height = 9.5
+        text.x      = xpos[0] 
+        text.y      = ypos[0] + 0.01 
+
+        cnvs2.plot(text, bg=1) 
+                      
+        if varIndex is not None:
+            if varIndex == 0:
+                tm2.data.x1      += deltaX
+                tm2.data.x2      += deltaX
+                tm2.box1.x1      += deltaX
+                tm2.box1.x2      += deltaX
+                tm2.ytic1.x1     += deltaX
+                tm2.ytic1.x2     += deltaX
+                tm2.ytic2.x1     += deltaX
+                tm2.ytic2.x2     += deltaX
+                tm2.ylabel1.x    += deltaX
+                tm2.ymintic1.x1  += deltaX
+                tm2.ymintic1.x2  += deltaX
+                #tm2.units.x     += deltaX
+                #tm2.title.x     += deltaX
+                tm2.xname.x      += deltaX
+                tm2.legend.x1    += deltaX
+        
+        return tm1, tm2
+    
     def _results(self,newgrid=0):
         # At the moment this is very specific to plot set 3.  Maybe later I'll use a
         # more general method, to something like what's in plot_data.py, maybe not.
         # later this may be something more specific to the needs of the UV-CDAT GUI
-        results = plot_spec._results(self,newgrid)
+        results = plot_plan._results(self,newgrid)
         if results is None: return None
         zvar = self.plot_a.zvars[0]
         z2var = self.plot_a.z2vars[0]
@@ -740,7 +1017,7 @@ class amwg_plot_set3(amwg_plot_spec,basic_id):
         plot_b_val.finalize()
         return [ plot_a_val, plot_b_val ]
 
-class amwg_plot_set4and41(amwg_plot_spec):
+class amwg_plot_set4and4A(amwg_plot_plan):
     """represents one plot from AMWG Diagnostics Plot Set 4 or 4a.
     Each such plot is a set of three contour plots: one each for model output, observations, and
     the difference between the two.  A plot's x-axis is latitude and its y-axis is the level,
@@ -752,16 +1029,20 @@ class amwg_plot_set4and41(amwg_plot_spec):
     #name = '4 - Vertical Contour Plots Zonal Means'
     #number = '4'
     reduction_functions = { '4':[reduce2lat_seasonal, reduce2levlat_seasonal], 
-                           '41':[reduce2lon_seasonal, reduce2levlon_seasonal]}
-    rf_ids = { '4': 'levlat', '41': 'levlon'}
-    def __init__( self, model, obs, varid, seasonid=None, regionid=None, aux=None, levels=None ):
+                           '4A':[reduce2lon_seasonal, reduce2levlon_seasonal]}
+    rf_ids = { '4': 'levlat', '4A': 'levlon'}
+    def __init__( self, model, obs, varid, seasonid=None, regionid=None, aux=None, plotparms=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'.
         At the moment we assume that data from filetable1 has CAM hybrid levels,
         and data from filetable2 has pressure levels."""
         filetable1, filetable2 = self.getfts(model, obs)
-        plot_spec.__init__(self,seasonid)
+        plot_plan.__init__(self,seasonid)
         self.plottype = 'Isofill'
+        if plotparms is None:
+            plotparms = { 'model':{'colormap':'rainbow'},
+                          'obs':{'colormap':'rainbow'},
+                          'diff':{'colormap':'bl_to_darkred'} }
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
         if regionid=="Global" or regionid=="global" or regionid is None:
             self._regionid="Global"
@@ -775,7 +1056,7 @@ class amwg_plot_set4and41(amwg_plot_spec):
         self.plot3_id = '_'.join([ft1id+'-'+ft2id,varid,seasonid,'contour'])
         self.plotall_id = '_'.join([ft1id,ft2id,varid,seasonid])
         if not self.computation_planned:
-            self.plan_computation( model, obs, varid, seasonid, levels )
+            self.plan_computation( model, obs, varid, seasonid, plotparms )
     @staticmethod
     def _list_variables( model, obs ):
         allvars = amwg_plot_set4._all_variables( model, obs )
@@ -786,15 +1067,15 @@ class amwg_plot_set4and41(amwg_plot_spec):
     @staticmethod
     def _all_variables( model, obs ):
         allvars = {}
-        for varname in amwg_plot_spec.package._list_variables_with_levelaxis(
-            model, obs, "amwg_plot_spec" ):
+        for varname in amwg_plot_plan.package._list_variables_with_levelaxis(
+            model, obs, "amwg_plot_plan" ):
             allvars[varname] = basic_level_variable
         return allvars
     def reduced_variables_press_lev( self, filetable, varid, seasonid, ftno=None,  RF1=None, RF2=None ):
         return reduced_variables_press_lev( filetable, varid, seasonid, region=self.region,  RF1=RF1, RF2=RF2 )
     def reduced_variables_hybrid_lev( self, filetable, varid, seasonid, ftno=None,  RF1=None, RF2=None):
         return reduced_variables_hybrid_lev( filetable, varid, seasonid, region=self.region,  RF1=RF1, RF2=RF2 )
-    def plan_computation( self, model, obs, varid, seasonid, levels = None ):
+    def plan_computation( self, model, obs, varid, seasonid, plotparms ):
         filetable1, filetable2 = self.getfts(model, obs)
         ft1_hyam = filetable1.find_files('hyam')
         if filetable2 is None:
@@ -855,27 +1136,118 @@ class amwg_plot_set4and41(amwg_plot_spec):
                 plottype = self.plottype,
                 title = ' '.join([varid,seasonid,'(1)']),
                 source = ft1src,
-                levels = levels ),
+                plotparms = plotparms[src2modobs(ft1src)] ),
             self.plot2_id: plotspec(
                 vid = ps.dict_idid(vid2), zvars=[vid2], zfunc=(lambda z: z),
                 plottype = self.plottype,
                 title = ' '.join([varid,seasonid,'(2)']),
                 source = ft2src,
-                levels = levels ),
+                plotparms = plotparms[src2obsmod(ft2src)] ),
             self.plot3_id: plotspec(
                 vid = ps.dict_id(varid,'diff',seasonid,filetable1,filetable2), zvars=[vid1,vid2],
                 zfunc=aminusb_2ax, plottype = self.plottype,
                 title = ' '.join([varid,seasonid,'(1)-(2)']),
                 source = ', '.join([ft1src,ft2src]),
-                levels = None )
+                plotparms = plotparms['diff'] )
             }
         self.composite_plotspecs = {
             self.plotall_id: [self.plot1_id, self.plot2_id, self.plot3_id ]
             }
         self.computation_planned = True
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
+        """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
+        (cnvs1, tm1), (cnvs2, tm2) = templates
+
+        tm2.yname.priority  = 1
+        tm2.xname.priority  = 1
+        tm1.yname.priority  = 1
+        tm1.xname.priority  = 1
+        tm1.legend.priority = 1
+        tm2.legend.priority = 1
+
+        # Fix units if needed
+        if data is not None:
+            if (getattr(data, 'units', '') == ''):
+                data.units = 'K'
+            if data.getAxis(0).id.count('lat'):
+                data.getAxis(0).id = 'Latitude'
+            if len(data.getAxisList()) > 1:
+                if data.getAxis(1).id.count('lat'):
+                    data.getAxis(1).id = 'Latitude'                    
+
+         # Adjust labels and names for single plots
+        ynameOri                  = cnvs1.gettextorientation(tm1.yname.textorientation)
+        ynameOri.height           = 20
+        tm1.yname.textorientation = ynameOri
+        tm1.yname.x              -= 0.006
+
+        xnameOri                  = cnvs1.gettextorientation(tm1.xname.textorientation)
+        xnameOri.height           = 20
+        tm1.xname.textorientation = xnameOri
+ 
+        meanOri                  = cnvs1.gettextorientation(tm1.mean.textorientation)
+        meanOri.height           = 15
+        tm1.mean.textorientation = meanOri
+        tm1.mean.y              -= 0.005
+
+        titleOri                  = cnvs1.gettextorientation(tm1.title.textorientation)
+        titleOri.height           = 23
+        tm1.title.textorientation = titleOri
+
+        maxOri                  = cnvs1.gettextorientation(tm1.max.textorientation)
+        maxOri.height           = 15
+        tm1.max.textorientation = maxOri
+        tm1.max.y              -= 0.005
+
+        minOri                  = cnvs1.gettextorientation(tm1.min.textorientation)
+        minOri.height           = 15
+        tm1.min.textorientation = minOri
+        
+        sourceOri                  = cnvs1.gettextorientation(tm1.source.textorientation)
+        sourceOri.height           = 11.0
+        tm1.source.textorientation = sourceOri
+        tm1.source.y               = tm1.units.y - 0.027
+        tm1.source.x               = tm1.data.x1
+        tm1.source.priority        = 1
+
+        unitsOri                  = cnvs1.gettextorientation(tm1.units.textorientation)
+        unitsOri.height           = 16
+        tm1.units.textorientation = unitsOri
+        tm1.units.y       -= 0.01
+        tm1.units.priority = 1
+
+        # Adjust labels and names for combined plots
+        ynameOri                  = cnvs2.gettextorientation(tm2.yname.textorientation)
+        ynameOri.height           = 10
+        tm2.yname.textorientation = ynameOri
+        tm2.yname.x              -= 0.009
+
+        xnameOri                  = cnvs2.gettextorientation(tm2.xname.textorientation)
+        xnameOri.height           = 10
+        tm2.xname.textorientation = xnameOri
+        tm2.xname.y              -= 0.003
+
+        tm2.mean.y -= 0.005
+
+        titleOri                  = cnvs2.gettextorientation(tm2.title.textorientation)
+        titleOri.height           = 11.5
+        tm2.title.textorientation = titleOri
+
+        tm2.max.y -= 0.005
+        
+        sourceOri                  = cnvs2.gettextorientation(tm2.source.textorientation)
+        sourceOri.height           = 8.0
+        tm2.source.textorientation = sourceOri
+        tm2.source.y               = tm2.units.y - 0.01
+        tm2.source.x               = tm2.data.x1
+        tm2.source.priority        = 1
+
+        tm2.units.priority = 1
+
+        return tm1, tm2
     def _results(self,newgrid=0):
         #pdb.set_trace()
-        results = plot_spec._results(self,newgrid)
+        results = plot_plan._results(self,newgrid)
         if results is None:
             print "WARNING, AMWG plot set 4 found nothing to plot"
             return None
@@ -894,7 +1266,7 @@ class amwg_plot_set4and41(amwg_plot_spec):
                 v.finalize(flip_y=True)
         return self.plotspec_values[self.plotall_id]
 
-class amwg_plot_set4(amwg_plot_set4and41):
+class amwg_plot_set4(amwg_plot_set4and4A):
     """ Define the reduction to be used
     sample script:
     diags --outputdir $HOME/Documents/Climatology/ClimateData/diagout/ 
@@ -903,16 +1275,16 @@ class amwg_plot_set4(amwg_plot_set4and41):
     --package AMWG --set 4 --vars T --seasons ANN"""
     name = '4 - Vertical Contour Plots Zonal Means'
     number = '4'
-class amwg_plot_set41(amwg_plot_set4and41):
+class amwg_plot_set4A(amwg_plot_set4and4A):
     """ Define the reduction to be used
         sample script:
         diags --outputdir $HOME/Documents/Climatology/ClimateData/diagout/ 
         --model path=$HOME/uvcmetrics_test_data/cam35_data/,climos=yes 
         --obs path=$HOME/uvcmetrics_test_data/obs_data/,filter="f_startswith('NCEP')",climos=yes 
-        --package AMWG --set 41 --vars T --seasons ANN"""
-    name = '41 - Horizontal Contour Plots of Meridional Means'
-    number = '41'    
-class amwg_plot_set5and6(amwg_plot_spec):
+        --package AMWG --set 4A --vars T --seasons ANN"""
+    name = '4A - Horizontal Contour Plots of Meridional Means'
+    number = '4A'
+class amwg_plot_set5and6(amwg_plot_plan):
     """represents one plot from AMWG Diagnostics Plot Sets 5 and 6  <actually only the contours, set 5>
     NCAR has the same menu for both plot sets, and we want to ease the transition from NCAR
     diagnostics to these; so both plot sets will be done together here as well.
@@ -920,14 +1292,19 @@ class amwg_plot_set5and6(amwg_plot_spec):
     the difference between the two.  A plot's x-axis is longitude and its y-axis is the latitude;
     normally a world map will be overlaid.
     """
-    def __init__( self, model, obs,  varid, seasonid=None, regionid=None, aux=None, levels=None ):
+    def __init__( self, model, obs,  varid, seasonid=None, regionid=None, aux=None,
+                  plotparms=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the variable to be plotted, e.g. 'TREFHT'.
         seasonid is a string such as 'DJF'."""
         filetable1, filetable2 = self.getfts(model, obs)
-         
-        plot_spec.__init__(self,seasonid, regionid)
+
+        plot_plan.__init__(self,seasonid, regionid)
         self.plottype = 'Isofill'
+        if plotparms is None:
+            plotparms = { 'model':{'colormap':'rainbow'},
+                          'obs':{'colormap':'rainbow'},
+                          'diff':{'colormap':'bl_to_darkred'} }
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
         if regionid=="Global" or regionid=="global" or regionid is None:
             self._regionid="Global"
@@ -946,7 +1323,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
         self.plotall_id = ft1id+'_'+ft2id+'_'+varid+'_'+seasonid
 
         if not self.computation_planned:
-            self.plan_computation( model, obs, varid, seasonid, aux, levels )
+            self.plan_computation( model, obs, varid, seasonid, aux, plotparms )
     @staticmethod
     def _list_variables( model, obs ):
         """returns a list of variable names"""
@@ -957,10 +1334,10 @@ class amwg_plot_set5and6(amwg_plot_spec):
     @staticmethod
     def _all_variables( model, obs, use_standard_vars=True ):
         """returns a dict of varname:varobject entries"""
-        allvars = amwg_plot_spec.package._all_variables( model, obs, "amwg_plot_spec" )
+        allvars = amwg_plot_plan.package._all_variables( model, obs, "amwg_plot_plan" )
         # ...this is what's in the data.  varname:basic_plot_variable
-        for varname in amwg_plot_spec.package._list_variables_with_levelaxis(
-            model, obs, "amwg_plot_spec" ):
+        for varname in amwg_plot_plan.package._list_variables_with_levelaxis(
+            model, obs, "amwg_plot_plan" ):
             allvars[varname] = level_variable_for_amwg_set5
             # ...this didn't add more variables, but changed the variable's class
             # to indicate that you can specify a level for it
@@ -968,16 +1345,19 @@ class amwg_plot_set5and6(amwg_plot_spec):
             # Now we add varname:basic_plot_variable for all standard_variables.
             # This needs work because we don't always have the data needed to compute them...
             # BTW when this part is done better, it should (insofar as it's reasonable) be moved to
-            # amwg_plot_spec and shared by all AMWG plot sets.
-            for varname in amwg_plot_spec.standard_variables.keys():
+            # amwg_plot_plan and shared by all AMWG plot sets.
+            for varname in amwg_plot_plan.standard_variables.keys():
                 allvars[varname] = basic_plot_variable
         return allvars
-    def plan_computation( self, model, obs, varid, seasonid, aux=None, levels=None ):
+    def plan_computation( self, model, obs, varid, seasonid, aux, plotparms ):
         if isinstance(aux,Number):
-            return self.plan_computation_level_surface( model, obs, varid, seasonid, aux, levels )
+            return self.plan_computation_level_surface( model, obs, varid, seasonid, aux,
+                                                        plotparms )
         else:
-            return self.plan_computation_normal_contours( model, obs, varid, seasonid, aux, levels )
-    def plan_computation_normal_contours( self, model, obs, varnom, seasonid, aux=None, levels=None ):
+            return self.plan_computation_normal_contours( model, obs, varid, seasonid, aux,
+                                                          plotparms )
+    def plan_computation_normal_contours( self, model, obs, varnom, seasonid, aux=None,
+                                          plotparms=None ):
         filetable1, filetable2 = self.getfts(model, obs)
         """Set up for a lat-lon contour plot, as in plot set 5.  Data is averaged over all other
         axes."""
@@ -988,7 +1368,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
             vid1,vid1var = self.vars_stdvar_normal_contours(
                 filetable1, varnom, seasonid, aux=None )
         else:
-            print "ERROR, variable",varnom,"not found in and cannot be computed from",filetable1
+            logger.error("variable %s not found in and cannot be computed from %s",varnom, filetable1)
             return None
         if filetable2 is not None and varnom in filetable2.list_variables():
             vid2,vid2var = self.vars_normal_contours(
@@ -1014,8 +1394,9 @@ class amwg_plot_set5and6(amwg_plot_spec):
                     #title = ' '.join([varnom,seasonid,filetable1._strid]) )
                     title = ' '.join([varnom,seasonid,'(1)']),
                     source = ft1src,
-                    levels = levels )
+                    plotparms = plotparms[src2modobs(ft1src)])
                 all_plotnames.append(self.plot1_id)
+                
             if vid1var is not None:
                 self.single_plotspecs[self.plot1var_id] = plotspec(
                     vid = ps.dict_idid(vid1var),
@@ -1024,8 +1405,9 @@ class amwg_plot_set5and6(amwg_plot_spec):
                     #title = ' '.join([varnom,seasonid,filetable1._strid,'variance']) )
                     title = ' '.join([varnom,seasonid,'1 variance']),
                     source = ft1src,
-                    levels = None )
+                    plotparms = plotparms[src2modobs(ft1src)] )
                 all_plotnames.append(self.plot1var_id)
+                
         if filetable2 is not None and vid2 is not None:
             self.single_plotspecs[self.plot2_id] = plotspec(
                 vid = ps.dict_idid(vid2),
@@ -1034,8 +1416,9 @@ class amwg_plot_set5and6(amwg_plot_spec):
                 #title = ' '.join([varnom,seasonid,filetable2._strid]) )
                 title = ' '.join([varnom,seasonid,'(2)']),
                 source = ft2src,
-                levels = levels)
+                plotparms = plotparms[src2obsmod(ft2src)] )
             all_plotnames.append(self.plot2_id)
+            
         if filetable1 is not None and filetable2 is not None and vid1 is not None and vid2 is not None:
             self.single_plotspecs[self.plot3_id] = plotspec(
                 vid = ps.dict_id(varnom,'diff',seasonid,filetable1,filetable2),
@@ -1044,7 +1427,8 @@ class amwg_plot_set5and6(amwg_plot_spec):
                 #title = ' '.join([varnom,seasonid,filetable1._strid,'-',filetable2._strid]) )
                 title = ' '.join([varnom,seasonid,'(1)-(2)']),
                 source = ', '.join([ft1src,ft2src]),
-                levels = None )
+                plotparms = plotparms['diff'] )
+
             all_plotnames.append(self.plot3_id)
         if len(all_plotnames)>0:
             self.composite_plotspecs = {
@@ -1090,7 +1474,8 @@ class amwg_plot_set5and6(amwg_plot_spec):
 
         return varid, None
 
-    def plan_computation_level_surface( self, model, obs, varid, seasonid, aux, levels ):
+    def plan_computation_level_surface( self, model, obs, varid, seasonid, aux=None,
+                                        plotparms=None ):
         filetable1, filetable2 = self.getfts(model, obs)
         """Set up for a lat-lon contour plot, averaged in other directions - except that if the
         variable to be plotted depend on level, it is not averaged over level.  Instead, the value
@@ -1101,19 +1486,6 @@ class amwg_plot_set5and6(amwg_plot_spec):
         if not isinstance(aux,Number): return None
         pselect = udunits(aux,'mbar')
 
-        # self.reduced_variables = {
-        #     varid+'_1': reduced_variable(  # var=var(time,lev,lat,lon)
-        #         variableid=varid, filetable=filetable1, reduced_var_id=varid+'_1', season=self.season,
-        #         reduction_function=(lambda x,vid: reduce_time_seasonal( x, self.season, vid ) ) ),
-        #     'hyam_1': reduced_variable(   # hyam=hyam(lev)
-        #         variableid='hyam', filetable=filetable1, reduced_var_id='hyam_1',season=self.season,
-        #         reduction_function=(lambda x,vid=None: x) ),
-        #     'hybm_1': reduced_variable(   # hybm=hybm(lev)
-        #         variableid='hybm', filetable=filetable1, reduced_var_id='hybm_1',season=self.season,
-        #         reduction_function=(lambda x,vid=None: x) ),
-        #     'PS_1': reduced_variable(     # ps=ps(time,lat,lon)
-        #         variableid='PS', filetable=filetable1, reduced_var_id='PS_1', season=self.season,
-        #         reduction_function=(lambda x,vid=None: reduce_time_seasonal( x, self.season, vid ) ) ) }
         reduced_varlis = [
             reduced_variable(  # var=var(time,lev,lat,lon)
                 variableid=varid, filetable=filetable1, season=self.season,
@@ -1151,7 +1523,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
                 #title = ' '.join([varid,seasonid,filetable1._strid,'at',str(pselect)]) ) }
                 title = ' '.join([varid,seasonid,'at',str(pselect),'(1)']),
                 source = ft1src,
-                levels = levels ) }
+                plotparms = plotparms[src2modobs(ft1src)] ) }
            
         if filetable2 is None:
             self.reduced_variables = { v.id():v for v in reduced_varlis }
@@ -1214,7 +1586,7 @@ class amwg_plot_set5and6(amwg_plot_spec):
                 #title = ' '.join([varid,seasonid,filetable2._strid,'at',str(pselect)]) )
                 title = ' '.join([varid,seasonid,'at',str(pselect),'(2)']),
                 source = ft2src,
-                levels = levels )
+                plotparms = plotparms[src2obsmod(ft2src)] )
         self.single_plotspecs[self.plot3_id] = plotspec(
                 #was vid = varid+'_diff',
                 vid = ps.dict_id(varid,'diff',seasonid,filetable1,filetable2),
@@ -1223,21 +1595,116 @@ class amwg_plot_set5and6(amwg_plot_spec):
                 #title = ' '.join([varid,seasonid,filetable1._strid,'-',filetable2._strid,'at',str(pselect)]) )
                 title = ' '.join([varid,seasonid,'at',str(pselect),'(1)-(2)']),
                 source = ', '.join([ft1src,ft2src]),
-                levels = None )
+                plotparms = plotparms['diff'] )
 #                zerocontour=-1 )
         self.composite_plotspecs = {
             self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id ]
             }
         self.computation_planned = True
+
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
+        """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
+        (cnvs1, tm1), (cnvs2, tm2) = templates
+        
+        tm2.yname.priority  = 1
+        tm2.xname.priority  = 1
+        tm1.yname.priority  = 1
+        tm1.xname.priority  = 1
+        tm1.legend.priority = 1
+        tm2.legend.priority = 1
+
+        # Fix units if needed
+        if data is not None:
+            if (getattr(data, 'units', '') == ''):
+                data.units = 'K'
+            if data.getAxis(0).id.count('lat'):
+                data.getAxis(0).id = 'Latitude'
+            if data.getAxis(0).id.count('lon'):
+                data.getAxis(0).id = 'Longitude'
+            elif len(data.getAxisList()) > 1:
+                if data.getAxis(1).id.count('lat'):
+                    data.getAxis(1).id = 'Latitude'
+                if data.getAxis(1).id.count('lon'):
+                    data.getAxis(1).id = 'Longitude'
+
+        #cnvs1.landscape()
+        #cnvs1.setcolormap("categorical")
+        #colormap = vcs.matplotlib2vcs('viridis')
+        #cnvs1.setcolormap(colormap)
+
+        # Adjust labels and names for single plots
+        ynameOri                  = cnvs1.gettextorientation(tm1.yname.textorientation)
+        ynameOri.height           = 16
+        tm1.yname.textorientation = ynameOri
+
+        xnameOri                  = cnvs1.gettextorientation(tm1.xname.textorientation)
+        xnameOri.height           = 16
+        tm1.xname.textorientation = xnameOri
+
+        meanOri                  = cnvs1.gettextorientation(tm1.mean.textorientation)
+        meanOri.height           = 14
+        tm1.mean.textorientation = meanOri
+        tm1.mean.y              -= 0.005
+
+        titleOri                  = cnvs1.gettextorientation(tm1.title.textorientation)
+        titleOri.height           = 22
+        tm1.title.textorientation = titleOri
+       
+        sourceOri                  = cnvs1.gettextorientation(tm1.source.textorientation)
+        sourceOri.height           = 11.0
+        tm1.source.textorientation = sourceOri
+        tm1.source.y               = tm1.units.y - 0.02
+        tm1.source.x               = tm1.data.x1
+        tm1.source.priority        = 1
+
+        # We want units at axis names
+        tm1.units.y       -= 0.01
+        tm1.units.priority = 1
+        
+        # Adjust labels and names for combined plots
+        ynameOri                  = cnvs2.gettextorientation(tm2.yname.textorientation)
+        ynameOri.height           = 9
+        tm2.yname.textorientation = ynameOri
+        tm2.yname.x              -= 0.009
+
+        xnameOri                  = cnvs2.gettextorientation(tm2.xname.textorientation)
+        xnameOri.height           = 9
+        tm2.xname.textorientation = xnameOri
+        tm2.xname.y              -= 0.003
+
+        tm2.mean.y -= 0.005
+
+        titleOri                  = cnvs2.gettextorientation(tm2.title.textorientation)
+        titleOri.height           = 11.5
+        tm2.title.textorientation = titleOri
+
+        tm2.max.y -= 0.005
+        
+        sourceOri                  = cnvs2.gettextorientation(tm2.source.textorientation)
+        sourceOri.height           = 8.0
+        tm2.source.textorientation = sourceOri
+        tm2.source.y               = tm2.units.y - 0.01
+        tm2.source.x               = tm2.data.x1
+        tm2.source.priority        = 1
+
+        tm2.units.priority = 1
+
+        try:
+            #this is for the output of RMSE and CORRELATION
+            tm1, tm2 = self.extraCustomizeTemplates((cnvs1, tm1), (cnvs2, tm2), var=var)
+        except:
+            pass
+        return tm1, tm2
+        
     def _results(self,newgrid=0):
-        results = plot_spec._results(self,newgrid)
+        results = plot_plan._results(self,newgrid)
         if results is None: return None
         psv = self.plotspec_values
         if self.plot1_id in psv and self.plot2_id in psv and\
                 psv[self.plot1_id] is not None and psv[self.plot2_id] is not None:
             psv[self.plot1_id].synchronize_ranges(psv[self.plot2_id])
         else:
-            print "WARNING not synchronizing ranges for",self.plot1_id,"and",self.plot2_id
+            logger.warning("not synchronizing ranges for %s and %s",self.plot1_id, self.plot2_id)
         for key,val in psv.items():
             if type(val) is not list: val=[val]
             for v in val:
@@ -1252,8 +1719,43 @@ class amwg_plot_set5(amwg_plot_set5and6):
     normally a world map will be overlaid. """
     name = '5 - Horizontal Contour Plots of Seasonal Means'
     number = '5'
-    
-class amwg_plot_set6(amwg_plot_spec):
+    def extraCustomizeTemplates(self, (cnvs1, tm1), (cnvs2, tm2), data=None, varIndex=None, graphicMethod=None, var=None):
+        """Theis method does what the title says.  It is a hack that will no doubt change as diags changes.
+        It is a total hack. I'm embarassed to be part of it. Please find a better way!!!"""
+        #(cnvs1, tm1), (cnvs2, tm2) = templates
+        import pdb
+        if hasattr(var, 'model') and hasattr(var, 'obs'): #these come from aminusb_2ax
+            from metrics.graphics.default_levels import default_levels
+            from metrics.computation.units import scale_data
+            from metrics.computation.compute_rmse import compute_rmse    
+            if self.varid in default_levels.keys():
+                #convert to the units specified in the default levels dictionay
+                displayunits = default_levels[self.varid].get('displayunits', None)
+                if displayunits is not None and var.model is not None and var.obs is not None:
+                    #print displayunits, var.model.units, var.obs.units
+                    var.model = scale_data( displayunits, var.model)
+                    var.obs   = scale_data( displayunits, var.obs) 
+            
+            RMSE, CORR = compute_rmse( var.model, var.obs )
+            
+            RMSE = round(RMSE, 2)
+            CORR = round(CORR, 2)
+            textRMSE = cnvs2.createtext()
+            textRMSE.string = 'RMSE = %.3g' % RMSE
+            textRMSE.x = .075
+            textRMSE.y = .005
+            textRMSE.height = 10
+            cnvs2.plot(textRMSE, bg=1)  
+
+            textCORR = cnvs2.createtext()
+            textCORR.string = 'Correlation = %.3g' % CORR
+            textCORR.x = .25
+            textCORR.y = .005
+            textCORR.height = 10
+            cnvs2.plot(textCORR, bg=1)              
+            
+        return tm1, tm2  
+class amwg_plot_set6(amwg_plot_plan):
     """represents one plot from AMWG Diagnostics Plot Set 6
     This is a vector+contour plot - the contour plot shows magnitudes and the vector plot shows both
     directions and magnitudes.  Unlike NCAR's diagnostics, our AMWG plot set 6 uses a different
@@ -1272,13 +1774,17 @@ class amwg_plot_set6(amwg_plot_spec):
     # The first in the list (e.g. [a,b,c]) is to be preferred.
     #... If this works, I'll make it universal, defaulting to {}.  For plot set 6, the first
     # data variable will be used for the contour plot, and the other two for the vector plot.
-    def __init__( self, model, obs, varid, seasonid=None, regionid=None, aux=None, levels=None ):
+    def __init__( self, model, obs, varid, seasonid=None, regionid=None, aux=None, plotparms=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the variable to be plotted, e.g. 'STRESS'.
         seasonid is a string such as 'DJF'."""
 
         filetable1, filetable2 = self.getfts(model, obs)
-        plot_spec.__init__(self,seasonid)
+        plot_plan.__init__(self,seasonid)
+        if plotparms is None:
+            plotparms = { 'model':{'colormap':'rainbow'},
+                          'obs':{'colormap':'rainbow'},
+                          'diff':{'colormap':'bl_to_darkred'} }
         # self.plottype = ['Isofill','Vector']  <<<< later we'll add contour plots
         self.plottype = 'Vector'
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
@@ -1296,16 +1802,17 @@ class amwg_plot_set6(amwg_plot_spec):
         self.plotall_id = ft1id+'_'+ft2id+'_'+varid+'_'+seasonid
 
         if not self.computation_planned:
-            self.plan_computation( model, obs, varid, seasonid, aux )
+            self.plan_computation( model, obs, varid, seasonid, aux, plotparms )
     @staticmethod
     def _list_variables( model, obs ):
         return amwg_plot_set6.standard_variables.keys()
     @staticmethod
     def _all_variables( model, obs ):
         return { vn:basic_plot_variable for vn in amwg_plot_set6._list_variables( model, obs ) }
-    def plan_computation( self, model, obs, varid, seasonid, aux=None ):
+    def plan_computation( self, model, obs, varid, seasonid, aux, plotparms ):
         if aux is None:
-            return self.plan_computation_normal_contours( model, obs, varid, seasonid, aux )
+            return self.plan_computation_normal_contours( model, obs, varid, seasonid, aux,
+                                                          plotparms )
         else:
             print "ERROR plot set 6 does not support auxiliary variable aux=",aux
             return None
@@ -1472,7 +1979,7 @@ class amwg_plot_set6(amwg_plot_spec):
 
         return derived_vars
 
-    def plan_computation_normal_contours( self, model, obs, varid, seasonid, aux=None ):
+    def plan_computation_normal_contours( self, model, obs, varid, seasonid, aux, plotparms ):
         """Set up for a lat-lon contour plot, as in plot set 5.  Data is averaged over all other
         axes."""
         filetable1, filetable2 = self.getfts(model, obs)
@@ -1488,11 +1995,11 @@ class amwg_plot_set6(amwg_plot_spec):
                 if vars1 is None and vars2 is None:
                     raise DiagError("cannot find standard variables in data 2")
             else:
-                print "ERROR, AMWG plot set 6 does not yet support",varid
+                logger.error("AMWG plot set 6 does not yet support %s",varid)
                 return None
         except Exception as e:
-            print "ERROR cannot find suitable standard_variables in data for varid=",varid
-            print "exception is",e
+            logger.error("cannot find suitable standard_variables in data for varid= %s",varid)
+            logger.exception(" %s ", e)
             return None
         reduced_varlis = []
         vardict1 = {'':'nameless_variable'}
@@ -1526,11 +2033,13 @@ class amwg_plot_set6(amwg_plot_spec):
             contplot = plotspec(
                 vid = ps.dict_idid(vid_cont1),  zvars = [vid_cont1],  zfunc = (lambda z: z),
                 plottype = plot_type_temp[0],
-                title = title, source=ft1src )
+                title = title, source=ft1src,
+                plotparms = plotparms[src2modobs(ft1src)] )
             vecplot = plotspec(
                 vid = ps.dict_idid(vid_vec1), zvars=[vid_vec11,vid_vec12], zfunc = (lambda z,w: (z,w)),
                 plottype = plot_type_temp[1],
-                title = title,  source=ft1src )
+                title = title,  source=ft1src,
+                plotparms = plotparms[src2modobs(ft1src)] )
             #self.single_plotspecs[self.plot1_id] = [contplot,vecplot]
             self.single_plotspecs[self.plot1_id+'c'] = contplot
             self.single_plotspecs[self.plot1_id+'v'] = vecplot
@@ -1541,11 +2050,13 @@ class amwg_plot_set6(amwg_plot_spec):
             contplot = plotspec(
                 vid = ps.dict_idid(vid_cont2),  zvars = [vid_cont2],  zfunc = (lambda z: z),
                 plottype = plot_type_temp[0],
-                title = title, source=ft2src )
+                title = title, source=ft2src,
+                plotparms = plotparms[src2obsmod(ft2src)] )
             vecplot = plotspec(
                 vid = ps.dict_idid(vid_vec2), zvars=[vid_vec21,vid_vec22], zfunc = (lambda z,w: (z,w)),
                 plottype = plot_type_temp[1],
-                title = title,  source=ft2src )
+                title = title,  source=ft2src,
+                plotparms = plotparms[src2obsmod(ft2src)] )
             self.single_plotspecs[self.plot2_id+'c'] = contplot
             self.single_plotspecs[self.plot2_id+'v'] = vecplot
         if vars1 is not None and vars2 is not None:
@@ -1564,7 +2075,8 @@ class amwg_plot_set6(amwg_plot_spec):
             contplot = plotspec(
                 vid = ps.dict_id(var_cont1,'mag.of.diff',seasonid,filetable1,filetable2),
                 zvars = [diff1_vid,diff2_vid],  zfunc = abnorm,  # This is magnitude of difference of vectors
-                plottype = plot_type_temp[0], title=title, source=source )
+                plottype = plot_type_temp[0], title=title, source=source,
+                plotparms = plotparms['diff'] )
             #contplot = plotspec(
             #    vid = ps.dict_id(var_cont1,'diff.of.mags',seasonid,filetable1,filetable2),
             #    zvars = [vid_cont1,vid_cont2],  zfunc = aminusb_2ax,  # This is difference of magnitudes.
@@ -1575,7 +2087,8 @@ class amwg_plot_set6(amwg_plot_spec):
                 zvars = [vid_vec11,vid_vec12,vid_vec21,vid_vec22],
                 zfunc = (lambda z1,w1,z2,w2: (aminusb_2ax(z1,z2),aminusb_2ax(w1,w2))),
                 plottype = plot_type_temp[1],
-                title = title,  source = source )
+                title = title,  source = source,
+                plotparms = plotparms['diff'] )
             self.single_plotspecs[self.plot3_id+'c'] = contplot
             self.single_plotspecs[self.plot3_id+'v'] = vecplot
         # initially we're not plotting the contour part of the plots....
@@ -1590,8 +2103,93 @@ class amwg_plot_set6(amwg_plot_spec):
             self.plotall_id: [self.plot1_id, self.plot2_id, self.plot3_id]
             }
         self.computation_planned = True
+
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
+        """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
+        (cnvs1, tm1), (cnvs2, tm2) = templates
+        
+        tm2.yname.priority  = 1
+        tm2.xname.priority  = 1
+        tm1.yname.priority  = 1
+        tm1.xname.priority  = 1
+        tm1.legend.priority = 1
+        tm2.legend.priority = 1
+
+        # Fix units if needed
+        if data is not None:
+            if (getattr(data, 'units', '') == ''):
+                data.units = 'N/m^2'
+            if data.getAxis(0).id.count('lat'):
+                data.getAxis(0).id = 'Latitude'
+            if data.getAxis(0).id.count('lon'):
+                data.getAxis(0).id = 'Longitude'
+            elif len(data.getAxisList()) > 1:
+                if data.getAxis(1).id.count('lat'):
+                    data.getAxis(1).id = 'Latitude'
+                if data.getAxis(1).id.count('lon'):
+                    data.getAxis(1).id = 'Longitude'
+
+        # Adjust labels and names for single plots
+        ynameOri                  = cnvs1.gettextorientation(tm1.yname.textorientation)
+        ynameOri.height           = 16
+        tm1.yname.textorientation = ynameOri
+
+        xnameOri                  = cnvs1.gettextorientation(tm1.xname.textorientation)
+        xnameOri.height           = 16
+        tm1.xname.textorientation = xnameOri
+
+        meanOri                  = cnvs1.gettextorientation(tm1.mean.textorientation)
+        meanOri.height           = 14
+        tm1.mean.textorientation = meanOri
+        tm1.mean.y              -= 0.005
+
+        titleOri                  = cnvs1.gettextorientation(tm1.title.textorientation)
+        titleOri.height           = 22
+        tm1.title.textorientation = titleOri
+        
+        sourceOri                  = cnvs1.gettextorientation(tm1.source.textorientation)
+        sourceOri.height           = 11.0
+        tm1.source.textorientation = sourceOri
+        tm1.source.y               = tm1.units.y - 0.02
+        tm1.source.x               = tm1.data.x1
+        tm1.source.priority        = 1
+
+        # We want units at axis names
+        tm1.units.y       -= 0.01
+        tm1.units.priority = 1
+
+        # Adjust labels and names for combined plots
+        ynameOri                  = cnvs2.gettextorientation(tm2.yname.textorientation)
+        ynameOri.height           = 9
+        tm2.yname.textorientation = ynameOri
+        tm2.yname.x              -= 0.009
+
+        xnameOri                  = cnvs2.gettextorientation(tm2.xname.textorientation)
+        xnameOri.height           = 9
+        tm2.xname.textorientation = xnameOri
+        tm2.xname.y              -= 0.003
+
+        tm2.mean.y -= 0.005
+
+        titleOri                  = cnvs2.gettextorientation(tm2.title.textorientation)
+        titleOri.height           = 11.5
+        tm2.title.textorientation = titleOri
+
+        tm2.max.y -= 0.005
+        
+        sourceOri                  = cnvs2.gettextorientation(tm2.source.textorientation)
+        sourceOri.height           = 8.0
+        tm2.source.textorientation = sourceOri
+        tm2.source.y               = tm2.units.y - 0.01
+        tm2.source.x               = tm2.data.x1
+        tm2.source.priority        = 1
+
+        tm2.units.priority = 1
+        
+        return tm1, tm2
+    
     def _results(self,newgrid=0):
-        results = plot_spec._results(self,newgrid)
+        results = plot_plan._results(self,newgrid)
         if results is None: return None
         psv = self.plotspec_values
         # >>>> synchronize_ranges is a bit more complicated because plot1_id,plot2_id aren't
@@ -1603,7 +2201,7 @@ class amwg_plot_set6(amwg_plot_spec):
         #    psv[self.plot1_id].synchronize_ranges(psv[self.plot2_id])
         #else:
         #    print "WARNING not synchronizing ranges for",self.plot1_id,"and",self.plot2_id
-        print "WARNING not synchronizing ranges for AMWG plot set 6"
+        logger.warning("not synchronizing ranges for AMWG plot set 6")
         for key,val in psv.items():
             if type(val) is not list and type(val) is not tuple: val=[val]
             for v in val:
@@ -1614,7 +2212,7 @@ class amwg_plot_set6(amwg_plot_spec):
         return self.plotspec_values[self.plotall_id]
 
 
-class amwg_plot_set7(amwg_plot_spec):
+class amwg_plot_set7(amwg_plot_plan):
     """This represents one plot from AMWG Diagnostics Plot Set 7
     Each graphic is a set of three polar contour plots: model output, observations, and
     the difference between the two.  A plot's x-axis is longitude and its y-axis is the latitude;
@@ -1623,14 +2221,19 @@ class amwg_plot_set7(amwg_plot_spec):
     """
     name = '7 - Polar Contour and Vector Plots of Seasonal Means'
     number = '7'
-    def __init__( self, model, obs, varid, seasonid=None, region=None, aux=slice(0,None), levels=None ):
+    def __init__( self, model, obs, varid, seasonid=None, region=None, aux=slice(0,None),
+                  plotparms=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the variable to be plotted, e.g. 'TREFHT'.
         seasonid is a string such as 'DJF'."""
 
         filetable1, filetable2 = self.getfts(model, obs)
-        plot_spec.__init__(self,seasonid)
+        plot_plan.__init__(self,seasonid)
         self.plottype = 'Isofill_polar'
+        if plotparms is None:
+            plotparms = { 'model':{'colormap':'rainbow'},
+                          'obs':{'colormap':'rainbow'},
+                          'diff':{'colormap':'bl_to_darkred'} }
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
 
         self.varid = varid
@@ -1641,7 +2244,7 @@ class amwg_plot_set7(amwg_plot_spec):
         self.plotall_id = ft1id+'_'+ft2id+'_'+varid+'_'+seasonid
 
         if not self.computation_planned:
-            self.plan_computation( model, obs, varid, seasonid, region, aux, levels=levels )
+            self.plan_computation( model, obs, varid, seasonid, region, aux, plotparms=plotparms )
     @staticmethod
     def _list_variables( model, obs ):
         allvars = amwg_plot_set5and6._all_variables( model, obs )
@@ -1650,15 +2253,21 @@ class amwg_plot_set7(amwg_plot_spec):
         return listvars
     @staticmethod
     def _all_variables( model, obs ):
-        allvars = amwg_plot_spec.package._all_variables( model, obs, "amwg_plot_spec" )
-        for varname in amwg_plot_spec.package._list_variables(
-            model, obs, "amwg_plot_spec" ):
+        allvars = amwg_plot_plan.package._all_variables( model, obs, "amwg_plot_plan" )
+        for varname in amwg_plot_plan.package._list_variables(
+            model, obs, "amwg_plot_plan" ):
             allvars[varname] = basic_pole_variable
         return allvars
-    def plan_computation( self, model, obs, varid, seasonid, region=None, aux=slice(0,None), levels=None ):
+    def plan_computation( self, model, obs, varid, seasonid, region=None, aux=slice(0,None),
+                          plotparms=None ):
        """Set up for a lat-lon polar contour plot.  Data is averaged over all other axes.
        """
        filetable1, filetable2 = self.getfts(model, obs)
+       ft1src = filetable1.source()
+       try:
+           ft2src = filetable2.source()
+       except:
+           ft2src = ''
        reduced_varlis = [
            reduced_variable(
                 variableid=varid, filetable=filetable1, season=self.season,
@@ -1677,33 +2286,114 @@ class amwg_plot_set7(amwg_plot_spec):
                 vid = ps.dict_idid(vid1),
                 zvars = [vid1],  zfunc = (lambda z: z),
                 plottype = self.plottype,
-                levels = levels ),
+                source = ft1src,
+                plotparms = plotparms[src2modobs(ft1src)] ),
             self.plot2_id: plotspec(
                 vid = ps.dict_idid(vid2),
                 zvars = [vid2],  zfunc = (lambda z: z),
                 plottype = self.plottype,
-                levels = levels ),
+                source = ft2src,
+                plotparms = plotparms[src2obsmod(ft2src)] ),
             self.plot3_id: plotspec(
                 vid = ps.dict_id(varid,'diff',seasonid,filetable1,filetable2),
                 zvars = [vid1,vid2],  zfunc = aminusb_2ax,
                 plottype = self.plottype,
-                levels = None )         
+                source = ', '.join([ft1src,ft2src]),
+                plotparms = plotparms['diff'] )         
             }
        self.composite_plotspecs = {
             self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id]
             }
        self.computation_planned = True
        #pdb.set_trace()
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
+        """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
+        (cnvs1, tm1), (cnvs2, tm2) = templates
+        
+        tm2.yname.priority  = 1
+        tm2.xname.priority  = 1
+        tm1.yname.priority  = 1
+        tm1.xname.priority  = 1
+        tm1.legend.priority = 1
+        tm2.legend.priority = 1
+
+        # Fix units if needed
+        if data is not None:
+            if (getattr(data, 'units', '') == ''):
+                data.units = 'K'
+            if data.getAxis(0).id.count('lat'):
+                data.getAxis(0).id = 'Latitude'
+            if data.getAxis(0).id.count('lon'):
+                data.getAxis(0).id = 'Longitude'
+            elif len(data.getAxisList()) > 1:
+                if data.getAxis(1).id.count('lat'):
+                    data.getAxis(1).id = 'Latitude'
+                if data.getAxis(1).id.count('lon'):
+                    data.getAxis(1).id = 'Longitude'
+
+        #cnvs1.landscape()
+        cnvs1.setcolormap("categorical")
+
+        maxOri                   = cnvs1.gettextorientation(tm1.max.textorientation)
+        meanOri                  = cnvs1.gettextorientation(tm1.mean.textorientation)
+        meanOri.height           = maxOri.height
+        tm1.mean.textorientation = meanOri
+        tm1.mean.y               = tm1.max.y - 0.018
+        tm1.mean.x               = tm1.max.x + 0.044
+        
+        titleOri                  = cnvs1.gettextorientation(tm1.title.textorientation)
+        titleOri.height           = 23
+        tm1.title.textorientation = titleOri
+       
+        tm1.source.priority        = 1
+
+        # # We want units at axis names
+        unitsOri                  = cnvs1.gettextorientation(tm1.units.textorientation)
+        unitsOri.height          += 8
+        tm1.units.textorientation = unitsOri
+        tm1.units.priority        = 1
+
+        cnvs2.setcolormap("categorical")
+
+        # Adjusting intersection of title and xlabels.
+        dy = (tm2.data.y2-tm2.data.y1) * 0.095
+        tm2.data.y2 -= dy
+    
+        maxOri                   = cnvs2.gettextorientation(tm2.max.textorientation)
+        meanOri                  = cnvs2.gettextorientation(tm2.mean.textorientation)
+        meanOri.height           = maxOri.height
+        tm2.mean.textorientation = meanOri
+        tm2.mean.y               = tm2.max.y - 0.005
+        tm2.mean.x               = tm2.max.x - 0.08
+        
+        titleOri                  = cnvs2.gettextorientation(tm2.title.textorientation)
+        titleOri.height           = 12
+        tm2.title.textorientation = titleOri
+        tm2.title.y              -= 0.005
+
+        tm2.max.y -= 0.005
+
+        tm2.legend.x1 -= 0.01
+        
+        tm2.source.priority        = 1
+
+        unitsOri                  = cnvs2.gettextorientation(tm2.units.textorientation)
+        unitsOri.height          += 1
+        tm2.units.textorientation = unitsOri
+        tm2.units.y               = tm2.min.y
+        tm2.units.priority        = 1
+        
+        return tm1, tm2
     def _results(self, newgrid=0):
         #pdb.set_trace()
-        results = plot_spec._results(self,newgrid)
+        results = plot_plan._results(self,newgrid)
         if results is None: return None
         psv = self.plotspec_values
         if self.plot1_id in psv and self.plot2_id in psv and\
                 psv[self.plot1_id] is not None and psv[self.plot2_id] is not None:
             psv[self.plot1_id].synchronize_ranges(psv[self.plot2_id])
         else:
-            print "WARNING not synchronizing ranges for",self.plot1_id,"and",self.plot2_id
+            logger.error("not synchronizing ranges for %s and %s ",self.plot1_id, self.plot2_id)
         for key,val in psv.items():
             if type(val) is not list: val=[val]
             for v in val:
@@ -1711,7 +2401,7 @@ class amwg_plot_set7(amwg_plot_spec):
                 v.finalize()
         return self.plotspec_values[self.plotall_id]
 
-class amwg_plot_set8(amwg_plot_spec): 
+class amwg_plot_set8(amwg_plot_plan): 
     """This class represents one plot from AMWG Diagnostics Plot Set 8.
     Each such plot is a set of three contour plots: two for the model output and
     the difference between the two.  A plot's x-axis is time  and its y-axis is latitude.
@@ -1729,7 +2419,8 @@ class amwg_plot_set8(amwg_plot_spec):
     name = '8 - Annual Cycle Contour Plots of Zonal Means '
     number = '8'
 
-    def __init__( self, model, obs, varid, seasonid='ANN', region='global', aux=None, levels=None ):
+    def __init__( self, model, obs, varid, seasonid='ANN', region='global', aux=None,
+                  plotparms=None ):
         """filetable1, should be a directory filetable for each model.
         varid is a string, e.g. 'TREFHT'.  The zonal mean is computed for each month. """
         filetable1, filetable2 = self.getfts(model, obs)
@@ -1740,7 +2431,7 @@ class amwg_plot_set8(amwg_plot_spec):
         
         self.CONTINUE = self.FT1
         if not self.CONTINUE:
-            print "user must specify a file table"
+            logger.info("user must specify a file table")
             return None
         self.filetables = [filetable1]
         if self.FT2:
@@ -1752,7 +2443,11 @@ class amwg_plot_set8(amwg_plot_spec):
             self._regionid=region
         self.region = interpret_region(self._regionid)
         
-        plot_spec.__init__(self, seasonid)
+        plot_plan.__init__(self, seasonid)
+        if plotparms is None:
+            plotparms = { 'model':{'colormap':'rainbow'},
+                          'obs':{'colormap':'rainbow'},
+                          'diff':{'colormap':'bl_to_darkred'} }
         self.plottype = 'Isofill'
         self._seasonid = seasonid
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
@@ -1764,10 +2459,15 @@ class amwg_plot_set8(amwg_plot_spec):
             self.plot3_id = '_'.join([ft1id+'-'+ft2id, varid, seasonid, 'contour'])
         self.plotall_id = '_'.join([ft1id,ft2id, varid, seasonid])
         if not self.computation_planned:
-            self.plan_computation( model, obs, varid, seasonid, levels=levels )
+            self.plan_computation( model, obs, varid, seasonid, plotparms )
 
-    def plan_computation( self, model, obs, varid, seasonid, levels=None ):
+    def plan_computation( self, model, obs, varid, seasonid, plotparms ):
         filetable1, filetable2 = self.getfts(model, obs)
+        ft1src = filetable1.source()
+        try:
+            ft2src = filetable2.source()
+        except:
+            ft2src = ''
 
         self.computation_planned = False
         
@@ -1782,7 +2482,8 @@ class amwg_plot_set8(amwg_plot_spec):
                 #pdb.set_trace()
                 #create identifiers
                 VID = rv.dict_id(varid, month, FT)
-                RF = (lambda x, vid=id2str(VID), month=VID[2]:reduce2lat_seasonal(x, seasons=cdutil.times.Seasons(month), region=self.region, vid=vid))
+                RF = (lambda x, vid=id2str(VID), month=VID[2]:
+                          reduce2lat_seasonal(x, seasons=cdutil.times.Seasons(month), region=self.region, vid=vid))
                 RV = reduced_variable(variableid = varid, 
                                       filetable = FT, 
                                       season = cdutil.times.Seasons(VID[2]), 
@@ -1817,31 +2518,59 @@ class amwg_plot_set8(amwg_plot_spec):
                                     zvars = [vidModel],
                                     zfunc = (lambda x: MV2.transpose(x)),
                                     plottype = self.plottype,
-                                    levels = levels )}
+                                    source  = ft1src,
+                                    plotparms = plotparms['model'] )}
         if self.FT2:
             self.single_plotspecs[self.plot2_id] = \
                                plotspec(vid = ps.dict_idid(vidObs), 
                                         zvars=[vidObs],   
                                         zfunc = (lambda x: MV2.transpose(x)),                                
                                         plottype = self.plottype,
-                                         levels = levels )
+                                        source = ft2src,
+                                        plotparms = plotparms['obs'] )
             self.single_plotspecs[self.plot3_id] = \
                                plotspec(vid = ps.dict_idid(vidDiff), 
                                         zvars = [vidDiff],
                                         zfunc = (lambda x: MV2.transpose(x)),
                                         plottype = self.plottype,
-                                        levels = None )
+                                        source = ', '.join([ft1src,ft2src]),
+                                        plotparms = plotparms['diff'] )
             
         self.composite_plotspecs = {
             self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id ]
             }
         #... was self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
         self.computation_planned = True
+
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
+        """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
+        (cnvs1, tm1), (cnvs2, tm2) = templates
+        
+        # Fix units if needed
+        if data is not None:
+            if (getattr(data, 'units', '') == ''):
+                data.units = 'K'
+            if data.getAxis(0).id.count('lat'):
+                data.getAxis(0).id = 'Latitude'
+            if data.getAxis(0).id.count('lon'):
+                data.getAxis(0).id = 'Longitude'
+            elif len(data.getAxisList()) > 1:
+                if data.getAxis(1).id.count('lat'):
+                    data.getAxis(1).id = 'Latitude'
+                if data.getAxis(1).id.count('lon'):
+                    data.getAxis(1).id = 'Longitude'
+                    
+        # Adjust y label position
+        tm2.yname.x = 0.075        
+        tm2.mean.y -= 0.01
+        
+        return tm1, tm2
+    
     def _results(self, newgrid=0):
         #pdb.set_trace()
-        results = plot_spec._results(self, newgrid)
+        results = plot_plan._results(self, newgrid)
         if results is None:
-            print "WARNING, AMWG plot set 8 found nothing to plot"
+            logger.warning("AMWG plot set 8 found nothing to plot")
             return None
         psv = self.plotspec_values
         if self.FT2:
@@ -1855,7 +2584,7 @@ class amwg_plot_set8(amwg_plot_spec):
                 v.finalize()
         return self.plotspec_values[self.plotall_id]
     
-class amwg_plot_set9(amwg_plot_spec): 
+class amwg_plot_set9(amwg_plot_plan): 
     """This class represents one plot from AMWG Diagnostics Plot Set 9.
     Each such plot is a set of three contour plots: two for the model output and
     the difference between the two.  A plot's x-axis is latitude and its y-axis is longitute.
@@ -1873,7 +2602,8 @@ class amwg_plot_set9(amwg_plot_spec):
     # Here, the plotspec contains the variables themselves.
     name = '9 - Horizontal Contour Plots of DJF-JJA Differences'
     number = '9'
-    def __init__( self, model, obs, varid, seasonid='DJF-JJA', regionid=None, aux=None, levels=None ):
+    def __init__( self, model, obs, varid, seasonid='DJF-JJA', regionid=None, aux=None,
+                  plotparms=None ):
         filetable1, filetable2 = self.getfts(model, obs)
         """filetable1, filetable2 should be filetables for each model.
         varid is a string, e.g. 'TREFHT'.  The seasonal difference is Seasonid
@@ -1896,8 +2626,12 @@ class amwg_plot_set9(amwg_plot_spec):
             self._regionid=regionid
         self.region = interpret_region(regionid)
 
-        plot_spec.__init__(self, seasonid)
+        plot_plan.__init__(self, seasonid)
         self.plottype = 'Isofill'
+        if plotparms is None:
+            plotparms = { 'model':{'colormap':'rainbow'},
+                          'obs':{'colormap':'rainbow'},
+                          'diff':{'colormap':'bl_to_darkred'} }
         self._seasonid = seasonid
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
         ft1id, ft2id = filetable_ids(filetable1, filetable2)
@@ -1907,9 +2641,14 @@ class amwg_plot_set9(amwg_plot_spec):
         self.plot3_id = '_'.join([ft1id+'-'+ft2id, varid, seasonid, 'contour'])
         self.plotall_id = '_'.join([ft1id,ft2id, varid, seasonid])
         if not self.computation_planned:
-            self.plan_computation( model, obs, varid, seasonid, levels=levels )
-    def plan_computation( self, model, obs, varid, seasonid, levels=None ):
+            self.plan_computation( model, obs, varid, seasonid, plotparms )
+    def plan_computation( self, model, obs, varid, seasonid, plotparms ):
         filetable1, filetable2 = self.getfts(model, obs)
+        ft1src = filetable1.source()
+        try:
+            ft2src = filetable2.source()
+        except:
+            ft2src = ''
         self.computation_planned = False
         #check if there is data to process
         ft1_valid = False
@@ -1920,7 +2659,7 @@ class amwg_plot_set9(amwg_plot_spec):
             ft1_valid = ft1 is not None and ft1!=[]    # true iff filetable1 uses hybrid level coordinates
             ft2_valid = ft2 is not None and ft2!=[]    # true iff filetable2 uses hybrid level coordinates
         else:
-            print "ERROR: user must specify 2 data files"
+            logger.error("user must specify 2 data files")
             return None
         if not ft1_valid or not ft2_valid:
             return None
@@ -1956,19 +2695,22 @@ class amwg_plot_set9(amwg_plot_spec):
                 zvars=[vid1], 
                 zfunc = (lambda z: z),
                 plottype = self.plottype,
-                levels = levels ),
+                source = ft1src,
+                plotparms = plotparms[src2modobs(ft1src)] ),
             self.plot2_id: plotspec(
                 vid = ps.dict_idid(vid2), 
                 zvars=[vid2], 
                 zfunc = (lambda z: z),
                 plottype = self.plottype,
-                levels = levels ),
+                source = ft2src,
+                plotparms = plotparms[src2obsmod(ft2src)] ),
             self.plot3_id: plotspec(
                 vid = ps.dict_idid(vid3), 
                 zvars = [vid3],
                 zfunc = (lambda x: x), 
                 plottype = self.plottype,
-                levels = None )
+                source = ', '.join([ft1src,ft2src]),
+                plotparms = plotparms['diff'] )
             }
 
         self.composite_plotspecs = {
@@ -1976,11 +2718,100 @@ class amwg_plot_set9(amwg_plot_spec):
             }
         # ...was self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
         self.computation_planned = True
+
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
+        """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
+        (cnvs1, tm1), (cnvs2, tm2) = templates
+        
+        tm2.yname.priority  = 1
+        tm2.xname.priority  = 1
+        tm1.yname.priority  = 1
+        tm1.xname.priority  = 1
+        tm1.legend.priority = 1
+        tm2.legend.priority = 1
+
+        # Fix units if needed
+        if data is not None:
+            if (getattr(data, 'units', '') == ''):
+                data.units = 'K'
+            if data.getAxis(0).id.count('lat'):
+                data.getAxis(0).id = 'Latitude'
+            if data.getAxis(0).id.count('lon'):
+                data.getAxis(0).id = 'Longitude'
+            elif len(data.getAxisList()) > 1:
+                if data.getAxis(1).id.count('lat'):
+                    data.getAxis(1).id = 'Latitude'
+                if data.getAxis(1).id.count('lon'):
+                    data.getAxis(1).id = 'Longitude'
+
+        # Adjust labels and names for single plots
+        ynameOri                  = cnvs1.gettextorientation(tm1.yname.textorientation)
+        ynameOri.height           = 16
+        tm1.yname.textorientation = ynameOri
+
+        xnameOri                  = cnvs1.gettextorientation(tm1.xname.textorientation)
+        xnameOri.height           = 16
+        tm1.xname.textorientation = xnameOri
+
+        meanOri                  = cnvs1.gettextorientation(tm1.mean.textorientation)
+        meanOri.height           = 14
+        tm1.mean.textorientation = meanOri
+        tm1.mean.y              -= 0.005
+
+        titleOri                  = cnvs1.gettextorientation(tm1.title.textorientation)
+        titleOri.height           = 22
+        tm1.title.textorientation = titleOri
+        
+        sourceOri                  = cnvs1.gettextorientation(tm1.source.textorientation)
+        sourceOri.height           = 11.0
+        tm1.source.textorientation = sourceOri
+        tm1.source.y               = tm1.units.y - 0.02
+        tm1.source.x               = tm1.data.x1
+        tm1.source.priority        = 1
+
+        # We want units at axis names
+        tm1.units.y       -= 0.01
+        tm1.units.priority = 1
+
+        # Adjust labels and names for combined plots
+        ynameOri                  = cnvs2.gettextorientation(tm2.yname.textorientation)
+        ynameOri.height           = 9
+        tm2.yname.textorientation = ynameOri
+        tm2.yname.x              -= 0.009
+
+        xnameOri                  = cnvs2.gettextorientation(tm2.xname.textorientation)
+        xnameOri.height           = 9
+        tm2.xname.textorientation = xnameOri
+        tm2.xname.y              -= 0.003
+
+        tm2.mean.y -= 0.005
+
+        titleOri                  = cnvs2.gettextorientation(tm2.title.textorientation)
+        titleOri.height           = 11.5
+        tm2.title.textorientation = titleOri
+
+        tm2.max.y -= 0.005
+        
+        sourceOri                  = cnvs2.gettextorientation(tm2.source.textorientation)
+        sourceOri.height           = 8.0
+        tm2.source.textorientation = sourceOri
+        tm2.source.y               = tm2.units.y - 0.01
+        tm2.source.x               = tm2.data.x1
+        tm2.source.priority        = 1
+        
+        legendOri                  = cnvs2.gettextorientation(tm2.legend.textorientation)
+        legendOri.height          -= 2
+        tm2.legend.textorientation = legendOri
+        
+        tm2.units.priority = 1
+        
+        return tm1, tm2
+
     def _results(self, newgrid=0):
         #pdb.set_trace()
-        results = plot_spec._results(self, newgrid)
+        results = plot_plan._results(self, newgrid)
         if results is None:
-            print "WARNING, AMWG plot set 9 found nothing to plot"
+            logger.warning("AMWG plot set 9 found nothing to plot")
             return None
         psv = self.plotspec_values
         if self.plot1_id in psv and self.plot2_id in psv and\
@@ -1993,7 +2824,7 @@ class amwg_plot_set9(amwg_plot_spec):
                 v.finalize()
         return self.plotspec_values[self.plotall_id]
 
-class amwg_plot_set10(amwg_plot_spec, basic_id):
+class amwg_plot_set10(amwg_plot_plan, basic_id):
     """represents one plot from AMWG Diagnostics Plot Set 10.
     The  plot is a plot of 2 curves comparing model with obs.  The x-axis is month of the year and
     its y-axis is the specified variable.  The data presented is a climatological mean - i.e.,
@@ -2008,22 +2839,27 @@ class amwg_plot_set10(amwg_plot_spec, basic_id):
     name = '10 - Annual Line Plots of  Global Means'
     number = '10'
  
-    def __init__( self, model, obs, varid, seasonid='ANN', region=None, aux=None, levels=None ):
+    def __init__( self, model, obs, varid, seasonid='ANN', region=None, aux=None, plotparms=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'."""
         filetable1, filetable2 = self.getfts(model, obs)
         basic_id.__init__(self, varid, seasonid)
-        plot_spec.__init__(self, seasonid)
+        plot_plan.__init__(self, seasonid)
         self.plottype = 'Yxvsx'
         self.season = cdutil.times.Seasons(self._seasonid)
         ft1id, ft2id = filetable_ids(filetable1, filetable2)
         self.plot_id = '_'.join([ft1id, ft2id, varid, self.plottype])
         self.computation_planned = False
         if not self.computation_planned:
-            self.plan_computation( model, obs, varid, seasonid )
+            self.plan_computation( model, obs, varid, seasonid, plotparms )
 
-    def plan_computation( self, model, obs, varid, seasonid ):
+    def plan_computation( self, model, obs, varid, seasonid, plotparms ):
         filetable1, filetable2 = self.getfts(model, obs)
+        ft1src = filetable1.source()
+        try:
+            ft2src = filetable2.source()
+        except:
+            ft2src = ''
         
         self.reduced_variables = {}
         vidAll = {}        
@@ -2066,14 +2902,128 @@ class amwg_plot_set10(amwg_plot_spec, basic_id):
                                                        zfunc = (lambda y: y),
                                                        z2vars = [self.vidObs ],
                                                        z2func = (lambda z: z),
-                                                       plottype = self.plottype)
+                                                       plottype = self.plottype,
+                                                       source = ', '.join([ft1src,ft2src]),
+                                                       plotparms=plotparms[src2modobs(ft1src)] )
 
 
         self.computation_planned = True
 
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
+        """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
+        (cnvs1, tm1), (cnvs2, tm2) = templates
+
+        tm2.yname.priority  = 1
+        tm2.xname.priority  = 1
+        tm1.yname.priority  = 1
+        tm1.xname.priority  = 1
+        tm1.legend.priority = 1
+        tm2.legend.priority = 1
+
+        # Fix units if needed
+        if data is not None:
+            if (getattr(data, 'units', '') == ''):
+                data.units = 'K'
+            if data.getAxis(0).id.count('lat'):
+                data.getAxis(0).id = 'Latitude'
+
+        # Adjust labels and names for single plots
+        yLabel = cnvs1.createtext(Tt_source=tm1.yname.texttable,
+                                  To_source=tm1.yname.textorientation)
+        yLabel.x      = tm1.yname.x - 0.02
+        yLabel.y      = tm1.yname.y
+        yLabel.height = 16
+        if data is not None:
+            yLabel.string  = ["Temperature (" + data.units + ")"]
+        else:
+            yLabel.string  = ["Temperature"]
+        cnvs1.plot(yLabel, bg=1)
+
+        xnameOri                  = cnvs1.gettextorientation(tm1.xname.textorientation)
+        xnameOri.height           = 16.0
+        tm1.xname.textorientation = xnameOri
+        
+        titleOri                  = cnvs1.gettextorientation(tm1.title.textorientation)
+        tm1.title.textorientation = titleOri
+
+        tm1.legend.y2 = tm1.legend.y1 + 0.01
+        
+        if varIndex is not None:
+            if varIndex > 0:
+                tm1.legend.y1  += 0.05
+                tm1.legend.y2   = tm1.legend.y1 + 0.01
+                if graphicMethod is not None:
+                    line = vcs.createline()
+                    line.width = 2
+                    line.color = ["red"]#, "blue", "salmon", "medium aquamarine", "orange", "chartreuse"]
+                    line.type = ["dash"]#, "dot", "dash-dot", "long-dash", "solid", "dash"]
+                    graphicMethod.line = line
+                data.id = 'obs'
+            else:
+                if type(min(data)) is float:
+                    data.id = 'model'
+                else:
+                    data.id = 'difference'
+
+        # We want units at axis names
+        tm1.units.priority = 0
+
+        # Adjust labels and names for combined plots
+        yLabel = cnvs2.createtext(Tt_source=tm2.yname.texttable,
+                                  To_source=tm2.yname.textorientation)
+        yLabel.x = tm2.yname.x - 0.02
+        yLabel.y = tm2.yname.y
+        if data is not None:
+            yLabel.string  = ["Temperature (" + data.units + ")"]
+        else:
+            yLabel.string  = ["Temperature"]
+        cnvs2.plot(yLabel, bg = 1)
+
+        titleOri                  = cnvs2.gettextorientation(tm2.title.textorientation)
+        tm2.title.textorientation = titleOri
+
+        xvaluesOri = cnvs2.gettextorientation(tm2.xvalue.textorientation)
+        xvaluesOri.height -= 5
+        tm2.xvalue.textorientation = xvaluesOri
+        
+        tm2.units.priority = 0
+
+        legendOri                  = cnvs2.gettextorientation(tm2.legend.textorientation)
+        legendOri.height           = 8
+        tm2.legend.textorientation = legendOri
+        tm2.legend.y2              = tm2.legend.y1 + 0.01
+        
+        if varIndex is not None:
+            if varIndex > 0:
+                tm2.legend.y1 += 0.05
+                tm2.legend.y2  = tm2.legend.y1 + 0.01
+
+        if varIndex is not None:
+            if varIndex == 0:
+                deltaX = 0.035
+        
+                tm2.data.x1      += deltaX
+                tm2.data.x2      += deltaX
+                tm2.box1.x1      += deltaX
+                tm2.box1.x2      += deltaX
+                tm2.ytic1.x1     += deltaX
+                tm2.ytic1.x2     += deltaX
+                tm2.ytic2.x1     += deltaX
+                tm2.ytic2.x2     += deltaX
+                tm2.ylabel1.x    += deltaX
+                tm2.ymintic1.x1  += deltaX
+                tm2.ymintic1.x2  += deltaX
+                #tm2.units.x     += deltaX
+                #tm2.title.x     += deltaX
+                tm2.xname.x      += deltaX
+                tm2.legend.x1    += deltaX
+                tm2.legend.x2    += deltaX
+        
+        return tm1, tm2
+
     def _results(self,newgrid=0):
         #pdb.set_trace()
-        results = plot_spec._results(self, newgrid)
+        results = plot_plan._results(self, newgrid)
         if results is None: return None
         psv = self.plotspec_values
         #print self.plotspec_values.keys()
@@ -2089,21 +3039,21 @@ class amwg_plot_set10(amwg_plot_spec, basic_id):
         plot_val.finalize()
         return [ plot_val]
     
-class amwg_plot_set11(amwg_plot_spec):
+class amwg_plot_set11(amwg_plot_plan):
     """Example script
     diags.py --model path=$HOME/uvcmetrics_test_data/cam35_data/,climos=yes 
     --obs path=$HOME/uvcmetrics_test_data/obs_data/,filter='f_startswith("CERES-EBAF")',climos=yes 
     --outputdir $HOME/Documents/Climatology/ClimateData/diagout/ --package AMWG --sets 11 --seasons JAN --plots yes  --vars LWCF """
     name = '11 - Pacific annual cycle, Scatter plots'
     number = '11'
-    def __init__( self, model, obs, varid, seasonid='ANN', region=None, aux=None, levels=None ):
+    def __init__( self, model, obs, varid, seasonid='ANN', region=None, aux=None, plotparms=None ):
         filetable1, filetable2 = self.getfts(model, obs)
         """filetable1, filetable2 should be filetables for each model.
         varid is a string, e.g. 'TREFHT'.  The seasonal difference is Seasonid
         It is is a string, e.g. 'DJF-JJA'. """
         import string
         
-        plot_spec.__init__(self, seasonid)
+        plot_plan.__init__(self, seasonid)
         self.plottype = 'Scatter'
         self._seasonid = seasonid
         self.season = cdutil.times.Seasons(self._seasonid) 
@@ -2130,10 +3080,15 @@ class amwg_plot_set11(amwg_plot_spec):
         
         self.plotall_id = '_'.join(self.datatype + ['Warm', 'Pool'])
         if not self.computation_planned:
-            self.plan_computation( model, obs, varid, seasonid )
+            self.plan_computation( model, obs, varid, seasonid, plotparms )
 
-    def plan_computation( self, model, obs, varid, seasonid ):
+    def plan_computation( self, model, obs, varid, seasonid, plotparms ):
         filetable1, filetable2 = self.getfts(model, obs)
+        ft1src = filetable1.source()
+        try:
+            ft2src = filetable2.source()
+        except:
+            ft2src = ''
         self.computation_planned = False
         #check if there is data to process
         ft1_valid = False
@@ -2147,7 +3102,7 @@ class amwg_plot_set11(amwg_plot_spec):
             ft1_valid = ft10 is not None and ft10!=[] and ft11 is not None and ft11!=[] 
             ft2_valid = ft20 is not None and ft20!=[] and ft21 is not None and ft21!=[]  
         else:
-            print "ERROR: user must specify 2 data files"
+            logger.error("user must specify 2 data files")
             return None
         if not ft1_valid or not ft2_valid:
             return None
@@ -2200,7 +3155,9 @@ class amwg_plot_set11(amwg_plot_spec):
                                                       z2rangevars={'yrange':[-120., 0.]},
                                                       plottype = 'Scatter', 
                                                       title = title,
-                                                      overplotline = False)
+                                                      overplotline = False,
+                                                      source = ', '.join([ft1src,ft2src]),
+                                                      plotparms=plotparms[src2modobs(ft1src)] )
         self.single_plotspecs['DIAGONAL_LINE'] = plotspec(vid = 'LINE_PS', 
                                                           zvars=['LINE'], 
                                                           zfunc = (lambda x: x),
@@ -2218,65 +3175,137 @@ class amwg_plot_set11(amwg_plot_spec):
         self.composite_plotspecs[self.plotall_id] = plotall_id
         self.computation_planned = True
         #pdb.set_trace()
-    def customizeTemplates(self, templates):
-        """Theis method does what the title says.  It is a hack that will no doubt change as diags changes."""
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
+        """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
-        #pdb.set_trace()
-        tm2.yname.priority=0
-        tm2.xname.priority=0
-        tm2.title.y=.98
 
-        ly = .96      
-        xpos = {'model':.15, 'obs':.6}  
+        tm2.title.y        = 0.98
+
+        ly = 0.96      
+        xpos = {'model':.19, 'obs':.66}  
         for key in self.ft_ids.keys():
-            text = cnvs2.createtext()
+            text        = cnvs2.createtext()
             text.string = self.ft_ids[key]
-            text.x = xpos[key]
-            text.y = ly
-            text.height = 12
+            text.x      = xpos[key]
+            text.y      = ly
+            text.height = 11
             cnvs2.plot(text, bg=1)  
-      
         
         #horizontal labels
         th=cnvs2.createtextorientation(None, tm2.xlabel1.textorientation)
         th.height=8
         tm2.xlabel1.textorientation = th
-        #vertical labels
-        
+ 
+        #vertical labels       
         tv=cnvs2.createtextorientation(None, tm2.ylabel1.textorientation)
         tv.height=8
-        tm2.ylabel1.textorientation = tv    
+        tm2.ylabel1.textorientation = tv
+
+        if varIndex == 0:
+            tm1.xname.priority    = 0
+            tm1.yname.priority    = 0
+            tm1.legend.priority   = 0
+            tm2.legend.priority   = 0
+            tm2.xname.priority    = 0
+            tm2.yname.priority    = 0
+            tm2.dataname.priority = 0
+            # Adjust plot position
+            deltaX = 0.015            
+            if tm2.data.x1 == 0.033:
+                deltaX += 0.015
+            elif tm2.data.x1 == 0.5165:
+                deltaX += 0.015 #0.03            
+            tm2.data.x1      += deltaX            
+            tm2.data.x2      += deltaX
+            tm2.box1.x1      += deltaX
+            tm2.box1.x2      += deltaX
+            tm2.ytic1.x1     += deltaX
+            tm2.ytic1.x2     += deltaX
+            tm2.ytic2.x1     += deltaX
+            tm2.ytic2.x2     += deltaX
+            tm2.ylabel1.x    += deltaX
+            tm2.ymintic1.x1  += deltaX
+            tm2.ymintic1.x2  += deltaX
+            #tm2.units.x      += deltaX
+            tm2.title.x      += deltaX
+            tm2.xname.x      += deltaX
+        elif (varIndex == 1) and (type(data[0]) is str):
+            if seqhasattr(graphicMethod, 'overplotline') and graphicMethod.overplotline:
+                tm1.line1.x1 = tm1.box1.x1
+                tm1.line1.x2 = tm1.box1.x2
+                tm1.line1.y1 = tm1.box1.y2
+                tm1.line1.y2 = tm1.box1.y1
+                #pdb.set_trace()
+                tm1.line1.line = 'LINE-DIAGS' # defined in diags.py
+                tm1.line1.priority = 1
+                tm2.line1.x1 = tm2.box1.x1
+                tm2.line1.x2 = tm2.box1.x2
+                tm2.line1.y1 = tm2.box1.y2
+                tm2.line1.y2 = tm2.box1.y1
+                tm2.line1.line = 'LINE-DIAGS'
+                tm2.line1.priority = 1                                                   
+                #tm.line1.list()
+            
+            tm1.xname.priority   = 1
+            tm1.yname.priority   = 1
+            tm1.ylabel1.priority = 1
+            tm1.xlabel1.priority = 1
+            tm1.units.priority   = 0
+            
+            yLabel = cnvs1.createtext(Tt_source=tm1.yname.texttable,
+                                      To_source=tm1.yname.textorientation)
+            yLabel.x      = tm1.yname.x
+            yLabel.y      = tm1.yname.y
+            if data is not None:
+                yLabel.string = ["SWCF (" + data[1] + ")"]
+            yLabel.height = 18
+            
+            cnvs1.plot(yLabel, bg=1)
+            
+            xLabel = cnvs1.createtext(Tt_source=tm1.xname.texttable,
+                                      To_source=tm1.xname.textorientation)
+            xLabel.x      = tm1.xname.x
+            xLabel.y      = tm1.xname.y
+            if data is not None:
+                xLabel.string = ["LWCF (" + data[0] + ")"]
+            xLabel.height = 18
+            
+            cnvs1.plot(xLabel, bg=1)
+            
+            titleOr                   = cnvs1.gettextorientation(tm1.title.textorientation)
+            titleOr.height           += 4
+            tm1.title.textorientation = titleOr
+
+            tm2.yname.priority    = 1
+            tm2.xname.priority    = 1
+            tm2.ylabel1.priority  = 1
+            tm2.xlabel1.priority  = 1
+            tm2.dataname.priority = 0
+            tm2.units.priority    = 0
+
+            yLabel = cnvs2.createtext(Tt_source=tm2.yname.texttable,
+                                      To_source=tm2.yname.textorientation)
+            yLabel.x = tm2.yname.x
+            yLabel.y = tm2.yname.y
+            yLabel.string = ["SWCF (" + data[1] + ")"]
+            yLabel.height = 9
+                                    
+            cnvs2.plot(yLabel, bg=1)
+            
+            xLabel = cnvs2.createtext(Tt_source=tm2.xname.texttable,
+                                      To_source=tm2.xname.textorientation)
+            xLabel.x      = tm2.xname.x
+            xLabel.y      = tm2.xname.y
+            xLabel.string = ["LWCF (" + data[0] + ")"]
+            xLabel.height = 9
+            
+            cnvs2.plot(xLabel, bg=1)     
         
         return tm1, tm2    
     
-        #the following is dead code that I'm keeping for now
-        #because it has some info on how to change elements
-        #of a template  
-        #pdb.set_trace()
-        #plot diagonal lines
-        if "UVC_TMP_LINE" not in vcs.listelements("line"):
-            LINE = cnvs1.createline('UVC_TMP_LINE')
-        else:
-            LINE = cnvs1.getline("UVC_TMP_LINE")
-        LINE.width = 3.0
-        LINE.type = 'solid'
-        LINE.color = 242
-        tm1.line1.x1 = tm1.box1.x1
-        tm1.line1.y1 = tm1.box1.y2
-        tm1.line1.x2 = tm1.box1.x2        
-        tm1.line1.y2 = tm1.box1.y1
-        tm1.line1.line = LINE
-        tm1.line1.priority = 1
-        tm2.line1.x1 = tm2.box1.x1
-        tm2.line1.y1 = tm2.box1.y2
-        tm2.line1.x2 = tm2.box1.x2
-        tm2.line1.y2 = tm2.box1.y1
-        tm2.line1.line = LINE
-        tm2.line1.priority = 1     
-        return tm1, tm2  
     def _results(self, newgrid=0):
         #pdb.set_trace()
-        results = plot_spec._results(self, newgrid)
+        results = plot_plan._results(self, newgrid)
         if results is None:
             print "WARNING, AMWG plot set 11 found nothing to plot"
             return None
@@ -2292,7 +3321,7 @@ class amwg_plot_set11(amwg_plot_spec):
                 val.presentation.linecolor = val.linecolors[0]
         return self.plotspec_values[self.plotall_id]
     
-class amwg_plot_set12(amwg_plot_spec):
+class amwg_plot_set12(amwg_plot_plan):
     """ Example script: 
         diags.py --model path=$HOME/uvcmetrics_test_data/esg_data/f.e11.F2000C5.f09_f09.control.001/,climos=yes \
         --obs path=$HOME/uvcmetrics_test_data/obs_data/,filter='f_startswith("RAOBS")',climos=yes \
@@ -2302,7 +3331,7 @@ class amwg_plot_set12(amwg_plot_spec):
     name = '12 - Vertical Profiles at 17 selected raobs stations'
     number = '12'
 
-    def __init__( self, model, obs, varid, seasonid='ANN', region=None, aux=None, levels=None ):
+    def __init__( self, model, obs, varid, seasonid='ANN', region=None, aux=None, plotparms=None):
 
         """filetable1, filetable2 should be filetables for each model.
         varid is a string, e.g. 'TREFHT'.  The seasonal difference is Seasonid
@@ -2319,7 +3348,7 @@ class amwg_plot_set12(amwg_plot_spec):
         
         self.StationData = stationData.stationData(filetable2._filelist.files[0])
         
-        plot_spec.__init__(self, seasonid)
+        plot_plan.__init__(self, seasonid)
         self.plottype = 'Scatter'
         ft1id, ft2id = filetable_ids(filetable1, filetable2)
         self.filetable_ids = [ft1id, ft2id]
@@ -2334,7 +3363,7 @@ class amwg_plot_set12(amwg_plot_spec):
         self.plot_ids = self.months       
         self.plotall_id = 'all_seasons'
         if not self.computation_planned:
-            self.plan_computation( model, obs, varid, station )
+            self.plan_computation( model, obs, varid, station, plotparms )
 
     @staticmethod
     def _list_variables( filetable1, filetable2=None ):
@@ -2345,12 +3374,12 @@ class amwg_plot_set12(amwg_plot_spec):
         return listvars
     @staticmethod
     def _all_variables( filetable1, filetable2=None ):
-        allvars = amwg_plot_spec.package._all_variables( filetable1, filetable2, "amwg_plot_spec" )
-        for varname in amwg_plot_spec.package._list_variables(
-            filetable1, filetable2, "amwg_plot_spec" ):
+        allvars = amwg_plot_plan.package._all_variables( filetable1, filetable2, "amwg_plot_plan" )
+        for varname in amwg_plot_plan.package._list_variables(
+            filetable1, filetable2, "amwg_plot_plan" ):
             allvars[varname] = station_id_variable
         return allvars
-    def plan_computation( self, model, obs, varid, station ):
+    def plan_computation( self, model, obs, varid, station, plotparms ):
         filetable1, filetable2 = self.getfts(model, obs)
 
         self.computation_planned = False
@@ -2442,38 +3471,90 @@ class amwg_plot_set12(amwg_plot_spec):
         name, units = self.IDsandUnits['axis']
         var.comment1 = name +' (' + units +')'
         return var        
-    def customizeTemplates(self, templates):
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
         """Theis method does what the title says.  It is a hack that will no doubt change as diags changes."""
+
         (cnvs1, tm1), (cnvs2, tm2) = templates
-        tm1.legend.priority = 0
-        tm2.legend.priority = 0
+        tm1.legend.priority   = 0
+        tm2.legend.priority   = 0
         tm1.dataname.priority = 0
-        tm1.min.priority= 0
-        tm1.mean.priority = 0
-        tm1.max.priority = 0
-                   
-        #pdb.set_trace()
-        #plot the axes names for the single plot
-        tm1.xname.priority = 1
-        tm1.xname.x = tm1.data.x1 + .4
-        tm1.xname.y = tm1.yname.y - .22
-        
-        tm1.comment1.priority = 1
-        tm1.comment1.x = tm1.data.x2 + .03
-        tm1.comment1.y = tm1.data.y1 + .25    
-        to = cnvs1.createtextorientation(None, tm1.yname.textorientation)
-        to.angle=-90
-        tm1.comment1.textorientation=to        
+        tm1.min.priority      = 0
+        tm1.mean.priority     = 0
+        tm1.max.priority      = 0
+        tm1.units.priority    = 0
+        tm2.units.priority    = 0
+        tm1.comment1.priority = 0
+        tm2.comment1.priority = 0
+        tm1.comment2.priority = 0
+        tm2.comment2.priority = 0
+        tm1.comment3.priority = 0
+        tm2.comment3.priority = 0
+        tm1.comment4.priority = 0
+        tm2.comment4.priority = 0
+
+        # Fix units if needed
+        if data is not None:
+            if (getattr(data, 'units', '') == ''):
+                data.units = 'K'
+            if data.getAxis(0).id.count('lat'):
+                data.getAxis(0).id = 'Latitude'
+            if data.getAxis(0).id.count('lon'):
+                data.getAxis(0).id = 'Longitude'
+            elif len(data.getAxisList()) > 1:
+                if data.getAxis(1).id.count('lat'):
+                    data.getAxis(1).id = 'Latitude'
+                if data.getAxis(1).id.count('lon'):
+                    data.getAxis(1).id = 'Longitude'
+
+        yLabel = cnvs1.createtext(Tt_source=tm1.yname.texttable,
+                                  To_source=tm1.yname.textorientation)
+        yLabel.x = tm1.yname.x - 0.02
+        yLabel.y = tm1.yname.y
+        if data is not None:
+            if hasattr(data, 'comment1'):
+                yLabel.string = [data.comment1]
+            else:
+                yLabel.string  = ["Pressure (" + data.units + ")"]
+        else:
+            yLabel.string  = ["Pressure"]
+        yLabel.height = 16
+        cnvs1.plot(yLabel, bg=1)
+
+        tm1.source.y = tm1.data.y2 + 0.01
+
+        xLabelTO                  = cnvs1.gettextorientation(tm1.xname.textorientation)
+        xLabelTO.height           = 16
+        tm1.xname.textorientation = xLabelTO
+        tm1.xname.y              -= 0.01        
+
+
+        # Moving plot for yLabel:
+        deltaX            = 0.015
+        tm2.data.x1      += deltaX
+        tm2.data.x2      += deltaX
+        tm2.box1.x1      += deltaX
+        tm2.box1.x2      += deltaX
+        tm2.ytic1.x1     += deltaX
+        tm2.ytic1.x2     += deltaX
+        tm2.ytic2.x1     += deltaX
+        tm2.ytic2.x2     += deltaX
+        tm2.ylabel1.x    += deltaX
+        tm2.ymintic1.x1  += deltaX
+        tm2.ymintic1.x2  += deltaX
+        #tm2.units.x     += deltaX
+        #tm2.title.x     += deltaX
+        tm2.xname.x      += deltaX
+
         
         #setup the custom legend
         lineTypes = {}
         lineTypes[self.legendTitles[0]] = 'solid'
         lineTypes[self.legendTitles[1]] = 'dot'
         positions = {}
-        positions['solid', tm1]  = [0.05, 0.2], [0.08, .08] 
-        positions['solid', tm2]  =  [.05, .2], [.47, .47]
-        positions['dot', tm1]  = [0.05, 0.2], [0.13, 0.13]  
-        positions['dot', tm2]  = [.05, .2], [.5, .5]
+        positions['solid', tm1]  = [tm1.data.x2 + 0.008, tm1.data.x2 + 0.07], [0.16, .16]
+        positions['solid', tm2]  = [tm2.data.x1 + 0.008+deltaX, tm2.data.x1 + 0.07+deltaX], [tm2.data.y1 + 0.01, tm2.data.y1 + 0.01]
+        positions['dot', tm1]  = [tm1.data.x2 + 0.008, tm1.data.x2 + 0.07], [0.24, 0.24]
+        positions['dot', tm2]  = [tm2.data.x1 + 0.008+deltaX, tm2.data.x1 + 0.07+deltaX], [tm2.data.y1 + 0.05, tm2.data.y1 + 0.05]
    
         #if not self.legendComplete:
         for canvas, tm in templates:
@@ -2488,60 +3569,54 @@ class amwg_plot_set12(amwg_plot_spec):
                 xpos, ypos = positions[lineType, tm]
                 if lineType == 'dot':
                     marker = canvas.createmarker()
-                    marker.size = 7
+                    marker.size = 2
                     marker.x = (numpy.arange(6)*(xpos[1]-xpos[0])/5.+xpos[0]).tolist()
-                    marker.y = [ypos[0],]*6
+                    marker.y = [ypos[0],]*6                    
                     canvas.plot(marker, bg=1)
                     marker.priority = 0
                 else:
                     line = canvas.createline(None, tm.legend.line)
                     line.type = lineType
                     line.x = xpos 
-                    line.y = [ypos, ypos] 
+                    line.y = [ypos, ypos]
                     line.color = 1
                     canvas.plot(line, bg=1)
                 text = canvas.createtext()
                 text.string = filename
-                text.x = xpos[1] + .05
-                text.y = ypos 
-                #text.height = 14
+                text.height = 9.5
+                text.x = xpos[0] 
+                text.y = ypos[0] + 0.01 
+
                 canvas.plot(text, bg=1)   
                 self.legendComplete[canvas, tm, filename] = True
   
-                #pdb.set_trace()
 
-        #plot the axes names for the multi plot
-        to = cnvs2.createtextorientation(None, tm2.xname.textorientation)
-        to.height = 10
-        tm2.xname.textorientation=to 
-        tm2.xname.priority = 1
-        tm2.xname.x = tm2.data.x1 + .1
-        tm2.xname.y = tm2.data.y1 - .05
+        yLabel = cnvs2.createtext(Tt_source=tm2.yname.texttable,
+                                  To_source=tm2.yname.textorientation)
+        yLabel.x = tm2.yname.x #- 0.005
+        yLabel.y = tm2.yname.y
+        if data is not None:
+            if hasattr(data, 'comment1'):
+                yLabel.string = [data.comment1]
+            else:
+                yLabel.string  = ["Pressure (" + data.units + ")"]
+        else:
+            yLabel.string  = ["Pressure"]
+        yLabel.height = 9
+        cnvs2.plot(yLabel, bg=1)
+
+        xLabelTO                  = cnvs2.gettextorientation(tm2.xname.textorientation)
+        xLabelTO.height           = 9
+        tm2.xname.textorientation = xLabelTO
+
+        tm2.source.y = tm2.data.y2 + 0.01
+        tm2.title.y -= 0.01
         
-        th=cnvs2.createtextorientation(None, tm2.xlabel1.textorientation)
-        th.height=10
-        tm2.xlabel1.textorientation = th
-        th=cnvs2.createtextorientation(None, tm2.ylabel1.textorientation)
-        th.height=10
-        tm2.ylabel1.textorientation = th
-        
-        #pdb.set_trace()        
-        tm2.comment1.priority = 1
-        tm2.comment1.x = tm2.data.x1 - .075
-        tm2.comment1.y = tm2.data.y1 + .1
-        to = cnvs2.createtextorientation(None, tm2.yname.textorientation)
-        to.angle=-90
-        to.height=10
-        tm2.comment1.textorientation=to
-          
-        tm2.source.x = tm2.ytic1.x1 + .15
-        tm2.source.y = tm2.data.y2 + .015
         if self.plotCompositeTitle:
             tm2.source.priority = 1
             self.plotCompositeTitle = False
         else:
             tm2.source.priority = 0
-        #pdb.set_trace()
 
         return tm1, tm2
     def _results(self, newgrid=0):
@@ -2571,7 +3646,7 @@ class amwg_plot_set12(amwg_plot_spec):
             presentation.datawc_x2=ymax     
             return presentation        
         #pdb.set_trace()
-        results = plot_spec._results(self, newgrid)
+        results = plot_plan._results(self, newgrid)
         if results is None:
             print "WARNING, AMWG plot set 12 found nothing to plot"
             return None
@@ -2613,7 +3688,7 @@ class amwg_plot_set12(amwg_plot_spec):
         #pdb.set_trace()
         return psvs
     
-class amwg_plot_set13(amwg_plot_spec):
+class amwg_plot_set13(amwg_plot_plan):
     """represents one plot from AMWG Diagnostics Plot Set 13, Cloud Simulator Histograms.
     Each such plot is a histogram with a numerical value laid over a box.
     At present, the histogram is used to show values of CLISCCP, cloud occurence in percent,
@@ -2625,13 +3700,13 @@ class amwg_plot_set13(amwg_plot_spec):
     #Often data comes from COSP = CFMIP Observation Simulator Package
     name = '13 - Cloud Simulator Histograms'
     number = '13'
-    standard_variables = {  # Note: shadows amwg_plot_spec.standard_variables
+    standard_variables = {  # Note: shadows amwg_plot_plan.standard_variables
         'CLISCCP':[derived_var(
                 vid='CLISCCP', inputs=['FISCCP1','isccp_prs','isccp_tau'], outputs=['CLISCCP'],
                 func=uncompress_fisccp1 )]
         }
 
-    def __init__( self, model, obs, varnom, seasonid=None, region=None, aux=None, levels=None ):
+    def __init__( self, model, obs, varnom, seasonid=None, region=None, aux=None, plotparms=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varnom is a string.  The variable described may depend on time,lat,lon and will be averaged
         in those dimensions.  But it also should have two other axes which will be used for the
@@ -2640,11 +3715,15 @@ class amwg_plot_set13(amwg_plot_spec):
         Region is an instance of the class rectregion (region.py).
         """
         filetable1, filetable2 = self.getfts(model, obs)
-        plot_spec.__init__(self,seasonid)
+        plot_plan.__init__(self,seasonid)
         region = interpret_region(region)
         self.reduced_variables = {}
         self.derived_variables = {}
         self.plottype = 'Boxfill'
+        if plotparms is None:
+            plotparms = { 'model':{'colormap':'rainbow'},
+                          'obs':{'colormap':'rainbow'},
+                          'diff':{'colormap':'bl_to_darkred'} }
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
         ft1id,ft2id = filetable_ids(filetable1,filetable2)
         self.plot1_id = '_'.join([ft1id,varnom,seasonid,str(region),'histo'])
@@ -2652,7 +3731,7 @@ class amwg_plot_set13(amwg_plot_spec):
         self.plot3_id = '_'.join([ft1id+'-'+ft2id,varnom,seasonid,str(region),'histo'])
         self.plotall_id = '_'.join([ft1id,ft2id,varnom,seasonid])
         if not self.computation_planned:
-            self.plan_computation( model, obs, varnom, seasonid, region )
+            self.plan_computation( model, obs, varnom, seasonid, region, plotparms )
     @staticmethod
     def _list_variables( model, obs ):
         allvars = amwg_plot_set13._all_variables( model, obs)
@@ -2688,8 +3767,8 @@ class amwg_plot_set13(amwg_plot_spec):
         # Now start with variables common to both filetables.  Keep only the ones with 2 axes
         # other than time,lat,lon.  That's because we're going to average over time,lat,lon
         # and display a histogram dependent on (exactly) two remaining axes.
-        for varname in amwg_plot_spec.package._list_variables(
-            [filetable1], [filetable2], "amwg_plot_spec" ):
+        for varname in amwg_plot_plan.package._list_variables(
+            [filetable1], [filetable2], "amwg_plot_plan" ):
             varaxisnames1 = vars1[varname]
             #otheraxes1 = list(set(varaxisnames1) - set(['time','lat','lon']))
             otheraxes1 = list(set(varaxisnames1) -
@@ -2738,8 +3817,13 @@ class amwg_plot_set13(amwg_plot_spec):
         for dv in dvs:
             self.derived_variables[ dv.id() ] = dv
         return varid
-    def plan_computation( self, model, obs, varnom, seasonid, region ):
+    def plan_computation( self, model, obs, varnom, seasonid, region, plotparms ):
         filetable1, filetable2 = self.getfts(model, obs)
+        ft1src = filetable1.source()
+        try:
+            ft2src = filetable2.source()
+        except:
+            ft2src = ''
         region = interpret_region( region )
         if varnom in filetable1.list_variables_incl_axes():
             vid1 = self.var_from_data( filetable1, varnom, seasonid, region )
@@ -2770,26 +3854,113 @@ class amwg_plot_set13(amwg_plot_spec):
                     zfunc=(lambda z: standardize_and_check_cloud_variable(z)),
                 plottype = self.plottype,
                 title = ' '.join([varnom,seasonid,str(region),'(1)']),
-                source = ft1src ),
+                source = ft1src,
+                plotparms = plotparms[src2modobs(ft1src)] ),
             self.plot2_id: plotspec(
                 vid = ps.dict_idid(vid2), zvars=[vid2],\
                     zfunc=(lambda z: standardize_and_check_cloud_variable(z)),
                 plottype = self.plottype,
                 title = ' '.join([varnom,seasonid,str(region),'(2)']),
-                source = ft2src ),
+                source = ft2src,
+                plotparms = plotparms[src2obsmod(ft2src)] ),
             self.plot3_id: plotspec(
                 vid = ps.dict_id(varnom,'diff',seasonid,filetable1,filetable2,region=region), zvars=[vid1,vid2],
                 zfunc=aminusb_2ax, plottype = self.plottype,
                 title = ' '.join([varnom,seasonid,str(region),'(1)-(2)']),
-                source = ', '.join([ft1src,ft2src]) )
+                source = ', '.join([ft1src,ft2src]),
+                plotparms = plotparms['diff'] )
             }
         self.composite_plotspecs = {
             self.plotall_id: [self.plot1_id, self.plot2_id, self.plot3_id ]
             }
         self.computation_planned = True
 
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
+        """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
+        (cnvs1, tm1), (cnvs2, tm2) = templates
+        
+        tm2.yname.priority  = 1
+        tm2.xname.priority  = 1
+        tm1.yname.priority  = 1
+        tm1.xname.priority  = 1
+        tm1.legend.priority = 1
+        tm2.legend.priority = 1
+
+        # Adjust labels and names for single plots
+        ynameOri                  = cnvs1.gettextorientation(tm1.yname.textorientation)
+        ynameOri.height           = 16
+        tm1.yname.textorientation = ynameOri
+        tm1.yname.x              -= 0.01
+
+        xnameOri                  = cnvs1.gettextorientation(tm1.xname.textorientation)
+        xnameOri.height           = 16
+        tm1.xname.textorientation = xnameOri
+        #tm1.xname.y              -= 0.003
+
+        meanOri                  = cnvs1.gettextorientation(tm1.mean.textorientation)
+        meanOri.height           = 14
+        tm1.mean.textorientation = meanOri
+        tm1.mean.y              -= 0.005
+
+        titleOri                  = cnvs1.gettextorientation(tm1.title.textorientation)
+        titleOri.height           = 22
+        tm1.title.textorientation = titleOri
+
+        tm1.max.y -= 0.005
+        
+        sourceOri                  = cnvs1.gettextorientation(tm1.source.textorientation)
+        sourceOri.height           = 11.0
+        tm1.source.textorientation = sourceOri
+        tm1.source.y               = tm1.units.y - 0.035
+        tm1.source.x               = tm1.data.x1
+        tm1.source.priority        = 1
+
+        # We want units at axis names
+        tm1.units.y       -= 0.01
+        tm1.units.priority = 1
+
+        
+        cnvs2.landscape()
+        # Gray colormap as a request
+        colormap = vcs.matplotlib2vcs("gray")
+        cnvs2.setcolormap(colormap)
+        
+        # Adjust labels and names for combined plots
+        ynameOri                  = cnvs2.gettextorientation(tm2.yname.textorientation)
+        ynameOri.height           = 16
+        tm2.yname.textorientation = ynameOri
+        tm2.yname.x              -= 0.02
+
+        xnameOri                  = cnvs2.gettextorientation(tm2.xname.textorientation)
+        xnameOri.height           = 16
+        tm2.xname.textorientation = xnameOri
+        #tm2.xname.y              -= 0.003
+
+        meanOri                  = cnvs2.gettextorientation(tm2.mean.textorientation)
+        meanOri.height           = 14
+        tm2.mean.textorientation = meanOri
+        tm2.mean.y -= 0.005
+
+        titleOri                  = cnvs2.gettextorientation(tm2.title.textorientation)
+        titleOri.height           = 22
+        tm2.title.textorientation = titleOri
+
+        tm2.max.y -= 0.005
+        
+        sourceOri                  = cnvs2.gettextorientation(tm2.source.textorientation)
+        sourceOri.height           = 11.0
+        tm2.source.textorientation = sourceOri
+        tm2.source.y               = tm2.units.y - 0.02
+        tm2.source.x               = tm2.data.x1
+        tm2.source.priority        = 1
+
+        tm2.units.priority = 1
+        
+        return tm1, tm2
+        
+
     def _results(self,newgrid=0):
-        results = plot_spec._results(self,newgrid)
+        results = plot_plan._results(self,newgrid)
         if results is None:
             print "WARNING, AMWG plot set 13 found nothing to plot"
             return None
@@ -2806,7 +3977,8 @@ class amwg_plot_set13(amwg_plot_spec):
                 v.finalize(flip_y=True)
         return self.plotspec_values[self.plotall_id]
 
-class amwg_plot_set14(amwg_plot_spec):
+
+class amwg_plot_set14(amwg_plot_plan):
     """ Example script
       diags.py --model path=$HOME/amwg_diagnostics/cam35_data/,filter='f_startswith("ccsm")',climos=yes \
     --model path=$HOME/uvcmetrics_test_data/cam35_data/,climos=yes \
@@ -2815,7 +3987,7 @@ class amwg_plot_set14(amwg_plot_spec):
     --seasons JAN --plots yes --vars T Z3 --varopts '200 mbar' """
     name = '14 - Taylor diagrams'
     number = '14'
-    def __init__( self, model, obs, varid, seasonid='JAN', region=None, aux=None ):
+    def __init__( self, model, obs, varid, seasonid='JAN', region=None, aux=None, plotparms=None ):
         
         """filetable1, filetable2 should be filetables for each model.
         varid is a string, e.g. 'TREFHT'.  The seasonal difference is Seasonid
@@ -2832,7 +4004,7 @@ class amwg_plot_set14(amwg_plot_spec):
             obsfn   = ft._filelist.files[0]
             self.obsfns = [obsfn]
         self.legendTitles = []
-        plot_spec.__init__(self, seasonid)
+        plot_plan.__init__(self, seasonid)
         self.plottype = 'Taylordiagram'
         self._seasonid = seasonid
         self.season = cdutil.times.Seasons(self._seasonid) 
@@ -2858,7 +4030,7 @@ class amwg_plot_set14(amwg_plot_spec):
         
         #self.plotall_id = '_'.join(self.datatype + ['Warm', 'Pool'])
         if not self.computation_planned:
-            self.plan_computation( model, obs, varid, seasonid, aux )
+            self.plan_computation( model, obs, varid, seasonid, aux, plotparms )
     @staticmethod
     #stolen from plot set 5and6
     def _list_variables( model, obs ):
@@ -2868,15 +4040,15 @@ class amwg_plot_set14(amwg_plot_spec):
         return listvars
     @staticmethod
     def _all_variables( model, obs, use_standard_vars=True ):
-        allvars = amwg_plot_spec.package._all_variables( model, obs, "amwg_plot_spec" )
-        for varname in amwg_plot_spec.package._list_variables_with_levelaxis(
-            model, obs, "amwg_plot_spec" ):
+        allvars = amwg_plot_plan.package._all_variables( model, obs, "amwg_plot_plan" )
+        for varname in amwg_plot_plan.package._list_variables_with_levelaxis(
+            model, obs, "amwg_plot_plan" ):
             allvars[varname] = level_variable_for_amwg_set5
         if use_standard_vars:
-            for varname in amwg_plot_spec.standard_variables.keys():
+            for varname in amwg_plot_plan.standard_variables.keys():
                 allvars[varname] = basic_plot_variable
         return allvars
-    def plan_computation( self, model, obs, varid, seasonid, aux ):
+    def plan_computation( self, model, obs, varid, seasonid, aux, plotparms ):
         def join_data(*args ):
             """ This function joins the results of several reduced variables into a
             single derived variable.  It is used in plot set 14.
@@ -2955,7 +4127,8 @@ class amwg_plot_set14(amwg_plot_spec):
                     RV = reduced_variable( variableid=var, 
                                            filetable=ft, 
                                            season=cdutil.times.Seasons(seasonid), 
-                                           reduction_function=( lambda x, vid=VID_mean, ID=DATAID: MV2.array(x.mean()) ) ) 
+                                           reduction_function=( lambda x, vid=VID_mean, ID=DATAID: MV2.array(reduce2scalar(x)) ) ) 
+#numpy mean() isn't working here           reduction_function=( lambda x, vid=VID_mean, ID=DATAID: MV2.array(x.mean()) ) ) 
                     self.reduced_variables[VID_mean] = RV     
                     
                     #rv for its std
@@ -3043,28 +4216,15 @@ class amwg_plot_set14(amwg_plot_spec):
                                                 zvars  = ['TaylorData'],
                                                 zfunc = (lambda x: x),
                                                 plottype = self.plottype,
-                                                title = '')
+                                                title = '',
+                                                plotparms=plotparms['model'] )
                                         
         self.computation_planned = True
         #pdb.set_trace()
-    def customizeTemplates(self, templates, legendTitles=[]):
+    def customizeTemplates(self, templates, legendTitles=[], var=None):
         """Theis method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs, tm), (cnvs2, tm2) = templates
-        tm.data.x1 = .1
-        tm.data.y1 = .1
-        tm.data.x2 = .9
-        tm.data.y2 = .9
-        #pdb.set_trace()
-        tm.yname.x = tm.yname.x + tm.data.x1/2
-        tm.xname.y = tm.data.y1 - .05
-        tm.line1.x1=tm.data.x1
-        tm.line1.x2=tm.data.x1
-        tm.line1.y1=.05
-        tm.line1.y2=.05
         
-        tm.xlabel1.y = tm.data.y1-.02
-        tm.xtic1.y1 = tm.data.y1 - .02
-        tm.xtic1.y2 = tm.data.y1 - .02
         tm.dataname.priority=0
 
         lx = .75
@@ -3081,11 +4241,11 @@ class amwg_plot_set14(amwg_plot_spec):
             text.height = 12
             cnvs.plot(text, bg=1)  
             ly -= .025        
-        #tm.line1.list()
+        
         return tm, None
     def _results(self, newgrid=0):
         #pdb.set_trace()
-        results = plot_spec._results(self, newgrid)
+        results = plot_plan._results(self, newgrid)
         if results is None:
             print "WARNING, AMWG plot set 12 found nothing to plot"
             return None
@@ -3098,7 +4258,7 @@ class amwg_plot_set14(amwg_plot_spec):
         #pdb.set_trace()
         return [self.plotspec_values['Taylor']]
 
-class amwg_plot_set15(amwg_plot_spec): 
+class amwg_plot_set15(amwg_plot_plan): 
     """ Example script
     diags.py --model path=$HOME/uvcmetrics_test_data/cam35_data/,climos=yes 
     --obs path=$HOME/uvcmetrics_test_data/obs_data/,filter='f_startswith("NCEP")',climos=yes  
@@ -3110,7 +4270,7 @@ class amwg_plot_set15(amwg_plot_spec):
     name = '15 - ARM Sites Annual Cycle Contour Plots'
     number = '15'
 
-    def __init__( self, model, obs, varid, seasonid='ANN', region=None, aux=None, levels=None ):
+    def __init__( self, model, obs, varid, seasonid='ANN', region=None, aux=None, plotparms=None ):
         """filetable1, should be a directory filetable for each model.
         varid is a string, e.g. 'TREFHT'.  The zonal mean is computed for each month. """
         filetable1, filetable2 = self.getfts(model, obs)
@@ -3129,8 +4289,12 @@ class amwg_plot_set15(amwg_plot_spec):
         self.datatype = ['model', 'obs']
         self.vars = [varid, 'P']
         
-        plot_spec.__init__(self, seasonid)
+        plot_plan.__init__(self, seasonid)
         self.plottype = 'Isofill'
+        if plotparms is None:
+            plotparms = { 'model':{'colormap':'rainbow'},
+                          'obs':{'colormap':'rainbow'},
+                          'diff':{'colormap':'bl_to_darkred'} }
         self._seasonid = seasonid
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
         ft1id, ft2id = filetable_ids(filetable1, filetable2)
@@ -3141,10 +4305,15 @@ class amwg_plot_set15(amwg_plot_spec):
             self.plot3_id = '_'.join([ft1id+'-'+ft2id, varid, seasonid, 'contour'])
         self.plotall_id = '_'.join([ft1id,ft2id, varid, seasonid])
         if not self.computation_planned:
-            self.plan_computation( model, obs, varid, seasonid, levels=levels )
+            self.plan_computation( model, obs, varid, seasonid, plotparms )
 
-    def plan_computation( self, model, obs, varid, seasonid, levels=None ):
+    def plan_computation( self, model, obs, varid, seasonid, plotparms ):
         filetable1, filetable2 = self.getfts(model, obs)
+        ft1src = filetable1.source()
+        try:
+            ft2src = filetable2.source()
+        except:
+            ft2src = ''
 
         self.computation_planned = False
         
@@ -3202,16 +4371,18 @@ class amwg_plot_set15(amwg_plot_spec):
                                     zrangevars={'yrange':[1000., 0.]},
                                     plottype = self.plottype,
                                     title = 'model',
-                                    levels = levels )}
+                                    source = ft1src,
+                                    plotparms = plotparms['model'] )}
         if self.FT2:
             self.single_plotspecs[self.plot2_id] = \
                                plotspec(vid = self.plot2_id, 
                                         zvars=[vidObs],   
                                         zfunc = (lambda x: MV2.transpose(x) ),       
-                                        zrangevars={'yrange':[1000., 0.]},                         
+                                        zrangevars={'yrange':[1000., 0.]},
                                         plottype = self.plottype,
                                         title = 'obs',
-                                        levels = levels )
+                                        source = ft2src,
+                                        plotparms = plotparms['obs'] )
             self.single_plotspecs[self.plot3_id] = \
                                plotspec(vid = self.plot3_id, 
                                         zvars = [vidDiff],
@@ -3219,7 +4390,8 @@ class amwg_plot_set15(amwg_plot_spec):
                                         zrangevars={'yrange':[1000., 0.]},
                                         plottype = self.plottype,
                                         title = 'difference: model-obs',
-                                        levels = None )
+                                        source = ', '.join([ft1src,ft2src]),
+                                        plotparms = plotparms['diff'] )
         
         self.composite_plotspecs = {
             self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id ]
@@ -3227,80 +4399,79 @@ class amwg_plot_set15(amwg_plot_spec):
         # ... was self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
         self.computation_planned = True
         #pdb.set_trace()
-    def customizeTemplates(self, templates):
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
+
         """Theis method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
  
-        tm1.data.x1 += .05
-        tm1.box1.x1 = tm1.data.x1
+        tm1.data.x1  += .05
+        tm1.box1.x1   = tm1.data.x1
         tm1.legend.x1 = tm1.data.x1
      
-        tm1.yname.x = .05
-        tm1.yname.y = (tm1.data.y1 + tm1.data.y2)/2
-        to = cnvs1.createtextorientation(None, tm1.yname.textorientation)
-        to.angle=-90
-        tm1.yname.textorientation=to 
-                
-        tm1.xname.y = tm1.data.y1 - .05
-        delta = tm1.ytic1.x1 - tm1.ytic1.x2
-        tm1.ytic1.x1 = tm1.data.x1
-        tm1.ytic1.x2 = tm1.data.x1 - delta
-        tm1.ylabel1.x = tm1.ytic1.x2
+        tm1.yname.x               = .04
+        tm1.yname.y               = (tm1.data.y1 + tm1.data.y2)/2
+        to                        = cnvs1.createtextorientation(None,
+                                                                tm1.yname.textorientation)
+        to.angle                  = -90
+        to.height                += 2
+        tm1.yname.textorientation = to 
+
+        to                        = cnvs1.createtextorientation(None,
+                                                                tm1.xname.textorientation)
+        to.height                += 2
+        tm1.xname.textorientation = to
+        tm1.xname.y               = tm1.data.y1 - .06
+        delta                     = tm1.ytic1.x1 - tm1.ytic1.x2
+        tm1.ytic1.x1              = tm1.data.x1
+        tm1.ytic1.x2              = tm1.data.x1 - delta
+        tm1.ylabel1.x             = tm1.ytic1.x2
+
+        titleOri                  = cnvs1.gettextorientation(tm1.title.textorientation)
+        titleOri.height          += 3
+        tm1.title.textorientation = titleOri
+        tm1.title.y               = tm1.data.y2 + 0.015
 
         tm1.crdate.priority = 0
         tm1.crtime.priority = 0        
 
-        tm2.data.x1 += .05
-        tm2.box1.x1 = tm2.data.x1
-        tm2.data.y1 += .025
-        tm2.data.y2 += .025
-        tm2.box1.y1 = tm2.data.y1
-        tm2.box1.y2 = tm2.data.y2
-        tm2.legend.y1 = tm2.data.y1
-        tm2.legend.y2 = tm2.data.y2
+        tm2.yname.x               = .05
+        tm2.yname.y               = (tm2.data.y1 + tm2.data.y2)/2
+        to                        = cnvs2.createtextorientation(None, tm2.yname.textorientation)
+        to.height                 = 10
+        to.angle                  = -90
+        tm2.yname.textorientation = to 
 
-        tm2.yname.x = .05
-        tm2.yname.y = (tm2.data.y1 + tm2.data.y2)/2
-        to = cnvs2.createtextorientation(None, tm2.yname.textorientation)
-        to.angle=-90
-        tm2.yname.textorientation=to 
-
-        tm2.xname.x = (tm2.data.x1 + tm2.data.x2)/2
-        tm2.xname.y = tm2.data.y1 - .025
-        #pdb.set_trace()
-        #delta = abs(tm2.ytic1.x1 - tm2.ytic1.x2)
-        tm2.ytic1.x1 = tm2.data.x1
-        tm2.ytic1.x2 = tm2.data.x1 - delta
-        tm2.ytic1.line = 'default'
-        tm2.ylabel1.x = tm2.ytic1.x2
+        tm2.xname.x               = (tm2.data.x1 + tm2.data.x2)/2
+        tm2.xname.y               = tm2.data.y1 - .025
+        to                        = cnvs2.createtextorientation(None, tm2.xname.textorientation)
+        to.height                 = 10
+        tm2.xname.textorientation = to
         
-        delta = abs(tm2.xtic1.y1 - tm2.xtic1.y2)
-        tm2.xtic1.y1 = tm2.data.y1
-        tm2.xtic1.y2 = tm2.xtic1.y1 - delta
-        tm2.xlabel1.y = tm2.xtic1.y2
-        tm2.xtic1.line = 'default'
+        titleOri                  = cnvs2.gettextorientation(tm2.title.textorientation)
+        titleOri.height           = 14
+        tm2.title.textorientation = titleOri
+        tm2.title.y               = tm2.data.y2 + 0.01
         
         for tm in [tm1, tm2]:       
-            #tm.title.priority = 0
-            tm.max.priority = 0
-            tm.min.priority = 0
-            tm.mean.priority = 0
+            tm.max.priority      = 0
+            tm.min.priority      = 0
+            tm.mean.priority     = 0
             tm.dataname.priority = 0
             
             tm.xlabel1.priority = 1 
-            tm.xtic1.priority = 1 
-            tm.yname.priority = 1
-            tm.yname.priority = 1
-            tm.xname.priority = 1
+            tm.xtic1.priority   = 1 
+            tm.yname.priority   = 1
+            tm.yname.priority   = 1
+            tm.xname.priority   = 1
             tm.ylabel1.priority = 1 
-            tm.ytic1.priority = 1  
+            tm.ytic1.priority   = 1  
                         
         
         #pdb.set_trace()
         return tm1, tm2        
     def _results(self, newgrid=0):
         #pdb.set_trace()
-        results = plot_spec._results(self, newgrid)
+        results = plot_plan._results(self, newgrid)
         if results is None:
             print "WARNING, AMWG plot set 15 found nothing to plot"
             return None

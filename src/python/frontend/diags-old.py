@@ -35,7 +35,7 @@
 # run_diagnostics_from_filetables( opts, filetable1, filetable2 )
 #
 
-import hashlib, os, pickle, sys, os, time, re
+import hashlib, os, pickle, sys, os, time, re, logging
 from metrics import *
 from metrics.fileio.filetable import *
 from metrics.fileio.findfiles import *
@@ -59,7 +59,8 @@ import cProfile
 from metrics.frontend.it import *
 from metrics.computation.region import *
 from metrics.frontend.amwg_plotting import *
-
+import logging
+logger = logging.getLogger(__name__)
 def mysort( lis ):
     lis.sort()
     return lis
@@ -110,7 +111,7 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
     outdir = opts['output']['outputdir']
     if outdir is None:
         outdir = os.path.join(os.environ['HOME'],"tmp","diagout")
-        print 'Writing output to %s. Override with --outputdir option' % outdir
+        logging.warning('Writing output to %s. Override with --outputdir option', outdir)
 
     basename = opts['output']['prefix']
     postname = opts['output']['postfix']
@@ -118,7 +119,7 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
     # Note:verifyOptions() should prevent this from being none. There used to be a quit() in
     # there but I removed it. (BES)
     if opts['package'] is None:
-        print 'Please specify a package name'
+        logging.warning('Please specify a package name')
         quit()
 #        packages = ['AMWG']
     else:
@@ -128,9 +129,9 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
         seasons = opts.get( 'times', None )
     if seasons is None or seasons==[]:
         seasons = ['ANN']
-        print "Defaulting to season ANN. You can specify season with --seasons/--seasonally, --months/--monthly or --yearly otherwise"
+        logging.warning("Defaulting to season ANN. You can specify season with --seasons/--seasonally, --months/--monthly or --yearly otherwise")
     else:
-        print "using seasons=",seasons
+        logger.info("using seasons= %s",seasons)
     if opts['varopts'] is None:
         opts['varopts'] = [None]
 
@@ -167,7 +168,7 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
             keys = sm.keys()
             keys.sort()
             plotsets = [ keys[1] ]
-            print "plot sets not specified, defaulting to",plotsets[0]
+            logging.warning("plot sets not specified, defaulting to %s", plotsets[0])
         else:
             ps = opts['sets']
             sndic = { setnum(s):s for s in sm.keys() }   # plot set number:name
@@ -181,7 +182,7 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
             rname = opts['regions'][0]
         region = rectregion( rname, regl )
         for sname in plotsets:
-            print "plot set",sname
+            logger.info( "plot set %s",sname)
             snum = sname.strip().split(' ')[0]
 
             sclass = sm[sname]
@@ -195,13 +196,12 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                 if opts.get('vars',['ALL'])!=['ALL']:
                     variables = list( set(variables) & set(opts.get('vars',[])) )
                     if len(variables)==0 and len(opts.get('vars',[]))>0:
-                        print "WARNING: Couldn't find any of the requested variables:",opts['vars']
-                        print "among",pclass.list_variables( filetable1, filetable2, sname  )
-                
+                        logging.warning("Couldn't find any of the requested variables: %s among %s",opts['vars'], pclass.list_variables(filetable1, filetable2, sname))
+
                 for ivarid, varid in enumerate(variables):
                     if snum == '14' and ivarid >= 1: #Taylor diagrams
                        continue
-                    print "variable",varid,"season",seasonid
+                    logger.info( "variable %s season %s",varid,seasonid)
                     vard = pclass.all_variables( modelfts, obsfts, sname )
                     plotvar = vard[varid]
 
@@ -210,9 +210,8 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                     if vvaropts is None:
                         if len(opts['varopts'])>0:
                             if opts['varopts']!=[None]:
-                                print "WARNING: no variable options are available, but these were requested:",\
-                                opts['varopts']
-                                print "Continuing as though no variable options were requested."
+                                logger.warning("No variable options are available, but these were requested: %s", opts['varopts'])
+                                logger.info("Continuing as though no variable options were requested.")
                         vvaropts = {None:None}
                         varopts = [None]
                     else:
@@ -223,10 +222,9 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                                 opts['varopts'] = [ None, 'default', ' default' ]
                             varopts = list( set(vvaropts.keys()) & set(opts['varopts']) )
                             if varopts==[]:
-                                print "WARNING: requested varopts incompatible with available varopts"
-                                print "requested varopts=",opts['varopts']
-                                print "available varopts for variable",varid,"are",vvaropts.keys()
-                                print "No plots will be made."
+                                logger.warning("Requested varopts incompatible with available varopts requested varopts= %s",opts['varopts'])
+                                logger.warning("Available varopts for variable %s are %s", varid, vvaropts.keys())
+                                logger.info("No plots will be made.")
 
                     for aux in varopts:
                         # Since Options is a 2nd class (at best) citizen, we have to do something icky like this.
@@ -284,7 +282,7 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                                         ovly[ir] = 0
                                         ir += 1
                                 if None in gms:
-                                    print "WARNING, missing a graphics method. gms=",gms
+                                    logging.warning("Missing a graphics method. gms=%s", gms)
                                 # Now get the templates which correspond to the graphics methods and overlay statuses.
                                 # tmobs[ir] is the template for plotting a simple plot on a page
                                 #   which has just one single-plot - that's vcanvas
@@ -292,12 +290,12 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                                 #   which has the entire compound plot - that's vcanvas2
                                 gmobs, tmobs, tmmobs = return_templates_graphic_methods( vcanvas, gms, ovly, onPage )
                                 if 1: # optional debugging:
-                                    print "tmpl nsingleplots=",nsingleplots,"nsimpleplots=",nsimpleplots
-                                    print "tmpl gms=",gms
-                                    print "tmpl len(res)=",len(res),"ovly=",ovly,"onPage=",onPage
-                                    print "tmpl gmobs=",gmobs
-                                    print "tmpl tmobs=",[tm.name for tm in tmobs]
-                                    print "tmpl tmmobs=",[tm.name for tm in tmmobs]
+                                    logger.debug( "tmpl nsingleplots= %s nsimpleplots= %s",nsingleplots,nsimpleplots)
+                                    logger.debug("tmpl gms= %s",gms)
+                                    logger.debug("tmpl len(res)= %s ovly= %s onPage= %s ",len(res),ovly,onPage)
+                                    logger.debug("tmpl gmobs= %s",gmobs)
+                                    logger.debug("tmpl tmobs= %s",[tm.name for tm in tmobs])
+                                    logger.debug("tmpl tmmobs= %s",[tm.name for tm in tmmobs])
                                 
                                 # gmmobs provides the correct graphics methods to go with the templates.
                                 # Unfortunately, for the moment we have to use rmr.presentation instead
@@ -340,7 +338,7 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                                            else:
                                                lenvar =len(var)
                                            if lenvar<=1:
-                                               print "INFO: won't plot short variable",var.id,var.shape
+                                               logger.debug("Won't plot short variable %s %s ",var.id,var.shape)
                                                continue
                                            savePNG = True
                                            seqsetattr(var,'title',title)
@@ -381,11 +379,11 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                                                    fname = fname+postname
                                                fname+='.png'
                                                if basename is None and postname is None:
-                                                   print "writing png file0",fname
+                                                   logger.info("writing png file0 %s",fname)
                                                else:
-                                                   print "writing png file1",fname,"for",vname
+                                                   logger.info("writing png file1 %s for %s",fname, vname)
                                                if len(fname)>255:
-                                                   print "file name too long",fname
+                                                   logger.error("file name too long %s",fname)
                                                #rsr_presentation.script("jeff.json")   #example of writing a json file
 
                                            if vcs.isscatter(rsr.presentation) or plot.number in ['11', '12']: 
@@ -412,7 +410,7 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                                                             plotcv2 = True
                                                             savePNG = True
                                                    except vcs.error.vcsError as e:
-                                                       print "ERROR making summary plot:",e
+                                                       logging.exception("ERROR making summary plot: %s",e)
                                                        savePNG = True                                              
                                                elif len(rsr.vars) == 2:
                                                    if varIndex == 0:
@@ -461,7 +459,7 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                                                            if varIndex+1 == len(rsr.vars):
                                                                savePNG = True
                                                    except vcs.error.vcsError as e:
-                                                       print "ERROR making summary plot:",e
+                                                       logging.exception("ERROR making summary plot: %s",e)
                                                        savePNG = True
                                            elif vcs.isvector(rsr.presentation) or rsr.presentation.__class__.__name__=="Gv":
                                                strideX = rsr.strideX
@@ -486,7 +484,7 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                                                        # should come from the contour plot, but that doesn't seem to
                                                        # have them.
                                                except vcs.error.vcsError as e:
-                                                   print "ERROR making summary plot:",e
+                                                   logging.exception("ERROR making summary plot: %s",e)
                                            elif vcs.istaylordiagram(rsr.presentation):
                                                #pdb.set_trace()
                                                #this is a total hack that is related to the hack in uvcdat.py
@@ -523,7 +521,7 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                                                                       source=rsr.source, compoundplot=onPage )
                                                        plotcv2 = True
                                                except vcs.error.vcsError as e:
-                                                   print "ERROR making summary plot:",e
+                                                   logging.exception("ERROR making summary plot: %s",e)
                                            if var_id_save is not None:
                                                if type(var_id_save) is str:
                                                    var.id = var_id_save
@@ -543,7 +541,7 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                                else:
                                    resc = uvc_composite_plotspec( res )
                                    filenames = resc.write_plot_data("xml-NetCDF", outdir )
-                               print "wrote plots",resc.title," to",filenames
+                               logger.info("wrote plots %s to %s",resc.title,filenames)
                             if opts['output']['plots']==True:
                                 if savePNG and tmmobs[0] is not None and plotcv2==True:  # If anything was plotted to vcanvas2
                                     # Why check for 3 things?  The whole structure of diags.py is messed up
@@ -564,7 +562,7 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                                              pname = postname+'_diff'
                                              # Note postname will have the obsfile key and things like _NP
                                        fname = outdir+'/'+basename+'_'+region_filekey+'_'+seasonid+'_'+varid+pname+'-combined.png'
-                                       print "writing png file2",fname
+                                       logger.info("writing png file2 %s",fname)
                                     vcanvas2.png( fname , ignore_alpha = True, metadata=provenance_dict() )
                                     number_diagnostic_plots += 1
                         elif res is not None:
@@ -573,11 +571,11 @@ def run_diagnostics_from_filetables( opts, modelfts, obsfts ):
                                 resc = res
                                 filenames = resc.write_plot_data("text", outdir)
                                 number_diagnostic_plots += 1
-                                print "wrote table",resc.title," to",filenames
+                                logger.info("wrote table %s to %s ",resc.title,filenames)
 
     vcanvas2.close()
     vcanvas.close()
-    print "total number of (compound) diagnostic plots generated =", number_diagnostic_plots
+    print "total number of (compound) diagnostic plots generated = %s", number_diagnostic_plots
 
 if __name__ == '__main__':
    print "UV-CDAT Diagnostics, command-line version"

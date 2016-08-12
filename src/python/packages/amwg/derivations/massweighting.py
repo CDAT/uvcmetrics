@@ -14,8 +14,12 @@
 
 import numpy
 import cdms2
+import logging
 from atmconst import AtmConst
 from unidata import udunits
+
+
+logger = logging.getLogger(__name__)
 
 def rhodz_from_hybridlev( PS, P0, hyai, hybi ):
     """returns a variable rhodz which represents the air mass column density in each cell, assumes
@@ -107,7 +111,7 @@ def rhodz_from_plev( lev, nlev_want, mv ):
                 s,i = tmp.how(PSunits)
             except Exception as e:
                 # conversion not possible.
-                print "ERROR could not convert from PS units",PS.units,"to lev units",lev.units
+                logging.exception("Could not convert from PS units %s to lev units %s",PS.units,lev.units)
                 return None
             # Now, s*PS+i would be PS in the units of lev.  In all cases I've seen, s==1 and i==0
 
@@ -140,6 +144,11 @@ def check_compatible_levels( var, pvar, strict=False ):
     """
     vlev = var.getLevel()
     plev = pvar.getLevel()
+    if plev is None and len(pvar.getAxisList())==1:
+        # probably a "special" level axis, e.g. sometimes hybi axis is its own fake
+        # axis with axis[i]==i, its connection to the level axis is implied.
+        # This may come from an error in climatology.py.
+        plev = pvar.getAxis(0)
     # We want plev[0] < var[0] < plev[1] < ... < var[N-1] < plev[N]
     # where var is defined on N levels and plev on N+1 levels.
     # But for now, just check the lengths of the two level arrays:
@@ -147,11 +156,11 @@ def check_compatible_levels( var, pvar, strict=False ):
     if compatible:
         return 0
     else:
-        print "numbers of levels: ",var.id,":",len(vlev),";",pvar.id,":",len(plev)
+        logger.debug("numbers of levels:  %s : %s ; %s : %s",var.id,len(vlev),pvar.id,len(plev))
         if strict:
-            raise DiagError("ERROR, numbers of levels are not compatible with mass weighting.")
+            logger.error("numbers of levels are not compatible with mass weighting.")
         else:
-            print "WARNING, poor levels for mass weighting, variables",var.id,pvar.id
+            logger.warning("Poor levels for mass weighting, variables %s %s",var.id,pvar.id)
             return len(vlev)+1
 
 def rhodz_from_mv( mv ):
@@ -188,7 +197,7 @@ def area_times_rhodz( mv, rhodz ):
     for k in range( rhodz.shape[0] ):  # k is level index
         wtlll[k,:,:] = rhodz[k,:,:]*wtll
     if wtlll.max()<=0.0:
-        print "debug WRONG WRONG WRONG weights wtlll...",wtlll
+        logger.debug("debug WRONG WRONG WRONG weights wtlll... %s",wtlll)
     return wtlll
 
 def mass_weights( mv ):

@@ -4,9 +4,12 @@
 # Based on NCAR's plot_oaht.ncl
 # pcmdi11.llnl.gov:~painter1/amwg/amwg_diag5.6/code/plot_oaht.ncl
 
-import os
+import os, logging
 from ncl_isms import *
 from metrics.common import store_provenance
+
+
+logger = logging.getLogger(__name__)
 
 # NCAR gets thse from environment variables!  We have to do it better, but for now, do it worse!
 version = None
@@ -81,7 +84,7 @@ def oceanic_heat_transport(
         gw = cdms2.createVariable( latRegWgt(lat1), axes=[lat1] )
     if oro is None:
         if ocnfrac is None:
-            print("ERROR, cannot compute atmospheric_heat_transport without oro or ocnfrac")
+            logger.error("Cannot compute atmospheric_heat_transport without oro or ocnfrac")
         oro = abs(ocnfrac-1.)           # ocnfrac = 1 becomes 0
 
     # get the model ocean heat transport for the basins and total 
@@ -93,9 +96,8 @@ def oceanic_heat_transport(
 
 # heat transport (ported from NCAR code; not used here)
     if compare != "OBS":
-        print "ERROR in atmospheric_heat_transport() - compare=",compare,\
-            " but non-obs not done yet!"
-        #  ht1 = ht_surface(gw,oro,fsns,flns,shflx,lhflx,False) # <<< this function doesn't exist 
+        logger.error("In atmospheric_heat_transport() - compare=%s but non-obs not done yet",compare)
+        #  ht1 = h0t_surface(gw,oro,fsns,flns,shflx,lhflx,False) # <<< this function doesn't exist
         #  ht1c = ht_surface(gw,oro,fsns,flns,shflx,lhflx,True) # <<< this function doesn't exist 
 
     # get the model required heat transport at TOA

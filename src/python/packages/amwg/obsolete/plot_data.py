@@ -13,8 +13,10 @@ from metrics.packages.amwg.derivations.ncl_isms import *
 from metrics.packages.amwg.derivations.vertical import *
 from pprint import pprint
 from metrics.common import store_provenance
-
+import logging
 import cdutil.times
+
+logger = logging.getLogger(__name__)
 seasonsDJF=cdutil.times.Seasons(['DJF'])
 seasonsJJA=cdutil.times.Seasons(['JJA'])
 
@@ -23,9 +25,9 @@ def test_driver( path1, path2=None, filt2=None ):
 
     # First, find and index the data files.
     datafiles1 = dirtree_datafiles( path1 )
-    print "jfp datafiles1=",datafiles1
+    logger.info("jfp datafiles1=%s",datafiles1)
     datafiles2 = dirtree_datafiles( path2, filt2 )
-    print "jfp datafiles2=",datafiles2
+    logger.info("jfp datafiles2=%s",datafiles2)
     filetable1 = basic_filetable( datafiles1 )
     filetable2 = basic_filetable( datafiles2 )
 
@@ -489,7 +491,7 @@ def test_driver( path1, path2=None, filt2=None ):
             h.write("<plotdata>\n")
         varkeys = []
         for ps in psl:
-            print "jfp preparing data for",ps._strid
+            logger.info("jfp preparing data for %s", ps._strid)
             xrv = [ varvals[k] for k in ps.xvars ]
             x1rv = [ varvals[k] for k in ps.x1vars ]
             x2rv = [ varvals[k] for k in ps.x2vars ]
@@ -582,6 +584,7 @@ def test_driver( path1, path2=None, filt2=None ):
 
 
 if __name__ == '__main__':
+    logging.basicConfig()
    if len( sys.argv ) > 1:
       from findfiles import *
       path1 = sys.argv[1]

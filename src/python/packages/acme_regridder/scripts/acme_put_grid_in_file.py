@@ -1,11 +1,14 @@
 #!/usr/bin/env python
 # PUts grid file info in file
 import cdms2 
-import sys, os
+import sys, os, logging
 import numpy
 import MV2
 import argparse
 from metrics.common import store_provenance
+
+
+logger = logging.getLogger(__name__)
 
 if __name__=="__main__":
   value = 0
@@ -50,7 +53,7 @@ if __name__=="__main__":
   store_provenance(fo)
 
   for v in vars:
-    print "Dealing with:",v
+    logger.info("Dealing with: %s", v)
     try:
       V=f(v)
       try:
@@ -72,13 +75,13 @@ if __name__=="__main__":
         b.setAxis(0,V.getAxis(-1))
         fo.write(b)
       if "ncol" in axIds:
-        print "tweaking %s" % v
+        logger.debug("tweaking %s", v)
         if not hasattr(V,"coordinates"):
           V.coordinates="lat lon"
       else:
-        print "Storing %s as is" % v
+        logger.debug("Storing %s as is", v)
       fo.write(V)
     except Exception,err:
-      print "Error processing: %s\n%s" % (v,err)
+      logger.exception("Error processing: %s\n%s", v, err)
 fo.close()
 print "Done, new file is: %s" % args.out

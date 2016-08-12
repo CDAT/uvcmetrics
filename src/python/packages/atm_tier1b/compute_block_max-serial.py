@@ -9,24 +9,27 @@ from   scipy.io import netcdf
 from   scipy    import stats
 from   netCDF4  import Dataset
 import math
+import logging
 import time
 import warnings
 
 #warnings.simplefilter('error', UserWarning)
+logger = logging.getLogger(__name__)
 
 
 if __name__ == "__main__":
    import getopt, sys
+   logging.basicConfig()
 
    case_dir = ''
    casename = ''
    fieldname = ''
    output = ''
-   print sys.argv
+   logger.debug(sys.argv)
    try:
       opts, args = getopt.getopt(sys.argv[1:], "hf:c:d:o:",["fieldname=", "casename=", "case_dir=", "output="])
    except getopt.GetoptError as err:
-      print str(err)
+      logger.error(err)
       print 'Usage:'
       print '--fieldname={fieldname} --casename={casename} --case_dir={case_dir} --output={output}'
       sys.exit(1)
@@ -44,7 +47,7 @@ if __name__ == "__main__":
    # This is what the modified script produces.
    file_name = case_dir + '/' + casename + '.daily.' + fieldname + '.nc'
 
-   print 'filename for reading: ',file_name
+   logger.debug('filename for reading: %s', file_name)
 
 
 
@@ -55,10 +58,10 @@ if __name__ == "__main__":
    rank = 0
    size = 1
 
-   print('rank, size: ', rank, size)
+   logger.debug('rank, size: %s, %s', rank, size)
 
    if rank == 0:
-       print casename, fieldname, file_name
+       logger.debug("%s, %s, %s", casename, fieldname, file_name)
 
 
 
@@ -67,13 +70,13 @@ if __name__ == "__main__":
    chunk_size = numpy.zeros(1)
 
    f = Dataset(file_name, 'r')
-   print 'file opened'
+   logger.debug('file opened')
 
    field = f.variables[fieldname]
    lat = f.variables['lat']
    lon = f.variables['lon']
 
-   print field.shape
+   logger.debug(field.shape)
 
    ntimef = field.shape[0]
    nlat  = field.shape[1]
@@ -81,7 +84,7 @@ if __name__ == "__main__":
 
    chunk_size = nlon/size
 
-   print 'nlat, nlon, chunk_size: ', nlat, nlon, chunk_size
+   logger.debug('nlat, nlon, chunk_size: %s, %s, %s', nlat, nlon, chunk_size)
 
 
 
@@ -97,7 +100,7 @@ if __name__ == "__main__":
    nyrs = numpy.zeros(1)
    nyrs = ntime/365
 
-   print 'nyrs: ', nyrs
+   logger.debug('nyrs: %s', nyrs)
 
 
 
@@ -110,18 +113,18 @@ if __name__ == "__main__":
    begin_index = rank * chunk_size
    end_index   = begin_index + chunk_size
 
-   print "rank, begin_index, end_index: ", rank, begin_index, end_index
+   logger.debug("rank, begin_index, end_index: %s, %s, %s", rank, begin_index, end_index)
 
 
 
-   #Reading the chunk for each process 
+   #Reading the chunk for each process
    local_field_doi = numpy.ma.zeros((ntime, nlat, chunk_size))
    local_field_doi[:,:,:] = field[time_begin_index:time_end_index,:,begin_index:end_index]
 
-   print "rank: ", rank, " file read!, time taken: ", str(time.clock()-t0)
+   logger.debug("rank: %s file read!, time taken: %s.", rank, str(time.clock()-t0))
 
 
-   #Changing units of precipitation from kg/m2/s2 to m/s for model output 
+   #Changing units of precipitation from kg/m2/s2 to m/s for model output
    if fieldname == "PRECT" or fieldname == "PRECC" or fieldname == "PRECL":
            if casename != "MERRA" and casename != "CPC" and casename !="CPC_GLOBAL":
                local_field_doi = local_field_doi * 86400. * 1000.0
@@ -136,7 +139,7 @@ if __name__ == "__main__":
    block_size = 1
    nt_block = 365
    n_blocks = ntime/(block_size * nt_block)
-   print 'n_blocks: ', n_blocks
+   logger.debug('n_blocks: %s', n_blocks)
 
    local_block_max = numpy.zeros((n_blocks, nlat, chunk_size))
 
@@ -149,7 +152,7 @@ if __name__ == "__main__":
             local_block_max[block, y, x] = numpy.max(ts[block*nt_block:(block+1) * nt_block])
 
 
-   print "Rank " + str(rank)+ " : time " + str(time.clock()-t0)
+   logger.debug("Rank %s: time %s.", rank, time.clock()-t0)
 #   print local_block_max
 
 
@@ -162,7 +165,7 @@ if __name__ == "__main__":
 #   else:
 #       comm.Send(local_block_max, dest = 0)
 
-           
+
 
    #Rank 0 receiving block max data from different processes
    if rank == 0:
@@ -170,9 +173,9 @@ if __name__ == "__main__":
           for i in range(1, size):
              begin_index_i = i * chunk_size
              end_index_i   = begin_index_i + chunk_size
-           
+
              temp_field = numpy.zeros((n_blocks,nlat,chunk_size))
-       
+
        #MPI.Recv receiving values from other processes
 #          comm.Recv(temp_field, source = i)
 
@@ -180,11 +183,11 @@ if __name__ == "__main__":
        else:
           block_max[:,:,:] = local_block_max[:,:,:]
 
-       print block_max.shape
-       print block_max
+       logger.debug(block_max.shape)
+       logger.debug(block_max)
 
-       
-       #Writing block max to a netcdf file		
+
+       #Writing block max to a netcdf file
        outfile = output + '/'+casename+'.1yr_block_max.'+fieldname+'.nc'
 
 #       outfile_dir = case_dir + '/' + casename +'.'+ diagname + '/'
@@ -205,13 +208,8 @@ if __name__ == "__main__":
        lon_out[:] = lon[:]
 
        f.close()
-       f_write.close() 
+       f_write.close()
 
-       print outfile, ' written!...'
+       logger.debug("%s written!", outfile)
 
-       print "Rank 0: time "+ str(time.clock()-t0)
-
-
-
-
-
+       logger.info("Rank 0: time %s", time.clock()-t0)

@@ -16,9 +16,13 @@ from metrics.packages.diagnostic_groups import *
 #from metrics.packages.common.diagnostic_groups import *
 from metrics.computation.reductions import *
 from metrics.frontend.uvcdat import *
+from metrics.packages.plotplan import plot_plan
 from metrics.computation.plotspec import *
 import metrics.frontend.defines as defines
 from metrics.packages.lmwg.defines import *
+import logging
+
+logger = logging.getLogger(__name__)
 
 debug_lmwg = False
 
@@ -182,7 +186,7 @@ class albedos_redvar( reduced_variable ):
             reduction_function=(lambda x, vid: reduce2latlon_seasonal(x, season=season, vid=vid)),
             duvs={vname:duv})
       else:
-         print 'Unknown function for albedo_redvar - ', fn
+         logger.critical('Unknown function for albedo_redvar - %s', fn)
          quit()
 
 # These could be passed in as snow/rain reduced, but still need to add them and then do more work, so
@@ -231,7 +235,7 @@ class canopyevapTrend( reduced_variable ):
 # Canopy evap = qvege/(rain+snow)
    def __init__(self, filetable):
       duv = derived_var('CE_A', inputs=['QVEGE', 'RAIN','SNOW'], func=canopy_special)
-      print 'in canopyevap.'
+      logger.debug('in canopyevap.')
       reduced_variable.__init__(
          self, variableid='CE_A',
          filetable=filetable,
@@ -248,7 +252,7 @@ class prereduce ( reduced_variable ):
 
 class land_weights( reduced_variable ):
    def __init__(self, filetable, region=None):
-      print 'In land_weights init()'
+      logger.debug('In land_weights init()')
       if 'area' in filetable.list_variables() and 'landfrac' in filetable.list_variables():
          duv = derived_var('landweights', inputs=['area', 'landfrac'], func=atimesb)
       elif 'weight' in filetable.list_variables() and 'LANDFRAC' in filetable.list_variables():
@@ -256,7 +260,7 @@ class land_weights( reduced_variable ):
       elif 'weight' in filetable.list_variables() and 'LANDFRAC' not in filetable.list_variables():
          duv = derived_var('landweights', inputs=['weight', 'weight'], func=dummy2) # there has to be a better way....
       else:
-         print 'Couldnt find anything usable for land weights in - ', filetable.list_variables()
+         logger.critical('Couldnt find anything usable for land weights in - %s', filetable.list_variables())
          quit()
       reduced_variable.__init__(
          self, variableid='landweights',
@@ -267,7 +271,7 @@ class land_weights( reduced_variable ):
 class co2ppmvTrendRegionSingle( reduced_variable ):
    def __init__(self, filetable, region, weights):
       duv = derived_var('CO2_PPMV_A', inputs=['PCO2', 'PBOT'], func=adivb)
-      print 'region: ', region
+      logger.info('region: %s', region)
       reduced_variable.__init__(
          self, variableid='CO2_PPMV_A',
          filetable=filetable,
@@ -302,7 +306,7 @@ class LMWG(BasicDiagnosticGroup):
         return BasicDiagnosticGroup._all_variables( model, obs, diagnostic_set_name )
 
     def list_diagnostic_sets( self ):
-        psets = lmwg_plot_spec.__subclasses__()
+        psets = lmwg_plot_plan.__subclasses__()
         plot_sets = psets
         for cl in psets:
             plot_sets = plot_sets + cl.__subclasses__()
@@ -353,15 +357,15 @@ def make_ft_dict(models):
 
    return model_dict
             
-class lmwg_plot_spec(plot_spec):
+class lmwg_plot_plan(plot_plan):
     package = LMWG  # Note that this is a class not an object.. 
     albedos = {'VBSA':['FSRVDLN', 'FSDSVDLN'], 'NBSA':['FSRNDLN', 'FSDSNDLN'], 'VWSA':['FSRVI', 'FSDSVI'], 'NWSA':['FSRNI', 'FSDSNI'], 'ASA':['FSR', 'FSDS']}
     @staticmethod
     def _list_variables( model, obs ):
-        return lmwg_plot_spec.package._list_variables( model, obs, "lmwg_plot_spec" )
+        return lmwg_plot_plan.package._list_variables( model, obs, "lmwg_plot_plan" )
     @staticmethod
     def _all_variables( model, obs ):
-        return lmwg_plot_spec.package._all_variables( model, obs, "lmwg_plot_spec" )
+        return lmwg_plot_plan.package._all_variables( model, obs, "lmwg_plot_plan" )
 
 
 ###############################################################################
@@ -383,7 +387,7 @@ class lmwg_plot_spec(plot_spec):
 ### However, the level_vars should *probably* have a separate option for 
 ### difference plots because there would be 20 plots otherwise. 
 ### Perhaps this needs to be a command line option or GUI check box?
-class lmwg_plot_set1(lmwg_plot_spec):
+class lmwg_plot_set1(lmwg_plot_plan):
    varlist = []
    name = '1 - Line plots of annual trends in energy balance, soil water/ice and temperature, runoff, snow water/ice, photosynthesis '
    number = '1'
@@ -392,9 +396,9 @@ class lmwg_plot_set1(lmwg_plot_spec):
    ### These are special cased since they have 10 levels plotted. However, they are not "derived" per se.
    _level_vars = ['SOILLIQ', 'SOILICE', 'SOILPSI', 'TSOI']
 
-   def __init__(self, model, obs, varid, seasonid=None, region=None, aux=None, levels=None):
-      print 'SOILLIQ LEVELS QUESTIONABLE?'
-      plot_spec.__init__(self,seasonid)
+   def __init__(self, model, obs, varid, seasonid=None, region=None, aux=None, plotparms='ignored'):
+      logger.debug('SOILLIQ LEVELS QUESTIONABLE?')
+      plot_plan.__init__(self,seasonid)
       self.plottype = 'Yxvsx'
 
       # There should be 0 obs for this, or at least we don't care about any obs.
@@ -443,7 +447,7 @@ class lmwg_plot_set1(lmwg_plot_spec):
 
    @staticmethod
    def _all_variables(model, obs):
-      allvars = lmwg_plot_spec.package._all_variables(model, obs, "lmwg_plot_spec")
+      allvars = lmwg_plot_plan.package._all_variables(model, obs, "lmwg_plot_plan")
       for dv in lmwg_plot_set1._derived_varnames:
          allvars[dv] = basic_plot_variable
       return allvars
@@ -583,7 +587,7 @@ class lmwg_plot_set1(lmwg_plot_spec):
       self.computation_planned = True
 
    def _results(self,newgrid=0):
-      results = plot_spec._results(self,newgrid)
+      results = plot_plan._results(self,newgrid)
       #print 'results: ', results
       if results is None: return None
       return self.plotspec_values[self.plotall_id]
@@ -602,7 +606,7 @@ class lmwg_plot_set1(lmwg_plot_spec):
 
 ###############################################################################
 
-class lmwg_plot_set2(lmwg_plot_spec):
+class lmwg_plot_set2(lmwg_plot_plan):
    varlist = []
    name = '2 - Horizontal contour plots of DJF, MAM, JJA, SON, and ANN means'
    number = '2'
@@ -611,9 +615,10 @@ class lmwg_plot_set2(lmwg_plot_spec):
    _level_varnames = [x+y for y in ['(1)', '(5)', '(10)'] for x in _level_vars]
    _obs_vars = ['TSA', 'PREC', 'TOTRUNOFF', 'SNOWDP', 'H2OSNO', 'FSNO', 'VBSA', 'NBSA', 'VWSA', 'NWSA', 'ASA']
    _nonlinear_vars = ['EVAPFRAC', 'ASA', 'VBSA', 'NBSA', 'VWSA', 'NWSA', 'RNET']
-   def __init__( self, model, obs, varid, seasonid=None, region=None, aux=None, levels=None):
+   def __init__( self, model, obs, varid, seasonid=None, region=None, aux=None,
+                 plotparms='ignored' ):
       # common regardless of number of fts
-      plot_spec.__init__(self,seasonid)
+      plot_plan.__init__(self,seasonid)
       self.plottype = 'Isofill'
       if self._seasonid == 'ANN':
          self.season = cdutil.times.Seasons('JFMAMJJASOND')
@@ -636,11 +641,11 @@ class lmwg_plot_set2(lmwg_plot_spec):
 
    @staticmethod
    def _all_variables( model, obs ):
-      allvars = lmwg_plot_spec.package._all_variables( model, obs, "lmwg_plot_spec" )
+      allvars = lmwg_plot_plan.package._all_variables( model, obs, "lmwg_plot_plan" )
 
       if type(obs) is list and len(obs) >= 1 and type(model) is list and len(model) >= 1:
          if 'SCF' in obs[0].list_variables() and 'FSNO' not in allvars and 'FSNO' in model[0].list_variables():
-            print 'Adding FSNO to var list for comparison with SCF in obs list'
+            logger.debug('Adding FSNO to var list for comparison with SCF in obs list')
             allvars['FSNO'] = basic_plot_variable
 
       ### TODO: Fix variable list based on filetable2 after adding derived/level vars
@@ -650,9 +655,10 @@ class lmwg_plot_set2(lmwg_plot_spec):
          if len(obs) == 1:
             if dv not in obs[0].list_variables():
                if flag == 0:
-                  print '----> Your list of variables includes obs variables which may or may not be in the model dataset and vice versa'
-                  print 'We used to remove those extra variables but it makes it hard to have a derived variable (e.g. TOTRUNOFF) which'
-                  print 'is compared to a different varaiable name (e.g. RUNOFF) in the obs sets'
+                  logger.warning("""----> Your list of variables includes obs variables which may or may not be in the model dataset and vice versa
+We used to remove those extra variables but it makes it hard to have a derived variable (e.g. TOTRUNOFF) which
+is compared to a different varaiable name (e.g. RUNOFF) in the obs sets
+""")
                   flag = 1
 #               del allvars[dv]
 
@@ -662,9 +668,10 @@ class lmwg_plot_set2(lmwg_plot_spec):
          if len(obs) == 1:
             if dv not in obs[0].list_variables():
                if flag == 0:
-                  print '----> Your list of variables includes obs variables which may or may not be in the model dataset and vice versa'
-                  print 'We used to remove those extra variables but it makes it hard to have a derived variable (e.g. TOTRUNOFF) which'
-                  print 'is compared to a different varaiable name (e.g. RUNOFF) in the obs sets'
+                  logger.warning("""----> Your list of variables includes obs variables which may or may not be in the model dataset and vice versa
+We used to remove those extra variables but it makes it hard to have a derived variable (e.g. TOTRUNOFF) which
+is compared to a different varaiable name (e.g. RUNOFF) in the obs sets
+""")
                   flag = 1
 #               del allvars[dv]
 
@@ -686,9 +693,9 @@ class lmwg_plot_set2(lmwg_plot_spec):
 
       # Now, determine how many unique fts we have.
       num_obs = len(obs)
-      print 'OBS: '
-      print obs
-      print 'DONE OBS'
+      logger.info('OBS: ')
+      logger.info(obs)
+      logger.info("DONE OBS")
 
 
       num_models = len(model_dict.keys())
@@ -699,7 +706,7 @@ class lmwg_plot_set2(lmwg_plot_spec):
       # however, and really probably should be moved?
       self.plot_ids = []
       if num_models == 0 and num_obs == 0:
-         print 'No plots apparently???'
+         logger.info('No plots apparently???')
          return
 
 
@@ -726,7 +733,7 @@ class lmwg_plot_set2(lmwg_plot_spec):
 
       # We only supoprt 1 obs set, so if we have any, the first one is the winner.
       if num_obs >= 2:
-         print 'Currently only supporting 1 obs set'
+         logger.warning('Currently only supporting 1 obs set')
       if num_obs >= 1:
          obs0 = obs[0] # a filetable.
       if num_obs == 2:
@@ -806,7 +813,7 @@ class lmwg_plot_set2(lmwg_plot_spec):
             ft = obs0
             # only an obs specified, is this a valid variable for obs-only?
             if varid not in lmwg_plot_set2._obs_vars: 
-               print 'Varid %s is not in obsvars list and only observation sets specified. Returning' % varid
+               logger.warning('Varid %s is not in obsvars list and only observation sets specified. Returning.', varid)
                return
             # These are not simple_flag vars so this code should never get hit....
             if varid == 'PREC' and 'PRECIP_LAND' in obs0.list_variables():
@@ -836,7 +843,7 @@ class lmwg_plot_set2(lmwg_plot_spec):
                ft_raw = raw0
             ft2 = obs0
             if varid not in lmwg_plot_set2._obs_vars:
-               print 'Varid %s is not in obsvars list and observation sets specified. Ignoring' % varid
+               logger.warning('Varid %s is not in obsvars list and observation sets specified. Ignoring.', varid)
                ft2 = None
             if varid == 'PREC' and 'PRECIP_LAND' in obs0.list_variables():
                v2 = 'PRECIP_LAND'
@@ -856,7 +863,7 @@ class lmwg_plot_set2(lmwg_plot_spec):
             ft = obs0
             ft2 = obs1
             if varid not in lmwg_plot_set2._obs_vars:
-               print 'Varid %s is not in obsvars list and only observation sets specified. Returning' % varid
+               logger.warning('Varid %s is not in obsvars list and only observation sets specified. Returning', varid)
                return
             if varid == 'PREC' and 'PRECIP_LAND' in obs0.list_variables():
                v1 = 'PRECIP_LAND'
@@ -870,7 +877,7 @@ class lmwg_plot_set2(lmwg_plot_spec):
                v2 = 'RUNOFF'
             if varid == 'FSNO' and 'SCF' in obs1.list_variables():
                v2 = 'SCF'
-         print 'IN SIMPLEFLAG - self.season:', self.season
+         logger.debug('IN SIMPLEFLAG - self.season: %s', self.season)
          self.reduced_variables[varid+'_ft1'] = reduced_variable(variableid = v1, 
             filetable=ft,
             reduced_var_id=varid+'_ft1',
@@ -901,7 +908,7 @@ class lmwg_plot_set2(lmwg_plot_spec):
             ft2 = obs0
             ft3 = obs1
             if varid not in lmwg_plot_set2._obs_vars:
-               print 'Varid %s is not in obsvars list and observation sets specified. Ignoring' % varid
+               logger.warning('Varid %s is not in obsvars list and observation sets specified. Ignoring.', varid)
                ft2 = None
                ft3 = None
             if varid == 'PREC' and 'PRECIP_LAND' in obs0.list_variables():
@@ -922,7 +929,7 @@ class lmwg_plot_set2(lmwg_plot_spec):
             ft2 = (climo1 if climo1 is not None else raw1)
             ft3 = obs0
             if varid not in lmwg_plot_set2._obs_vars:
-               print 'Varid %s is not in obsvars list and observation sets specified. Ignoring' % varid
+               logger.warning('Varid %s is not in obsvars list and observation sets specified. Ignoring.', varid)
                ft3 = None
             if varid == 'PREC' and 'PRECIP_LAND' in obs0.list_variables():
                v3 = 'PRECIP_LAND'
@@ -1083,10 +1090,10 @@ class lmwg_plot_set2(lmwg_plot_spec):
                variableid = v3, filetable = ft3, reduced_var_id=varid+'_ttest3',
                reduction_function = (lambda x, vid: dummy(x, vid)))
 
-         print 'Going to add plotspec %s.' % '_'.join([ft._strid, varid, seasonid])
+         logger.info('Going to add plotspec %s.', '_'.join([ft._strid, varid, seasonid]))
 
          if ft == None:
-            print 'ft is none. Thats probably bad.'
+            logger.critical("ft is none. That's probably bad.")
             exit(1)
 
          # Trivial case; a single plot.
@@ -1154,7 +1161,7 @@ class lmwg_plot_set2(lmwg_plot_spec):
       # nonlinear albedos. next most complicated, though fairly similar to prec/totrunoff/lheat
       elif varid == 'VBSA' or varid == 'NBSA' or varid == 'VWSA' or varid == 'NWSA' or varid == 'ASA':
          if raw0 == None and raw1 == None:
-            print 'Nonlinear derived variable %s specified but no raw datasets available. Returning.' % varid
+            logger.warning('Nonlinear derived variable %s specified but no raw datasets available. Returning.',  varid)
             return
          if raw0 != None:
             self.reduced_variables[varid+'_ft1'] = albedos_redvar(raw0, 'SEASONAL', self.albedos[varid], season=self.season)
@@ -1175,7 +1182,7 @@ class lmwg_plot_set2(lmwg_plot_spec):
       # These 3 only exist as model vs model (no model vs obs) comparisons, so ft2 is not special cased
       elif varid == 'RNET':
          if raw0 == None and raw1 == None:
-            print 'Nonlinear derived variable %s specified but no raw datasets available. Returning' % varid
+            logger.warning('Nonlinear derived variable %s specified but no raw datasets available. Returning.',  varid)
             return
          if raw0 != None:
             self.reduced_variables['RNET_ft1'] = rnet_redvar(raw0, 'SEASONAL', season=self.season)
@@ -1189,7 +1196,7 @@ class lmwg_plot_set2(lmwg_plot_spec):
 
       elif varid == 'EVAPFRAC':
          if raw0 == None and raw1 == None:
-            print 'Nonlinear derived variable %s specified but no raw datasets available. Returning' % varid
+            logger.warning('Nonlinear derived variable %s specified but no raw datasets available. Returning.',  varid)
             return
          if raw0 != None:
             self.reduced_variables['EVAPFRAC_ft1'] = evapfrac_redvar(raw0, 'SEASONAL', suffix='1', season=self.season)
@@ -1202,9 +1209,9 @@ class lmwg_plot_set2(lmwg_plot_spec):
             ft2_raw = raw1
 
       elif varid == 'P-E':
-         print 'WORKING ON P-E'
+         logger.debug('WORKING ON P-E')
          if raw0 == None and raw1 == None:
-            print 'Nonlinear derived variable %s specified but no raw datasets available. Returning' % varid
+            logger.warning('Nonlinear derived variable %s specified but no raw datasets available. Returning.',  varid)
             return
          if raw0 != None:
             self.reduced_variables['P-E_ft1'] = pminuse_redvar(raw0, 'SEASONAL', self.season)
@@ -1220,7 +1227,7 @@ class lmwg_plot_set2(lmwg_plot_spec):
       elif varid in lmwg_plot_set2._level_varnames or varid in lmwg_plot_set2._level_vars:
          # The actual variable names should be in level_vars. level_varnames are {var}(0), (5), and (10).
          if varid not in lmwg_plot_set2._level_varnames:
-            print 'A variable with multiple levels was specified but no level was provided. Assuming 1, 5, and 10 levels.'
+            logger.warning('A variable with multiple levels was specified but no level was provided. Assuming 1, 5, and 10 levels.')
             vbase = varid
             levels = [1, 5, 10]
 #            vs = [varid+y for y in ['(1)', '(5)', '(10)']]
@@ -1229,7 +1236,7 @@ class lmwg_plot_set2(lmwg_plot_spec):
             levels = [int(varid.split('(')[1].split(')')[0])]
 
          for level in levels:
-            print 'in level_varnames - varid %s, level %s' % (varid, level)
+            logger.debug('in level_varnames - varid %s, level %s', varid, level)
             # split into varname and level. kinda icky but it works.
             # TODO Offer a level drop down in the GUI/command line
 
@@ -1244,7 +1251,7 @@ class lmwg_plot_set2(lmwg_plot_spec):
 
             self.composite_plotspecs = {}
             self.single_plotspecs={}
-            print 'Creating plot for %s' % vbase+str(level)+'_ft1'
+            logger.debug('Creating plot for %s', vbase+str(level)+'_ft1')
 #            print 'Reduced variables: %s' % self.reduced_variables
             self.single_plotspecs[self.plot1_id] = plotspec(
                vid=vbase+str(level)+'_ft1',
@@ -1272,14 +1279,14 @@ class lmwg_plot_set2(lmwg_plot_spec):
 
       # level_varnames already did their plots
       if plots_defined == False:
-         print '--------> Plots not yet defined. Defining...'
+         logger.debug('--------> Plots not yet defined. Defining...')
          self.single_plotspecs = {}
          self.composite_plotspecs = {}
          self.single_plotspecs[self.plot1_id] = plotspec(
             vid = varid+'_ft1',
             zvars = [varid+'_ft1'], zfunc = (lambda z: z),
             plottype = self.plottype)
-         print 'setting up plot 1:', self.plot1_id
+         logger.debug('setting up plot 1:', self.plot1_id)
          self.composite_plotspecs[self.plotall_id] = [self.plot1_id]
 
          if ft2 != None:
@@ -1318,7 +1325,7 @@ class lmwg_plot_set2(lmwg_plot_spec):
             self.composite_plotspecs[self.plotall_id].append(self.plot4_id)
             self.composite_plotspecs[self.plotall_id].append(self.plot5_id)
             self.composite_plotspecs[self.plotall_id].append(self.plot6_id)
-            print 'NO SUPPORT FOR ADDITIONAL PLOTS IN TEMPLATES - COMPLAIN TO SOMEONE TO FIX'
+            logger.error('NO SUPPORT FOR ADDITIONAL PLOTS IN TEMPLATES - COMPLAIN TO SOMEONE TO FIX')
             # this needs an 8-plot template
             self.single_plotspecs[self.plot8_id] = plotspec(
                vid = varid+'_models_obs_ttest',
@@ -1329,11 +1336,12 @@ class lmwg_plot_set2(lmwg_plot_spec):
       self.computation_planned = True
 
    def _results(self,newgrid=0):
-      print 'In set 2 results'
-      results = plot_spec._results(self,newgrid)
-      print 'reduced vars available now: ', self.reduced_variables
-      print 'results: ', results
-      if results is None: return None
+      logger.info('In set 2 results')
+      results = plot_plan._results(self,newgrid)
+      logger.info('reduced vars available now: %s', self.reduced_variables)
+      logger.info('results: %s', results)
+      if results is None:
+         return None
       return self.plotspec_values[self.plotall_id]
 
 ###############################################################################
@@ -1344,14 +1352,15 @@ class lmwg_plot_set2(lmwg_plot_spec):
 ###############################################################################
 ###############################################################################
 ### This should be combined with set6. They share lots of common code.
-class lmwg_plot_set3(lmwg_plot_spec):
+class lmwg_plot_set3(lmwg_plot_plan):
    _nonlinear_vars = ['EVAPFRAC', 'ASA', 'VBSA', 'NBSA', 'VWSA', 'NWSA', 'RNET']
    _derived_varnames = ['EVAPFRAC', 'PREC', 'TOTRUNOFF', 'LHEAT', 'ASA', 'VBSA', 'NBSA', 'VWSA', 'NWSA', 'RNET']
    name = '3 - Grouped Line plots of monthly climatology: regional air temperature, precipitation, runoff, snow depth, radiative fluxes, and turbulent fluxes'
    number = '3'
-   def __init__(self, model, obs, varid, seasonid=None, region=None, aux=None, levels=None):
+   def __init__(self, model, obs, varid, seasonid=None, region=None, aux=None,
+                plotparms='ignored' ):
 
-      plot_spec.__init__(self, seasonid)
+      plot_plan.__init__(self, seasonid)
       self.plottype = 'Yxvsx'
       self.seasons = defines.all_months
       self.season = cdutil.times.Seasons('JFMAMJJASOND')
@@ -1387,7 +1396,7 @@ class lmwg_plot_set3(lmwg_plot_spec):
       self.plot_ids = []
 
       if num_models == 0 and num_obs == 0:
-         print 'Nothing to plot'
+         logger.error('Nothing to plot')
          return
 
       obs0 = None
@@ -1434,10 +1443,10 @@ class lmwg_plot_set3(lmwg_plot_spec):
 
          # These are all nonlinear derivations so we need raw data.
          if raw0 == None and raw1 == None:
-            print 'Albedos are nonlinear derived variables and require a raw (non climo) dataset'
+            logger.error('Albedos are nonlinear derived variables and require a raw (non climo) dataset')
             return
          for v in self.albedos.keys():
-            print 'Albedos - ', v
+            logger.info('Albedos - %s', v)
             if raw0 != None:
                self.reduced_variables[v+'_ft1'] = albedos_redvar(raw0, 'TREND', self.albedos[v], region=region, flag='MONTHLY', weights=lw0)
             if raw1 != None:
@@ -1453,7 +1462,7 @@ class lmwg_plot_set3(lmwg_plot_spec):
                   lw_obs0 = land_weights(obs0, region=region).reduce()
                for v in vlist:
                   if v == 'ASA':
-                     print '***** Comparison to ASA in obs set not implemented yet ***** \n'
+                     logger.error('***** Comparison to ASA in obs set not implemented yet *****')
                      pass
                   if v in obs0.list_variables():
                      self.reduced_variables[v+'_obs0'] = reduced_variable(
@@ -1465,7 +1474,7 @@ class lmwg_plot_set3(lmwg_plot_spec):
                   lw_obs1 = land_weights(obs1, region=region).reduce()
                for v in vlist:
                   if v == 'ASA':
-                     print 'TODO ---- ***** Comparison to ASA in obs set not implemented yet ***** \n'
+                     logger.error('TODO ---- ***** Comparison to ASA in obs set not implemented yet *****')
                      pass
                   if v in obs1.list_variables():
                      self.reduced_variables[v+'_obs1'] = reduced_variable(
@@ -1485,7 +1494,7 @@ class lmwg_plot_set3(lmwg_plot_spec):
             # TODO: Can we have z2var/func WITHOUT z1 var/func????
             if v != 'ASA':
                if obs0 != None and v in obs0.list_variables():
-                  print 'TODO ---- ****** z3/4vars/z3/4funcs NOT (yet) fully supported ********'
+                  logger.warning('TODO ---- ****** z3/4vars/z3/4funcs NOT (yet) fully supported ********')
                   self.single_plotspecs[v+'_fts'].z3vars = [v+'_obs0']
                   self.single_plotspecs[v+'_fts'].z3func = (lambda z:z)
                if obs1 != None and v in obs1.list_variables():
@@ -1505,8 +1514,8 @@ class lmwg_plot_set3(lmwg_plot_spec):
          for v in red_varlist:
             ft = (climo0 if climo0 is not None else raw0)
             ft2 = (climo1 if climo1 is not None else raw1)
-            print '**** TODO - Why is this not working with climo files? We should be able to grab each month from each climo file and not reduce ******'
-            print '^^^^ CLIMATOLOGY.PY IS SUPPOSED TO FIX THIS BY ADDING TIME STAMPS IN THE FILES'
+            logger.error('**** TODO - Why is this not working with climo files? We should be able to grab each month from each climo file and not reduce ******')
+            logger.error('^^^^ CLIMATOLOGY.PY IS SUPPOSED TO FIX THIS BY ADDING TIME STAMPS IN THE FILES')
 #            ft = raw0 #(climo0 if climo0 is not None else raw0)
 #            ft2 = raw1 # (climo1 if climo1 is not None else raw1)
             self.reduced_variables[v+'_ft1'] = reduced_variable(
@@ -1530,13 +1539,13 @@ class lmwg_plot_set3(lmwg_plot_spec):
          if raw0 != None:
             self.reduced_variables['RNET_ft1'] = rnet_redvar(raw0, 'TREND', region=region, flag='MONTHLY', weights=lw0)
          else:
-            print 'No non-climo datasets (model 1) for nonlinear derived variable RNET. Skipping over it.'
+            logger.warning('No non-climo datasets (model 1) for nonlinear derived variable RNET. Skipping over it.')
          if raw1 != None:
             self.reduced_variables['RNET_ft2'] = rnet_redvar(raw1, 'TREND', region=region, flag='MONTHLY', weights=lw1)
          else:
-            print 'No non-climo datasets (model 2) for nonlinear derived variable RNET. Skipping over it.'
+            logger.warning('No non-climo datasets (model 2) for nonlinear derived variable RNET. Skipping over it.')
 
-         print 'TODO -- ****** z3vars/z3funcs NOT (yet) supported ******** so 2 graphs generated instead of 1'
+         logger.warning('TODO -- ****** z3vars/z3funcs NOT (yet) supported ******** so 2 graphs generated instead of 1')
          # When z3func/z3vars is supported, these should be one plot.
          self.single_plotspecs['ET_ft1'] = plotspec(vid='ET_ft1',
             zvars=['ET_ft1'], zfunc=(lambda z:z),
@@ -1734,7 +1743,7 @@ class lmwg_plot_set3(lmwg_plot_spec):
             if 'weight' in obs[i].list_variables():
                weights.append(land_weights(ft0, region=region).reduce())
             else:
-               print 'No weights found for obs set ', i
+               logger.warning('No weights found for obs set %s', i)
 
             if 'PREC' in obs[i].list_variables():
                num_prec = num_prec+1
@@ -1813,7 +1822,7 @@ class lmwg_plot_set3(lmwg_plot_spec):
                   self.single_plotspecs['Prec_ft1'].z4vars = ['PREC_obs2']
                   self.single_plotspecs['Prec_ft1'].z4func = (lambda z:z)
                if num_prec > 2:
-                  print 'Only 2 obs sets plotted for precipitation'
+                  logger.warning('Only 2 obs sets plotted for precipitation')
 
                if num_temp >= 1:
                   self.single_plotspecs['2mAir_ft1'].z3vars = ['TSA_obs1']
@@ -1822,7 +1831,7 @@ class lmwg_plot_set3(lmwg_plot_spec):
                   self.single_plotspecs['2mAir_ft1'].z4vars = ['TSA_obs2']
                   self.single_plotspecs['2mAir_ft1'].z4func = (lambda z:z)
                if num_temp > 2:
-                  print 'Only 2 obs sets plotted for temp'
+                  logger.warning('Only 2 obs sets plotted for temp')
                if num_snowd >= 1:
                   self.single_plotspecs['SnowDepth_ft1'].z3vars = ['SNOWDP_obs1']
                   self.single_plotspecs['SnowDepth_ft1'].z3func = (lambda z:z)
@@ -1830,7 +1839,7 @@ class lmwg_plot_set3(lmwg_plot_spec):
                   self.single_plotspecs['SnowDepth_ft1'].z4vars = ['SNOWDP_obs2']
                   self.single_plotspecs['SnowDepth_ft1'].z4func = (lambda z:z)
                if num_snowd > 2:
-                  print 'Only 2 obs sets plotted for snowdepth'
+                  logger.warning('Only 2 obs sets plotted for snowdepth')
                if num_run >= 1:
                   self.single_plotspecs['Runoff_ft1'].z3vars = ['TOTRUNOFF_obs1']
                   self.single_plotspecs['Runoff_ft1'].z3func = (lambda z:z)
@@ -1838,7 +1847,7 @@ class lmwg_plot_set3(lmwg_plot_spec):
                   self.single_plotspecs['Runoff_ft1'].z4vars = ['TOTRUNOFF_obs2']
                   self.single_plotspecs['Runoff_ft1'].z4func = (lambda z:z)
                if num_run > 2:
-                  print 'Only 2 obs sets plotted for total runoff'
+                  logger.warning('Only 2 obs sets plotted for total runoff')
             else:
                if num_prec >= 1:
                   self.single_plotspecs['Prec_ft1'].z2vars = ['PREC_obs1']
@@ -1847,7 +1856,7 @@ class lmwg_plot_set3(lmwg_plot_spec):
                   self.single_plotspecs['Prec_ft1'].z3vars = ['PREC_obs2']
                   self.single_plotspecs['Prec_ft1'].z3func = (lambda z:z)
                if num_prec > 2:
-                  print 'Only 2 obs sets plotted for precipitation'
+                  logger.warning('Only 2 obs sets plotted for precipitation')
 
                if num_temp >= 1:
                   self.single_plotspecs['2mAir_ft1'].z2vars = ['TSA_obs1']
@@ -1856,7 +1865,7 @@ class lmwg_plot_set3(lmwg_plot_spec):
                   self.single_plotspecs['2mAir_ft1'].z3vars = ['TSA_obs2']
                   self.single_plotspecs['2mAir_ft1'].z3func = (lambda z:z)
                if num_temp > 2:
-                  print 'Only 2 obs sets plotted for temp'
+                  logger.warning('Only 2 obs sets plotted for temp')
                if num_snowd >= 1:
                   self.single_plotspecs['SnowDepth_ft1'].z2vars = ['SNOWDP_obs1']
                   self.single_plotspecs['SnowDepth_ft1'].z2func = (lambda z:z)
@@ -1864,7 +1873,7 @@ class lmwg_plot_set3(lmwg_plot_spec):
                   self.single_plotspecs['SnowDepth_ft1'].z3vars = ['SNOWDP_obs2']
                   self.single_plotspecs['SnowDepth_ft1'].z3func = (lambda z:z)
                if num_snowd > 2:
-                  print 'Only 2 obs sets plotted for snowdepth'
+                  logger.warning('Only 2 obs sets plotted for snowdepth')
                if num_run >= 1:
                   self.single_plotspecs['Runoff_ft1'].z2vars = ['TOTRUNOFF_obs1']
                   self.single_plotspecs['Runoff_ft1'].z2func = (lambda z:z)
@@ -1872,7 +1881,7 @@ class lmwg_plot_set3(lmwg_plot_spec):
                   self.single_plotspecs['Runoff_ft1'].z3vars = ['TOTRUNOFF_obs2']
                   self.single_plotspecs['Runoff_ft1'].z3func = (lambda z:z)
                if num_run > 2:
-                  print 'Only 2 obs sets plotted for total runoff'
+                  logger.warning('Only 2 obs sets plotted for total runoff')
 
 
 
@@ -1884,7 +1893,7 @@ class lmwg_plot_set3(lmwg_plot_spec):
       if 'Snow' in varid:
          ft = (climo0 if climo0 is not None else raw0)
          ft2 = (climo1 if climo1 is not None else raw1)
-         print '******* NEED MONTHLY FILES, USING RAW FOR NOW *********'
+         logger.warning('******* NEED MONTHLY FILES, USING RAW FOR NOW *********')
          lw0 = land_weights(ft0, region=region).reduce()
          if ft1 != None:
             lw1 = land_weights(ft1, region=region).reduce()
@@ -1910,7 +1919,7 @@ class lmwg_plot_set3(lmwg_plot_spec):
 
          # Process any/all observation sets now
          weights = []
-         print '******* CALCULATE LAND WEIGHTS FOR OBS PROPERLY *******'
+         logger.debug('******* CALCULATE LAND WEIGHTS FOR OBS PROPERLY *******')
          num_snowd = 0
          num_fsno = 0
          num_swe = 0
@@ -1944,7 +1953,7 @@ class lmwg_plot_set3(lmwg_plot_spec):
                   self.single_plotspecs['SNOWDP'].z4vars = ['SNOWDP_obs2']
                   self.single_plotspecs['SNOWDP'].z4func = (lambda z:z)
                if num_snowd > 2:
-                  print 'Only plotting first 2 snow depth obs sets'
+                  logger.warning('Only plotting first 2 snow depth obs sets')
                if num_fsno >= 1:
                   self.single_plotspecs['FSNO'].z3vars = ['FSNO_obs1']
                   self.single_plotspecs['FSNO'].z3func = (lambda z:z)
@@ -1952,7 +1961,7 @@ class lmwg_plot_set3(lmwg_plot_spec):
                   self.single_plotspecs['FSNO'].z4vars = ['FSNO_obs2']
                   self.single_plotspecs['FSNO'].z4func = (lambda z:z)
                if num_fsno > 2:
-                  print 'Only plotting first 2 fractional snow coverage obs sets'
+                  logger.warning('Only plotting first 2 fractional snow coverage obs sets')
                if num_swe >= 1:
                   self.single_plotspecs['H2OSNO'].z3vars = ['H2OSNO_obs1']
                   self.single_plotspecs['H2OSNO'].z3func = (lambda z:z)
@@ -1960,7 +1969,7 @@ class lmwg_plot_set3(lmwg_plot_spec):
                   self.single_plotspecs['H2OSNO'].z4vars = ['H2OSNO_obs2']
                   self.single_plotspecs['H2OSNO'].z4func = (lambda z:z)
                if num_swe > 2: 
-                  print 'Only plotting first 2 snow/water equivalent obs sets'
+                  logger.warning('Only plotting first 2 snow/water equivalent obs sets')
             else:
                if num_snowd >= 1:
                   self.single_plotspecs['SNOWDP'].z2vars = ['SNOWDP_obs1']
@@ -1969,7 +1978,7 @@ class lmwg_plot_set3(lmwg_plot_spec):
                   self.single_plotspecs['SNOWDP'].z3vars = ['SNOWDP_obs2']
                   self.single_plotspecs['SNOWDP'].z3func = (lambda z:z)
                if num_snowd > 2:
-                  print 'Only plotting first 2 snow depth obs sets'
+                  logger.warning('Only plotting first 2 snow depth obs sets')
                if num_fsno >= 1:
                   self.single_plotspecs['FSNO'].z2vars = ['FSNO_obs1']
                   self.single_plotspecs['FSNO'].z2func = (lambda z:z)
@@ -1977,7 +1986,7 @@ class lmwg_plot_set3(lmwg_plot_spec):
                   self.single_plotspecs['FSNO'].z3vars = ['FSNO_obs2']
                   self.single_plotspecs['FSNO'].z3func = (lambda z:z)
                if num_fsno > 2:
-                  print 'Only plotting first 2 fractional snow coverage obs sets'
+                  logger.warning('Only plotting first 2 fractional snow coverage obs sets')
                if num_swe >= 1:
                   self.single_plotspecs['H2OSNO'].z2vars = ['H2OSNO_obs1']
                   self.single_plotspecs['H2OSNO'].z2func = (lambda z:z)
@@ -1985,7 +1994,7 @@ class lmwg_plot_set3(lmwg_plot_spec):
                   self.single_plotspecs['H2OSNO'].z3vars = ['H2OSNO_obs2']
                   self.single_plotspecs['H2OSNO'].z3func = (lambda z:z)
                if num_swe > 2: 
-                  print 'Only plotting first 2 snow/water equivalent obs sets'
+                  logger.warning('Only plotting first 2 snow/water equivalent obs sets')
 
       # No obs sets for these 3
       if 'Carbon' in varid or 'Fire' in varid or 'Hydrology' in varid:
@@ -2005,8 +2014,8 @@ class lmwg_plot_set3(lmwg_plot_spec):
          lw0 = land_weights(ft0, region=region).reduce()
          if ft1 != None:
             lw1 = land_weights(ft1, region=region).reduce()
-         print '******* NEED MON CLIMOS *******'
-         print '***** CALC LAND WEIGHTS *****'
+         logger.warning('******* NEED MON CLIMOS *******')
+         logger.warning('***** CALC LAND WEIGHTS *****')
          ft = raw0
          ft2 = raw1
 
@@ -2031,9 +2040,9 @@ class lmwg_plot_set3(lmwg_plot_spec):
       self.computation_planned = True
       
    def _results(self, newgrid = 0):
-      results = plot_spec._results(self, newgrid)
+      results = plot_plan._results(self, newgrid)
       if results is None:
-         print 'No results'
+         logger.error('No results')
          return None
       psv = self.plotspec_values
       composite_names = ['Total_Precipitation', 'Carbon_Nitrogen_Fluxes', 
@@ -2055,19 +2064,20 @@ class lmwg_plot_set3(lmwg_plot_spec):
 ###############################################################################
 ###############################################################################
 
-class lmwg_plot_set5(lmwg_plot_spec):
+class lmwg_plot_set5(lmwg_plot_plan):
    varlist = []
    name = '5 - Tables of annual means'
    number = '5'
 
-   if debug_lmwg: print '***** NEED PROPER UNIT CONVERSIONS FOR A FEW MORE UNITS ******'
-   print '(Probably what is wrong with regional. carbon needs some more conversions too though)'
    # This jsonflag is gross, but Options has always been a 2nd class part of the design. Maybe I'll get to
    # change that for the next release.
-   def __init__( self, model, obs, varid, seasonid=None, region=None, aux=None, jsonflag=False, levels=None):
+   def __init__( self, model, obs, varid, seasonid=None, region=None, aux=None, jsonflag=False,
+                 plotparms='ignored' ):
 #      print 'jsonflag passed in: ', jsonflag
+      logger.debug('***** NEED PROPER UNIT CONVERSIONS FOR A FEW MORE UNITS ******')
+      logger.debug('(Probably what is wrong with regional. carbon needs some more conversions too though)')
 
-      plot_spec.__init__(self,seasonid)
+      plot_plan.__init__(self,seasonid)
       self.jsonflag = jsonflag
 #      print 'jsonflag passed in: ', jsonflag
       self.plottype = 'Isofill'
@@ -2084,13 +2094,13 @@ class lmwg_plot_set5(lmwg_plot_spec):
       num_models = len(model_dict.keys())
 
       if num_models == 0: 
-         print 'Nothing to plot'
+         logger.warning('Nothing to plot')
          self._end = 1
          return
 
       if aux.lower() == 'difference' and num_models != 2: # ie, difference was passed any only one dataset
-         print 'difference variable option requires two models'
-         print 'Only one model passed in. Nothing to do'
+         logger.warning('difference variable option requires two models')
+         logger.warning('Only one model passed in. Nothing to do')
          self._end = 1
          return
 
@@ -2114,7 +2124,7 @@ class lmwg_plot_set5(lmwg_plot_spec):
    def plan_computation( self, model, obs, varid, seasonid, region=None, aux=None):
 
       model_dict = make_ft_dict(model)
-      print 'model dict:', model_dict
+      logger.debug('model dict: %s', model_dict)
       num_models = len(model_dict.keys())
 
       raw0 = None
@@ -2144,7 +2154,7 @@ class lmwg_plot_set5(lmwg_plot_spec):
       # Ok, which table are we producing?
 
       if 'Regional' in varid:
-         print 'NOTE: Set 5, Regional still has bug fixes required'
+         logger.warning('NOTE: Set 5, Regional still has bug fixes required')
          # This one will take 2 passes over the input list for efficiency.
          self.derived_variables1 = {}
          self.reduced_variables1 = {}
@@ -2238,7 +2248,7 @@ class lmwg_plot_set5(lmwg_plot_spec):
 
          for v in self.albedos.keys():
             if raw0 == None:
-               print 'Nonclimo dataset required for albedos. Removing them from the display'
+               logger.info('Nonclimo dataset required for albedos. Removing them from the display')
                self.display_varslist(set(self.display_vars) - set(self.albedos.keys()))
             else:
                self.reduced_variables[v+'_ft1'] = albedos_redvar(raw0, 'SINGLE', self.albedos[v], region=region, weights=global_lw0)
@@ -2255,7 +2265,7 @@ class lmwg_plot_set5(lmwg_plot_spec):
             self.derived_variables['LHEAT_ft2'] = derived_var(vid='LHEAT_ft2', inputs=['FCTR_ft2', 'FGEV_ft2', 'FCEV_ft2'], func=sum3)
             self.derived_variables['PREC_ft2'] = derived_var(vid='PREC_ft2', inputs=['RAIN_ft2', 'SNOW_ft2'], func=aplusb)
          if raw0 == None:
-            print 'Nonclimo dataset required for nonlinear variables CO2_PPMV, and RNET. Removing them from display'
+            logger.info('Nonclimo dataset required for nonlinear variables CO2_PPMV, and RNET. Removing them from display')
             self.display_vars.remove('CO2_PPMV')
             self.display_vars.remove('RNET')
          else:
@@ -2310,13 +2320,13 @@ class lmwg_plot_set5(lmwg_plot_spec):
                   self.derived_variables[v+'_diff'] = derived_var(
                      vid=v+'_diff', inputs=[v+'_ft1', v+'_ft2'], func=aminusb)
 
-         print 'global_lw0: ', global_lw0.max()
+         logger.debug('global_lw0: %s', global_lw0.max())
       self.computation_planned = True
 
    def _results(self,newgrid=0):
       if self._end == 1:
          return
-      print 'JSON FLAG', self.jsonflag
+      logger.debug('JSON FLAG: %s', self.jsonflag)
       # Do we have some first-pass variables to do?
       if self.reduced_variables1 != None:
          for v in self.reduced_variables1.keys():
@@ -2328,7 +2338,7 @@ class lmwg_plot_set5(lmwg_plot_spec):
             self.variable_values[v] = value
 
       for v in self.reduced_variables.keys():
-         print 'trying to reduce ', v
+         logger.debug('trying to reduce %s', v)
          value = self.reduced_variables[v].reduce(None)
          self.variable_values[v] = value
       postponed = []
@@ -2350,7 +2360,7 @@ class lmwg_plot_set5(lmwg_plot_spec):
 
       # See if we have json set
       if self.jsonflag == True:
-         print 'json set'
+         logger.debug('json set')
       else:
          if self.hasregions == 1:
             # An attempt to make this look pretty....
@@ -2443,7 +2453,7 @@ class lmwg_plot_set5(lmwg_plot_spec):
             descmax = max(map(len, [varinfo[x]['desc'] for x in self.display_vars]))
             unitmax = max(map(len, [varinfo[x]['RepUnits'] for x in self.display_vars]))
             varmax  = max(map(len, self.display_vars))
-            print 'desc: ', descmax, 'unit: ', unitmax, 'var: ', varmax
+            logger.debug('desc: %s; unit: %s; var: %s', descmax, unitmax, varmax)
 
             if self.difference == 0:
                print >>strbuf, 'DATA SET 5: CLM ANNUAL MEANS OVER LAND'
@@ -2519,12 +2529,13 @@ class lmwg_plot_set5(lmwg_plot_spec):
 ### This should be combined with set3b. They share lots of common code.     ###
 ###############################################################################
 ###############################################################################
-class lmwg_plot_set6(lmwg_plot_spec):
+class lmwg_plot_set6(lmwg_plot_plan):
    varlist = []
    name = '6 - Group Line plots of annual trends in regional soil water/ice and temperature, runoff, snow water/ice, photosynthesis'
    number = '6'
-   def __init__(self, model, obs, varid, seasonid=None, region=None, aux=None, levels=None):
-      plot_spec.__init__(self, seasonid)
+   def __init__(self, model, obs, varid, seasonid=None, region=None, aux=None,
+                plotparms='ignored' ):
+      plot_plan.__init__(self, seasonid)
       self.plottype = 'Yxvsx'
 
       self._var_baseid = '_'.join([varid, 'set6'])
@@ -2545,6 +2556,7 @@ class lmwg_plot_set6(lmwg_plot_spec):
       return vlist
 
    def plan_computation(self, model, obs, varid, seasonid, region, aux=None):
+      logger.info('NOTE: Set 6 requires raw data for all "variables" until we create series of annual average climatologies and support them')
 
       model_dict = make_ft_dict(model)
 
@@ -2558,7 +2570,7 @@ class lmwg_plot_set6(lmwg_plot_spec):
       raw0 = model_dict[model_dict.keys()[0]]['raw']
       climo0 = model_dict[model_dict.keys()[0]]['climos']
       if raw0 == None:
-         print 'Set 6 requires raw data for now. We need to create climatology files that have a series of annual averages'
+         logger.warning('Set 6 requires raw data for now. We need to create climatology files that have a series of annual averages')
          return
       ft = raw0
       lw0 = land_weights(ft, region=region).reduce()
@@ -2571,7 +2583,7 @@ class lmwg_plot_set6(lmwg_plot_spec):
          raw1 = model_dict[model_dict.keys()[1]]['raw']
          climo1 = model_dict[model_dict.keys()[1]]['climos']
          if raw1 == None:
-            print 'Set 6 requires raw data for now. We need to create climatology files that have a series of annual averages'
+            logger.warning('Set 6 requires raw data for now. We need to create climatology files that have a series of annual averages')
             num_models = 1
             if raw0 == None:
                return
@@ -2786,7 +2798,7 @@ class lmwg_plot_set6(lmwg_plot_spec):
 
          self.composite_plotspecs['Radiative_Fluxes'].append('Albedo_composite')
          self.composite_plotspecs['Radiative_Fluxes'].append('NetRadiation_composite')
-         print self.composite_plotspecs
+         logger.debug("Composite plotspecs: %s", self.composite_plotspecs)
          
       if 'Carbon' in varid or 'Fire' in varid or 'Hydrology' in varid or 'TotalSnow' in varid:
          if 'TotalSnow' in varid:
@@ -2825,9 +2837,9 @@ class lmwg_plot_set6(lmwg_plot_spec):
 
 
    def _results(self,newgrid=0):
-      results = plot_spec._results(self,newgrid)
+      results = plot_plan._results(self,newgrid)
       if results is None: 
-         print 'No results to plot. This is probably bad'
+         logger.warning('No results to plot. This is probably bad')
          return None
       psv = self.plotspec_values
 
@@ -2835,23 +2847,24 @@ class lmwg_plot_set6(lmwg_plot_spec):
          'Fire_Fluxes', 'Radiative_Fluxes', 'Turbulent_Fluxes', 'SoilIce', 
          'SoilLiq_Water', 'Soil_Temp', 'TotalSnowH2O_TotalSnowIce', 'TotalSoilIce_TotalSoilH2O']
 
-      print '******************* PSV KEYS ************'
-      print psv.keys()
+      logger.debug('******************* PSV KEYS ************')
+      logger.debug("%s", psv.keys())
       for plot in composite_names:
-         print 'plot name:', plot
+         logger.debug('plot name: %s', plot)
          if plot in psv.keys():
             return self.plotspec_values[plot]
 
 
 
 
-class lmwg_plot_set9(lmwg_plot_spec):
+class lmwg_plot_set9(lmwg_plot_plan):
    name = '9 - Contour plots and statistics for precipitation and temperature. Statistics include DJF, JJA, and ANN biases, and RMSE, correlation and standard deviation of the annual cycle relative to observations'
    number = '9'
 #   print 'set 9 preinit'
-   def __init__(self, model, obs, varid, seasonid=None, region=None, aux=None, levels=None):
+   def __init__( self, model, obs, varid, seasonid=None, region=None, aux=None,
+                 plotparms='ignored' ):
 
-      plot_spec.__init__(self, seasonid)
+      plot_plan.__init__(self, seasonid)
 
       if seasonid == 'ANN':
          self.season = cdutil.times.Seasons('JFMAMJJASOND')
@@ -2886,7 +2899,7 @@ class lmwg_plot_set9(lmwg_plot_spec):
       return vlist
 
    def plan_computation(self, model, obs, varid, seasonid, region, aux=None):
-      print '******* TODO - Add weighted single number averages above the tables as per NCL ********'
+      logger.info('******* TODO - Add weighted single number averages above the tables as per NCL ********')
       
       model_dict = make_ft_dict(model)
 
@@ -2903,7 +2916,7 @@ class lmwg_plot_set9(lmwg_plot_spec):
       climo1 = None
 
       if num_fts < 3:
-         print 'This requires two models (%d supplied) and at least one obs set (%d supplied).' % (num_models, num_obs)
+         logger.critical('This requires two models (%d supplied) and at least one obs set (%d supplied).',num_models, num_obs)
          return
 
       raw0 = model_dict[model_dict.keys()[0]]['raw']
@@ -2912,20 +2925,20 @@ class lmwg_plot_set9(lmwg_plot_spec):
       climo1 = model_dict[model_dict.keys()[1]]['climos']
 
       obs0 = obs[0]
-      print dir(obs0)
-      print obs0.list_variables()
+      logger.debug(dir(obs0))
+      logger.debug(obs0.list_variables())
       # This one always has 3 plots, assuming num_models==2 and num_obs >= 1
       # Actual variable passed in via varopts. 
 
       if 'Table' in varid:
-         print 'TABLE NOT IMPLEMENTED YET'
+         logger.error('TABLE NOT IMPLEMENTED YET')
          pass
       else:
 
          ft = (climo0 if climo0 is not None else raw0)
          ft2 = (climo1 if climo1 is not None else raw1)
-         print '----> PASSING RAW DATA'
-         print 'TODO -- NEED NON-REDUCED DATA SUPPORT WHEN POSSIBLE'
+         logger.info('----> PASSING RAW DATA')
+         logger.info('TODO -- NEED NON-REDUCED DATA SUPPORT WHEN POSSIBLE')
          ft = raw0
          ft2 = raw1
 
@@ -2944,7 +2957,7 @@ class lmwg_plot_set9(lmwg_plot_spec):
             fn = 'CORR'
             season = cdutil.times.Seasons('JFMAMJJASOND')
          else:
-            print 'Unknown variable - ', varid
+            logger.warning('Unknown variable - ', varid)
             quit()
 
          var1 = fn+'_'+aux+'_1' # the 3 input variables
@@ -2967,16 +2980,16 @@ class lmwg_plot_set9(lmwg_plot_spec):
             elif 'TREFHT_LAND' in obs0.list_variables():
                vname = 'TREFHT_LAND'
             else:
-               print 'Couldnt find variable ',aux,' or equivalent in ', obs0.list_variables()
+               logger.error('Couldnt find variable %s or equivalent in %s', aux, obs0.list_variables())
                return
             # Now, is this Seasonal_Bias or not?
             if func == None:
-               print '---------> func is NONE'
+               logger.info('---------> func is NONE')
                self.reduced_variables[var1] = reduced_variable(variableid = aux, filetable = ft, reduced_var_id = var1, reduction_function = (lambda x, vid: dummy(x, vid))) 
                self.reduced_variables[var2] = reduced_variable(variableid = aux, filetable = ft2, reduced_var_id = var2, reduction_function = (lambda x, vid: dummy(x, vid))) 
                self.reduced_variables[varobs] = reduced_variable(variableid = vname, filetable=obs0, reduced_var_id = varobs, reduction_function = (lambda x, vid: dummy(x, vid))) 
             else: #seasonal bias, prereduce to a season
-               print '---------> func is NOT NONE'
+               logger.info('---------> func is NOT NONE')
                self.reduced_variables[var1] = reduced_variable(variableid = aux, filetable = ft, reduced_var_id = var1, reduction_function = (lambda x, vid: reduce2latlon_seasonal(x, vid=vid, season=self.season)))
                self.reduced_variables[var2] = reduced_variable(variableid = aux, filetable = ft2, reduced_var_id = var2, reduction_function = (lambda x, vid: reduce2latlon_seasonal(x, vid=vid, season=self.season)))
                self.reduced_variables[varobs] = reduced_variable(variableid = vname, filetable=obs0, reduced_var_id = varobs, reduction_function = (lambda x, vid: reduce2latlon_seasonal(x, vid=vid, season=self.season))) 
@@ -2992,9 +3005,9 @@ class lmwg_plot_set9(lmwg_plot_spec):
                vname = aux
             elif 'PRECIP_LAND' in obs0.list_variables():
                vname = 'PRECIP_LAND'
-               print 'Using PRECIP_LAND from the obs set to compare to PREC calculated'
+               logger.info('Using PRECIP_LAND from the obs set to compare to PREC calculated')
             else:
-               print 'Couldnt find variable ', aux, ' or equivalent in ', obs0.list_variables()
+               logger.warning('Couldnt find variable %s or equivalent in %s.', aux, obs0.list_variables())
 
             # "Extract" PREC from the obs set
             if func == None:
@@ -3010,7 +3023,7 @@ class lmwg_plot_set9(lmwg_plot_spec):
 
          elif aux == 'ASA':
             if raw0 == None or raw1 == None:
-               print 'All sky albedos requires raw data'
+               logger.error('All sky albedos requires raw data')
                return
 
             self.reduced_variables[var1] = albedos_redvar(raw0, fn, self.albedos['ASA'], season=self.season)
@@ -3022,16 +3035,16 @@ class lmwg_plot_set9(lmwg_plot_spec):
             elif 'BRDALB' in obs0.list_variables():
                vname = 'BRDALB'
                ow = 'LANDMASK' # all caps in the modisradweight* files
-               print 'Using BRDALB from the obs set to compare to ASA calculated'
+               logger.info('Using BRDALB from the obs set to compare to ASA calculated')
             else:
-               print 'Couldnt find variable ',aux,' or equivalent in ', obs0.list_variables()
+               logger.info('Couldnt find variable %s or equivalent in %s.', aux, obs0.list_variables())
             if func == None:
                self.reduced_variables[varobs] = reduced_variable(variableid = vname, filetable = obs0, reduced_var_id = varobs, reduction_function = (lambda x, vid: dummy(x, vid)))
             else:
                self.reduced_variables[varobs] = reduced_variable(variableid = vname, filetable = obs0, reduced_var_id = varobs, reduction_function = (lambda x, vid: reduce2latlon_seasonal(x, vid=vid, season=self.season)))
 
          else:
-            print 'Invalid variable option - ', aux
+            logger.critical('Invalid variable option - %s', aux)
             quit()
                   
          # Now, do the actual manipulations based on user input
@@ -3052,26 +3065,26 @@ class lmwg_plot_set9(lmwg_plot_spec):
             self.single_plotspecs[graph2] = plotspec( vid=graph2, zfunc = aminusb_regrid, zvars=[var2, varobs], plottype = 'Isofill')
             self.derived_variables[map1+'_var'] = derived_var(vid = map1+'_var', inputs=[var1, var2, varobs], special_values=[self.season], func = bias_map)
             self.single_plotspecs[map1] = plotspec( vid = map1, zfunc = (lambda z:z), zvars = [map1+'_var'], plottype = 'Boxfill')
-            print 'SELF KEYS'
-            print self.derived_variables.keys()
-            print self.reduced_variables.keys()
-            print 'SELF DONE'
+            logger.debug('SELF KEYS')
+            logger.debug(self.derived_variables.keys())
+            logger.debug(self.reduced_variables.keys())
+            logger.debug('SELF DONE')
 
 
          self.composite_plotspecs[pname] = [graph1, graph2, map1]
 
    def _results(self, newgrid = 0):
-      results = plot_spec._results(self, newgrid)
+      results = plot_plan._results(self, newgrid)
       if results is None:
-         print 'No results'
+         logger.error('No results')
          return None
       psv = self.plotspec_values
       composite_names = ['RMSE', 'Correlation', 'Standard_Deviation', 'Seasonal_Bias']
 
-      print 'psv.keys: ', psv.keys()
+      logger.debug('psv.keys: %s', psv.keys())
       for plot in composite_names:
          if plot in psv.keys():
-            print 'RETURNING'
+            logger.debug('RETURNING')
             return self.plotspec_values[plot]
 
 
@@ -3080,13 +3093,14 @@ class lmwg_plot_set9(lmwg_plot_spec):
 ###   This is not implemented yet                                           ###
 ###############################################################################
 ###############################################################################
-class lmwg_plot_set7(lmwg_plot_spec):
+class lmwg_plot_set7(lmwg_plot_plan):
    name = '7 - Line plots, tables, and maps of RTM river flow and discharge to oceans'
    number = '7'
-   def __init__(self, model, obs, varid, seasonid=None, region=None, aux=None, levels=None):
+   def __init__( self, model, obs, varid, seasonid=None, region=None, aux=None,
+                 plotparms='ignored' ):
 
       self.tables = False
-      plot_spec.__init__(self, seasonid)
+      plot_plan.__init__(self, seasonid)
       # This needs all months and annual.
 
       self._var_baseid = '_'.join([varid, 'set7'])
@@ -3095,7 +3109,7 @@ class lmwg_plot_set7(lmwg_plot_spec):
       self.ann = cdutil.times.Seasons('JFMAMJJASOND')
 
       self.region = 'Global'
-      print 'planned: ', self.computation_planned
+      logger.debug('planned: %s', self.computation_planned)
 
       if not self.computation_planned:
          self.plan_computation(model, obs, varid, seasonid, region, aux)
@@ -3115,11 +3129,11 @@ class lmwg_plot_set7(lmwg_plot_spec):
 
 
    def plan_computation(self, model, obs, varid, seasonid, region, aux=None):
-      print '----------> FINISH IMPLEMENTING'
+      logger.debug('----------> FINISH IMPLEMENTING')
 
       num_obs = len(obs)
       if num_obs == 0:
-         print 'Set 7 requires observation data that defines river locations'
+         logger.error('Set 7 requires observation data that defines river locations')
          return
 
       model_dict = make_ft_dict(model)
@@ -3139,7 +3153,7 @@ class lmwg_plot_set7(lmwg_plot_spec):
       climo1 = None
 
       if num_fts < 2 or num_obs == 0:
-         print 'This requires at least one model and one obs set'
+         logger.error('This requires at least one model and one obs set')
          return
 
       raw0 = model_dict[model_dict.keys()[0]]['raw']
@@ -3207,12 +3221,11 @@ class lmwg_plot_set7(lmwg_plot_spec):
          if num_models == 2:
             self.reduced_variables['QCHANR_ft1'] = reduced_variable(variableid = 'QCHANR', reduced_var_id = 'QCHANR_ft1', filetable = ft2, reduction_function = (lambda x, vid: reduceMonthlyTrendRegion(x, region=None, weights=None, vid=vid)))
             self.reduced_variables['QCHOCNR_ft1'] = reduced_variable(variableid = 'QCHOCNR', reduced_var_id = 'QCHOCNR_ft1', filetable = ft2, reduction_function = (lambda x, vid: reduceMonthlyTrendRegion(x, region=None, weights=None, vid=vid)))
-         print 'aux: ', aux
+         logger.debug('aux: %s', aux)
 
 
       if 'MAPS' in varid.upper():
-         print 'Maps'
-         print 'aux: ', aux
+         logger.debug('Maps: aux is %s', aux)
 
       self.computation_planned = True
 
@@ -3222,8 +3235,8 @@ class lmwg_plot_set7(lmwg_plot_spec):
       for r in range(len(river_data)):
          tmp = mv(latitude=(river_data[r]['rtm_stn_lat'], river_data[r]['rtm_stn_lat'], "cob"), longitude=(river_data[r]['rtm_stn_lon'], river_data[r]['rtm_stn_lon'], "cob")).data[0][0]
          model_array.append(tmp/1.e9*86400.*365.)
-      print 'RETURNING MODEL_ARRAY'
-      print 'TREAT THE SCATTER DATA SIMILAR TO constructed LINE PLOT DATA'
+      logger.debug('RETURNING MODEL_ARRAY')
+      logger.debug('TREAT THE SCATTER DATA SIMILAR TO constructed LINE PLOT DATA')
       return model_array
 #      rtm_array = []
 #      model_array = []
@@ -3239,7 +3252,7 @@ class lmwg_plot_set7(lmwg_plot_spec):
          strbuf = StringIO.StringIO()
          # "reduce" the variables
          for v in self.reduced_variables.keys():
-            print 'trying to reduce ', v
+            logger.debug('trying to reduce %s', v)
             value = self.reduced_variables[v].reduce(None)
             self.variable_values[v] = value
 
@@ -3265,9 +3278,9 @@ class lmwg_plot_set7(lmwg_plot_spec):
             
          return str(strbuf.getvalue())
       else:
-         results = plot_spec._results(self, newgrid)
+         results = plot_plan._results(self, newgrid)
          if results is None:
-            print 'No results'
+            logger.warning('No results')
             return None
          return self.plotspec_values[self.plotall_id]
 
@@ -3277,7 +3290,7 @@ class lmwg_plot_set7(lmwg_plot_spec):
          try:
             fp = open(fname)
          except:
-            print 'Opening ', fname, 'failed.'
+            logger.critical('Opening %s failed', fname)
             quit()
          return fp
 
@@ -3286,7 +3299,7 @@ class lmwg_plot_set7(lmwg_plot_spec):
       river_data = []
       rtm_data = []
 
-      print 'Parsing river data'
+      logger.debug('Parsing river data')
 
       # assume we can get a path.
       path = '.'
@@ -3369,7 +3382,7 @@ class lmwg_plot_set7(lmwg_plot_spec):
 ###############################################################################
 ###############################################################################
 
-class lmwg_plot_set4(lmwg_plot_spec):
+class lmwg_plot_set4(lmwg_plot_plan):
     pass
-class lmwg_plot_set8(lmwg_plot_spec):
+class lmwg_plot_set8(lmwg_plot_plan):
     pass

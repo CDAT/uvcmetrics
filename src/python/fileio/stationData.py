@@ -1,11 +1,14 @@
-import pdb
+import pdb, logging
+logger = logging.getLogger(__name__)
+
 class stationData():
     """ This class support the RAOBS.nc file used for plot set 12. It reads the file and
     sets up the variables needed later for analysis."""
     def __init__(self, obsDataFile):
         import cdms2
         if obsDataFile.find('RAOBS.nc')<0:
-            print "INFO: We usually get station data from RAOBS.nc.  This data file is",obsDataFile
+            logger.warning("We usually get station data from RAOBS.nc.  This data file is %s",obsDataFile)
+
         f=cdms2.open(obsDataFile)
         self.KEYS = f.listvariables() 
         self.KEYS = [ a for a in self.KEYS if a!='STATIONS' and a!= 'MONTHS']
@@ -26,7 +29,7 @@ class stationData():
         for key in ['slat', 'slon']:
             #print key
             if f[key] is None:
-                raise Exception( "This plot requires station data, but there is none in file %s"%obsDataFile )
+                logger.exception( "This plot requires station data, but there is none in file %s"%obsDataFile )
             self.data[key] = f[key].getValue()
         f.close()
         
@@ -55,5 +58,5 @@ class stationData():
             return data
             #return self.data[dataId][0][stationIndex][month], self.data[dataId][1]
         except:
-            print 'no data for ' + dataId + ' and station ' + str(stationIndex)
+            logger.exception('no data for %s and station %s', dataId, str(stationIndex))
             return None

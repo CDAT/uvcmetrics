@@ -2,8 +2,7 @@
 
 # Functions callable from the UV-CDAT GUI.
 
-import hashlib, os, pickle, sys, os, math, pdb, string
-from numbers import Number
+import hashlib, os, pickle, sys, os, math, pdb, string, logging
 from metrics import *
 from metrics.fileio.filetable import *
 from metrics.fileio.findfiles import *
@@ -16,7 +15,6 @@ from metrics.common.utilities import *
 from metrics.packages.amwg.derivations import *
 from pprint import pprint
 import cProfile
-import logging
 import json
 import vcs
 from metrics.common import store_provenance
@@ -30,6 +28,8 @@ vcsx=vcs.init()   # This belongs in one of the GUI files, e.g.diagnosticsDockWid
 from multiprocessing import Process, Semaphore, Pipe
 import time
 import cdms2
+
+logger = logging.getLogger(__name__)
 
 def _plotdata_run( child_conn, sema, plotspec, filetable1, filetable2, varname, seasonname, outputPath, unique_ID, aux=None, newgrid=0 ):
     #def _plotdata_run(plotspec, filetable1, filetable2, varname, seasonname, outputPath, unique_ID, aux=None ):
@@ -52,9 +52,9 @@ def _plotdata_run( child_conn, sema, plotspec, filetable1, filetable2, varname, 
     child_conn.send(outfile)
     return outfile
 
-def plotdata_run( plotspec, filetable1, filetable2, varname, seasonname, outputPath, unique_ID, aux=None, newgrid=0 ):
+def plotdata_run( plotplan, filetable1, filetable2, varname, seasonname, outputPath, unique_ID, aux=None, newgrid=0 ):
     """Inputs:
-    plotspec is a plot_spec class to be instantiated
+    plotplan is a plot_plan class to be instantiated
     filetable1 is the model data file table
     fileteable2 is the obs or reference model data file table
     varname is a string representing the variable to be plotted
@@ -62,7 +62,7 @@ def plotdata_run( plotspec, filetable1, filetable2, varname, seasonname, outputP
     aux is an auxiliary option, if any
 
     This function will spawn another process and return it as p, an instance of
-    multiprocessing.Process.  This p will create a plotspec object and run its compute() method.
+    multiprocessing.Process.  This p will create a plotplan object and run its compute() method.
     To check the status of p, call plotdata_status(p) to get a semaphore value (>0 means done).
     To get the computed value, call plotdata_results(p).
     """
@@ -73,15 +73,15 @@ def plotdata_run( plotspec, filetable1, filetable2, varname, seasonname, outputP
     parent_conn, child_conn = Pipe()
     p = Process( target=_plotdata_run,
                  args=(child_conn, sema,
-                       plotspec, filetable1, filetable2, varname, seasonname, outputPath,
+                       plotplan, filetable1, filetable2, varname, seasonname, outputPath,
                        unique_ID, aux, newgrid ) )
     #log.info("initial p=%s"%(p))
-    #outfile=_plotdata_run(plotspec, filetable1, filetable2, varname, seasonname, outputPath,
+    #outfile=_plotdata_run(plotplan, filetable1, filetable2, varname, seasonname, outputPath,
     #                      unique_ID, aux, newgrid)
     #print outfile
     """
     p = Process( target=_plotdata_run,
-                 args=( plotspec, filetable1, filetable2, varname, seasonname, outputPath,
+                 args=( plotplan, filetable1, filetable2, varname, seasonname, outputPath,
                         unique_ID, aux, newgrid ) )
     """
     p.start()
@@ -162,16 +162,16 @@ class uvc_composite_plotspec():
             format = "xml-NetCDF"
             contents_format = "NetCDF"
         else:
-            print "WARNING: write_plot_data cannot recognize format name",format,\
-                ", will write a xml file pointing to NetCDF files."
+            logger.warning("write_plot_data cannot recognize format name %s",format)
+            logger.warning("will write a xml file pointing to NetCDF files.")
             format = "xml-NetCDF"
             conents_format = "NetCDF"
 
         filenames = []
         for p in self.plots:
             if type(p) is tuple:
-                print "ERROR cannot write_plot_data on tuple<<<<<<<<<<<<<<<<<"
-                print p
+                logger.error("Cannot write_plot_data on tuple<<<<<<<<<<<<<<<<<")
+                logger.info(p)
                 continue
             filenames += p.write_plot_data( contents_format, where )
 
@@ -181,7 +181,7 @@ class uvc_composite_plotspec():
         writer.write("<plotdata>\n")
         for p in self.plots:
             if type(p) is tuple:
-                print "ERROR again, cannot write_plot_data on tuple<<<<<<<<<<<<<<<<<"
+                logger.error("Again, cannot write_plot_data on tuple<<<<<<<<<<<<<<<<<")
                 continue
             pfn = p.outfile(where)
             writer.write( "<ncfile>"+pfn+"</ncfile>\n" )
@@ -205,7 +205,9 @@ class uvc_simple_plotspec():
     # re presentation (plottype): Yxvsx is a line plot, for Y=Y(X).  It can have one or several lines.
     # Isofill is a contour plot.  To make it polar, set projection=polar.  I'll
     # probably communicate that by passing a name "Isofill_polar".
-    def __init__( self, pvars, presentation, labels=[], title='', source='', ranges=None, overplotline=False, linetypes=['solid'], linecolors=[241], levels=None):
+    def __init__(
+        self, pvars, presentation, labels=[], title='', source='', ranges=None, overplotline=False,
+        linetypes=['solid'], linecolors=[241], levels=None, plotparms=None, displayunits=None ):
 
         pvars = [v for v in pvars if v is not None]
         # ... Maybe something else is broken to let None get into pvars.
@@ -239,7 +241,7 @@ class uvc_simple_plotspec():
             elif presentation == "Taylordiagram":
                 self.presentation = vcsx.createtaylordiagram()
             else:
-                print "ERROR, uvc_plotspec doesn't recognize presentation",presentation
+                logger.error("uvc_plotspec doesn't recognize presentation %s",presentation)
                 self.presentation = "Isofill"  # try to go on
         else:
             self.presentation = presentation
@@ -256,6 +258,8 @@ class uvc_simple_plotspec():
         self.linetypes = linetypes
         self.linecolors = linecolors
         self.levels = levels
+        self.plotparms = plotparms
+        self.displayunits = displayunits
         
         # Initial ranges - may later be changed to coordinate with related plots:
         # For each variable named 'v', the i-th member of self.vars, (most often there is just one),
@@ -489,9 +493,17 @@ class uvc_simple_plotspec():
                     nlevels = 16
     
                     try:
-                        levels = [float(v) for v in vcs.mkscale( varmin, varmax, nlevels )]
+                        #changed by Charles on 4/15/16 to support Chris
+                        if varmin<0 and varmax>0 and hasattr(var,"RMSE"):
+                            mx = max(-varmin,varmax)
+                            #temporarily disabled from dicsussion with J. Potter on 4/28/16
+                            #levels = [float(v) for v in vcs.mkscale( -mx,mx, nlevels, zero=-1 )]
+                            levels = [float(v) for v in vcs.mkscale( varmin,varmax, nlevels, zero=-1 )]
+                        else:
+                            levels = [float(v) for v in vcs.mkscale( varmin, varmax, nlevels, zero=1 )]
+
                         # Exceptions occur because mkscale doesn't always work.  E.g. vcs.mkscale(0,1.e35,16)
-                    except RuntimeWarning:
+                    except RuntimeWarning,err:
                         levels = []
                     if levels==[]:
                         ## Here's how to do it with percentiles (clip out large values first).
@@ -503,7 +515,7 @@ class uvc_simple_plotspec():
                         # This cannot be expected to work always, but it's better than doing nothing.
                         amed = numpy.median(self.vars[0]._data)
                         vclip = amed * 1.0e6
-                        print "WARNING graphics problems, clipping some data at",vclip
+                        logger.warning("Graphics problems, clipping some data at %s",vclip)
                         self.vars[0]._data[ self.vars[0]._data > vclip ] = vclip
                         a = numpy.sort(self.vars[0]._data.flatten())
                         asp = numpy.array_split(a,nlevels)
@@ -520,6 +532,8 @@ class uvc_simple_plotspec():
                 # passed a tuple value
                 if levels is not None and len(levels)>0:
                     self.presentation.levels = levels
+                    if varmin<0 and varmax>0 and hasattr(var,"model"):
+                        self.presentation.fillareacolors=vcs.getcolors(levels,split=1)
                 #nlevels = max(1, len(levels) - 1)
                 #self.presentation.list()
  
@@ -556,10 +570,10 @@ class uvc_simple_plotspec():
 
                 vec = self.presentation
 
-                vec.scale = min(vcsx.bgX,vcsx.bgY)/10.
+                #vec.scale = min(vcsx.bgX,vcsx.bgY)/10.
                 # Former scale factor, didn't work on more than one variable.
                 #   That is, 100 workrf for moisture transport, 10 for wind stress:
-                # vec.scale = min(vcsx.bgX,vcsx.bgY)/ 100.
+                vec.scale = min(vcsx.bgX,vcsx.bgY)/ 100.
                 #pdb.set_trace()
                 if hasattr(self.vars[0],'__getitem__') and not hasattr( self.vars[0], '__cdms_internals__'):
                     # generally a tuple of variables - we need 2 variables to describe a vector
@@ -567,13 +581,11 @@ class uvc_simple_plotspec():
                     w = self.vars[0][1]
                     vm = max(abs(v.min()),abs(v.max()))
                     wm = max(abs(w.min()),abs(w.max()))
-                    vec.scale = 100 / math.sqrt( math.sqrt( vm**2 + wm**2 ))
+                    vec.scale = 10 / math.sqrt( math.sqrt( vm**2 + wm**2 ))
                 else:   # We shouldn't get here, but may as well try to make it work if possible:
-                    print "WARNING trying to make a vector plot without tuples!  Variables involved are:"
+                    logger.warning("Trying to make a vector plot without tuples!  Variables involved are:")
                     v = self.vars[0]
-                    print "variable",v.id
                     v = self.vars[1]
-                    print "variable",v.id
                 nlats = latAxis(v).shape[0]
                 nlons = lonAxis(w).shape[0]
                 # vector density factor of 32 works for moisture transport, 16 for wind stress
@@ -652,7 +664,7 @@ class uvc_simple_plotspec():
             #self.presentation.list()
             
         else:
-            print "ERROR cannot identify graphics method",self.presentation.__class__.__name__
+            logger.error("Cannot identify graphics method %s",self.presentation.__class__.__name__)
 
     def __repr__(self):
         return ("uvc_plotspec %s: %s\n" % (self.presentation,self.title))
@@ -676,7 +688,7 @@ class uvc_simple_plotspec():
     def synchronize_values( self, pset, suffix_length=0 ):
         """the part of synchronize_ranges for variable values only"""
         if type(self.vars[0]) is tuple:
-            print "ERROR synchronize_values hasn't been implemented for tuples",self.vars[0]
+            logger.error("Synchronize_values hasn't been implemented for tuples %s",self.vars[0])
 
         # First, go from the MV (TransientVariable) id attribute to the original variable name.
         # This id attribute has the orginal name (e.g. PS) plus substrings to identify data type,
@@ -724,7 +736,7 @@ class uvc_simple_plotspec():
         """the part of synchronize_ranges for variable values only - except that psets is a list of
         uvc_plotset instances.  Thus we can combine ranges of many variable values."""
         if type(self.vars[0]) is tuple:
-            print "ERROR synchronize_many_values hasn't been implemented for tuples",self.vars[0]
+            logger.error("Synchronize_many_values hasn't been implemented for tuples %s",self.vars[0])
         sl = -suffix_length
         if sl==0:
             self_suffix = ""
@@ -761,7 +773,7 @@ class uvc_simple_plotspec():
     def synchronize_axes( self, pset ):
         "the part of synchronize_ranges for axes only"
         if type(self.vars[0]) is tuple:
-            print "ERROR synchronize_axes hasn't been implemented for tuples",self.vars[0]
+            logger.error("Synchronize_axes hasn't been implemented for tuples %s",self.vars[0])
         self_suffix = self.vars[0].id[-2:]
         pset_suffix = pset.vars[0].id[-2:]
         var_ids = set([v.id[:-2] for v in self.vars]) & set([v.id[:-2] for v in pset.vars])
@@ -798,8 +810,8 @@ class uvc_simple_plotspec():
         elif format=="JSON file":
             pass
         else:
-            print "WARNING: write_plot_data cannot recognize format name",format,\
-                ", will write a NetCDF file."
+            logger.warning("write_plot_data cannot recognize format name %s",format)
+            logger.warning("will write a NetCDF file.")
             format = "NetCDF file"
 
         filename = self.outfile( format, where )
@@ -813,14 +825,13 @@ class uvc_simple_plotspec():
             writer = cdms2.open( filename, 'w' )    # later, choose a better name and a path!
             store_provenance(writer)
         elif format=="JSON file":
-            print "ERROR: JSON file not implemented yet"
+            logger.error("JSON file not implemented yet")
         elif format=="JSON string":
             return json.dumps(self,cls=DiagsEncoder)
 
         writer.source = "UV-CDAT Diagnostics"
         writer.presentation = self.ptype
         plot_these = []
-
         for zax in self.vars:
             try:
                 del zax.filetable  # we'll write var soon, and can't write a filetable
@@ -857,7 +868,7 @@ def get_plot_data( plot_set, filetable1, filetable2, variable, season ):
     e.g. 'DJF','ANN','MAR'.
     This is DEPRECATED and AMWG-specific.  It is better to call a method obtained by a call
     of the list_diagnostic_sets() method of BasicDiagnosticGroup and its children such as AMWG."""
-    print "WARNING - deprecated function get_plot_data() has been called."
+    logger.warning("Deprecated function get_plot_data() has been called.")
     return _get_plot_data( plot_set, filetable1, filetable2, variable, season)
 
 # To profile, replace (by name changes) the above get_plot_data() with the following one:
@@ -890,370 +901,9 @@ def _get_plot_data( plot_set_id, filetable1, filetable2, variable, season ):
     elif plot_set_id=='5':
         return plot_set5( filetable1, filetable2, variable, season )
     else:
-        print "ERROR, plot set",plot_set_id," not implemented yet!"
+        logger.error("Plot set %s not implemented yet!", plot_set_id)
         return None
     
-#>>>>>>>>> I want to put the following class elsewhere, but there's a problem with circular imports >>>>>>>>
-from metrics.packages.diagnostic_groups import *
-class plot_spec(object):
-    # ...I made this a new-style class so we can call __subclasses__ .
-    package=BasicDiagnosticGroup  # Note that this is a class not an object.
-    name = "dummy plot_spec class"  # anything which will get instantiated should have a real plot set name.
-    number = '0'    # anything which will get instantiated should have the plot set 'number' which appears in its name
-    #                 The number is actually a short string, not a number - e.g. '3' or '4b'.
-    def __repr__( self ):
-        if hasattr( self, 'plotall_id' ):
-            return self.__class__.__name__+'('+self.plotall_id+')'
-        else:
-            return self.__class__.__name__+' object'
-    def __init__(self, seasonid='ANN', *args ):
-        self._season_displayid = seasonid
-        if seasonid=='ANN' or seasonid is None:
-            # cdutil.times.getMonthIndex() (called by climatology()) doesn't recognize 'ANN'
-            self._seasonid='JFMAMJJASOND'
-        else:
-            self._seasonid=seasonid
-        self.reduced_variables = {}
-        self.derived_variables = {}
-        self.variable_values = { 'seasonid':self._seasonid }
-        self.single_plotspecs = {}
-        self.composite_plotspecs = {}
-        self.plotspec_values = {}
-        self.computation_planned = False
-    def plan_computation( self, seasonid):
-        pass
-    def _build_label( self, vars, p ):
-        yls = []
-        for y in vars:
-            if type(y) is tuple:
-                yl = getattr(y[0],'_strid',None)
-                if yl is None:
-                    yl = getattr(y[0],'_vid',None)  # deprecated attribute
-            else:
-                yl = getattr(y,'_strid',None)
-                if yl is None:
-                    yl = getattr(y,'_vid',None)  # deprecated attribute
-            if yl is not None:
-                yls.append( yl )
-        new_id = underscore_join(yls)
-        if new_id is None or new_id.strip()=="": new_id = p+'_2'
-        return new_id
-    def compute(self,newgrid=0):
-        return self.results(newgrid)
-
-    def uniquefts(self, ftlist):
-        names = []
-        for i in range(len(ftlist)):
-            names.append(ftlist[i]._name)
-        names = list(set(names))
-        return names
-
-    def getfts(self, model, obs):
-        if len(model) == 2:
-#           print 'Two models'
-           filetable1 = model[0]
-           filetable2 = model[1]
-        if len(model) == 1 and len(obs) == 1:
-#           print 'Model and Obs'
-            filetable1 = model[0]
-            filetable2 = obs[0]
-        if len(obs) == 2: # seems unlikely but whatever
-#           print 'Two obs'
-           filetable1 = obs[0]
-           filetable2 = obs[1]
-        if len(model) == 1 and (obs != None and len(obs) == 0):
-#           print 'Model only'
-           filetable1 = model[0]
-           filetable2 = None
-        if len(obs) == 1 and (model != None and len(model) == 0): #also unlikely
-#           print 'Obs only'
-           filetable1 = obs[0]
-           filetable2 = None
-        return filetable1, filetable2
-
-    # This takes the list of filetables and returns 3 lists:
-    # 1) the indexes for the duplicatly named fts (the ones that are raw+climos)
-    # 2) the indexes for the purely climo fts
-    # 3) the indexes for the purely raw fts
-    def parse_fts(self, fts):
-    # First, find duplicates.
-    # eg, if ft[0] = foo, ft[1] = bar, ft[2] = foo, ft[3] = blah, ft[4] = bar it would return
-    # [ [0, 2], [1, 4]]
-        raw = []
-        climo = []
-        names = []
-        dups = []
-        for i in range(len(fts)):
-           if fts[i]._climos == 'yes':
-               climo.append(i)
-           else:
-               raw.append(i)
-           names.append(fts[i]._name)
-        newnames = list(set(names))
-        if len(newnames) != len(names):
-           dup_list = []
-           for i in range(len(fts)):
-              dup_list.append([])
-              for j in range(len(fts)):
-                 if i == j:
-                    pass
-                 if fts[i]._name == fts[j]._name:
-                    dup_list[i].append(j)
-           for elem in dup_list:
-              if elem not in dups and len(elem) == 2:
-                 dups.append(elem)
-        return dups, climo, raw 
-
-
-    def results(self,newgrid=0):
-        return self._results(newgrid)
-# To profile, replace (by name changes) the above results() with the following one:
-    def profiled_results(self,newgrid=0):
-        if newgrid!=0:
-            print "ERROR haven't implemented profiling with argument"
-        prof = cProfile.Profile()
-        returnme = prof.runcall( self._results )
-        prof.dump_stats('results_stats')
-        return returnme
-    def _results(self, newgrid=0 ):
-        """newgrid=0 for keep original. !=0 to use any regridded variants of variables - presently
-        that means a coarser grid, typically from regridding model data to the obs grid.
-        In the future regrid>0 will mean regrid everything to the finest grid and regrid<0
-        will mean regrid everything to the coarsest grid."""
-        for v in self.reduced_variables.keys():
-            #print v
-            value = self.reduced_variables[v].reduce(None)
-            try:
-                if  len(value.data)<=0:
-                    print "ERROR no data for",v
-            except: # value.data may not exist, or may not accept len()
-                try:
-                    if value.size<=0:
-                        print "ERROR no data for",v
-                except: # value.size may not exist
-                    pass
-            self.variable_values[v] = value  # could be None
-            #print value.id, value.shape
-            #pdb.set_trace()
-        postponed = []   # derived variables we won't do right away
-
-        #print 'derived var'
-        for v in self.derived_variables.keys():
-            #pdb.set_trace()
-            #print v
-            value = self.derived_variables[v].derive(self.variable_values)
-            #print value.id, value.shape
-            if value is None:
-                # couldn't compute v - probably it depends on another derived variables which
-                # hasn't been computed yet
-                postponed.append(v)
-            else:
-                self.variable_values[v] = value
-        
-        #print 'postponed', postponed
-        for v in postponed:   # Finish up with derived variables
-            #print v
-            value = self.derived_variables[v].derive(self.variable_values)
-            #print value.id, value.shape
-            self.variable_values[v] = value  # could be None
-        varvals = self.variable_values
-        
-        for p,ps in self.single_plotspecs.iteritems():
-            print "uvcdat preparing data for",ps._strid, ps.plottype
-            #pdb.set_trace()
-            try:
-                zax,zrv  = self.compute_plot_var_value( ps, ps.zvars, ps.zfunc )
-                z2ax,z2rv = self.compute_plot_var_value( ps, ps.z2vars, ps.z2func )
-                z3ax,z3rv = self.compute_plot_var_value( ps, ps.z3vars, ps.z3func )
-                z4ax,z4rv = self.compute_plot_var_value( ps, ps.z4vars, ps.z4func )
-
-                if zax is None and z2ax is None and z3ax is None and z4ax is None:
-                    continue
-            except Exception as e:
-                if ps._id != plotspec.dict_id( None, None, None, None, None ):
-                    # not an empty plot
-                    print "WARNING cannot compute data for",ps._strid
-                    print "due to exception",e.__class__.__name__,e
-                self.plotspec_values[p] = None
-                continue
-            vars = []
-            zlab=""
-            z2lab=""
-            z3lab =""
-            z3lab = ""
-            if zax is not None:
-                zaxdata = getattr(zax,'data',[None])
-                try:
-                    lenzaxdata = len(zaxdata)  # >0 for a tuple
-                except TypeError:
-                    lenzaxdata = 0
-                if lenzaxdata<=0:
-                    print "WARNING: no plottable data for",getattr(zax,'id',zax)
-                    continue
-                if hasattr(zax,'regridded') and newgrid!=0:
-                    vars.append( regridded_vars[zax.regridded] )
-                else:
-                    vars.append( zax )
-                new_id = self._build_label( zrv, p )
-                if type(zax) is not tuple:
-                    zax.id = new_id
-                    zlab += ' '+zax.id
-            if z2ax is not None:
-                if hasattr(z2ax,'regridded') and newgrid!=0:
-                    vars.append( regridded_vars[z2ax.regridded] )
-                else:
-                    vars.append( z2ax )
-                new_id = self._build_label( z2rv, p )
-                z2ax.id = new_id
-                z2lab += ' '+z2ax.id
-            if z3ax is not None:
-               if hasattr(z3ax,'regridded') and newgrid != 0:
-                  vars.append( regridded_vars[z3ax.regridded] )
-               else:
-                  vars.append( z3ax)
-               new_id = self._build_label( z3rv, p )
-               z3ax.id = new_id
-               z3lab += ' '+z3ax.id
-            if z4ax is not None:
-               if hasattr(z4ax,'regridded') and newgrid != 0:
-                  vars.append( regridded_vars[z4ax.regridded] )
-               else:
-                  vars.append( z4ax)
-               new_id = self._build_label( z4rv, p )
-               z4ax.id = new_id
-               z4lab += ' '+z4ax.id
-
-            if vars==[]:
-                self.plotspec_values[p] = None
-                continue
-            #labels = [xlab,ylab,zlab]
-            labels = [zlab,z2lab]
-            if hasattr(ps,'title'):
-                title = ps.title
-            else:
-                title = ' '.join(labels)+' '+self._season_displayid  # do this better later
-                
-            #process the ranges if present
-            zrange = ps.zrangevars
-            z2range = ps.z2rangevars
-            z3range = ps.z3rangevars
-            z4range = ps.z4rangevars
-            ranges = {}
-            if zrange != None and z2range != None and z3range != None and z4range != None:
-                ranges.update(ps.zrangevars)
-                if ps.z2rangevars:
-                   ranges.update(ps.z2rangevars)
-                if ps.z3rangevars:
-                   ranges.update(ps.z3rangevars)
-                if ps.z4rangevars:
-                   ranges.upadte(ps.z4rangevars)
-            else:
-                ranges = None
-
-            #over plot line flag
-            overplotline = False
-            if  hasattr(ps, 'overplotline'):
-                overplotline = ps.overplotline
-            
-            #get line types for each curve (solid, dot, ...)
-            linetypes = [ps.zlinetype]
-            if z2ax is not None:
-                linetypes += [ps.z2linetype]
-
-            #get the line color for each curve
-            linecolors = [ps.zlinecolor]
-            if z2ax is not None:
-                line2colors = [ps.z2linecolor]
-
-            #get the levels
-            levels = ps.levels       
-                    
-            # The following line is getting specific to UV-CDAT, although not any GUI...
-            #pdb.set_trace()
-            #new kludge added to handle scatter plots, 10/14/14, JMcE
-            if self.plottype == 'Vector':
-                if type(vars[0])==tuple:
-                    plot_type_temp = 'Vector'
-                elif vars[0].id.find('STRESS_MAG')>=0:   # maybe not needed
-                    # If this is needed, we need to change code so that this isn't.
-                    plot_type_temp = 'Isofill'
-                else:
-                    #jfp not tested yet on wind stress, wrong for moisture transport:
-                    #jfp plot_type_temp = self.plottype
-                    plot_type_temp = 'Isofill' #jfp works for moisture transport
-            else:
-                plot_type_temp = ps.plottype
-            self.plotspec_values[p] = uvc_simple_plotspec( vars, plot_type_temp, labels, title, ps.source, ranges, overplotline, linetypes, linecolors, levels )
-            #print p
-            #print self.plotspec_values[p]
-        #pdb.set_trace()
-
-        # dispose of any failed plots
-        self.plotspec_values = { p:ps for p,ps in self.plotspec_values.items() if ps is not None }
-
-        print 'now composite plot'
-        for p,ps in self.composite_plotspecs.iteritems():
-            self.plotspec_values[p] = [ self.plotspec_values[sp] for sp in ps if sp in self.plotspec_values ]
-            self.plotspec_values[p] = [ self.plotspec_values[sp] for sp in ps if sp in self.plotspec_values ]
-            # Normally ps is a list of names of a plots, we'll remember its value as a list of their values.
-            if type( ps ) is tuple:
-                # ps is a tuple of names of simple plots which should be overlapped
-                self.plotspec_values[p] = tuple( self.plotspec_values[p] )
-            #print p
-            #print self.plotspec_values[p]
-        #This next loop is a duplicate of the previous loop.  It can be viewed as a cleanup. The reason it's 
-        #needed is that there is no guaranteed order of execution with a dictionary.  So if a composite plot
-        #is a composite of others then there may be an incomplete plot if the individual plots are defined
-        #later.  Plot set 11 is an example of this.  It can happen with plot set 6 too.
-        for p,ps in self.composite_plotspecs.iteritems():
-            # Normally ps is a list of names of a plots, we'll remember its value as a list of their values.
-            self.plotspec_values[p] = [ self.plotspec_values[sp] for sp in ps if sp in self.plotspec_values ]
-            if type( ps ) is tuple:
-                # ps is a tuple of names of simple plots which should be overlapped
-                self.plotspec_values[p] = tuple( self.plotspec_values[p] )
-            #print p
-            #print self.plotspec_values[p]
-        # note: we may have to += other lists into the same ...[p]
-        # note: if we have a composite of composites we can deal with it by building a second time
-        #print 'leaving _results'
-        #print self.plotspec_values.keys()
-        return self
-
-    def compute_plot_var_value( self, ps, zvars, zfunc ):
-        """Inputs: a plotspec object, a list zvars of precursor variables, and a function zfunc.
-        This method computes the variable z to be plotted as zfunc(zvars), and returns it.
-        It also returns zrv for use in building a label."""
-        vvals = self.variable_values
-        zrv = [ vvals[k] for k in zvars ]
-
-        if any([a is None for a in zrv]):
-            print "WARNING - cannot compute plot results from zvars=",ps.zvars
-            print "because missing results for",[k for k in ps.zvars if vvals[k] is None]
-            return None, None
-        z = apply( zfunc, zrv )
-        if hasattr(z,'mask') and z.mask.all():
-            print 'in uvcdat.py' # this next line is printed from two different possible places.
-            print "ERROR, all values of",z.id,"are missing!"
-            return None,None
-        if z is not None and not (hasattr(z,'mean') and isinstance(z.mean,Number)):
-            # Compute variable's mean.  For mass weighting, it should have already happened in a
-            # dimensionality reduction functions.
-            if type(z) is tuple: zid = [zz.id for zz in z]
-            else: zid = z.id
-            print "INFO no mean attribute in variable",zid,\
-                "; we may compute it in compute_plot_var_value."
-            set_mean( z, season=getattr(self,'season',None), region=getattr(self,'region',None) )
-            if hasattr(z,'mean') and isinstance(z.mean,cdms2.tvariable.TransientVariable) and\
-                    z.mean.shape==():
-                # ... adding 0.0 converts a numpy array of shape () to an actual number
-                z.mean = z.mean.getValue()+0.0
-        if (hasattr(z,'mean') and isinstance(z.mean,Number)):
-            # VCS display of z.mean has too many digits unless we round:
-            z.mean = round2( z.mean, 6 )
-
-        return z, zrv
-        
-
 def diagnostics_template():
     """creates and returns a VCS template suitable for diagnostics plots"""
     if 'diagnostic' in vcs.listelements('template'):
