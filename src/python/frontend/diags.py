@@ -79,7 +79,31 @@ def setManualColormap(canvas=None, level=0):
     canvas.setcolorcell(1, 0.0, 0.0, 0.0)
     canvas.setcolorcell(0, 100.0, 100.0, 100.0)
 
+def getNames(opts, model, obs):
+    """ The purpose of this kludge is to get the names of the model and obs 
+    specified on the command line for output on the graphic"""
+    def get_model_case(filetable):
+        files = filetable._filelist
+        f = cdms2.open(files[0])
+        try:
+            case = f.case
+        except:
+            case = 'not available'
+        f.close()
+        return case
+    from metrics.packages.plotplan import plot_plan
+    ft1, ft2 = plot_plan().getfts(model, obs)
+    nicknames = {}
+    if opts._opts['model'][0]['name'] is not None:
+        nicknames['model'] = opts._opts['model'][0]['name']
+    else:
+        nicknames['model'] = get_model_case(ft1)
 
+    if opts._opts['obs'][0]['name'] is not None:
+        nicknames['obs'] = opts._opts['obs'][0]['name']
+    else:
+        nicknames['obs'] = ft2.source().split('_')[-1]
+    return nicknames
 def setnum( setname ):
     """extracts the plot set number from the full plot set name, and returns the number.
     The plot set name should begin with the set number, e.g.
@@ -291,7 +315,9 @@ def run_diags( opts ):
                                 logger.warning("Requested varopts incompatible with available varopts, requeseted varopts=%s",opts['varopts'])
                                 logger.warning("available varopts for variable %s are %s",varid,vvaropts.keys())
                                 logger.warning("No plots will be made.")
-
+                    #get the names of the model and obs passed in from the command line
+                    #or a default from the filetable
+                    names = getNames(opts, modelfts, obsfts)
                     # now, the most inner loop. Looping over sets then seasons then vars then varopts
                     for aux in varopts:
                         #plot = sclass( modelfts, obsfts, varid, time, region, vvaropts[aux] )
@@ -307,7 +333,7 @@ def run_diags( opts ):
                                 plot = sclass( modelfts, obsfts, variables, time, region, vvaropts[aux],
                                                plotparms = { 'model':{}, 'obs':{}, 'diff':{} } )
                             else:
-                                plot = sclass( modelfts, obsfts, varid, time, region, vvaropts[aux],
+                                plot = sclass( modelfts, obsfts, varid, time, region, vvaropts[aux], names=names,
                                                plotparms = { 'model':{'levels':opts['levels'], 'colormap':opts['colormaps']['model']},
                                                              'obs':{'levels':opts['levels'], 'colormap':opts['colormaps']['obs']},
                                                              'diff':{'levels':opts['difflevels'], 'colormap':opts['colormaps']['diff']} } )
