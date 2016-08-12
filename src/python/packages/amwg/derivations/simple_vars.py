@@ -2,7 +2,8 @@
 
 import numpy, logging
 import cdms2
-from metrics.computation.reductions import aminusb, aplusb, adivb
+from metrics.computation.reductions import aminusb, aplusb, adivb, convert_units
+from metrics.common.utilities import DiagError
 
 def albedo( SOLIN, FSNTOA ):
     """TOA (top-of-atmosphere) albedo, (SOLIN-FSNTOA)/FSNTOA"""
@@ -32,11 +33,18 @@ def mask_by( var, maskvar, lo=None, hi=None ):
     var is changed and returned; we don't make a new variable.
     We expect var and maskvar to be dimensioned the same.  lo and hi are scalars.
     """
-    maskvarmask = (maskvar<lo) or (maskvar>hi)
+    if lo is None and hi is None:
+        return var
+    if lo is None and hi is not None:
+        maskvarmask = maskvar>hi
+    elif lo is not None and hi is None:
+        maskvarmask = maskvar<lo
+    else:
+        maskvarmask = (maskvar<lo) | (maskvar>hi)
     if var.mask is False:
         newmask = maskvarmask
     else:
-        newmask = var.mask or nmaskvarmask
+        newmask = var.mask | maskvarmask
     var.mask = newmask
     return var
 
@@ -46,3 +54,16 @@ def land_precipitation( PRECC, PRECL, LANDFRAC ):
     prect_land.long_name = "precipitation rate on land"
     return mask_by( prect_land, LANDFRAC, lo=0.5, hi=None )
 
+def prect2precip( PRECT, seasonid ):
+    """converts a precipitation rate PRECT (averaged over a season; typical units mm/day)
+    to a cumulative precipitation PRECIP (summed over the season).  Thus PRECIP is PRECT multiplied
+    by the length of the season.  PRECIP is returned.  We assume a 365-day (noleap) calendar."""
+    lenseason = { 'ANN':365, 'JFMAMJJASOND':365, 'DJF':90, 'MAM':92, 'JJA':92, 'SON':91,
+                  'JAN':31, 'FEB':28, 'MAR':31, 'APR':30, 'MAY':31,
+                  'JUN':30, 'JUL':31, 'AUG':31, 'SEP':30, 'OCT':31, 'NOV':30, 'DEC':31 }
+    if seasonid not in lenseason:
+        raise DiagError( "While converting precipitation rate to cumulative, cannot identify season %s" % seasonid )
+    
+    PRECIP = lenseason[seasonid] * convert_units( PRECT, 'mm/day' )
+    PRECIP.units = 'mm'
+    return PRECIP

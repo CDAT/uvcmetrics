@@ -160,9 +160,18 @@ class amwg_plot_plan(plot_plan):
         'PRECT_LAND':[derived_var( # land precipitation rate
                 vid='PRECT_LAND', inputs=['PRECC','PRECL','LANDFRAC'], outputs=['PRECT_LAND'],
                 func=land_precipitation )],
+        'PRECIP':[derived_var(     # cumulative precipitation (over the season)
+                vid='PRECIP', inputs=['PRECT','seasonid'], outputs=['PRECIP'],
+                func=prect2precip )],
+        'PRECIP_LAND':[derived_var(     # cumulative precipitation (over the season; restricted to land)
+                vid='PRECIP_LAND', inputs=['PRECT_LAND','seasonid'], outputs=['PRECIP_LAND'],
+                func=prect2precip )],
         'SST':[derived_var(        # sea surface temperature.  Usually it's in the data file, but not always.
                 vid='SST', inputs=['TS','OCNFRAC'], outputs=['SST'],
                 func=(lambda ts,of: mask_by(ts,of,lo=0.9)) )],
+        'SWCFSRF':[derived_var(    # Surface SW Cloud Forcing
+                vid='SWCFSRF', inputs=['FSNS', 'FSNSC'], outputs=['SWCFSRF'],
+                func=aminusb )],
 
         # miscellaneous:
         'PRECT':[derived_var(
@@ -340,14 +349,19 @@ class amwg_plot_plan(plot_plan):
     def _all_variables( model, obs ):
         return amwg_plot_plan.package._all_variables( model, obs, "amwg_plot_plan" )
     @classmethod
-    def stdvar2var( cls, varnom, filetable, season, reduction_function, recurse=True ):
+    def stdvar2var( cls, varnom, filetable, season, reduction_function, recurse=True,
+                    builtin_variables=[] ):
         """From a variable name, a filetable, and a season, this finds the variable name in
         standard_variables. If it's there, this method generates a variable as an instance
         of reduced_variable or derived_var, which represents the variable and how to compute it
         from the data described by the filetable.
-        Inputs are the variable name (e.g. FLUT, TREFHT), a filetable, a season, and (important!)
-        a reduction function which reduces data variables to reduced variables prior to computing
-        the variable specified by varnom.
+        Inputs include the variable name (e.g. FLUT, TREFHT), a filetable, a season, and
+        (important!) a reduction function which reduces data variables to reduced variables prior
+        to computing the variable specified by varnom.  Optionally you can supply a list of
+        built-in variable names.  These variables are not reduced_variable or derived_variable
+        objects.  They are put into a plot_plan object's self.variable_values when it is
+        constructed.  Currently the only one available is 'seasonid' and is used when the
+        season is needed to compute a variable's value.
         If successful, this will return (i) a variable id for varnom, including filetable and
         season; it is the id of the first item in the returned list of derived variables.
          (ii) a list of reduced_variables needed for computing varnom.  For
@@ -389,11 +403,9 @@ class amwg_plot_plan(plot_plan):
                 #print "dbg   adding reduced variable rv=",rv
                 rvs.append(rv)
 
-            #print "dbg",varnom,"is not directly computable"
-            pass
         available = rvs + dvs
         availdict = { v.id()[1]:v for v in available }
-        inputs = [ availdict[v].id() for v in svd._inputs if v in availdict]
+        inputs = [ availdict[v].id() for v in svd._inputs if v in availdict] + builtin_variables
         #print "dbg1 rvs ids=",[rv.id() for rv in rvs]
         if not computable and recurse==True:
             # Maybe the input variables are themselves computed.  We'll only do this one
@@ -419,7 +431,7 @@ class amwg_plot_plan(plot_plan):
                 func = svd._func
                 available = rvs + dvs
                 availdict = { v.id()[1]:v for v in available }
-                inputs = [ availdict[v].id() for v in svd._inputs if v in availdict]
+                inputs = [ availdict[v].id() for v in svd._inputs if v in availdict] + builtin_variables
                 computable = True
                 #print "dbg in second round, found",varnom,"computable by",func,"from",inputs
                 break
@@ -439,9 +451,9 @@ class amwg_plot_plan(plot_plan):
         vid = derived_var.dict_id( varnom, '', seasonid, filetable )
         #print "dbg stdvar is making a new derived_var, vid=",vid,"inputs=",inputs
         #print "dbg function=",func
-        #jfp was newdv = derived_var( vid=vid, inputs=[rv.id() for rv in rvs], func=func )
         newdv = derived_var( vid=vid, inputs=inputs, func=func )
         dvs.append(newdv)
+        #print "dbg2 returning newdv.id=",newdv.id(),"rvs=",rvs,"dvs=",dvs
         return newdv.id(), rvs, dvs
 
 # plot set classes in other files:
@@ -1492,8 +1504,10 @@ class amwg_plot_set5and6(amwg_plot_plan):
                      reduce2latlon_seasonal(x, self.season, self.region, vid, exclude_axes=[
                         'isccp_prs','isccp_tau','cosp_prs','cosp_tau',
                         'modis_prs','modis_tau','cosp_tau_modis',
-                        'misr_cth','misr_tau','cosp_htmisr']) ))
+                        'misr_cth','misr_tau','cosp_htmisr']) ),
         #            ... isccp_prs, isccp_tau etc. are used for cloud variables and need special treatment
+            builtin_variables=self.variable_values.keys()
+            )
         if varid is None:
             return None,None
         for rv in rvs:
