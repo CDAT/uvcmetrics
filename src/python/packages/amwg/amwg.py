@@ -862,13 +862,9 @@ class amwg_plot_set3(amwg_plot_plan,basic_id):
                 tm1.legend.y1  += 0.05
                 tm1.legend.y2   = tm1.legend.y1 + 0.01
                 if graphicMethod is not None:
-                    line = vcs.createline('dash')
-                    line.width = 2
-                    line.color = ["red"]#, "blue", "salmon", "medium aquamarine", "orange", "chartreuse"]
-                    line.type = ["dash"]#, "dot", "dash-dot", "long-dash", "solid", "dash"]
-                    graphicMethod.line = line
+                    graphicMethod.linetype = "dash"
                     # The next repeated commands were necessary in Linux.
-                    graphicMethod.linecolor = 242
+                    graphicMethod.linecolor = "red"
                     graphicMethod.linewidth = 2
                 data.id = 'obs'
             else:
@@ -3002,11 +2998,9 @@ class amwg_plot_set10(amwg_plot_plan, basic_id):
                 tm1.legend.y1  += 0.05
                 tm1.legend.y2   = tm1.legend.y1 + 0.01
                 if graphicMethod is not None:
-                    line = vcs.createline()
-                    line.width = 2
-                    line.color = ["red"]#, "blue", "salmon", "medium aquamarine", "orange", "chartreuse"]
-                    line.type = ["dash"]#, "dot", "dash-dot", "long-dash", "solid", "dash"]
-                    graphicMethod.line = line
+                    graphicMethod.linewidth = 2
+                    graphicMethod.linecolor = "red"
+                    graphicMethod.linetype = "dash"
                 data.id = 'obs'
             else:
                 if type(min(data)) is float:
