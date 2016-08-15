@@ -269,9 +269,9 @@ class Row:
             return float(mean2.data)
         else:
             # It's a more complicated calculation, which we can treat as a derived variable.
-            # If it's a standard_variable, we know how to do it...
+            # If it's a common_derived_variable, we know how to do it...
             try:
-                vid,rvs,dvs = amwg_plot_plan.stdvar2var(
+                vid,rvs,dvs = amwg_plot_plan.commvar2var(
                     self.var, filetable, self.season, reduction_function=\
                         (lambda x,vid=None,season=self.season,dom0=domrange[0],dom1=domrange[1],gw=gw:
                              reduce2scalar_seasonal_zonal(
