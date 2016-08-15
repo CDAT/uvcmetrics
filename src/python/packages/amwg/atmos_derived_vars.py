@@ -58,7 +58,7 @@ common_derived_variables = {
             func=aminusb )],   # RESTOM = net radiative flux
 
     # clouds, Yuying Zhang:
-        'CLISCCP':[
+    'CLISCCP':[
         derived_var(
             # old style vid='CLISCCP', inputs=['FISCCP1_COSP','cosp_prs','cosp_tau'], outputs=['CLISCCP'],
             # old style          func=uncompress_fisccp1 )

@@ -142,72 +142,69 @@ class amwg_plot_plan(plot_plan):
                 func = svd._func
                 computable = True
                 break
-            if computable:
-                #print "dbg",varnom,"is computable by",func,"from..."
-                for ivn in invarnoms:
-                    #print "dbg   computing reduced variable from input variableid=ivn=",ivn
-                    rv = reduced_variable( variableid=ivn, filetable=filetable, season=season,
-                                           reduction_function=reduction_function )
-                    #print "dbg   adding reduced variable rv=",rv
-                    rvs.append(rv)
+        if computable:
+            #print "dbg",varnom,"is computable by",func,"from..."
+            for ivn in invarnoms:
+                #print "dbg   computing reduced variable from input variableid=ivn=",ivn
+                rv = reduced_variable( variableid=ivn, filetable=filetable, season=season,
+                                       reduction_function=reduction_function )
+                #print "dbg   adding reduced variable rv=",rv
+                rvs.append(rv)
 
-                #print "dbg",varnom,"is not directly computable"
-                pass
-            available = rvs + dvs
-            availdict = { v.id()[1]:v for v in available }
-            inputs = [ availdict[v].id() for v in svd._inputs if v in availdict]
-            #print "dbg1 rvs ids=",[rv.id() for rv in rvs]
-            if not computable and recurse==True:
-                # Maybe the input variables are themselves computed.  We'll only do this one
-                # level of recursion before giving up.  This is enough to do a real computation
-                # plus some variable renamings via common_derived_variables.
-                # Once we have a real system for handling name synonyms, this loop can probably
-                # be dispensed with.  If we well never have such a system, then the above loop
-                # can be dispensed with.
-                for svd in cls.common_derived_variables[varnom]:  # loop over ways to compute varnom
-                    invarnoms = svd.inputs()
-                    for invar in invarnoms:
-                        if invar in filetable.list_variables_incl_axes():
-                            rv = reduced_variable( variableid=invar, filetable=filetable, season=season,
-                                                   reduction_function=reduction_function )
-                            rvs.append(rv)
-                        else:
-                            if invar not in cls.common_derived_variables:
-                                break
-                            dummy,irvs,idvs =\
-                                cls.commvar2var( invar, filetable, season, reduction_function, recurse=False )
-                            rvs += irvs
-                            dvs += idvs
-                    func = svd._func
-                    available = rvs + dvs
-                    availdict = { v.id()[1]:v for v in available }
-                    inputs = [ availdict[v].id() for v in svd._inputs if v in availdict]
-                    computable = True
-                    #print "dbg in second round, found",varnom,"computable by",func,"from",inputs
-                    break
-            if len(rvs)<=0:
-                logger.warning("no inputs found for %s in filetable %s",varnom, filetable.id())
-                logger.warning("filetable source files= %s",filetable._filelist[0:10])
-                logger.warning("need inputs %s",svd.inputs())
-                return None,[],[]
-                #raise DiagError( "ERROR, don't have %s, and don't have sufficient data to compute it!"\
-                    #                     % varnom )
-            if not computable:
-                logger.debug("DEBUG: comm. derived variable %s is not computable", varnom)
-                logger.debug( "need inputs %s" ,svd.inputs())
-                logger.debug("found inputs %s",([rv.id() for rv in rvs]+[drv.id() for drv in dvs]))
-                return None,[],[]
-            seasonid = season.seasons[0]
-            vid = derived_var.dict_id( varnom, '', seasonid, filetable )
-            #print "dbg commvar2var is making a new derived_var, vid=",vid,"inputs=",inputs
-            #print "dbg function=",func
-            #jfp was newdv = derived_var( vid=vid, inputs=[rv.id() for rv in rvs], func=func )
-            newdv = derived_var( vid=vid, inputs=inputs, func=func )
-            dvs.append(newdv)
-            pdb.set_trace()
-            return newdv.id(), rvs, dvs
-        logger.debug("dropping out of bottom of commvar2var")
-        return None,[],[]
+            #print "dbg",varnom,"is not directly computable"
+            pass
+        available = rvs + dvs
+        availdict = { v.id()[1]:v for v in available }
+        inputs = [ availdict[v].id() for v in svd._inputs if v in availdict]
+        #print "dbg1 rvs ids=",[rv.id() for rv in rvs]
+        if not computable and recurse==True:
+            # Maybe the input variables are themselves computed.  We'll only do this one
+            # level of recursion before giving up.  This is enough to do a real computation
+            # plus some variable renamings via common_derived_variables.
+            # Once we have a real system for handling name synonyms, this loop can probably
+            # be dispensed with.  If we well never have such a system, then the above loop
+            # can be dispensed with.
+            for svd in cls.common_derived_variables[varnom]:  # loop over ways to compute varnom
+                invarnoms = svd.inputs()
+                for invar in invarnoms:
+                    if invar in filetable.list_variables_incl_axes():
+                        rv = reduced_variable( variableid=invar, filetable=filetable, season=season,
+                                               reduction_function=reduction_function )
+                        rvs.append(rv)
+                    else:
+                        if invar not in cls.common_derived_variables:
+                            break
+                        dummy,irvs,idvs =\
+                            cls.commvar2var( invar, filetable, season, reduction_function, recurse=False )
+                        rvs += irvs
+                        dvs += idvs
+                func = svd._func
+                available = rvs + dvs
+                availdict = { v.id()[1]:v for v in available }
+                inputs = [ availdict[v].id() for v in svd._inputs if v in availdict]
+                computable = True
+                #print "dbg in second round, found",varnom,"computable by",func,"from",inputs
+                break
+        if len(rvs)<=0:
+            logger.warning("no inputs found for %s in filetable %s",varnom, filetable.id())
+            logger.warning("filetable source files= %s",filetable._filelist[0:10])
+            logger.warning("need inputs %s",svd.inputs())
+            return None,[],[]
+            #raise DiagError( "ERROR, don't have %s, and don't have sufficient data to compute it!"\
+                #                     % varnom )
+        if not computable:
+            logger.debug("DEBUG: comm. derived variable %s is not computable", varnom)
+            logger.debug( "need inputs %s" ,svd.inputs())
+            logger.debug("found inputs %s",([rv.id() for rv in rvs]+[drv.id() for drv in dvs]))
+            return None,[],[]
+        seasonid = season.seasons[0]
+        vid = derived_var.dict_id( varnom, '', seasonid, filetable )
+        #print "dbg commvar2var is making a new derived_var, vid=",vid,"inputs=",inputs
+        #print "dbg function=",func
+        #jfp was newdv = derived_var( vid=vid, inputs=[rv.id() for rv in rvs], func=func )
+        newdv = derived_var( vid=vid, inputs=inputs, func=func )
+        dvs.append(newdv)
+        return newdv.id(), rvs, dvs
 
     @staticmethod
     def _list_variables( model, obs ):
