@@ -6,6 +6,8 @@ import datetime
 from distutils.sysconfig import get_python_lib
 import shutil
 from output_viewer.build import build_viewer
+from output_viewer.utils import rechmod
+import stat
 
 
 parser = ArgumentParser(description="Generate web pages for viewing UVCMetrics' metadiags output")
@@ -29,12 +31,18 @@ if __name__ == '__main__':
     share_directory = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(get_python_lib()))), "share", "uvcmetrics", "viewer")
 
     if os.access(path, os.W_OK):
+
         viewer_dir = os.path.join(path, "amwg_viewer")
+
         if os.path.exists(viewer_dir):
             shutil.rmtree(viewer_dir)
+
         shutil.copytree(share_directory, viewer_dir)
 
-        build_viewer(os.path.join(path, "index.json"), diag_name="UVCMetrics AMWG")
+        default_mask = stat.S_IMODE(os.stat(path).st_mode)
+        rechmod(viewer_dir, default_mask)
+
+        build_viewer(os.path.join(path, "index.json"), diag_name="ACME Atmospheric Diagnostics", default_mask=default_mask)
 
     if os.path.exists(os.path.join(path, "index.html")):
         should_open = raw_input("Viewer HTML generated at %s/index.html. Would you like to open in a browser? y/[n]: " % path)
