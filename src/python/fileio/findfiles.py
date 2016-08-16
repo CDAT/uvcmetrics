@@ -322,11 +322,11 @@ class dirtree_datafiles( basic_datafiles ):
         if os.path.isfile(root):
             self.files += [root]
         elif os.path.isdir(root):
-            for dirpath, dirname, filenames in os.walk(root):
-                dirpath = os.path.expanduser(dirpath)
-                dirpath = os.path.abspath(dirpath)
+            for dirpath, dirnames, filenames in os.walk(root):
+                # Remove any hidden directories from the walk before we get into them.
+                dirnames[:] = [d for d in dirnames if d[0] != "."]
                 # Skip hidden files and anything that fails the filter.
-                self.files += [ os.path.join(dirpath,f) for f in filenames if filt(f) and f[0] != "." ]
+                self.files += [ os.path.join(dirpath, f) for f in filenames if filt(f) and f[0] != "." and os.path.basename(dirpath)[0] != "." ]
         else:   # no more checking, but still could be valid - maybe its a url or something:
             self.files += [root]
             logger.warning("Candidate data source is not a file or directory. %s What is it????", self.files[0])

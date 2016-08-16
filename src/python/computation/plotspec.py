@@ -140,7 +140,7 @@ class plotspec(basic_id):
         overplotline = False,
         levels = None,  # deprecated
         plotparms = None,
-        displayunits = None #units to be used for display
+        displayunits = None, #units to be used for display
         ):
         """Initialize a plotspec (plot specification).  Inputs are an id and plot type,
         and lists of x,y,z variables (as keys in the plotvars dictionary), functions to
