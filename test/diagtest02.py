@@ -23,10 +23,10 @@ dt = diags_test.DiagTest( modeldir, obsdir, plotset, filterid, obsid, varid, sea
 imagefilename = 'figure-set2_Global_JAN_Ocean_Heat_plot-combined.png'
 imagethreshold = None
 ncfiles = {}
-ncfiles['CAM_and_NCEP_HEAT_TRANSPORT_ATLANTIC_cam_output.nc'] = ['CAM_HEAT_TRANSPORT_ALL_1']
-ncfiles['CAM_and_NCEP_HEAT_TRANSPORT_GLOBAL_cam_output.nc'] = ['CAM_HEAT_TRANSPORT_ALL_1']
-ncfiles['CAM_and_NCEP_HEAT_TRANSPORT_INDIAN_cam_output.nc'] = ['CAM_HEAT_TRANSPORT_ALL_1']
-ncfiles['CAM_and_NCEP_HEAT_TRANSPORT_PACIFIC_cam_output.nc'] = ['CAM_HEAT_TRANSPORT_ALL_1']
+ncfiles['Ocean_Heat_JAN_CAM_and_NCEP_HEAT_TRANSPORT_ATLANTIC_cam_output.nc'] = ['CAM_HEAT_TRANSPORT_ALL_1']
+ncfiles['Ocean_Heat_JAN_CAM_and_NCEP_HEAT_TRANSPORT_GLOBAL_cam_output.nc'] = ['CAM_HEAT_TRANSPORT_ALL_1']
+ncfiles['Ocean_Heat_JAN_CAM_and_NCEP_HEAT_TRANSPORT_INDIAN_cam_output.nc'] = ['CAM_HEAT_TRANSPORT_ALL_1']
+ncfiles['Ocean_Heat_JAN_CAM_and_NCEP_HEAT_TRANSPORT_PACIFIC_cam_output.nc'] = ['CAM_HEAT_TRANSPORT_ALL_1']
 # Test of NetCDF data (nc) file match:
 rtol = 1.0e-3
 atol = 1.0e-2   # suitable for temperatures
