@@ -79,7 +79,31 @@ def setManualColormap(canvas=None, level=0):
     canvas.setcolorcell(1, 0.0, 0.0, 0.0)
     canvas.setcolorcell(0, 100.0, 100.0, 100.0)
 
+def getNames(opts, model, obs):
+    """ The purpose of this kludge is to get the names of the model and obs 
+    specified on the command line for output on the graphic"""
+    def get_model_case(filetable):
+        files = filetable._filelist
+        f = cdms2.open(files[0])
+        try:
+            case = f.case
+        except:
+            case = 'not available'
+        f.close()
+        return case
+    from metrics.packages.plotplan import plot_plan
+    ft1, ft2 = plot_plan().getfts(model, obs)
+    nicknames = {}
+    if opts._opts['model'][0]['name'] is not None:
+        nicknames['model'] = opts._opts['model'][0]['name']
+    else:
+        nicknames['model'] = get_model_case(ft1)
 
+    if opts._opts['obs'][0]['name'] is not None:
+        nicknames['obs'] = opts._opts['obs'][0]['name']
+    else:
+        nicknames['obs'] = ft2.source().split('_')[-1]
+    return nicknames
 def setnum( setname ):
     """extracts the plot set number from the full plot set name, and returns the number.
     The plot set name should begin with the set number, e.g.
@@ -276,7 +300,6 @@ def run_diags( opts ):
                     counter = counter+1
                     vard = pclass.all_variables( modelfts, obsfts, sname )
                     plotvar = vard[varid]
-
                     # Find variable options.  If none were requested, that means "all".
                     vvaropts = plotvar.varoptions()
                     if vvaropts is None:
@@ -296,7 +319,9 @@ def run_diags( opts ):
                                 logger.warning("Requested varopts incompatible with available varopts, requeseted varopts=%s",opts['varopts'])
                                 logger.warning("available varopts for variable %s are %s",varid,vvaropts.keys())
                                 logger.warning("No plots will be made.")
-
+                    #get the names of the model and obs passed in from the command line
+                    #or a default from the filetable
+                    names = getNames(opts, modelfts, obsfts)
                     # now, the most inner loop. Looping over sets then seasons then vars then varopts
                     for aux in varopts:
                         #plot = sclass( modelfts, obsfts, varid, time, region, vvaropts[aux] )
@@ -312,7 +337,7 @@ def run_diags( opts ):
                                 plot = sclass( modelfts, obsfts, variables, time, region, vvaropts[aux],
                                                plotparms = { 'model':{}, 'obs':{}, 'diff':{} } )
                             else:
-                                plot = sclass( modelfts, obsfts, varid, time, region, vvaropts[aux],
+                                plot = sclass( modelfts, obsfts, varid, time, region, vvaropts[aux], names=names,
                                                plotparms = { 'model':{'levels':opts['levels'], 'colormap':opts['colormaps']['model']},
                                                              'obs':{'levels':opts['levels'], 'colormap':opts['colormaps']['obs']},
                                                              'diff':{'levels':opts['difflevels'], 'colormap':opts['colormaps']['diff']} } )
@@ -338,7 +363,6 @@ def run_diags( opts ):
 
                                 name = basename+'_'+time+'_'+varid+auxname+'_'+pname+r_fname
                                 fname = os.path.join(outdir,name)
-
                             if opts['output']['plots'] == True:
                                 displayunits = opts.get('displayunits', None)
                                 makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=displayunits)
@@ -349,8 +373,15 @@ def run_diags( opts ):
                                 # Probably make this a command line option.
                                 if res.__class__.__name__ is 'uvc_composite_plotspec':
                                     resc = res
+                                    resc.title.replace('\n', ' ')
                                     filenames = resc.write_plot_data("xml-NetCDF", outdir )
                                 else:
+                                    #new kludge
+                                    for PLOT in res:
+                                        if hasattr(PLOT, 'title'):
+                                            PLOT.title = PLOT.title.replace('\n', ' ')
+                                            if varid not in PLOT.title and time not in PLOT.title:
+                                                PLOT.title = varid + ' ' + time + ' ' + PLOT.title
                                     resc = uvc_composite_plotspec( res )
                                     filenames = resc.write_plot_data("xml-NetCDF", outdir )
                                 logger.info("wrote plots %s to %s",resc.title, filenames)
@@ -476,6 +507,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
             if tmmobs != []:
                 tm2 = tmmobs[ir]
             title = rsr.title
+
             rsr_presentation = rsr.presentation
             for varIndex, var in enumerate(rsr.vars):
                 savePNG = True
@@ -660,12 +692,12 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
                         pass
 
                     if plot.number == '6':
-                        vcanvas.plot( var[0][::strideY,::strideX],
-                                      var[1][::strideY,::strideX], rsr.presentation, tmobs[ir], bg=1, ratio=ratio)
+                        vcanvas.plot( var[0](longitude=(-10,370))[::strideY,::strideX],
+                                      var[1](longitude=(-10,370))[::strideY,::strideX], rsr.presentation, tmobs[ir], bg=1, ratio=ratio)
                     else:
                         # Note that continents=0 is a useful plot option
-                        vcanvas.plot( var[0][::strideY,::strideX],
-                                      var[1][::strideY,::strideX], rsr.presentation, tmobs[ir], bg=1,
+                        vcanvas.plot( var[0](longitude=(-10,370))[::strideY,::strideX],
+                                      var[1](longitude=(-10,370))[::strideY,::strideX], rsr.presentation, tmobs[ir], bg=1,
                                       title=title, units=getattr(var,'units',''), ratio=ratio,
                                       source=rsr.source )
 
@@ -674,8 +706,8 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
                     # have them.
                     try:
                         if tm2 is not None:
-                            vcanvas2.plot( var[0][::strideY,::strideX],
-                                           var[1][::strideY,::strideX],
+                            vcanvas2.plot( var[0](longitude=(-10,370))[::strideY,::strideX],
+                                           var[1](longitude=(-10,370))[::strideY,::strideX],
                                            rsr.presentation, tm2, bg=1,
                                            title=title, units=getattr(var,'units',''),
                                            ratio=ratio,
@@ -734,7 +766,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
                                                            varIndex=varIndex, graphicMethod=rsr.presentation, var=var )
 
                     # Single plot
-                    plot.vcs_plot(vcanvas, var, rsr.presentation, tm, bg=1,
+                    plot.vcs_plot(vcanvas, var(longitude=(-10,370)), rsr.presentation, tm, bg=1,
                                   title=title, source=rsr.source,
                                   plotparms=getattr(rsr,'plotparms',None) )
 #                                      vcanvas3.clear()
@@ -745,7 +777,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
                     try:
                         if tm2 is not None:
                             # Multiple plots on a page:
-                            plot.vcs_plot( vcanvas2, var, rsr.presentation, tm2, bg=1,
+                            plot.vcs_plot( vcanvas2, var(longitude=(-10,370)), rsr.presentation, tm2, bg=1,
                                            title=title, source=rsr.source,
                                            plotparms=getattr(rsr,'plotparms',None))#,
                                            #compoundplot=onPage )
