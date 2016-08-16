@@ -259,6 +259,7 @@ class uvc_simple_plotspec():
         self.plotparms = plotparms
         self.displayunits = displayunits
         
+        
         # Initial ranges - may later be changed to coordinate with related plots:
         # For each variable named 'v', the i-th member of self.vars, (most often there is just one),
         # varmax[v] is the maximum value of v, varmin[v] is the minimum value of v,
@@ -343,6 +344,12 @@ class uvc_simple_plotspec():
         # interim test here and below.  Once all the is* functions work, I should
         # drop the tests on self.presentation.__class__.__name__ :
         #pdb.set_trace()
+        #  We want missing value to be white
+        try:
+            self.presentation.missing = "grey"
+        except:
+            #  Some presentation do not have missing attribute
+            pass
         if vcs.isscatter(self.presentation):
             #ylabel, xlabel = string.split(self.title, ' vs ')
             #in the case of scatter plots there are 2 variables packed together

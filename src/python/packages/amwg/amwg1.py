@@ -83,7 +83,15 @@ def makeCmds(specs):
     cmds = []
     for spec in specs:
         argv = copy(sys.argv)
+        argv[0] = 'diags'
         argv.remove('--dryrun')
+        try:
+            ind = argv.index('--sbatch')
+            #delete --sbatch and the number
+            junk = argv.pop(ind)
+            junk = argv.pop(ind)
+        except:
+            pass
         cmd = ''
         if 'obs' in spec.keys():
             obsind = argv.index('--obs')
@@ -494,6 +502,7 @@ class amwg_plot_set1(amwg_plot_plan):
             for cmd in cmds:
                 #f.write(cmd + '\n')
                 print >> f, cmd + " &"
+            print >>f, 'wait'
             f.close()
         elif varid is not None:
             #execute a single row
