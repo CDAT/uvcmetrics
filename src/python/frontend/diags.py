@@ -9,8 +9,6 @@
 ### Look for speed improvements
 
 import hashlib, os, pickle, sys, os, time, re, pdb, logging
-print "jfp"
-print "jfp running this python:",sys.executable
 from metrics import *
 from metrics.fileio.filetable import *
 from metrics.fileio.findfiles import *

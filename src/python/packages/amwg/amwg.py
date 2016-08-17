@@ -1254,20 +1254,17 @@ class amwg_plot_set4and4A(amwg_plot_plan):
 
         return tm1, tm2
     def _results(self,newgrid=0):
-        #pdb.set_trace()
         results = plot_plan._results(self,newgrid)
         if results is None:
-            print "WARNING, AMWG plot set 4 found nothing to plot"
+            logger.warning("AMWG plot set 4 found nothing to plot")
             return None
         psv = self.plotspec_values
         if self.plot1_id in psv and self.plot2_id in psv and\
                 psv[self.plot1_id] is not None and psv[self.plot2_id] is not None:
             psv[self.plot1_id].synchronize_ranges(psv[self.plot2_id])
         else:
-            print "WARNING not synchronizing ranges for",self.plot1_id,"and",self.plot2_id
+            logger.warning("not synchronizing ranges for %s and %s", self.plot1_id,self.plot2_id )
         for key,val in psv.items():
-            #print key, val
-            #pdb.set_trace()
             if type(val) is not list: val=[val]
             for v in val:
                 if v is None: continue
@@ -1760,7 +1757,6 @@ class amwg_plot_set5(amwg_plot_set5and6):
                 #convert to the units specified in the default levels dictionay
                 displayunits = default_levels[self.varid].get('displayunits', None)
                 if displayunits is not None and var.model is not None and var.obs is not None:
-                    #print displayunits, var.model.units, var.obs.units
                     var.model = scale_data( displayunits, var.model)
                     var.obs   = scale_data( displayunits, var.obs) 
 
@@ -1863,7 +1859,7 @@ class amwg_plot_set6(amwg_plot_plan):
             return self.plan_computation_normal_contours( model, obs, varid, seasonid, aux,
                                                           plotparms )
         else:
-            print "ERROR plot set 6 does not support auxiliary variable aux=",aux
+            logger.error( "plot set 6 does not support auxiliary variable aux=%s", aux )
             return None
     def STRESS_setup( self, filetable, varid, seasonid ):
         """sets up reduced & derived variables for the STRESS (ocean wind stress) variable.
@@ -1897,9 +1893,9 @@ class amwg_plot_set6(amwg_plot_plan):
             vars_vec = ( vars[0], vars[1] )  # for vector plot
             vid_cont = var_cont
         else:
-            print "WARNING, could not find a suitable variable set when setting up for a vector plot!"
-            print "variables found=",vars
-            print "filetable=",filetable
+            logger.warning( "could not find a suitable variable set when setting up for a vector plot!" )
+            logger.debug( "variables found=",vars )
+            logger.debug( "filetable=",filetable )
             rvars = []
             dvars = []
             var_cont = ''
@@ -2141,9 +2137,6 @@ class amwg_plot_set6(amwg_plot_plan):
             self.single_plotspecs[self.plot3_id+'c'] = contplot
             self.single_plotspecs[self.plot3_id+'v'] = vecplot
         # initially we're not plotting the contour part of the plots....
-        #for pln,pl in self.single_plotspecs.iteritems(): #jfp
-        #    print "dbg single plot",pln,pl.plottype
-        #    print "dbg            ",pl.zvars
         self.composite_plotspecs = {
             self.plot1_id: ( self.plot1_id+'c', self.plot1_id+'v' ),
             #self.plot1_id: [ self.plot1_id+'v' ],
@@ -2249,7 +2242,6 @@ class amwg_plot_set6(amwg_plot_plan):
         #        psv[self.plot1_id] is not None and psv[self.plot2_id] is not None:
         #    psv[self.plot1_id].synchronize_ranges(psv[self.plot2_id])
         #else:
-        #    print "WARNING not synchronizing ranges for",self.plot1_id,"and",self.plot2_id
         logger.warning("not synchronizing ranges for AMWG plot set 6")
         for key,val in psv.items():
             if type(val) is not list and type(val) is not tuple: val=[val]
@@ -2542,7 +2534,6 @@ class amwg_plot_set8(amwg_plot_plan):
                 self.reduced_variables[RV.id()] = RV
                 VIDs += [VID]
             vidAll[FT] = VIDs               
-        #print self.reduced_variables.keys()
         vidModel = dv.dict_id(varid, 'ZonalMean model', self._seasonid, filetable1)
         if self.FT2:
             vidObs  = dv.dict_id(varid, 'ZonalMean obs', self._seasonid, filetable2)
@@ -2553,10 +2544,8 @@ class amwg_plot_set8(amwg_plot_plan):
       
         self.derived_variables = {}
         #create the derived variables which is the composite of the months
-        #print vidAll[filetable1]
         self.derived_variables[vidModel] = derived_var(vid=id2str(vidModel), inputs=vidAll[filetable1], func=join_data) 
         if self.FT2:
-            #print vidAll[filetable2]
             self.derived_variables[vidObs] = derived_var(vid=id2str(vidObs), inputs=vidAll[filetable2], func=join_data) 
             #create the derived variable which is the difference of the composites
             self.derived_variables[vidDiff] = derived_var(vid=id2str(vidDiff), inputs=[vidModel, vidObs], func=aminusb_ax2) 
@@ -2929,7 +2918,6 @@ class amwg_plot_set10(amwg_plot_plan, basic_id):
                 self.reduced_variables[VID] = RV   
                 VIDs += [VID]
             vidAll[FT] = VIDs 
-        #print self.reduced_variables.keys()
         
         #create the identifiers 
         vidModel = dv.dict_id(varid, 'model', "", filetable1)
@@ -3073,7 +3061,6 @@ class amwg_plot_set10(amwg_plot_plan, basic_id):
         results = plot_plan._results(self, newgrid)
         if results is None: return None
         psv = self.plotspec_values
-        #print self.plotspec_values.keys()
 
         model = self.single_plotspecs[self.plot_id].zvars[0]
         obs   = self.single_plotspecs[self.plot_id].z2vars[0]
@@ -3115,7 +3102,6 @@ class amwg_plot_set11(amwg_plot_plan):
         for dt, ft in zip(self.datatype, self.filetables):
             fn = ft._files[0]
             self.ft_ids[dt] = fn.split('/')[-1:][0]
-        #print self.ft_ids
         
         self.plot_ids = []
         vars_id = '_'.join(self.vars)
@@ -3123,7 +3109,6 @@ class amwg_plot_set11(amwg_plot_plan):
             for dt in self.datatype:     
                 plot_id = '_'.join([dt,  season])
                 self.plot_ids += [plot_id]
-        #print self.plot_ids
         
         self.plotall_id = '_'.join(self.datatype + ['Warm', 'Pool'])
         if not self.computation_planned:
@@ -3163,7 +3148,6 @@ class amwg_plot_set11(amwg_plot_plan):
                     VID = rv.dict_id(var, season, ft)
                     VID = id2str(VID)
                     pair += [VID]
-                    #print VID
                     if ft == filetable1:
                         RF = ( lambda x, vid=VID:x)
                     else:
@@ -3192,7 +3176,6 @@ class amwg_plot_set11(amwg_plot_plan):
         for plot_id in self.plot_ids:
             title = plot_id
             xVID, yVID = VIDs[plot_id]
-            #print xVID, yVID 
             self.single_plotspecs[plot_id] = plotspec(vid = plot_id, 
                                                       zvars=[xVID], 
                                                       zfunc = (lambda x: x.flatten()[SLICE]),
@@ -3354,7 +3337,7 @@ class amwg_plot_set11(amwg_plot_plan):
         #pdb.set_trace()
         results = plot_plan._results(self, newgrid)
         if results is None:
-            print "WARNING, AMWG plot set 11 found nothing to plot"
+            logger.warning( "AMWG plot set 11 found nothing to plot" )
             return None
         psv = self.plotspec_values
     
@@ -3391,7 +3374,6 @@ class amwg_plot_set12(amwg_plot_plan):
         obsfn   = filetable2._filelist.files[0]
         self.legendTitles = [modelfn.split('/')[-1:][0], obsfn.split('/')[-1:][0]]
         self.legendComplete = {}
-        #print self.legendTitles
         
         self.StationData = stationData.stationData(filetable2._filelist.files[0])
         
@@ -3402,7 +3384,6 @@ class amwg_plot_set12(amwg_plot_plan):
         self.months = ['JAN', 'APR', 'JUL', 'OCT']
         station = aux
         self.lat, self.lon = self.StationData.getLatLon(station)
-        #print station, self.lat, self.lon
         self.compositeTitle = defines.station_names[station]+'\n'+ \
                               'latitude = ' + str(self.lat) + ' longitude = ' + str(self.lon)
         self.plotCompositeTitle = True
@@ -3695,7 +3676,7 @@ class amwg_plot_set12(amwg_plot_plan):
         #pdb.set_trace()
         results = plot_plan._results(self, newgrid)
         if results is None:
-            print "WARNING, AMWG plot set 12 found nothing to plot"
+            logger.warning( "AMWG plot set 12 found nothing to plot" )
             return None
         psv = self.plotspec_values
         #pdb.set_trace()
@@ -3784,7 +3765,7 @@ class amwg_plot_set13(amwg_plot_plan):
         allvars = amwg_plot_set13._all_variables( model, obs)
         listvars = allvars.keys()
         listvars.sort()
-        print "amwg plot set 13 listvars=",listvars
+        logger.debug( "amwg plot set 13 listvars=%s", listvars )
         return listvars
     @classmethod
     def _all_variables( cls, ft1, ft2 ):
@@ -3877,7 +3858,8 @@ class amwg_plot_set13(amwg_plot_plan):
         elif varnom in self.standard_variables.keys():
             vid1 = self.var_from_std( filetable1, varnom, seasonid, region )
         else:
-            print "ERROR variable",varnom,"cannot be read or computed from data in the filetable",filetable1
+            logger.error( "variable %s cannot be read or computed from data in the filetable %s",
+                          varnom, filetable1 )
             return None
         if filetable2 is None:
             vid2 = None
@@ -4009,14 +3991,14 @@ class amwg_plot_set13(amwg_plot_plan):
     def _results(self,newgrid=0):
         results = plot_plan._results(self,newgrid)
         if results is None:
-            print "WARNING, AMWG plot set 13 found nothing to plot"
+            logger.warning( "AMWG plot set 13 found nothing to plot" )
             return None
         psv = self.plotspec_values
         if self.plot1_id in psv and self.plot2_id in psv and\
                 psv[self.plot1_id] is not None and psv[self.plot2_id] is not None:
             psv[self.plot1_id].synchronize_ranges(psv[self.plot2_id])
         else:
-            print "WARNING not synchronizing ranges for",self.plot1_id,"and",self.plot2_id
+            logger.warning( "not synchronizing ranges for %s and %s", self.plot1_id, self.plot2_id )
         for key,val in psv.items():
             if type(val) is not list: val=[val]
             for v in val:
@@ -4066,16 +4048,13 @@ class amwg_plot_set14(amwg_plot_plan):
         
         #vardi is a list of variables
         self.vars = varid
-        #print self.vars
         
         self.plot_ids = []
         #vars_id = '_'.join(self.vars)
         #for dt in self.datatype:
         plot_id = 'Taylor'
         self.plot_ids += [plot_id]
-        #print self.plot_ids
         
-        #self.plotall_id = '_'.join(self.datatype + ['Warm', 'Pool'])
         if not self.computation_planned:
             self.plan_computation( model, obs, varid, seasonid, aux, plotparms )
     @staticmethod
@@ -4154,7 +4133,6 @@ class amwg_plot_set14(amwg_plot_plan):
                     #rv for the data
                     VID_data = rv.dict_id(var, 'data', ft)
                     VID_data = id2str(VID_data)
-                    #print VID_data
                     RV = reduced_variable( variableid=var, 
                                            filetable=ft, 
                                            season=cdutil.times.Seasons(seasonid), 
@@ -4165,12 +4143,10 @@ class amwg_plot_set14(amwg_plot_plan):
                     FN = RV.get_variable_file(var)
                     L = FN.split('/')
                     DATAID = var + '_' + L[-1:][0]
-                    #print DATAID
                                         
                     #rv for the mean
                     VID_mean = rv.dict_id(var, 'mean', ft)
                     VID_mean = id2str(VID_mean)
-                    #print VID_mean
                     RV = reduced_variable( variableid=var, 
                                            filetable=ft, 
                                            season=cdutil.times.Seasons(seasonid), 
@@ -4181,7 +4157,6 @@ class amwg_plot_set14(amwg_plot_plan):
                     #rv for its std
                     VID_std = rv.dict_id(var, 'std', ft)
                     VID_std = id2str(VID_std)
-                    #print VID_std
                     RV = reduced_variable( variableid=var, 
                                            filetable=ft, 
                                            season=cdutil.times.Seasons(seasonid), 
@@ -4203,15 +4178,10 @@ class amwg_plot_set14(amwg_plot_plan):
                 Vmodel = RVs['model', ft, var][1]
                 BV =  rv.dict_id(var, 'bias', ft)
                 BV = id2str(BV)
-                #print Vobs
-                #print Vmodel
-                #print BV
                 bias += [BV]
                 BVs[var, ft, 'bias'] = BV
                 #FUNC = ( lambda x,y, vid=BV: x-y )
                 self.derived_variables[BV] = derived_var(vid=BV, inputs=[Vmodel, Vobs], func=adivb)
-        #print 'bias ='
-        #print bias        
            
         #generate derived variables for correlation between each model data and obs data
         nvars = len(self.vars)
@@ -4222,9 +4192,6 @@ class amwg_plot_set14(amwg_plot_plan):
                 Vmodel = RVs['model', ft, var][0]
                 CV = rv.dict_id(var, 'model_correlation', ft)
                 CV = id2str(CV)
-                #print Vobs
-                #print Vmodel
-                #print DV
                 CVs[var, ft, 'correlation'] = CV
                 FUNC = ( lambda x,y,  vid=CV, aux=aux: correlateData(x, y, aux) )
                 self.derived_variables[CV] = derived_var(vid=CV, inputs=[Vobs, Vmodel], func=FUNC) 
@@ -4237,9 +4204,6 @@ class amwg_plot_set14(amwg_plot_plan):
                 Vmodel = RVs['model', ft, var][2]
                 NV = rv.dict_id(var,'_normalized_std', ft)
                 NV = id2str(NV)
-                #print Vobs
-                #print Vmodel
-                #print NV
                 NVs[var, ft, 'normalized_std'] = NV
                 self.derived_variables[NV] = derived_var(vid=NV, inputs=[Vmodel, Vobs], func=adivb) 
                     
@@ -4250,8 +4214,6 @@ class amwg_plot_set14(amwg_plot_plan):
                 triple = (NVs[var, ft, 'normalized_std'], CVs[var, ft, 'correlation'], BVs[var, ft, 'bias'])
                 triples += triple 
 
-        #print triples
-        
         #correlation coefficient 
         self.derived_variables['TaylorData'] = derived_var(vid='TaylorData', inputs=triples, func=join_data) 
         #self.derived_variables['TaylorBias'] = derived_var(vid='TaylorBias', inputs=bias, func=join_scalar_data)
@@ -4294,7 +4256,7 @@ class amwg_plot_set14(amwg_plot_plan):
         #pdb.set_trace()
         results = plot_plan._results(self, newgrid)
         if results is None:
-            print "WARNING, AMWG plot set 14 found nothing to plot"
+            logger.warning( "AMWG plot set 14 found nothing to plot" )
             return None
         psv = self.plotspec_values
         v=psv['Taylor']
@@ -4328,7 +4290,7 @@ class amwg_plot_set15(amwg_plot_plan):
         
         self.CONTINUE = self.FT1
         if not self.CONTINUE:
-            print "user must specify a file table"
+            logger.warning( "When initializing plot set 15,  must specify a file table" )
             return None
         self.filetables = [filetable1]
         if self.FT2:
@@ -4382,11 +4344,9 @@ class amwg_plot_set15(amwg_plot_plan):
                                       reduction_function =  RF)
 
                 VID = id2str(VID)
-                #print VID
                 self.reduced_variables[VID] = RV
                 VIDs += [VID]
             vidAll[FT] = VIDs               
-        #print self.reduced_variables.keys()
         vidModel = dv.dict_id(varid, 'Level model', self._seasonid, filetable1)
         if self.FT2:
             vidObs  = dv.dict_id(varid, 'Level obs', self._seasonid, filetable2)
@@ -4401,14 +4361,11 @@ class amwg_plot_set15(amwg_plot_plan):
         
         self.derived_variables = {}
         #create the derived variables which is the composite of the months
-        #print vidAll[filetable1]
         self.derived_variables[vidModel] = derived_var(vid=vidModel, inputs=vidAll[filetable1], func=join_data) 
         if self.FT2:
-            #print vidAll[filetable2]
             self.derived_variables[vidObs] = derived_var(vid=vidObs, inputs=vidAll[filetable2], func=join_data) 
             #create the derived variable which is the difference of the composites
             self.derived_variables[vidDiff] = derived_var(vid=vidDiff, inputs=[vidModel, vidObs], func=aminusb_ax2) 
-        #print self.derived_variables.keys()
         
         #create composite plots np.transpose zfunc = (lambda x: x), zfunc = (lambda z:z), 
         self.single_plotspecs = {
@@ -4520,7 +4477,7 @@ class amwg_plot_set15(amwg_plot_plan):
         #pdb.set_trace()
         results = plot_plan._results(self, newgrid)
         if results is None:
-            print "WARNING, AMWG plot set 15 found nothing to plot"
+            logger.warning( "AMWG plot set 15 found nothing to plot" )
             return None
         psv = self.plotspec_values
         if self.FT2:
