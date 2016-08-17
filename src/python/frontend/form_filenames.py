@@ -1,5 +1,6 @@
 import logging, os
 logger = logging.getLogger(__name__)
+from metrics.common.utilities import underscore_join
 
 def form_filename( rootname, fmt, descr='', vname='', more_id='' ):
     """This information goes into a file name computation, or possibly should go:
@@ -121,22 +122,23 @@ def form_file_rootname( plotset, vars, meanings='variable', dir='', filetables=[
 # For a first cut at this function, I will simply try to reproduce the present behavior.
 
     plotset = str(plotset)
-    if plotset==1:
+    if plotset=='1':
         fname = 'table_output'
         return os.path.join( dir, fname )
 
     if plotset[0] in ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']: # i.e. [str(n) for n in range(10)]
         # This is a normal plotset.
         if basen == '' and postn == '':
-            fname = 'figure-set'+plotset+'_'+region+'_'+season+'_'+'_'.join(vars)+'_plot'
+            fname = underscore_join(['figure-set'+plotset, region, season, underscore_join(vars),
+                                     'plot'])
         else:
-            fname = '_'.join( basen, season, '_'.join(vars), '_'.join(aux), postn )
+            fname = underscore_join([ basen, season, underscore_join(vars), underscore_join(aux), postn ])
     elif plotset=='resstring':  # For "type(res) is str".
         if aux is None or aux==[None] or aux=='':
             aux = []
-        fname = '_'.join(basen, season, '_'.join(vars), '_'.join(aux)) + '-table.text'
+        fname = underscore_join([basen, season, underscore_join(vars), underscore_join(aux)]) + '-table.text'
     elif plotset=='res0':    # For len(res)==0
-        fname = '_'.join(basen, season, region) + '-table.text'
+        fname = underscore_join([basen, season, region]) + '-table.text'
 
     return os.path.join( dir, fname )
 
