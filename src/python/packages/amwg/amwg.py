@@ -866,8 +866,7 @@ class amwg_plot_set3(amwg_plot_plan,basic_id):
                     # The next repeated commands were necessary in Linux.
                     graphicMethod.linecolor = "red"
                     graphicMethod.linewidth = 2
-                    graphicMethod.linetype  = 1
-                    
+
                 data.id = 'obs'
             else:
                 if type(min(data)) is float:
