@@ -214,6 +214,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, data_hash, colls
         defaultft1 = None
         raw1 = None
         climo1 = None
+        name1 = None
 
     if climo0 != None:
         cf0 = 'yes'
@@ -377,7 +378,6 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, data_hash, colls
                     xmlstr = ' --xml no'
                 else:
                     xmlstr = ''
-
                 if o != 'NA' and obspath != None:
                     obsfname = diags_obslist[o]['filekey']
                     obsstr = '--obs path='+obspath+',climos=yes,filter="f_startswith(\''+obsfname+'\')"'
@@ -423,8 +423,14 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, data_hash, colls
                 if len(simple_vars) != 0:
                     varstr = '--vars '+' '.join(simple_vars)
                     pstr1 = '--model path=%s,climos=%s,type=model' % (modelpath, cf0)
+                    #append the name if passed from command line
+                    if name0 != None:
+                        pstr1 += ',name=' + name0
                     if modelpath1 != None:
                         pstr2 = '--model path=%s,climos=%s,type=model' % (modelpath1, cf1)
+                        #append the name if passed from command line
+                        if name1 != None:
+                            pstr2 += ',name=' + name1
                     else:
                         pstr2 = ''
                     cmdline = (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, seasonstr, varstr, outstr, xmlstr, prestr, poststr, regionstr)
@@ -543,7 +549,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, data_hash, colls
                                             title = "{var} ({option})".format(var=var, option=option)
                                         for s in coll_def.get("seasons", ["ANN"]):
                                             fname = "set{plotset}_{season}_{var}_{option}_{obs}_{region}-{image}.png".format(plotset=collnum, season=s, var=var, option=option, obs=diags_obslist[o]["filekey"], region=region, image="combined" if combined else "model")
-                                            f = OutputFile(fname, title="{title} - {season}".format(title=title, season=s))
+                                            f = OutputFile(fname, title="{season}".format(season=s))
                                             columns.append(f)
                                         row = OutputRow(title, columns)
                                         page.addRow(row, obs_index)
@@ -555,7 +561,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, data_hash, colls
                                     columns = []
                                     for s in coll_def.get("seasons", ["ANN"]):
                                         fname = "set{plotset}_{season}_{var}_{obs}_{region}-{image}.png".format(plotset=collnum, season=s, var=var, obs=diags_obslist[o]["filekey"], region=region, image="combined" if combined else "model")
-                                        f = OutputFile(fname, title="{title} - {season}".format(title=title, season=s))
+                                        f = OutputFile(fname, title="{season}".format(season=s))
                                         columns.append(f)
                                     if collnum == "topten":
                                         page.addRow(OutputRow(title, columns), 0)

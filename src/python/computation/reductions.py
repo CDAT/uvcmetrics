@@ -2131,6 +2131,9 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
 
     # First, if there are no units, take a guess.  I'm reluctant to do this because it will surely
     # be wrong sometimes.  But usually it is correct.
+    if not hasattr(mv2,'units') and hasattr(mv2,'lunits'):
+        # Fix an apparent typo in two variables in CERES-EBAF data
+        mv2.units = mv2.lunits
     if not hasattr(mv1,'units') or mv1.units == 'none':
         logger.warning("Variable %s has no units, will use units=1.", getattr(mv1,'id',''))
         mv1.units = '1'

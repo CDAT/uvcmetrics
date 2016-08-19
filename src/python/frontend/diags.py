@@ -136,8 +136,12 @@ def run_diags( opts ):
         logging.info('model %s id: %s', i, modelfts[i]._strid)
     for i in range(len(obsfts)):
         logging.info('obs %s id: %s', i, obsfts[i]._strid)
-    # Setup some output things
 
+    # Runtime import of user-defined diagnostics
+    for module in opts['uservars']:
+        amwg_plot_plan.get_user_vars(module)
+
+    # Setup some output things
     outdir = opts['output']['outputdir']
     if outdir is None:
         outdir = os.path.join(os.environ['HOME'],"tmp","diagout")

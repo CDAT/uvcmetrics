@@ -113,6 +113,7 @@ class AMWG(BasicDiagnosticGroup):
 
 class amwg_plot_plan(plot_plan):
     package = AMWG  # Note that this is a class not an object; also not a string.
+
     # Standard variables are derived variables which are as general-interest as most dataset
     # variables (which soon become reduced variables).  So it makes sense for all plot sets
     # (for the physical realm) to share them.  We use the derived_var class here to
@@ -356,11 +357,17 @@ class amwg_plot_plan(plot_plan):
     @staticmethod
     def _all_variables( model, obs ):
         return amwg_plot_plan.package._all_variables( model, obs, "amwg_plot_plan" )
+    #@classmethod
+    #def stdvar2var( cls, varnom, filetable, season, reduction_function, recurse=True,
+    #               builtin_variables=[] ):
+
+    from atmos_derived_vars import *
+
     @classmethod
-    def stdvar2var( cls, varnom, filetable, season, reduction_function, recurse=True,
-                    builtin_variables=[] ):
+    def commvar2var( cls, varnom, filetable, season, reduction_function, recurse=True ):
+
         """From a variable name, a filetable, and a season, this finds the variable name in
-        standard_variables. If it's there, this method generates a variable as an instance
+        common_derived_variables. If it's there, this method generates a variable as an instance
         of reduced_variable or derived_var, which represents the variable and how to compute it
         from the data described by the filetable.
         Inputs include the variable name (e.g. FLUT, TREFHT), a filetable, a season, and
@@ -372,26 +379,26 @@ class amwg_plot_plan(plot_plan):
         season is needed to compute a variable's value.
         If successful, this will return (i) a variable id for varnom, including filetable and
         season; it is the id of the first item in the returned list of derived variables.
-         (ii) a list of reduced_variables needed for computing varnom.  For
+        (ii) a list of reduced_variables needed for computing varnom.  For
         each such reduced variable rv, it may be placed in a dictionary using rv.id() as its key.
         (iii) a list of derived variables - normally just the one representing varnom, but
         in more complicated situations (which haven't been implemented yet) it may be longer.
         For a member of the list dv, dv.id() is a suitable dictionary key.
-        If unsuccessful, this will return None,None,None.
+        If unsuccessful, this will return None,[],[].
         """
         if filetable is None:
             return None,[],[]
-        #if varnom not in amwg_plot_plan.standard_variables:
-        if varnom not in cls.standard_variables:
+            #if varnom not in amwg_plot_plan.common_derived_variables:
+        if varnom not in cls.common_derived_variables:
             return None,[],[]
         computable = False
         rvs = []
         dvs = []
-        #print "dbg in stdvar2var to compute varnom=",varnom,"from filetable=",filetable
-        for svd in cls.standard_variables[varnom]:  # loop over ways to compute varnom
+            #print "dbg in commvar2var to compute varnom=",varnom,"from filetable=",filetable
+        for svd in cls.common_derived_variables[varnom]:  # loop over ways to compute varnom
             invarnoms = svd.inputs()
-            #print "dbg first round, invarnoms=",invarnoms
-            #print "dbg filetable variables=",filetable.list_variables()
+                #print "dbg first round, invarnoms=",invarnoms
+                #print "dbg filetable variables=",filetable.list_variables()
             if len( set(invarnoms) - set(filetable.list_variables_incl_axes()) )<=0:
                 func = svd._func
                 computable = True
@@ -418,11 +425,11 @@ class amwg_plot_plan(plot_plan):
         if not computable and recurse==True:
             # Maybe the input variables are themselves computed.  We'll only do this one
             # level of recursion before giving up.  This is enough to do a real computation
-            # plus some variable renamings via standard_variables.
+            # plus some variable renamings via common_derived_variables.
             # Once we have a real system for handling name synonyms, this loop can probably
             # be dispensed with.  If we will never have such a system, then the above loop
             # can be dispensed with.
-            for svd in cls.standard_variables[varnom]:  # loop over ways to compute varnom
+            for svd in cls.common_derived_variables[varnom]:  # loop over ways to compute varnom
                 invarnoms = svd.inputs()
                 for invar in invarnoms:
                     if invar in filetable.list_variables_incl_axes():
@@ -430,10 +437,10 @@ class amwg_plot_plan(plot_plan):
                                                reduction_function=reduction_function )
                         rvs.append(rv)
                     else:
-                        if invar not in cls.standard_variables:
+                        if invar not in cls.common_derived_variables:
                             break
                         dummy,irvs,idvs =\
-                            cls.stdvar2var( invar, filetable, season, reduction_function, recurse=False )
+                            cls.commvar2var( invar, filetable, season, reduction_function, recurse=False )
                         rvs += irvs
                         dvs += idvs
                 func = svd._func
@@ -445,24 +452,31 @@ class amwg_plot_plan(plot_plan):
                 break
         if len(rvs)<=0:
             logger.warning("no inputs found for %s in filetable %s",varnom, filetable.id())
-            logger.warning("filetable source files= %s %s",filetable._filelist[0:10])
+            logger.warning("filetable source files= %s",filetable._filelist[0:10])
             logger.warning("need inputs %s",svd.inputs())
             return None,[],[]
             #raise DiagError( "ERROR, don't have %s, and don't have sufficient data to compute it!"\
-            #                     % varnom )
+                #                     % varnom )
         if not computable:
-            logger.debug("DEBUG: standard variable %s is not computable", varnom)
+            logger.debug("DEBUG: comm. derived variable %s is not computable", varnom)
             logger.debug( "need inputs %s" ,svd.inputs())
             logger.debug("found inputs %s",([rv.id() for rv in rvs]+[drv.id() for drv in dvs]))
             return None,[],[]
         seasonid = season.seasons[0]
         vid = derived_var.dict_id( varnom, '', seasonid, filetable )
-        #print "dbg stdvar is making a new derived_var, vid=",vid,"inputs=",inputs
+        #print "dbg commvar2var is making a new derived_var, vid=",vid,"inputs=",inputs
         #print "dbg function=",func
         newdv = derived_var( vid=vid, inputs=inputs, func=func )
         dvs.append(newdv)
         #print "dbg2 returning newdv.id=",newdv.id(),"rvs=",rvs,"dvs=",dvs
         return newdv.id(), rvs, dvs
+
+    @staticmethod
+    def _list_variables( model, obs ):
+        return amwg_plot_plan.package._list_variables( model, obs, "amwg_plot_plan" )
+    @staticmethod
+    def _all_variables( model, obs ):
+        return amwg_plot_plan.package._all_variables( model, obs, "amwg_plot_plan" )
 
 # plot set classes in other files:
 from metrics.packages.amwg.amwg1 import *
@@ -790,15 +804,15 @@ class amwg_plot_set3(amwg_plot_plan,basic_id):
         listvars.sort()
         return listvars
     @staticmethod
-    def _all_variables( model, obs, use_standard_vars=True ):
+    def _all_variables( model, obs, use_common_derived_vars=True ):
         """returns a dict of varname:varobject entries"""
         allvars = amwg_plot_plan.package._all_variables( model, obs, "amwg_plot_plan" )
-        if use_standard_vars:
-            # Now we add varname:basic_plot_variable for all standard_variables.
+        if use_common_derived_vars:
+            # Now we add varname:basic_plot_variable for all common_derived_variables.
             # This needs work because we don't always have the data needed to compute them...
             # BTW when this part is done better, it should (insofar as it's reasonable) be moved to
             # amwg_plot_plan and shared by all AMWG plot sets.
-            for varname in amwg_plot_plan.standard_variables.keys():
+            for varname in amwg_plot_plan.common_derived_variables.keys():
                 allvars[varname] = basic_plot_variable
         return allvars
     def plan_computation( self, model, obs, varnom, seasonid, plotparms ):
@@ -810,8 +824,8 @@ class amwg_plot_set3(amwg_plot_plan,basic_id):
                 filetable=filetable1, season=self.season, region=self.region,
                 reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,self.season,self.region,vid=vid)) )
             self.reduced_variables[zvar._strid] = zvar
-        elif varnom in self.standard_variables.keys():
-                    zvar,rvs,dvs = self.stdvar2var(
+        elif varnom in self.common_derived_variables.keys():
+                    zvar,rvs,dvs = self.commvar2var(
                         varnom, filetable1, self.season,\
                             (lambda x,vid=None:
                                  reduce2lat_seasonal(x, self.season, self.region, vid=vid) ))
@@ -831,8 +845,8 @@ class amwg_plot_set3(amwg_plot_plan,basic_id):
                 filetable=filetable2, season=self.season, region=self.region,
                 reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,self.season,self.region,vid=vid)) )
             self.reduced_variables[z2var._strid] = z2var
-        elif varnom in self.standard_variables.keys():
-                    z2var,rvs,dvs = self.stdvar2var(
+        elif varnom in self.common_derived_variables.keys():
+                    z2var,rvs,dvs = self.commvar2var(
                         varnom, filetable2, self.season,\
                             (lambda x,vid:
                                  reduce2latlon_seasonal(x, self.season, self.region, vid) ))
@@ -1375,7 +1389,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
         listvars.sort()
         return listvars
     @staticmethod
-    def _all_variables( model, obs, use_standard_vars=True ):
+    def _all_variables( model, obs, use_common_derived_vars=True ):
         """returns a dict of varname:varobject entries"""
         allvars = amwg_plot_plan.package._all_variables( model, obs, "amwg_plot_plan" )
         # ...this is what's in the data.  varname:basic_plot_variable
@@ -1384,12 +1398,12 @@ class amwg_plot_set5and6(amwg_plot_plan):
             allvars[varname] = level_variable_for_amwg_set5
             # ...this didn't add more variables, but changed the variable's class
             # to indicate that you can specify a level for it
-        if use_standard_vars:
-            # Now we add varname:basic_plot_variable for all standard_variables.
+        if use_common_derived_vars:
+            # Now we add varname:basic_plot_variable for all common_derived_variables.
             # This needs work because we don't always have the data needed to compute them...
             # BTW when this part is done better, it should (insofar as it's reasonable) be moved to
             # amwg_plot_plan and shared by all AMWG plot sets.
-            for varname in amwg_plot_plan.standard_variables.keys():
+            for varname in amwg_plot_plan.common_derived_variables.keys():
                 allvars[varname] = basic_plot_variable
         return allvars
     def plan_computation( self, model, obs, varid, seasonid, aux, names, plotparms ):
@@ -1405,8 +1419,8 @@ class amwg_plot_set5and6(amwg_plot_plan):
         if varnom in filetable1.list_variables():
             vid1,vid1var = self.vars_normal_contours(
                 filetable1, varnom, seasonid, aux=None )
-        elif varnom in self.standard_variables.keys():
-            vid1,vid1var = self.vars_stdvar_normal_contours(
+        elif varnom in self.common_derived_variables.keys():
+            vid1,vid1var = self.vars_commdervar_normal_contours(
                 filetable1, varnom, seasonid, aux=None )
         else:
             logger.error("variable %s not found in and cannot be computed from %s",varnom, filetable1)
@@ -1414,8 +1428,8 @@ class amwg_plot_set5and6(amwg_plot_plan):
         if filetable2 is not None and varnom in filetable2.list_variables():
             vid2,vid2var = self.vars_normal_contours(
                 filetable2, varnom, seasonid, aux=None )
-        elif varnom in self.standard_variables.keys():
-            vid2,vid2var = self.vars_stdvar_normal_contours(
+        elif varnom in self.common_derived_variables.keys():
+            vid2,vid2var = self.vars_commdervar_normal_contours(
                 filetable2, varnom, seasonid, aux=None )
         else:
             vid2,vid2var = None,None
@@ -1489,12 +1503,13 @@ class amwg_plot_set5and6(amwg_plot_plan):
         vid = rv.dict_id( varnom, seasonid, filetable )
         vidvar = rv.dict_id( varnom+'_var', seasonid, filetable ) # variance
         return vid, vidvar
-    def vars_stdvar_normal_contours( self, filetable, varnom, seasonid, aux=None ):
+    def vars_commdervar_normal_contours( self, filetable, varnom, seasonid, aux=None ):
         """Set up for a lat-lon contour plot, as in plot set 5.  Data is averaged over all other
         axes.  The variable given by varnom is *not* a data variable suitable for reduction.  It is
-        a standard_variable.  Its inputs will be reduced, then it will be set up as a derived_var.
+        a common_derived_variable.  Its inputs will be reduced, then it will be set up as a
+        derived_var.
         """
-        varid,rvs,dvs = self.stdvar2var(
+        varid,rvs,dvs = self.commvar2var(
             varnom, filetable, self.season,\
                 (lambda x,vid:
                      reduce2latlon_seasonal(x, self.season, self.region, vid, exclude_axes=[
@@ -1762,7 +1777,10 @@ class amwg_plot_set5and6(amwg_plot_plan):
             for v in val:
                 if v is None: continue
                 v.finalize()
-        return self.plotspec_values[self.plotall_id]
+        if self.plotall_id in self.plotspec_values:
+            return self.plotspec_values[self.plotall_id]
+        else:
+            return None
 
 def get_textobject(t,att,text):
     obj = vcs.createtext(Tt_source=getattr(t,att).texttable,To_source=getattr(t,att).textorientation)
@@ -1854,7 +1872,7 @@ class amwg_plot_set6(amwg_plot_plan):
     """
     name = '6 - (Experimental, doesnt work with GUI) Horizontal Vector Plots of Seasonal Means' 
     number = '6'
-    standard_variables = { 'STRESS':[['STRESS_MAG','TAUX','TAUY'],['TAUX','TAUY']],
+    common_derived_variables = { 'STRESS':[['STRESS_MAG','TAUX','TAUY'],['TAUX','TAUY']],
                            'MOISTURE_TRANSPORT':[['TUQ','TVQ']] }
     # ...built-in variables.   The key is the name, as the user specifies it.
     # The value is a lists of lists of the required data variables. If the dict item is, for
@@ -1893,7 +1911,7 @@ class amwg_plot_set6(amwg_plot_plan):
             self.plan_computation( model, obs, varid, seasonid, aux, plotparms )
     @staticmethod
     def _list_variables( model, obs ):
-        return amwg_plot_set6.standard_variables.keys()
+        return amwg_plot_set6.common_derived_variables.keys()
     @staticmethod
     def _all_variables( model, obs ):
         return { vn:basic_plot_variable for vn in amwg_plot_set6._list_variables( model, obs ) }
@@ -1911,7 +1929,7 @@ class amwg_plot_set6(amwg_plot_plan):
         """
         vars = None
         if filetable is not None:
-            for dvars in self.standard_variables[varid]:   # e.g. dvars=['STRESS_MAG','TAUX','TAUY']
+            for dvars in self.common_derived_variables[varid]:   # e.g. dvars=['STRESS_MAG','TAUX','TAUY']
                 if filetable.has_variables(dvars):
                     vars = dvars                           # e.g. ['STRESS_MAG','TAUX','TAUY']
                     break
@@ -2081,12 +2099,12 @@ class amwg_plot_set6(amwg_plot_plan):
                 vars2,rvars2,dvars2,var_cont2,vars_vec2,vid_cont2 =\
                     self.STRESS_setup( filetable2, varid, seasonid )
                 if vars1 is None and vars2 is None:
-                    raise DiagError("cannot find standard variables in data 2")
+                    raise DiagError("cannot find common derived variables in data 2")
             else:
                 logger.error("AMWG plot set 6 does not yet support %s",varid)
                 return None
         except Exception as e:
-            logger.error("cannot find suitable standard_variables in data for varid= %s",varid)
+            logger.error("cannot find suitable common_derived_variables in data for varid= %s",varid)
             logger.exception(" %s ", e)
             return None
         reduced_varlis = []
@@ -3786,7 +3804,7 @@ class amwg_plot_set13(amwg_plot_plan):
     #Often data comes from COSP = CFMIP Observation Simulator Package
     name = '13 - Cloud Simulator Histograms'
     number = '13'
-    standard_variables = {  # Note: shadows amwg_plot_plan.standard_variables
+    common_derived_variables = {  # Note: shadows amwg_plot_plan.common_derived_variables
         'CLISCCP':[derived_var(
                 vid='CLISCCP', inputs=['FISCCP1','isccp_prs','isccp_tau'], outputs=['CLISCCP'],
                 func=uncompress_fisccp1 )]
@@ -3870,9 +3888,9 @@ class amwg_plot_set13(amwg_plot_plan):
                     continue
             allvars[varname] = basic_plot_variable
 
-        # Finally, add in the standard variables.  Note that there is no check on whether
+        # Finally, add in the common derived variables.  Note that there is no check on whether
         # we have the inputs needed to compute them.
-        for varname in set(cls.standard_variables.keys())-set(allvars.keys()):
+        for varname in set(cls.common_derived_variables.keys())-set(allvars.keys()):
             allvars[varname] = basic_plot_variable
 
         return allvars
@@ -3891,10 +3909,10 @@ class amwg_plot_set13(amwg_plot_plan):
             )
         self.reduced_variables[ rv.id() ] = rv
         return rv.id()
-    def var_from_std( self, filetable, varnom, seasonid, region ):
-        """defines the derived variable for varnom when computable as a standard variable using data
+    def var_from_cdv( self, filetable, varnom, seasonid, region ):
+        """defines the derived variable for varnom when computable as a common derived variable using data
         in the specified filetable"""
-        varid,rvs,dvs = self.stdvar2var(
+        varid,rvs,dvs = self.commvar2var(
             varnom, filetable, self.season,\
                 (lambda x,vid,season=self.season,region=region:
                      reduce_time_space_seasonal_regional(x, season=season, region=region, vid=vid) ))
@@ -3913,8 +3931,8 @@ class amwg_plot_set13(amwg_plot_plan):
         region = interpret_region( region )
         if varnom in filetable1.list_variables_incl_axes():
             vid1 = self.var_from_data( filetable1, varnom, seasonid, region )
-        elif varnom in self.standard_variables.keys():
-            vid1 = self.var_from_std( filetable1, varnom, seasonid, region )
+        elif varnom in self.common_derived_variables.keys():
+            vid1 = self.var_from_cdv( filetable1, varnom, seasonid, region )
         else:
             print "ERROR variable",varnom,"cannot be read or computed from data in the filetable",filetable1
             return None
@@ -3922,8 +3940,8 @@ class amwg_plot_set13(amwg_plot_plan):
             vid2 = None
         elif varnom in filetable2.list_variables_incl_axes():
             vid2 = self.var_from_data( filetable2, varnom, seasonid, region )
-        elif varnom in self.standard_variables.keys():
-            vid2 = self.var_from_std( filetable2, varnom, seasonid, region )
+        elif varnom in self.common_derived_variables.keys():
+            vid2 = self.var_from_cdv( filetable2, varnom, seasonid, region )
         else:
             vid2 = None
 
@@ -4125,13 +4143,13 @@ class amwg_plot_set14(amwg_plot_plan):
         listvars.sort()
         return listvars
     @staticmethod
-    def _all_variables( model, obs, use_standard_vars=True ):
+    def _all_variables( model, obs, use_common_derived_vars=True ):
         allvars = amwg_plot_plan.package._all_variables( model, obs, "amwg_plot_plan" )
         for varname in amwg_plot_plan.package._list_variables_with_levelaxis(
             model, obs, "amwg_plot_plan" ):
             allvars[varname] = level_variable_for_amwg_set5
-        if use_standard_vars:
-            for varname in amwg_plot_plan.standard_variables.keys():
+        if use_common_derived_vars:
+            for varname in amwg_plot_plan.common_derived_variables.keys():
                 allvars[varname] = basic_plot_variable
         return allvars
     def plan_computation( self, model, obs, varid, seasonid, aux, plotparms ):

@@ -68,6 +68,7 @@ class Options():
         self._opts['sets'] = None
         self._opts['regions'] = []
         self._opts['logging'] = {}
+        self._opts['uservars'] = []
 
         self._opts['reltime'] = None
         self._opts['cachepath'] = '/tmp'
@@ -288,6 +289,9 @@ class Options():
         if log_file:
             log_path = os.path.abspath(os.path.expanduser(log_file))
             self._opts["logging"]["file"] = log_path
+
+    def processUservars( self, uservars ):
+        self._opts["uservars"]=uservars
 
    ###
    ### The next few functions provide the ability to get valid options to the various parameters.
@@ -661,6 +665,8 @@ class Options():
                               help="key=value comma delimited list of model options. Options are as follows: path={a path to the data} filter={one or more file filters} name={short name for the dataset} start={starting time for the analysis} end={ending time for the analysis} climo=[yes|no] - is this a set of climatologies or raw data")
         pathopts.add_argument('--obs', '-O', action='append', #nargs=1,
                               help="key=value comma delimited list of observation options. See usage guide for more information.")
+        pathopts.add_argument('--uservars', action='append',
+                              help="a module defining user-defined derived variables; should be in your PYTHONPATH.  See the user guide for the file format.  This option may appear any number of times."),
 
         # Other options, useful at various times.
         otheropts = parser.add_argument_group('Other')
@@ -884,6 +890,9 @@ class Options():
 
         if args.displayunits != None:
             self.processDisplayunits('displayunits', args.displayunits)
+
+        if args.uservars != None:
+            self.processUservars(args.uservars)
 
         if "metadiags" in progname:
             if args.custom_specs is not None:
