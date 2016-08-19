@@ -149,8 +149,8 @@ class amwg_plot_plan(plot_plan):
         #print "dbg in commvar2var to compute varnom=",varnom,"from filetable=",filetable
         for svd in cls.common_derived_variables[varnom]:  # loop over ways to compute varnom
             invarnoms = svd.inputs()
-            #print "dbg first round, invarnoms=",invarnoms
-            #print "dbg filetable variables=",filetable.list_variables()
+                #print "dbg first round, invarnoms=",invarnoms
+                #print "dbg filetable variables=",filetable.list_variables()
             if len( set(invarnoms) - set(filetable.list_variables_incl_axes()) )<=0:
                 func = svd._func
                 computable = True
@@ -208,7 +208,7 @@ class amwg_plot_plan(plot_plan):
             logger.warning("need inputs %s",svd.inputs())
             return None,[],[]
             #raise DiagError( "ERROR, don't have %s, and don't have sufficient data to compute it!"\
-            #                     % varnom )
+                #                     % varnom )
         if not computable:
             logger.debug("DEBUG: comm. derived variable %s is not computable", varnom)
             logger.debug( "need inputs %s" ,svd.inputs())
@@ -1258,7 +1258,8 @@ class amwg_plot_set5and6(amwg_plot_plan):
     def vars_commdervar_normal_contours( self, filetable, varnom, seasonid, aux=None ):
         """Set up for a lat-lon contour plot, as in plot set 5.  Data is averaged over all other
         axes.  The variable given by varnom is *not* a data variable suitable for reduction.  It is
-        a common_derived_variable.  Its inputs will be reduced, then it will be set up as a derived_var.
+        a common_derived_variable.  Its inputs will be reduced, then it will be set up as a
+        derived_var.
         """
         varid,rvs,dvs = self.commvar2var(
             varnom, filetable, self.season,\
@@ -1623,7 +1624,7 @@ class amwg_plot_set6(amwg_plot_plan):
     """
     name = '6 - (Experimental, doesnt work with GUI) Horizontal Vector Plots of Seasonal Means' 
     number = '6'
-    standard_variables = { 'STRESS':[['STRESS_MAG','TAUX','TAUY'],['TAUX','TAUY']],
+    set6_variables = { 'STRESS':[['STRESS_MAG','TAUX','TAUY'],['TAUX','TAUY']],
                            'MOISTURE_TRANSPORT':[['TUQ','TVQ']] }
     # ...built-in variables.   The key is the name, as the user specifies it.
     # The value is a lists of lists of the required data variables. If the dict item is, for
@@ -1662,7 +1663,7 @@ class amwg_plot_set6(amwg_plot_plan):
             self.plan_computation( model, obs, varid, seasonid, aux, plotparms )
     @staticmethod
     def _list_variables( model, obs ):
-        return amwg_plot_set6.standard_variables.keys()
+        return amwg_plot_set6.set6_variables.keys()
     @staticmethod
     def _all_variables( model, obs ):
         return { vn:basic_plot_variable for vn in amwg_plot_set6._list_variables( model, obs ) }
@@ -1680,7 +1681,7 @@ class amwg_plot_set6(amwg_plot_plan):
         """
         vars = None
         if filetable is not None:
-            for dvars in self.standard_variables[varid]:   # e.g. dvars=['STRESS_MAG','TAUX','TAUY']
+            for dvars in self.set6_variables[varid]:   # e.g. dvars=['STRESS_MAG','TAUX','TAUY']
                 if filetable.has_variables(dvars):
                     vars = dvars                           # e.g. ['STRESS_MAG','TAUX','TAUY']
                     break
@@ -1850,12 +1851,12 @@ class amwg_plot_set6(amwg_plot_plan):
                 vars2,rvars2,dvars2,var_cont2,vars_vec2,vid_cont2 =\
                     self.STRESS_setup( filetable2, varid, seasonid )
                 if vars1 is None and vars2 is None:
-                    raise DiagError("cannot find standard variables in data 2")
+                    raise DiagError("cannot find set6 variables in data 2")
             else:
                 logger.error("AMWG plot set 6 does not yet support %s",varid)
                 return None
         except Exception as e:
-            logger.error("cannot find suitable standard_variables in data for varid= %s",varid)
+            logger.error("cannot find suitable set6_variables in data for varid= %s",varid)
             logger.exception(" %s ", e)
             return None
         reduced_varlis = []
@@ -3661,7 +3662,7 @@ class amwg_plot_set13(amwg_plot_plan):
         self.reduced_variables[ rv.id() ] = rv
         return rv.id()
     def var_from_cdv( self, filetable, varnom, seasonid, region ):
-        """defines the derived variable for varnom when computable as a comon derived variable using data
+        """defines the derived variable for varnom when computable as a common derived variable using data
         in the specified filetable"""
         varid,rvs,dvs = self.commvar2var(
             varnom, filetable, self.season,\
