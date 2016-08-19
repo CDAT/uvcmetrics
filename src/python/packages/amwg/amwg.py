@@ -113,254 +113,13 @@ class AMWG(BasicDiagnosticGroup):
 
 class amwg_plot_plan(plot_plan):
     package = AMWG  # Note that this is a class not an object; also not a string.
-    # Standard variables are derived variables which are as general-interest as most dataset
-    # variables (which soon become reduced variables).  So it makes sense for all plot sets
-    # (for the physical realm) to share them.  We use the derived_var class here to
-    # contain their information ,i.e. inputs and how to compute.  But, if one be used, another
-    # derived_var object will have to be built using the full variable ids, including season
-    # and filetable information.
-    # standard_variables is a dict.  The key is a variable name and the value is a list of
-    # derived_var objects, each of which gives a way to compute the variable.  The first on the
-    # list is the preferred method.  Of course, if the variable be already available as data,
-    # then that is preferred over any computation.
-    standard_variables = {
-        # mass weighting, Jeff Painter based on communications from Susannah Burrows.
+    from atmos_derived_vars import *
 
-        # water cycle, Chris Terai:
-        'QFLX_LND':[derived_var(
-                vid='QFLX_LND', inputs=['QFLX','OCNFRAC'], outputs=['QFLX_LND'],
-                func=WC_diag_amwg.surface_maskvariable ),
-                    derived_var(
-                vid='QFLX_LND', inputs=['QFLX'], outputs=['QFLX_LND'],
-                func=(lambda x: x) ) ],  # assumes that QFLX is from a land-only dataset
-        'QFLX_OCN':[derived_var(
-                vid='QFLX_OCN', inputs=['QFLX','LANDFRAC'], outputs=['QFLX_OCN'],
-                func=WC_diag_amwg.surface_maskvariable ),
-                    derived_var(
-                vid='QFLX_OCN', inputs=['QFLX'], outputs=['QFLX_OCN'],
-                func=(lambda x: x) ) ],  # assumes that QFLX is from an ocean-only dataset
-        'EminusP':[derived_var(
-                vid='EminusP', inputs=['QFLX','PRECT'], outputs=['EminusP'],
-                func=aminusb_2ax )],  # assumes that QFLX,PRECT are time-reduced
-        'TMQ':[derived_var(
-                vid='TMQ', inputs=['PREH2O'], outputs=['TMQ'],
-                func=(lambda x:x))],
-        'WV_LIFETIME':[derived_var(
-                vid='WV_LIFETIME', inputs=['TMQ','PRECT'], outputs=['WV_LIFETIME'],
-                func=(lambda tmq,prect: wv_lifetime(tmq,prect)[0]) )],
-
-        # Variables computed by NCAR AMWG, requested by Chris Golaz, our issue 222:
-        'ALBEDO':[derived_var(      # TOA albedo
-                vid='ALBEDO', inputs=['SOLIN','FSNTOA'], outputs=['ALBEDO'],
-                func=albedo )],
-        'ALBEDOC':[derived_var(      # TOA clear-sky albedo
-                vid='ALBEDOC', inputs=['SOLIN','FSNTOAC'], outputs=['ALBEDOC'],
-                func=albedo )],
-        'EP':[derived_var(          # evaporation - precipitation
-                vid='EP', inputs=['QFLX','PRECT'], outputs=['EP'],
-                func=aminusb )],
-        'TTRP':[derived_var(       # tropopause temperature (at first time)
-                vid='TTRP', inputs=['T'], outputs=['TTRP'], special_orders={'T':'dontreduce'},
-                func=tropopause_temperature )],
-        'LWCFSRF':[derived_var(    # Surface LW Cloud Forcing
-                vid='LWCFSRF', inputs=['FLNSC','FLNS'], outputs=['LWCFSRF'],
-                func=aminusb )],
-        'PRECT_LAND':[derived_var( # land precipitation rate
-                vid='PRECT_LAND', inputs=['PRECC','PRECL','LANDFRAC'], outputs=['PRECT_LAND'],
-                func=land_precipitation )],
-        'PRECIP':[derived_var(     # cumulative precipitation (over the season)
-                vid='PRECIP', inputs=['PRECT','seasonid'], outputs=['PRECIP'],
-                func=prect2precip )],
-        'PRECIP_LAND':[derived_var(     # cumulative precipitation (over the season; restricted to land)
-                vid='PRECIP_LAND', inputs=['PRECT_LAND','seasonid'], outputs=['PRECIP_LAND'],
-                func=prect2precip )],
-        'SST':[derived_var(        # sea surface temperature.  Usually it's in the data file, but not always.
-                vid='SST', inputs=['TS','OCNFRAC'], outputs=['SST'],
-                func=(lambda ts,of: mask_by(ts,of,lo=0.9)) )],
-        'SWCFSRF':[derived_var(    # Surface SW Cloud Forcing
-                vid='SWCFSRF', inputs=['FSNS', 'FSNSC'], outputs=['SWCFSRF'],
-                func=aminusb )],
-
-        # miscellaneous:
-        'PRECT':[derived_var(
-                vid='PRECT', inputs=['pr'], outputs=['PRECT'],
-                func=(lambda x:x)),
-                 derived_var(
-                vid='PRECT', inputs=['PRECC','PRECL'], outputs=['PRECT'],
-                func=(lambda a,b,units="mm/day": aplusb(a,b,units) ))],
-        'AODVIS':[derived_var(
-                vid='AODVIS', inputs=['AOD_550'], outputs=['AODVIS'],
-                func=(lambda x: setunits(x,'')) )],
-        # AOD normally has no units, but sometimes the units attribute is set anyway.
-        'TREFHT':[derived_var(
-                vid='TREFHT', inputs=['TREFHT_LAND'], outputs=['TREFHT'],
-                func=(lambda x: x) )],
-        'RESTOM':[derived_var(
-                vid='RESTOM', inputs=['FSNT','FLNT'], outputs=['RESTOM'],
-                func=aminusb )],   # RESTOM = net radiative flux
-
-        # clouds, Yuying Zhang:
-        'CLISCCP':[
-            derived_var(
-                # old style vid='CLISCCP', inputs=['FISCCP1_COSP','cosp_prs','cosp_tau'], outputs=['CLISCCP'],
-                # old style          func=uncompress_fisccp1 )
-                vid='CLISCCP', inputs=['FISCCP1_COSP'], outputs=['CLISCCP'],
-                func=(lambda x: x) )
-            ],
-         'CLDMED_VISIR':[derived_var(
-               vid='CLDMED_VISIR', inputs=['CLDMED'], outputs=['CLDMED_VISIR'],
-               func=(lambda x:x))],
-         'CLDTOT_VISIR':[derived_var(
-               vid='CLDTOT_VISIR', inputs=['CLDTOT'], outputs=['CLDTOT_VISIR'],
-               func=(lambda x:x))],
-         'CLDHGH_VISIR':[derived_var(
-               vid='CLDHGH_VISIR', inputs=['CLDHGH'], outputs=['CLDHGH_VISIR'],
-               func=(lambda x:x))],
-         'CLDLOW_VISIR':[derived_var(
-               vid='CLDLOW_VISIR', inputs=['CLDLOW'], outputs=['CLDLOW_VISIR'],
-               func=(lambda x:x))],
-
-        'CLDTOT_ISCCP':[
-            derived_var( vid='CLDTOT_ISCCP', inputs=['CLDTOT_ISCCPCOSP'], outputs=['CLDTOT_ISCCP'],
-                         func=(lambda x:x) ) ],
-        'CLDHGH_ISCCP':[
-            derived_var( vid='CLDHGH_ISCCP', inputs=['CLDHGH_ISCCPCOSP'], outputs=['CLDHGH_ISCCP'],
-                         func=(lambda x:x) ) ],
-        'CLDMED_ISCCP':[
-            derived_var( vid='CLDMED_ISCCP', inputs=['CLDMED_ISCCPCOSP'], outputs=['CLDMED_ISCCP'],
-                         func=(lambda x:x) ) ],
-        'CLDLOW_ISCCP':[
-            derived_var( vid='CLDLOW_ISCCP', inputs=['CLDLOW_ISCCPCOSP'], outputs=['CLDLOW_ISCCP'],
-                         func=(lambda x:x) ) ],
-        'CLMISR':[
-            derived_var( vid='CLMISR', inputs=['CLD_MISR'], outputs=['CLMISR'],
-                         func=(lambda x:x) ) ],
-        # Note: CLDTOT is different from CLDTOT_CAL, CLDTOT_ISCCPCOSP, etc.  But translating
-        # from one to the other might be better than returning nothing.  Also, I'm not so sure that
-        # reduce_prs_tau is producing the right answers, but that's a problem for later.
-	#1-ISCCP
-        'CLDTOT_TAU1.3_ISCCP':[
-            derived_var(
-                vid='CLDTOT_TAU1.3_ISCCP', inputs=['CLISCCP'], outputs=['CLDTOT_TAU1.3_ISCCP'],
-                func=(lambda clisccp: reduce_height_thickness( clisccp, None,None, 1.3,379) ) )
-            ],
-	#2-ISCCP
-        'CLDTOT_TAU1.3-9.4_ISCCP':[
-            derived_var(
-                vid='CLDTOT_TAU1.3-9.4_ISCCP', inputs=['CLISCCP'], outputs=['CLDTOT_TAU1.3-9.4_ISCCP'],
-                func=(lambda clisccp: reduce_height_thickness( clisccp, None,None, 1.3,9.4) ) )
-            ],
-	#3-ISCCP
-        'CLDTOT_TAU9.4_ISCCP':[
-            derived_var(
-                vid='CLDTOT_TAU9.4_ISCCP', inputs=['CLISCCP'], outputs=['CLDTOT_TAU9.4_ISCCP'],
-                func=(lambda clisccp: reduce_height_thickness( clisccp, None,None, 9.4,379) ) )
-            ],
-	#1-MODIS
-        'CLDTOT_TAU1.3_MODIS':[
-            derived_var(
-                vid='CLDTOT_TAU1.3_MODIS', inputs=['CLMODIS'], outputs=['CLDTOT_TAU1.3_MODIS'],
-                func=(lambda clmodis: reduce_height_thickness( clmodis, None,None, 1.3,379 ) ) )
-            ],
-	#2-MODIS
-        'CLDTOT_TAU1.3-9.4_MODIS':[
-            derived_var(
-                vid='CLDTOT_TAU1.3-9.4_MODIS', inputs=['CLMODIS'], outputs=['CLDTOT_TAU1.3-9.4_MODIS'],
-                func=(lambda clmodis: reduce_height_thickness( clmodis, None,None, 1.3,9.4 ) ) )
-            ],
-	#3-MODIS
-        'CLDTOT_TAU9.4_MODIS':[
-            derived_var(
-                vid='CLDTOT_TAU9.4_MODIS', inputs=['CLMODIS'], outputs=['CLDTOT_TAU9.4_MODIS'],
-                func=(lambda clmodis: reduce_height_thickness( clmodis, None,None, 9.4,379 ) ) )
-            ],
-	#4-MODIS
-        'CLDHGH_TAU1.3_MODIS':[
-            derived_var(
-                vid='CLDHGH_TAU1.3_MODIS', inputs=['CLMODIS'], outputs=['CLDHGH_TAU1.3_MODIS'],
-                func=(lambda clmodis: reduce_height_thickness( clmodis, 0,440, 1.3,379 ) ) )
-            ],
-	#5-MODIS
-        'CLDHGH_TAU1.3-9.4_MODIS':[
-            derived_var(
-                vid='CLDHGH_TAU1.3-9.4_MODIS', inputs=['CLMODIS'], outputs=['CLDHGH_TAU1.3-9.4_MODIS'],
-                #func=(lambda clmodis: reduce_prs_tau( clmodis( modis_prs=(0,440), modis_tau=(1.3,9.4) ))) )
-                func=(lambda clmodis: reduce_height_thickness(
-                        clmodis, 0,440, 1.3,9.4) ) )
-            ],
-	#6-MODIS
-        'CLDHGH_TAU9.4_MODIS':[
-            derived_var(
-                vid='CLDHGH_TAU9.4_MODIS', inputs=['CLMODIS'], outputs=['CLDHGH_TAU9.4_MODIS'],
-                func=(lambda clmodis: reduce_height_thickness( clmodis, 0,440, 9.4,379) ) )
-            ],
-	#1-MISR
-        'CLDTOT_TAU1.3_MISR':[
-            derived_var(
-                vid='CLDTOT_TAU1.3_MISR', inputs=['CLMISR'], outputs=['CLDTOT_TAU1.3_MISR'],
-                func=(lambda clmisr: reduce_height_thickness( clmisr, None,None, 1.3,379) ) )
-            ],
-	#2-MISR
-        'CLDTOT_TAU1.3-9.4_MISR':[
-            derived_var(
-                vid='CLDTOT_TAU1.3-9.4_MISR', inputs=['CLMISR'], outputs=['CLDTOT_TAU1.3-9.4_MISR'],
-                func=(lambda clmisr: reduce_height_thickness( clmisr, None,None, 1.3,9.4) ) )
-            ],
-	#3-MISR
-        'CLDTOT_TAU9.4_MISR':[
-            derived_var(
-                vid='CLDTOT_TAU9.4_MISR', inputs=['CLMISR'], outputs=['CLDTOT_TAU9.4_MISR'],
-                func=(lambda clmisr: reduce_height_thickness( clmisr, None,None, 9.4,379) ) )
-            ],
-	#4-MISR
-        'CLDLOW_TAU1.3_MISR':[
-            derived_var(
-                vid='CLDLOW_TAU1.3_MISR', inputs=['CLMISR'], outputs=['CLDLOW_TAU1.3_MISR'],
-                func=(lambda clmisr, h0=0,h1=3,t0=1.3,t1=379: reduce_height_thickness(
-                        clmisr, h0,h1, t0,t1) ) )
-            ],
-	#5-MISR
-        'CLDLOW_TAU1.3-9.4_MISR':[
-            derived_var(
-                vid='CLDLOW_TAU1.3-9.4_MISR', inputs=['CLMISR'], outputs=['CLDLOW_TAU1.3-9.4_MISR'],
-                func=(lambda clmisr, h0=0,h1=3, t0=1.3,t1=9.4: reduce_height_thickness( clmisr, h0,h1, t0,t1) ) )
-                #func=(lambda clmisr, h0=0,h1=6, t0=2,t1=4: reduce_height_thickness( clmisr, h0,h1, t0,t1) ) )
-            ],
-	#6-MISR
-        'CLDLOW_TAU9.4_MISR':[
-            derived_var(
-                vid='CLDLOW_TAU9.4_MISR', inputs=['CLMISR'], outputs=['CLDLOW_TAU9.4_MISR'],
-                func=(lambda clmisr, h0=0,h1=3, t0=9.4,t1=379: reduce_height_thickness(
-                        clmisr, h0,h1, t0,t1) ) )
-            ],
-
-        'TGCLDLWP':[derived_var(
-                vid='TGCLDLWP', inputs=['TGCLDLWP_OCEAN'], outputs=['TGCLDLWP'],
-                func=(lambda x: x) ) ],
-        #...end of clouds, Yuying Zhang
-
-        # To compare LHFLX and QFLX, need to unify these to a common variable
-        # e.g. LHFLX (latent heat flux in W/m^2) vs. QFLX (evaporation in mm/day).
-        # The conversion functions are defined in qflx_lhflx_conversions.py.
-        # [SMB: 25 Feb 2015]
-        'LHFLX':[derived_var(
-                vid='LHFLX', inputs=['QFLX'], outputs=['LHFLX'],
-                func=(lambda x: x) ) ],
-        'QFLX':[derived_var(
-                vid='QFLX', inputs=['LHFLX'], outputs=['QFLX'],
-                func=(lambda x: x) ) ]
-        }
-    @staticmethod
-    def _list_variables( model, obs ):
-        return amwg_plot_plan.package._list_variables( model, obs, "amwg_plot_plan" )
-    @staticmethod
-    def _all_variables( model, obs ):
-        return amwg_plot_plan.package._all_variables( model, obs, "amwg_plot_plan" )
     @classmethod
-    def stdvar2var( cls, varnom, filetable, season, reduction_function, recurse=True,
+    def commvar2var( cls, varnom, filetable, season, reduction_function, recurse=True,
                     builtin_variables=[] ):
         """From a variable name, a filetable, and a season, this finds the variable name in
-        standard_variables. If it's there, this method generates a variable as an instance
+        common_derived_variables. If it's there, this method generates a variable as an instance
         of reduced_variable or derived_var, which represents the variable and how to compute it
         from the data described by the filetable.
         Inputs include the variable name (e.g. FLUT, TREFHT), a filetable, a season, and
@@ -372,23 +131,23 @@ class amwg_plot_plan(plot_plan):
         season is needed to compute a variable's value.
         If successful, this will return (i) a variable id for varnom, including filetable and
         season; it is the id of the first item in the returned list of derived variables.
-         (ii) a list of reduced_variables needed for computing varnom.  For
+        (ii) a list of reduced_variables needed for computing varnom.  For
         each such reduced variable rv, it may be placed in a dictionary using rv.id() as its key.
         (iii) a list of derived variables - normally just the one representing varnom, but
         in more complicated situations (which haven't been implemented yet) it may be longer.
         For a member of the list dv, dv.id() is a suitable dictionary key.
-        If unsuccessful, this will return None,None,None.
+        If unsuccessful, this will return None,[],[].
         """
         if filetable is None:
             return None,[],[]
-        #if varnom not in amwg_plot_plan.standard_variables:
-        if varnom not in cls.standard_variables:
+        #if varnom not in amwg_plot_plan.common_derived_variables:
+        if varnom not in cls.common_derived_variables:
             return None,[],[]
         computable = False
         rvs = []
         dvs = []
-        #print "dbg in stdvar2var to compute varnom=",varnom,"from filetable=",filetable
-        for svd in cls.standard_variables[varnom]:  # loop over ways to compute varnom
+        #print "dbg in commvar2var to compute varnom=",varnom,"from filetable=",filetable
+        for svd in cls.common_derived_variables[varnom]:  # loop over ways to compute varnom
             invarnoms = svd.inputs()
             #print "dbg first round, invarnoms=",invarnoms
             #print "dbg filetable variables=",filetable.list_variables()
@@ -418,11 +177,11 @@ class amwg_plot_plan(plot_plan):
         if not computable and recurse==True:
             # Maybe the input variables are themselves computed.  We'll only do this one
             # level of recursion before giving up.  This is enough to do a real computation
-            # plus some variable renamings via standard_variables.
+            # plus some variable renamings via common_derived_variables.
             # Once we have a real system for handling name synonyms, this loop can probably
             # be dispensed with.  If we will never have such a system, then the above loop
             # can be dispensed with.
-            for svd in cls.standard_variables[varnom]:  # loop over ways to compute varnom
+            for svd in cls.common_derived_variables[varnom]:  # loop over ways to compute varnom
                 invarnoms = svd.inputs()
                 for invar in invarnoms:
                     if invar in filetable.list_variables_incl_axes():
@@ -430,10 +189,10 @@ class amwg_plot_plan(plot_plan):
                                                reduction_function=reduction_function )
                         rvs.append(rv)
                     else:
-                        if invar not in cls.standard_variables:
+                        if invar not in cls.common_derived_variables:
                             break
                         dummy,irvs,idvs =\
-                            cls.stdvar2var( invar, filetable, season, reduction_function, recurse=False )
+                            cls.commvar2var( invar, filetable, season, reduction_function, recurse=False )
                         rvs += irvs
                         dvs += idvs
                 func = svd._func
@@ -445,24 +204,31 @@ class amwg_plot_plan(plot_plan):
                 break
         if len(rvs)<=0:
             logger.warning("no inputs found for %s in filetable %s",varnom, filetable.id())
-            logger.warning("filetable source files= %s %s",filetable._filelist[0:10])
+            logger.warning("filetable source files= %s",filetable._filelist[0:10])
             logger.warning("need inputs %s",svd.inputs())
             return None,[],[]
             #raise DiagError( "ERROR, don't have %s, and don't have sufficient data to compute it!"\
             #                     % varnom )
         if not computable:
-            logger.debug("DEBUG: standard variable %s is not computable", varnom)
+            logger.debug("DEBUG: comm. derived variable %s is not computable", varnom)
             logger.debug( "need inputs %s" ,svd.inputs())
             logger.debug("found inputs %s",([rv.id() for rv in rvs]+[drv.id() for drv in dvs]))
             return None,[],[]
         seasonid = season.seasons[0]
         vid = derived_var.dict_id( varnom, '', seasonid, filetable )
-        #print "dbg stdvar is making a new derived_var, vid=",vid,"inputs=",inputs
+        #print "dbg commvar2var is making a new derived_var, vid=",vid,"inputs=",inputs
         #print "dbg function=",func
         newdv = derived_var( vid=vid, inputs=inputs, func=func )
         dvs.append(newdv)
         #print "dbg2 returning newdv.id=",newdv.id(),"rvs=",rvs,"dvs=",dvs
         return newdv.id(), rvs, dvs
+
+    @staticmethod
+    def _list_variables( model, obs ):
+        return amwg_plot_plan.package._list_variables( model, obs, "amwg_plot_plan" )
+    @staticmethod
+    def _all_variables( model, obs ):
+        return amwg_plot_plan.package._all_variables( model, obs, "amwg_plot_plan" )
 
 # plot set classes in other files:
 from metrics.packages.amwg.amwg1 import *
@@ -790,15 +556,15 @@ class amwg_plot_set3(amwg_plot_plan,basic_id):
         listvars.sort()
         return listvars
     @staticmethod
-    def _all_variables( model, obs, use_standard_vars=True ):
+    def _all_variables( model, obs, use_common_derived_vars=True ):
         """returns a dict of varname:varobject entries"""
         allvars = amwg_plot_plan.package._all_variables( model, obs, "amwg_plot_plan" )
-        if use_standard_vars:
-            # Now we add varname:basic_plot_variable for all standard_variables.
+        if use_common_derived_vars:
+            # Now we add varname:basic_plot_variable for all common_derived_variables.
             # This needs work because we don't always have the data needed to compute them...
             # BTW when this part is done better, it should (insofar as it's reasonable) be moved to
             # amwg_plot_plan and shared by all AMWG plot sets.
-            for varname in amwg_plot_plan.standard_variables.keys():
+            for varname in amwg_plot_plan.common_derived_variables.keys():
                 allvars[varname] = basic_plot_variable
         return allvars
     def plan_computation( self, model, obs, varnom, seasonid, plotparms ):
@@ -810,8 +576,8 @@ class amwg_plot_set3(amwg_plot_plan,basic_id):
                 filetable=filetable1, season=self.season, region=self.region,
                 reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,self.season,self.region,vid=vid)) )
             self.reduced_variables[zvar._strid] = zvar
-        elif varnom in self.standard_variables.keys():
-                    zvar,rvs,dvs = self.stdvar2var(
+        elif varnom in self.common_derived_variables.keys():
+                    zvar,rvs,dvs = self.commvar2var(
                         varnom, filetable1, self.season,\
                             (lambda x,vid=None:
                                  reduce2lat_seasonal(x, self.season, self.region, vid=vid) ))
@@ -831,8 +597,8 @@ class amwg_plot_set3(amwg_plot_plan,basic_id):
                 filetable=filetable2, season=self.season, region=self.region,
                 reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,self.season,self.region,vid=vid)) )
             self.reduced_variables[z2var._strid] = z2var
-        elif varnom in self.standard_variables.keys():
-                    z2var,rvs,dvs = self.stdvar2var(
+        elif varnom in self.common_derived_variables.keys():
+                    z2var,rvs,dvs = self.commvar2var(
                         varnom, filetable2, self.season,\
                             (lambda x,vid:
                                  reduce2latlon_seasonal(x, self.season, self.region, vid) ))
@@ -1375,7 +1141,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
         listvars.sort()
         return listvars
     @staticmethod
-    def _all_variables( model, obs, use_standard_vars=True ):
+    def _all_variables( model, obs, use_common_derived_vars=True ):
         """returns a dict of varname:varobject entries"""
         allvars = amwg_plot_plan.package._all_variables( model, obs, "amwg_plot_plan" )
         # ...this is what's in the data.  varname:basic_plot_variable
@@ -1384,12 +1150,12 @@ class amwg_plot_set5and6(amwg_plot_plan):
             allvars[varname] = level_variable_for_amwg_set5
             # ...this didn't add more variables, but changed the variable's class
             # to indicate that you can specify a level for it
-        if use_standard_vars:
-            # Now we add varname:basic_plot_variable for all standard_variables.
+        if use_common_derived_vars:
+            # Now we add varname:basic_plot_variable for all common_derived_variables.
             # This needs work because we don't always have the data needed to compute them...
             # BTW when this part is done better, it should (insofar as it's reasonable) be moved to
             # amwg_plot_plan and shared by all AMWG plot sets.
-            for varname in amwg_plot_plan.standard_variables.keys():
+            for varname in amwg_plot_plan.common_derived_variables.keys():
                 allvars[varname] = basic_plot_variable
         return allvars
     def plan_computation( self, model, obs, varid, seasonid, aux, names, plotparms ):
@@ -1405,8 +1171,8 @@ class amwg_plot_set5and6(amwg_plot_plan):
         if varnom in filetable1.list_variables():
             vid1,vid1var = self.vars_normal_contours(
                 filetable1, varnom, seasonid, aux=None )
-        elif varnom in self.standard_variables.keys():
-            vid1,vid1var = self.vars_stdvar_normal_contours(
+        elif varnom in self.common_derived_variables.keys():
+            vid1,vid1var = self.vars_commdervar_normal_contours(
                 filetable1, varnom, seasonid, aux=None )
         else:
             logger.error("variable %s not found in and cannot be computed from %s",varnom, filetable1)
@@ -1414,8 +1180,8 @@ class amwg_plot_set5and6(amwg_plot_plan):
         if filetable2 is not None and varnom in filetable2.list_variables():
             vid2,vid2var = self.vars_normal_contours(
                 filetable2, varnom, seasonid, aux=None )
-        elif varnom in self.standard_variables.keys():
-            vid2,vid2var = self.vars_stdvar_normal_contours(
+        elif varnom in self.common_derived_variables.keys():
+            vid2,vid2var = self.vars_commdervar_normal_contours(
                 filetable2, varnom, seasonid, aux=None )
         else:
             vid2,vid2var = None,None
@@ -1489,12 +1255,12 @@ class amwg_plot_set5and6(amwg_plot_plan):
         vid = rv.dict_id( varnom, seasonid, filetable )
         vidvar = rv.dict_id( varnom+'_var', seasonid, filetable ) # variance
         return vid, vidvar
-    def vars_stdvar_normal_contours( self, filetable, varnom, seasonid, aux=None ):
+    def vars_commdervar_normal_contours( self, filetable, varnom, seasonid, aux=None ):
         """Set up for a lat-lon contour plot, as in plot set 5.  Data is averaged over all other
         axes.  The variable given by varnom is *not* a data variable suitable for reduction.  It is
-        a standard_variable.  Its inputs will be reduced, then it will be set up as a derived_var.
+        a common_derived_variable.  Its inputs will be reduced, then it will be set up as a derived_var.
         """
-        varid,rvs,dvs = self.stdvar2var(
+        varid,rvs,dvs = self.commvar2var(
             varnom, filetable, self.season,\
                 (lambda x,vid:
                      reduce2latlon_seasonal(x, self.season, self.region, vid, exclude_axes=[
@@ -1762,7 +1528,10 @@ class amwg_plot_set5and6(amwg_plot_plan):
             for v in val:
                 if v is None: continue
                 v.finalize()
-        return self.plotspec_values[self.plotall_id]
+        if self.plotall_id in self.plotspec_values:
+            return self.plotspec_values[self.plotall_id]
+        else:
+            return None
 
 def get_textobject(t,att,text):
     obj = vcs.createtext(Tt_source=getattr(t,att).texttable,To_source=getattr(t,att).textorientation)
@@ -3786,7 +3555,7 @@ class amwg_plot_set13(amwg_plot_plan):
     #Often data comes from COSP = CFMIP Observation Simulator Package
     name = '13 - Cloud Simulator Histograms'
     number = '13'
-    standard_variables = {  # Note: shadows amwg_plot_plan.standard_variables
+    common_derived_variables = {  # Note: shadows amwg_plot_plan.common_derived_variables
         'CLISCCP':[derived_var(
                 vid='CLISCCP', inputs=['FISCCP1','isccp_prs','isccp_tau'], outputs=['CLISCCP'],
                 func=uncompress_fisccp1 )]
@@ -3870,9 +3639,9 @@ class amwg_plot_set13(amwg_plot_plan):
                     continue
             allvars[varname] = basic_plot_variable
 
-        # Finally, add in the standard variables.  Note that there is no check on whether
+        # Finally, add in the common derived variables.  Note that there is no check on whether
         # we have the inputs needed to compute them.
-        for varname in set(cls.standard_variables.keys())-set(allvars.keys()):
+        for varname in set(cls.common_derived_variables.keys())-set(allvars.keys()):
             allvars[varname] = basic_plot_variable
 
         return allvars
@@ -3891,10 +3660,10 @@ class amwg_plot_set13(amwg_plot_plan):
             )
         self.reduced_variables[ rv.id() ] = rv
         return rv.id()
-    def var_from_std( self, filetable, varnom, seasonid, region ):
-        """defines the derived variable for varnom when computable as a standard variable using data
+    def var_from_cdv( self, filetable, varnom, seasonid, region ):
+        """defines the derived variable for varnom when computable as a comon derived variable using data
         in the specified filetable"""
-        varid,rvs,dvs = self.stdvar2var(
+        varid,rvs,dvs = self.commvar2var(
             varnom, filetable, self.season,\
                 (lambda x,vid,season=self.season,region=region:
                      reduce_time_space_seasonal_regional(x, season=season, region=region, vid=vid) ))
@@ -3913,8 +3682,8 @@ class amwg_plot_set13(amwg_plot_plan):
         region = interpret_region( region )
         if varnom in filetable1.list_variables_incl_axes():
             vid1 = self.var_from_data( filetable1, varnom, seasonid, region )
-        elif varnom in self.standard_variables.keys():
-            vid1 = self.var_from_std( filetable1, varnom, seasonid, region )
+        elif varnom in self.common_derived_variables.keys():
+            vid1 = self.var_from_cdv( filetable1, varnom, seasonid, region )
         else:
             print "ERROR variable",varnom,"cannot be read or computed from data in the filetable",filetable1
             return None
@@ -3922,8 +3691,8 @@ class amwg_plot_set13(amwg_plot_plan):
             vid2 = None
         elif varnom in filetable2.list_variables_incl_axes():
             vid2 = self.var_from_data( filetable2, varnom, seasonid, region )
-        elif varnom in self.standard_variables.keys():
-            vid2 = self.var_from_std( filetable2, varnom, seasonid, region )
+        elif varnom in self.common_derived_variables.keys():
+            vid2 = self.var_from_cdv( filetable2, varnom, seasonid, region )
         else:
             vid2 = None
 
@@ -4125,13 +3894,13 @@ class amwg_plot_set14(amwg_plot_plan):
         listvars.sort()
         return listvars
     @staticmethod
-    def _all_variables( model, obs, use_standard_vars=True ):
+    def _all_variables( model, obs, use_common_derived_vars=True ):
         allvars = amwg_plot_plan.package._all_variables( model, obs, "amwg_plot_plan" )
         for varname in amwg_plot_plan.package._list_variables_with_levelaxis(
             model, obs, "amwg_plot_plan" ):
             allvars[varname] = level_variable_for_amwg_set5
-        if use_standard_vars:
-            for varname in amwg_plot_plan.standard_variables.keys():
+        if use_common_derived_vars:
+            for varname in amwg_plot_plan.common_derived_variables.keys():
                 allvars[varname] = basic_plot_variable
         return allvars
     def plan_computation( self, model, obs, varid, seasonid, aux, plotparms ):
