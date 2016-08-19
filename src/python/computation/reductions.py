@@ -2096,6 +2096,9 @@ def aminusb_ax2( mv1, mv2 ):
 def convert_units(mv, units):
    if type(mv) == float:
       return mv
+   if not hasattr(mv,'units') and hasattr(mv,'lunits'):
+       # Fix an apparent typo in two variables in CERES-EBAF data
+       mv.units = mv.lunits
    if not hasattr(mv, 'units'):
       mv.units = '1'
    if mv.units == units or mv.units == 'none':
