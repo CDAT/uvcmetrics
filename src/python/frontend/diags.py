@@ -1,4 +1,4 @@
-#!/home/jccosta/Pessoal/Work/NYU/UV-CDAT/build-uvcdat/install/bin/python
+#!/usr/bin/env python
 # Script for running diagnostics.
 # Command-line usage example:
 # diags --model path=path,climos=yes --obs path=path,climos=yes,filter='f_startswith("NCEP")' --vars FLUT T --seasons DJF --region Global --package AMWG --output path
