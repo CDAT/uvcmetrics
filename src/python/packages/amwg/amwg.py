@@ -1280,7 +1280,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
 
         return varid, None
 
-    def plan_computation_level_surface( self, model, obs, varid, seasonid, aux=None, names={}, plotparms=None ):
+    def plan_computation_level_surface( self, model, obs, varnom, seasonid, aux=None, names={}, plotparms=None ):
         filetable1, filetable2 = self.getfts(model, obs)
         model_case = get_model_case(filetable1)
         """Set up for a lat-lon contour plot, averaged in other directions - except that if the
@@ -1294,7 +1294,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
 
         reduced_varlis = [
             reduced_variable(  # var=var(time,lev,lat,lon)
-                variableid=varid, filetable=filetable1, season=self.season,
+                variableid=varnom, filetable=filetable1, season=self.season,
                 reduction_function=(lambda x,vid: reduce_time_seasonal( x, self.season, self.region, vid ) ) ),
             reduced_variable(   # hyam=hyam(lev)
                 variableid='hyam', filetable=filetable1, season=self.season,
@@ -1305,15 +1305,15 @@ class amwg_plot_set5and6(amwg_plot_plan):
             reduced_variable(     # ps=ps(time,lat,lon)
                 variableid='PS', filetable=filetable1, season=self.season,
                 reduction_function=(lambda x,vid: reduce_time_seasonal( x, self.season, self.region, vid ) ) ) ]
-        # vid1 = varid+'_p_1'
-        # vidl1 = varid+'_lp_1'
-        vid1 = dv.dict_id(  varid, 'p', seasonid, filetable1)
-        vidl1 = dv.dict_id(varid, 'lp', seasonid, filetable1)
+        # vid1 = varnom+'_p_1'
+        # vidl1 = varnom+'_lp_1'
+        vid1 = dv.dict_id(  varnom, 'p', seasonid, filetable1)
+        vidl1 = dv.dict_id(varnom, 'lp', seasonid, filetable1)
         self.derived_variables = {
             vid1: derived_var( vid=vid1, inputs =
-                               [rv.dict_id(varid,seasonid,filetable1), rv.dict_id('hyam',seasonid,filetable1),
+                               [rv.dict_id(varnom,seasonid,filetable1), rv.dict_id('hyam',seasonid,filetable1),
                                 rv.dict_id('hybm',seasonid,filetable1), rv.dict_id('PS',seasonid,filetable1) ],
-            #was  vid1: derived_var( vid=vid1, inputs=[ varid+'_1', 'hyam_1', 'hybm_1', 'PS_1' ],
+            #was  vid1: derived_var( vid=vid1, inputs=[ varnom+'_1', 'hyam_1', 'hybm_1', 'PS_1' ],
                                func=verticalize ),
             vidl1: derived_var( vid=vidl1, inputs=[vid1],
                                 func=(lambda z,psl=pselect: select_lev(z,psl))) }
@@ -1321,7 +1321,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
         ft1src = filetable1.source()
         self.single_plotspecs = {
             self.plot1_id: plotspec(
-                # was vid = varid+'_1',
+                # was vid = varnom+'_1',
                 # was zvars = [vid1],  zfunc = (lambda z: select_lev( z, pselect ) ),
                 vid = ps.dict_idid(vidl1),
                 zvars = [vidl1],  zfunc = (lambda z: z),
@@ -1342,7 +1342,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
             # hybrid levels in use, convert to pressure levels
             reduced_varlis += [
                 reduced_variable(  # var=var(time,lev,lat,lon)
-                    variableid=varid, filetable=filetable2, season=self.season,
+                    variableid=varnom, filetable=filetable2, season=self.season,
                     reduction_function=(lambda x,vid: reduce_time_seasonal( x, self.season, self.region, vid ) ) ),
                 reduced_variable(   # hyam=hyam(lev)
                     variableid='hyam', filetable=filetable2, season=self.season,
@@ -1354,25 +1354,25 @@ class amwg_plot_set5and6(amwg_plot_plan):
                     variableid='PS', filetable=filetable2, season=self.season,
                     reduction_function=(lambda x,vid: reduce_time_seasonal( x, self.season, self.region, vid ) ) )
                 ]
-            #vid2 = varid+'_p_2'
-            #vidl2 = varid+'_lp_2'
-            vid2 = dv.dict_id( varid, 'p', seasonid, filetable2 )
+            #vid2 = varnom+'_p_2'
+            #vidl2 = varnom+'_lp_2'
+            vid2 = dv.dict_id( varnom, 'p', seasonid, filetable2 )
             vid2 = dv.dict_id( vards, 'lp', seasonid, filetable2 )
             self.derived_variables[vid2] = derived_var( vid=vid2, inputs=[
-                    rv.dict_id(varid,seasonid,filetable2), rv.dict_id('hyam',seasonid,filetable2),
+                    rv.dict_id(varnom,seasonid,filetable2), rv.dict_id('hyam',seasonid,filetable2),
                     rv.dict_id('hybm',seasonid,filetable2), rv.dict_id('PS',seasonid,filetable2) ],
                                                         func=verticalize )
             self.derived_variables[vidl2] = derived_var(
                 vid=vidl2, inputs=[vid2], func=(lambda z,psl=pselect: select_lev(z,psl) ) )
         else:
             # no hybrid levels, assume pressure levels.
-            #vid2 = varid+'_2'
-            #vidl2 = varid+'_lp_2'
-            vid2 = rv.dict_id(varid,seasonid,filetable2)
-            vidl2 = dv.dict_id( varid, 'lp', seasonid, filetable2 )
+            #vid2 = varnom+'_2'
+            #vidl2 = varnom+'_lp_2'
+            vid2 = rv.dict_id(varnom,seasonid,filetable2)
+            vidl2 = dv.dict_id( varnom, 'lp', seasonid, filetable2 )
             reduced_varlis += [
                 reduced_variable(  # var=var(time,lev,lat,lon)
-                    variableid=varid, filetable=filetable2, season=self.season,
+                    variableid=varnom, filetable=filetable2, season=self.season,
                     reduction_function=(lambda x,vid: reduce_time_seasonal( x, self.season, self.region, vid ) ) )
                 ]
             self.derived_variables[vidl2] = derived_var(
@@ -1385,7 +1385,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
             ft2src = ''
         filterid = ft2src.split('_')[-1] #recover the filter id: kludge
         self.single_plotspecs[self.plot2_id] = plotspec(
-                #was vid = varid+'_2',
+                #was vid = varnom+'_2',
                 vid = ps.dict_idid(vidl2),
                 zvars = [vidl2],  zfunc = (lambda z: z),
                 plottype = self.plottype,
@@ -1393,8 +1393,8 @@ class amwg_plot_set5and6(amwg_plot_plan):
                 source = names['obs'],
                 plotparms = plotparms[src2obsmod(ft2src)] )
         self.single_plotspecs[self.plot3_id] = plotspec(
-                #was vid = varid+'_diff',
-                vid = ps.dict_id(varid,'diff',seasonid,filetable1,filetable2),
+                #was vid = varnom+'_diff',
+                vid = ps.dict_id(varnom,'diff',seasonid,filetable1,filetable2),
                 zvars = [vidl1,vidl2],  zfunc = aminusb_2ax,
                 plottype = self.plottype,
                 title = 'difference',
