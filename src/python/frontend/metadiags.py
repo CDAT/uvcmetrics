@@ -549,7 +549,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, data_hash, colls
                                             title = "{var} ({option})".format(var=var, option=option)
                                         for s in coll_def.get("seasons", ["ANN"]):
                                             fname = "set{plotset}_{season}_{var}_{option}_{obs}_{region}-{image}.png".format(plotset=collnum, season=s, var=var, option=option, obs=diags_obslist[o]["filekey"], region=region, image="combined" if combined else "model")
-                                            f = OutputFile(fname, title="{title} - {season}".format(title=title, season=s))
+                                            f = OutputFile(fname, title="{season}".format(season=s))
                                             columns.append(f)
                                         row = OutputRow(title, columns)
                                         page.addRow(row, obs_index)
@@ -561,7 +561,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, data_hash, colls
                                     columns = []
                                     for s in coll_def.get("seasons", ["ANN"]):
                                         fname = "set{plotset}_{season}_{var}_{obs}_{region}-{image}.png".format(plotset=collnum, season=s, var=var, obs=diags_obslist[o]["filekey"], region=region, image="combined" if combined else "model")
-                                        f = OutputFile(fname, title="{title} - {season}".format(title=title, season=s))
+                                        f = OutputFile(fname, title="{season}".format(season=s))
                                         columns.append(f)
                                     if collnum == "topten":
                                         page.addRow(OutputRow(title, columns), 0)
