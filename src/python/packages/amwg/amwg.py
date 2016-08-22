@@ -116,14 +116,19 @@ class amwg_plot_plan(plot_plan):
     from atmos_derived_vars import *
 
     @classmethod
-    def commvar2var( cls, varnom, filetable, season, reduction_function, recurse=True ):
+    def commvar2var( cls, varnom, filetable, season, reduction_function, recurse=True,
+                    builtin_variables=[] ):
         """From a variable name, a filetable, and a season, this finds the variable name in
         common_derived_variables. If it's there, this method generates a variable as an instance
         of reduced_variable or derived_var, which represents the variable and how to compute it
         from the data described by the filetable.
-        Inputs are the variable name (e.g. FLUT, TREFHT), a filetable, a season, and (important!)
-        a reduction function which reduces data variables to reduced variables prior to computing
-        the variable specified by varnom.
+        Inputs include the variable name (e.g. FLUT, TREFHT), a filetable, a season, and
+        (important!) a reduction function which reduces data variables to reduced variables prior
+        to computing the variable specified by varnom.  Optionally you can supply a list of
+        built-in variable names.  These variables are not reduced_variable or derived_variable
+        objects.  They are put into a plot_plan object's self.variable_values when it is
+        constructed.  Currently the only one available is 'seasonid' and is used when the
+        season is needed to compute a variable's value.
         If successful, this will return (i) a variable id for varnom, including filetable and
         season; it is the id of the first item in the returned list of derived variables.
         (ii) a list of reduced_variables needed for computing varnom.  For
@@ -135,13 +140,13 @@ class amwg_plot_plan(plot_plan):
         """
         if filetable is None:
             return None,[],[]
-            #if varnom not in amwg_plot_plan.common_derived_variables:
+        #if varnom not in amwg_plot_plan.common_derived_variables:
         if varnom not in cls.common_derived_variables:
             return None,[],[]
         computable = False
         rvs = []
         dvs = []
-            #print "dbg in commvar2var to compute varnom=",varnom,"from filetable=",filetable
+        #print "dbg in commvar2var to compute varnom=",varnom,"from filetable=",filetable
         for svd in cls.common_derived_variables[varnom]:  # loop over ways to compute varnom
             invarnoms = svd.inputs()
                 #print "dbg first round, invarnoms=",invarnoms
@@ -153,24 +158,28 @@ class amwg_plot_plan(plot_plan):
         if computable:
             #print "dbg",varnom,"is computable by",func,"from..."
             for ivn in invarnoms:
-                #print "dbg   computing reduced variable from input variableid=ivn=",ivn
-                rv = reduced_variable( variableid=ivn, filetable=filetable, season=season,
-                                       reduction_function=reduction_function )
+                if ivn in svd.special_orders and svd.special_orders[ivn]=='dontreduce':
+                    # The computation requires the full variable, not the usual reduced form.
+                    # Note that we're not yet handling this case for recursive calculations (the
+                    # next loop below), because we have no need, hence no test case.
+                    rv = reduced_variable( variableid=ivn, filetable=filetable, season=season,
+                                           reduction_function=(lambda x,vid:x) )
+                else:
+                    rv = reduced_variable( variableid=ivn, filetable=filetable, season=season,
+                                           reduction_function=reduction_function )
                 #print "dbg   adding reduced variable rv=",rv
                 rvs.append(rv)
 
-            #print "dbg",varnom,"is not directly computable"
-            pass
         available = rvs + dvs
         availdict = { v.id()[1]:v for v in available }
-        inputs = [ availdict[v].id() for v in svd._inputs if v in availdict]
+        inputs = [ availdict[v].id() for v in svd._inputs if v in availdict] + builtin_variables
         #print "dbg1 rvs ids=",[rv.id() for rv in rvs]
         if not computable and recurse==True:
             # Maybe the input variables are themselves computed.  We'll only do this one
             # level of recursion before giving up.  This is enough to do a real computation
             # plus some variable renamings via common_derived_variables.
             # Once we have a real system for handling name synonyms, this loop can probably
-            # be dispensed with.  If we well never have such a system, then the above loop
+            # be dispensed with.  If we will never have such a system, then the above loop
             # can be dispensed with.
             for svd in cls.common_derived_variables[varnom]:  # loop over ways to compute varnom
                 invarnoms = svd.inputs()
@@ -189,7 +198,7 @@ class amwg_plot_plan(plot_plan):
                 func = svd._func
                 available = rvs + dvs
                 availdict = { v.id()[1]:v for v in available }
-                inputs = [ availdict[v].id() for v in svd._inputs if v in availdict]
+                inputs = [ availdict[v].id() for v in svd._inputs if v in availdict] + builtin_variables
                 computable = True
                 #print "dbg in second round, found",varnom,"computable by",func,"from",inputs
                 break
@@ -209,9 +218,9 @@ class amwg_plot_plan(plot_plan):
         vid = derived_var.dict_id( varnom, '', seasonid, filetable )
         #print "dbg commvar2var is making a new derived_var, vid=",vid,"inputs=",inputs
         #print "dbg function=",func
-        #jfp was newdv = derived_var( vid=vid, inputs=[rv.id() for rv in rvs], func=func )
         newdv = derived_var( vid=vid, inputs=inputs, func=func )
         dvs.append(newdv)
+        #print "dbg2 returning newdv.id=",newdv.id(),"rvs=",rvs,"dvs=",dvs
         return newdv.id(), rvs, dvs
 
     @staticmethod
@@ -1258,8 +1267,10 @@ class amwg_plot_set5and6(amwg_plot_plan):
                      reduce2latlon_seasonal(x, self.season, self.region, vid, exclude_axes=[
                         'isccp_prs','isccp_tau','cosp_prs','cosp_tau',
                         'modis_prs','modis_tau','cosp_tau_modis',
-                        'misr_cth','misr_tau','cosp_htmisr']) ))
+                        'misr_cth','misr_tau','cosp_htmisr']) ),
         #            ... isccp_prs, isccp_tau etc. are used for cloud variables and need special treatment
+            builtin_variables=self.variable_values.keys()
+            )
         if varid is None:
             return None,None
         for rv in rvs:
@@ -1269,7 +1280,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
 
         return varid, None
 
-    def plan_computation_level_surface( self, model, obs, varid, seasonid, aux=None, names={}, plotparms=None ):
+    def plan_computation_level_surface( self, model, obs, varnom, seasonid, aux=None, names={}, plotparms=None ):
         filetable1, filetable2 = self.getfts(model, obs)
         model_case = get_model_case(filetable1)
         """Set up for a lat-lon contour plot, averaged in other directions - except that if the
@@ -1283,7 +1294,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
 
         reduced_varlis = [
             reduced_variable(  # var=var(time,lev,lat,lon)
-                variableid=varid, filetable=filetable1, season=self.season,
+                variableid=varnom, filetable=filetable1, season=self.season,
                 reduction_function=(lambda x,vid: reduce_time_seasonal( x, self.season, self.region, vid ) ) ),
             reduced_variable(   # hyam=hyam(lev)
                 variableid='hyam', filetable=filetable1, season=self.season,
@@ -1294,15 +1305,15 @@ class amwg_plot_set5and6(amwg_plot_plan):
             reduced_variable(     # ps=ps(time,lat,lon)
                 variableid='PS', filetable=filetable1, season=self.season,
                 reduction_function=(lambda x,vid: reduce_time_seasonal( x, self.season, self.region, vid ) ) ) ]
-        # vid1 = varid+'_p_1'
-        # vidl1 = varid+'_lp_1'
-        vid1 = dv.dict_id(  varid, 'p', seasonid, filetable1)
-        vidl1 = dv.dict_id(varid, 'lp', seasonid, filetable1)
+        # vid1 = varnom+'_p_1'
+        # vidl1 = varnom+'_lp_1'
+        vid1 = dv.dict_id(  varnom, 'p', seasonid, filetable1)
+        vidl1 = dv.dict_id(varnom, 'lp', seasonid, filetable1)
         self.derived_variables = {
             vid1: derived_var( vid=vid1, inputs =
-                               [rv.dict_id(varid,seasonid,filetable1), rv.dict_id('hyam',seasonid,filetable1),
+                               [rv.dict_id(varnom,seasonid,filetable1), rv.dict_id('hyam',seasonid,filetable1),
                                 rv.dict_id('hybm',seasonid,filetable1), rv.dict_id('PS',seasonid,filetable1) ],
-            #was  vid1: derived_var( vid=vid1, inputs=[ varid+'_1', 'hyam_1', 'hybm_1', 'PS_1' ],
+            #was  vid1: derived_var( vid=vid1, inputs=[ varnom+'_1', 'hyam_1', 'hybm_1', 'PS_1' ],
                                func=verticalize ),
             vidl1: derived_var( vid=vidl1, inputs=[vid1],
                                 func=(lambda z,psl=pselect: select_lev(z,psl))) }
@@ -1310,7 +1321,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
         ft1src = filetable1.source()
         self.single_plotspecs = {
             self.plot1_id: plotspec(
-                # was vid = varid+'_1',
+                # was vid = varnom+'_1',
                 # was zvars = [vid1],  zfunc = (lambda z: select_lev( z, pselect ) ),
                 vid = ps.dict_idid(vidl1),
                 zvars = [vidl1],  zfunc = (lambda z: z),
@@ -1331,7 +1342,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
             # hybrid levels in use, convert to pressure levels
             reduced_varlis += [
                 reduced_variable(  # var=var(time,lev,lat,lon)
-                    variableid=varid, filetable=filetable2, season=self.season,
+                    variableid=varnom, filetable=filetable2, season=self.season,
                     reduction_function=(lambda x,vid: reduce_time_seasonal( x, self.season, self.region, vid ) ) ),
                 reduced_variable(   # hyam=hyam(lev)
                     variableid='hyam', filetable=filetable2, season=self.season,
@@ -1343,25 +1354,25 @@ class amwg_plot_set5and6(amwg_plot_plan):
                     variableid='PS', filetable=filetable2, season=self.season,
                     reduction_function=(lambda x,vid: reduce_time_seasonal( x, self.season, self.region, vid ) ) )
                 ]
-            #vid2 = varid+'_p_2'
-            #vidl2 = varid+'_lp_2'
-            vid2 = dv.dict_id( varid, 'p', seasonid, filetable2 )
+            #vid2 = varnom+'_p_2'
+            #vidl2 = varnom+'_lp_2'
+            vid2 = dv.dict_id( varnom, 'p', seasonid, filetable2 )
             vid2 = dv.dict_id( vards, 'lp', seasonid, filetable2 )
             self.derived_variables[vid2] = derived_var( vid=vid2, inputs=[
-                    rv.dict_id(varid,seasonid,filetable2), rv.dict_id('hyam',seasonid,filetable2),
+                    rv.dict_id(varnom,seasonid,filetable2), rv.dict_id('hyam',seasonid,filetable2),
                     rv.dict_id('hybm',seasonid,filetable2), rv.dict_id('PS',seasonid,filetable2) ],
                                                         func=verticalize )
             self.derived_variables[vidl2] = derived_var(
                 vid=vidl2, inputs=[vid2], func=(lambda z,psl=pselect: select_lev(z,psl) ) )
         else:
             # no hybrid levels, assume pressure levels.
-            #vid2 = varid+'_2'
-            #vidl2 = varid+'_lp_2'
-            vid2 = rv.dict_id(varid,seasonid,filetable2)
-            vidl2 = dv.dict_id( varid, 'lp', seasonid, filetable2 )
+            #vid2 = varnom+'_2'
+            #vidl2 = varnom+'_lp_2'
+            vid2 = rv.dict_id(varnom,seasonid,filetable2)
+            vidl2 = dv.dict_id( varnom, 'lp', seasonid, filetable2 )
             reduced_varlis += [
                 reduced_variable(  # var=var(time,lev,lat,lon)
-                    variableid=varid, filetable=filetable2, season=self.season,
+                    variableid=varnom, filetable=filetable2, season=self.season,
                     reduction_function=(lambda x,vid: reduce_time_seasonal( x, self.season, self.region, vid ) ) )
                 ]
             self.derived_variables[vidl2] = derived_var(
@@ -1374,7 +1385,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
             ft2src = ''
         filterid = ft2src.split('_')[-1] #recover the filter id: kludge
         self.single_plotspecs[self.plot2_id] = plotspec(
-                #was vid = varid+'_2',
+                #was vid = varnom+'_2',
                 vid = ps.dict_idid(vidl2),
                 zvars = [vidl2],  zfunc = (lambda z: z),
                 plottype = self.plottype,
@@ -1382,8 +1393,8 @@ class amwg_plot_set5and6(amwg_plot_plan):
                 source = names['obs'],
                 plotparms = plotparms[src2obsmod(ft2src)] )
         self.single_plotspecs[self.plot3_id] = plotspec(
-                #was vid = varid+'_diff',
-                vid = ps.dict_id(varid,'diff',seasonid,filetable1,filetable2),
+                #was vid = varnom+'_diff',
+                vid = ps.dict_id(varnom,'diff',seasonid,filetable1,filetable2),
                 zvars = [vidl1,vidl2],  zfunc = aminusb_2ax,
                 plottype = self.plottype,
                 title = 'difference',
@@ -1613,7 +1624,7 @@ class amwg_plot_set6(amwg_plot_plan):
     """
     name = '6 - (Experimental, doesnt work with GUI) Horizontal Vector Plots of Seasonal Means' 
     number = '6'
-    common_derived_variables = { 'STRESS':[['STRESS_MAG','TAUX','TAUY'],['TAUX','TAUY']],
+    set6_variables = { 'STRESS':[['STRESS_MAG','TAUX','TAUY'],['TAUX','TAUY']],
                            'MOISTURE_TRANSPORT':[['TUQ','TVQ']] }
     # ...built-in variables.   The key is the name, as the user specifies it.
     # The value is a lists of lists of the required data variables. If the dict item is, for
@@ -1652,7 +1663,7 @@ class amwg_plot_set6(amwg_plot_plan):
             self.plan_computation( model, obs, varid, seasonid, aux, plotparms )
     @staticmethod
     def _list_variables( model, obs ):
-        return amwg_plot_set6.common_derived_variables.keys()
+        return amwg_plot_set6.set6_variables.keys()
     @staticmethod
     def _all_variables( model, obs ):
         return { vn:basic_plot_variable for vn in amwg_plot_set6._list_variables( model, obs ) }
@@ -1670,7 +1681,7 @@ class amwg_plot_set6(amwg_plot_plan):
         """
         vars = None
         if filetable is not None:
-            for dvars in self.common_derived_variables[varid]:   # e.g. dvars=['STRESS_MAG','TAUX','TAUY']
+            for dvars in self.set6_variables[varid]:   # e.g. dvars=['STRESS_MAG','TAUX','TAUY']
                 if filetable.has_variables(dvars):
                     vars = dvars                           # e.g. ['STRESS_MAG','TAUX','TAUY']
                     break
@@ -1840,12 +1851,12 @@ class amwg_plot_set6(amwg_plot_plan):
                 vars2,rvars2,dvars2,var_cont2,vars_vec2,vid_cont2 =\
                     self.STRESS_setup( filetable2, varid, seasonid )
                 if vars1 is None and vars2 is None:
-                    raise DiagError("cannot find common derived variables in data 2")
+                    raise DiagError("cannot find set6 variables in data 2")
             else:
                 logger.error("AMWG plot set 6 does not yet support %s",varid)
                 return None
         except Exception as e:
-            logger.error("cannot find suitable common_derived_variables in data for varid= %s",varid)
+            logger.error("cannot find suitable set6_variables in data for varid= %s",varid)
             logger.exception(" %s ", e)
             return None
         reduced_varlis = []

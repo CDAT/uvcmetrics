@@ -19,9 +19,6 @@ from metrics.frontend.amwg_plotting import *
 # script that does anything with diags, and would need updated if new packages
 # are added, etc.
 from metrics.packages.amwg import *
-from metrics.packages.amwg.derivations.vertical import *
-#obsolete from metrics.packages.amwg.plot_data import plotspec, derived_var
-from metrics.packages.amwg.derivations import *
 from metrics.packages.lmwg import *
 from metrics.packages.diagnostic_groups import *
 from metrics.frontend.uvcdat import *

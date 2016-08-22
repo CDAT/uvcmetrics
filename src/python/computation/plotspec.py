@@ -12,7 +12,8 @@ logger = logging.getLogger(__name__)
 
 
 class derived_var(basic_id):
-    def __init__( self, vid, inputs=[], outputs=['output'], func=(lambda: None), special_values=None ):
+    def __init__( self, vid, inputs=[], outputs=['output'], func=(lambda: None), special_values=None,
+                  special_orders={} ):
         """Arguments:
         vid, an id for this dervied variable;
         func=function to compute values of this variable;
@@ -38,6 +39,10 @@ class derived_var(basic_id):
         # but this is what worked for me in land.
         #   -BES
         self._special = special_values
+        # Only example so far of "special_orders":  { 'T':'dontreduce' }
+        # which means that an input T should not be reduced as input variables usually are, before
+        # computing a derived variable .
+        self.special_orders = special_orders
     def inputs( self ):
         return self._inputs
     def derive( self, inpdict ):

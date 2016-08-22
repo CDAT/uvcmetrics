@@ -39,6 +39,38 @@ common_derived_variables = {
             vid='WV_LIFETIME', inputs=['TMQ','PRECT'], outputs=['WV_LIFETIME'],
             func=(lambda tmq,prect: wv_lifetime(tmq,prect)[0]) )],
 
+    # Variables computed by NCAR AMWG, requested by Chris Golaz, our issue 222:
+    'ALBEDO':[derived_var(      # TOA albedo
+            vid='ALBEDO', inputs=['SOLIN','FSNTOA'], outputs=['ALBEDO'],
+            func=albedo )],
+    'ALBEDOC':[derived_var(      # TOA clear-sky albedo
+            vid='ALBEDOC', inputs=['SOLIN','FSNTOAC'], outputs=['ALBEDOC'],
+            func=albedo )],
+    'EP':[derived_var(          # evaporation - precipitation
+            vid='EP', inputs=['QFLX','PRECT'], outputs=['EP'],
+            func=aminusb )],
+    'TTRP':[derived_var(       # tropopause temperature (at first time)
+            vid='TTRP', inputs=['T'], outputs=['TTRP'], special_orders={'T':'dontreduce'},
+            func=tropopause_temperature )],
+    'LWCFSRF':[derived_var(    # Surface LW Cloud Forcing
+            vid='LWCFSRF', inputs=['FLNSC','FLNS'], outputs=['LWCFSRF'],
+            func=aminusb )],
+    'PRECT_LAND':[derived_var( # land precipitation rate
+            vid='PRECT_LAND', inputs=['PRECC','PRECL','LANDFRAC'], outputs=['PRECT_LAND'],
+            func=land_precipitation )],
+    'PRECIP':[derived_var(     # cumulative precipitation (over the season)
+            vid='PRECIP', inputs=['PRECT','seasonid'], outputs=['PRECIP'],
+            func=prect2precip )],
+    'PRECIP_LAND':[derived_var(     # cumulative precipitation (over the season; restricted to land)
+            vid='PRECIP_LAND', inputs=['PRECT_LAND','seasonid'], outputs=['PRECIP_LAND'],
+            func=prect2precip )],
+    'SST':[derived_var(        # sea surface temperature.  Usually it's in the data file, but not always.
+            vid='SST', inputs=['TS','OCNFRAC'], outputs=['SST'],
+            func=(lambda ts,of: mask_by(ts,of,lo=0.9)) )],
+    'SWCFSRF':[derived_var(    # Surface SW Cloud Forcing
+            vid='SWCFSRF', inputs=['FSNS', 'FSNSC'], outputs=['SWCFSRF'],
+            func=aminusb )],
+
     # miscellaneous:
         'PRECT':[derived_var(
             vid='PRECT', inputs=['pr'], outputs=['PRECT'],
