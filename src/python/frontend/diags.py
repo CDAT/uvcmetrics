@@ -359,6 +359,9 @@ def run_diags( opts ):
                                 makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits=displayunits)
                                 number_diagnostic_plots += 1
 
+                                #tracker.print_diff()
+
+
                             if opts['output']['xml'] == True:
                                 # Also, write the nc output files and xml.
                                 # Probably make this a command line option.
@@ -460,10 +463,13 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
         logger.info("%s ", tmobs)
         logger.info('*************************************************')
 
-    # gmmobs provides the correct graphics methods to go with the templates.
+    # gmobs provides the correct graphics methods to go with the templates.
     # Unfortunately, for the moment we have to use rmr.presentation instead
     # (below) because it contains some information such as axis and vector
     # scaling which is not yet done as part of
+    # So, we are deleting gmobs:
+    gmobs = None
+    ovly  = None
 
     vcanvas2.clear()
     plotcv2 = False
@@ -546,7 +552,8 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
                         if hasattr(plot, 'replaceIds'):
                             var = plot.replaceIds(var)
                         tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)],
-                                                           data=var, varIndex=varIndex, graphicMethod=rsr_presentation, var=var )
+                                                           data=var, varIndex=varIndex, graphicMethod=rsr_presentation,
+                                                           var=var, iteration=ir )
                     if len(rsr.vars) == 1:
                         #scatter plot for plot set 12
                         subtitle = title
@@ -579,8 +586,8 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
                             yvar = var.flatten()
                             if hasattr(plot, 'customizeTemplates'):
                                 tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)],
-                                                                   data=[xvar.units, yvar.units], varIndex=varIndex, graphicMethod=rsr_presentation)
-
+                                                                   data=[xvar.units, yvar.units], varIndex=varIndex,
+                                                                   graphicMethod=rsr_presentation, var=var, iteration=ir)                            
                             # Scatter part from the single plots in set 11
                             vcanvas.plot(xvar, yvar,
                                          rsr_presentation, tm, bg=1, title=title,
@@ -689,7 +696,6 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
                     if hasattr(plot, 'customizeTemplates'):
                         tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)], data=var,
                                                            varIndex=varIndex, graphicMethod=rsr.presentation, var=var )
-
                     # Single plot
                     plot.vcs_plot(vcanvas, var(longitude=(-10,370)), rsr.presentation, tm, bg=1,
                                   title=title, source=rsr.source,

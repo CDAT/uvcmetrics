@@ -677,6 +677,7 @@ class amwg_plot_set3(amwg_plot_plan,basic_id):
                     # The next repeated commands were necessary in Linux.
                     graphicMethod.linecolor = "red"
                     graphicMethod.linewidth = 2
+
                 data.id = 'obs'
             else:
                 if type(min(data)) is float:
@@ -1439,7 +1440,6 @@ class amwg_plot_set5and6(amwg_plot_plan):
         tm1.yname.priority  = 1
         tm1.xname.priority  = 1
         tm1.legend.priority = 1
-
         # Fix units if needed
         if data is not None:
             if (getattr(data, 'units', '') == ''):
@@ -2039,7 +2039,8 @@ class amwg_plot_set6(amwg_plot_plan):
         tm2.source.x               = tm2.data.x1
         tm2.source.priority        = 1
 
-        tm2.units.priority = 1
+        tm2.units.priority         = 1
+        tm2.legend.offset         += 0.011
         
         return tm1, tm2
     
@@ -2199,8 +2200,9 @@ class amwg_plot_set7(amwg_plot_plan):
         titleOri.height           = 23
         tm1.title.textorientation = titleOri
        
-        tm1.source.priority        = 1
-
+        tm1.source.priority       = 1
+        tm1.source.y              = tm1.mean.y - 0.02
+            
         # # We want units at axis names
         unitsOri                  = cnvs1.gettextorientation(tm1.units.textorientation)
         unitsOri.height          += 8
@@ -2210,8 +2212,8 @@ class amwg_plot_set7(amwg_plot_plan):
         cnvs2.setcolormap("categorical")
 
         # Adjusting intersection of title and xlabels.
-        dy = (tm2.data.y2-tm2.data.y1) * 0.095
-        tm2.data.y2 -= dy
+        dy                        = (tm2.data.y2-tm2.data.y1) * 0.095
+        tm2.data.y2              -= dy
     
         maxOri                   = cnvs2.gettextorientation(tm2.max.textorientation)
         meanOri                  = cnvs2.gettextorientation(tm2.mean.textorientation)
@@ -2225,11 +2227,12 @@ class amwg_plot_set7(amwg_plot_plan):
         tm2.title.textorientation = titleOri
         tm2.title.y              -= 0.005
 
-        tm2.max.y -= 0.005
+        tm2.max.y                -= 0.005
 
-        tm2.legend.x1 -= 0.01
+        tm2.legend.x1            -= 0.01
+        tm2.legend.offset        += 0.013
         
-        tm2.source.priority        = 1
+        tm2.source.priority       = 1
 
         unitsOri                  = cnvs2.gettextorientation(tm2.units.textorientation)
         unitsOri.height          += 1
@@ -2414,6 +2417,12 @@ class amwg_plot_set8(amwg_plot_plan):
         # Adjust y label position
         tm2.yname.x = 0.075        
         tm2.mean.y -= 0.01
+        
+        
+        # Adjust source position
+        tm1.source.priority = 1
+        tm1.source.y = tm1.max.y - 0.02
+        
         
         return tm1, tm2
     
@@ -2653,6 +2662,7 @@ class amwg_plot_set9(amwg_plot_plan):
         legendOri                  = cnvs2.gettextorientation(tm2.legend.textorientation)
         legendOri.height          -= 2
         tm2.legend.textorientation = legendOri
+        tm2.legend.offset         += 0.01
         
         tm2.units.priority = 1
         
@@ -3018,30 +3028,33 @@ class amwg_plot_set11(amwg_plot_plan):
         self.composite_plotspecs[self.plotall_id] = plotall_id
         self.computation_planned = True
         #pdb.set_trace()
-    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
+    #@profile
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, 
+                           var=None, iteration=None):
         """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
 
-        tm2.title.y        = 0.98
-
-        ly = 0.96      
-        xpos = {'model':.19, 'obs':.66}  
-        for key in self.ft_ids.keys():
-            text        = cnvs2.createtext()
-            text.string = self.ft_ids[key]
-            text.x      = xpos[key]
-            text.y      = ly
-            text.height = 11
-            cnvs2.plot(text, bg=1)  
+        tm2.title.y = 0.98
+        
+        if iteration == 0:
+            ly = 0.96      
+            xpos = {'model':.19, 'obs':.66}  
+            for key in self.ft_ids.keys():
+                text        = cnvs2.createtext()
+                text.string = self.ft_ids[key]
+                text.x      = xpos[key]
+                text.y      = ly
+                text.height = 11
+                cnvs2.plot(text, bg=1)
         
         #horizontal labels
-        th=cnvs2.createtextorientation(None, tm2.xlabel1.textorientation)
-        th.height=8
+        th        = cnvs2.gettextorientation(tm2.xlabel1.textorientation)
+        th.height = 8
         tm2.xlabel1.textorientation = th
  
         #vertical labels       
-        tv=cnvs2.createtextorientation(None, tm2.ylabel1.textorientation)
-        tv.height=8
+        tv        = cnvs2.gettextorientation(tm2.ylabel1.textorientation)
+        tv.height = 8
         tm2.ylabel1.textorientation = tv
 
         if varIndex == 0:
@@ -3052,6 +3065,11 @@ class amwg_plot_set11(amwg_plot_plan):
             tm2.xname.priority    = 0
             tm2.yname.priority    = 0
             tm2.dataname.priority = 0
+            
+            # Adjust source position
+            tm1.source.priority   = 1
+            tm1.source.y          = tm1.data.y2 + 0.02
+            
             # Adjust plot position
             deltaX = 0.015            
             if tm2.data.x1 == 0.033:
@@ -3142,7 +3160,7 @@ class amwg_plot_set11(amwg_plot_plan):
             xLabel.string = ["LWCF (" + data[0] + ")"]
             xLabel.height = 9
             
-            cnvs2.plot(xLabel, bg=1)     
+            cnvs2.plot(xLabel, bg=1)
         
         return tm1, tm2    
     
@@ -3312,7 +3330,8 @@ class amwg_plot_set12(amwg_plot_plan):
         name, units = self.IDsandUnits['axis']
         var.comment1 = name +' (' + units +')'
         return var        
-    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, 
+                           var=None, iteration=None):
         """Theis method does what the title says.  It is a hack that will no doubt change as diags changes."""
 
         (cnvs1, tm1), (cnvs2, tm2) = templates
@@ -3332,7 +3351,7 @@ class amwg_plot_set12(amwg_plot_plan):
         tm2.comment3.priority = 0
         tm1.comment4.priority = 0
         tm2.comment4.priority = 0
-
+         
         # Fix units if needed
         if data is not None:
             if (getattr(data, 'units', '') == ''):
@@ -3347,20 +3366,21 @@ class amwg_plot_set12(amwg_plot_plan):
                 if data.getAxis(1).id.count('lon'):
                     data.getAxis(1).id = 'Longitude'
 
-        yLabel = cnvs1.createtext(Tt_source=tm1.yname.texttable,
-                                  To_source=tm1.yname.textorientation)
-        yLabel.x = tm1.yname.x - 0.02
-        yLabel.y = tm1.yname.y
-        if data is not None:
-            if hasattr(data, 'comment1'):
-                yLabel.string = [data.comment1]
+        if (iteration % 2) == 0:
+            yLabel = cnvs1.createtext(Tt_source=tm1.yname.texttable,
+                                    To_source=tm1.yname.textorientation)
+            yLabel.x = tm1.yname.x - 0.02
+            yLabel.y = tm1.yname.y
+            if data is not None:
+                if hasattr(data, 'comment1'):
+                    yLabel.string = [data.comment1]
+                else:
+                    yLabel.string  = ["Pressure (" + data.units + ")"]
             else:
-                yLabel.string  = ["Pressure (" + data.units + ")"]
-        else:
-            yLabel.string  = ["Pressure"]
-        yLabel.height = 16
-        cnvs1.plot(yLabel, bg=1)
-
+                yLabel.string  = ["Pressure"]
+            yLabel.height = 16
+            cnvs1.plot(yLabel, bg=1)            
+                
         tm1.source.y = tm1.data.y2 + 0.01
 
         xLabelTO                  = cnvs1.gettextorientation(tm1.xname.textorientation)
@@ -3386,65 +3406,69 @@ class amwg_plot_set12(amwg_plot_plan):
         #tm2.title.x     += deltaX
         tm2.xname.x      += deltaX
 
-        
-        #setup the custom legend
-        lineTypes = {}
-        lineTypes[self.legendTitles[0]] = 'solid'
-        lineTypes[self.legendTitles[1]] = 'dot'
-        positions = {}
-        positions['solid', tm1]  = [tm1.data.x2 + 0.008, tm1.data.x2 + 0.07], [0.16, .16]
-        positions['solid', tm2]  = [tm2.data.x1 + 0.008+deltaX, tm2.data.x1 + 0.07+deltaX], [tm2.data.y1 + 0.01, tm2.data.y1 + 0.01]
-        positions['dot', tm1]  = [tm1.data.x2 + 0.008, tm1.data.x2 + 0.07], [0.24, 0.24]
-        positions['dot', tm2]  = [tm2.data.x1 + 0.008+deltaX, tm2.data.x1 + 0.07+deltaX], [tm2.data.y1 + 0.05, tm2.data.y1 + 0.05]
-   
-        #if not self.legendComplete:
-        for canvas, tm in templates:
-            for filename in self.legendTitles:
-                if (canvas, tm, filename) not in self.legendComplete.keys():
-                    self.legendComplete[(canvas, tm, filename)] = False
-        #plot the custom legend
-        for canvas, tm, filename in self.legendComplete.keys():
-            tm.legend.priority = 0
-            lineType = lineTypes[filename]
-            if not self.legendComplete[(canvas, tm, filename)]:
-                xpos, ypos = positions[lineType, tm]
-                if lineType == 'dot':
-                    marker = canvas.createmarker()
-                    marker.size = 2
-                    marker.x = (numpy.arange(6)*(xpos[1]-xpos[0])/5.+xpos[0]).tolist()
-                    marker.y = [ypos[0],]*6                    
-                    canvas.plot(marker, bg=1)
-                    marker.priority = 0
+
+        if (iteration % 2) == 0:        
+            #setup the custom legend
+            lineTypes = {}
+            lineTypes[self.legendTitles[0]] = 'solid'
+            lineTypes[self.legendTitles[1]] = 'dot'
+            positions = {}
+            positions['solid', tm1]  = [tm1.data.x2 + 0.008, tm1.data.x2 + 0.07], [0.16, .16]
+            positions['solid', tm2]  = [tm2.data.x1 + 0.008+deltaX, tm2.data.x1 + 0.07+deltaX], [tm2.data.y1 + 0.01, tm2.data.y1 + 0.01]
+            positions['dot', tm1]  = [tm1.data.x2 + 0.008, tm1.data.x2 + 0.07], [0.24, 0.24]
+            positions['dot', tm2]  = [tm2.data.x1 + 0.008+deltaX, tm2.data.x1 + 0.07+deltaX], [tm2.data.y1 + 0.05, tm2.data.y1 + 0.05]
+    
+            #if not self.legendComplete:
+            for canvas, tm in templates:
+                for filename in self.legendTitles:
+                    if (canvas, tm, filename) not in self.legendComplete.keys():
+                        self.legendComplete[(canvas, tm, filename)] = False
+            #plot the custom legend
+            for canvas, tm, filename in self.legendComplete.keys():
+                tm.legend.priority = 0
+                lineType = lineTypes[filename]
+                if not self.legendComplete[(canvas, tm, filename)]:
+                    xpos, ypos = positions[lineType, tm]
+                    if lineType == 'dot':
+                        marker = canvas.createmarker()
+                        marker.size = 2
+                        marker.x = (numpy.arange(6)*(xpos[1]-xpos[0])/5.+xpos[0]).tolist()
+                        marker.y = [ypos[0],]*6                    
+                        canvas.plot(marker, bg=1)
+            
+                        marker.priority = 0
+                    else:
+                        line = canvas.createline(None, tm.legend.line)
+                        line.type = lineType
+                        line.x = xpos 
+                        line.y = [ypos, ypos]
+                        line.color = 1
+                        canvas.plot(line, bg=1)
+                        
+                    text = canvas.createtext()
+                    text.string = filename
+                    text.height = 9.5
+                    text.x = xpos[0] 
+                    text.y = ypos[0] + 0.01 
+
+                    canvas.plot(text, bg=1)
+            
+                    self.legendComplete[canvas, tm, filename] = True
+    
+
+            yLabel = cnvs2.createtext(Tt_source=tm2.yname.texttable,
+                                    To_source=tm2.yname.textorientation)
+            yLabel.x = tm2.yname.x #- 0.005
+            yLabel.y = tm2.yname.y
+            if data is not None:
+                if hasattr(data, 'comment1'):
+                    yLabel.string = [data.comment1]
                 else:
-                    line = canvas.createline(None, tm.legend.line)
-                    line.type = lineType
-                    line.x = xpos 
-                    line.y = [ypos, ypos]
-                    line.color = 1
-                    canvas.plot(line, bg=1)
-                text = canvas.createtext()
-                text.string = filename
-                text.height = 9.5
-                text.x = xpos[0] 
-                text.y = ypos[0] + 0.01 
-
-                canvas.plot(text, bg=1)   
-                self.legendComplete[canvas, tm, filename] = True
-  
-
-        yLabel = cnvs2.createtext(Tt_source=tm2.yname.texttable,
-                                  To_source=tm2.yname.textorientation)
-        yLabel.x = tm2.yname.x #- 0.005
-        yLabel.y = tm2.yname.y
-        if data is not None:
-            if hasattr(data, 'comment1'):
-                yLabel.string = [data.comment1]
+                    yLabel.string  = ["Pressure (" + data.units + ")"]
             else:
-                yLabel.string  = ["Pressure (" + data.units + ")"]
-        else:
-            yLabel.string  = ["Pressure"]
-        yLabel.height = 9
-        cnvs2.plot(yLabel, bg=1)
+                yLabel.string  = ["Pressure"]
+            yLabel.height = 9
+            cnvs2.plot(yLabel, bg=1)            
 
         xLabelTO                  = cnvs2.gettextorientation(tm2.xname.textorientation)
         xLabelTO.height           = 9
@@ -3452,7 +3476,7 @@ class amwg_plot_set12(amwg_plot_plan):
 
         tm2.source.y = tm2.data.y2 + 0.01
         tm2.title.y -= 0.01
-        
+            
         if self.plotCompositeTitle:
             tm2.source.priority = 1
             self.plotCompositeTitle = False
@@ -4217,13 +4241,12 @@ class amwg_plot_set15(amwg_plot_plan):
         self.computation_planned = True
         #pdb.set_trace()
     def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
-
-        """Theis method does what the title says.  It is a hack that will no doubt change as diags changes."""
+        """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
  
-        tm1.data.x1  += .05
-        tm1.box1.x1   = tm1.data.x1
-        tm1.legend.x1 = tm1.data.x1
+        tm1.data.x1              += .05
+        tm1.box1.x1               = tm1.data.x1
+        tm1.legend.x1             = tm1.data.x1
      
         tm1.yname.x               = .04
         tm1.yname.y               = (tm1.data.y1 + tm1.data.y2)/2
@@ -4242,14 +4265,18 @@ class amwg_plot_set15(amwg_plot_plan):
         tm1.ytic1.x1              = tm1.data.x1
         tm1.ytic1.x2              = tm1.data.x1 - delta
         tm1.ylabel1.x             = tm1.ytic1.x2
+        
+        # Adjust source position for tm1 plots
+        tm1.source.priority       = 1
+        tm1.source.y              = tm1.data.y2 + 0.045
 
         titleOri                  = cnvs1.gettextorientation(tm1.title.textorientation)
         titleOri.height          += 3
         tm1.title.textorientation = titleOri
         tm1.title.y               = tm1.data.y2 + 0.015
 
-        tm1.crdate.priority = 0
-        tm1.crtime.priority = 0        
+        tm1.crdate.priority       = 0
+        tm1.crtime.priority       = 0        
 
         tm2.yname.x               = .05
         tm2.yname.y               = (tm2.data.y1 + tm2.data.y2)/2
@@ -4268,6 +4295,7 @@ class amwg_plot_set15(amwg_plot_plan):
         titleOri.height           = 14
         tm2.title.textorientation = titleOri
         tm2.title.y               = tm2.data.y2 + 0.01
+        tm2.legend.offset        += 0.01
         
         for tm in [tm1, tm2]:       
             tm.max.priority      = 0
