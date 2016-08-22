@@ -2826,6 +2826,8 @@ class reduced_variable(ftrow,basic_id):
     # In reality we will have a more generic function, and some additional parameters.
     # So this reduction function will typically be specified as a lambda expression, e.g.
     # (lambda mv: return zonal_mean( mv, sourcefile, -20, 20 )
+    IDtuple = namedtuple( "reduced_variable_ID", "classid var season region ft1 ffilt1" )
+
     def __init__( self, fileid=None, variableid='', timerange=None,
                   latrange=None, lonrange=None, levelrange=None,
                   season=seasonsyr, region=None, reduced_var_id=None,
@@ -2835,19 +2837,16 @@ class reduced_variable(ftrow,basic_id):
         self._season = season
         self._region = interpret_region(region) # this could probably change lat/lon range, or lat/lon ranges could be passed in
         if reduced_var_id is not None:
+            # lmwg.py provides a string here - a feature which should be removed eventually.
             basic_id.__init__( self, reduced_var_id )
         else:
             seasonid=self._season.seasons[0]
             if seasonid=='JFMAMJJASOND':
                 seasonid='ANN'
-            basic_id.__init__( self, variableid, seasonid, filetable, None, region )
+            basic_id.__init__( self, variableid, seasonid, filetable, filefilter, region )
         ftrow.__init__( self, fileid, variableid, timerange, latrange, lonrange, levelrange )
         self._reduction_function = reduction_function
         self._axes = axes
-        #if reduced_var_id is None:      # self._vid is deprecated
-        #    self._vid = ""      # self._vid is deprecated
-        #else:
-        #    self._vid = reduced_var_id      # self._vid is deprecated
         if filetable is None:
             logger.warning("No filetable specified for reduced_variable instance %s",variableid)
         self.filetable = filetable
@@ -2964,7 +2963,6 @@ class reduced_variable(ftrow,basic_id):
             logger.debug("filetable is %s",self.filetable)
             return None
         if vid is None:
-            #vid = self._vid      # self._vid is deprecated
             vid = self._strid
 
         filename = self.get_variable_file( self.variableid )

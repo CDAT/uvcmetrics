@@ -196,7 +196,7 @@ def get_month_strings(length=15):
         months += [cdutil.getMonthString(i)[0:length]]
     return months
 
-class uvc_simple_plotspec():
+class uvc_simple_plotspec(basic_id):
     """This is a simplified version of the plotspec class, intended for the UV-CDAT GUI.
     Once it stabilizes, I may replace the plotspec class with this one.
     The plots will be of the type specified by presentation.  The data will be the
@@ -205,11 +205,18 @@ class uvc_simple_plotspec():
     # re presentation (plottype): Yxvsx is a line plot, for Y=Y(X).  It can have one or several lines.
     # Isofill is a contour plot.  To make it polar, set projection=polar.  I'll
     # probably communicate that by passing a name "Isofill_polar".
+    IDtuple = namedtuple( "uvc_plotspec_ID", "classid vars varmod season ft1 ft2 ft1nn ft2nn region" )
+
     def __init__(
-        self, pvars, presentation, labels=[], title='', source='', ranges=None, overplotline=False,
-        linetypes=['solid'], linecolors=[241], levels=None, plotparms=None, displayunits=None ):
+        self, pvars, presentation, labels=[], title='', title1='', title2='', source='', ranges=None, overplotline=False,
+        linetypes=['solid'], linecolors=[241], levels=None, plotparms=None, displayunits=None,
+        idinfo=None ):
 
         pvars = [v for v in pvars if v is not None]
+        if idinfo['season']=='JFMAMJJASOND': idinfo['season']='ANN'
+        basic_id.__init__(self, idinfo['vars'][0], '', idinfo['season'], idinfo['ft1'], idinfo['ft2'],
+                          idinfo['ft1nn'], idinfo['ft2nn'], idinfo['region'] )
+
         # ... Maybe something else is broken to let None get into pvars.
         if len(pvars)<=0:
             zerovar = cdms2.createVariable([[0,0,0],[0,0,0]])
@@ -249,7 +256,9 @@ class uvc_simple_plotspec():
         ##     self.presentation = vcsx.create
         self.vars = pvars # vars[i] is either a cdms2 variable or a tuple of variables
         self.labels = labels
-        self.title = title
+        self.title = title   # deprecated
+        self.title1 = title1
+        self.title2 = title2
         self.source = source
         self.type = ptype
         self.ptype = ptype
@@ -842,6 +851,10 @@ class uvc_simple_plotspec():
         for zax in self.vars:
             try:
                 del zax.filetable  # we'll write var soon, and can't write a filetable
+            except:
+                pass
+            try:
+                zax.filetableid= str(zax.filetableid)  # and the named tuple ids aren't writeable as such
             except:
                 pass
             for ax in zax.getAxisList():

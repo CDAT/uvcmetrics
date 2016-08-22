@@ -131,9 +131,19 @@ def run_diags( opts ):
     modelfts = []
     obsfts = []
     for i in range(len(opts['model'])):
-        modelfts.append(path2filetable(opts, modelid=i))
+        ft = path2filetable(opts, modelid=i)
+        if ft._id.nickname=='':
+            newid = ft.IDtuple( classid=ft._id.classid, ftno=ft._id.ftno, ftid=ft._id.ftid,
+                                nickname='model' )
+            ft._id = newid
+        modelfts.append(ft)
     for i in range(len(opts['obs'])):
-        obsfts.append(path2filetable(opts, obsid=i))
+        ft = path2filetable(opts, obsid=i)
+        if ft._id.nickname=='':
+            newid = ft.IDtuple( classid=ft._id.classid, ftno=ft._id.ftno, ftid=ft._id.ftid,
+                                nickname='obs' )
+            ft._id = newid
+        obsfts.append(ft)
 
     for i in range(len(modelfts)):
         logging.info('model %s id: %s', i, modelfts[i]._strid)
@@ -273,7 +283,8 @@ def run_diags( opts ):
             # If the user sepcified variables, use them instead of the complete list
             variables = list( set(variables) & set(opts.get('vars',[])) )
             if len(variables)==0 and len(opts.get('vars',[]))>0:
-                logger.critical('Could not find any of the requested variables %s among %s', opts['vars'], variables)
+                logger.critical('Could not find any of the requested variables %s among %s', opts['vars'],
+                                pclass.list_variables(modelfts,obsfts,sname) )
                 logger.critical("among %s", variables)
                 sys.exit(1)
 
@@ -465,16 +476,13 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
     # tmmobs[ir] is the template for plotting a simple plot on a page
     #   which has the entire compound plot - that's vcanvas2
     gmobs, tmobs, tmmobs = return_templates_graphic_methods( vcanvas, gms, ovly, onPage )
-    if 1==1: # optional debugging:
-        logger.info('*************************************************')
-        logger.info("tmpl nsingleplots= %s nsimpleplots= %s ",nsingleplots , nsimpleplots)
-        logger.info("tmpl gms= %s" , gms)
-        logger.info("tmpl len(res)= %s ovly= %s onPage=%s", len(res),  ovly, onPage)
-        logger.info("tmpl gmobs= %s", gmobs)
-        logger.info('TMOBS/TMMOBS:')
-        logger.info("%s ", tmobs)
-        logger.info("%s ", tmobs)
-        logger.info('*************************************************')
+    logger.debug("tmpl nsingleplots= %s nsimpleplots= %s ",nsingleplots , nsimpleplots)
+    logger.debug("tmpl gms= %s" , gms)
+    logger.debug("tmpl len(res)= %s ovly= %s onPage=%s", len(res),  ovly, onPage)
+    logger.debug("tmpl gmobs= %s", gmobs)
+    logger.debug('TMOBS/TMMOBS:')
+    logger.debug("%s ", tmobs)
+    logger.debug("%s ", tmmobs)
 
     # gmmobs provides the correct graphics methods to go with the templates.
     # Unfortunately, for the moment we have to use rmr.presentation instead
@@ -502,14 +510,19 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
             tm = tmobs[ir]
             if tmmobs != []:
                 tm2 = tmmobs[ir]
-            title = rsr.title
+            title1 = getattr( rsr, 'title1', rsr.title )
+            title2 = getattr( rsr, 'title2', rsr.title )
+            title = title1
+            #title = rsr.title
 
             rsr_presentation = rsr.presentation
             for varIndex, var in enumerate(rsr.vars):
                 savePNG = True
                 seqsetattr(var,'title',title)
                 try:
+                    ftid = var.filetable.id()
                     del var.filetable  # we'll write var soon, and can't write a filetable
+                    var.filetableid = ftid  # but we'll still need to know what the filetable is
                 except:
                     pass
 
@@ -759,11 +772,12 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
 
                     if hasattr(plot, 'customizeTemplates'):
                         tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)], data=var,
-                                                           varIndex=varIndex, graphicMethod=rsr.presentation, var=var )
+                                                           varIndex=varIndex, graphicMethod=rsr.presentation,
+                                                           var=var, uvcplotspec=rsr )
 
                     # Single plot
                     plot.vcs_plot(vcanvas, var(longitude=(-10,370)), rsr.presentation, tm, bg=1,
-                                  title=title, source=rsr.source,
+                                  title=title1, source=rsr.source,
                                   plotparms=getattr(rsr,'plotparms',None) )
 #                                      vcanvas3.clear()
 #                                      vcanvas3.plot(var, rsr.presentation )
@@ -773,8 +787,10 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
                     try:
                         if tm2 is not None:
                             # Multiple plots on a page:
+                            title1 += 'spam'
+                            title2 += 'spam spam spam'
                             plot.vcs_plot( vcanvas2, var(longitude=(-10,370)), rsr.presentation, tm2, bg=1,
-                                           title=title, source=rsr.source,
+                                           title=title2, source=rsr.source,
                                            plotparms=getattr(rsr,'plotparms',None))#,
                                            #compoundplot=onPage )
                             plotcv2 = True

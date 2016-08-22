@@ -243,9 +243,13 @@ class plot_plan(object):
             #labels = [xlab,ylab,zlab]
             labels = [zlab,z2lab]
             if hasattr(ps,'title'):
-                title = ps.title
-            else:
+                title1 = getattr( ps, 'title1', ps.title )
+                title2 = getattr( ps, 'title2', ps.title )
+                title = title1         # deprecated
+            else:  # Normally we won't get here because titles are normally built with the plotspec object.
                 title = ' '.join(labels)+' '+self._season_displayid  # do this better later
+                title1 = title
+                title2 = title
                 
             #process the ranges if present
             zrange = ps.zrangevars
@@ -283,6 +287,10 @@ class plot_plan(object):
             levels = ps.levels
             plotparms = getattr(ps,'plotparms',None)
                     
+            regionid = self.region
+            if type(regionid) is not str: regionid = regionid.id()[1]
+            if regionid.lower().find('global')>=0: regionid=''
+
             # The following line is getting specific to UV-CDAT, although not any GUI...
             #pdb.set_trace()
             #new kludge added to handle scatter plots, 10/14/14, JMcE
@@ -299,8 +307,11 @@ class plot_plan(object):
             else:
                 plot_type_temp = ps.plottype
             self.plotspec_values[p] = uvc_simple_plotspec(
-                vars, plot_type_temp, labels, title, ps.source, ranges, overplotline, linetypes,
-                linecolors, levels, plotparms )
+                vars, plot_type_temp, labels, title, title1, title2, ps.source, ranges, overplotline, linetypes,
+                linecolors, levels, plotparms, idinfo={
+                    'vars':[getattr(self,'varid','')],'season':self._seasonid, 'region':regionid,
+                    'ft1':getattr(self,'ft1nom',''), 'ft2':getattr(self,'ft2nom',''),
+                    'ft1nn':getattr(self,'ft1nickname'), 'ft2nn':getattr(self,'ft2nickname') } )
             #print p
             #print self.plotspec_values[p]
         #pdb.set_trace()
