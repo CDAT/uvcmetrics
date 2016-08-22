@@ -80,6 +80,9 @@ def convert_energyflux_precip(mv, preferred_units):
     if mv.units=="W/m~S~2~N":
         logger.info("Arbitrarily decided that W/m~S~2~N is W/m^2 for %s", mv.id)
         mv.units="W/m^2"
+    if mv.units=="W/m~S~2~N~":
+        logger.info("Arbitrarily decided that W/m~S~2~N~ is W/m^2 for %s", mv.id)
+        mv.units="W/m^2"
 
     if mv.units==preferred_units:
         return mv

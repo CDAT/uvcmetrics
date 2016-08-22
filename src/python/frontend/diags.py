@@ -20,9 +20,6 @@ from metrics.frontend.amwg_plotting import *
 # script that does anything with diags, and would need updated if new packages
 # are added, etc.
 from metrics.packages.amwg import *
-from metrics.packages.amwg.derivations.vertical import *
-#obsolete from metrics.packages.amwg.plot_data import plotspec, derived_var
-from metrics.packages.amwg.derivations import *
 from metrics.packages.lmwg import *
 from metrics.packages.diagnostic_groups import *
 from metrics.frontend.uvcdat import *
@@ -140,8 +137,12 @@ def run_diags( opts ):
         logging.info('model %s id: %s', i, modelfts[i]._strid)
     for i in range(len(obsfts)):
         logging.info('obs %s id: %s', i, obsfts[i]._strid)
-    # Setup some output things
 
+    # Runtime import of user-defined diagnostics
+    for module in opts['uservars']:
+        amwg_plot_plan.get_user_vars(module)
+
+    # Setup some output things
     outdir = opts['output']['outputdir']
     if outdir is None:
         outdir = os.path.join(os.environ['HOME'],"tmp","diagout")

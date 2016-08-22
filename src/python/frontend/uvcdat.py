@@ -8,12 +8,13 @@ from metrics.fileio.filetable import *
 from metrics.fileio.findfiles import *
 from metrics.computation.reductions import *
 from metrics.packages.amwg import *
-from metrics.packages.amwg.derivations.vertical import *
 from metrics.computation.plotspec import plotspec, derived_var
 from metrics.common.version import version
 from metrics.common.utilities import *
+
 from metrics.packages.amwg.derivations import *
 from metrics.frontend.form_filenames import form_filename
+
 from pprint import pprint
 import cProfile
 import json
