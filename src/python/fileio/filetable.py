@@ -6,6 +6,7 @@
 
 import sys, os, cdms2, re, logging
 from metrics.frontend.options import Options
+from metrics.common.id import *
 from metrics.common import *
 from pprint import pprint
 logger = logging.getLogger(__name__)
@@ -121,14 +122,38 @@ def get_datafile_filefmt( dfile, options):
        # which has no global attributes which would tell you what kind of file it is.
        # Nevertheless the one I am looking at has lots of clues, e.g. variable and axis names.
 
+# We cache filetables with pickle, but pickle won't pickle a nested class without help.
+# Here is a woraround from Stack Overflow:  define the following class, then use it below...
+# Thanks to Phil Elson of UK's Met Office, "pelson" in
+#  http://stackoverflow.com/questions/1947904/how-can-i-pickle-a-nested-class-in-python/11493777#11493777
+class _NestedClassGetter(object):
+    """
+    When called with the containing class as the first argument, 
+    and the name of the nested class as the second argument,
+    returns an instance of the nested class.
+    """
+    def __call__(self, containing_class, class_name):
+        nested_class = getattr(containing_class, class_name)
+        # return an instance of a nested_class. Some more intelligence could be
+        # applied for class construction if necessary.
+        return nested_class()
+
 class basic_filetable(basic_id):
     """Conceptually a file table is just a list of rows; but we need to attach some methods,
     which makes it a class.  Moreover, indices for the table are in this class.
     Different file types will require different methods,
     and auxiliary data."""
     nfiletables = 0
+    IDtuple = namedtuple( "filetable_ID", "classid, ftno, ftid, nickname" )
 
-    def __init__( self, filelist, opts, ftid=''):
+    # continuation of workaround to pickle problem with nested classes...
+    def IDtuple__reduce__(self):
+            # return a class which can return this class when called with the 
+            # appropriate tuple of arguments
+            return (_NestedClassGetter(), (basic_filetable, self.__class__.__name__, ))
+    IDtuple.__reduce__ = IDtuple__reduce__
+
+    def __init__( self, filelist, opts, ftid='', nickname=''):
         """filelist is a list of strings, each of which is the path to a file.
         ftid is a human-readable id string.  In common use, it comes via a method
         dirtree_datafiles.short_name from the name of the directory containing the files."""
@@ -142,7 +167,7 @@ class basic_filetable(basic_id):
             logger.critical('Could not determine options array in basic_filetable')
             quit()
         self.initialize_idnumber()
-        basic_id.__init__( self, self._idnumber, ftid )
+        basic_id.__init__( self, self._idnumber, ftid, nickname )
 
         self.maxfilewarn = 2  # maximum number of warnings about bad files
 
