@@ -23,8 +23,10 @@ dt = diags_test.DiagTest( modeldir, obsdir, plotset, filterid, obsid, varid, sea
 imagefilename = 'figure-set13_Global_ANN_CLISCCP_plot-combined.png'
 imagethreshold = None
 ncfiles = {}
-ncfiles['CLISCCP_ANN_Global_(1)_cam35_data_smaller.nc'] = ['dv_CLISCCP_ANN_ft1_cam35_data_smaller']
-ncfiles['CLISCCP_ANN_Global_(2)_obs_data_13_ISCCPCOSP.nc'] = ['rv_CLISCCP_ANN_Global_ft2_obs_data_13_ISCCPCOSP']
+#ncfiles['CLISCCP_ANN_Global_(1)_cam35_data_smaller.nc'] = ['dv_CLISCCP_ANN_ft1_cam35_data_smaller']
+#ncfiles['CLISCCP_ANN_Global_(2)_obs_data_13_ISCCPCOSP.nc'] = ['rv_CLISCCP_ANN_Global_ft2_obs_data_13_ISCCPCOSP']
+ncfiles['figure-set13_Global_ANN_CLISCCP_plot--model.nc'] = ['dv_CLISCCP_ANN_ft1_cam35_data_smaller']
+ncfiles['figure-set13_Global_ANN_CLISCCP_plot--obs.nc'] = ['rv_CLISCCP_ANN_Global_ft2_obs_data_13_ISCCPCOSP']
 
 # Test of NetCDF data (nc) file match:
 rtol = 1.0e-3

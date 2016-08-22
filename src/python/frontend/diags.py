@@ -13,6 +13,7 @@ from metrics import *
 from metrics.fileio.filetable import *
 from metrics.fileio.findfiles import *
 from metrics.computation.reductions import *
+from metrics.frontend.form_filenames import *
 from metrics.frontend.amwg_plotting import *
 # These next 5 liens really shouldn't be necessary. We should have a top level
 # file in packages/ that import them all. Otherwise, this needs done in every
@@ -258,7 +259,9 @@ def run_diags( opts ):
             directory = outdir + '/amwg1_output/'
             if opts['output']['table']:
                 table.get_data(directory)
-            table.write_plot_data(where=directory, fname=directory+'table_output')
+#jfp was            table.write_plot_data(where=directory, fname=directory+'table_output') 
+            table.write_plot_data(where=directory, fname=form_filename( form_file_rootname(
+                        sclass.number, [], 'table'), 'text' ) )
             continue
 
         # see if the user specified seasons are valid for this diagnostic
@@ -341,37 +344,29 @@ def run_diags( opts ):
 
                         # Do the work (reducing variables, etc)
                         res = plot.compute(newgrid=-1) # newgrid=0 for original grid, -1 for coarse
+                        # typically res is a list of uvc_simple_plotspec.  But an item might be a tuple.
 
                         if res is not None and len(res)>0 and type(res) is not str: # Success, we have some plots to plot
                             logger.info('--------------------------------- res is not none')
                             # Are we running from metadiags? If so, lets keep the name as simple as possible.
-                            if basename == '' and postname == '':
-                                fname = 'figure-set'+snum+'_'+r_fname+'_'+time+'_'+varid+'_plot'
-                                fname = os.path.join(outdir, fname)
-                            else:
-                                auxname =''
-                                if aux != 'default' and aux != None and aux != ' default': #?? why ' default'?
-                                    auxname = '_'+aux
-                                # don't add an extra underscore unnecessarily
-                                if postname != '':
-                                    pname = postname+'_'
-                                else:
-                                    pname = ''
 
-                                name = basename+'_'+time+'_'+varid+auxname+'_'+pname+r_fname
-                                fname = os.path.join(outdir,name)
+                            frname = form_file_rootname(
+                                snum, [varid], 'variable', dir=outdir, season=time, basen=basename,
+                                postn=postname, region=r_fname, aux=[aux] )
+                     
                             if opts['output']['plots'] == True:
-                                displayunits = opts.get('displayunits', None)
-                                makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=displayunits)
+                                displayunits = opts.get('displayunits', None)                                    
+                                makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits=displayunits)
                                 number_diagnostic_plots += 1
+
+                                #tracker.print_diff()
+
 
                             if opts['output']['xml'] == True:
                                 # Also, write the nc output files and xml.
                                 # Probably make this a command line option.
                                 if res.__class__.__name__ is 'uvc_composite_plotspec':
                                     resc = res
-                                    resc.title.replace('\n', ' ')
-                                    filenames = resc.write_plot_data("xml-NetCDF", outdir )
                                 else:
                                     #new kludge
                                     for PLOT in res:
@@ -380,7 +375,7 @@ def run_diags( opts ):
                                             if varid not in PLOT.title and time not in PLOT.title:
                                                 PLOT.title = varid + ' ' + time + ' ' + PLOT.title
                                     resc = uvc_composite_plotspec( res )
-                                    filenames = resc.write_plot_data("xml-NetCDF", outdir )
+                                filenames = resc.write_plot_data("xml-NetCDF", frname )
                                 logger.info("wrote plots %s to %s",resc.title, filenames)
 
                         elif res is not None:
@@ -388,36 +383,27 @@ def run_diags( opts ):
                             # it appears that the rest of this code is unnecessary.
                             # the hack to speedup amwg1 does not need this. It's simpler.
                             if type(res) is str:
-                                if aux == None:
-                                    auxstr = ''
-                                else:
-                                    auxstr = aux
-                                if aux != None and aux != '':
-                                    auxstr = '_'+auxstr
-                                if basename == '' and postname == '':
-                                    name = time+'_'+varid+auxstr+'-table.text'
-                                else:
-                                    name = basename+'_'+time+'_'+varid+auxstr+'-table.text'
-                                fname = os.path.join(outdir, name)
-                                logger.info('Creating file -----------------> %s ', fname)
-                                f = open(fname, 'w')
+                                f = open( form_filename( form_file_rootname(
+                                            'resstring', [varid], 'table', dir=outdir, season=time,
+                                                         basen=basename, postn=postname, region=r_fname, aux=aux ),
+                                                         'text' ))
                                 f.write(res)
                                 f.close()
                             else:
                                 # but len(res)==0, probably plot tables
                                 # eventually, education could get rid of the second clause here but I suspect not anytime soon.
                                 if opts['output']['table'] == True or res.__class__.__name__ is 'amwg_plot_set1':
-                                    logger.info('IN TABLES')
                                     resc = res
                                     if basename == '' and postname == '':
                                         where = outdir
                                         fname = ""
                                     else:
                                         where = ""
-                                        name = basename+'_'+time+'_'+r_fname+'-table.text'
-                                        fname = os.path.join(outdir,name)
-
-                                    logger.info( '-------> calling write_plot with where: %s, fname: %s',where, fname)
+                                        #jfp former fname code: name = basename+'_'+time+'_'+r_fname+'-table.text'
+                                        #jfp was fname = os.path.join(outdir,name)
+                                        fname = form_filename( form_file_rootname(
+                                            'res0', [], 'table', dir=outdir, season=time,
+                                            basen=basename, region=r_fname ), 'text' )
 
                                     filenames = resc.write_plot_data("text", where=where, fname=fname)
                                     number_diagnostic_plots += 1
@@ -430,7 +416,7 @@ def run_diags( opts ):
     logger.info("total number of (compound) diagnostic plots generated = %s", number_diagnostic_plots)
 
 
-def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=None):
+def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits=None):
     # need to add plot and pacakge for the amwg 11,12 special cases. need to rethink how to deal with that
     # At this loop level we are making one compound plot.  In consists
     # of "single plots", each of which we would normally call "one" plot.
@@ -441,7 +427,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
     # We are given the list of results from plot(), the 2 VCS canvases and a filename minus the last bit
     cdms2.setAutoBounds(True)   # makes the VCS-computed means the same as when we
     #                             compute means after calling genGenericBounds().
-    fnamebase = fname
+    frnamebase = frname
     nsingleplots = len(res)
     nsimpleplots = nsingleplots + sum([len(resr)-1 for resr in res if type(resr) is tuple])
     gms = nsimpleplots * [None]
@@ -477,10 +463,13 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
         logger.info("%s ", tmobs)
         logger.info('*************************************************')
 
-    # gmmobs provides the correct graphics methods to go with the templates.
+    # gmobs provides the correct graphics methods to go with the templates.
     # Unfortunately, for the moment we have to use rmr.presentation instead
     # (below) because it contains some information such as axis and vector
     # scaling which is not yet done as part of
+    # So, we are deleting gmobs:
+    gmobs = None
+    ovly  = None
 
     vcanvas2.clear()
     plotcv2 = False
@@ -490,9 +479,11 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
     for r,resr in enumerate(res):
         if resr is None:
             continue
-
         if type(resr) is not tuple:
+            more_id = resr.more_id
             resr = (resr, None )
+        else:
+            more_id = None
         vcanvas.clear()
         # ... Thus all members of resr and all variables of rsr will be
         # plotted in the same plot...
@@ -532,93 +523,37 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
                         var_id_save = seqgetattr(var,'id','')
                         seqsetattr( var,'id','' )
                     else:
-                        logger.debug('in the else clause.')
-                        logger.debug("%s: %s", type(var), var)
-
                         vname = var.id.replace(' ', '_')
                         var_id_save = var.id
                         var.id = ''         # If id exists, vcs uses it as a plot title
                         # and if id doesn't exist, the system will create one before plotting!
-
                     vname = vname.replace('/', '_')
-                    #### TODO - Do we need the old style very verbose names here?
-                    #### jfp, my answer: The right way to do it is that all the verbose information
-                    #### useful for file names should be constructed elsewhere, perhaps in a named tuple.
-                    #### The verbose names are formed, basically, by concatenating everything in that
-                    #### tuple.  What we should do here is to form file names by concatenating the
-                    #### most interesting parts of that tuple, whatever they are.  But it's important
-                    #### to use enough so that different plots will almost surely have different names.
-                    #### bes - it is also a requirement that filenames be reconstructable after-the-fact
-                    #### with only the dataset name (the dsname parameter probably) and the combination of
-                    #### seasons/vars/setnames/varopts/etc used to create the plot. Otherwise, there is no
-                    #### way for classic viewer to know the filename without lots more special casing.
+                else:
+                    vname = ''
+                #### TODO - Do we need the old style very verbose names here?
+                #### jfp, my answer: The right way to do it is that all the verbose information
+                #### useful for file names should be constructed elsewhere, perhaps in a named tuple.
+                #### The verbose names are formed, basically, by concatenating everything in that
+                #### tuple.  What we should do here is to form file names by concatenating the
+                #### most interesting parts of that tuple, whatever they are.  But it's important
+                #### to use enough so that different plots will almost surely have different names.
+                #### bes - it is also a requirement that filenames be reconstructable after-the-fact
+                #### with only the dataset name (the dsname parameter probably) and the combination of
+                #### seasons/vars/setnames/varopts/etc used to create the plot. Otherwise, there is no
+                #### way for classic viewer to know the filename without lots more special casing. 
 
-                    logger.info('vname: %s' , vname)
-                    # I *really* hate to do this. Filename should be handled better at a level above diags*.py
-                    special = ''
-                    if 'RMSE_' in vname:
-                        special='RMSE'
-                    if 'Standard_Deviation' in vname:
-                        special='STDDEV'
-                    if 'BIAS_' in vname:
-                        special='BIAS'
-                    if 'CORR_' in vname:
-                        special='CORR'
-                    if special != '':
-                        logger.info('--> Special: %s',special)
-                        if ('_1' in vname and '_2' in vname) or '_MAP' in vname.upper():
-                            fname = fnamebase+'-map.png'
-                        elif '_1' in vname and '_2' not in vname:
-                            fname = fnamebase+'-ds1.png'
-                        elif '_2' in vname and '_1' not in vname:
-                            fname = fnamebase+'-ds2.png'
-                        elif '_0' in vname and '_1' not in vname:
-                            fname = fnamebase+'-ds0.png'
-                        else:
-                            logger.warning('Couldnt determine filename; defaulting to just .png. vname: %s, fnamebase: %s', vname, fnamebase)
-                            fname = fnamebase+'.png'
-                    elif '_diff' in vname or ('_ft0_' in vname and '_ft1_' in vname) or\
-                         ('_ft1_' in vname and '_ft2_' in vname):
-                        fname = fnamebase+'-diff.png'
-                    elif '_obs' in vname:
-                        fname = fnamebase+'-obs.png'
-                    else:
-                        if '_ttest' in vname:
-                            if 'ft1' in vname and 'ft2' in vname:
-                                fname = fnamebase+'-model1_model2_ttest.png'
-                            elif 'ft1' in vname and 'ft2' not in vname:
-                                fname = fnamebase+'-model1_ttest.png'
-                            elif 'ft2' in vname and 'ft1' not in vname:
-                                fname = fnamebase+'-model2_ttest.png'
-                        elif '_ft1' in vname and '_ft2' not in vname:
-                            fname = fnamebase+'-model.png'
-                            # if we had switched to model1 it would affect classic view, etc.
-                        elif '_ft2' in vname and '_ft1' not in vname:
-                            fname = fnamebase+'-model2.png'
-                        elif '_ft0' in vname and '_ft1' not in vname:
-                            fname = fnamebase+'-model0.png'
-                        elif '_ft1' in vname and '_ft2' in vname:
-                            fname = fnamebase+'-model-model2.png'
-                        elif '_fts' in vname: # a special variable; typically like lmwg set3/6 or amwg set 2
-                            fname = fnamebase+'_'+vname.replace('_fts','')+'.png'
-                        else:
-                            logger.warning('Second spot - Couldnt determine filename; defaulting to just .png. vname: %s, fnamebase: %s', vname, fnamebase)
-                            fname = fnamebase+'.png'
+                fnamepng,fnamesvg,fnamepdf = form_filename( frnamebase, ('png','svg','pdf'), descr=True,
+                                                            vname=vname, more_id=more_id )
 
-                    logger.info("png file name: %s",fname)
-                    fnamesvg = fname[:-3]+'svg'
-                    logger.info("svg file name: %s", fnamesvg)
-                    fnamepdf = fname[:-3]+'pdf'
-                    logger.info("pdf file name: %s", fnamepdf)
-
-
+                # Beginning of section for building plots; this depends on the plot set!
                 if vcs.isscatter(rsr.presentation) or (plot.number in ['11', '12'] and package.upper() == 'AMWG'):
                     #pdb.set_trace()
                     if hasattr(plot, 'customizeTemplates'):
                         if hasattr(plot, 'replaceIds'):
                             var = plot.replaceIds(var)
                         tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)],
-                                                           data=var, varIndex=varIndex, graphicMethod=rsr_presentation, var=var )
+                                                           data=var, varIndex=varIndex, graphicMethod=rsr_presentation,
+                                                           var=var, iteration=ir )
                     if len(rsr.vars) == 1:
                         #scatter plot for plot set 12
                         subtitle = title
@@ -651,8 +586,8 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
                             yvar = var.flatten()
                             if hasattr(plot, 'customizeTemplates'):
                                 tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)],
-                                                                   data=[xvar.units, yvar.units], varIndex=varIndex, graphicMethod=rsr_presentation)
-
+                                                                   data=[xvar.units, yvar.units], varIndex=varIndex,
+                                                                   graphicMethod=rsr_presentation, var=var, iteration=ir)                            
                             # Scatter part from the single plots in set 11
                             vcanvas.plot(xvar, yvar,
                                          rsr_presentation, tm, bg=1, title=title,
@@ -761,7 +696,6 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
                     if hasattr(plot, 'customizeTemplates'):
                         tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)], data=var,
                                                            varIndex=varIndex, graphicMethod=rsr.presentation, var=var )
-
                     # Single plot
                     plot.vcs_plot(vcanvas, var(longitude=(-10,370)), rsr.presentation, tm, bg=1,
                                   title=title, source=rsr.source,
@@ -782,23 +716,24 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
 
                     except vcs.error.vcsError as e:
                         logger.exception("Making summary plot: %s", e)
-
                     #restore var before the KLUDGE!!!
-                    var = var_save
-                    if hasattr(var, 'model') and hasattr(var, 'obs'):
-                        delattr(var, 'model')
-                        delattr(var, 'obs')
-                    rsr.vars[varIndex] = var
+                    var = var_save                
 
-                    if var_id_save is not None:
-                        if type(var_id_save) is str:
-                            var.id = var_id_save
-                        else:
-                            for i in range(len(var_id_save)):
-                                var[i].id = var_id_save[i]
-                if savePNG:
-                    logger.info("WHEN PNGING WE GET: %s", vcanvas.getantialiasing())
-                    vcanvas.png( fname, ignore_alpha=True, metadata=provenance_dict() )
+                # End of section for building plots
+
+                if hasattr(var, 'model') and hasattr(var, 'obs'):
+                    delattr(var, 'model')
+                    delattr(var, 'obs')
+                rsr.vars[varIndex] = var
+
+                if var_id_save is not None:
+                    if type(var_id_save) is str:
+                        var.id = var_id_save
+                    else:
+                        for i in range(len(var_id_save)):
+                            var[i].id = var_id_save[i]
+            if savePNG:
+                    vcanvas.png( fnamepng, ignore_alpha=True, metadata=provenance_dict() )
                     # vcanvas.svg() doesn't support ignore_alpha or metadata keywords
                     vcanvas.svg( fnamesvg )
                     vcanvas.pdf( fnamepdf)
@@ -807,26 +742,19 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
             vname = varid.replace(' ', '_')
             vname = vname.replace('/', '_')
 
-        logger.info("vname in tmmobs: %s", vname)
-        if '_diff' in vname:
-            fname = fnamebase+'-combined-diff.png'
-        else:
-            fname = fnamebase+'-combined.png'
-        fnamesvg = fname[:-3]+'svg'
-        fnamepdf = fname[:-3]+'pdf'
+        fnamepng,fnamesvg,fnamepdf = form_filename( frnamebase, ('png','svg','pdf'),
+                                                    descr=True, vname=vname, more_id='combined' )
 
         if vcanvas2.backend.renWin is None:
-            logger.warning("no data to plot to file2: %s",fname)
+            logger.warning("no data to plot to file2: %s", fnamepng)
         else:
-            logger.info("writing png file2: %s", fname)
-            logger.info("WHEN PNGING TWO @ @ @ @ @ 2 WE GET : %s", vcanvas2.getantialiasing())
-            vcanvas2.png( fname , ignore_alpha = True, metadata=provenance_dict() )
-            logger.info("writing svg file2: %s", fnamesvg)
+            logger.info("writing png file2: %s",fnamepng)
+            vcanvas2.png( fnamepng , ignore_alpha = True, metadata=provenance_dict() )
+            logger.info("writing svg file2: %s",fnamesvg)
             # vcanvas2.svg() doesn't support ignore_alpha or metadata keywords
             vcanvas2.svg( fnamesvg )
-
-            logger.info("writing pdf file2: %s", fnamepdf)
-            vcanvas2.pdf( fnamepdf )
+            logger.info("writing pdf file2: %s",fnamepdf)
+            vcanvas2.pdf( fnamepdf )            
 
 if __name__ == '__main__':
     print "UV-CDAT Diagnostics, command-line version"
