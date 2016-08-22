@@ -726,18 +726,26 @@ class amwg_plot_set3(amwg_plot_plan,basic_id):
     # Here, the plotspec contains the variables themselves.
     name = '3 - Line Plots of  Zonal Means'
     number = '3'
+    IDtuple = namedtuple( "amwg_plot_set3_ID", "classid var season region" )
     def __init__( self, model, obs, varnom, seasonid=None, regionid=None, aux=None, names={},
                   plotparms=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varnom is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'."""
-        basic_id.__init__(self,varnom,seasonid)
         plot_plan.__init__(self,seasonid)
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
-        if regionid=="Global" or regionid=="global" or regionid is None:
+
+        if regionid.id()[0]=='rg':  # If the region is a class, extract a suitable string.
+            regionid = regionid.id()[1]
+        if regionid=="Global" or regionid=="global" or regionid is None or regionid is '':
             self._regionid="Global"
         else:
             self._regionid=regionid
+        if self._regionid=='Global':
+            idregionid = ''
+        else:
+            idregionid = self.regionid
         self.region = interpret_region(regionid)
+        basic_id.__init__(self,'set3',varnom,seasonid,idregionid)
 
         if not self.computation_planned:
             self.plan_computation( model, obs, varnom, seasonid, plotparms )
@@ -806,7 +814,8 @@ class amwg_plot_set3(amwg_plot_plan,basic_id):
         #z2var._vid = varnom+'_2'      # _vid is deprecated
         self.plot_a = basic_two_line_plot( zvar, z2var, plotparms=plotparms['model'] )
         ft1id,ft2id = filetable_ids(filetable1,filetable2)
-        vid = '_'.join([self._id[0],self._id[1],ft1id,ft2id,'diff'])
+        #vid = '_'.join([self._id[0],self._id[1],ft1id,ft2id,'diff'])
+        vid = underscore_join([self._id.classid,self._id.season,self._id.region,ft1id,ft2id,'diff'])
         # ... e.g. CLT_DJF_ft1_ft2_diff
         self.plot_b = one_line_diff_plot( zvar, z2var, vid, plotparms=plotparms['diff'] )
         self.computation_planned = True
@@ -862,7 +871,7 @@ class amwg_plot_set3(amwg_plot_plan,basic_id):
                 tm1.legend.y1  += 0.05
                 tm1.legend.y2   = tm1.legend.y1 + 0.01
                 if graphicMethod is not None:
-                    graphicMethod.linetype = "dash"
+                    # jfp not working!!!!... graphicMethod.linetype = "dash"
                     # The next repeated commands were necessary in Linux.
                     graphicMethod.linecolor = "red"
                     graphicMethod.linewidth = 2
@@ -1010,11 +1019,12 @@ class amwg_plot_set3(amwg_plot_plan,basic_id):
         plot_a_val = uvc_plotspec(
             [v for v in [zval,z2val] if v is not None],'Yxvsx', labels=[zunam,z2unam],
             #title=' '.join([self._id[0],self._id[1],self._id[2],zunam,'and',z2unam]),
-            title = ' '.join([self._id[0],self._id[1],self._id[2]]),
+            title = ' '.join([self._id.classid,self._id.var,self._id.season,self._id.region]),
             source = ','.join([ft1src,ft2src] ))
         plot_b_val = uvc_plotspec(
             [v for v in [zdiffval] if v is not None],'Yxvsx', labels=['difference'],
-            title=' '.join([self._id[0],self._id[1],self._id[2],'difference']),
+            #title=' '.join([self._id[0],self._id[1],self._id[2],'difference']),
+            title=' '.join([self._id.classid,self._id.var,self._id.season,self._id.region,'difference']),
             source = ','.join([ft1src,ft2src] ))
         # no, we don't want same range for values & difference! plot_a_val.synchronize_ranges(plot_b_val)
         plot_a_val.finalize()
@@ -1315,6 +1325,8 @@ class amwg_plot_set5and6(amwg_plot_plan):
         self.region = interpret_region(regionid)
 
         self.varid = varid
+        self.ft1nom,self.ft2nom = filetable_names(filetable1,filetable2)
+        self.ft1nickname,self.ft2nickname = filetable_nicknames(filetable1,filetable2)
         ft1id,ft2id = filetable_ids(filetable1,filetable2)
         self.reduced_variables = {}
         self.derived_variables = {}
@@ -1392,7 +1404,9 @@ class amwg_plot_set5and6(amwg_plot_plan):
                     vid = ps.dict_idid(vid1),
                     zvars = [vid1],  zfunc = (lambda z: z),
                     plottype = self.plottype,
-                    title = varnom + ' ' + seasonid + ' model ' + names['model'], 
+                    title = ' '.join([varnom, seasonid, 'model']),
+                    title1 = ' '.join([varnom, seasonid, 'model']),
+                    title2 = 'model',
                     source = names['model'], 
                     plotparms = plotparms[src2modobs(ft1src)])
                 all_plotnames.append(self.plot1_id)
@@ -1402,7 +1416,9 @@ class amwg_plot_set5and6(amwg_plot_plan):
                     vid = ps.dict_idid(vid1var),
                     zvars = [vid1var],  zfunc = (lambda z: z),
                     plottype = self.plottype,
-                    title = 'model variance ' + names['model'],
+                    title = ' '.join([varnom, seasonid, 'model variance']),
+                    title1 = ' '.join([varnom, seasonid, 'model variance']),
+                    title2 = 'model variance',
                     source = names['model'],
                     plotparms = plotparms[src2modobs(ft1src)] )
                 all_plotnames.append(self.plot1var_id)
@@ -1412,7 +1428,9 @@ class amwg_plot_set5and6(amwg_plot_plan):
                 vid = ps.dict_idid(vid2),
                 zvars = [vid2],  zfunc = (lambda z: z),
                 plottype = self.plottype,
-                title = 'observation ' + names['obs'],
+                title = ' '.join([varnom, seasonid, 'obs']),
+                title1 = ' '.join([varnom, seasonid, 'obs']),
+                title2 = "obs",
                 source = names['obs'], 
                 plotparms = plotparms[src2obsmod(ft2src)] )
             all_plotnames.append(self.plot2_id)
@@ -1422,10 +1440,12 @@ class amwg_plot_set5and6(amwg_plot_plan):
                 vid = ps.dict_id(varnom,'diff',seasonid,filetable1,filetable2),
                 zvars = [vid1,vid2],  zfunc = aminusb_2ax,
                 plottype = self.plottype,
-                title = 'difference',
+                title = ' '.join([varnom, seasonid, 'difference']),
+                title1 = ' '.join([varnom, seasonid, 'difference']),
+                title2 = 'difference',
                 plotparms = plotparms['diff'] )
-
             all_plotnames.append(self.plot3_id)
+
         if len(all_plotnames)>0:
             self.composite_plotspecs = {
                 self.plotall_id: all_plotnames
@@ -1470,7 +1490,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
 
         return varid, None
 
-    def plan_computation_level_surface( self, model, obs, varid, seasonid, aux=None, names={}, plotparms=None ):
+    def plan_computation_level_surface( self, model, obs, varnom, seasonid, aux=None, names={}, plotparms=None ):
         filetable1, filetable2 = self.getfts(model, obs)
         model_case = get_model_case(filetable1)
         """Set up for a lat-lon contour plot, averaged in other directions - except that if the
@@ -1484,7 +1504,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
 
         reduced_varlis = [
             reduced_variable(  # var=var(time,lev,lat,lon)
-                variableid=varid, filetable=filetable1, season=self.season,
+                variableid=varnom, filetable=filetable1, season=self.season,
                 reduction_function=(lambda x,vid: reduce_time_seasonal( x, self.season, self.region, vid ) ) ),
             reduced_variable(   # hyam=hyam(lev)
                 variableid='hyam', filetable=filetable1, season=self.season,
@@ -1495,15 +1515,15 @@ class amwg_plot_set5and6(amwg_plot_plan):
             reduced_variable(     # ps=ps(time,lat,lon)
                 variableid='PS', filetable=filetable1, season=self.season,
                 reduction_function=(lambda x,vid: reduce_time_seasonal( x, self.season, self.region, vid ) ) ) ]
-        # vid1 = varid+'_p_1'
-        # vidl1 = varid+'_lp_1'
-        vid1 = dv.dict_id(  varid, 'p', seasonid, filetable1)
-        vidl1 = dv.dict_id(varid, 'lp', seasonid, filetable1)
+        # vid1 = varnom+'_p_1'
+        # vidl1 = varnom+'_lp_1'
+        vid1 = dv.dict_id(  varnom, 'p', seasonid, filetable1)
+        vidl1 = dv.dict_id(varnom, 'lp', seasonid, filetable1)
         self.derived_variables = {
             vid1: derived_var( vid=vid1, inputs =
-                               [rv.dict_id(varid,seasonid,filetable1), rv.dict_id('hyam',seasonid,filetable1),
+                               [rv.dict_id(varnom,seasonid,filetable1), rv.dict_id('hyam',seasonid,filetable1),
                                 rv.dict_id('hybm',seasonid,filetable1), rv.dict_id('PS',seasonid,filetable1) ],
-            #was  vid1: derived_var( vid=vid1, inputs=[ varid+'_1', 'hyam_1', 'hybm_1', 'PS_1' ],
+            #was  vid1: derived_var( vid=vid1, inputs=[ varnom+'_1', 'hyam_1', 'hybm_1', 'PS_1' ],
                                func=verticalize ),
             vidl1: derived_var( vid=vidl1, inputs=[vid1],
                                 func=(lambda z,psl=pselect: select_lev(z,psl))) }
@@ -1511,12 +1531,14 @@ class amwg_plot_set5and6(amwg_plot_plan):
         ft1src = filetable1.source()
         self.single_plotspecs = {
             self.plot1_id: plotspec(
-                # was vid = varid+'_1',
+                # was vid = varnom+'_1',
                 # was zvars = [vid1],  zfunc = (lambda z: select_lev( z, pselect ) ),
                 vid = ps.dict_idid(vidl1),
                 zvars = [vidl1],  zfunc = (lambda z: z),
                 plottype = self.plottype,
-                title = varnom + ' ' + seasonid + '\n model',
+                title = ' '.join([varnom, seasonid, '\n model']),
+                title1 = ' '.join([varnom, seasonid, 'model']),
+                title2 = 'model',
                 source = names['model'],
                 plotparms = plotparms[src2modobs(ft1src)] ) }
            
@@ -1532,7 +1554,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
             # hybrid levels in use, convert to pressure levels
             reduced_varlis += [
                 reduced_variable(  # var=var(time,lev,lat,lon)
-                    variableid=varid, filetable=filetable2, season=self.season,
+                    variableid=varnom, filetable=filetable2, season=self.season,
                     reduction_function=(lambda x,vid: reduce_time_seasonal( x, self.season, self.region, vid ) ) ),
                 reduced_variable(   # hyam=hyam(lev)
                     variableid='hyam', filetable=filetable2, season=self.season,
@@ -1544,25 +1566,25 @@ class amwg_plot_set5and6(amwg_plot_plan):
                     variableid='PS', filetable=filetable2, season=self.season,
                     reduction_function=(lambda x,vid: reduce_time_seasonal( x, self.season, self.region, vid ) ) )
                 ]
-            #vid2 = varid+'_p_2'
-            #vidl2 = varid+'_lp_2'
-            vid2 = dv.dict_id( varid, 'p', seasonid, filetable2 )
+            #vid2 = varnom+'_p_2'
+            #vidl2 = varnom+'_lp_2'
+            vid2 = dv.dict_id( varnom, 'p', seasonid, filetable2 )
             vid2 = dv.dict_id( vards, 'lp', seasonid, filetable2 )
             self.derived_variables[vid2] = derived_var( vid=vid2, inputs=[
-                    rv.dict_id(varid,seasonid,filetable2), rv.dict_id('hyam',seasonid,filetable2),
+                    rv.dict_id(varnom,seasonid,filetable2), rv.dict_id('hyam',seasonid,filetable2),
                     rv.dict_id('hybm',seasonid,filetable2), rv.dict_id('PS',seasonid,filetable2) ],
                                                         func=verticalize )
             self.derived_variables[vidl2] = derived_var(
                 vid=vidl2, inputs=[vid2], func=(lambda z,psl=pselect: select_lev(z,psl) ) )
         else:
             # no hybrid levels, assume pressure levels.
-            #vid2 = varid+'_2'
-            #vidl2 = varid+'_lp_2'
-            vid2 = rv.dict_id(varid,seasonid,filetable2)
-            vidl2 = dv.dict_id( varid, 'lp', seasonid, filetable2 )
+            #vid2 = varnom+'_2'
+            #vidl2 = varnom+'_lp_2'
+            vid2 = rv.dict_id(varnom,seasonid,filetable2)
+            vidl2 = dv.dict_id( varnom, 'lp', seasonid, filetable2 )
             reduced_varlis += [
                 reduced_variable(  # var=var(time,lev,lat,lon)
-                    variableid=varid, filetable=filetable2, season=self.season,
+                    variableid=varnom, filetable=filetable2, season=self.season,
                     reduction_function=(lambda x,vid: reduce_time_seasonal( x, self.season, self.region, vid ) ) )
                 ]
             self.derived_variables[vidl2] = derived_var(
@@ -1575,19 +1597,23 @@ class amwg_plot_set5and6(amwg_plot_plan):
             ft2src = ''
         filterid = ft2src.split('_')[-1] #recover the filter id: kludge
         self.single_plotspecs[self.plot2_id] = plotspec(
-                #was vid = varid+'_2',
+                #was vid = varnom+'_2',
                 vid = ps.dict_idid(vidl2),
                 zvars = [vidl2],  zfunc = (lambda z: z),
                 plottype = self.plottype,
-                title = 'observation',
+                title = ' '.join([varnom,seasonid,'observation']),
+                title1 = ' '.join([varnom, seasonid, 'obs']),
+                title2 = 'obs',
                 source = names['obs'],
                 plotparms = plotparms[src2obsmod(ft2src)] )
         self.single_plotspecs[self.plot3_id] = plotspec(
-                #was vid = varid+'_diff',
-                vid = ps.dict_id(varid,'diff',seasonid,filetable1,filetable2),
+                #was vid = varnom+'_diff',
+                vid = ps.dict_id(varnom,'diff',seasonid,filetable1,filetable2),
                 zvars = [vidl1,vidl2],  zfunc = aminusb_2ax,
                 plottype = self.plottype,
-                title = 'difference',
+                title = ' '.join([varnom,seasonid,'difference']),
+                title1 = ' '.join([varnom, seasonid, 'difference']),
+                title2 = 'difference',
                 plotparms = plotparms['diff'] )
 #                zerocontour=-1 )
         self.composite_plotspecs = {
@@ -1595,7 +1621,8 @@ class amwg_plot_set5and6(amwg_plot_plan):
             }
         self.computation_planned = True
 
-    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
+    def customizeTemplates( self, templates, data=None, varIndex=None, graphicMethod=None, var=None,
+                            uvcplotspec=None ):
         """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
         
@@ -1608,20 +1635,31 @@ class amwg_plot_set5and6(amwg_plot_plan):
             graphicMethod.datawc_x1 = 0
         # UNtil Jonathas fixes this, we simply figure out the template number to get from what Jonathas gave us
         tm2 = cnvs1.gettemplate("plotset5_0_x_%s" % (tm2.name.split("_")[2]))
-        #more kludgy than ever before
-        #var seems to be the only way to get the required titles.
-        #I think this was a result of another kludge
+
         header = None
-        s = var.title.split(' ')
-        if len(s) == 4:
-            header = s[0] + ' ' + s[1]
-            var.title = s[2]
-            source = s[3]
-        elif len(s) == 2:
-            var.title = s[0]
-            source = s[1]
+        source = None
+        if uvcplotspec is None:  # old kludge, tries to extract information from var.title
+            logger.warning( "running old section of plot set 5 customizeTemplates because uvcplotspec==None" )
+            #more kludgy than ever before
+            #var seems to be the only way to get the required titles.
+            #I think this was a result of another kludge            s = var.title.split(' ')
+            if len(s) == 4:
+                header = s[0] + ' ' + s[1]
+                var.title = s[2]
+                source = s[3]
+            elif len(s) == 2:
+                var.title = s[0]
+                source = s[1]
+            else:
+                source = None
         else:
-            source = None
+            psid = uvcplotspec.id()
+            ftid = data.filetableid
+            #source = ftid.ftid         # source for simple plot, not used
+            source = uvcplotspec.source # None should work, but it doesn't right now.
+            #sourcenn = ftid.nickname   # not used at present
+            if tm2.title.y > 0.8:   # top of the compound plot, the only case where we want a header
+                header = ' '.join([psid.vars[0], psid.season])
 
         #pdb.set_trace()
 
@@ -1677,9 +1715,8 @@ class amwg_plot_set5and6(amwg_plot_plan):
         tm1.units.y       -= 0.01
         tm1.units.priority = 1
         
-        #for some reason the source is not being put on the combined graphic
-        #So I needed to create it from var.title and put it there. The only
-        #reason var is being passed is for some other kludge.
+        # For some reason the source is not being put on the combined graphic
+        # So put it there.
         if source is not None:
             text = cnvs2.createtext()
             text.string = source
