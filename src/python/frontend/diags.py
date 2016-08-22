@@ -787,8 +787,6 @@ def makeplots(res, vcanvas, vcanvas2, varid, fname, plot, package, displayunits=
                     try:
                         if tm2 is not None:
                             # Multiple plots on a page:
-                            title1 += 'spam'
-                            title2 += 'spam spam spam'
                             plot.vcs_plot( vcanvas2, var(longitude=(-10,370)), rsr.presentation, tm2, bg=1,
                                            title=title2, source=rsr.source,
                                            plotparms=getattr(rsr,'plotparms',None))#,
