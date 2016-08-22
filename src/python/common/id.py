@@ -102,3 +102,25 @@ def filetable_ids( filetable1, filetable2 ):
         else:
             ft2id  = filetable2._strid
         return ft1id,ft2id
+
+def filetable_names( filetable1, filetable2 ):
+        if filetable1 is None:
+            ft1id = ''
+        else:
+            ft1id  = filetable1._id.ftid
+        if filetable2 is None:
+            ft2id = ''
+        else:
+            ft2id  = filetable2._id.ftid
+        return ft1id,ft2id
+
+def filetable_nicknames( filetable1, filetable2 ):
+    if filetable1 is None:
+        ft1nn = ''
+    else:
+        ft1nn  = filetable1._id.nickname
+    if filetable2 is None:
+        ft2nn = ''
+    else:
+        ft2nn  = filetable2._id.nickname
+    return ft1nn,ft2nn
