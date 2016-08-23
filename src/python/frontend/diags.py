@@ -671,7 +671,13 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
                 else:
                     #pdb.set_trace()
                     # Set canvas colormap back to default color
-                    vcanvas2.setcolormap('bl_to_darkred')
+                    # Formerly we did it this way:
+                    #  vcanvas2.setcolormap('bl_to_darkred')
+                    # But that redraws everything already drawn before, and does it with the wrong title.
+                    # And it's a drag on performance.
+                    # All setcolormap() does is the following line, which we want; plus an
+                    # update() line which we don't want.
+                    vcanvas2.colormap = 'bl_to_darkred'
 
                     #check for units specified for display purposes
                     var_save = var.clone()
