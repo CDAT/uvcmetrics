@@ -671,7 +671,17 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
                 else:
                     #pdb.set_trace()
                     # Set canvas colormap back to default color
-                    vcanvas2.setcolormap('bl_to_darkred')
+                    # Formerly we did it this way:
+                    #  vcanvas2.setcolormap('bl_to_darkred')
+                    # But that redraws everything already drawn before, and does it with the wrong title.
+                    # And it's a drag on performance.
+                    # All setcolormap() does is the following line, which we want; plus an
+                    # update() line which we don't want.
+                    vcanvas2.colormap = 'bl_to_darkred'
+                    if plot.number in ['2','6']:
+                        # For these plot sets, the updated plot is different, and in the baselines.
+                        # So do this ugly thing or fail the automated tests:
+                        vcanvas2.update()
 
                     #check for units specified for display purposes
                     var_save = var.clone()
@@ -738,23 +748,22 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
                     vcanvas.svg( fnamesvg )
                     vcanvas.pdf( fnamepdf)
 
-        if tmmobs[0] is not None:  # If anything was plotted to vcanvas2
-            vname = varid.replace(' ', '_')
-            vname = vname.replace('/', '_')
+    if tmmobs[0] is not None:  # If anything was plotted to vcanvas2
+        vname = varid.replace(' ', '_')
+        vname = vname.replace('/', '_')
+    fnamepng,fnamesvg,fnamepdf = form_filename( frnamebase, ('png','svg','pdf'),
+                                                descr=True, vname=vname, more_id='combined' )
 
-        fnamepng,fnamesvg,fnamepdf = form_filename( frnamebase, ('png','svg','pdf'),
-                                                    descr=True, vname=vname, more_id='combined' )
-
-        if vcanvas2.backend.renWin is None:
-            logger.warning("no data to plot to file2: %s", fnamepng)
-        else:
-            logger.info("writing png file2: %s",fnamepng)
-            vcanvas2.png( fnamepng , ignore_alpha = True, metadata=provenance_dict() )
-            logger.info("writing svg file2: %s",fnamesvg)
-            # vcanvas2.svg() doesn't support ignore_alpha or metadata keywords
-            vcanvas2.svg( fnamesvg )
-            logger.info("writing pdf file2: %s",fnamepdf)
-            vcanvas2.pdf( fnamepdf )            
+    if vcanvas2.backend.renWin is None:
+        logger.warning("no data to plot to file2: %s", fnamepng)
+    else:
+        logger.info("writing png file2: %s",fnamepng)
+        vcanvas2.png( fnamepng , ignore_alpha = True, metadata=provenance_dict() )
+        logger.info("writing svg file2: %s",fnamesvg)
+        # vcanvas2.svg() doesn't support ignore_alpha or metadata keywords
+        vcanvas2.svg( fnamesvg )
+        logger.info("writing pdf file2: %s",fnamepdf)
+        vcanvas2.pdf( fnamepdf )            
 
 if __name__ == '__main__':
     print "UV-CDAT Diagnostics, command-line version"
