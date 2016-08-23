@@ -678,6 +678,10 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
                     # All setcolormap() does is the following line, which we want; plus an
                     # update() line which we don't want.
                     vcanvas2.colormap = 'bl_to_darkred'
+                    if plot.number in ['2','6']:
+                        # For these plot sets, the updated plot is different, and in the baselines.
+                        # So do this ugly thing or fail the automated tests:
+                        vcanvas2.update()
 
                     #check for units specified for display purposes
                     var_save = var.clone()
