@@ -1633,7 +1633,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
             graphicMethod.datawc_y1 = -90
             graphicMethod.datawc_x2 = 360
             graphicMethod.datawc_x1 = 0
-        # UNtil Jonathas fixes this, we simply figure out the template number to get from what Jonathas gave us
+        # Until Jonathas fixes this, we simply figure out the template number to get from what Jonathas gave us
         tm2 = cnvs1.gettemplate("plotset5_0_x_%s" % (tm2.name.split("_")[2]))
 
         header = None
