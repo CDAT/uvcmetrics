@@ -151,7 +151,8 @@ class amwg_plot_plan(plot_plan):
             invarnoms = svd.inputs()
             #print "dbg first round, invarnoms=",invarnoms
             #print "dbg filetable variables=",filetable.list_variables()
-            if len( set(invarnoms) - set(filetable.list_variables_incl_axes()) )<=0:
+            if len( (set(invarnoms) - set(filetable.list_variables_incl_axes()))
+                    - set(builtin_variables) )<=0:
                 func = svd._func
                 computable = True
                 break
@@ -201,7 +202,7 @@ class amwg_plot_plan(plot_plan):
                 availdict = { v.id()[1]:v for v in available }
                 inputs = [ availdict[v].id() for v in svd._inputs if v in availdict ] +\
                     [ v for v in svd._inputs if v in builtin_variables ]
-                if len( set(invarnoms) - set( availdict.keys() ))<=0:
+                if len( (set(invarnoms) - set( availdict.keys()) -set(builtin_variables) ))<=0:
                     computable = True
                     #print "dbg in second round, found",varnom,"computable by",func,"from",inputs
                     break
