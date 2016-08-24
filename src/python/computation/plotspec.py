@@ -14,7 +14,8 @@ logger = logging.getLogger(__name__)
 class derived_var(basic_id):
     IDtuple = namedtuple( "derived_var_ID", "classid var varmod season ft1 ft2 region" )
 
-    def __init__( self, vid, inputs=[], outputs=['output'], func=(lambda: None), special_values=None ):
+    def __init__( self, vid, inputs=[], outputs=['output'], func=(lambda: None), special_values=None,
+                  special_orders={} ):
         """Arguments:
         vid, an id for this dervied variable;
         func=function to compute values of this variable;
@@ -40,6 +41,10 @@ class derived_var(basic_id):
         # but this is what worked for me in land.
         #   -BES
         self._special = special_values
+        # Only example so far of "special_orders":  { 'T':'dontreduce' }
+        # which means that an input T should not be reduced as input variables usually are, before
+        # computing a derived variable .
+        self.special_orders = special_orders
     def inputs( self ):
         return self._inputs
     def derive( self, inpdict ):
@@ -149,7 +154,8 @@ class plotspec(basic_id):
         overplotline = False,
         levels = None,  # deprecated
         plotparms = None,
-        displayunits = None, #units to be used for display
+        displayunits = None, #units to be used for display,
+        more_id=None         # more information to identify the plot
         ):
         """Initialize a plotspec (plot specification).  Inputs are an id and plot type,
         and lists of x,y,z variables (as keys in the plotvars dictionary), functions to
@@ -238,7 +244,8 @@ class plotspec(basic_id):
         self.source = source
         self.overplotline = overplotline
         self.levels = levels
-        self.displayunits = displayunits 
+        self.displayunits = displayunits
+        self.more_id = more_id
 
     @classmethod
     def dict_id( cls, varid, varmod, seasonid, ft1, ft2=None, region='' ):

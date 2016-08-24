@@ -8,11 +8,13 @@ from metrics.fileio.filetable import *
 from metrics.fileio.findfiles import *
 from metrics.computation.reductions import *
 from metrics.packages.amwg import *
-from metrics.packages.amwg.derivations.vertical import *
 from metrics.computation.plotspec import plotspec, derived_var
 from metrics.common.version import version
 from metrics.common.utilities import *
+
 from metrics.packages.amwg.derivations import *
+from metrics.frontend.form_filenames import form_filename
+
 from pprint import pprint
 import cProfile
 import json
@@ -145,7 +147,13 @@ class uvc_composite_plotspec():
         for p in self.plots:
             p.finalize()
     def outfile( self, format='xml-NetCDF', where=""):
-        if len(self.title)<=0:
+        if not os.path.isdir(where):
+            # if it's not a directory, it's a filename (probably doesn't exist yet)
+            fname = where
+            if '.xml' not in fname:
+               fname = fname+'.xml'
+            return fname
+        elif len(self.title)<=0:
             fname = 'foo.xml'
         else:
             # the title join ends up with two spaces between fields. check for that first, then replace single spaces after.
@@ -165,7 +173,7 @@ class uvc_composite_plotspec():
             logger.warning("write_plot_data cannot recognize format name %s",format)
             logger.warning("will write a xml file pointing to NetCDF files.")
             format = "xml-NetCDF"
-            conents_format = "NetCDF"
+            contents_format = "NetCDF"
 
         filenames = []
         for p in self.plots:
@@ -210,7 +218,7 @@ class uvc_simple_plotspec(basic_id):
     def __init__(
         self, pvars, presentation, labels=[], title='', title1='', title2='', source='', ranges=None, overplotline=False,
         linetypes=['solid'], linecolors=[241], levels=None, plotparms=None, displayunits=None,
-        idinfo=None ):
+        more_id=None, idinfo=None ):
 
         pvars = [v for v in pvars if v is not None]
         if idinfo['season']=='JFMAMJJASOND': idinfo['season']='ANN'
@@ -313,6 +321,8 @@ class uvc_simple_plotspec(basic_id):
                         for ax in var.getDomain()[:] if ax is not None
                     }
         self.finalized = False
+        self.more_id = more_id
+
     def make_ranges(self, var):
 
         if 'xrange' in self.ranges.keys():
@@ -810,7 +820,19 @@ class uvc_simple_plotspec(basic_id):
         
     def outfile( self, format="", where="" ):
         """returns a filename for writing out this plot"""
-        if len(self.title)<=0:
+        if not os.path.isdir(where):
+            # if it's not a directory, it's a filename (probably incomplete and probably doesn't exist yet)
+            if where[-3:]=='.nc':
+                return where
+            else:
+                # Incomplete filename.  We may need to extract the final bits from a variable name.
+                if type(self.vars[0]) is tuple:  # typically, a vector plot
+                    varn = self.vars[0][0].id
+                else:
+                    varn = self.vars[0].id
+                if len(self.vars)>1:  where = where+'-combined'
+                return form_filename( where, 'nc', True, self.vars[0].id, more_id=self.more_id )
+        elif len(self.title)<=0:
             fname = 'foo.nc'
         else:
             # the title join ends up with two spaces between fields. check for that first, then replace single spaces after.

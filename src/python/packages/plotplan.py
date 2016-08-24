@@ -284,7 +284,8 @@ class plot_plan(object):
                 line2colors = [ps.z2linecolor]
 
             #get the levels and plot parameters
-            levels = ps.levels
+            levels = ps.levels  # deprecated
+            more_id = ps.more_id
             plotparms = getattr(ps,'plotparms',None)
                     
             regionid = self.region
@@ -308,7 +309,7 @@ class plot_plan(object):
                 plot_type_temp = ps.plottype
             self.plotspec_values[p] = uvc_simple_plotspec(
                 vars, plot_type_temp, labels, title, title1, title2, ps.source, ranges, overplotline, linetypes,
-                linecolors, levels, plotparms, idinfo={
+                linecolors, levels=levels, more_id=more_id, plotparms=plotparms, idinfo={
                     'vars':[getattr(self,'varid','')],'season':self._seasonid, 'region':regionid,
                     'ft1':getattr(self,'ft1nom',''), 'ft2':getattr(self,'ft2nom',''),
                     'ft1nn':getattr(self,'ft1nickname'), 'ft2nn':getattr(self,'ft2nickname') } )

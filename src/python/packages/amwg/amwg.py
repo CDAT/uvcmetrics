@@ -113,275 +113,77 @@ class AMWG(BasicDiagnosticGroup):
 
 class amwg_plot_plan(plot_plan):
     package = AMWG  # Note that this is a class not an object; also not a string.
-    # Standard variables are derived variables which are as general-interest as most dataset
-    # variables (which soon become reduced variables).  So it makes sense for all plot sets
-    # (for the physical realm) to share them.  We use the derived_var class here to
-    # contain their information ,i.e. inputs and how to compute.  But, if one be used, another
-    # derived_var object will have to be built using the full variable ids, including season
-    # and filetable information.
-    # standard_variables is a dict.  The key is a variable name and the value is a list of
-    # derived_var objects, each of which gives a way to compute the variable.  The first on the
-    # list is the preferred method.  Of course, if the variable be already available as data,
-    # then that is preferred over any computation.
-    standard_variables = {
-        # mass weighting, Jeff Painter based on communications from Susannah Burrows.
+    from atmos_derived_vars import *
 
-        # water cycle, Chris Terai:
-        'QFLX_LND':[derived_var(
-                vid='QFLX_LND', inputs=['QFLX','OCNFRAC'], outputs=['QFLX_LND'],
-                func=WC_diag_amwg.surface_maskvariable ),
-                    derived_var(
-                vid='QFLX_LND', inputs=['QFLX'], outputs=['QFLX_LND'],
-                func=(lambda x: x) ) ],  # assumes that QFLX is from a land-only dataset
-        'QFLX_OCN':[derived_var(
-                vid='QFLX_OCN', inputs=['QFLX','LANDFRAC'], outputs=['QFLX_OCN'],
-                func=WC_diag_amwg.surface_maskvariable ),
-                    derived_var(
-                vid='QFLX_OCN', inputs=['QFLX'], outputs=['QFLX_OCN'],
-                func=(lambda x: x) ) ],  # assumes that QFLX is from an ocean-only dataset
-        'EminusP':[derived_var(
-                vid='EminusP', inputs=['QFLX','PRECT'], outputs=['EminusP'],
-                func=aminusb_2ax )],  # assumes that QFLX,PRECT are time-reduced
-        'TMQ':[derived_var(
-                vid='TMQ', inputs=['PREH2O'], outputs=['TMQ'],
-                func=(lambda x:x))],
-        'WV_LIFETIME':[derived_var(
-                vid='WV_LIFETIME', inputs=['TMQ','PRECT'], outputs=['WV_LIFETIME'],
-                func=(lambda tmq,prect: wv_lifetime(tmq,prect)[0]) )],
-
-        # miscellaneous:
-        'PRECT':[derived_var(
-                vid='PRECT', inputs=['pr'], outputs=['PRECT'],
-                func=(lambda x:x)),
-                 derived_var(
-                vid='PRECT', inputs=['PRECC','PRECL'], outputs=['PRECT'],
-                func=(lambda a,b,units="mm/day": aplusb(a,b,units) ))],
-        'AODVIS':[derived_var(
-                vid='AODVIS', inputs=['AOD_550'], outputs=['AODVIS'],
-                func=(lambda x: setunits(x,'')) )],
-        # AOD normally has no units, but sometimes the units attribute is set anyway.
-        'TREFHT':[derived_var(
-                vid='TREFHT', inputs=['TREFHT_LAND'], outputs=['TREFHT'],
-                func=(lambda x: x) )],
-        'RESTOM':[derived_var(
-                vid='RESTOM', inputs=['FSNT','FLNT'], outputs=['RESTOM'],
-                func=aminusb )],   # RESTOM = net radiative flux
-
-        # clouds, Yuying Zhang:
-        'CLISCCP':[
-            derived_var(
-                # old style vid='CLISCCP', inputs=['FISCCP1_COSP','cosp_prs','cosp_tau'], outputs=['CLISCCP'],
-                # old style          func=uncompress_fisccp1 )
-                vid='CLISCCP', inputs=['FISCCP1_COSP'], outputs=['CLISCCP'],
-                func=(lambda x: x) )
-            ],
-         'CLDMED_VISIR':[derived_var(
-               vid='CLDMED_VISIR', inputs=['CLDMED'], outputs=['CLDMED_VISIR'],
-               func=(lambda x:x))],
-         'CLDTOT_VISIR':[derived_var(
-               vid='CLDTOT_VISIR', inputs=['CLDTOT'], outputs=['CLDTOT_VISIR'],
-               func=(lambda x:x))],
-         'CLDHGH_VISIR':[derived_var(
-               vid='CLDHGH_VISIR', inputs=['CLDHGH'], outputs=['CLDHGH_VISIR'],
-               func=(lambda x:x))],
-         'CLDLOW_VISIR':[derived_var(
-               vid='CLDLOW_VISIR', inputs=['CLDLOW'], outputs=['CLDLOW_VISIR'],
-               func=(lambda x:x))],
-
-        'CLDTOT_ISCCP':[
-            derived_var( vid='CLDTOT_ISCCP', inputs=['CLDTOT_ISCCPCOSP'], outputs=['CLDTOT_ISCCP'],
-                         func=(lambda x:x) ) ],
-        'CLDHGH_ISCCP':[
-            derived_var( vid='CLDHGH_ISCCP', inputs=['CLDHGH_ISCCPCOSP'], outputs=['CLDHGH_ISCCP'],
-                         func=(lambda x:x) ) ],
-        'CLDMED_ISCCP':[
-            derived_var( vid='CLDMED_ISCCP', inputs=['CLDMED_ISCCPCOSP'], outputs=['CLDMED_ISCCP'],
-                         func=(lambda x:x) ) ],
-        'CLDLOW_ISCCP':[
-            derived_var( vid='CLDLOW_ISCCP', inputs=['CLDLOW_ISCCPCOSP'], outputs=['CLDLOW_ISCCP'],
-                         func=(lambda x:x) ) ],
-        'CLMISR':[
-            derived_var( vid='CLMISR', inputs=['CLD_MISR'], outputs=['CLMISR'],
-                         func=(lambda x:x) ) ],
-        # Note: CLDTOT is different from CLDTOT_CAL, CLDTOT_ISCCPCOSP, etc.  But translating
-        # from one to the other might be better than returning nothing.  Also, I'm not so sure that
-        # reduce_prs_tau is producing the right answers, but that's a problem for later.
-	#1-ISCCP
-        'CLDTOT_TAU1.3_ISCCP':[
-            derived_var(
-                vid='CLDTOT_TAU1.3_ISCCP', inputs=['CLISCCP'], outputs=['CLDTOT_TAU1.3_ISCCP'],
-                func=(lambda clisccp: reduce_height_thickness( clisccp, None,None, 1.3,379) ) )
-            ],
-	#2-ISCCP
-        'CLDTOT_TAU1.3-9.4_ISCCP':[
-            derived_var(
-                vid='CLDTOT_TAU1.3-9.4_ISCCP', inputs=['CLISCCP'], outputs=['CLDTOT_TAU1.3-9.4_ISCCP'],
-                func=(lambda clisccp: reduce_height_thickness( clisccp, None,None, 1.3,9.4) ) )
-            ],
-	#3-ISCCP
-        'CLDTOT_TAU9.4_ISCCP':[
-            derived_var(
-                vid='CLDTOT_TAU9.4_ISCCP', inputs=['CLISCCP'], outputs=['CLDTOT_TAU9.4_ISCCP'],
-                func=(lambda clisccp: reduce_height_thickness( clisccp, None,None, 9.4,379) ) )
-            ],
-	#1-MODIS
-        'CLDTOT_TAU1.3_MODIS':[
-            derived_var(
-                vid='CLDTOT_TAU1.3_MODIS', inputs=['CLMODIS'], outputs=['CLDTOT_TAU1.3_MODIS'],
-                func=(lambda clmodis: reduce_height_thickness( clmodis, None,None, 1.3,379 ) ) )
-            ],
-	#2-MODIS
-        'CLDTOT_TAU1.3-9.4_MODIS':[
-            derived_var(
-                vid='CLDTOT_TAU1.3-9.4_MODIS', inputs=['CLMODIS'], outputs=['CLDTOT_TAU1.3-9.4_MODIS'],
-                func=(lambda clmodis: reduce_height_thickness( clmodis, None,None, 1.3,9.4 ) ) )
-            ],
-	#3-MODIS
-        'CLDTOT_TAU9.4_MODIS':[
-            derived_var(
-                vid='CLDTOT_TAU9.4_MODIS', inputs=['CLMODIS'], outputs=['CLDTOT_TAU9.4_MODIS'],
-                func=(lambda clmodis: reduce_height_thickness( clmodis, None,None, 9.4,379 ) ) )
-            ],
-	#4-MODIS
-        'CLDHGH_TAU1.3_MODIS':[
-            derived_var(
-                vid='CLDHGH_TAU1.3_MODIS', inputs=['CLMODIS'], outputs=['CLDHGH_TAU1.3_MODIS'],
-                func=(lambda clmodis: reduce_height_thickness( clmodis, 0,440, 1.3,379 ) ) )
-            ],
-	#5-MODIS
-        'CLDHGH_TAU1.3-9.4_MODIS':[
-            derived_var(
-                vid='CLDHGH_TAU1.3-9.4_MODIS', inputs=['CLMODIS'], outputs=['CLDHGH_TAU1.3-9.4_MODIS'],
-                #func=(lambda clmodis: reduce_prs_tau( clmodis( modis_prs=(0,440), modis_tau=(1.3,9.4) ))) )
-                func=(lambda clmodis: reduce_height_thickness(
-                        clmodis, 0,440, 1.3,9.4) ) )
-            ],
-	#6-MODIS
-        'CLDHGH_TAU9.4_MODIS':[
-            derived_var(
-                vid='CLDHGH_TAU9.4_MODIS', inputs=['CLMODIS'], outputs=['CLDHGH_TAU9.4_MODIS'],
-                func=(lambda clmodis: reduce_height_thickness( clmodis, 0,440, 9.4,379) ) )
-            ],
-	#1-MISR
-        'CLDTOT_TAU1.3_MISR':[
-            derived_var(
-                vid='CLDTOT_TAU1.3_MISR', inputs=['CLMISR'], outputs=['CLDTOT_TAU1.3_MISR'],
-                func=(lambda clmisr: reduce_height_thickness( clmisr, None,None, 1.3,379) ) )
-            ],
-	#2-MISR
-        'CLDTOT_TAU1.3-9.4_MISR':[
-            derived_var(
-                vid='CLDTOT_TAU1.3-9.4_MISR', inputs=['CLMISR'], outputs=['CLDTOT_TAU1.3-9.4_MISR'],
-                func=(lambda clmisr: reduce_height_thickness( clmisr, None,None, 1.3,9.4) ) )
-            ],
-	#3-MISR
-        'CLDTOT_TAU9.4_MISR':[
-            derived_var(
-                vid='CLDTOT_TAU9.4_MISR', inputs=['CLMISR'], outputs=['CLDTOT_TAU9.4_MISR'],
-                func=(lambda clmisr: reduce_height_thickness( clmisr, None,None, 9.4,379) ) )
-            ],
-	#4-MISR
-        'CLDLOW_TAU1.3_MISR':[
-            derived_var(
-                vid='CLDLOW_TAU1.3_MISR', inputs=['CLMISR'], outputs=['CLDLOW_TAU1.3_MISR'],
-                func=(lambda clmisr, h0=0,h1=3,t0=1.3,t1=379: reduce_height_thickness(
-                        clmisr, h0,h1, t0,t1) ) )
-            ],
-	#5-MISR
-        'CLDLOW_TAU1.3-9.4_MISR':[
-            derived_var(
-                vid='CLDLOW_TAU1.3-9.4_MISR', inputs=['CLMISR'], outputs=['CLDLOW_TAU1.3-9.4_MISR'],
-                func=(lambda clmisr, h0=0,h1=3, t0=1.3,t1=9.4: reduce_height_thickness( clmisr, h0,h1, t0,t1) ) )
-                #func=(lambda clmisr, h0=0,h1=6, t0=2,t1=4: reduce_height_thickness( clmisr, h0,h1, t0,t1) ) )
-            ],
-	#6-MISR
-        'CLDLOW_TAU9.4_MISR':[
-            derived_var(
-                vid='CLDLOW_TAU9.4_MISR', inputs=['CLMISR'], outputs=['CLDLOW_TAU9.4_MISR'],
-                func=(lambda clmisr, h0=0,h1=3, t0=9.4,t1=379: reduce_height_thickness(
-                        clmisr, h0,h1, t0,t1) ) )
-            ],
-
-        'TGCLDLWP':[derived_var(
-                vid='TGCLDLWP', inputs=['TGCLDLWP_OCEAN'], outputs=['TGCLDLWP'],
-                func=(lambda x: x) ) ],
-        #...end of clouds, Yuying Zhang
-
-        # To compare LHFLX and QFLX, need to unify these to a common variable
-        # e.g. LHFLX (latent heat flux in W/m^2) vs. QFLX (evaporation in mm/day).
-        # The conversion functions are defined in qflx_lhflx_conversions.py.
-        # [SMB: 25 Feb 2015]
-        'LHFLX':[derived_var(
-                vid='LHFLX', inputs=['QFLX'], outputs=['LHFLX'],
-                func=(lambda x: x) ) ],
-        'QFLX':[derived_var(
-                vid='QFLX', inputs=['LHFLX'], outputs=['QFLX'],
-                func=(lambda x: x) ) ]
-        }
-    @staticmethod
-    def _list_variables( model, obs ):
-        return amwg_plot_plan.package._list_variables( model, obs, "amwg_plot_plan" )
-    @staticmethod
-    def _all_variables( model, obs ):
-        return amwg_plot_plan.package._all_variables( model, obs, "amwg_plot_plan" )
     @classmethod
-    def stdvar2var( cls, varnom, filetable, season, reduction_function, recurse=True ):
+    def commvar2var( cls, varnom, filetable, season, reduction_function, recurse=True,
+                    builtin_variables=[] ):
         """From a variable name, a filetable, and a season, this finds the variable name in
-        standard_variables. If it's there, this method generates a variable as an instance
+        common_derived_variables. If it's there, this method generates a variable as an instance
         of reduced_variable or derived_var, which represents the variable and how to compute it
         from the data described by the filetable.
-        Inputs are the variable name (e.g. FLUT, TREFHT), a filetable, a season, and (important!)
-        a reduction function which reduces data variables to reduced variables prior to computing
-        the variable specified by varnom.
+        Inputs include the variable name (e.g. FLUT, TREFHT), a filetable, a season, and
+        (important!) a reduction function which reduces data variables to reduced variables prior
+        to computing the variable specified by varnom.  Optionally you can supply a list of
+        built-in variable names.  These variables are not reduced_variable or derived_variable
+        objects.  They are put into a plot_plan object's self.variable_values when it is
+        constructed.  Currently the only one available is 'seasonid' and is used when the
+        season is needed to compute a variable's value.
         If successful, this will return (i) a variable id for varnom, including filetable and
         season; it is the id of the first item in the returned list of derived variables.
-         (ii) a list of reduced_variables needed for computing varnom.  For
+        (ii) a list of reduced_variables needed for computing varnom.  For
         each such reduced variable rv, it may be placed in a dictionary using rv.id() as its key.
         (iii) a list of derived variables - normally just the one representing varnom, but
         in more complicated situations (which haven't been implemented yet) it may be longer.
         For a member of the list dv, dv.id() is a suitable dictionary key.
-        If unsuccessful, this will return None,None,None.
+        If unsuccessful, this will return None,[],[].
         """
         if filetable is None:
             return None,[],[]
-        #if varnom not in amwg_plot_plan.standard_variables:
-        if varnom not in cls.standard_variables:
+        #if varnom not in amwg_plot_plan.common_derived_variables:
+        if varnom not in cls.common_derived_variables:
             return None,[],[]
         computable = False
         rvs = []
         dvs = []
-        #print "dbg in stdvar2var to compute varnom=",varnom,"from filetable=",filetable
-        for svd in cls.standard_variables[varnom]:  # loop over ways to compute varnom
+        #print "dbg in commvar2var to compute varnom=",varnom,"from filetable=",filetable
+        for svd in cls.common_derived_variables[varnom]:  # loop over ways to compute varnom
             invarnoms = svd.inputs()
             #print "dbg first round, invarnoms=",invarnoms
             #print "dbg filetable variables=",filetable.list_variables()
-            if len( set(invarnoms) - set(filetable.list_variables_incl_axes()) )<=0:
+            if len( (set(invarnoms) - set(filetable.list_variables_incl_axes()))
+                    - set(builtin_variables) )<=0:
                 func = svd._func
                 computable = True
                 break
         if computable:
             #print "dbg",varnom,"is computable by",func,"from..."
             for ivn in invarnoms:
-                #print "dbg   computing reduced variable from input variableid=ivn=",ivn
-                rv = reduced_variable( variableid=ivn, filetable=filetable, season=season,
-                                       reduction_function=reduction_function )
+                if ivn in svd.special_orders and svd.special_orders[ivn]=='dontreduce':
+                    # The computation requires the full variable, not the usual reduced form.
+                    # Note that we're not yet handling this case for recursive calculations (the
+                    # next loop below), because we have no need, hence no test case.
+                    rv = reduced_variable( variableid=ivn, filetable=filetable, season=season,
+                                           reduction_function=(lambda x,vid:x) )
+                else:
+                    rv = reduced_variable( variableid=ivn, filetable=filetable, season=season,
+                                           reduction_function=reduction_function )
                 #print "dbg   adding reduced variable rv=",rv
                 rvs.append(rv)
 
-            #print "dbg",varnom,"is not directly computable"
-            pass
         available = rvs + dvs
         availdict = { v.id()[1]:v for v in available }
-        inputs = [ availdict[v].id() for v in svd._inputs if v in availdict]
+        inputs = [ availdict[v].id() for v in svd._inputs if v in availdict ] +\
+            [ v for v in svd._inputs if v in builtin_variables ]
         #print "dbg1 rvs ids=",[rv.id() for rv in rvs]
         if not computable and recurse==True:
             # Maybe the input variables are themselves computed.  We'll only do this one
             # level of recursion before giving up.  This is enough to do a real computation
-            # plus some variable renamings via standard_variables.
+            # plus some variable renamings via common_derived_variables.
             # Once we have a real system for handling name synonyms, this loop can probably
-            # be dispensed with.  If we well never have such a system, then the above loop
+            # be dispensed with.  If we will never have such a system, then the above loop
             # can be dispensed with.
-            for svd in cls.standard_variables[varnom]:  # loop over ways to compute varnom
+            for svd in cls.common_derived_variables[varnom]:  # loop over ways to compute varnom
                 invarnoms = svd.inputs()
                 for invar in invarnoms:
                     if invar in filetable.list_variables_incl_axes():
@@ -389,39 +191,48 @@ class amwg_plot_plan(plot_plan):
                                                reduction_function=reduction_function )
                         rvs.append(rv)
                     else:
-                        if invar not in cls.standard_variables:
+                        if invar not in cls.common_derived_variables:
                             break
                         dummy,irvs,idvs =\
-                            cls.stdvar2var( invar, filetable, season, reduction_function, recurse=False )
+                            cls.commvar2var( invar, filetable, season, reduction_function, recurse=False )
                         rvs += irvs
                         dvs += idvs
                 func = svd._func
                 available = rvs + dvs
                 availdict = { v.id()[1]:v for v in available }
-                inputs = [ availdict[v].id() for v in svd._inputs if v in availdict]
-                computable = True
-                #print "dbg in second round, found",varnom,"computable by",func,"from",inputs
-                break
+                inputs = [ availdict[v].id() for v in svd._inputs if v in availdict ] +\
+                    [ v for v in svd._inputs if v in builtin_variables ]
+                if len( (set(invarnoms) - set( availdict.keys()) -set(builtin_variables) ))<=0:
+                    computable = True
+                    #print "dbg in second round, found",varnom,"computable by",func,"from",inputs
+                    break
         if len(rvs)<=0:
             logger.warning("no inputs found for %s in filetable %s",varnom, filetable.id())
-            logger.warning("filetable source files= %s %s",filetable._filelist[0:10])
+            logger.warning("filetable source files= %s",filetable._filelist[0:10])
             logger.warning("need inputs %s",svd.inputs())
             return None,[],[]
             #raise DiagError( "ERROR, don't have %s, and don't have sufficient data to compute it!"\
-            #                     % varnom )
+                #                     % varnom )
         if not computable:
-            logger.debug("DEBUG: standard variable %s is not computable", varnom)
+            logger.debug("DEBUG: comm. derived variable %s is not computable", varnom)
             logger.debug( "need inputs %s" ,svd.inputs())
             logger.debug("found inputs %s",([rv.id() for rv in rvs]+[drv.id() for drv in dvs]))
             return None,[],[]
         seasonid = season.seasons[0]
         vid = derived_var.dict_id( varnom, '', seasonid, filetable )
-        #print "dbg stdvar is making a new derived_var, vid=",vid,"inputs=",inputs
+        #print "dbg commvar2var is making a new derived_var, vid=",vid,"inputs=",inputs
         #print "dbg function=",func
-        #jfp was newdv = derived_var( vid=vid, inputs=[rv.id() for rv in rvs], func=func )
         newdv = derived_var( vid=vid, inputs=inputs, func=func )
         dvs.append(newdv)
+        #print "dbg2 returning newdv.id=",newdv.id(),"rvs=",rvs,"dvs=",dvs
         return newdv.id(), rvs, dvs
+
+    @staticmethod
+    def _list_variables( model, obs ):
+        return amwg_plot_plan.package._list_variables( model, obs, "amwg_plot_plan" )
+    @staticmethod
+    def _all_variables( model, obs ):
+        return amwg_plot_plan.package._all_variables( model, obs, "amwg_plot_plan" )
 
 # plot set classes in other files:
 from metrics.packages.amwg.amwg1 import *
@@ -551,6 +362,7 @@ class amwg_plot_set2(amwg_plot_plan):
                 plottype = self.plottype,
                 title = 'CAM and NCEP HEAT_TRANSPORT GLOBAL',
                 source = ft1src,
+                more_id = 'Global',
                 plotparms = plotparms[src2modobs(ft1src)] ),
             'CAM_NCEP_HEAT_TRANSPORT_PACIFIC': plotspec(
                 vid='CAM_NCEP_HEAT_TRANSPORT_PACIFIC',
@@ -561,6 +373,7 @@ class amwg_plot_set2(amwg_plot_plan):
                 plottype = self.plottype,
                 title = 'CAM and NCEP HEAT_TRANSPORT PACIFIC',
                 source = ft1src,
+                more_id = 'Pacific',
                 plotparms = plotparms[src2modobs(ft1src)] ),
             'CAM_NCEP_HEAT_TRANSPORT_ATLANTIC': plotspec(
                 vid='CAM_NCEP_HEAT_TRANSPORT_ATLANTIC',
@@ -571,6 +384,7 @@ class amwg_plot_set2(amwg_plot_plan):
                 plottype = self.plottype ,
                 title = 'CAM and NCEP HEAT_TRANSPORT ATLANTIC',
                 source = ft1src,
+                more_id = 'Atlantic',
                 plotparms = plotparms[src2modobs(ft1src)] ),
             'CAM_NCEP_HEAT_TRANSPORT_INDIAN': plotspec(
                 vid='CAM_NCEP_HEAT_TRANSPORT_INDIAN',
@@ -581,6 +395,7 @@ class amwg_plot_set2(amwg_plot_plan):
                 plottype = self.plottype,
                 title = 'CAM and NCEP HEAT_TRANSPORT INDIAN',
                 source = ft1src,
+                more_id = 'Indian',
                 plotparms = plotparms[src2modobs(ft1src)] ),
             }
         self.composite_plotspecs = {
@@ -757,15 +572,15 @@ class amwg_plot_set3(amwg_plot_plan,basic_id):
         listvars.sort()
         return listvars
     @staticmethod
-    def _all_variables( model, obs, use_standard_vars=True ):
+    def _all_variables( model, obs, use_common_derived_vars=True ):
         """returns a dict of varname:varobject entries"""
         allvars = amwg_plot_plan.package._all_variables( model, obs, "amwg_plot_plan" )
-        if use_standard_vars:
-            # Now we add varname:basic_plot_variable for all standard_variables.
+        if use_common_derived_vars:
+            # Now we add varname:basic_plot_variable for all common_derived_variables.
             # This needs work because we don't always have the data needed to compute them...
             # BTW when this part is done better, it should (insofar as it's reasonable) be moved to
             # amwg_plot_plan and shared by all AMWG plot sets.
-            for varname in amwg_plot_plan.standard_variables.keys():
+            for varname in amwg_plot_plan.common_derived_variables.keys():
                 allvars[varname] = basic_plot_variable
         return allvars
     def plan_computation( self, model, obs, varnom, seasonid, plotparms ):
@@ -777,8 +592,8 @@ class amwg_plot_set3(amwg_plot_plan,basic_id):
                 filetable=filetable1, season=self.season, region=self.region,
                 reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,self.season,self.region,vid=vid)) )
             self.reduced_variables[zvar._strid] = zvar
-        elif varnom in self.standard_variables.keys():
-                    zvar,rvs,dvs = self.stdvar2var(
+        elif varnom in self.common_derived_variables.keys():
+                    zvar,rvs,dvs = self.commvar2var(
                         varnom, filetable1, self.season,\
                             (lambda x,vid=None:
                                  reduce2lat_seasonal(x, self.season, self.region, vid=vid) ))
@@ -798,8 +613,8 @@ class amwg_plot_set3(amwg_plot_plan,basic_id):
                 filetable=filetable2, season=self.season, region=self.region,
                 reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,self.season,self.region,vid=vid)) )
             self.reduced_variables[z2var._strid] = z2var
-        elif varnom in self.standard_variables.keys():
-                    z2var,rvs,dvs = self.stdvar2var(
+        elif varnom in self.common_derived_variables.keys():
+                    z2var,rvs,dvs = self.commvar2var(
                         varnom, filetable2, self.season,\
                             (lambda x,vid:
                                  reduce2latlon_seasonal(x, self.season, self.region, vid) ))
@@ -875,6 +690,7 @@ class amwg_plot_set3(amwg_plot_plan,basic_id):
                     # The next repeated commands were necessary in Linux.
                     graphicMethod.linecolor = "red"
                     graphicMethod.linewidth = 2
+
                 data.id = 'obs'
             else:
                 if type(min(data)) is float:
@@ -1260,20 +1076,17 @@ class amwg_plot_set4and4A(amwg_plot_plan):
 
         return tm1, tm2
     def _results(self,newgrid=0):
-        #pdb.set_trace()
         results = plot_plan._results(self,newgrid)
         if results is None:
-            print "WARNING, AMWG plot set 4 found nothing to plot"
+            logger.warning("AMWG plot set 4 found nothing to plot")
             return None
         psv = self.plotspec_values
         if self.plot1_id in psv and self.plot2_id in psv and\
                 psv[self.plot1_id] is not None and psv[self.plot2_id] is not None:
             psv[self.plot1_id].synchronize_ranges(psv[self.plot2_id])
         else:
-            print "WARNING not synchronizing ranges for",self.plot1_id,"and",self.plot2_id
+            logger.warning("not synchronizing ranges for %s and %s", self.plot1_id,self.plot2_id )
         for key,val in psv.items():
-            #print key, val
-            #pdb.set_trace()
             if type(val) is not list: val=[val]
             for v in val:
                 if v is None: continue
@@ -1346,7 +1159,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
         listvars.sort()
         return listvars
     @staticmethod
-    def _all_variables( model, obs, use_standard_vars=True ):
+    def _all_variables( model, obs, use_common_derived_vars=True ):
         """returns a dict of varname:varobject entries"""
         allvars = amwg_plot_plan.package._all_variables( model, obs, "amwg_plot_plan" )
         # ...this is what's in the data.  varname:basic_plot_variable
@@ -1355,12 +1168,12 @@ class amwg_plot_set5and6(amwg_plot_plan):
             allvars[varname] = level_variable_for_amwg_set5
             # ...this didn't add more variables, but changed the variable's class
             # to indicate that you can specify a level for it
-        if use_standard_vars:
-            # Now we add varname:basic_plot_variable for all standard_variables.
+        if use_common_derived_vars:
+            # Now we add varname:basic_plot_variable for all common_derived_variables.
             # This needs work because we don't always have the data needed to compute them...
             # BTW when this part is done better, it should (insofar as it's reasonable) be moved to
             # amwg_plot_plan and shared by all AMWG plot sets.
-            for varname in amwg_plot_plan.standard_variables.keys():
+            for varname in amwg_plot_plan.common_derived_variables.keys():
                 allvars[varname] = basic_plot_variable
         return allvars
     def plan_computation( self, model, obs, varid, seasonid, aux, names, plotparms ):
@@ -1376,8 +1189,8 @@ class amwg_plot_set5and6(amwg_plot_plan):
         if varnom in filetable1.list_variables():
             vid1,vid1var = self.vars_normal_contours(
                 filetable1, varnom, seasonid, aux=None )
-        elif varnom in self.standard_variables.keys():
-            vid1,vid1var = self.vars_stdvar_normal_contours(
+        elif varnom in self.common_derived_variables.keys():
+            vid1,vid1var = self.vars_commdervar_normal_contours(
                 filetable1, varnom, seasonid, aux=None )
         else:
             logger.error("variable %s not found in and cannot be computed from %s",varnom, filetable1)
@@ -1385,8 +1198,8 @@ class amwg_plot_set5and6(amwg_plot_plan):
         if filetable2 is not None and varnom in filetable2.list_variables():
             vid2,vid2var = self.vars_normal_contours(
                 filetable2, varnom, seasonid, aux=None )
-        elif varnom in self.standard_variables.keys():
-            vid2,vid2var = self.vars_stdvar_normal_contours(
+        elif varnom in self.common_derived_variables.keys():
+            vid2,vid2var = self.vars_commdervar_normal_contours(
                 filetable2, varnom, seasonid, aux=None )
         else:
             vid2,vid2var = None,None
@@ -1468,19 +1281,22 @@ class amwg_plot_set5and6(amwg_plot_plan):
         vid = rv.dict_id( varnom, seasonid, filetable )
         vidvar = rv.dict_id( varnom+'_var', seasonid, filetable ) # variance
         return vid, vidvar
-    def vars_stdvar_normal_contours( self, filetable, varnom, seasonid, aux=None ):
+    def vars_commdervar_normal_contours( self, filetable, varnom, seasonid, aux=None ):
         """Set up for a lat-lon contour plot, as in plot set 5.  Data is averaged over all other
         axes.  The variable given by varnom is *not* a data variable suitable for reduction.  It is
-        a standard_variable.  Its inputs will be reduced, then it will be set up as a derived_var.
+        a common_derived_variable.  Its inputs will be reduced, then it will be set up as a
+        derived_var.
         """
-        varid,rvs,dvs = self.stdvar2var(
+        varid,rvs,dvs = self.commvar2var(
             varnom, filetable, self.season,\
                 (lambda x,vid:
                      reduce2latlon_seasonal(x, self.season, self.region, vid, exclude_axes=[
                         'isccp_prs','isccp_tau','cosp_prs','cosp_tau',
                         'modis_prs','modis_tau','cosp_tau_modis',
-                        'misr_cth','misr_tau','cosp_htmisr']) ))
+                        'misr_cth','misr_tau','cosp_htmisr']) ),
         #            ... isccp_prs, isccp_tau etc. are used for cloud variables and need special treatment
+            builtin_variables=self.variable_values.keys()
+            )
         if varid is None:
             return None,None
         for rv in rvs:
@@ -1666,7 +1482,6 @@ class amwg_plot_set5and6(amwg_plot_plan):
         tm1.yname.priority  = 1
         tm1.xname.priority  = 1
         tm1.legend.priority = 1
-
         # Fix units if needed
         if data is not None:
             if (getattr(data, 'units', '') == ''):
@@ -1734,7 +1549,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
             text.height = 16
             text.halign = 1
             cnvs2.plot(text, bg=1)  
-
+        #pdb.set_trace()
         try:
             #this is for the output of RMSE and CORRELATION
             tm1, tm2 = self.extraCustomizeTemplates((cnvs1, tm1), (cnvs2, tm2), var=var)
@@ -1756,7 +1571,10 @@ class amwg_plot_set5and6(amwg_plot_plan):
             for v in val:
                 if v is None: continue
                 v.finalize()
-        return self.plotspec_values[self.plotall_id]
+        if self.plotall_id in self.plotspec_values:
+            return self.plotspec_values[self.plotall_id]
+        else:
+            return None
 
 def get_textobject(t,att,text):
     obj = vcs.createtext(Tt_source=getattr(t,att).texttable,To_source=getattr(t,att).textorientation)
@@ -1793,7 +1611,6 @@ class amwg_plot_set5(amwg_plot_set5and6):
                 #convert to the units specified in the default levels dictionay
                 displayunits = default_levels[self.varid].get('displayunits', None)
                 if displayunits is not None and var.model is not None and var.obs is not None:
-                    #print displayunits, var.model.units, var.obs.units
                     var.model = scale_data( displayunits, var.model)
                     var.obs   = scale_data( displayunits, var.obs) 
 
@@ -1848,7 +1665,7 @@ class amwg_plot_set6(amwg_plot_plan):
     """
     name = '6 - (Experimental, doesnt work with GUI) Horizontal Vector Plots of Seasonal Means' 
     number = '6'
-    standard_variables = { 'STRESS':[['STRESS_MAG','TAUX','TAUY'],['TAUX','TAUY']],
+    set6_variables = { 'STRESS':[['STRESS_MAG','TAUX','TAUY'],['TAUX','TAUY']],
                            'MOISTURE_TRANSPORT':[['TUQ','TVQ']] }
     # ...built-in variables.   The key is the name, as the user specifies it.
     # The value is a lists of lists of the required data variables. If the dict item is, for
@@ -1887,7 +1704,7 @@ class amwg_plot_set6(amwg_plot_plan):
             self.plan_computation( model, obs, varid, seasonid, aux, plotparms )
     @staticmethod
     def _list_variables( model, obs ):
-        return amwg_plot_set6.standard_variables.keys()
+        return amwg_plot_set6.set6_variables.keys()
     @staticmethod
     def _all_variables( model, obs ):
         return { vn:basic_plot_variable for vn in amwg_plot_set6._list_variables( model, obs ) }
@@ -1896,7 +1713,7 @@ class amwg_plot_set6(amwg_plot_plan):
             return self.plan_computation_normal_contours( model, obs, varid, seasonid, aux,
                                                           plotparms )
         else:
-            print "ERROR plot set 6 does not support auxiliary variable aux=",aux
+            logger.error( "plot set 6 does not support auxiliary variable aux=%s", aux )
             return None
     def STRESS_setup( self, filetable, varid, seasonid ):
         """sets up reduced & derived variables for the STRESS (ocean wind stress) variable.
@@ -1905,7 +1722,7 @@ class amwg_plot_set6(amwg_plot_plan):
         """
         vars = None
         if filetable is not None:
-            for dvars in self.standard_variables[varid]:   # e.g. dvars=['STRESS_MAG','TAUX','TAUY']
+            for dvars in self.set6_variables[varid]:   # e.g. dvars=['STRESS_MAG','TAUX','TAUY']
                 if filetable.has_variables(dvars):
                     vars = dvars                           # e.g. ['STRESS_MAG','TAUX','TAUY']
                     break
@@ -1930,9 +1747,9 @@ class amwg_plot_set6(amwg_plot_plan):
             vars_vec = ( vars[0], vars[1] )  # for vector plot
             vid_cont = var_cont
         else:
-            print "WARNING, could not find a suitable variable set when setting up for a vector plot!"
-            print "variables found=",vars
-            print "filetable=",filetable
+            logger.warning( "could not find a suitable variable set when setting up for a vector plot!" )
+            logger.debug( "variables found=",vars )
+            logger.debug( "filetable=",filetable )
             rvars = []
             dvars = []
             var_cont = ''
@@ -2075,12 +1892,12 @@ class amwg_plot_set6(amwg_plot_plan):
                 vars2,rvars2,dvars2,var_cont2,vars_vec2,vid_cont2 =\
                     self.STRESS_setup( filetable2, varid, seasonid )
                 if vars1 is None and vars2 is None:
-                    raise DiagError("cannot find standard variables in data 2")
+                    raise DiagError("cannot find set6 variables in data 2")
             else:
                 logger.error("AMWG plot set 6 does not yet support %s",varid)
                 return None
         except Exception as e:
-            logger.error("cannot find suitable standard_variables in data for varid= %s",varid)
+            logger.error("cannot find suitable set6_variables in data for varid= %s",varid)
             logger.exception(" %s ", e)
             return None
         reduced_varlis = []
@@ -2174,9 +1991,6 @@ class amwg_plot_set6(amwg_plot_plan):
             self.single_plotspecs[self.plot3_id+'c'] = contplot
             self.single_plotspecs[self.plot3_id+'v'] = vecplot
         # initially we're not plotting the contour part of the plots....
-        #for pln,pl in self.single_plotspecs.iteritems(): #jfp
-        #    print "dbg single plot",pln,pl.plottype
-        #    print "dbg            ",pl.zvars
         self.composite_plotspecs = {
             self.plot1_id: ( self.plot1_id+'c', self.plot1_id+'v' ),
             #self.plot1_id: [ self.plot1_id+'v' ],
@@ -2266,7 +2080,8 @@ class amwg_plot_set6(amwg_plot_plan):
         tm2.source.x               = tm2.data.x1
         tm2.source.priority        = 1
 
-        tm2.units.priority = 1
+        tm2.units.priority         = 1
+        tm2.legend.offset         += 0.011
         
         return tm1, tm2
     
@@ -2282,7 +2097,6 @@ class amwg_plot_set6(amwg_plot_plan):
         #        psv[self.plot1_id] is not None and psv[self.plot2_id] is not None:
         #    psv[self.plot1_id].synchronize_ranges(psv[self.plot2_id])
         #else:
-        #    print "WARNING not synchronizing ranges for",self.plot1_id,"and",self.plot2_id
         logger.warning("not synchronizing ranges for AMWG plot set 6")
         for key,val in psv.items():
             if type(val) is not list and type(val) is not tuple: val=[val]
@@ -2427,8 +2241,9 @@ class amwg_plot_set7(amwg_plot_plan):
         titleOri.height           = 23
         tm1.title.textorientation = titleOri
        
-        tm1.source.priority        = 1
-
+        tm1.source.priority       = 1
+        tm1.source.y              = tm1.mean.y - 0.02
+            
         # # We want units at axis names
         unitsOri                  = cnvs1.gettextorientation(tm1.units.textorientation)
         unitsOri.height          += 8
@@ -2438,8 +2253,8 @@ class amwg_plot_set7(amwg_plot_plan):
         cnvs2.setcolormap("categorical")
 
         # Adjusting intersection of title and xlabels.
-        dy = (tm2.data.y2-tm2.data.y1) * 0.095
-        tm2.data.y2 -= dy
+        dy                        = (tm2.data.y2-tm2.data.y1) * 0.095
+        tm2.data.y2              -= dy
     
         maxOri                   = cnvs2.gettextorientation(tm2.max.textorientation)
         meanOri                  = cnvs2.gettextorientation(tm2.mean.textorientation)
@@ -2453,11 +2268,12 @@ class amwg_plot_set7(amwg_plot_plan):
         tm2.title.textorientation = titleOri
         tm2.title.y              -= 0.005
 
-        tm2.max.y -= 0.005
+        tm2.max.y                -= 0.005
 
-        tm2.legend.x1 -= 0.01
+        tm2.legend.x1            -= 0.01
+        tm2.legend.offset        += 0.013
         
-        tm2.source.priority        = 1
+        tm2.source.priority       = 1
 
         unitsOri                  = cnvs2.gettextorientation(tm2.units.textorientation)
         unitsOri.height          += 1
@@ -2575,7 +2391,6 @@ class amwg_plot_set8(amwg_plot_plan):
                 self.reduced_variables[RV.id()] = RV
                 VIDs += [VID]
             vidAll[FT] = VIDs               
-        #print self.reduced_variables.keys()
         vidModel = dv.dict_id(varid, 'ZonalMean model', self._seasonid, filetable1)
         if self.FT2:
             vidObs  = dv.dict_id(varid, 'ZonalMean obs', self._seasonid, filetable2)
@@ -2586,10 +2401,8 @@ class amwg_plot_set8(amwg_plot_plan):
       
         self.derived_variables = {}
         #create the derived variables which is the composite of the months
-        #print vidAll[filetable1]
         self.derived_variables[vidModel] = derived_var(vid=id2str(vidModel), inputs=vidAll[filetable1], func=join_data) 
         if self.FT2:
-            #print vidAll[filetable2]
             self.derived_variables[vidObs] = derived_var(vid=id2str(vidObs), inputs=vidAll[filetable2], func=join_data) 
             #create the derived variable which is the difference of the composites
             self.derived_variables[vidDiff] = derived_var(vid=id2str(vidDiff), inputs=[vidModel, vidObs], func=aminusb_ax2) 
@@ -2645,6 +2458,12 @@ class amwg_plot_set8(amwg_plot_plan):
         # Adjust y label position
         tm2.yname.x = 0.075        
         tm2.mean.y -= 0.01
+        
+        
+        # Adjust source position
+        tm1.source.priority = 1
+        tm1.source.y = tm1.max.y - 0.02
+        
         
         return tm1, tm2
     
@@ -2884,6 +2703,7 @@ class amwg_plot_set9(amwg_plot_plan):
         legendOri                  = cnvs2.gettextorientation(tm2.legend.textorientation)
         legendOri.height          -= 2
         tm2.legend.textorientation = legendOri
+        tm2.legend.offset         += 0.01
         
         tm2.units.priority = 1
         
@@ -2962,7 +2782,6 @@ class amwg_plot_set10(amwg_plot_plan, basic_id):
                 self.reduced_variables[VID] = RV   
                 VIDs += [VID]
             vidAll[FT] = VIDs 
-        #print self.reduced_variables.keys()
         
         #create the identifiers 
         vidModel = dv.dict_id(varid, 'model', "", filetable1)
@@ -3106,7 +2925,6 @@ class amwg_plot_set10(amwg_plot_plan, basic_id):
         results = plot_plan._results(self, newgrid)
         if results is None: return None
         psv = self.plotspec_values
-        #print self.plotspec_values.keys()
 
         model = self.single_plotspecs[self.plot_id].zvars[0]
         obs   = self.single_plotspecs[self.plot_id].z2vars[0]
@@ -3148,7 +2966,6 @@ class amwg_plot_set11(amwg_plot_plan):
         for dt, ft in zip(self.datatype, self.filetables):
             fn = ft._files[0]
             self.ft_ids[dt] = fn.split('/')[-1:][0]
-        #print self.ft_ids
         
         self.plot_ids = []
         vars_id = '_'.join(self.vars)
@@ -3156,7 +2973,6 @@ class amwg_plot_set11(amwg_plot_plan):
             for dt in self.datatype:     
                 plot_id = '_'.join([dt,  season])
                 self.plot_ids += [plot_id]
-        #print self.plot_ids
         
         self.plotall_id = '_'.join(self.datatype + ['Warm', 'Pool'])
         if not self.computation_planned:
@@ -3196,7 +3012,6 @@ class amwg_plot_set11(amwg_plot_plan):
                     VID = rv.dict_id(var, season, ft)
                     VID = id2str(VID)
                     pair += [VID]
-                    #print VID
                     if ft == filetable1:
                         RF = ( lambda x, vid=VID:x)
                     else:
@@ -3225,7 +3040,6 @@ class amwg_plot_set11(amwg_plot_plan):
         for plot_id in self.plot_ids:
             title = plot_id
             xVID, yVID = VIDs[plot_id]
-            #print xVID, yVID 
             self.single_plotspecs[plot_id] = plotspec(vid = plot_id, 
                                                       zvars=[xVID], 
                                                       zfunc = (lambda x: x.flatten()[SLICE]),
@@ -3255,30 +3069,33 @@ class amwg_plot_set11(amwg_plot_plan):
         self.composite_plotspecs[self.plotall_id] = plotall_id
         self.computation_planned = True
         #pdb.set_trace()
-    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
+    #@profile
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, 
+                           var=None, iteration=None):
         """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
 
-        tm2.title.y        = 0.98
-
-        ly = 0.96      
-        xpos = {'model':.19, 'obs':.66}  
-        for key in self.ft_ids.keys():
-            text        = cnvs2.createtext()
-            text.string = self.ft_ids[key]
-            text.x      = xpos[key]
-            text.y      = ly
-            text.height = 11
-            cnvs2.plot(text, bg=1)  
+        tm2.title.y = 0.98
+        
+        if iteration == 0:
+            ly = 0.96      
+            xpos = {'model':.19, 'obs':.66}  
+            for key in self.ft_ids.keys():
+                text        = cnvs2.createtext()
+                text.string = self.ft_ids[key]
+                text.x      = xpos[key]
+                text.y      = ly
+                text.height = 11
+                cnvs2.plot(text, bg=1)
         
         #horizontal labels
-        th=cnvs2.createtextorientation(None, tm2.xlabel1.textorientation)
-        th.height=8
+        th        = cnvs2.gettextorientation(tm2.xlabel1.textorientation)
+        th.height = 8
         tm2.xlabel1.textorientation = th
  
         #vertical labels       
-        tv=cnvs2.createtextorientation(None, tm2.ylabel1.textorientation)
-        tv.height=8
+        tv        = cnvs2.gettextorientation(tm2.ylabel1.textorientation)
+        tv.height = 8
         tm2.ylabel1.textorientation = tv
 
         if varIndex == 0:
@@ -3289,6 +3106,11 @@ class amwg_plot_set11(amwg_plot_plan):
             tm2.xname.priority    = 0
             tm2.yname.priority    = 0
             tm2.dataname.priority = 0
+            
+            # Adjust source position
+            tm1.source.priority   = 1
+            tm1.source.y          = tm1.data.y2 + 0.02
+            
             # Adjust plot position
             deltaX = 0.015            
             if tm2.data.x1 == 0.033:
@@ -3379,7 +3201,7 @@ class amwg_plot_set11(amwg_plot_plan):
             xLabel.string = ["LWCF (" + data[0] + ")"]
             xLabel.height = 9
             
-            cnvs2.plot(xLabel, bg=1)     
+            cnvs2.plot(xLabel, bg=1)
         
         return tm1, tm2    
     
@@ -3387,7 +3209,7 @@ class amwg_plot_set11(amwg_plot_plan):
         #pdb.set_trace()
         results = plot_plan._results(self, newgrid)
         if results is None:
-            print "WARNING, AMWG plot set 11 found nothing to plot"
+            logger.warning( "AMWG plot set 11 found nothing to plot" )
             return None
         psv = self.plotspec_values
     
@@ -3424,7 +3246,6 @@ class amwg_plot_set12(amwg_plot_plan):
         obsfn   = filetable2._filelist.files[0]
         self.legendTitles = [modelfn.split('/')[-1:][0], obsfn.split('/')[-1:][0]]
         self.legendComplete = {}
-        #print self.legendTitles
         
         self.StationData = stationData.stationData(filetable2._filelist.files[0])
         
@@ -3435,7 +3256,6 @@ class amwg_plot_set12(amwg_plot_plan):
         self.months = ['JAN', 'APR', 'JUL', 'OCT']
         station = aux
         self.lat, self.lon = self.StationData.getLatLon(station)
-        #print station, self.lat, self.lon
         self.compositeTitle = defines.station_names[station]+'\n'+ \
                               'latitude = ' + str(self.lat) + ' longitude = ' + str(self.lon)
         self.plotCompositeTitle = True
@@ -3551,7 +3371,8 @@ class amwg_plot_set12(amwg_plot_plan):
         name, units = self.IDsandUnits['axis']
         var.comment1 = name +' (' + units +')'
         return var        
-    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, 
+                           var=None, iteration=None):
         """Theis method does what the title says.  It is a hack that will no doubt change as diags changes."""
 
         (cnvs1, tm1), (cnvs2, tm2) = templates
@@ -3571,7 +3392,7 @@ class amwg_plot_set12(amwg_plot_plan):
         tm2.comment3.priority = 0
         tm1.comment4.priority = 0
         tm2.comment4.priority = 0
-
+         
         # Fix units if needed
         if data is not None:
             if (getattr(data, 'units', '') == ''):
@@ -3586,20 +3407,21 @@ class amwg_plot_set12(amwg_plot_plan):
                 if data.getAxis(1).id.count('lon'):
                     data.getAxis(1).id = 'Longitude'
 
-        yLabel = cnvs1.createtext(Tt_source=tm1.yname.texttable,
-                                  To_source=tm1.yname.textorientation)
-        yLabel.x = tm1.yname.x - 0.02
-        yLabel.y = tm1.yname.y
-        if data is not None:
-            if hasattr(data, 'comment1'):
-                yLabel.string = [data.comment1]
+        if (iteration % 2) == 0:
+            yLabel = cnvs1.createtext(Tt_source=tm1.yname.texttable,
+                                    To_source=tm1.yname.textorientation)
+            yLabel.x = tm1.yname.x - 0.02
+            yLabel.y = tm1.yname.y
+            if data is not None:
+                if hasattr(data, 'comment1'):
+                    yLabel.string = [data.comment1]
+                else:
+                    yLabel.string  = ["Pressure (" + data.units + ")"]
             else:
-                yLabel.string  = ["Pressure (" + data.units + ")"]
-        else:
-            yLabel.string  = ["Pressure"]
-        yLabel.height = 16
-        cnvs1.plot(yLabel, bg=1)
-
+                yLabel.string  = ["Pressure"]
+            yLabel.height = 16
+            cnvs1.plot(yLabel, bg=1)            
+                
         tm1.source.y = tm1.data.y2 + 0.01
 
         xLabelTO                  = cnvs1.gettextorientation(tm1.xname.textorientation)
@@ -3625,65 +3447,69 @@ class amwg_plot_set12(amwg_plot_plan):
         #tm2.title.x     += deltaX
         tm2.xname.x      += deltaX
 
-        
-        #setup the custom legend
-        lineTypes = {}
-        lineTypes[self.legendTitles[0]] = 'solid'
-        lineTypes[self.legendTitles[1]] = 'dot'
-        positions = {}
-        positions['solid', tm1]  = [tm1.data.x2 + 0.008, tm1.data.x2 + 0.07], [0.16, .16]
-        positions['solid', tm2]  = [tm2.data.x1 + 0.008+deltaX, tm2.data.x1 + 0.07+deltaX], [tm2.data.y1 + 0.01, tm2.data.y1 + 0.01]
-        positions['dot', tm1]  = [tm1.data.x2 + 0.008, tm1.data.x2 + 0.07], [0.24, 0.24]
-        positions['dot', tm2]  = [tm2.data.x1 + 0.008+deltaX, tm2.data.x1 + 0.07+deltaX], [tm2.data.y1 + 0.05, tm2.data.y1 + 0.05]
-   
-        #if not self.legendComplete:
-        for canvas, tm in templates:
-            for filename in self.legendTitles:
-                if (canvas, tm, filename) not in self.legendComplete.keys():
-                    self.legendComplete[(canvas, tm, filename)] = False
-        #plot the custom legend
-        for canvas, tm, filename in self.legendComplete.keys():
-            tm.legend.priority = 0
-            lineType = lineTypes[filename]
-            if not self.legendComplete[(canvas, tm, filename)]:
-                xpos, ypos = positions[lineType, tm]
-                if lineType == 'dot':
-                    marker = canvas.createmarker()
-                    marker.size = 2
-                    marker.x = (numpy.arange(6)*(xpos[1]-xpos[0])/5.+xpos[0]).tolist()
-                    marker.y = [ypos[0],]*6                    
-                    canvas.plot(marker, bg=1)
-                    marker.priority = 0
+
+        if (iteration % 2) == 0:        
+            #setup the custom legend
+            lineTypes = {}
+            lineTypes[self.legendTitles[0]] = 'solid'
+            lineTypes[self.legendTitles[1]] = 'dot'
+            positions = {}
+            positions['solid', tm1]  = [tm1.data.x2 + 0.008, tm1.data.x2 + 0.07], [0.16, .16]
+            positions['solid', tm2]  = [tm2.data.x1 + 0.008+deltaX, tm2.data.x1 + 0.07+deltaX], [tm2.data.y1 + 0.01, tm2.data.y1 + 0.01]
+            positions['dot', tm1]  = [tm1.data.x2 + 0.008, tm1.data.x2 + 0.07], [0.24, 0.24]
+            positions['dot', tm2]  = [tm2.data.x1 + 0.008+deltaX, tm2.data.x1 + 0.07+deltaX], [tm2.data.y1 + 0.05, tm2.data.y1 + 0.05]
+    
+            #if not self.legendComplete:
+            for canvas, tm in templates:
+                for filename in self.legendTitles:
+                    if (canvas, tm, filename) not in self.legendComplete.keys():
+                        self.legendComplete[(canvas, tm, filename)] = False
+            #plot the custom legend
+            for canvas, tm, filename in self.legendComplete.keys():
+                tm.legend.priority = 0
+                lineType = lineTypes[filename]
+                if not self.legendComplete[(canvas, tm, filename)]:
+                    xpos, ypos = positions[lineType, tm]
+                    if lineType == 'dot':
+                        marker = canvas.createmarker()
+                        marker.size = 2
+                        marker.x = (numpy.arange(6)*(xpos[1]-xpos[0])/5.+xpos[0]).tolist()
+                        marker.y = [ypos[0],]*6                    
+                        canvas.plot(marker, bg=1)
+            
+                        marker.priority = 0
+                    else:
+                        line = canvas.createline(None, tm.legend.line)
+                        line.type = lineType
+                        line.x = xpos 
+                        line.y = [ypos, ypos]
+                        line.color = 1
+                        canvas.plot(line, bg=1)
+                        
+                    text = canvas.createtext()
+                    text.string = filename
+                    text.height = 9.5
+                    text.x = xpos[0] 
+                    text.y = ypos[0] + 0.01 
+
+                    canvas.plot(text, bg=1)
+            
+                    self.legendComplete[canvas, tm, filename] = True
+    
+
+            yLabel = cnvs2.createtext(Tt_source=tm2.yname.texttable,
+                                    To_source=tm2.yname.textorientation)
+            yLabel.x = tm2.yname.x #- 0.005
+            yLabel.y = tm2.yname.y
+            if data is not None:
+                if hasattr(data, 'comment1'):
+                    yLabel.string = [data.comment1]
                 else:
-                    line = canvas.createline(None, tm.legend.line)
-                    line.type = lineType
-                    line.x = xpos 
-                    line.y = [ypos, ypos]
-                    line.color = 1
-                    canvas.plot(line, bg=1)
-                text = canvas.createtext()
-                text.string = filename
-                text.height = 9.5
-                text.x = xpos[0] 
-                text.y = ypos[0] + 0.01 
-
-                canvas.plot(text, bg=1)   
-                self.legendComplete[canvas, tm, filename] = True
-  
-
-        yLabel = cnvs2.createtext(Tt_source=tm2.yname.texttable,
-                                  To_source=tm2.yname.textorientation)
-        yLabel.x = tm2.yname.x #- 0.005
-        yLabel.y = tm2.yname.y
-        if data is not None:
-            if hasattr(data, 'comment1'):
-                yLabel.string = [data.comment1]
+                    yLabel.string  = ["Pressure (" + data.units + ")"]
             else:
-                yLabel.string  = ["Pressure (" + data.units + ")"]
-        else:
-            yLabel.string  = ["Pressure"]
-        yLabel.height = 9
-        cnvs2.plot(yLabel, bg=1)
+                yLabel.string  = ["Pressure"]
+            yLabel.height = 9
+            cnvs2.plot(yLabel, bg=1)            
 
         xLabelTO                  = cnvs2.gettextorientation(tm2.xname.textorientation)
         xLabelTO.height           = 9
@@ -3691,7 +3517,7 @@ class amwg_plot_set12(amwg_plot_plan):
 
         tm2.source.y = tm2.data.y2 + 0.01
         tm2.title.y -= 0.01
-        
+            
         if self.plotCompositeTitle:
             tm2.source.priority = 1
             self.plotCompositeTitle = False
@@ -3728,7 +3554,7 @@ class amwg_plot_set12(amwg_plot_plan):
         #pdb.set_trace()
         results = plot_plan._results(self, newgrid)
         if results is None:
-            print "WARNING, AMWG plot set 12 found nothing to plot"
+            logger.warning( "AMWG plot set 12 found nothing to plot" )
             return None
         psv = self.plotspec_values
         #pdb.set_trace()
@@ -3780,7 +3606,7 @@ class amwg_plot_set13(amwg_plot_plan):
     #Often data comes from COSP = CFMIP Observation Simulator Package
     name = '13 - Cloud Simulator Histograms'
     number = '13'
-    standard_variables = {  # Note: shadows amwg_plot_plan.standard_variables
+    common_derived_variables = {  # Note: shadows amwg_plot_plan.common_derived_variables
         'CLISCCP':[derived_var(
                 vid='CLISCCP', inputs=['FISCCP1','isccp_prs','isccp_tau'], outputs=['CLISCCP'],
                 func=uncompress_fisccp1 )]
@@ -3817,7 +3643,7 @@ class amwg_plot_set13(amwg_plot_plan):
         allvars = amwg_plot_set13._all_variables( model, obs)
         listvars = allvars.keys()
         listvars.sort()
-        print "amwg plot set 13 listvars=",listvars
+        logger.debug( "amwg plot set 13 listvars=%s", listvars )
         return listvars
     @classmethod
     def _all_variables( cls, ft1, ft2 ):
@@ -3864,9 +3690,9 @@ class amwg_plot_set13(amwg_plot_plan):
                     continue
             allvars[varname] = basic_plot_variable
 
-        # Finally, add in the standard variables.  Note that there is no check on whether
+        # Finally, add in the common derived variables.  Note that there is no check on whether
         # we have the inputs needed to compute them.
-        for varname in set(cls.standard_variables.keys())-set(allvars.keys()):
+        for varname in set(cls.common_derived_variables.keys())-set(allvars.keys()):
             allvars[varname] = basic_plot_variable
 
         return allvars
@@ -3885,10 +3711,10 @@ class amwg_plot_set13(amwg_plot_plan):
             )
         self.reduced_variables[ rv.id() ] = rv
         return rv.id()
-    def var_from_std( self, filetable, varnom, seasonid, region ):
-        """defines the derived variable for varnom when computable as a standard variable using data
+    def var_from_cdv( self, filetable, varnom, seasonid, region ):
+        """defines the derived variable for varnom when computable as a common derived variable using data
         in the specified filetable"""
-        varid,rvs,dvs = self.stdvar2var(
+        varid,rvs,dvs = self.commvar2var(
             varnom, filetable, self.season,\
                 (lambda x,vid,season=self.season,region=region:
                      reduce_time_space_seasonal_regional(x, season=season, region=region, vid=vid) ))
@@ -3907,17 +3733,18 @@ class amwg_plot_set13(amwg_plot_plan):
         region = interpret_region( region )
         if varnom in filetable1.list_variables_incl_axes():
             vid1 = self.var_from_data( filetable1, varnom, seasonid, region )
-        elif varnom in self.standard_variables.keys():
-            vid1 = self.var_from_std( filetable1, varnom, seasonid, region )
+        elif varnom in self.common_derived_variables.keys():
+            vid1 = self.var_from_cdv( filetable1, varnom, seasonid, region )
         else:
-            print "ERROR variable",varnom,"cannot be read or computed from data in the filetable",filetable1
+            logger.error( "variable %s cannot be read or computed from data in the filetable %s",
+                          varnom, filetable1 )
             return None
         if filetable2 is None:
             vid2 = None
         elif varnom in filetable2.list_variables_incl_axes():
             vid2 = self.var_from_data( filetable2, varnom, seasonid, region )
-        elif varnom in self.standard_variables.keys():
-            vid2 = self.var_from_std( filetable2, varnom, seasonid, region )
+        elif varnom in self.common_derived_variables.keys():
+            vid2 = self.var_from_cdv( filetable2, varnom, seasonid, region )
         else:
             vid2 = None
 
@@ -4042,14 +3869,14 @@ class amwg_plot_set13(amwg_plot_plan):
     def _results(self,newgrid=0):
         results = plot_plan._results(self,newgrid)
         if results is None:
-            print "WARNING, AMWG plot set 13 found nothing to plot"
+            logger.warning( "AMWG plot set 13 found nothing to plot" )
             return None
         psv = self.plotspec_values
         if self.plot1_id in psv and self.plot2_id in psv and\
                 psv[self.plot1_id] is not None and psv[self.plot2_id] is not None:
             psv[self.plot1_id].synchronize_ranges(psv[self.plot2_id])
         else:
-            print "WARNING not synchronizing ranges for",self.plot1_id,"and",self.plot2_id
+            logger.warning( "not synchronizing ranges for %s and %s", self.plot1_id, self.plot2_id )
         for key,val in psv.items():
             if type(val) is not list: val=[val]
             for v in val:
@@ -4099,16 +3926,13 @@ class amwg_plot_set14(amwg_plot_plan):
         
         #vardi is a list of variables
         self.vars = varid
-        #print self.vars
         
         self.plot_ids = []
         #vars_id = '_'.join(self.vars)
         #for dt in self.datatype:
         plot_id = 'Taylor'
         self.plot_ids += [plot_id]
-        #print self.plot_ids
         
-        #self.plotall_id = '_'.join(self.datatype + ['Warm', 'Pool'])
         if not self.computation_planned:
             self.plan_computation( model, obs, varid, seasonid, aux, plotparms )
     @staticmethod
@@ -4119,13 +3943,13 @@ class amwg_plot_set14(amwg_plot_plan):
         listvars.sort()
         return listvars
     @staticmethod
-    def _all_variables( model, obs, use_standard_vars=True ):
+    def _all_variables( model, obs, use_common_derived_vars=True ):
         allvars = amwg_plot_plan.package._all_variables( model, obs, "amwg_plot_plan" )
         for varname in amwg_plot_plan.package._list_variables_with_levelaxis(
             model, obs, "amwg_plot_plan" ):
             allvars[varname] = level_variable_for_amwg_set5
-        if use_standard_vars:
-            for varname in amwg_plot_plan.standard_variables.keys():
+        if use_common_derived_vars:
+            for varname in amwg_plot_plan.common_derived_variables.keys():
                 allvars[varname] = basic_plot_variable
         return allvars
     def plan_computation( self, model, obs, varid, seasonid, aux, plotparms ):
@@ -4187,7 +4011,6 @@ class amwg_plot_set14(amwg_plot_plan):
                     #rv for the data
                     VID_data = rv.dict_id(var, 'data', ft)
                     VID_data = id2str(VID_data)
-                    #print VID_data
                     RV = reduced_variable( variableid=var, 
                                            filetable=ft, 
                                            season=cdutil.times.Seasons(seasonid), 
@@ -4198,12 +4021,10 @@ class amwg_plot_set14(amwg_plot_plan):
                     FN = RV.get_variable_file(var)
                     L = FN.split('/')
                     DATAID = var + '_' + L[-1:][0]
-                    #print DATAID
                                         
                     #rv for the mean
                     VID_mean = rv.dict_id(var, 'mean', ft)
                     VID_mean = id2str(VID_mean)
-                    #print VID_mean
                     RV = reduced_variable( variableid=var, 
                                            filetable=ft, 
                                            season=cdutil.times.Seasons(seasonid), 
@@ -4214,7 +4035,6 @@ class amwg_plot_set14(amwg_plot_plan):
                     #rv for its std
                     VID_std = rv.dict_id(var, 'std', ft)
                     VID_std = id2str(VID_std)
-                    #print VID_std
                     RV = reduced_variable( variableid=var, 
                                            filetable=ft, 
                                            season=cdutil.times.Seasons(seasonid), 
@@ -4236,15 +4056,10 @@ class amwg_plot_set14(amwg_plot_plan):
                 Vmodel = RVs['model', ft, var][1]
                 BV =  rv.dict_id(var, 'bias', ft)
                 BV = id2str(BV)
-                #print Vobs
-                #print Vmodel
-                #print BV
                 bias += [BV]
                 BVs[var, ft, 'bias'] = BV
                 #FUNC = ( lambda x,y, vid=BV: x-y )
                 self.derived_variables[BV] = derived_var(vid=BV, inputs=[Vmodel, Vobs], func=adivb)
-        #print 'bias ='
-        #print bias        
            
         #generate derived variables for correlation between each model data and obs data
         nvars = len(self.vars)
@@ -4255,9 +4070,6 @@ class amwg_plot_set14(amwg_plot_plan):
                 Vmodel = RVs['model', ft, var][0]
                 CV = rv.dict_id(var, 'model_correlation', ft)
                 CV = id2str(CV)
-                #print Vobs
-                #print Vmodel
-                #print DV
                 CVs[var, ft, 'correlation'] = CV
                 FUNC = ( lambda x,y,  vid=CV, aux=aux: correlateData(x, y, aux) )
                 self.derived_variables[CV] = derived_var(vid=CV, inputs=[Vobs, Vmodel], func=FUNC) 
@@ -4270,9 +4082,6 @@ class amwg_plot_set14(amwg_plot_plan):
                 Vmodel = RVs['model', ft, var][2]
                 NV = rv.dict_id(var,'_normalized_std', ft)
                 NV = id2str(NV)
-                #print Vobs
-                #print Vmodel
-                #print NV
                 NVs[var, ft, 'normalized_std'] = NV
                 self.derived_variables[NV] = derived_var(vid=NV, inputs=[Vmodel, Vobs], func=adivb) 
                     
@@ -4283,8 +4092,6 @@ class amwg_plot_set14(amwg_plot_plan):
                 triple = (NVs[var, ft, 'normalized_std'], CVs[var, ft, 'correlation'], BVs[var, ft, 'bias'])
                 triples += triple 
 
-        #print triples
-        
         #correlation coefficient 
         self.derived_variables['TaylorData'] = derived_var(vid='TaylorData', inputs=triples, func=join_data) 
         #self.derived_variables['TaylorBias'] = derived_var(vid='TaylorBias', inputs=bias, func=join_scalar_data)
@@ -4327,7 +4134,7 @@ class amwg_plot_set14(amwg_plot_plan):
         #pdb.set_trace()
         results = plot_plan._results(self, newgrid)
         if results is None:
-            print "WARNING, AMWG plot set 12 found nothing to plot"
+            logger.warning( "AMWG plot set 14 found nothing to plot" )
             return None
         psv = self.plotspec_values
         v=psv['Taylor']
@@ -4361,7 +4168,7 @@ class amwg_plot_set15(amwg_plot_plan):
         
         self.CONTINUE = self.FT1
         if not self.CONTINUE:
-            print "user must specify a file table"
+            logger.warning( "When initializing plot set 15,  must specify a file table" )
             return None
         self.filetables = [filetable1]
         if self.FT2:
@@ -4415,11 +4222,9 @@ class amwg_plot_set15(amwg_plot_plan):
                                       reduction_function =  RF)
 
                 VID = id2str(VID)
-                #print VID
                 self.reduced_variables[VID] = RV
                 VIDs += [VID]
             vidAll[FT] = VIDs               
-        #print self.reduced_variables.keys()
         vidModel = dv.dict_id(varid, 'Level model', self._seasonid, filetable1)
         if self.FT2:
             vidObs  = dv.dict_id(varid, 'Level obs', self._seasonid, filetable2)
@@ -4434,14 +4239,11 @@ class amwg_plot_set15(amwg_plot_plan):
         
         self.derived_variables = {}
         #create the derived variables which is the composite of the months
-        #print vidAll[filetable1]
         self.derived_variables[vidModel] = derived_var(vid=vidModel, inputs=vidAll[filetable1], func=join_data) 
         if self.FT2:
-            #print vidAll[filetable2]
             self.derived_variables[vidObs] = derived_var(vid=vidObs, inputs=vidAll[filetable2], func=join_data) 
             #create the derived variable which is the difference of the composites
             self.derived_variables[vidDiff] = derived_var(vid=vidDiff, inputs=[vidModel, vidObs], func=aminusb_ax2) 
-        #print self.derived_variables.keys()
         
         #create composite plots np.transpose zfunc = (lambda x: x), zfunc = (lambda z:z), 
         self.single_plotspecs = {
@@ -4480,13 +4282,12 @@ class amwg_plot_set15(amwg_plot_plan):
         self.computation_planned = True
         #pdb.set_trace()
     def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
-
-        """Theis method does what the title says.  It is a hack that will no doubt change as diags changes."""
+        """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
  
-        tm1.data.x1  += .05
-        tm1.box1.x1   = tm1.data.x1
-        tm1.legend.x1 = tm1.data.x1
+        tm1.data.x1              += .05
+        tm1.box1.x1               = tm1.data.x1
+        tm1.legend.x1             = tm1.data.x1
      
         tm1.yname.x               = .04
         tm1.yname.y               = (tm1.data.y1 + tm1.data.y2)/2
@@ -4505,14 +4306,18 @@ class amwg_plot_set15(amwg_plot_plan):
         tm1.ytic1.x1              = tm1.data.x1
         tm1.ytic1.x2              = tm1.data.x1 - delta
         tm1.ylabel1.x             = tm1.ytic1.x2
+        
+        # Adjust source position for tm1 plots
+        tm1.source.priority       = 1
+        tm1.source.y              = tm1.data.y2 + 0.045
 
         titleOri                  = cnvs1.gettextorientation(tm1.title.textorientation)
         titleOri.height          += 3
         tm1.title.textorientation = titleOri
         tm1.title.y               = tm1.data.y2 + 0.015
 
-        tm1.crdate.priority = 0
-        tm1.crtime.priority = 0        
+        tm1.crdate.priority       = 0
+        tm1.crtime.priority       = 0        
 
         tm2.yname.x               = .05
         tm2.yname.y               = (tm2.data.y1 + tm2.data.y2)/2
@@ -4531,6 +4336,7 @@ class amwg_plot_set15(amwg_plot_plan):
         titleOri.height           = 14
         tm2.title.textorientation = titleOri
         tm2.title.y               = tm2.data.y2 + 0.01
+        tm2.legend.offset        += 0.01
         
         for tm in [tm1, tm2]:       
             tm.max.priority      = 0
@@ -4553,7 +4359,7 @@ class amwg_plot_set15(amwg_plot_plan):
         #pdb.set_trace()
         results = plot_plan._results(self, newgrid)
         if results is None:
-            print "WARNING, AMWG plot set 15 found nothing to plot"
+            logger.warning( "AMWG plot set 15 found nothing to plot" )
             return None
         psv = self.plotspec_values
         if self.FT2:

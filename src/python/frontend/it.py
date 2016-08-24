@@ -185,6 +185,8 @@ def return_templates_graphic_methods(canvas1=None, gms=None, ovly=None, onPage=N
             
       graphicMethodObjects = []
 
+      #from pympler.tracker import SummaryTracker
+      #tracker = SummaryTracker()
       graphicMethodObjects, tmmobs = build_templates(canvas1, gms, ovly, rows, columns,
                                                      TemplateOptionsUVWGMulti_New(),
                                                      templateOptionsArray,
@@ -192,6 +194,10 @@ def return_templates_graphic_methods(canvas1=None, gms=None, ovly=None, onPage=N
                                                      'vertical',
                                                      forceAspectRatio=False,
                                                      disableLegend=disLegend)
+      #tracker.print_diff()
+      
+      del templateOptionsArray
+      del templateNameArray
                
       return (gmobs, tmobs, tmmobs)
    else:

@@ -277,9 +277,9 @@ class Row:
             return float(mean2.data)
         else:
             # It's a more complicated calculation, which we can treat as a derived variable.
-            # If it's a standard_variable, we know how to do it...
+            # If it's a common_derived_variable, we know how to do it...
             try:
-                vid,rvs,dvs = amwg_plot_plan.stdvar2var(
+                vid,rvs,dvs = amwg_plot_plan.commvar2var(
                     self.var, filetable, self.season, reduction_function=\
                         (lambda x,vid=None,season=self.season,dom0=domrange[0],dom1=domrange[1],gw=gw:
                              reduce2scalar_seasonal_zonal(
@@ -303,7 +303,7 @@ class Row:
         """ This function computes the rmse and correlation between the model and observations.
         It also scales the data to the units in devel_levels before these computations."""
         from metrics.graphics.default_levels import default_levels
-        from metrics.computation.units import scale_data
+        from metrics.computation.units import convert_variable
         from metrics.computation.compute_rmse import compute_rmse
         #pdb.set_trace()
 
@@ -314,8 +314,8 @@ class Row:
                 #convert to the units specified in the default levels disctionay
                 displayunits = default_levels[self.var].get('displayunits', None)
                 if displayunits is not None and variable_values[key] is not None:
-                    logger.debug("%s, %s", displayunits, variable_values[key].units)
-                    variable_values[key] = scale_data( displayunits, variable_values[key])
+                    logger.debug("%s, %s", displayunits, getattr(variable_values[key],'units',''))
+                    variable_values[key] = convert_variable( variable_values[key], displayunits )
 
         RMSE = self.undefined
         CORR = self.undefined
