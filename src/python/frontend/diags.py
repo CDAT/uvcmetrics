@@ -669,19 +669,8 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
                     # fjim.write(var,id="jim")
                     # fjim.close()
                 else:
-                    #pdb.set_trace()
-                    # Set canvas colormap back to default color
-                    # Formerly we did it this way:
-                    #  vcanvas2.setcolormap('bl_to_darkred')
-                    # But that redraws everything already drawn before, and does it with the wrong title.
-                    # And it's a drag on performance.
-                    # All setcolormap() does is the following line, which we want; plus an
-                    # update() line which we don't want.
-                    vcanvas2.colormap = 'bl_to_darkred'
-                    if plot.number in ['2','6']:
-                        # For these plot sets, the updated plot is different, and in the baselines.
-                        # So do this ugly thing or fail the automated tests:
-                        vcanvas2.update()
+                    # Reverting to having an update otherwise we get double titles
+                    vcanvas2.setcolormap('bl_to_darkred')
 
                     #check for units specified for display purposes
                     var_save = var.clone()
