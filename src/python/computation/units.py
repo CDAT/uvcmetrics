@@ -13,7 +13,7 @@ import logging
 # Each value is a synonymous unit which is supported by udunits.
 # NOTES: 'gpm' appears in JRA25_ANN_climo.nc, probably stands for "geopotential meters".
 unit_synonyms = {
-    'mb':'millibar', 'pa':'pascal', 'gpm':'meters'
+    'mb':'millibar', 'pa':'pascal', 'gpm':'meters', 'C':'Celsius'
     }
 
 # Each key of the following dictionary is a unit not supported by udunits in a manner appropriate
