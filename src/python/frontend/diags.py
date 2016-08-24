@@ -681,16 +681,13 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
                                 logger.warning("multiple displayunits not supported at this time, using: %s" % displayunits[0])
                             displayunits=displayunits[0]
                         try:
-                            scale = udunits(1.0, var.units)
-                            scale = scale.to(displayunits).value
+                            var = convert_units(var,displayunits)
                         except:
                             try:
                                 scale = float(displayunits)
                             except:
                                 logger.critical('Invalid display units: '+ displayunits)
                                 sys.exit()
-                        var = var*scale
-                        var.units = displayunits
                         var.id = '' #this was clearer earlier; var=anything makes an id
 
                     if hasattr(plot, 'customizeTemplates'):
