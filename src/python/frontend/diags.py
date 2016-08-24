@@ -82,12 +82,12 @@ def getNames(opts, model, obs):
     specified on the command line for output on the graphic"""
     def get_model_case(filetable):
         files = filetable._filelist
-        f = cdms2.open(files[0])
         try:
+            f = cdms2.open(files[0])
             case = f.case
+            f.close()
         except:
             case = 'not available'
-        f.close()
         return case
     from metrics.packages.plotplan import plot_plan
     ft1, ft2 = plot_plan().getfts(model, obs)
