@@ -1508,7 +1508,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
             text.height = 16
             text.halign = 1
             cnvs2.plot(text, bg=1)  
-
+        #pdb.set_trace()
         try:
             #this is for the output of RMSE and CORRELATION
             tm1, tm2 = self.extraCustomizeTemplates((cnvs1, tm1), (cnvs2, tm2), var=var)
