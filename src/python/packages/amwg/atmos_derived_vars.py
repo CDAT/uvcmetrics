@@ -72,7 +72,7 @@ common_derived_variables = {
             func=aminusb )],
 
     # miscellaneous:
-        'PRECT':[derived_var(
+    'PRECT':[derived_var(
             vid='PRECT', inputs=['pr'], outputs=['PRECT'],
             func=(lambda x:x)),
                  derived_var(

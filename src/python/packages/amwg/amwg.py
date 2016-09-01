@@ -149,9 +149,10 @@ class amwg_plot_plan(plot_plan):
         #print "dbg in commvar2var to compute varnom=",varnom,"from filetable=",filetable
         for svd in cls.common_derived_variables[varnom]:  # loop over ways to compute varnom
             invarnoms = svd.inputs()
-                #print "dbg first round, invarnoms=",invarnoms
-                #print "dbg filetable variables=",filetable.list_variables()
-            if len( set(invarnoms) - set(filetable.list_variables_incl_axes()) )<=0:
+            #print "dbg first round, invarnoms=",invarnoms
+            #print "dbg filetable variables=",filetable.list_variables()
+            if len( (set(invarnoms) - set(filetable.list_variables_incl_axes()))
+                    - set(builtin_variables) )<=0:
                 func = svd._func
                 computable = True
                 break
@@ -172,7 +173,8 @@ class amwg_plot_plan(plot_plan):
 
         available = rvs + dvs
         availdict = { v.id()[1]:v for v in available }
-        inputs = [ availdict[v].id() for v in svd._inputs if v in availdict] + builtin_variables
+        inputs = [ availdict[v].id() for v in svd._inputs if v in availdict ] +\
+            [ v for v in svd._inputs if v in builtin_variables ]
         #print "dbg1 rvs ids=",[rv.id() for rv in rvs]
         if not computable and recurse==True:
             # Maybe the input variables are themselves computed.  We'll only do this one
@@ -198,10 +200,12 @@ class amwg_plot_plan(plot_plan):
                 func = svd._func
                 available = rvs + dvs
                 availdict = { v.id()[1]:v for v in available }
-                inputs = [ availdict[v].id() for v in svd._inputs if v in availdict] + builtin_variables
-                computable = True
-                #print "dbg in second round, found",varnom,"computable by",func,"from",inputs
-                break
+                inputs = [ availdict[v].id() for v in svd._inputs if v in availdict ] +\
+                    [ v for v in svd._inputs if v in builtin_variables ]
+                if len( (set(invarnoms) - set( availdict.keys()) -set(builtin_variables) ))<=0:
+                    computable = True
+                    #print "dbg in second round, found",varnom,"computable by",func,"from",inputs
+                    break
         if len(rvs)<=0:
             logger.warning("no inputs found for %s in filetable %s",varnom, filetable.id())
             logger.warning("filetable source files= %s",filetable._filelist[0:10])
