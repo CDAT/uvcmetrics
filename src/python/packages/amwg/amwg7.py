@@ -1,3 +1,7 @@
+# AMWG Diagnostics, plot set 7.
+# Here's the title used by NCAR:
+# DIAG Set 7 - Polar Contour and Vector Plots of Seasonal Means
+
 from pprint import pprint
 from metrics.packages.amwg.amwg import amwg_plot_plan, src2modobs, src2obsmod
 from metrics.packages.amwg.amwg5and6 import amwg_plot_set5and6

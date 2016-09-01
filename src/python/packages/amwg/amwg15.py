@@ -1,3 +1,7 @@
+# AMWG Diagnostics, plot set 15.
+# Here's the title used by NCAR:
+# DIAG Set 15 - ARM Sites Annual Cycle Contour Plots
+
 from pprint import pprint
 from metrics.packages.amwg.amwg import amwg_plot_plan, src2modobs, src2obsmod
 from metrics.packages.amwg.derivations.vertical import *
@@ -241,4 +245,5 @@ class amwg_plot_set15(amwg_plot_plan):
             for v in val:
                 if v is None: continue
                 v.finalize(flip_y=True)
+
         return self.plotspec_values[self.plotall_id]

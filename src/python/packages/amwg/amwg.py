@@ -235,8 +235,8 @@ class amwg_plot_plan(plot_plan):
         return amwg_plot_plan.package._all_variables( model, obs, "amwg_plot_plan" )
 
 # plot set classes in other files:
-
 #import the individual plot modules
+
 from metrics.packages.amwg.amwg1 import *
 from metrics.packages.amwg.amwg2 import *
 from metrics.packages.amwg.amwg3 import *

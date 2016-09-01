@@ -1,3 +1,7 @@
+# AMWG Diagnostics, plot set 2.
+# Here's the title used by NCAR:
+# DIAG Set 3 - Line Plots of  Zonal Means
+
 from pprint import pprint
 from metrics.packages.amwg.amwg import amwg_plot_plan, src2modobs, src2obsmod
 from metrics.packages.amwg.amwg5and6 import amwg_plot_set5and6
@@ -321,4 +325,5 @@ class amwg_plot_set3(amwg_plot_plan,basic_id):
         # no, we don't want same range for values & difference! plot_a_val.synchronize_ranges(plot_b_val)
         plot_a_val.finalize()
         plot_b_val.finalize()
+
         return [ plot_a_val, plot_b_val ]

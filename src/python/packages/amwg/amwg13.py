@@ -1,13 +1,17 @@
+# AMWG Diagnostics, plot set 13.
+# Here's the title used by NCAR:
+# DIAG Set 13 - Cloud Simulator Histograms
+
 from pprint import pprint
 from metrics.packages.amwg.amwg import amwg_plot_plan, src2modobs, src2obsmod
 from metrics.packages.amwg.derivations.vertical import *
 from metrics.packages.plotplan import plot_plan
-from metrics.packages.amwg.derivations import *
 from metrics.computation.reductions import *
 from metrics.computation.plotspec import *
 from metrics.fileio.findfiles import *
 from metrics.common.utilities import *
 from metrics.computation.region import *
+from metrics.packages.amwg.derivations import *
 from unidata import udunits
 import cdutil.times, numpy, pdb
 import logging

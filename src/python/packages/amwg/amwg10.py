@@ -1,3 +1,7 @@
+# AMWG Diagnostics, plot set 10.
+# Here's the title used by NCAR:
+# DIAG Set 10 - Annual Line Plots of  Global Means
+
 from pprint import pprint
 from metrics.packages.amwg.amwg import amwg_plot_plan, src2modobs, src2obsmod
 from metrics.packages.amwg.derivations.vertical import *

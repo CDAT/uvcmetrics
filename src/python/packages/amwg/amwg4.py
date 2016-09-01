@@ -1,3 +1,8 @@
+# AMWG Diagnostics, plot set 4 and 4a.
+# Here's the title used by NCAR:
+# DIAG Set 4 - Vertical Contour Plots Zonal Means
+# DIAG Set $A - Horizontal Contour Plots of Meridional Means
+
 from pprint import pprint
 from metrics.packages.amwg.amwg import amwg_plot_plan, src2modobs, src2obsmod
 from metrics.packages.amwg.amwg1 import reduced_variables_press_lev, reduced_variables_hybrid_lev

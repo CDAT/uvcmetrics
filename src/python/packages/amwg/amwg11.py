@@ -1,3 +1,7 @@
+# AMWG Diagnostics, plot set 11.
+# Here's the title used by NCAR:
+# DIAG Set 11 - Pacific annual cycle, Scatter plots
+
 from pprint import pprint
 from metrics.packages.amwg.amwg import amwg_plot_plan, src2modobs, src2obsmod
 from metrics.packages.amwg.derivations.vertical import *
@@ -14,6 +18,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 seasonsyr=cdutil.times.Seasons('JFMAMJJASOND')
+
 class amwg_plot_set11(amwg_plot_plan):
     """Example script
     diags.py --model path=$HOME/uvcmetrics_test_data/cam35_data/,climos=yes 

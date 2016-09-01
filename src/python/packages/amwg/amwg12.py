@@ -1,3 +1,7 @@
+# AMWG Diagnostics, plot set 12.
+# Here's the title used by NCAR:
+# DIAG Set 12 - Vertical Profiles at 17 selected raobs stations
+
 from pprint import pprint
 from metrics.packages.amwg.amwg import amwg_plot_plan, src2modobs, src2obsmod
 from metrics.packages.amwg.derivations.vertical import *

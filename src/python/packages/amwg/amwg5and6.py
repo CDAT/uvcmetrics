@@ -1,3 +1,7 @@
+# AMWG Diagnostics, plot set 5.
+# Here's the title used by NCAR:
+# DIAG Set 5 - Horizontal Contour Plots of Seasonal Means
+
 from pprint import pprint
 from metrics.packages.amwg.amwg import amwg_plot_plan, src2modobs, src2obsmod
 from metrics.packages.amwg.derivations.vertical import *
@@ -529,5 +533,4 @@ class amwg_plot_set5(amwg_plot_set5and6):
                 nmin.string=[get_format(CORR)]
             nmin.x=[exts[0][1]]
             x.plot(nmin)
-
         return tm1, tm2  

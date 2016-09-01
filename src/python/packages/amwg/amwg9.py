@@ -1,3 +1,7 @@
+# AMWG Diagnostics, plot set 9.
+# Here's the title used by NCAR:
+# DIAG Set 9 - Horizontal Contour Plots of DJF-JJA Differences
+
 from pprint import pprint
 from metrics.packages.amwg.amwg import amwg_plot_plan, src2modobs, src2obsmod
 from metrics.packages.amwg.derivations.vertical import *
@@ -14,7 +18,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 seasonsyr=cdutil.times.Seasons('JFMAMJJASOND')
-    
+
 class amwg_plot_set9(amwg_plot_plan): 
     """This class represents one plot from AMWG Diagnostics Plot Set 9.
     Each such plot is a set of three contour plots: two for the model output and

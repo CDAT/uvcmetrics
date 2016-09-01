@@ -1,3 +1,7 @@
+# AMWG Diagnostics, plot set 8.
+# Here's the title used by NCAR:
+# DIAG Set 8 - Polar Contour and Vector Plots of Seasonal Means
+
 from pprint import pprint
 from metrics.packages.amwg.amwg import amwg_plot_plan
 from metrics.packages.amwg.derivations.vertical import *
