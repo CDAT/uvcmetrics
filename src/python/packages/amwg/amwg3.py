@@ -4,10 +4,12 @@
 
 from pprint import pprint
 from metrics.packages.amwg.amwg import amwg_plot_plan
+from metrics.packages.amwg.amwg5and6 import amwg_plot_set5and6
 from metrics.packages.amwg.derivations.vertical import *
 from metrics.packages.plotplan import plot_plan
 from metrics.computation.reductions import *
 from metrics.computation.plotspec import *
+from metrics.frontend.uvcdat import *
 from metrics.fileio.findfiles import *
 from metrics.common.utilities import *
 from metrics.computation.region import *

@@ -10,6 +10,7 @@
 # between the VCS-knowledgeable stuff and the actual plot specification...
 
 from metrics.packages.amwg.amwg import *
+from metrics.packages.amwg.amwg13 import *
 from metrics.packages.lmwg.lmwg import *
 import numpy
 
