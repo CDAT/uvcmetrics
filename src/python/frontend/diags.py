@@ -82,24 +82,24 @@ def getNames(opts, model, obs):
     specified on the command line for output on the graphic"""
     def get_model_case(filetable):
         files = filetable._filelist
-        f = cdms2.open(files[0])
         try:
+            f = cdms2.open(files[0])
             case = f.case
+            f.close()
         except:
             case = 'not available'
-        f.close()
         return case
     from metrics.packages.plotplan import plot_plan
     ft1, ft2 = plot_plan().getfts(model, obs)
     nicknames = {}
-    if opts._opts['model'][0]['name'] is not None:
-        nicknames['model'] = opts._opts['model'][0]['name']
+    if len(opts['model'])>0 and opts['model'][0]['name'] is not None:
+        nicknames['model'] = opts['model'][0]['name']
     else:
         nicknames['model'] = get_model_case(ft1)
 
-    if opts._opts['obs'][0]['name'] is not None:
-        nicknames['obs'] = opts._opts['obs'][0]['name']
-    else:
+    if len(opts['obs'])>0 and opts['obs'][0]['name'] is not None:
+        nicknames['obs'] = opts['obs'][0]['name']
+    elif ft2 is not None:
         nicknames['obs'] = ft2.source().split('_')[-1]
     return nicknames
 def setnum( setname ):

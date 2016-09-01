@@ -165,7 +165,10 @@ class basic_datafiles:
     def long_name(self):
         return self.__class__.__name__
     def __getitem__(self, slicelist):
-        return self.files.__getitem__(slicelist)
+        if len(self.files)>0:
+            return self.files.__getitem__(slicelist)
+        else:
+            return None
     def check_filesepc(self):
         """the basic_datafiles version of this method does nothing.  See the dirtree_datafiles
         version to see what it is supposed to do."""
