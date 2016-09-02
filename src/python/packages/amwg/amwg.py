@@ -26,29 +26,6 @@ logger = logging.getLogger(__name__)
 
 seasonsyr=cdutil.times.Seasons('JFMAMJJASOND')
 
-def src2modobs( src ):
-    """guesses whether the source string is for model or obs, prefer model"""
-    if src.find('obs')>=0:
-        typ = 'obs'
-    else:
-        typ = 'model'
-    return typ
-def src2obsmod( src ):
-    """guesses whether the source string is for model or obs, prefer obs"""
-    if src.find('model')>=0:
-        typ = 'model'
-    else:
-        typ = 'obs'
-    return typ
-def get_model_case(filetable):
-    files = filetable._filelist
-    f = cdms2.open(files[0])
-    try:
-        case = f.case
-    except:
-        case = 'not available'
-    f.close()
-    return case
 class AMWG(BasicDiagnosticGroup):
     """This class defines features unique to the AMWG Diagnostics."""
     def __init__(self):

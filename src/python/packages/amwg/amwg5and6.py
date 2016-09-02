@@ -3,7 +3,8 @@
 # DIAG Set 5 - Horizontal Contour Plots of Seasonal Means
 
 from pprint import pprint
-from metrics.packages.amwg.amwg import amwg_plot_plan, src2modobs, src2obsmod
+from metrics.packages.amwg.amwg import amwg_plot_plan
+from metrics.packages.amwg.tools import src2modobs, src2obsmod, get_textobject, get_format
 from metrics.packages.amwg.derivations.vertical import *
 from metrics.packages.plotplan import plot_plan
 from metrics.computation.reductions import *
@@ -18,23 +19,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 seasonsyr=cdutil.times.Seasons('JFMAMJJASOND')
-
-
-def get_textobject(t,att,text):
-    obj = vcs.createtext(Tt_source=getattr(t,att).texttable,To_source=getattr(t,att).textorientation)
-    obj.string = [text]
-    obj.x = [getattr(t,att).x]
-    obj.y = [getattr(t,att).y]
-    return obj
-def get_format(value):
-    v = abs(value)
-    if v<10E-2:
-        fmt="%.3g"
-    elif v<10000:
-        fmt = "%.2f"
-    else:
-        fmt="%.5g"
-    return fmt % value
 
 class amwg_plot_set5and6(amwg_plot_plan):
     """represents one plot from AMWG Diagnostics Plot Sets 5 and 6  <actually only the contours, set 5>

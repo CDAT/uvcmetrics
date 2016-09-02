@@ -3,7 +3,8 @@
 # DIAG Set 15 - ARM Sites Annual Cycle Contour Plots
 
 from pprint import pprint
-from metrics.packages.amwg.amwg import amwg_plot_plan, src2modobs, src2obsmod
+from metrics.packages.amwg.amwg import amwg_plot_plan
+from metrics.packages.amwg.tools import src2modobs, src2obsmod
 from metrics.packages.amwg.derivations.vertical import *
 from metrics.packages.plotplan import plot_plan
 from metrics.computation.reductions import *
