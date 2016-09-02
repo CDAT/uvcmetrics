@@ -5,7 +5,7 @@
 from pprint import pprint
 from metrics.packages.amwg.amwg import amwg_plot_plan
 from metrics.packages.amwg.tools import src2modobs, src2obsmod
-from metrics.packages.amwg.amwg5and6 import amwg_plot_set5and6
+from metrics.packages.amwg.amwg5 import amwg_plot_set5
 from metrics.packages.amwg.derivations.vertical import *
 from metrics.packages.plotplan import plot_plan
 from metrics.computation.reductions import *
@@ -50,7 +50,7 @@ class amwg_plot_set3(amwg_plot_plan,basic_id):
     @staticmethod
     def _list_variables( model, obs ):
         """returns a list of variable names"""
-        allvars = amwg_plot_set5and6._all_variables( model, obs )
+        allvars = amwg_plot_set5._all_variables( model, obs )
         listvars = allvars.keys()
         listvars.sort()
         return listvars

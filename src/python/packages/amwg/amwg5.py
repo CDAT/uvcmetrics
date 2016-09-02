@@ -20,14 +20,21 @@ logger = logging.getLogger(__name__)
 
 seasonsyr=cdutil.times.Seasons('JFMAMJJASOND')
 
-class amwg_plot_set5and6(amwg_plot_plan):
+class amwg_plot_set5(amwg_plot_plan):
     """represents one plot from AMWG Diagnostics Plot Sets 5 and 6  <actually only the contours, set 5>
     NCAR has the same menu for both plot sets, and we want to ease the transition from NCAR
     diagnostics to these; so both plot sets will be done together here as well.
     Each contour plot is a set of three contour plots: one each for model output, observations, and
     the difference between the two.  A plot's x-axis is longitude and its y-axis is the latitude;
-    normally a world map will be overlaid.
-    """
+    normally a world map will be overlaid."""
+
+    """represents one plot from AMWG Diagnostics Plot Set 5
+    Each contour plot is a set of three contour plots: one each for model output, observations, and
+    the difference between the two.  A plot's x-axis is longitude and its y-axis is the latitude;
+    normally a world map will be overlaid. """
+    name = '5 - Horizontal Contour Plots of Seasonal Means'
+    number = '5'
+
     def __init__( self, model, obs,  varid, seasonid=None, regionid=None, aux=None, names={}, plotparms=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the variable to be plotted, e.g. 'TREFHT'.
@@ -438,33 +445,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
         except Exception,err:
             pass
         return tm1, tm2
-        
-    def _results(self,newgrid=0):
-        results = plot_plan._results(self,newgrid)
-        if results is None: return None
-        psv = self.plotspec_values
-        if self.plot1_id in psv and self.plot2_id in psv and\
-                psv[self.plot1_id] is not None and psv[self.plot2_id] is not None:
-            psv[self.plot1_id].synchronize_ranges(psv[self.plot2_id])
-        else:
-            logger.warning("not synchronizing ranges for %s and %s",self.plot1_id, self.plot2_id)
-        for key,val in psv.items():
-            if type(val) is not list: val=[val]
-            for v in val:
-                if v is None: continue
-                v.finalize()
-        if self.plotall_id in self.plotspec_values:
-            return self.plotspec_values[self.plotall_id]
-        else:
-            return None
-
-class amwg_plot_set5(amwg_plot_set5and6):
-    """represents one plot from AMWG Diagnostics Plot Set 5
-    Each contour plot is a set of three contour plots: one each for model output, observations, and
-    the difference between the two.  A plot's x-axis is longitude and its y-axis is the latitude;
-    normally a world map will be overlaid. """
-    name = '5 - Horizontal Contour Plots of Seasonal Means'
-    number = '5'
+    
     def extraCustomizeTemplates(self, (cnvs1, tm1), (cnvs2, tm2), data=None, varIndex=None, graphicMethod=None, var=None):
         """This method does what the title says.  It is a hack that will no doubt change as diags changes.
         It is a total hack. I'm embarassed to be part of it. Please find a better way!!!"""
@@ -517,4 +498,22 @@ class amwg_plot_set5(amwg_plot_set5and6):
                 nmin.string=[get_format(CORR)]
             nmin.x=[exts[0][1]]
             x.plot(nmin)
-        return tm1, tm2  
+        return tm1, tm2          
+    def _results(self,newgrid=0):
+        results = plot_plan._results(self,newgrid)
+        if results is None: return None
+        psv = self.plotspec_values
+        if self.plot1_id in psv and self.plot2_id in psv and\
+                psv[self.plot1_id] is not None and psv[self.plot2_id] is not None:
+            psv[self.plot1_id].synchronize_ranges(psv[self.plot2_id])
+        else:
+            logger.warning("not synchronizing ranges for %s and %s",self.plot1_id, self.plot2_id)
+        for key,val in psv.items():
+            if type(val) is not list: val=[val]
+            for v in val:
+                if v is None: continue
+                v.finalize()
+        if self.plotall_id in self.plotspec_values:
+            return self.plotspec_values[self.plotall_id]
+        else:
+            return None
