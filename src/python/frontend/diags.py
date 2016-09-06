@@ -754,6 +754,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
 if __name__ == '__main__':
     print "UV-CDAT Diagnostics, command-line version"
     print ' '.join(sys.argv)
+    pdb.set_trace()
     o = Options()
     o.parseCmdLine()
     o.verifyOptions()
