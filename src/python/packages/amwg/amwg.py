@@ -213,12 +213,11 @@ class amwg_plot_plan(plot_plan):
 
 # plot set classes in other files:
 #import the individual plot modules
-
 from metrics.packages.amwg.amwg1 import *
 from metrics.packages.amwg.amwg2 import *
 from metrics.packages.amwg.amwg3 import *
 from metrics.packages.amwg.amwg4 import *
-from metrics.packages.amwg.amwg5and6 import *
+from metrics.packages.amwg.amwg5 import *
 from metrics.packages.amwg.amwg6 import *
 from metrics.packages.amwg.amwg7 import *
 from metrics.packages.amwg.amwg8 import *

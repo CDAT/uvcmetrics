@@ -68,7 +68,7 @@ class amwg_plot_set5(amwg_plot_plan):
     @staticmethod
     def _list_variables( model, obs ):
         """returns a list of variable names"""
-        allvars = amwg_plot_set5and6._all_variables( model, obs )
+        allvars = amwg_plot_set5._all_variables( model, obs )
         listvars = allvars.keys()
         listvars.sort()
         return listvars
