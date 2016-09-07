@@ -471,10 +471,10 @@ class amwg_plot_set5(amwg_plot_plan):
 
         x=cnvs2
         t = tm2
-        try:
-            mean_val = float(var.mean)
-        except Exception,err:
-            mean_val = numpy.ma.mean(var.asma())
+        #try:
+        #    mean_val = float(var.mean)
+        #except Exception,err:
+        #    mean_val = numpy.ma.mean(var.asma())
 
         try:
             mean_val = float(var.mean)
