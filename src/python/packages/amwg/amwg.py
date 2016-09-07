@@ -1586,15 +1586,14 @@ class amwg_plot_set5(amwg_plot_set5and6):
             lst = ["min","max"]
 
 
-        x=cnvs2
+        x = cnvs2
         t = tm2
-        pdb.set_trace()
-        weights = cdutil.area_weights(var)
         try:
             mean_val = float(var.mean)
         except Exception,err:
             print "ERROR FROM GETTING ATTRIBUTE:",err
             try:
+                weights = cdutil.area_weights(var)
                 mean_val = cdutil.averager(var, axis="xy", weights=weights)
             except Exception,err:
                 print "ERROR IN CDUTIL:",err
