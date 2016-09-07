@@ -627,10 +627,10 @@ def ttest_ab(mv1, mv2, constant = .1):
    # Shall we go up or down? If this was 2 models, we probably need to go down.
    if len(ax1[idx1]) < len(ax2[idx2]):
       newgrid = mv2.getGrid()
-      mv1new = mv1.regrid(newgrid)
+      mv1new = mv1.regrid(newgrid,regridTool="regrid2")
    if len(ax1[idx1]) > len(ax2[idx2]):
       newgrid = mv1.getGrid()
-      mv2new = mv2.regrid(newgrid)
+      mv2new = mv2.regrid(newgrid,regridTool="regrid2")
 
    tax1, tid1 = timeAxis2(mv1new)
    tax2, tid2 = timeAxis2(mv2new)
@@ -688,15 +688,15 @@ def ttest_time(mv1, mv2, mv3):
    # NCL code interpolates up, ie, obs is scaled to model grid with linint2 function
    if len(ax1[idx1]) < len(ax2[idx2]):
       newgrid = mv1.getGrid()
-      mv2new = mv2.regrid(newgrid)
+      mv2new = mv2.regrid(newgrid,regridTool="regrid2")
    if len(ax1[idx1]) > len(ax2[idx2]):
       newgrid = mv2.getGrid()
-      mv1new = mv1.regrid(newgrid)
+      mv1new = mv1.regrid(newgrid,regridTool="regrid2")
 
    modellat = min(len(ax1[idx1]), len(ax2[idx2]))
    if len(ax3[idx3] < modellat):
       newgrid = mv1new.getGrid()
-      mv3new = mv3.regrid(newgrid)
+      mv3new = mv3.regrid(newgrid,regridTool="regrid2")
 
    # Now, do the model-model ttest
    tax1, tid1 = timeAxis2(mv1new)
@@ -812,10 +812,10 @@ def std_3time(mv1, mv2, mv3, constant = 1.):
 
    if len(axes1[idx1]) < len(axes2[idx2]):
       newgrid = mv1.getGrid()
-      mv2new = mv2.regrid(newgrid)
+      mv2new = mv2.regrid(newgrid,regridTool="regrid2")
    if len(axes1[idx1]) > len(axes2[idx2]):
       newgrid = mv2.getGrid()
-      mv1new = mv1.regrid(newgrid)
+      mv1new = mv1.regrid(newgrid,regridTool="regrid2")
 
    # 1 and 2 are regridded. now we up-sample obs to them (which is what ncar does)
    latA, idxA = latAxis2(mv1new)
@@ -907,11 +907,11 @@ def regrid_without_obs(mv1, mv2):
    if len(axes1[idx1]) < len(axes2[idx2]):
       # mv1 is more coarse, regrid to it
       newgrid = mv1.getGrid()
-      mv2new = mv2.regrid(newgrid)
+      mv2new = mv2.regrid(newgrid,regridTool="regrid2")
    if len(axes1[idx1]) > len(axes2[idx2]):
       # mv2 is more coarse, regrid to it
       newgrid = mv2.getGrid()
-      mv1new = mv1.regrid(newgrid)
+      mv1new = mv1.regrid(newgrid,regridTool="regrid2")
    # we can now calculate rms
    #### If one of these is obs, do we need to convert 'months' to 't' for example?
    ### Does mv2 have a axis=t?
@@ -977,11 +977,11 @@ def regrid_with_obs(mv1, mv2, obs1):
       grid = obs1.getGrid()
 
    if len(axes1[idx1]) > minlat:
-      mv1new = mv1.regrid(grid)
+      mv1new = mv1.regrid(grid,regridTool="regrid2")
    if len(axes2[idx2]) > minlat:
-      mv2new = mv2.regrid(grid)
+      mv2new = mv2.regrid(grid,regridTool="regrid2")
    if len(axesobs[idxobs]) > minlat:
-      obsnew = obs1.regrid(grid)
+      obsnew = obs1.regrid(grid,regridTool="regrid2")
 
    logger.debug('Regridding shapes: %s %s %s', mv1new.shape, mv2new.shape, obsnew.shape)
 
@@ -2375,7 +2375,7 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
                              [a[0].id for a in mv1._TransientVariable__domain], len(axes1[0]), len(axes1[1]),
                              [a[0].id for a in mv2._TransientVariable__domain], len(axes2[0]), len(axes2[1]))
                 raise Exception("when regridding mv2 to mv1, failed to get or generate a grid for mv1")
-            mv2new = mv2.regrid(grid1)
+            mv2new = mv2.regrid(grid1,regridTool="regrid2")
             mv2.regridded = mv2new.id   # a GUI can use this
             regridded_vars[mv2new.id] = mv2new
 #        else:
