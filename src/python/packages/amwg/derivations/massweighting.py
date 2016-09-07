@@ -259,6 +259,8 @@ def weighting_choice( mv ):
             #              hyam, hybm have no axes other than the level axis
             if len( [a for a in axes if a.isLevel()] )>0:
                 # 3-D variable
+                pass
+            else:
                 if bulk_units_p(un):
                     choice = 'mass'
         mv.weighting = choice
