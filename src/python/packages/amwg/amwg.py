@@ -1172,7 +1172,7 @@ class amwg_plot_set5and6(amwg_plot_plan):
             return self.plan_computation_normal_contours( model, obs, varid, seasonid, aux, names, plotparms )
     def plan_computation_normal_contours( self, model, obs, varnom, seasonid, aux=None, names={}, plotparms=None ):
         filetable1, filetable2 = self.getfts(model, obs)
-
+        pdb.set_trace()
         """Set up for a lat-lon contour plot, as in plot set 5.  Data is averaged over all other
         axes."""
         if varnom in filetable1.list_variables():
