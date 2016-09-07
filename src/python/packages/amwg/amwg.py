@@ -21,6 +21,7 @@ import cdutil.times, numpy
 from numbers import Number
 from pprint import pprint
 import logging
+import cdutil
 
 logger = logging.getLogger(__name__)
 
@@ -1590,7 +1591,12 @@ class amwg_plot_set5(amwg_plot_set5and6):
         try:
             mean_val = float(var.mean)
         except Exception,err:
-            mean_val = numpy.ma.mean(var.asma())
+            print "ERROR FROM GETTING ATTRIBUTE:",err
+            try:
+                mean_val = cdutil.averager(var,axis="xy")
+            except Exception,err:
+                print "ERROR IN CDUTIL:",err
+                mean_val = numpy.ma.mean(var.asma())
         mean = get_textobject(t,"mean","Mean   %.2f" % mean_val)
         exts = x.gettextextent(mean)
         x.plot(mean)
