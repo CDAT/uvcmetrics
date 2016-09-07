@@ -1590,7 +1590,8 @@ class amwg_plot_set5(amwg_plot_set5and6):
         t = tm2
         weights = cdutil.area_weights(var)
         try:
-            mean_val = float(var.mean)
+            #mean_val = float(var.mean)
+            mean_val = cdutil.averager(var, axis="xy", weights=weights)
         except Exception,err:
             print "ERROR FROM GETTING ATTRIBUTE:",err
             try:
