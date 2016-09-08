@@ -141,7 +141,7 @@ class amwg_plot_set7(amwg_plot_plan):
                     data.getAxis(1).id = 'Longitude'
 
         #cnvs1.landscape()
-        cnvs1.setcolormap("categorical")
+        #cnvs1.setcolormap("categorical")
 
         maxOri                   = cnvs1.gettextorientation(tm1.max.textorientation)
         meanOri                  = cnvs1.gettextorientation(tm1.mean.textorientation)
@@ -163,7 +163,7 @@ class amwg_plot_set7(amwg_plot_plan):
         tm1.units.textorientation = unitsOri
         tm1.units.priority        = 1
 
-        cnvs2.setcolormap("categorical")
+        #cnvs2.setcolormap("categorical")
 
         # Adjusting intersection of title and xlabels.
         dy                        = (tm2.data.y2-tm2.data.y1) * 0.095
