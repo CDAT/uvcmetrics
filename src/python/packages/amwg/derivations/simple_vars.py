@@ -67,3 +67,5 @@ def prect2precip( PRECT, seasonid ):
     PRECIP = lenseason[seasonid] * convert_units( PRECT, 'mm/day' )
     PRECIP.units = 'mm'
     return PRECIP
+def land_TREFHT(TREFHT, LANDFRAC):
+    return mask_by( TREFHT, LANDFRAC, lo=0.5, hi=None )

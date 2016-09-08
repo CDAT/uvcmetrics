@@ -85,6 +85,9 @@ common_derived_variables = {
     'TREFHT':[derived_var(
             vid='TREFHT', inputs=['TREFHT_LAND'], outputs=['TREFHT'],
             func=(lambda x: x) )],
+    'TREFHT_LAND':[derived_var(
+            vid='TREFHT_LAND', inputs=['TREFHT', 'LANDFRAC'], outputs=['TREFHT_LAND'],
+            func=land_TREFHT )],
     'RESTOM':[derived_var(
             vid='RESTOM', inputs=['FSNT','FLNT'], outputs=['RESTOM'],
             func=aminusb )],   # RESTOM = net radiative flux
