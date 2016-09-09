@@ -9,6 +9,7 @@ from metrics.common.version import version
 from metrics.common.utilities import *
 from metrics.frontend.options import Options
 from metrics.fileio.filetable import *
+from metrics.fileio.prune_filelist import *
 
 # Datafile Filters: Make one class for each atomic operation, e.g. check that it
 # is a file (as opposed to directory, etc.), check the file extension,
@@ -328,6 +329,8 @@ class dirtree_datafiles( basic_datafiles ):
             for dirpath, dirnames, filenames in os.walk(root):
                 # Remove any hidden directories from the walk before we get into them.
                 dirnames[:] = [d for d in dirnames if d[0] != "."]
+                #if isinstance(filt, f_startswith):
+                #    filenames = prune_filelist(filenames, filt.mystr())
                 # Skip hidden files and anything that fails the filter.
                 self.files += [ os.path.join(dirpath, f) for f in filenames if filt(f) and f[0] != "." and os.path.basename(dirpath)[0] != "." ]
         else:   # no more checking, but still could be valid - maybe its a url or something:
@@ -335,6 +338,7 @@ class dirtree_datafiles( basic_datafiles ):
             logger.warning("Candidate data source is not a file or directory. %s What is it????", self.files[0])
         if len(self.files)<=0:
             logger.warning("No files found at %s with filter %s",root, filt)
+        pdb.set_trace()
         return self.files
 
     def short_name(self):
