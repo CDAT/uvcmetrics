@@ -82,9 +82,14 @@ common_derived_variables = {
             vid='AODVIS', inputs=['AOD_550'], outputs=['AODVIS'],
             func=(lambda x: setunits(x,'')) )],
     # AOD normally has no units, but sometimes the units attribute is set anyway.
+    # The next one returns TREFHT over land because that's what the obs files contain
     'TREFHT':[derived_var(
             vid='TREFHT', inputs=['TREFHT_LAND'], outputs=['TREFHT'],
             func=(lambda x: x) )],
+    #The next one returns the fraction of TREFHT over land
+    'TREFHT_LAND':[derived_var(
+            vid='TREFHT_LAND', inputs=['TREFHT', 'LANDFRAC'], outputs=['TREFHT_LAND'],
+            func=land_TREFHT )],
     'RESTOM':[derived_var(
             vid='RESTOM', inputs=['FSNT','FLNT'], outputs=['RESTOM'],
             func=aminusb )],   # RESTOM = net radiative flux
