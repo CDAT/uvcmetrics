@@ -3,7 +3,7 @@
 # The user provides some minimal specification of the data he wants analyzed.
 # Our goal here is to find all the data files which comprise that data.
 
-import hashlib, pickle, operator, os, functools, sys, re, getpass, logging
+import hashlib, pickle, operator, os, functools, sys, re, getpass, logging, pdb
 import pprint
 from metrics.common.version import version
 from metrics.common.utilities import *
@@ -165,7 +165,10 @@ class basic_datafiles:
     def long_name(self):
         return self.__class__.__name__
     def __getitem__(self, slicelist):
-        return self.files.__getitem__(slicelist)
+        if len(self.files)>0:
+            return self.files.__getitem__(slicelist)
+        else:
+            return None
     def check_filesepc(self):
         """the basic_datafiles version of this method does nothing.  See the dirtree_datafiles
         version to see what it is supposed to do."""
@@ -255,7 +258,7 @@ class dirtree_datafiles( basic_datafiles ):
         to specify multiple paths).  In this case the filter, if any,
         also must be specified through the keyword argument.  The Options object will still
         be used for the cache path."""
-
+        
         self.opts = options
         self._root = None
         self._type = None
