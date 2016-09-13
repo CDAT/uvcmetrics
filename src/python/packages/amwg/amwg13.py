@@ -209,7 +209,8 @@ class amwg_plot_set13(amwg_plot_plan):
             }
         self.computation_planned = True
 
-    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None,
+                           uvcplotspec=None ):
         """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
         

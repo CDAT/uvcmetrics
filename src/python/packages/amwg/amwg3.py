@@ -125,7 +125,8 @@ class amwg_plot_set3(amwg_plot_plan,basic_id):
         self.plot_b = one_line_diff_plot( zvar, z2var, vid, plotparms=plotparms['diff'] )
         self.computation_planned = True
         
-    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None,
+                           uvcplotspec=None ):
         """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
 

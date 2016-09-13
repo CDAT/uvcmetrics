@@ -218,12 +218,15 @@ class uvc_simple_plotspec(basic_id):
     def __init__(
         self, pvars, presentation, labels=[], title='', title1='', title2='', source='', ranges=None, overplotline=False,
         linetypes=['solid'], linecolors=[241], levels=None, plotparms=None, displayunits=None,
-        more_id=None, idinfo=None ):
+        more_id=None, idinfo={} ):
 
         pvars = [v for v in pvars if v is not None]
+        if idinfo=={}:
+            idinfo['vars']=[getattr(p,'id','') for p in pvars]
+            idinfo['season']=''
         if idinfo['season']=='JFMAMJJASOND': idinfo['season']='ANN'
-        basic_id.__init__(self, idinfo['vars'][0], '', idinfo['season'], idinfo['ft1'], idinfo['ft2'],
-                          idinfo['ft1nn'], idinfo['ft2nn'], idinfo['region'] )
+        basic_id.__init__(self, idinfo['vars'][0], '', idinfo['season'], idinfo.get('ft1'),
+                          idinfo.get('ft2'), idinfo.get('ft1nn'), idinfo.get('ft2nn'), idinfo.get('region') )
 
         # ... Maybe something else is broken to let None get into pvars.
         if len(pvars)<=0:

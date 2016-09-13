@@ -288,7 +288,7 @@ class plot_plan(object):
             more_id = ps.more_id
             plotparms = getattr(ps,'plotparms',None)
                     
-            regionid = self.region
+            regionid = getattr(self,'region','')
             if type(regionid) is not str: regionid = regionid.id()[1]
             if regionid.lower().find('global')>=0: regionid=''
 
@@ -312,7 +312,7 @@ class plot_plan(object):
                 linecolors, levels=levels, more_id=more_id, plotparms=plotparms, idinfo={
                     'vars':[getattr(self,'varid','')],'season':self._seasonid, 'region':regionid,
                     'ft1':getattr(self,'ft1nom',''), 'ft2':getattr(self,'ft2nom',''),
-                    'ft1nn':getattr(self,'ft1nickname'), 'ft2nn':getattr(self,'ft2nickname') } )
+                    'ft1nn':getattr(self,'ft1nickname',''), 'ft2nn':getattr(self,'ft2nickname','') } )
             #print p
             #print self.plotspec_values[p]
         #pdb.set_trace()

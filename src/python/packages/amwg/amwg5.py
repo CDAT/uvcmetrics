@@ -4,7 +4,7 @@
 
 from pprint import pprint
 from metrics.packages.amwg.amwg import amwg_plot_plan
-from metrics.packages.amwg.tools import src2modobs, src2obsmod, get_textobject, get_format
+from metrics.packages.amwg.tools import src2modobs, src2obsmod, get_textobject, get_format, get_model_case
 from metrics.packages.amwg.derivations.vertical import *
 from metrics.packages.plotplan import plot_plan
 from metrics.computation.reductions import *
