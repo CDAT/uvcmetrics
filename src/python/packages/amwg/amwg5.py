@@ -449,13 +449,15 @@ class amwg_plot_set5(amwg_plot_plan):
         
         #for some reason the source is not being put on the combined graphic
         # So put it there.
-        if source is not None:
-            text = cnvs2.createtext()
-            text.string = source
-            text.x = tm2.data.x1
-            text.y = tm2.data.y2 + 0.01
-            text.height = 10
-            cnvs2.plot(text, bg=1)  
+        # jfp 2015.09.13: For another unknown reason, the source is getting on properly now.
+        #   In case the problem recurs, I'll leave the code here, commented-out, for a while.
+        #if source is not None":
+        #    text = cnvs2.createtext()
+        #    text.string = source
+        #    text.x = tm2.data.x1
+        #    text.y = tm2.data.y2 + 0.01
+        #    text.height = 10
+        #    cnvs2.plot(text, bg=1)  
         
         #create the header for the plot    
         if header is not None:
@@ -469,12 +471,14 @@ class amwg_plot_set5(amwg_plot_plan):
         #pdb.set_trace()
         try:
             #this is for the output of RMSE and CORRELATION
-            tm1, tm2 = self.extraCustomizeTemplates((cnvs1, tm1), (cnvs2, tm2), var=var)
+            tm1, tm2 = self.extraCustomizeTemplates((cnvs1, tm1), (cnvs2, tm2), var=var,
+                                                    uvcplotspec=uvcplotspec)
         except Exception,err:
             pass
         return tm1, tm2
     
-    def extraCustomizeTemplates(self, (cnvs1, tm1), (cnvs2, tm2), data=None, varIndex=None, graphicMethod=None, var=None):
+    def extraCustomizeTemplates(self, (cnvs1, tm1), (cnvs2, tm2), data=None, varIndex=None,
+                                graphicMethod=None, var=None, uvcplotspec=None):
         """This method does what the title says.  It is a hack that will no doubt change as diags changes.
         It is a total hack. I'm embarassed to be part of it. Please find a better way!!!"""
         #(cnvs1, tm1), (cnvs2, tm2) = templates
@@ -503,15 +507,10 @@ class amwg_plot_set5(amwg_plot_plan):
         try:
             mean_val = float(var.mean)
         except Exception,err:
-            logger.debug( "ERROR FROM GETTING ATTRIBUTE: %s",err )
-            # N.B. We need to call our own set_mean()  instead of cdutil.averager (which it calls) <<<<<<<<
-            # because set_mean() chooses better weights <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-            try:
-                weights = cdutil.area_weights(var)
-                mean_val = cdutil.averager(var, axis="xy", weights=weights)
-            except Exception,err:
-                logger.debug( "ERROR IN CDUTIL: %s",err )
-                mean_val = numpy.ma.mean(var.asma())
+            season = uvcplotspec.id().season
+            region = uvcplotspec.id().region
+            set_mean( var, season, region ) # Note that gw is not provided in this call.
+            mean_val = float(var.mean)
 
         mean = get_textobject(t,"mean","Mean   %.2f" % mean_val)
         exts = x.gettextextent(mean)
