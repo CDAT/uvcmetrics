@@ -82,12 +82,12 @@ def getNames(opts, model, obs):
     specified on the command line for output on the graphic"""
     def get_model_case(filetable):
         files = filetable._filelist
-        f = cdms2.open(files[0])
         try:
+            f = cdms2.open(files[0])
             case = f.case
+            f.close()
         except:
             case = 'not available'
-        f.close()
         return case
     from metrics.packages.plotplan import plot_plan
     ft1, ft2 = plot_plan().getfts(model, obs)
@@ -206,7 +206,7 @@ def run_diags( opts ):
             vcanvas.setantialiasing(0)
         vcsx = vcanvas
         vcanvas.setcolormap('bl_to_darkred') #Set the colormap to the NCAR colors
-        vcanvas2 = vcs.init()
+        vcanvas2 = vcs.init(bg=True, geometry=(1212,1628))
         if opts['output']['antialiasing'] is False:
             vcanvas.setantialiasing(0)
             vcanvas2.setantialiasing(0)
@@ -764,7 +764,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
         logger.warning("no data to plot to file2: %s", fnamepng)
     else:
         logger.info("writing png file2: %s",fnamepng)
-        vcanvas2.png( fnamepng , ignore_alpha = True, metadata=provenance_dict() )
+        vcanvas2.png( fnamepng , ignore_alpha = True, metadata=provenance_dict())
         logger.info("writing svg file2: %s",fnamesvg)
         # vcanvas2.svg() doesn't support ignore_alpha or metadata keywords
         vcanvas2.svg( fnamesvg )

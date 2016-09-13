@@ -76,7 +76,7 @@ class Options():
         self._opts['translations'] = {}
         self._opts['levels'] = None
         self._opts['difflevels'] = None #levels for a difference plot
-        self._opts['colormaps'] = {'model': 'rainbow', 'obs': 'rainbow', 'diff': 'bl_to_darkred'}
+        self._opts['colormaps'] = {'model': 'viridis', 'obs': 'viridis', 'diff': 'bl_to_darkred'}
         self._opts['taskspernode'] = None
         self._opts["displayunits"] = None
 

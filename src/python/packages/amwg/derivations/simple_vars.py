@@ -6,9 +6,9 @@ from metrics.computation.reductions import aminusb, aplusb, adivb, convert_units
 from metrics.common.utilities import DiagError
 
 def albedo( SOLIN, FSNTOA ):
-    """TOA (top-of-atmosphere) albedo, (SOLIN-FSNTOA)/FSNTOA"""
+    """TOA (top-of-atmosphere) albedo, (SOLIN-FSNTOA)/SOLIN"""
     diff = aminusb( SOLIN, FSNTOA )
-    alb = adivb( diff, FSNTOA )
+    alb = adivb( diff, SOLIN )
     alb.long_name = "TOA albedo"
     return alb
 
@@ -67,3 +67,5 @@ def prect2precip( PRECT, seasonid ):
     PRECIP = lenseason[seasonid] * convert_units( PRECT, 'mm/day' )
     PRECIP.units = 'mm'
     return PRECIP
+def land_TREFHT(TREFHT, LANDFRAC):
+    return mask_by( TREFHT, LANDFRAC, lo=0.5, hi=None )

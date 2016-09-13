@@ -559,7 +559,7 @@ class uvc_simple_plotspec(basic_id):
                 if levels is not None and len(levels)>0:
                     self.presentation.levels = levels
                     if varmin<0 and varmax>0 and hasattr(var,"model"):
-                        self.presentation.fillareacolors=vcs.getcolors(levels,split=1)
+                        self.presentation.fillareacolors=vcs.getcolors(levels,colors=range(16,240),split=1)
                 #nlevels = max(1, len(levels) - 1)
                 #self.presentation.list()
  
