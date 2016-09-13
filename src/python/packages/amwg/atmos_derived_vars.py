@@ -70,12 +70,14 @@ common_derived_variables = {
     'SWCFSRF':[derived_var(    # Surface SW Cloud Forcing
             vid='SWCFSRF', inputs=['FSNS', 'FSNSC'], outputs=['SWCFSRF'],
             func=aminusb )],
-
+    'SWCFTOM':[derived_var( #difference between clouds and no clouds
+               vid='SWCFTOM', inputs=['FSNTOA', 'FSNTOAC'], outputs=['SWCFTOM'],
+               func=aminusb )],
     # miscellaneous:
     'PRECT':[derived_var(
             vid='PRECT', inputs=['pr'], outputs=['PRECT'],
             func=(lambda x:x)),
-                 derived_var(
+            derived_var(
             vid='PRECT', inputs=['PRECC','PRECL'], outputs=['PRECT'],
             func=(lambda a,b,units="mm/day": aplusb(a,b,units) ))],
     'AODVIS':[derived_var(
