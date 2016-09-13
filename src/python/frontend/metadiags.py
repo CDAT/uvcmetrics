@@ -40,7 +40,7 @@ def getCollections(pname):
     for k in keys:
         fields = k.split()
         colls.append(fields[0])
-
+    
     # Find all mixed_plots sets that have the user-specified pname
     # Deal with mixed_plots next
     for c in allcolls:
@@ -339,7 +339,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, data_hash, colls
                 logger.debug('Processing collection %s ', collnum)
                 packagestr = '--package '+pname
 
-
+        pdb.set_trace()
         # Given this collection, see what variables we have for it.
         vlist = []
         special = set(collection_special_vars)
@@ -770,7 +770,6 @@ def setnum( setname ):
 
 def list_vars(ft, package):
     dm = diagnostics_menu()
-    pdb.set_trace()
     vlist = []
     if 'packages' not in opts._opts:
        opts['packages'] = [ opts['package'] ]
