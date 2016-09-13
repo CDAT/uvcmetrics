@@ -339,7 +339,6 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, data_hash, colls
                 logger.debug('Processing collection %s ', collnum)
                 packagestr = '--package '+pname
 
-        pdb.set_trace()
         # Given this collection, see what variables we have for it.
         vlist = []
         special = set(collection_special_vars)
@@ -417,6 +416,8 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, data_hash, colls
                     regionstr = '--regions '+' '.join(g_region)
 
                 # Now, check each variable for a season/region/varopts argument. Any that do NOT have them can be dealt with first.
+                if o == 'CERES-EBAF_1':
+                    pdb.set_trace()
                 obs_vlist = obsvars[o]
                 simple_vars = []
                 for v in obs_vlist:
