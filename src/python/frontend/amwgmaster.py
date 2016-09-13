@@ -498,6 +498,7 @@ diags_varlist['FSNTOA'] = {'desc': 'TOA net SW flux (Northern)'}
 diags_varlist['CLDMED_VISIR'] = {'desc': 'Mid cloud amount (VIS/IR/NIR) clouds) (Northern)'}
 diags_varlist['MEANTAU'] = {'desc': 'Mean cloud optical thickness (Day)'}
 diags_varlist['SWCF'] = {'desc': 'TOA shortwave cloud forcing'}
+diags_varlist['SWCFTOM'] = {'desc': 'Top of model shortwave cloud forcing'}
 diags_varlist['ALBEDO'] = {'desc': 'TOA Albedo'}
 diags_varlist['MEANTTOP'] = {'desc': 'Mean cloud top temperature (Day)'}
 diags_varlist['FLDS'] = {'desc': 'Surf LW downwelling flux (Northern)'}

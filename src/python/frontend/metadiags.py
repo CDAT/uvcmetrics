@@ -770,6 +770,7 @@ def setnum( setname ):
 
 def list_vars(ft, package):
     dm = diagnostics_menu()
+    pdb.set_trace()
     vlist = []
     if 'packages' not in opts._opts:
        opts['packages'] = [ opts['package'] ]
