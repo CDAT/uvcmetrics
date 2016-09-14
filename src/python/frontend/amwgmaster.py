@@ -668,8 +668,8 @@ diags_collection['dontrun']['TSA'] = {'plottype':'2', 'obs':['NA_1'], 'package':
 # *** Collection 99 for testing ***
 diags_collection['99'] = {}
 diags_collection['99']['desc'] = 'Horizontal contour plots of DJF, JJA and ANN means'
-diags_collection['99']['seasons'] = ['DJF', 'JJA', 'ANN']
+diags_collection['99']['seasons'] = ['ANN']
 diags_collection['99']['package'] = 'AMWG'
 diags_collection['99']['options'] = {'logo':'no'}
 diags_collection['99']['combined'] = True
-diags_collection['99']['TS'] = {'plottype': '5', 'obs': ['NCEP_1']}
+diags_collection['99']['SWCFTOM'] = {'plottype': '5', 'obs': ['CERES-EBAF_1'], 'regions':['Global']}

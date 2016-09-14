@@ -416,8 +416,6 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, data_hash, colls
                     regionstr = '--regions '+' '.join(g_region)
 
                 # Now, check each variable for a season/region/varopts argument. Any that do NOT have them can be dealt with first.
-                if o == 'CERES-EBAF_1':
-                    pdb.set_trace()
                 obs_vlist = obsvars[o]
                 simple_vars = []
                 for v in obs_vlist:
@@ -454,6 +452,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, data_hash, colls
                 # let's save what the defaults are for this plotset
                 g_seasons = g_season
                 g_regions = g_region
+                pdb.set_trace()
                 for v in complex_vars:
                     # run these individually basically.
                     g_region = diags_collection[collnum][v].get('regions', g_regions)
@@ -702,6 +701,7 @@ def runcmdline(cmdline, outlogdir, dryrun=False):
                                regionstr, '--log_level DEBUG ', '--log_file', log_file)
                     CMDLINES += [cmdline]
                 elif length == 15:
+
                     for vo in varopts.split("--varopts")[-1].split():
                         if regionstr:
                             fname = "{pkg}_{set}_{obs}_{var}_{opt}_{season}_{region}.log".format(pkg=pkg, set=plotset, obs=obs, var=var, opt=vo, season=season, region=region)
@@ -714,6 +714,20 @@ def runcmdline(cmdline, outlogdir, dryrun=False):
                                    seasonstr, varstr, outstr, xmlstr, prestr, poststr,
                                    regionstr, "--varopts", vo, '--log_level DEBUG ', '--log_file', log_file)
                         CMDLINES += [cmdline]
+                        
+                    if False:
+                        for vo in varopts.split("--varopts")[-1].split():
+                            if regionstr:
+                                fname = "{pkg}_{set}_{obs}_{var}_{opt}_{season}_{region}.log".format(pkg=pkg, set=plotset, obs=obs, var=var, opt=vo, season=season, region=region)
+                            else:
+                                fname = "{pkg}_{set}_{obs}_{var}_{opt}_{season}.log".format(pkg=pkg, set=plotset, obs=obs, var=var, opt=vo, season=season)
+    
+                            log_file = os.path.join(outlogdir, fname)
+    
+                            cmdline = (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr,
+                                       seasonstr, varstr, outstr, xmlstr, prestr, poststr,
+                                       regionstr, "--varopts", vo, '--log_level DEBUG ', '--log_file', log_file)
+                            CMDLINES += [cmdline]
     else:
         CMDLINES = [cmdline]
 
