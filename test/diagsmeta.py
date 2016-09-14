@@ -15,12 +15,13 @@ p.add_argument("--baseline", dest="baseline", help="directory with baseline file
 args = p.parse_args(sys.argv[1:])
 datadir = args.datadir
 print 'datadir = ', datadir
-baselinepath = args.baseline + '/metadiags/'
+baselinepath = args.baseline + '/diagsmeta/'
 print "baselinepath = ", baselinepath
 
 test_str = 'metadiags\n'
 #run this from command line to get the files required
 command = "metadiags.py  --package AMWG --set 5  --model path=" + datadir + "/cam35_data_smaller/,climos=yes  --obs path=" + datadir + "/obs_data_5.6/,climos=yes --dryrun "
+print command
 
 #run the command
 proc = subprocess.Popen([command], shell=True)
