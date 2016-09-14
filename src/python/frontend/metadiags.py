@@ -498,7 +498,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, data_hash, colls
                             pstr2 = '--model path=%s,climos=%s,type=model' % (modelpath1, cf1)
                         else:
                             pstr2 = ''
-                        pdb.set_trace()
+
                         cmdline = [def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, seasonstr, varstr, outstr, xmlstr, prestr, poststr, regionstr]
                         if varopts:
                             cmdline +=  [varopts]
