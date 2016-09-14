@@ -452,7 +452,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, data_hash, colls
                 # let's save what the defaults are for this plotset
                 g_seasons = g_season
                 g_regions = g_region
-                pdb.set_trace()
+                
                 for v in complex_vars:
                     # run these individually basically.
                     g_region = diags_collection[collnum][v].get('regions', g_regions)
@@ -498,12 +498,13 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, data_hash, colls
                             pstr2 = '--model path=%s,climos=%s,type=model' % (modelpath1, cf1)
                         else:
                             pstr2 = ''
-
-                        cmdline = (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, seasonstr, varstr, outstr, xmlstr, prestr, poststr, regionstr, varopts)
+                        pdb.set_trace()
+                        cmdline = [def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, seasonstr, varstr, outstr, xmlstr, prestr, poststr, regionstr]
+                        if varopts:
+                            cmdline +=  [varopts]
                         if collnum != 'dontrun':
                             runcmdline(cmdline, outlogdir, dryrun)
                         else:
-
                             logger.debug('DONTRUN: %s', cmdline)
                 else: # different executable; just pass all option key:values as command line options.
                     # Look for a cmdline list in the options for this variable.
