@@ -702,7 +702,7 @@ def runcmdline(cmdline, outlogdir, dryrun=False):
                                regionstr, '--log_level DEBUG ', '--log_file', log_file)
                     CMDLINES += [cmdline]
                 elif length == 15:
-
+                    #varopts must be non empty
                     for vo in varopts.split("--varopts")[-1].split():
                         if regionstr:
                             fname = "{pkg}_{set}_{obs}_{var}_{opt}_{season}_{region}.log".format(pkg=pkg, set=plotset, obs=obs, var=var, opt=vo, season=season, region=region)
@@ -715,20 +715,7 @@ def runcmdline(cmdline, outlogdir, dryrun=False):
                                    seasonstr, varstr, outstr, xmlstr, prestr, poststr,
                                    regionstr, "--varopts", vo, '--log_level DEBUG ', '--log_file', log_file)
                         CMDLINES += [cmdline]
-                        
-                    if False:
-                        for vo in varopts.split("--varopts")[-1].split():
-                            if regionstr:
-                                fname = "{pkg}_{set}_{obs}_{var}_{opt}_{season}_{region}.log".format(pkg=pkg, set=plotset, obs=obs, var=var, opt=vo, season=season, region=region)
-                            else:
-                                fname = "{pkg}_{set}_{obs}_{var}_{opt}_{season}.log".format(pkg=pkg, set=plotset, obs=obs, var=var, opt=vo, season=season)
-    
-                            log_file = os.path.join(outlogdir, fname)
-    
-                            cmdline = (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr,
-                                       seasonstr, varstr, outstr, xmlstr, prestr, poststr,
-                                       regionstr, "--varopts", vo, '--log_level DEBUG ', '--log_file', log_file)
-                            CMDLINES += [cmdline]
+
     else:
         CMDLINES = [cmdline]
 
