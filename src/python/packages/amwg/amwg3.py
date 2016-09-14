@@ -40,8 +40,11 @@ class amwg_plot_set3(amwg_plot_plan,basic_id):
         plot_plan.__init__(self,seasonid)
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
 
-        if regionid.id()[0]=='rg':  # If the region is a class, extract a suitable string.
-            regionid = regionid.id()[1]
+        try:
+            if regionid.id()[0]=='rg':  # If the region is a class, extract a suitable string.
+                regionid = regionid.id()[1]
+        except:
+            pass
         if regionid=="Global" or regionid=="global" or regionid is None or regionid is '':
             self._regionid="Global"
         else:
@@ -326,11 +329,13 @@ class amwg_plot_set3(amwg_plot_plan,basic_id):
         plot_a_val = uvc_plotspec(
             [v for v in [zval,z2val] if v is not None],'Yxvsx', labels=[zunam,z2unam],
             #title=' '.join([self._id[0],self._id[1],self._id[2],zunam,'and',z2unam]),
-            title = ' '.join([self._id.classid,self._id.var,self._id.season,self._id.region]),
+            title1 = ' '.join([self._id.classid,self._id.var,self._id.season,self._id.region]),
+            title2 = ' '.join([self._id.classid,self._id.var,self._id.season,self._id.region]),
             source = ','.join([ft1src,ft2src] ))
         plot_b_val = uvc_plotspec(
             [v for v in [zdiffval] if v is not None],'Yxvsx', labels=['difference'],
-            title=' '.join([self._id.classid,self._id.var,self._id.season,self._id.region,'difference']),
+            title1=' '.join([self._id.classid,self._id.var,self._id.season,self._id.region,'difference']),
+            title2="difference",
             source = ','.join([ft1src,ft2src] ))
         # no, we don't want same range for values & difference! plot_a_val.synchronize_ranges(plot_b_val)
         plot_a_val.finalize()

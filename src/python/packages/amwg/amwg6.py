@@ -304,7 +304,7 @@ class amwg_plot_set6(amwg_plot_plan):
             vecplot = plotspec(
                 vid = ps.dict_idid(vid_vec1), zvars=[vid_vec11,vid_vec12], zfunc = (lambda z,w: (z,w)),
                 plottype = plot_type_temp[1],
-                title = title,  source=ft1src,
+                title = title,   # causees duplication in overlaid vector/contour plot: source=ft1src,
                 plotparms = plotparms[src2modobs(ft1src)] )
             #self.single_plotspecs[self.plot1_id] = [contplot,vecplot]
             self.single_plotspecs[self.plot1_id+'c'] = contplot
@@ -321,7 +321,7 @@ class amwg_plot_set6(amwg_plot_plan):
             vecplot = plotspec(
                 vid = ps.dict_idid(vid_vec2), zvars=[vid_vec21,vid_vec22], zfunc = (lambda z,w: (z,w)),
                 plottype = plot_type_temp[1],
-                title = title,  source=ft2src,
+                title = title,  # causees duplication in overlaid vector/contour plot: source=ft2src,
                 plotparms = plotparms[src2obsmod(ft2src)] )
             self.single_plotspecs[self.plot2_id+'c'] = contplot
             self.single_plotspecs[self.plot2_id+'v'] = vecplot
@@ -353,7 +353,7 @@ class amwg_plot_set6(amwg_plot_plan):
                 zvars = [vid_vec11,vid_vec12,vid_vec21,vid_vec22],
                 zfunc = (lambda z1,w1,z2,w2: (aminusb_2ax(z1,z2),aminusb_2ax(w1,w2))),
                 plottype = plot_type_temp[1],
-                title = title,  source = source,
+                title = title,  # causees duplication in overlaid vector/contour plot: source = source,
                 plotparms = plotparms['diff'] )
             self.single_plotspecs[self.plot3_id+'c'] = contplot
             self.single_plotspecs[self.plot3_id+'v'] = vecplot
