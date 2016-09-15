@@ -2094,6 +2094,8 @@ def aminusb_ax2( mv1, mv2 ):
 
 
 def convert_units(mv, units):
+   import pdb
+   pdb.set_trace() 
    if type(mv) == float:
       return mv
    if not hasattr(mv,'units') and hasattr(mv,'lunits'):
