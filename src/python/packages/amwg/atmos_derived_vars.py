@@ -2,7 +2,7 @@
 
 from metrics.computation.plotspec import derived_var
 from metrics.packages.amwg.derivations import *
-from metrics.computation.reductions import aminusb_2ax, aminusb, aplusb
+from metrics.computation.reductions import aminusb_2ax, aminusb, aplusb, convert_units
 
 # "Common derived variables" are derived variables which are as general-interest as most dataset
 # variables (which soon become reduced variables).  So it makes sense their definition to be common
@@ -230,10 +230,10 @@ common_derived_variables = {
             func=(lambda clmisr, h0=0,h1=3, t0=9.4,t1=379: reduce_height_thickness(
                     clmisr, h0,h1, t0,t1) ) )
         ],
-
+    #TGCLDLWP_OCEAN
     'TGCLDLWP':[derived_var(
-            vid='TGCLDLWP', inputs=['TGCLDLWP_OCEAN'], outputs=['TGCLDLWP'],
-            func=(lambda x: x) ) ],
+            vid='TGCLDLWP', inputs=['TGCLDLWP'], outputs=['TGCLDLWP'],
+            func=(lambda x, units='g/m^2': convert_units(x, units)) ) ],
     #...end of clouds, Yuying Zhang
 
     # To compare LHFLX and QFLX, need to unify these to a common variable

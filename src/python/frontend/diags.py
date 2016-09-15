@@ -731,8 +731,8 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
             if savePNG:
                     vcanvas.png( fnamepng, ignore_alpha=True, metadata=provenance_dict() )
                     # vcanvas.svg() doesn't support ignore_alpha or metadata keywords
-                    vcanvas.svg( fnamesvg )
-                    vcanvas.pdf( fnamepdf)
+                    #vcanvas.svg( fnamesvg )
+                    #vcanvas.pdf( fnamepdf)
 
     if tmmobs[0] is not None:  # If anything was plotted to vcanvas2
         vname = varid.replace(' ', '_')
@@ -745,11 +745,11 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
     else:
         logger.info("writing png file2: %s",fnamepng)
         vcanvas2.png( fnamepng , ignore_alpha = True, metadata=provenance_dict())
-        logger.info("writing svg file2: %s",fnamesvg)
+        #logger.info("writing svg file2: %s",fnamesvg)
         # vcanvas2.svg() doesn't support ignore_alpha or metadata keywords
-        vcanvas2.svg( fnamesvg )
-        logger.info("writing pdf file2: %s",fnamepdf)
-        vcanvas2.pdf( fnamepdf )            
+        #vcanvas2.svg( fnamesvg )
+        #logger.info("writing pdf file2: %s",fnamepdf)
+        #vcanvas2.pdf( fnamepdf )            
 
 if __name__ == '__main__':
     print "UV-CDAT Diagnostics, command-line version"
