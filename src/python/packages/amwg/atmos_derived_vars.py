@@ -230,9 +230,9 @@ common_derived_variables = {
             func=(lambda clmisr, h0=0,h1=3, t0=9.4,t1=379: reduce_height_thickness(
                     clmisr, h0,h1, t0,t1) ) )
         ],
-
+    #TGCLDLWP_OCEAN
     'TGCLDLWP':[derived_var(
-            vid='TGCLDLWP', inputs=['TGCLDLWP_OCEAN'], outputs=['TGCLDLWP'],
+            vid='TGCLDLWP_scaled', inputs=['TGCLDLWP'], outputs=['TGCLDLWP'],
             func=(lambda x: 1000.*x) ) ],
     #...end of clouds, Yuying Zhang
 
