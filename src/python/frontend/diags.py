@@ -341,7 +341,7 @@ def run_diags( opts ):
                                                plotparms = { 'model':{'levels':opts['levels'], 'colormap':opts['colormaps']['model']},
                                                              'obs':{'levels':opts['levels'], 'colormap':opts['colormaps']['obs']},
                                                              'diff':{'levels':opts['difflevels'], 'colormap':opts['colormaps']['diff']} } )
-
+                        pdb.set_trace()
                         # Do the work (reducing variables, etc)
                         res = plot.compute(newgrid=-1) # newgrid=0 for original grid, -1 for coarse
                         # typically res is a list of uvc_simple_plotspec.  But an item might be a tuple.
@@ -353,7 +353,7 @@ def run_diags( opts ):
                             frname = form_file_rootname(
                                 snum, [varid], 'variable', dir=outdir, season=time, basen=basename,
                                 postn=postname, region=r_fname, aux=[aux] )
-                            pdb.set_trace()
+                            
                             if opts['output']['plots'] == True:
                                 displayunits = opts.get('displayunits', None)                                    
                                 makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits=displayunits)
