@@ -255,7 +255,9 @@ diags_collection['5']['SWCFSRF'] = {'plottype': '5', 'obs': ['ISCCP_1']}
 diags_collection['5']['TMQ'] = {'plottype': '5', 
                                 'obs': ['NCEP_1', 'NVAP_1', 'JRA25_1', 'ERA40_1', 'MODIS_1', 'ECMWF_1', 'SSMI_1'], 
                                 'regions':['Global'],
-                                'colormaps':{'model':[4,8,12,16,20,24,28,32,36,40,44,48,52,56,60], 'obs':[-12,-9,-6,-4,-3,-2,-1,0,1,2,3,4,6,9,12] } },
+                                'colormaps':{'model':[4,8,12,16,20,24,28,32,36,40,44,48,52,56,60], 
+                                             'obs':[4,8,12,16,20,24,28,32,36,40,44,48,52,56,60],
+                                             'diff':[-12,-9,-6,-4,-3,-2,-1,0,1,2,3,4,6,9,12] } },
 diags_collection['5']['TGCLDLWP'] = {'plottype': '5', 'obs': ['SSMI_1', 'NVAP_1', 'SSMI_1', 'NVAP_1', 'MODIS_1'], 'regions':['Global']}
 diags_collection['5']['PSL'] = {'plottype': '5', 'obs': ['JRA25_1', 'NCEP_1']}
 diags_collection['5']['T'] = {'plottype': '5', 'obs': ['ECMWF_1', 'JRA25_1', 'AIRS_1', 'ERA40_1', 'NCEP_1'], 'varopts':['850', '200']}
