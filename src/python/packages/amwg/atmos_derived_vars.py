@@ -232,7 +232,7 @@ common_derived_variables = {
         ],
     #TGCLDLWP_OCEAN
     'TGCLDLWP':[derived_var(
-            vid='TGCLDLWP_scaled', inputs=['TGCLDLWP'], outputs=['TGCLDLWP'],
+            vid='TGCLDLWP', inputs=['TGCLDLWP'], outputs=['TGCLDLWP'],
             func=(lambda x: 1000.*x) ) ],
     #...end of clouds, Yuying Zhang
 
