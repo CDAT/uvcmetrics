@@ -40,7 +40,7 @@ class amwg_plot_set3(amwg_plot_plan,basic_id):
         plot_plan.__init__(self,seasonid)
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
 
-        region, self._regionid, idregionid = interpret_region2( regionid )
+        self.region, self._regionid, idregionid = interpret_region2( regionid )
         basic_id.__init__(self,'set3',varnom,seasonid,idregionid)
 
         if not self.computation_planned:
