@@ -67,7 +67,7 @@ What this function returns depends on what fmt is.
         else:
             logging.warning('Couldnt determine filename; defaulting to just .png. vname: %s, rootname: %s', vname, rootname)
             fnamedot = rootname+'.'
-    elif '_diff' in vname or ' diff' in vname or "Difference" in vname or\
+    elif '_diff' in vname or ' diff' in vname or "Difference" in vname or "difference" in vname or\
             ('_ft0_' in vname and '_ft1_' in vname) or ('_ft1_' in vname and '_ft2_' in vname):
         fnamedot = rootname+'-diff.'
     elif rootname[-9:]=='-combined':  # descr has really already been supplied by being stuck in the rootname

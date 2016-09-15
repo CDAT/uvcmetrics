@@ -242,10 +242,14 @@ class plot_plan(object):
                 continue
             #labels = [xlab,ylab,zlab]
             labels = [zlab,z2lab]
-            if hasattr(ps,'title'):
-                title1 = getattr( ps, 'title1', ps.title )
-                title2 = getattr( ps, 'title2', ps.title )
-                title = title1         # deprecated
+            if hasattr(ps,'title1'):
+                title1 = ps.title1
+                title = title1      # deprecated
+                title2 = getattr( ps, 'title2', title1 )
+            elif hasattr(ps,'title'):  # deprecated
+                title1 = ps.title
+                title = title1
+                title2 = getattr( ps, 'title2', title )
             else:  # Normally we won't get here because titles are normally built with the plotspec object.
                 title = ' '.join(labels)+' '+self._season_displayid  # do this better later
                 title1 = title
@@ -313,8 +317,6 @@ class plot_plan(object):
                     'vars':[getattr(self,'varid','')],'season':self._seasonid, 'region':regionid,
                     'ft1':getattr(self,'ft1nom',''), 'ft2':getattr(self,'ft2nom',''),
                     'ft1nn':getattr(self,'ft1nickname',''), 'ft2nn':getattr(self,'ft2nickname','') } )
-            #print p
-            #print self.plotspec_values[p]
         #pdb.set_trace()
 
         # dispose of any failed plots
