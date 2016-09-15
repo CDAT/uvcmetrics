@@ -672,4 +672,4 @@ diags_collection['99']['seasons'] = ['ANN']
 diags_collection['99']['package'] = 'AMWG'
 diags_collection['99']['options'] = {'logo':'no'}
 diags_collection['99']['combined'] = True
-diags_collection['99']['U'] = {'plottype': '5', 'obs': [ 'ERA40_1'], 'varopts':['200']}
+diags_collection['99']['TGCLDLWP'] = {'plottype': '5', 'obs': ['MODIS_1'], 'regions':['Global']}
