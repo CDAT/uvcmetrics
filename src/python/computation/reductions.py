@@ -1583,35 +1583,6 @@ def calculate_seasonal_climatology(mv, season):
         mvt.units = mv.units
     return mvt
 
-# Moved this here from amwg.py set13 class, because it can be used by all the AMWG classes.
-def interpret_region( region ):
-    """Tries to make sense of the input region, and returns the resulting instance of the class
-    rectregion in region.py."""
-    if region is None:
-        region = "Global"
-    if type(region) is str:
-        if region in defines.all_regions:
-            region = defines.all_regions[region]
-        else:
-            raise ValueError, "cannot recognize region name %s"%region
-            region = None
-    if region == None:
-        raise Exception( 'this code should never be hit. please sent smithbe@ornl.gov an email detailing how you got here.' )
-    return region
-
-def select_region(mv, region=None):
-    # Select lat-lon region
-    if region is None or region=="global" or region=="Global" or\
-            getattr(region,'filekey',None)=="Global" or str(region)=="Global":
-#        print 'first case'
-        mvreg = mv
-    else:
-#        print 'second case'
-        region = interpret_region(region)
-#        print 'region after interpret region:', region
-        mvreg = mv(latitude=(region[0], region[1]), longitude=(region[2], region[3]))
-    return mvreg
-
 def select_lev( mv, slev ):
     """Input is a level-dependent variable mv and a level slev to select.
     slev is an instance of udunits - thus it has a value and a units attribute.
