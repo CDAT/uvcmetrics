@@ -353,7 +353,7 @@ def run_diags( opts ):
                             frname = form_file_rootname(
                                 snum, [varid], 'variable', dir=outdir, season=time, basen=basename,
                                 postn=postname, region=r_fname, aux=[aux] )
-                     
+                            pdb.set_trace()
                             if opts['output']['plots'] == True:
                                 displayunits = opts.get('displayunits', None)                                    
                                 makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits=displayunits)

@@ -875,7 +875,6 @@ if __name__ == '__main__':
 
     # Kludge to make sure colormaps options are passed to diags
     # If user changed them
-    pdb.set_trace()
     for K in diags_collection.keys():
         tmpDict = diags_collection[K].get("options", {})
         cmaps = opts._opts["colormaps"]
