@@ -254,7 +254,7 @@ diags_collection['5']['LWCFSRF'] = {'plottype': '5', 'obs': ['ISCCP_1']}
 diags_collection['5']['SWCFSRF'] = {'plottype': '5', 'obs': ['ISCCP_1']}
 diags_collection['5']['TMQ'] = {'plottype': '5', 
                                 'obs': ['NCEP_1', 'NVAP_1', 'JRA25_1', 'ERA40_1', 'MODIS_1', 'ECMWF_1', 'SSMI_1'], 
-                                'regions':['Global']},
+                                'regions':['Global']}
 diags_collection['5']['TGCLDLWP'] = {'plottype': '5', 'obs': ['SSMI_1', 'NVAP_1', 'SSMI_1', 'NVAP_1', 'MODIS_1'], 'regions':['Global']}
 diags_collection['5']['PSL'] = {'plottype': '5', 'obs': ['JRA25_1', 'NCEP_1']}
 diags_collection['5']['T'] = {'plottype': '5', 'obs': ['ECMWF_1', 'JRA25_1', 'AIRS_1', 'ERA40_1', 'NCEP_1'], 'varopts':['850', '200']}
