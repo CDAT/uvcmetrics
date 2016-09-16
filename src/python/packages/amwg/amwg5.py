@@ -257,7 +257,7 @@ class amwg_plot_set5(amwg_plot_plan):
                 vid = ps.dict_idid(vidl1),
                 zvars = [vidl1],  zfunc = (lambda z: z),
                 plottype = self.plottype,
-                title = varnom + ' ' + seasonid + '\n model',
+                title = varnom + ' ' + seasonid + ' model' + names['model'],
                 source = names['model'],
                 plotparms = plotparms[src2modobs(ft1src)] ) }
            
@@ -320,7 +320,7 @@ class amwg_plot_set5(amwg_plot_plan):
                 vid = ps.dict_idid(vidl2),
                 zvars = [vidl2],  zfunc = (lambda z: z),
                 plottype = self.plottype,
-                title = 'observation',
+                title = 'observation' + names['obs'],
                 source = names['obs'],
                 plotparms = plotparms[src2obsmod(ft2src)] )
         self.single_plotspecs[self.plot3_id] = plotspec(
