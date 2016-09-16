@@ -674,4 +674,6 @@ diags_collection['99']['seasons'] = ['ANN']
 diags_collection['99']['package'] = 'AMWG'
 diags_collection['99']['options'] = {'logo':'no'}
 diags_collection['99']['combined'] = True
-diags_collection['99']['TGCLDLWP'] = {'plottype': '5', 'obs': ['MODIS_1'], 'regions':['Global']}
+diags_collection['99']['TMQ'] = {'plottype': '5', 
+                                'obs': ['NCEP_1', 'NVAP_1', 'JRA25_1', 'ERA40_1', 'MODIS_1', 'ECMWF_1', 'SSMI_1'], 
+                                'regions':['Global']}
