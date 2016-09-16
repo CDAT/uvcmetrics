@@ -77,20 +77,24 @@ What this function returns depends on what fmt is.
     else:
         if '_ttest' in vname:
             if 'ft1' in vname and 'ft2' in vname:
-                fnamedot = rootname+'-model1_model2_ttest.'
+                #fnamedot = rootname+'-model1_model2_ttest.'
+                fnamedot = rootname+'-model_obs_ttest.'
             elif 'ft1' in vname and 'ft2' not in vname:
                 fnamedot = rootname+'-model1_ttest.'
             elif 'ft2' in vname and 'ft1' not in vname:
-                fnamedot = rootname+'-model2_ttest.'
+                #fnamedot = rootname+'-model2_ttest.'
+                fnamedot = rootname+'-obs_ttest.'
         elif '_ft1' in vname and '_ft2' not in vname:
             fnamedot = rootname+'-model.'  
             # if we had switched to model1 it would affect classic view, etc.
         elif '_ft2' in vname and '_ft1' not in vname:
-            fnamedot = rootname+'-model2.'
+            #fnamedot = rootname+'-model2.'
+            fnamedot = rootname+'-obs.'
         elif '_ft0' in vname and '_ft1' not in vname:
             fnamedot = rootname+'-model0.'
         elif '_ft1' in vname and '_ft2' in vname:
-            fnamedot = rootname+'-model-model2.'
+            #fnamedot = rootname+'-model-model2.'
+            fnamedot = rootname+'-model-obs.'
         elif '_fts' in vname: # a special variable; typically like lmwg set3/6 or amwg set 2
             fnamedot = rootname+'_'+vname.replace('_fts','')+'.'
         else:
