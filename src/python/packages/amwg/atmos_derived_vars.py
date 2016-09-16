@@ -74,10 +74,10 @@ common_derived_variables = {
                vid='SWCFTOM', inputs=['FSNTOA', 'FSNTOAC'], outputs=['SWCFTOM'],
                func=aminusb )],
     # miscellaneous:
-    'PRECT':[derived_var(
+    'PRECT':[derived_var( 
             vid='PRECT', inputs=['pr'], outputs=['PRECT'],
             func=(lambda x:x)),
-            derived_var(
+            derived_var( 
             vid='PRECT', inputs=['PRECC','PRECL'], outputs=['PRECT'],
             func=(lambda a,b,units="mm/day": aplusb(a,b,units) ))],
     'AODVIS':[derived_var(
@@ -233,7 +233,10 @@ common_derived_variables = {
     #TGCLDLWP_OCEAN
     'TGCLDLWP':[derived_var(
             vid='TGCLDLWP', inputs=['TGCLDLWP'], outputs=['TGCLDLWP'],
-            func=(lambda x: convert_units(x, 'g/m^2')) ) ],
+            func=(lambda x: convert_units(x, 'g/m^2')) ),
+            derived_var(
+            vid='TGCLDLWP_OCEAN', inputs=['TGCLDLWP_OCEAN'], outputs=['TGCLDLWP'],
+            func=(lambda x: convert_units(x, 'g/m^2')) )],
     #...end of clouds, Yuying Zhang
 
     # To compare LHFLX and QFLX, need to unify these to a common variable
