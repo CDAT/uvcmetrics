@@ -160,7 +160,7 @@
     "priority": 0, 
     "textorientation": "plotset5_max", 
     "texttable": "default", 
-    "x": 0.90, 
+    "x": 0.88, 
     "y": 0.99
    }, 
    "mean": {
@@ -168,7 +168,7 @@
     "priority": 0, 
     "textorientation": "plotset5_mean", 
     "texttable": "default", 
-    "x": 0.90, 
+    "x": 0.88, 
     "y": 0.975
    }, 
    "min": {
@@ -176,7 +176,7 @@
     "priority": 0, 
     "textorientation": "plotset5_min", 
     "texttable": "default", 
-    "x": 0.90, 
+    "x": 0.88, 
     "y": 0.96
    }, 
    "source": {
