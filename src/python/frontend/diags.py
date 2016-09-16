@@ -671,7 +671,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
                 else:
                     # Reverting to having an update otherwise we get double titles
                     vcanvas2.setcolormap('bl_to_darkred')
-                    pdb.set_trace()
+
                     #check for units specified for display purposes
                     var_save = var.clone()
                     if displayunits != None:
