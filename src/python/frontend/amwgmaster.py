@@ -166,7 +166,7 @@ diags_collection['3']['PSL'] = {'plottype': '3', 'obs': ['JRA25_1', 'NCEP_1']}
 diags_collection['3']['SHFLX'] = {'plottype': '3', 'obs': ['JRA25_1', 'NCEP_1', 'LARYEA_1']}
 diags_collection['3']['LHFLX'] = {'plottype': '3', 'obs': ['WHOI_1', 'ECMWF_1', 'JRA25_1', 'ERA40_1']}
 diags_collection['3']['QFLX'] = {'plottype': '3', 'obs': ['WHOI_1', 'ECMWF_1', 'LARYEA_1']}
-diags_collection['3']['PRECT'] = {'plottype': '3', 'obs': ['XA_1', 'GPCP_1', 'LEGATES_1', 'TRMM_1', 'SSMI_1']}
+diags_collection['3']['PRECT'] = {'plottype': '3', 'obs': ['XI_1', 'GPCP_1', 'LEGATES_1', 'TRMM_1', 'SSMI_1']}
 diags_collection['3']['TREFHT'] = {'plottype': '3', 'obs': ['WILLMOTT_1', 'LEGATES_1', 'JRA25_1', 'CRU_1']}
 diags_collection['3']['TGCLDLWP'] = {'plottype': '3', 'obs': ['SSMI_1', 'NVAP_1', 'MODIS_1']}
 diags_collection['3']['TS'] = {'plottype': '3', 'obs': ['NCEP_1']}
@@ -263,7 +263,7 @@ diags_collection['5']['TTRP'] = {'plottype': '5', 'obs': ['ECMWF_1', 'NCEP_1']}
 diags_collection['5']['TS'] = {'plottype': '5', 'obs': ['NCEP_1']}
 diags_collection['5']['U'] = {'plottype': '5', 'obs': ['ECMWF_1', 'NCEP_1', 'JRA25_1', 'ERA40_1'], 'varopts':['200']}
 diags_collection['5']['Z3'] = {'plottype': '5', 'obs': ['ECMWF_1', 'NCEP_1', 'JRA25_1', 'ERA40_1'], 'varopts':['500', '300']}
-diags_collection['5']['PRECT'] = {'plottype': '5', 'obs': ['XA_1', 'GPCP_1', 'LEGATES_1', 'SSMI_1', 'TRMM_1'], 'regions':['Global']}
+diags_collection['5']['PRECT'] = {'plottype': '5', 'obs': ['XI_1', 'GPCP_1', 'LEGATES_1', 'SSMI_1', 'TRMM_1'], 'regions':['Global']}
 diags_collection['5']['PRECT_LAND'] = {'plottype': '5', 'obs': ['PRECL_1']}
 diags_collection['5']['PRECIP_LAND'] = {'plottype': '5', 'obs': ['WILLMOTT_1']}
 diags_collection['5']['TREFHT'] = {'plottype': '5', 'obs': ['LEGATES_1', 'JRA25_1', 'CRU_1']}
@@ -348,7 +348,7 @@ diags_collection['8']['parallel'] = True
 
 diags_collection['8']['PREH2O'] = {'plottype': '8', 'obs': ['NCEP_1', 'NVAP_1', 'JRA25_1', 'ERA40_1', 'ECMWF_1']}
 diags_collection['8']['U'] = {'plottype': '8', 'obs': ['ECMWF_1', 'NCEP_1', 'JRA25_1', 'ERA40_1'], 'varopts':['200']}
-diags_collection['8']['PRECT'] = {'plottype': '8', 'obs': ['XA_1', 'GPCP_1']}
+diags_collection['8']['PRECT'] = {'plottype': '8', 'obs': ['XI_1', 'GPCP_1']}
 diags_collection['8']['FLUT'] = {'plottype': '8', 'obs': ['ERBE_1', 'CERES2_1', 'CERES_1']}
 
 # *** Collection 9 ***
@@ -364,7 +364,7 @@ diags_collection['9']['PSL'] = {'plottype': '9', 'obs': ['NCEP_1']}
 diags_collection['9']['T'] = {'plottype': '9', 'obs': ['ECMWF_1', 'JRA25_1', 'AIRS_1', 'ERA40_1', 'NCEP_1'], 'varopts':['850']}
 diags_collection['9']['LWCF'] = {'plottype': '9', 'obs': ['ERBE_1', 'CERES2_1', 'CERES_1']}
 diags_collection['9']['SWCF'] = {'plottype': '9', 'obs': ['ERBE_1', 'CERES2_1', 'CERES_1']}
-diags_collection['9']['PRECT'] = {'plottype': '9', 'obs': ['XA_1', 'GPCP_1']}
+diags_collection['9']['PRECT'] = {'plottype': '9', 'obs': ['XI_1', 'GPCP_1']}
 diags_collection['9']['CLDTOT'] = {'plottype': '9', 'obs': ['ISCCP_1', 'CLOUDSAT_1']}
 
 # *** Collection 10 ***
@@ -373,7 +373,7 @@ diags_collection['10']['desc'] = 'Annual cycle line plots of global means'
 diags_collection['10']['package'] = 'AMWG'
 diags_collection['10']['options'] = {'logo': 'no'}
 
-diags_collection['10']['PRECT'] = {'plottype': '10', 'obs': ['XA_1', 'GPCP_1', 'LEGATES_1', 'TRMM_1', 'SSMI_1']}
+diags_collection['10']['PRECT'] = {'plottype': '10', 'obs': ['XI_1', 'GPCP_1', 'LEGATES_1', 'TRMM_1', 'SSMI_1']}
 diags_collection['10']['PREH2O'] = {'plottype': '10', 'obs': ['NCEP_1', 'NVAP_1', 'JRA25_1', 'ERA40_1', 'ECMWF_1', 'SSMI_1']}
 diags_collection['10']['PSL'] = {'plottype': '10', 'obs': ['JRA25_1', 'NCEP_1']}
 diags_collection['10']['LHFLX'] = {'plottype': '10', 'obs': ['WHOI_1', 'ECMWF_1', 'ERA40_1']}
@@ -602,7 +602,7 @@ diags_obslist['WILLMOTT_1'] = {'filekey': 'WILLMOTT', 'desc': 'Willmott and Mats
 diags_obslist['GPCP_1'] = {'filekey': 'GPCP', 'desc': 'GPCP 1979-2003'}
 diags_obslist['TRMM_1'] = {'filekey': 'TRMM', 'desc': 'TRMM (3B43) 1998-Feb2004 - Tropics'}
 diags_obslist['PRECL_1'] = {'filekey': 'PRECL', 'desc': 'PREC/L (CMAP) 1948-2001'}
-diags_obslist['XA_1'] = {'filekey': 'XA', 'desc': 'CMAP (Xie-Arkin) 1979-98'}
+diags_obslist['XI_1'] = {'filekey': 'XI', 'desc': 'CMAP (Xie-Arkin) 1979-98'}
 diags_obslist['CERES-EBAF_1'] = {'filekey': 'CERES-EBAF', 'desc': 'CERES-EBAF'}
 diags_obslist['CERES2_1'] = {'filekey': 'CERES2', 'desc': 'CERES2 March 2000-October 2005'}
 diags_obslist['CERES_1'] = {'filekey': 'CERES', 'desc': 'CERES 2000-2003'}
