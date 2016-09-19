@@ -494,8 +494,12 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, data_hash, colls
                                 cf1 = 'no'
 
                         pstr1 = '--model path=%s,climos=%s,type=model' % (modelpath, cf0)
+                        if name0 != None:
+                            pstr1 += ',name=' + name0
                         if modelpath1 != None:
                             pstr2 = '--model path=%s,climos=%s,type=model' % (modelpath1, cf1)
+                            if name1 != None:
+                                pstr2 += ',name=' + name1
                         else:
                             pstr2 = ''
 
