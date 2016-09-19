@@ -321,7 +321,7 @@ def run_diags( opts ):
                                 logger.warning("No plots will be made.")
                     #get the names of the model and obs passed in from the command line
                     #or a default from the filetable
-
+                    pdb.set_trace()
                     names = getNames(opts, modelfts, obsfts)
                     # now, the most inner loop. Looping over sets then seasons then vars then varopts
                     for aux in varopts:
