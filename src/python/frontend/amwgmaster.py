@@ -674,4 +674,5 @@ diags_collection['99']['seasons'] = ['ANN']
 diags_collection['99']['package'] = 'AMWG'
 diags_collection['99']['options'] = {'logo':'no'}
 diags_collection['99']['combined'] = True
+diags_collection['99']['SWCFTOM'] = {'plottype': '5', 'obs': ['CERES-EBAF_1'], 'regions':['Global']}
 diags_collection['99']['TMQ'] = {'plottype': '5', 'obs': ['NCEP_1'], 'regions':['Global']}
