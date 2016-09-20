@@ -70,5 +70,5 @@ def prect2precip( PRECT, seasonid ):
 def land_only(var, LANDFRAC):
     """Used by TREFHT"""
     return mask_by( var, LANDFRAC, lo=0.5, hi=None )
-def ocean_only(var, LANDFRAC):
-    return mask_by(var, 1.0-LANDFRAC, lo=0.5, hi=None)
+def ocean_only(var, OCNFRAC):
+    return mask_by(var, OCNFRAC, lo=0.5, hi=None)
