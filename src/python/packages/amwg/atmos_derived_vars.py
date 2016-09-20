@@ -77,7 +77,7 @@ common_derived_variables = {
             vid='SWCFSRF', inputs=['FSNS', 'FSNSC'], outputs=['SWCFSRF'],
             func=aminusb )],
     'SWCFTOM':[derived_var( #difference between clouds and no clouds
-               vid='SWCFTOM', inputs=['FSNTOA', 'FSNTOAC'], outputs=['SWCFTOM'],
+               vid='SWCFTOM', inputs=['FSNTOA', 'FSNTOAC'], outputs=['SWCF'],
                func=aminusb )],
     # miscellaneous:
     'PRECT':[derived_var( 
