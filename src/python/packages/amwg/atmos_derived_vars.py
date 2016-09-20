@@ -76,7 +76,7 @@ common_derived_variables = {
     'SWCFSRF':[derived_var(    # Surface SW Cloud Forcing
             vid='SWCFSRF', inputs=['FSNS', 'FSNSC'], outputs=['SWCFSRF'],
             func=aminusb )],
-    'SWCFTOM':[derived_var( #difference between clouds and no clouds
+    'SWCF':[derived_var( #difference between clouds and no clouds
                vid='SWCFTOM', inputs=['FSNTOA', 'FSNTOAC'], outputs=['SWCF'],
                func=aminusb )],
     # miscellaneous:
@@ -258,10 +258,10 @@ common_derived_variables = {
 
     #added for Chris Golaz
     'SHFLX_OCN':[derived_var(
-            vid='SHFLX', inputs=['SHFLX'], outputs=['SHFLX'],
+            vid='SHFLX', inputs=['SHFLX'], outputs=['SHFLX_OCN'],
             func=(lambda x: x) ),
                  derived_var(
-            vid='SHFLX_OCN', inputs=['SHFLX', 'OCNFRAC'], outputs=['SHFLX'],
+            vid='SHFLX_OCN', inputs=['SHFLX', 'OCNFRAC'], outputs=['SHFLX_OCN'],
             func=(lambda x, y: ocean_only(x,y)) )],
     'FSNS_OCN':[derived_var(
             vid='FSNS_OCN', inputs=['FSNS', 'OCNFRAC'], outputs=['FSNS'],
