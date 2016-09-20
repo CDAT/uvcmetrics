@@ -231,16 +231,21 @@ diags_collection['5']['package'] = 'AMWG'
 diags_collection['5']['options'] = {'logo':'no'}
 diags_collection['5']['combined'] = True
 
-diags_collection['5']['SHFLX'] = {'plottype': '5', 'obs': ['JRA25_1', 'NCEP_1', 'LARYEA_1']}
+diags_collection['5']['SHFLX'] = {'plottype': '5', 'obs': ['JRA25_1', 'NCEP_1']}
+diags_collection['5']['SHFLX_OCN'] = {'plottype': '5', 'obs': ['LARYEA_1']}
 diags_collection['5']['LHFLX_OCN'] = {'plottype': '5', 'obs': ['WHOI_1', 'ECMWF_1', 'JRA25_1', 'ERA40_1']}
 diags_collection['5']['QFLX_OCN'] = {'plottype': '5', 'obs': ['WHOI_1', 'ECMWF_1', 'LARYEA_1']}
 diags_collection['5']['FLDS'] = {'plottype': '5', 'obs': ['ISCCP_1']}
 diags_collection['5']['FLDSC'] = {'plottype': '5', 'obs': ['ISCCP_1']}
 diags_collection['5']['FSDS'] = {'plottype': '5', 'obs': ['ISCCP_1']}
 diags_collection['5']['FSDSC'] = {'plottype': '5', 'obs': ['ISCCP_1']}
-diags_collection['5']['FSNS'] = {'plottype': '5', 'obs': ['ISCCP_1', 'LARYEA_1']}
+
+diags_collection['5']['FSNS'] = {'plottype': '5', 'obs': ['ISCCP_1']}
+diags_collection['5']['FSNS_OCN'] = {'plottype': '5', 'obs': ['LARYEA_1']}
 diags_collection['5']['FSNSC'] = {'plottype': '5', 'obs': ['ISCCP_1']}
-diags_collection['5']['FLNS'] = {'plottype': '5', 'obs': ['ISCCP_1', 'LARYEA_1']}
+diags_collection['5']['FLNS'] = {'plottype': '5', 'obs': ['ISCCP_1']}
+diags_collection['5']['FLNS_OCN'] = {'plottype': '5', 'obs': ['LARYEA_1']}
+
 diags_collection['5']['FLNSC'] = {'plottype': '5', 'obs': ['ISCCP_1']}
 diags_collection['5']['ALBEDO'] = {'plottype': '5', 'obs': ['CERES-EBAF_1']}
 diags_collection['5']['ALBEDOC'] = {'plottype': '5', 'obs': ['CERES-EBAF_1']}
