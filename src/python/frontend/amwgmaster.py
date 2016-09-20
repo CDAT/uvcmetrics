@@ -232,8 +232,8 @@ diags_collection['5']['options'] = {'logo':'no'}
 diags_collection['5']['combined'] = True
 
 diags_collection['5']['SHFLX'] = {'plottype': '5', 'obs': ['JRA25_1', 'NCEP_1', 'LARYEA_1']}
-diags_collection['5']['LHFLX'] = {'plottype': '5', 'obs': ['WHOI_1', 'ECMWF_1', 'JRA25_1', 'ERA40_1']}
-diags_collection['5']['QFLX'] = {'plottype': '5', 'obs': ['WHOI_1', 'ECMWF_1', 'LARYEA_1']}
+diags_collection['5']['LHFLX_OCN'] = {'plottype': '5', 'obs': ['WHOI_1', 'ECMWF_1', 'JRA25_1', 'ERA40_1']}
+diags_collection['5']['QFLX_OCN'] = {'plottype': '5', 'obs': ['WHOI_1', 'ECMWF_1', 'LARYEA_1']}
 diags_collection['5']['FLDS'] = {'plottype': '5', 'obs': ['ISCCP_1']}
 diags_collection['5']['FLDSC'] = {'plottype': '5', 'obs': ['ISCCP_1']}
 diags_collection['5']['FSDS'] = {'plottype': '5', 'obs': ['ISCCP_1']}
@@ -255,7 +255,7 @@ diags_collection['5']['SWCFSRF'] = {'plottype': '5', 'obs': ['ISCCP_1']}
 diags_collection['5']['TMQ'] = {'plottype': '5', 
                                 'obs': ['NCEP_1', 'NVAP_1', 'JRA25_1', 'ERA40_1', 'MODIS_1', 'ECMWF_1', 'SSMI_1'], 
                                 'regions':['Global']}
-diags_collection['5']['TGCLDLWP'] = {'plottype': '5', 'obs': ['SSMI_1', 'NVAP_1', 'MODIS_1'], 'regions':['Global']}
+diags_collection['5']['TGCLDLWP'] = {'plottype': '5', 'obs': ['NVAP_1', 'MODIS_1'], 'regions':['Global']}
 diags_collection['5']['PSL'] = {'plottype': '5', 'obs': ['JRA25_1', 'NCEP_1']}
 diags_collection['5']['T'] = {'plottype': '5', 'obs': ['ECMWF_1', 'JRA25_1', 'AIRS_1', 'ERA40_1', 'NCEP_1'], 'varopts':['850', '200']}
 diags_collection['5']['SST'] = {'plottype': '5', 'obs': ['HadISST_PD_1', 'HadISST_PI_1', 'HadISST_CL_1']}

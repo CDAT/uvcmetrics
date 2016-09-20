@@ -29,6 +29,12 @@ common_derived_variables = {
                 derived_var(
             vid='QFLX_OCN', inputs=['QFLX'], outputs=['QFLX_OCN'],
             func=(lambda x: x) ) ],  # assumes that QFLX is from an ocean-only dataset
+    'LHLX_OCN':[derived_var(
+            vid='LHFLX_OCN', inputs=['LHFLX','LANDFRAC'], outputs=['LHFLX_OCN'],
+            func=WC_diag_amwg.surface_maskvariable ),
+                derived_var(
+            vid='LHFLX_OCN', inputs=['LHFLX'], outputs=['LHFLX_OCN'],
+            func=(lambda x: x) ) ],  # assumes that QFLX is from an ocean-only dataset
     'EminusP':[derived_var(
             vid='EminusP', inputs=['QFLX','PRECT'], outputs=['EminusP'],
             func=aminusb_2ax )],  # assumes that QFLX,PRECT are time-reduced
@@ -91,7 +97,7 @@ common_derived_variables = {
     #The next one returns the fraction of TREFHT over land
     'TREFHT_LAND':[derived_var(
             vid='TREFHT_LAND', inputs=['TREFHT', 'LANDFRAC'], outputs=['TREFHT_LAND'],
-            func=land_TREFHT )],
+            func=land_only )],
     'RESTOM':[derived_var(
             vid='RESTOM', inputs=['FSNT','FLNT'], outputs=['RESTOM'],
             func=aminusb )],   # RESTOM = net radiative flux
