@@ -29,7 +29,7 @@ common_derived_variables = {
                 derived_var(
             vid='QFLX_OCN', inputs=['QFLX'], outputs=['QFLX_OCN'],
             func=(lambda x: x) ) ],  # assumes that QFLX is from an ocean-only dataset
-    'LHLX_OCN':[derived_var(
+    'LHFLX_OCN':[derived_var(
             vid='LHFLX_OCN', inputs=['LHFLX','LANDFRAC'], outputs=['LHFLX_OCN'],
             func=WC_diag_amwg.surface_maskvariable ),
                 derived_var(
