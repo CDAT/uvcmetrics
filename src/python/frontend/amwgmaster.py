@@ -258,7 +258,7 @@ diags_collection['5']['SWCFTOM'] = {'plottype': '5', 'obs': ['CERES-EBAF_1'], 'r
 diags_collection['5']['LWCFSRF'] = {'plottype': '5', 'obs': ['ISCCP_1']}
 diags_collection['5']['SWCFSRF'] = {'plottype': '5', 'obs': ['ISCCP_1']}
 diags_collection['5']['TMQ'] = {'plottype': '5', 
-                                'obs': ['NCEP_1', 'NVAP_1', 'JRA25_1', 'ERA40_1', 'MODIS_1', 'ECMWF_1', 'SSMI_1'], 
+                                'obs': ['NCEP_1', 'NVAP_1', 'JRA25_1', 'ERA40_1', 'MODIS_1', 'ECMWF_1'], 
                                 'regions':['Global']}
 diags_collection['5']['TGCLDLWP'] = {'plottype': '5', 'obs': ['NVAP_1', 'MODIS_1'], 'regions':['Global']}
 diags_collection['5']['PSL'] = {'plottype': '5', 'obs': ['JRA25_1', 'NCEP_1']}
@@ -268,7 +268,7 @@ diags_collection['5']['TTRP'] = {'plottype': '5', 'obs': ['ECMWF_1', 'NCEP_1']}
 diags_collection['5']['TS'] = {'plottype': '5', 'obs': ['NCEP_1']}
 diags_collection['5']['U'] = {'plottype': '5', 'obs': ['ECMWF_1', 'NCEP_1', 'JRA25_1', 'ERA40_1'], 'varopts':['200']}
 diags_collection['5']['Z3'] = {'plottype': '5', 'obs': ['ECMWF_1', 'NCEP_1', 'JRA25_1', 'ERA40_1'], 'varopts':['500', '300']}
-diags_collection['5']['PRECT'] = {'plottype': '5', 'obs': ['XI_1', 'GPCP_1', 'LEGATES_1', 'SSMI_1', 'TRMM_1'], 'regions':['Global']}
+diags_collection['5']['PRECT'] = {'plottype': '5', 'obs': ['XI_1', 'GPCP_1', 'LEGATES_1', 'TRMM_1'], 'regions':['Global']}
 diags_collection['5']['PRECT_LAND'] = {'plottype': '5', 'obs': ['PRECL_1']}
 diags_collection['5']['PRECIP_LAND'] = {'plottype': '5', 'obs': ['WILLMOTT_1']}
 diags_collection['5']['TREFHT'] = {'plottype': '5', 'obs': ['LEGATES_1', 'JRA25_1', 'CRU_1']}
