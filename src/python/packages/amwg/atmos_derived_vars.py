@@ -257,7 +257,7 @@ common_derived_variables = {
             func=(lambda x: x) ) ],
 
     #added for Chris Golaz
-    'SHFLX_OCN':[derived_var(
+    'SHFLX_OCN':[derived_var(   #this one must come first
             vid='SHFLX_OCN', inputs=['SHFLX', 'OCNFRAC'], outputs=['SHFLX_OCN'],
             func=(lambda x, y: ocean_only(x,y)) ), 
                  derived_var(
@@ -265,10 +265,16 @@ common_derived_variables = {
             func=(lambda x: x) )],
     'FSNS_OCN':[derived_var(
             vid='FSNS_OCN', inputs=['FSNS', 'OCNFRAC'], outputs=['FSNS'],
-            func=(lambda x, y: ocean_only(x,y)) )],
+            func=(lambda x, y: ocean_only(x,y)) ), 
+                derived_var(
+            vid='FSNS', inputs=['FSNS'], outputs=['FSNS_OCN'],
+            func=(lambda x: x) )],
     'FLNS_OCN':[derived_var(
             vid='FLNS_OCN', inputs=['FLNS', 'OCNFRAC'], outputs=['FLNS'],
-            func=(lambda x, y: ocean_only(x,y)) )]                            
+            func=(lambda x, y: ocean_only(x,y)) ),                
+                derived_var(    #rename FLNS
+            vid='FLNS', inputs=['FLNS'], outputs=['FLNS_OCN'],
+            func=(lambda x: x) )]                            
     }
 
 @classmethod
