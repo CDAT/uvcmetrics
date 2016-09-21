@@ -215,8 +215,8 @@ def set_mean( mv, season=seasonsyr, region=None, gw=None ):
         mvmean = mv.mean
     else:
         mvmean = None
-    if weighting=='mass' and hasattr(mv,'_filename') and mvmean is None:
-        # The _filename attribute, or else a lot of data we don't have, is needed to compute
+    if weighting=='mass' and hasattr(mv,'filename') and mvmean is None:
+        # The filename attribute, or else a lot of data we don't have, is needed to compute
         # mass-based weights.
         try:
             mv.mean = reduce2scalar( mv, season=season, region=region, gw=gw, weights='mass' )
@@ -266,6 +266,8 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
     if mvrs is None:
         # Among other cases, this can happen if mv has all missing values.
         return None
+    mvrs.filename = mvr.filename
+    mvrs.filetable = mvr.filetable
 
     mv_axes = allAxes( mv )
     for a in mv_axes:
@@ -388,6 +390,9 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
                         ilev = inds[klev]
                         avweights[inds] = numpy.sum( latlon_wts[ilev,:,:] )
 
+            #if len(avweights.shape)==2: print "jfp weights=",avweights[:,0]/avweights[0,0],avweights.shape
+            #if len(avweights.shape)==3: print "jfp weights=",numpy.sum(avweights[:,:,0],axis=0)/sum(avweights[:,0,0]),\
+            #        avweights.shape
             avmv = averager( mvrs, axis=axes_string, weights=avweights )
 
         elif gw is None:
@@ -414,8 +419,8 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
         # >>> special ad-hoc code.  The target units should be provided in an argument, not by this if statement>>>>
         if avmv.units=="Pa" or avmv.units.lower()=="pascal" or avmv.units.lower()=="pascals":
             avmv = convert_variable( avmv, "millibar" )
-    if not hasattr( avmv, '_filename' ) and hasattr( mv,'_filename' ):
-        avmv._filename = mv._filename
+    if not hasattr( avmv, 'filename' ) and hasattr( mv,'filename' ):
+        avmv.filename = mv.filename
     if not hasattr( avmv, 'filetable' ) and hasattr( mv,'filetable' ):
         avmv.filetable = mv.filetable
     avmv.weighting = weights
@@ -491,7 +496,7 @@ def reduce2scalar( mv, vid=None, gw=None, weights=None, season=seasonsyr, region
     Uses the averager module for greater capabilities
     Latitude weights may be provided as 'gw'.  The averager's default is reasonable, however.
     If weights='mass', mass weighting will be used.  This requires several variables to be
-    available in a file mv._filename, which attribute must exist if mv has hybrid levels.
+    available in a file mv.filename, which attribute must exist if mv has hybrid levels.
     Alternatively, you can compute mass (or other) weights into a 3-D (lev,lat,lon) array (or MV)
     and pass it as the 'weights' argument.
     For the moment we expect mv to have lat and lon axes; and if it has no level axis,
@@ -2046,20 +2051,7 @@ def aminusb_ax2( mv1, mv2 ):
     if hasattr(mv1,'units'):  aminusb.units = mv1.units
 
     aminusb.initDomain( ab_axes )
-
-    if hasattr(mv1,'mean') and hasattr(mv2,'mean'):
-        # Note that mv1,mv2 will initially have a mean attribute which is a Numpy method.
-        # We only need to compute a new mean if the mean attribute has been changed to a number.
-        try:
-            aminusb.mean = mv1.mean - mv2.mean
-        except TypeError:
-            # If this happens, "-" can't be applied to the means.
-            # For sure they aren't numbers.  Probably they are the Numpy builtin mean() method.
-            pass
-        except Exception:
-            if hasattr(aminusb,'mean') and isinstance(aminusb.mean,Number):
-                logger.warning("When computing the difference of %s and %s, the mean of the difference cannot be correctly be computed",mv1.id,mv2.id)
-            del aminusb.mean
+    mean_of_diff( aminusb, mv1, mv2 )
 
     return aminusb
 
@@ -2283,7 +2275,6 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
     If this works out, it should be generalized and reproduced in other aminusb_* functions."""
     ""
     import pdb
-    #pdb.set_trace()
     global regridded_vars   # experimental for now
     if mv1 is None or mv2 is None:
         logger.warning("aminusb_2ax missing an input variable.")
@@ -2380,15 +2371,24 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
     #save arrays for rmse and correlations KLUDGE!
     aminusb.model = mv1new
     aminusb.obs   = mv2new
-
+    mean_of_diff( aminusb, mv1, mv2 )
     if hasattr(mv1,'long_name'):
         aminusb.long_name = 'difference of '+mv1.long_name
     if hasattr(mv1,'units'):  aminusb.units = mv1.units
+    
+    return aminusb
+
+def mean_of_diff( aminusb, mv1, mv2, recursive=False ):
+    """Sets aminusb.mean = mv1.mean - mv2.mean if it makes sense."""
     if hasattr(mv1,'mean') and hasattr(mv2,'mean'):
         # Note that mv1,mv2 will initially have a mean attribute which is a Numpy method.
         # We only need to compute a new mean if the mean attribute has been changed to a number.
         try:
             aminusb.mean = mv1.mean - mv2.mean
+            if len(aminusb.mean.shape)==0 and not isinstance(aminusb.mean,Number):
+                # aminusb.mean is a TransientVariable with shape==() (or something similar);
+                # convert it to a simple scalar
+                aminusb.mean = aminusb.mean.min()
         except TypeError:
             # If this happens, "-" can't be applied to the means.
             # For sure they aren't numbers.  Probably they are the Numpy builtin mean() method.
@@ -2397,7 +2397,7 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
             if hasattr(aminusb,'mean') and isinstance(aminusb.mean,Number):
                 logger.warning("When computing the difference of %s and %s the mean of the difference cannot be correctly computed.", mv1.id, mv1.id)
             del aminusb.mean
-    return aminusb
+
 
 def aminusb_1ax( mv1, mv2 ):
     """returns a transient variable representing mv1-mv2, where mv1 and mv2 are variables, normally
@@ -2684,7 +2684,6 @@ def join_data(*args ):
     versus zonal mean.
     """
     import cdms2, cdutil
-    #pdb.set_trace()
     M = cdms2.MV2.masked_array(args)
     #M.shape
     M.setAxis(-1,args[0].getAxis(-1))
@@ -2697,7 +2696,6 @@ def join_data(*args ):
     cdutil.times.setTimeBoundsMonthly(T)
     #print M.getAxis(1)
     #M.info()
-    #pdb.set_trace()
     return M
 
 def join_1d_data(*args ):
@@ -2706,7 +2704,6 @@ def join_1d_data(*args ):
     versus zonal mean.
     """
     import cdms2, cdutil, numpy
-    #pdb.set_trace()
     nargs = len(args)
     T = cdms2.createAxis(numpy.arange(nargs, dtype='d'))
     T.designateTime()
@@ -2743,20 +2740,17 @@ def correlateData(mv1, mv2, aux):
     from genutil.statistics import correlation
     #print mv1.shape, mv2.shape
 
-    #pdb.set_trace()
     sliced_mvs = []
     if isinstance(aux,Number):
         for mv in [mv1, mv2]:
             level = mv.getLevel()
             index = mv.getAxisIndex('lev')
             UNITS = level.units #mbar or level
-            #pdb.set_trace()
             if UNITS != 'mbar':
                 level.units = 'mbar'
                 mv.setAxis(index, level)
             pselect = udunits(aux, 'mbar')
             sliced_mvs += [ select_lev(mv, pselect) ]
-            #pdb.set_trace()
     else:
         sliced_mvs = [mv1, mv2]
     mv1_new, mv2_new = sliced_mvs
@@ -2769,7 +2763,6 @@ def correlateData(mv1, mv2, aux):
 def create_yvsx(x, y, stride=10):
     """ create a variable that is y(x).  It is a assumed that x.shape=y.shape."""
     import cdms2, numpy
-    #pdb.set_trace()
     xdata = x.data.flatten()
     N = len(xdata)/stride
     index = stride*numpy.arange(N)
@@ -2819,7 +2812,7 @@ class reduced_variable(ftrow,basic_id):
         self._file_attributes = {}
         self._duvs = duvs
         self._rvs = rvs
-        self._filename = None  # will be set later.  This attribute shouldn't be used, but sometimes it's just too tempting.
+        self.filename = None  # will be set later.  This attribute shouldn't be used, but sometimes it's just too tempting.
     def __repr__(self):
         return self._strid
 
@@ -2906,7 +2899,7 @@ class reduced_variable(ftrow,basic_id):
             # the easy case, just one file has all the data on this variable
             filename = files[0]
         #fcf = get_datafile_filefmt(f)
-        self._filename = filename
+        self.filename = filename
         return filename
 
     def reduce( self, vid=None ):
@@ -2999,7 +2992,7 @@ class reduced_variable(ftrow,basic_id):
             self._file_attributes.update(f.attributes)
             if self.variableid in f.variables.keys():
                 var = f(self.variableid)
-                var._filename = self._filename
+                var.filename = self.filename
                 weighting = weighting_choice(var)
                 if weighting=='mass':
                     from metrics.packages.amwg.derivations.massweighting import mass_weights
@@ -3026,7 +3019,7 @@ class reduced_variable(ftrow,basic_id):
         if hasattr(reduced_data,'mask') and reduced_data.mask.all():
             reduced_data = None
         if reduced_data is not None:
-            reduced_data._filename = self._filename
+            reduced_data.filename = self.filename
             reduced_data.filetable = self.filetable
         return reduced_data
 
