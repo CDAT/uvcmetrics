@@ -110,6 +110,9 @@ class amwg_plot_set4and4A(amwg_plot_plan):
         self.derived_variables = {}
         if hybrid1:
             # >>>> actually last arg of the derived var should identify the coarsest level, not nec. 2
+            # Note also that it is dangerous to use input data from two filetables (though necessary here) - it
+            # can badly mess things up if derive() assigns to the new variable a filetable which is not the
+            # main source of the data, meaning its axes.  It gets the filetable from the first input listed here.
             vid1=dv.dict_id(varid,rf_id,seasonid,filetable1)
             self.derived_variables[vid1] = derived_var(
                 vid=vid1, inputs=[rv.dict_id(varid,seasonid,filetable1), rv.dict_id('hyam',seasonid,filetable1),

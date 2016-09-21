@@ -73,12 +73,12 @@ class derived_var(basic_id):
         nonevals = [ inp for inp in self._inputs if inpdict.get(inp,None) is None ]
         for var in dictvals:
             # set some attributes which may help do a mass-weighted mean computation
-            if hasattr(var,'_filename'):
-                self._filename = var._filename
-                if hasattr(var,'filetable'):
+            if not hasattr(self,'filename') and hasattr(var,'filename'):
+                self.filename = var.filename
+                if not hasattr(self,'filetable') and hasattr(var,'filetable'):
                     self.filetable = var.filetable
                     break
-            elif hasattr(var,'filetable'):
+            elif not hasattr(self,'filetable') and hasattr(var,'filetable'):
                 self.filetable = var.filetable
         if len(nonevals)>0:
             logger.warning("cannot yet derive %s because missing inputs %s",self._id,nonevals)
@@ -97,13 +97,13 @@ class derived_var(basic_id):
                 if o is None: return None
                 #o._vid  = self._vid      # self._vid is deprecated
                 self.adopt( o )  # o gets ids of self
-                if hasattr(self,'_filename'):  o._filename = self._filename
+                if hasattr(self,'filename'):  o.filename = self.filename
                 if hasattr(self,'filetable'):  o.filetable = self.filetable
                 self._file_attributes.update( getattr(o,'_file_attributes',{}) )
         elif output is not None:
             #output._vid = self._vid      # self._vid is deprecated
             self.adopt( output )  # output gets ids of self
-            if hasattr(self,'_filename'):  output._filename = self._filename
+            if hasattr(self,'filename'):  output.filename = self.filename
             if hasattr(self,'filetable'):  output.filetable = self.filetable
             self._file_attributes.update( getattr(output,'_file_attributes',{}) )
         if hasattr(output,'__cdms_internals__'):  # probably a mv
