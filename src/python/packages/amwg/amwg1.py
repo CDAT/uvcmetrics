@@ -8,6 +8,7 @@
 from pprint import pprint
 from metrics.packages.amwg.amwg import amwg_plot_plan
 from metrics.packages.amwg.derivations.vertical import *
+from metrics.packages.amwg.table_row_spec import *
 from metrics.packages.plotplan import plot_plan
 from metrics.computation.reductions import *
 from metrics.computation.plotspec import *
@@ -349,7 +350,7 @@ class amwg_plot_set1(amwg_plot_plan):
 
     # This is essentially duplicated in amwgmaster.
 
-    table_row_specs = [
+    xxxtable_row_specs = [
         { 'var':'RESTOM'},
         { 'var':'RESSURF'},
         { 'var':'RESTOA', 'obs':'CERES-EBAF'},
@@ -485,7 +486,7 @@ class amwg_plot_set1(amwg_plot_plan):
         directory = outdir + 'amwg1_output'
         self.rows = []
         if dryrun:
-            cmds = makeCmds(self.table_row_specs)
+            cmds = makeCmds(table_row_specs)
             #write them in a file for execution
             f = open(directory + '/table_commands.sh', 'w')
             print "List of commands is in: %s",f
@@ -506,7 +507,7 @@ class amwg_plot_set1(amwg_plot_plan):
             f.close()
         elif varid is not None:
             #execute a single row
-            for spec in self.table_row_specs:
+            for spec in table_row_specs:
                 if varid in spec.values():
                     #obsfilter may or may not be specified
                     if obsfilter is None or obsfilter in spec.values():
@@ -529,7 +530,7 @@ class amwg_plot_set1(amwg_plot_plan):
                         break
         elif computeall:
             #execute all rows
-            for spec in self.table_row_specs:
+            for spec in table_row_specs:
                 #if spec['var']!='SHFLX': continue # <<<<< for temporary testing <<<<
                 obs = spec.get('obs', None)
                 row = Row(  filetable1, filetable2,
@@ -581,7 +582,7 @@ class amwg_plot_set1(amwg_plot_plan):
         return self
     def get_data(self, directory):
         """the rows are in files. read them to make the table. """
-        for spec in self.table_row_specs:
+        for spec in table_row_specs:
             #pdb.set_trace()
             var = spec.get('var', '')
             obs = spec.get('obs', None)
