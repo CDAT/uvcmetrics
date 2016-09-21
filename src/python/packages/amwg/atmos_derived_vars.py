@@ -238,7 +238,7 @@ common_derived_variables = {
         ],
     #TGCLDLWP_OCEAN
     'TGCLDLWP':[derived_var(
-            vid='TGCLDLWP_OCEAN', inputs=['TGCLDLWP', 'OCNFRAC'], outputs=['TGCLDLWP'],
+            vid='TGCLDLWP', inputs=['TGCLDLWP', 'OCNFRAC'], outputs=['TGCLDLWP'],
             func=(lambda x, y: simple_vars.ocean_only(x,y, units='g/m^2')) ),
             derived_var(
             vid='TGCLDLWP_OCEAN', inputs=['TGCLDLWP_OCEAN'], outputs=['TGCLDLWP'],
