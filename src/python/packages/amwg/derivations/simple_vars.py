@@ -1,6 +1,6 @@
 # Derived variables which are simple to compute, but a bit too much to wrap in a lambda expression.
 
-import numpy, logging
+import numpy, logging, pdb
 import cdms2
 from metrics.computation.reductions import aminusb, aplusb, adivb, convert_units
 from metrics.common.utilities import DiagError
@@ -71,6 +71,7 @@ def land_only(var, LANDFRAC):
     """Used by TREFHT"""
     return mask_by( var, LANDFRAC, lo=0.5, hi=None )
 def ocean_only(var, OCNFRAC, units=None):
+    pdb.set_trace()
     if units != None:
         convert_units(var, units)
     return mask_by(var, OCNFRAC, lo=0.5, hi=None)
