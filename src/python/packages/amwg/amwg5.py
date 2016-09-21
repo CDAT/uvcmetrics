@@ -536,6 +536,7 @@ class amwg_plot_set5(amwg_plot_plan):
             nmin.x=[exts[0][1]]
             x.plot(nmin)
         return tm1, tm2          
+
     def _results(self,newgrid=0):
         results = plot_plan._results(self,newgrid)
         if results is None: return None

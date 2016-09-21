@@ -1,4 +1,4 @@
-import logging
+import logging, pdb
 from numbers import Number
 import cdms2
 from metrics.packages.diagnostic_groups import *

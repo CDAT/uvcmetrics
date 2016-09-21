@@ -82,11 +82,11 @@ def rhodz_from_plev( lev, nlev_want, mv ):
     lev3d = cdms2.createVariable( lev3ddat, axes=[levc, lat, lon] )
     for k in range( levc.shape[0] ):
         lev3d[k,:,:] = levc[k]
-    if hasattr( lev, '_filename' ):
+    if hasattr( lev, 'filename' ):
         # We'll try to use other variables to do better than extrapolating.
         # This only works in CAM, CESM, ACME, etc.
         # For simplicity, if data is available at multiple times we will use just the first time.
-        f = cdms2.open(lev._filename)
+        f = cdms2.open(lev.filename)
         fvars = f.variables.keys()
         if 'PS' in fvars:
             PS = f('PS')
@@ -168,7 +168,7 @@ def rhodz_from_mv( mv ):
     Its shape is lev,lat,lon.  The input is a cdms variable.  """
     lev = mv.getLevel()
     if lev.units=='level':  # hybrid level
-        cfile = cdms2.open( mv._filename )
+        cfile = cdms2.open( mv.filename )
         check_compatible_levels( mv, cfile('hybi'), True )
         rhodz = rhodz_from_hybridlev( cfile('PS'), cfile('P0'), cfile('hyai'), cfile('hybi') )
         cfile.close()
@@ -178,8 +178,8 @@ def rhodz_from_mv( mv ):
         # belonging to the mass between two levels.  That's not possible unless
         # there's another level axis somewhere, and there's no standard way to identify it.
         nlev_want = check_compatible_levels( mv, mv )
-        if hasattr(mv,'_filename') and not hasattr(lev,'_filename'):
-            lev._filename = mv._filename
+        if hasattr(mv,'filename') and not hasattr(lev,'filename'):
+            lev.filename = mv.filename
         rhodz  = rhodz_from_plev( lev, nlev_want, mv )
     return rhodz
 
@@ -202,7 +202,7 @@ def area_times_rhodz( mv, rhodz ):
 
 def mass_weights( mv ):
     """Returns a (lev,lat,lon)-shaped array of mass weights computed from a variable mv with
-    lev,lat,lon axes.  It must have a _filename attribute if hybrid levels are used.
+    lev,lat,lon axes.  It must have a filename attribute if hybrid levels are used.
     All variables must use kg,m,sec,mbar units.  Masks are ignored.
     The requirements are not checked (maybe they will be checked or relaxed in the future)."""
     # At this point, rhodz is cell mass per unit area. Multiply by that area to get the mass weight.
