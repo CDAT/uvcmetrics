@@ -241,7 +241,7 @@ common_derived_variables = {
             vid='TGCLDLWP', inputs=['TGCLDLWP', 'OCNFRAC'], outputs=['TGCLDLWP'],
             func=(lambda x, y: simple_vars.ocean_only(x,y, units='g/m^2')) ),
             derived_var(
-            vid='TGCLDLWP_OCEAN', inputs=['TGCLDLWP_OCEAN'], outputs=['TGCLDLWP'],
+            vid='TGCLDLWP', inputs=['TGCLDLWP_OCEAN'], outputs=['TGCLDLWP'],
             func=(lambda x: convert_units(x, 'g/m^2')) )],
     #...end of clouds, Yuying Zhang
 
