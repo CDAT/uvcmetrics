@@ -26,7 +26,7 @@ ncfiles = {}
 #ncfiles['rv_T_ANN_ft1_cam_output_ANN_cam_output.nc'] = ['rv_T_ANN_ft1_cam_output']
 #ncfiles['rv_T_ANN_ft2_obs_atmos_NCEP_ANN_obs_atmos_NCEP.nc'] = ['rv_T_ANN_ft2_obs_atmos_NCEP']
 ncfiles['figure-set7_Global_ANN_T_plot--model.nc'] = ['rv_T_ANN_ft1_cam_output']
-ncfiles['figure-set7_Global_ANN_T_plot--obs.nc'] = ['rv_T_ANN_ft2_obs_atmos_NCEP']
+ncfiles['figure-set7_Global_ANN_T_plot--obs.nc'] = ['rv_T_ANN_ft2_NCEP']
 
 # Test of NetCDF data (nc) file match:
 rtol = 1.0e-3
