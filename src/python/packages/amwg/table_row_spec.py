@@ -1,4 +1,5 @@
 """This is the list of variables and observations used to generate the table in amwg1."""
+# This is essentially duplicated in amwgmaster.
 table_row_specs = [
     { 'var':'RESTOM'},
     { 'var':'RESSURF'},
@@ -65,4 +66,4 @@ table_row_specs = [
     { 'var':'Z3', 'obs':'NCEP', 'lev':'500', 'units':'hectometer'}
     ]
 #this is a dummy table for testing
-table_row_specs = [{ 'var':'TS', 'obs':'NCEP'},{ 'var':'RESTOM'},{ 'var':'RESSURF'}]
+#table_row_specs = [{ 'var':'TS', 'obs':'NCEP'},{ 'var':'RESTOM'},{ 'var':'RESSURF'}]
