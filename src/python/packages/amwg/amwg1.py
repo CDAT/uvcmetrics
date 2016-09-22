@@ -483,7 +483,6 @@ class amwg_plot_set1(amwg_plot_plan):
         """writes to the specified location, which may be a directory path or sys.stdout.
         The only allowed format is text"""
         logger.debug('IN AMWG1 WRITE PLOT')
-        pdb.set_trace()
         self.ptype = "text"
         if fname != "":
            logger.debug('filename was: %s', fname)
@@ -497,6 +496,8 @@ class amwg_plot_set1(amwg_plot_plan):
             logger.debug(s)
             writer.write(str(s)+'\n')
         writer.close()
+        
+        self._results()
         return filename
     def __len__( self ):
         """__len__ returns 0 so that len(self)==0, so that scripts written for normal plot sets won't plot this one"""
