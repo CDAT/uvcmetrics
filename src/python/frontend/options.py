@@ -3,7 +3,7 @@
 ### TODO: Seperate subclasses for datasets vs obs
 
 
-import cdms2, os, logging, pdb
+import cdms2, os, logging, pdb, getpass
 import metrics.packages as packages
 import argparse, re
 from metrics.frontend.defines import *
@@ -37,7 +37,7 @@ help_url="https://acme-climate.atlassian.net/wiki/pages/viewpage.action?pageId=1
 ###   json - output json files
 ###  sets - which sets to plot
 ###  translate - optional list of {set 1} to {set N} variable name mapping translations, e.g. TSA->TREFHT
-###  cachepath - path for temp files
+###  cachepath - path for cached data (*.cache), and cdscan output (*.xml).
 ###  vars - list of variables or ALL
 ###  varopts - list of variable options
 ###  regions -  list of regions
@@ -71,7 +71,7 @@ class Options():
         self._opts['uservars'] = []
 
         self._opts['reltime'] = None
-        self._opts['cachepath'] = '/tmp'
+        self._opts['cachepath'] = '/tmp/'+getpass.getuser()+'/uvcmetrics'
         self._opts['translate'] = True
         self._opts['translations'] = {}
         self._opts['levels'] = None
@@ -671,7 +671,7 @@ class Options():
         # Other options, useful at various times.
         otheropts = parser.add_argument_group('Other')
         otheropts.add_argument('--cachepath', nargs=1,
-                               help="Path for temporary and cachced files. Defaults to /tmp")
+                               help="Path for temporary and cached files. Defaults to /tmp/<username>/uvcmetrics/")
         otheropts.add_argument('--verbose', action='count',
                                help="Increase the verbosity level. Each -v option increases the verbosity more.") # count
         otheropts.add_argument('--list', '-l', nargs=1, choices=['sets', 'vars', 'variables', 'packages', 'seasons', 'regions', 'translations','options','varopts'],
@@ -878,6 +878,11 @@ class Options():
 
         if(args.cachepath != None):
             self._opts['cachepath'] = args.cachepath[0]
+        try:
+            os.makedirs(self._opts['cachepath'])
+        except OSError as e:  # usually means path already exists, but make sure:
+            if not os.path.isdir(self._opts['cachepath']):
+                raise e
 
         if (args.levels) != None:
             self.processLevels('levels', args.levels, extras)
