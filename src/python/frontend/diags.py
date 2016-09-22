@@ -252,7 +252,7 @@ def run_diags( opts ):
 
             computeall = not opts['output']['table']
             table = sclass( modelfts, obsfts, varid=varid, obsfilter=obsfilter, dryrun=opts['dryrun'], sbatch=opts["sbatch"], computeall=computeall, outdir=outdir)
-
+            pdb.set_trace()
             if opts['dryrun'] or varid is not None:
                 continue
             #read the files and print the table
