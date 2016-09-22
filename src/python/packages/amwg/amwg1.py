@@ -497,6 +497,7 @@ class amwg_plot_set1(amwg_plot_plan):
             writer.write(str(s)+'\n')
         writer.close()
         
+        #print the table
         self._results()
         return filename
     def __len__( self ):

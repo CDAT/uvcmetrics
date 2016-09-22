@@ -73,4 +73,4 @@ table_row_specs = [
     { 'var':'Z3', 'obs':'NCEP', 'lev':'500', 'units':'hectometer'}
     ]
 #this is a dummy table for testing
-table_row_specs = [{ 'var':'TS', 'obs':'NCEP'},{ 'var':'RESTOM'},{ 'var':'RESSURF'}]
+#table_row_specs = [{ 'var':'TS', 'obs':'NCEP'},{ 'var':'RESTOM'},{ 'var':'RESSURF'}]
