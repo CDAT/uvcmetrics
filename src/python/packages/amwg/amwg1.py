@@ -341,12 +341,6 @@ class Row:
 class amwg_plot_set1(amwg_plot_plan):
     name = '1 - Tables of Global, tropical, and extratropical DJF, JJA, ANN means and RMSE'
     number = '1'
-    # table row specs:
-    #   var variable name, mandatory (other entries are optional)
-    #   obs root of obs file name
-    #   lev level (in millibars) to which variable is restricted
-    #   obsprint obs name to be printed (default is obs)
-    #   units units of the output quantity (default is same as the input files)
 
     # These also appear, in another form, in frontend/defines.py.
     regions = { 'Global':(-90,90),
@@ -394,7 +388,7 @@ class amwg_plot_set1(amwg_plot_plan):
         # filetable2 is a file table for all obs data.
         # seasonid is a season string, e.g. 'DJF'.  Region is the name of a zonal region, e.g.
         # 'tropics'; the acceptable region names are amwg_plot_set1.regions.keys().
-
+        pdb.set_trace()
         if type(region)==list or type(region)==rectregion:
             # Brian's numerical region, or an instance of the similar rectregion class.
             # Ignore if it doesn't match one we have.

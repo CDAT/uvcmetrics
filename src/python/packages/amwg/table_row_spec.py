@@ -1,5 +1,12 @@
 """This is the list of variables and observations used to generate the table in amwg1."""
 # This is essentially duplicated in amwgmaster.
+    # table row specs:
+    #   var variable name, mandatory (other entries are optional)
+    #   obs root of obs file name
+    #   lev level (in millibars) to which variable is restricted
+    #   obsprint obs name to be printed (default is obs)
+    #   units units of the output quantity (default is same as the input files)
+
 table_row_specs = [
     { 'var':'RESTOM'},
     { 'var':'RESSURF'},
