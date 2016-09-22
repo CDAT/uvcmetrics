@@ -41,6 +41,7 @@ a variable named XXX_OCN with the ocean masked.
 # then that is preferred over any computation.
 
 from metrics.frontend.user_identifier import user
+import importlib
 usermodule = importlib.import_module( 'derived_variables_for_'+user )
 common_derived_variables = usermodule.user_derived_variables
 
