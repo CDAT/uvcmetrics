@@ -252,12 +252,13 @@ def run_diags( opts ):
 
             computeall = not opts['output']['table']
             table = sclass( modelfts, obsfts, varid=varid, obsfilter=obsfilter, dryrun=opts['dryrun'], sbatch=opts["sbatch"], computeall=computeall, outdir=outdir)
-            pdb.set_trace()
+            
             if opts['dryrun'] or varid is not None:
                 continue
             #read the files and print the table
-            directory = outdir + '/amwg1_output/'
+            directory = outdir
             if opts['output']['table']:
+                directory += '/amwg1_output/'
                 table.get_data(directory)
 #jfp was            table.write_plot_data(where=directory, fname=directory+'table_output') 
             table.write_plot_data(where=directory, fname=form_filename( form_file_rootname(

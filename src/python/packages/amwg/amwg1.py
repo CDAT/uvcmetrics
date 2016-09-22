@@ -487,7 +487,7 @@ class amwg_plot_set1(amwg_plot_plan):
         self.ptype = "text"
         if fname != "":
            logger.debug('filename was: %s', fname)
-           filename = fname
+           filename = where + fname
         else:
            filename = self.outfile( format, where )
         writer = open( filename, 'w' )
