@@ -42,7 +42,7 @@ a variable named XXX_OCN with the ocean masked.
 
 from metrics.frontend.user_identifier import user
 import importlib
-usermodule = importlib.import_module( 'derived_variables_for_'+user )
+usermodule = importlib.import_module( 'metrics.packages.amwg.derived_variables_for_'+user )
 common_derived_variables = usermodule.user_derived_variables
 
 @classmethod
