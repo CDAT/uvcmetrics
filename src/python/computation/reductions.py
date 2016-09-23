@@ -213,6 +213,11 @@ def set_mean( mv, season=seasonsyr, region=None, gw=None ):
     weighting = getattr( mv, 'weighting', None )
     if hasattr(mv,'mean') and isinstance(mv.mean,Number):
         mvmean = mv.mean
+    elif hasattr(mv,'mean') and not isinstance(mv.mean,Number) and hasattr(mv.mean,'shape') and\
+            len(mv.mean.shape)==0:
+        # mv.mean is a TransientVariable of shape (), or something like that: only one value.
+        mvmean = mv.mean.min()
+        mv.mean = mvmean
     else:
         mvmean = None
     if weighting=='mass' and hasattr(mv,'filename') and mvmean is None:
@@ -222,8 +227,12 @@ def set_mean( mv, season=seasonsyr, region=None, gw=None ):
             mv.mean = reduce2scalar( mv, season=season, region=region, gw=gw, weights='mass' )
         except Exception as e:
             logger.error("Caught by set_mean, exception %s for variable %s", e, mv.id)
+            # Helpful for debugging:
+            #import traceback
+            #tb = traceback.format_exc()
+            #print tb
     #else: use the VCS default of area weighting
-
+    return mv.mean
 
 # -------- end of Miscellaneous  Utilities ---------
 
@@ -272,9 +281,9 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
     mv_axes = allAxes( mv )
     for a in mv_axes:
         if hasattr(a,'axis'): continue
-        if a.isLatitude: a.axis = 'y'
-        elif a.isLongitude: a.axis = 'x'
-        elif a.isLevel: a.axis = 'z'
+        if a.isLatitude(): a.axis = 'y'
+        elif a.isLongitude(): a.axis = 'x'
+        elif a.isLevel(): a.axis = 'z'
     axis_names = [ a.id for a in mv_axes if not a.isTime() and a.id not in exclude_axes and
                    a not in target_axes and a.id not in target_axes and
                    getattr(a,'axis').lower() not in target_axes and
@@ -302,6 +311,14 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
             # "of the same shape as V" in the language of the genutil averager() documentation (with V=mvrs)
             if weights=='mass':
                 latlon_wts = mvrs.filetable.weights['mass']  # array of shape (lev,lat,lon)
+                # ... except if mvrs has been regridded to match another filetable!  These asserts help catch
+                # such situations; there's nothing to really handle them:
+                if mvrs.getLongitude() is not None and len(mvrs.getLongitude())>0:
+                    assert len(mvrs.getLongitude())==len(latlon_wts.getLongitude())
+                if mvrs.getLatitude() is not None and len(mvrs.getLatitude())>0:
+                    assert len(mvrs.getLatitude())==len(latlon_wts.getLatitude())
+                if mvrs.getLevel() is not None and len(mvrs.getLevel())>0:
+                    assert len(mvrs.getLevel())==len(latlon_wts.getLevel())
             else:
                 latlon_wts = weights
             klevs = [i for i,j in enumerate([a.isLevel() for a in axes]) if j==True]
@@ -390,9 +407,6 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
                         ilev = inds[klev]
                         avweights[inds] = numpy.sum( latlon_wts[ilev,:,:] )
 
-            #if len(avweights.shape)==2: print "jfp weights=",avweights[:,0]/avweights[0,0],avweights.shape
-            #if len(avweights.shape)==3: print "jfp weights=",numpy.sum(avweights[:,:,0],axis=0)/sum(avweights[:,0,0]),\
-            #        avweights.shape
             avmv = averager( mvrs, axis=axes_string, weights=avweights )
 
         elif gw is None:
@@ -454,7 +468,11 @@ def reduce2scalar_seasonal_zonal( mv, season=seasonsyr, latmin=-90, latmax=90, v
         else:
             #print "debug For mv",mv.id,"gw rejected, domain is",gw.getDomain()
             pass
-    return reduce2any( mv2, target_axes=[], vid=vid, season=season, gw=gw2 )
+    sclr = reduce2any( mv2, target_axes=[], vid=vid, season=season, gw=gw2 )
+    if not isinstance(sclr,Number) and len(sclr.shape)==0:
+        # sclr is a TransientVariable of shape (), or something like that: only one value.
+        sclr = sclr.min()
+    return sclr
 
 def reduce2scalar_seasonal_zonal_level( mv, season=seasonsyr, latmin=-90, latmax=90, level=None,
                                         vid=None, gw=None, seasons=seasonsyr ):
@@ -502,8 +520,12 @@ def reduce2scalar( mv, vid=None, gw=None, weights=None, season=seasonsyr, region
     For the moment we expect mv to have lat and lon axes; and if it has no level axis,
     the bottom level, i.e. the last in any level array, lev=levels[-1], will be assumed.
     """
-    return reduce2any( mv, target_axes=[], vid=vid, gw=gw, weights=weights, season=season,
+    sclr = reduce2any( mv, target_axes=[], vid=vid, gw=gw, weights=weights, season=season,
                        region=region )
+    if not isinstance(sclr,Number) and len(sclr.shape)==0:
+        # sclr is a TransientVariable of shape (), or something like that: only one value.
+        sclr = sclr.min()
+    return sclr
 
 def reduce2levlat_seasonal( mv, season=seasonsyr, region=None, vid=None ):
     """returns the mean of the variable over all axes but level and latitude, as a cdms2 variable, i.e. a MV.
