@@ -225,14 +225,14 @@ def set_mean( mv, season=seasonsyr, region=None, gw=None ):
         # mass-based weights.
         try:
             mv.mean = reduce2scalar( mv, season=season, region=region, gw=gw, weights='mass' )
+            mvmean = mv.mean
         except Exception as e:
             logger.error("Caught by set_mean, exception %s for variable %s", e, mv.id)
-            # Helpful for debugging:
-            #import traceback
-            #tb = traceback.format_exc()
-            #print tb
+            import traceback
+            tb = traceback.format_exc()
+            logger.debug("traceback:\n%s", tb)
     #else: use the VCS default of area weighting
-    return mv.mean
+    return mvmean
 
 # -------- end of Miscellaneous  Utilities ---------
 
@@ -310,9 +310,24 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
             # In this case we will provide the averager with a full weight array, i.e.
             # "of the same shape as V" in the language of the genutil averager() documentation (with V=mvrs)
             if weights=='mass':
-                latlon_wts = mvrs.filetable.weights['mass']  # array of shape (lev,lat,lon)
-                # ... except if mvrs has been regridded to match another filetable!  These asserts help catch
-                # such situations; there's nothing to really handle them:
+                # doesn't work for atmos set 7: latlon_wts = mvrs.filetable.weights['mass']  # array of shape (lev,lat,lon)
+                from metrics.packages.amwg.derivations.massweighting import mass_weights
+                # simple cacheing uses only size of axes.  A more reliable one would use season and actual locations
+                # of axes, and do something about levels:
+                lat = mvrs.getLatitude()
+                lon = mvrs.getLongitude()
+                llat = len(lat)
+                llon = len(lon)
+                if 'mass' in mvrs.filetable.weights and (llat,llon) in mvrs.filetable.weights['mass']:
+                    latlon_wts = mvrs.filetable.weights['mass'][(llat,llon)]
+                else:
+                    if 'mass' not in mvrs.filetable.weights:
+                        mvrs.filetable.weights['mass'] = {}
+                    latlon_wts = mass_weights( mvrs )    # array of shape (lev,lat,lon) ...
+                    mvrs.filetable.weights['mass'][(llat,llon)] = latlon_wts
+                # Previously I simply stored weights in the filetable, but it did't work in the occasional
+                # case that mvrs had been regridded to match another filetable!  These asserts help catch
+                # such situations:
                 if mvrs.getLongitude() is not None and len(mvrs.getLongitude())>0:
                     assert len(mvrs.getLongitude())==len(latlon_wts.getLongitude())
                 if mvrs.getLatitude() is not None and len(mvrs.getLatitude())>0:
@@ -3015,11 +3030,6 @@ class reduced_variable(ftrow,basic_id):
             if self.variableid in f.variables.keys():
                 var = f(self.variableid)
                 var.filename = self.filename
-                weighting = weighting_choice(var)
-                if weighting=='mass':
-                    from metrics.packages.amwg.derivations.massweighting import mass_weights
-                    if 'mass' not in self.filetable.weights:
-                        self.filetable.weights['mass'] = mass_weights( var )
                 if os.path.basename(filename)[0:5]=='CERES':
                     var = special_case_fixed_variable( 'CERES', var )
                 if not hasattr( var, 'filetable'): var.filetable = self.filetable
