@@ -14,16 +14,18 @@
 
 import numpy
 import cdms2
-import logging
+import logging, pdb
 from atmconst import AtmConst
 from unidata import udunits
 
 
 logger = logging.getLogger(__name__)
 
-def rhodz_from_hybridlev( PS, P0, hyai, hybi ):
+def rhodz_from_hybridlev( PS, P0, hyai, hybi, mv, f ):
     """returns a variable rhodz which represents the air mass column density in each cell, assumes
-    kg,m,sec,mbar units and 3-D grid lon,lat,level.  The input variables are from CAM."""
+    kg,m,sec,mbar units and 3-D grid lon,lat,level.  The input variables are from CAM, except for mv
+    and f, the file from which it all came.
+    The axes of rhodz will be made compatible with the variable mv, if possible."""
     # g*rhodz = delta-P, where delta-P is pressure difference between top and bottom of the cell
     # and g the acceleration due to gravity.
     # So rhodz is the mass in the cell per unit of horizontal (lat-lon) area.
@@ -33,20 +35,23 @@ def rhodz_from_hybridlev( PS, P0, hyai, hybi ):
     # value of time).
     # Thus rhodz will depend on lat,lon,level (and time).
     g = AtmConst.g     # 9.80665 m/s2.
+    latm1,latm2 = axis_minmax( mv.getLatitude(), f )
+    lonm1,lonm2 = axis_minmax( mv.getLongitude(), f )
+    PSlim = PS( latitude=(latm1,latm2), longitude=(lonm1,lonm2) )
     levax = hybi.getLevel()
-    latax = PS.getLatitude()
-    lonax = PS.getLongitude()
-    pintdat = numpy.zeros( ( hybi.shape[0], PS.shape[1], PS.shape[2] ) )
+    latax = PSlim.getLatitude()
+    lonax = PSlim.getLongitude()
+    pintdat = numpy.zeros( ( hybi.shape[0], PSlim.shape[1], PSlim.shape[2] ) )
     pint = cdms2.createVariable( pintdat, axes=[levax,latax,lonax] )
     for k in range(hybi.shape[0]):
-	pint[k,:,:] = hyai[k]*P0 + PS[0,:,:]*hybi[k]
+	pint[k,:,:] = hyai[k]*P0 + PSlim[0,:,:]*hybi[k]
     # ... I don't know how to do this without a loop.
     dp = pint[1:,0:,0:] - pint[0:-1,0:,0:]
     rhodz = dp/g
 
     # Fix level axis attributes:
     pintlev = pint.getLevel()
-    levunits = getattr(PS,'units',None)
+    levunits = getattr(PSlim,'units',None)
     levaxis = getattr(pintlev,'axis',None)
     levrho = rhodz.getAxisList()[0]
     if not levrho.isLatitude() and not levrho.isLongitude():
@@ -70,6 +75,24 @@ def interp_extrap_to_one_more_level( lev ):
     levc.axis = 'Z'
     levc.long_name = getattr( lev, 'long_name', None )
     return levc
+
+def axis_minmax( lax, f ):
+    """finds the minimum and maximum values of an axis lax (normally lat or lon) from the axis bounds
+    attribute and an open file f containing the bounds variable.  The return values will be min,max or
+    max,min depending on whether lax[0]<lax[-1] or lax[-1]>lax[0].  Thus either min<=lax[0]<lax[-1]<=max
+    or max>=lax[0]>lax[-1]>=min."""
+    try:
+        bnds = f(lax.bounds)
+        bnds0 = [b for b in bnds if b[0]<lax[0] and b[1]>lax[0]][0]
+        bnds1 = [b for b in bnds if b[0]<lax[-1] and b[1]>lax[-1]][0]
+        if lax[0]<lax[-1]:
+            return bnds0[0],bnds1[1]
+        else:
+            return bnds0[1],bnds1[0]
+    except:
+        logger.error("axis %s has no bounds in file %s",lat.id,f.id)
+        return -1.0e20, 1.0e20
+    
 
 def rhodz_from_plev( lev, nlev_want, mv ):
     """returns a variable rhodz which represents the air mass column density in each cell.
@@ -99,7 +122,9 @@ def rhodz_from_plev( lev, nlev_want, mv ):
         f = cdms2.open(lev.filename)
         fvars = f.variables.keys()
         if 'PS' in fvars:
-            PS = f('PS')
+            latm1,latm2 = axis_minmax( lat, f )
+            lonm1,lonm2 = axis_minmax( lon, f )
+            PS = f('PS')(latitude=(latm1,latm2),longitude=(lonm1,lonm2))
             # I could relax all of the following assertions, but not without a test
             # problem, and I don't have one.  An assertion failure will provide a test
             # problem and make it clear what has to be done.
@@ -190,7 +215,8 @@ def rhodz_from_mv( mv ):
     if lev.units=='level':  # hybrid level
         cfile = cdms2.open( mv.filename )
         check_compatible_levels( mv, cfile('hybi'), True )
-        rhodz = rhodz_from_hybridlev( cfile('PS'), cfile('P0'), cfile('hyai'), cfile('hybi') )
+        rhodz = rhodz_from_hybridlev( cfile('PS'), cfile('P0'), cfile('hyai'), cfile('hybi'),
+                                      mv, cfile )
         cfile.close()
     elif lev.units in  ['millibars','mbar','mb','Pa','hPa']:  # pressure level
         # Note that lev is the level axis of mv, thus each value of mv is centered _at_ a level.
@@ -222,7 +248,7 @@ def area_times_rhodz( mv, rhodz ):
 
 def mass_weights( mv ):
     """Returns a (lev,lat,lon)-shaped array of mass weights computed from a variable mv with
-    lev,lat,lon axes.  It must have a filename attribute if hybrid levels are used.
+    lev,lat,lon axes.  It should have a filename attribute, and must if hybrid levels are used.
     All variables must use kg,m,sec,mbar units.  Masks are ignored.
     The requirements are not checked (maybe they will be checked or relaxed in the future)."""
     # At this point, rhodz is cell mass per unit area. Multiply by that area to get the mass weight.
