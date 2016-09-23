@@ -7,7 +7,7 @@
     #   obsprint obs name to be printed (default is obs)
     #   units units of the output quantity (default is same as the input files)
 
-XXXtable_row_specs = [
+table_row_specs = [
     { 'var':'RESTOM'},
     { 'var':'RESSURF'},
     { 'var':'RESTOA', 'obs':'CERES-EBAF'},
@@ -42,11 +42,11 @@ XXXtable_row_specs = [
     #obsolete { 'var':'LWCF', 'obs':'CERES'},
     #obsolete { 'var':'LWCF', 'obs':'ERBE'},
     { 'var':'PRECT', 'obs':'GPCP'},
-    { 'var':'PREH2O', 'obs':'NVAP'},
-    { 'var':'PREH2O', 'obs':'AIRS'},
-    { 'var':'PREH2O', 'obs':'JRA25'},
-    { 'var':'PREH2O', 'obs':'ERAI'},
-    { 'var':'PREH2O', 'obs':'ERA40'},
+    { 'var':'TMQ', 'obs':'NVAP'},
+    { 'var':'TMQ', 'obs':'AIRS'},
+    { 'var':'TMQ', 'obs':'JRA25'},
+    { 'var':'TMQ', 'obs':'ERAI'},
+    { 'var':'TMQ', 'obs':'ERA40'},
     { 'var':'PSL', 'obs':'JRA25', 'units':'millibar' },
     { 'var':'PSL', 'obs':'ERAI', 'units':'millibar' },
     { 'var':'SHFLX', 'obs':'JRA25'},
@@ -60,7 +60,7 @@ XXXtable_row_specs = [
     #obsolete { 'var':'SWCF', 'obs':'ERBE'},
     { 'var':'AODVIS'},
     { 'var':'AODDUST'},
-    { 'var':'SST', 'obs':'HadISST'},
+    { 'var':'SST', 'obs':'HadISST_CI'},
     { 'var':'SST', 'obs':'HadISST_PI'},
     { 'var':'SST', 'obs':'HadISST_PD'},
     { 'var':'TREFHT', 'obs':'LEGATES'},
@@ -73,4 +73,4 @@ XXXtable_row_specs = [
     { 'var':'Z3', 'obs':'NCEP', 'lev':'500', 'units':'hectometer'}
     ]
 #this is a dummy table for testing
-table_row_specs = [{'var':'SST', 'obs':'HadISST_CI'}, { 'var':'TS', 'obs':'NCEP'},{ 'var':'RESTOM'},{ 'var':'RESSURF'}]
+#table_row_specs = [{'var':'SST', 'obs':'HadISST_CI'}, { 'var':'TS', 'obs':'NCEP'},{ 'var':'RESTOM'},{ 'var':'RESSURF'}]
