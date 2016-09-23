@@ -17,11 +17,14 @@ datadir = args.datadir
 print 'datadir = ', datadir
 baselinepath = args.baseline + '/diagsmeta/'
 print "baselinepath = ", baselinepath
+#outpath = tempfile.mkdtemp() + "/"
+#print "outpath=", outpath
 
 test_str = 'metadiags\n'
 #run this from command line to get the files required
-command = "metadiags.py  --package AMWG --set 5  --model path=" + datadir + "/cam35_data_smaller/,climos=yes  --obs path=" + datadir + "/obs_data_5.6/,climos=yes --dryrun "
+command = "metadiags.py  --package AMWG --set 5  --model path=%s/cam35_data_smaller/,climos=yes  --obs path=%sobs_data_5.6/,climos=yes --dryrun "%(datadir, datadir)
 print command
+#+ "--outputdir " + outpath 
 
 #run the command
 proc = subprocess.Popen([command], shell=True)
