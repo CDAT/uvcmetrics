@@ -43,6 +43,16 @@ def rhodz_from_hybridlev( PS, P0, hyai, hybi ):
     # ... I don't know how to do this without a loop.
     dp = pint[1:,0:,0:] - pint[0:-1,0:,0:]
     rhodz = dp/g
+
+    # Fix level axis attributes:
+    pintlev = pint.getLevel()
+    levunits = getattr(PS,'units',None)
+    levaxis = getattr(pintlev,'axis',None)
+    levrho = rhodz.getAxisList()[0]
+    if not levrho.isLatitude() and not levrho.isLongitude():
+        if levunits is not None:  setattr(levrho,'units',levunits)
+        if levaxis is not None: setattr(levrho,'axis',levaxis)
+
     return rhodz
 
 def interp_extrap_to_one_more_level( lev ):
@@ -128,6 +138,16 @@ def rhodz_from_plev( lev, nlev_want, mv ):
 
     dp = lev3d[0:-1,:,:] - lev3d[1:,:,:]
     rhodz = dp/g   # (lev) shape
+
+    # Fix level axis attributes:
+    lev3dlev = lev3d.getLevel()
+    levunits = getattr(lev3dlev,'units',None)
+    levaxis = getattr(lev3dlev,'axis',None)
+    levrho = rhodz.getAxisList()[0]
+    if not levrho.isLatitude() and not levrho.isLongitude():
+        if levunits is not None:  setattr(levrho,'units',levunits)
+        if levaxis is not None: setattr(levrho,'axis',levaxis)
+
     return rhodz
 
 def check_compatible_levels( var, pvar, strict=False ):
