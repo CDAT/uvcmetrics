@@ -295,7 +295,8 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
         # weights unspecified (probably).  Are they specified in a variable attribute?
         # If mass weighting is appropriate, the weighting attribute should say so.  It was set by
         # an earlier weighting_choice() call.
-        weights = getattr( mv, 'weighting', None )
+        from metrics.packages.amwg.derivations.massweighting import weighting_choice
+        weights = getattr( mv, 'weighting', weighting_choice(mv) )
         if not hasattr(mvrs,'filetable') and hasattr(mv,'filetable'):
             mvrs.filetable = mv.filetable
 
@@ -316,17 +317,27 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
                 # of axes, and do something about levels:
                 lat = mvrs.getLatitude()
                 lon = mvrs.getLongitude()
-                llat = len(lat)
-                llon = len(lon)
+                if lat is None: llat = -1
+                else:llat = len(lat)
+                if lon is None: llon = -1
+                else: llon = len(lon)
                 if 'mass' in mvrs.filetable.weights and (llat,llon) in mvrs.filetable.weights['mass']:
                     latlon_wts = mvrs.filetable.weights['mass'][(llat,llon)]
+                # Add "lat is None" etc. only if we realy need it.
+                elif 'mass' in mvrs.filetable.weights and lon is None and\
+                        llat in [k[0] for k in mvrs.filetable.weights['mass'].keys()]:
+                    # No lon.  Get weights with lon (and the same lat), and sum over lon.
+                    newllon = [k[1] for k in mvrs.filetable.weights['mass'] if k[0]==llat][0]
+                    latlon_wts = mvrs.filetable.weights['mass'][(llat,newllon)]
+                    # ... array of shape (lev,lat,lon); the sum over longitudes will happen later.
                 else:
                     if 'mass' not in mvrs.filetable.weights:
                         mvrs.filetable.weights['mass'] = {}
+                    # Note that mass_weights() requires mvrs to have lev,lat,lon axes.
                     latlon_wts = mass_weights( mvrs )    # array of shape (lev,lat,lon) ...
                     mvrs.filetable.weights['mass'][(llat,llon)] = latlon_wts
                 # Previously I simply stored weights in the filetable, but it did't work in the occasional
-                # case that mvrs had been regridded to match another filetable!  These asserts help catch
+                # case that mvrs had been regridded to match another filetable!  These asserts helped catch
                 # such situations:
                 if mvrs.getLongitude() is not None and len(mvrs.getLongitude())>0:
                     assert len(mvrs.getLongitude())==len(latlon_wts.getLongitude())
@@ -3033,6 +3044,7 @@ class reduced_variable(ftrow,basic_id):
                 if os.path.basename(filename)[0:5]=='CERES':
                     var = special_case_fixed_variable( 'CERES', var )
                 if not hasattr( var, 'filetable'): var.filetable = self.filetable
+                weighting = weighting_choice(var)
                 reduced_data = self._reduction_function( var, vid=vid )
             elif self.variableid in f.axes.keys():
                 taxis = cdms2.createAxis(f[self.variableid])   # converts the FileAxis to a TransientAxis.
