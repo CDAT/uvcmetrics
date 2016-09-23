@@ -188,6 +188,9 @@ class plot_plan(object):
                 if ps._id != plotspec.dict_id( None, None, None, None, None ):
                     # not an empty plot
                     logger.warning("Cannot compute data for %s due to exception %s %s",ps._strid, e.__class__.__name__, e)
+                    import traceback
+                    tb = traceback.format_exc()
+                    logger.debug("traceback:\n%s", tb)
                 self.plotspec_values[p] = None
                 continue
             vars = []
@@ -372,7 +375,7 @@ class plot_plan(object):
                 zid = [zz.id for zz in z]
             else:
                 zid = z.id
-            logger.warning("No 'mean' attribute in variable %s; we may compute it in compute_plot_var_value.", zid)
+            logger.debug("No 'mean' attribute in variable %s; we may compute it in compute_plot_var_value.", zid)
 
             set_mean( z, season=getattr(self,'season',None), region=getattr(self,'region',None) )
             if hasattr(z,'mean') and isinstance(z.mean,cdms2.tvariable.TransientVariable) and\

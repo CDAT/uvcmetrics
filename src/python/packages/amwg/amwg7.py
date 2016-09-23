@@ -79,11 +79,11 @@ class amwg_plot_set7(amwg_plot_plan):
            ft2src = ''
        reduced_varlis = [
            reduced_variable(
-                variableid=varid, filetable=filetable1, season=self.season,
-                reduction_function=(lambda x, vid, region=None: reduce2latlon_seasonal( x(latitude=aux, longitude=(0, 360)), self.season, region, vid=vid ) ) ),
-            reduced_variable(
-                variableid=varid, filetable=filetable2, season=self.season,
-                reduction_function=(lambda x,vid, region=None: reduce2latlon_seasonal( x(latitude=aux, longitude=(0, 360)), self.season, region, vid=vid ) ) )
+               variableid=varid, filetable=filetable1, season=self.season,
+               reduction_function=(lambda x,vid, region=None: reduce2latlon_seasonal( x(latitude=aux, longitude=(0, 360)), self.season, region, vid=vid ) ) ),
+           reduced_variable(
+               variableid=varid, filetable=filetable2, season=self.season,
+               reduction_function=(lambda x,vid, region=None: reduce2latlon_seasonal( x(latitude=aux, longitude=(0, 360)), self.season, region, vid=vid ) ) )
             ]
        self.reduced_variables = { v.id():v for v in reduced_varlis }
        vid1 = rv.dict_id( varid, seasonid, filetable1 )
