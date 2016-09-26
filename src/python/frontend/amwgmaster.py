@@ -282,9 +282,9 @@ diags_collection['5']['CLDLOW'] = {'plottype': '5', 'obs': ['ISCCP_1', 'WARREN_1
 diags_collection['5']['CLDLOW_VISIR'] = {'plottype': '5', 'obs': ['ISCCP_1'], 'modelvar':'CLDLOW'}
 diags_collection['5']['CLDTOT'] = {'plottype': '5', 'obs': ['ISCCP_1', 'WARREN_1', 'CLOUDSAT_1']}
 diags_collection['5']['CLDTOT_VISIR'] = {'plottype': '5', 'obs': ['ISCCP_1'], 'modelvar':'CLDTOT'}
-diags_collection['5']['MEANPTOP'] = {'plottype': '5', 'obs': ['ISCCP_1', 'MODIS_1']}
-diags_collection['5']['MEANTTOP'] = {'plottype': '5', 'obs': ['ISCCP_1', 'MODIS_1']}
-diags_collection['5']['MEANTAU'] = {'plottype': '5', 'obs': ['ISCCP_1', 'MODIS_1']}
+#diags_collection['5']['MEANPTOP'] = {'plottype': '5', 'obs': ['ISCCP_1', 'MODIS_1']}
+#diags_collection['5']['MEANTTOP'] = {'plottype': '5', 'obs': ['ISCCP_1', 'MODIS_1']}
+#diags_collection['5']['MEANTAU'] = {'plottype': '5', 'obs': ['ISCCP_1', 'MODIS_1']}
 diags_collection['5']['TCLDAREA'] = {'plottype': '5', 'obs': ['ISCCP_1', 'MODIS_1']}
 
 # *** Collection 6 ***
