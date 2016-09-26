@@ -1,6 +1,6 @@
 # Derived variables which are simple to compute, but a bit too much to wrap in a lambda expression.
 
-import numpy, logging
+import numpy, logging, pdb
 import cdms2
 from metrics.computation.reductions import aminusb, aplusb, adivb, convert_units
 from metrics.common.utilities import DiagError

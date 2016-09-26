@@ -254,13 +254,13 @@ diags_collection['5']['FLUTC'] = {'plottype': '5', 'obs': ['CERES-EBAF_1']}
 diags_collection['5']['FSNTOA'] = {'plottype': '5', 'obs': ['CERES-EBAF_1']}
 diags_collection['5']['FSNTOAC'] = {'plottype': '5', 'obs': [ 'CERES-EBAF_1']}
 diags_collection['5']['LWCF'] = {'plottype': '5', 'obs': ['CERES-EBAF_1']}
-diags_collection['5']['SWCFTOM'] = {'plottype': '5', 'obs': ['CERES-EBAF_1'], 'regions':['Global']}
+diags_collection['5']['SWCF'] = {'plottype': '5', 'obs': ['CERES-EBAF_1'], 'regions':['Global']}
 diags_collection['5']['LWCFSRF'] = {'plottype': '5', 'obs': ['ISCCP_1']}
 diags_collection['5']['SWCFSRF'] = {'plottype': '5', 'obs': ['ISCCP_1']}
 diags_collection['5']['TMQ'] = {'plottype': '5', 
                                 'obs': ['NCEP_1', 'NVAP_1', 'JRA25_1', 'ERA40_1', 'MODIS_1', 'ECMWF_1'], 
                                 'regions':['Global']}
-diags_collection['5']['TGCLDLWP'] = {'plottype': '5', 'obs': ['NVAP_1', 'MODIS_1'], 'regions':['Global']}
+diags_collection['5']['TGCLDLWP_OCN'] = {'plottype': '5', 'obs': ['NVAP_1'], 'regions':['Global']}
 diags_collection['5']['PSL'] = {'plottype': '5', 'obs': ['JRA25_1', 'NCEP_1']}
 diags_collection['5']['T'] = {'plottype': '5', 'obs': ['ECMWF_1', 'JRA25_1', 'AIRS_1', 'ERA40_1', 'NCEP_1'], 'varopts':['850', '200']}
 diags_collection['5']['SST'] = {'plottype': '5', 'obs': ['HadISST_PD_1', 'HadISST_PI_1', 'HadISST_CL_1']}
@@ -679,7 +679,9 @@ diags_collection['99']['seasons'] = ['ANN']
 diags_collection['99']['package'] = 'AMWG'
 diags_collection['99']['options'] = {'logo':'no'}
 diags_collection['99']['combined'] = True
-diags_collection['99']['SHFLX_OCN'] = {'plottype': '5', 'obs': ['LARYEA_1']}
+diags_collection['99']['FSNS_OCN'] = {'plottype': '5', 'obs': ['LARYEA_1']}
+diags_collection['99']['FLNS_OCN'] = {'plottype': '5', 'obs': ['LARYEA_1']}
+#diags_collection['99']['SHFLX_OCN'] = {'plottype': '5', 'obs': ['LARYEA_1']}
 #diags_collection['99']['QFLX_OCN'] = {'plottype': '5', 'obs': ['WHOI_1'] }
 #diags_collection['99']['LHFLX_OCN'] = {'plottype': '5', 'obs': ['WHOI_1'] }
 #diags_collection['99']['SWCFTOM'] = {'plottype': '5', 'obs': ['CERES-EBAF_1'], 'regions':['Global']}
