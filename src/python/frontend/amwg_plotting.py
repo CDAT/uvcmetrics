@@ -71,7 +71,6 @@ def amwg_plot_plan_vcs_plot( self, canvas, var, gm, tm, ratio='autot', *args, **
         vcs.utils.defaultColorsRange = range(16,240)
         pass
 
-    print "PLOTTING:",var.id,gm.fillareacolors
     canvas.plot( var, gm, tm, *args, **kwargs )
     # Restore current default behaviour
     vcs.utils.defaultColorsRange = range(256)
