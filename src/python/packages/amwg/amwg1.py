@@ -245,7 +245,7 @@ class Row:
                 reduction_function=(lambda x,vid=None: x) ).reduce()
         else:
             gw = None
-        pdb.set_trace()
+        
         if filetable.find_files( self.var, filefilter=ffilt ):
             if self.lev is not None:
                 mean1 = self.mean_lev( filetable, ffilt, domrange, gw )
@@ -284,6 +284,7 @@ class Row:
         else:
             # It's a more complicated calculation, which we can treat as a derived variable.
             # If it's a common_derived_variable, we know how to do it...
+            pdb.set_trace()
             try:
                 vid,rvs,dvs = amwg_plot_plan.commvar2var(
                     self.var, filetable, self.season, reduction_function=\

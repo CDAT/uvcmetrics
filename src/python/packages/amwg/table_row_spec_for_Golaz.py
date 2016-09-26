@@ -6,6 +6,8 @@
     #   lev level (in millibars) to which variable is restricted
     #   obsprint obs name to be printed (default is obs)
     #   units units of the output quantity (default is same as the input files)
+#this is a dummy table for testing
+table_row_specs = [{ 'var':'TMQ', 'obs':'NVAP'}, { 'var':'TS', 'obs':'NCEP'},{ 'var':'RESTOM'},{ 'var':'RESSURF'}]
 
 xxxtable_row_specs = [
     { 'var':'RESTOM'},
@@ -72,5 +74,3 @@ xxxtable_row_specs = [
     { 'var':'Z3', 'obs':'JRA25', 'lev':'500', 'units':'hectometer'},
     { 'var':'Z3', 'obs':'NCEP', 'lev':'500', 'units':'hectometer'}
     ]
-#this is a dummy table for testing
-table_row_specs = [{ 'var':'TMQ', 'obs':'NVAP'}, { 'var':'TS', 'obs':'NCEP'},{ 'var':'RESTOM'},{ 'var':'RESSURF'}]
