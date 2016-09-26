@@ -495,9 +495,6 @@ def reduce2scalar_seasonal_zonal( mv, season=seasonsyr, latmin=-90, latmax=90, v
             #print "debug For mv",mv.id,"gw rejected, domain is",gw.getDomain()
             pass
     sclr = reduce2any( mv2, target_axes=[], vid=vid, season=season, gw=gw2 )
-    if not isinstance(sclr,Number) and len(sclr.shape)==0:
-        # sclr is a TransientVariable of shape (), or something like that: only one value.
-        sclr = sclr.min()
     return sclr
 
 def reduce2scalar_seasonal_zonal_level( mv, season=seasonsyr, latmin=-90, latmax=90, level=None,
@@ -548,9 +545,6 @@ def reduce2scalar( mv, vid=None, gw=None, weights=None, season=seasonsyr, region
     """
     sclr = reduce2any( mv, target_axes=[], vid=vid, gw=gw, weights=weights, season=season,
                        region=region )
-    if not isinstance(sclr,Number) and len(sclr.shape)==0:
-        # sclr is a TransientVariable of shape (), or something like that: only one value.
-        sclr = sclr.min()
     return sclr
 
 def reduce2levlat_seasonal( mv, season=seasonsyr, region=None, vid=None ):
@@ -3055,16 +3049,17 @@ class reduced_variable(ftrow,basic_id):
             else:
                 logger.error("Reduce failed to find variable %s in file %s. It did find variables %s and axes %s.",
                              self.variableid, filename, sorted(f.variables.keys()), sorted(f.axes.keys()))
-            if reduced_data is not None and type(reduced_data) is not list:
+            if reduced_data is not None and type(reduced_data) is not list and\
+                    not isinstance(reduced_data,Number):
                 reduced_data._vid = vid
-            if reduced_data is not None:
                 reduced_data.weighting = weighting  # needed if we have to average it further later on
             f.close()
-        if hasattr(reduced_data,'mask') and reduced_data.mask.all():
-            reduced_data = None
-        if reduced_data is not None:
-            reduced_data.filename = self.filename
-            reduced_data.filetable = self.filetable
+        if not isinstance(reduced_data,Number):
+            if hasattr(reduced_data,'mask') and reduced_data.mask.all():
+                reduced_data = None
+            if reduced_data is not None:
+                reduced_data.filename = self.filename
+                reduced_data.filetable = self.filetable
         return reduced_data
 
 class rv(reduced_variable):
