@@ -32,5 +32,16 @@ proc_status = proc.wait()
 if proc_status!=0: 
     raise "metadiags test failed"
 
-cmp = filecmp.cmp("/tmp/metadiags_commands.sh", baselinepath+"/metadiags_commands.sh")
-assert(cmp), 'metadiags_commands.sh files are not close'
+new = open(os.path.join("/tmp","metadiags_commands.sh")).readlines()
+old = open(os.path.join(baselinepath,"metadiags_commands.sh")).readlines()
+
+diff = False
+for i,l in enumerate(new):
+    new_content = l.replace(datadir,"/Users/mcenerney1/uvcmetrics/test/data/")
+    l2 = old[i]
+    sp = new_content.split("--log")[:-1]
+    sp2 = l2.split("--log")[:-1]
+    if sp!=sp2:
+        diff = True
+if diff:
+    raise Exception("metadiags.sh generated different files")
