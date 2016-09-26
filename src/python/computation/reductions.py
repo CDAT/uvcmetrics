@@ -330,6 +330,12 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
                     newllon = [k[1] for k in mvrs.filetable.weights['mass'] if k[0]==llat][0]
                     latlon_wts = mvrs.filetable.weights['mass'][(llat,newllon)]
                     # ... array of shape (lev,lat,lon); the sum over longitudes will happen later.
+                elif 'mass' in mvrs.filetable.weights and lat is None and\
+                        llon in [k[1] for k in mvrs.filetable.weights['mass'].keys()]:
+                    # No lat.  Get weights with lat (and the same lon), and sum over lon.
+                    newllat = [k[0] for k in mvrs.filetable.weights['mass'] if k[1]==llon][0]
+                    latlon_wts = mvrs.filetable.weights['mass'][(newllat,llon)]
+                    # ... array of shape (lev,lat,lon); the sum over longitudes will happen later.
                 else:
                     if 'mass' not in mvrs.filetable.weights:
                         mvrs.filetable.weights['mass'] = {}
