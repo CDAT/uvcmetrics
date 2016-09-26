@@ -147,7 +147,7 @@ class amwg_plot_plan(plot_plan):
                                            reduction_function=reduction_function )
                 #print "dbg   adding reduced variable rv=",rv
                 rvs.append(rv)
-
+        pdb.set_trace()
         available = rvs + dvs
         availdict = { v.id()[1]:v for v in available }
         inputs = [ availdict[v].id() for v in svd._inputs if v in availdict ] +\
