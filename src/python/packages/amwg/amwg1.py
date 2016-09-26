@@ -228,7 +228,7 @@ class Row:
             #self.variable_values[VID] = mean1
         return mean1
     def mean( self, filetable, filefam=None ):
-        #pdb.set_trace()
+        pdb.set_trace()
         if filetable is None:
             return self.undefined #-999.000
         if filefam is not None:
