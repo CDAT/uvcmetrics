@@ -245,7 +245,7 @@ class Row:
                 reduction_function=(lambda x,vid=None: x) ).reduce()
         else:
             gw = None
-
+        pdb.set_trace()
         if filetable.find_files( self.var, filefilter=ffilt ):
             if self.lev is not None:
                 mean1 = self.mean_lev( filetable, ffilt, domrange, gw )
