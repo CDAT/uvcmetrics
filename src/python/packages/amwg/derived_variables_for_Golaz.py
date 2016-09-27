@@ -88,6 +88,10 @@ user_derived_variables = {
     'TREFHT_LAND':[derived_var(
             vid='TREFHT_LAND', inputs=['TREFHT', 'LANDFRAC'], outputs=['TREFHT_LAND'],
             func=land_only )],
+    #The next one returns the fraction of TREFHT over ocean
+    'TREFHT_OCN':[derived_var(
+            vid='TREFHT_OCN', inputs=['TREFHT', 'OCNFRAC'], outputs=['TREFHT_OCN'],
+            func=ocean_only )],
     'RESTOM':[derived_var(
             vid='RESTOM', inputs=['FSNT','FLNT'], outputs=['RESTOM'],
             func=aminusb )],   # RESTOM = net radiative flux
