@@ -313,8 +313,14 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
             if weights=='mass':
                 # doesn't work for atmos set 7: latlon_wts = mvrs.filetable.weights['mass']  # array of shape (lev,lat,lon)
                 from metrics.packages.amwg.derivations.massweighting import mass_weights
-                # simple cacheing uses only size of axes.  A more reliable one would use season and actual locations
-                # of axes, and do something about levels:
+                # We don't want to recompute weights if unnecessary.  So here, when possible, we are
+                # retrieving cached weights, based on the (lev,lat,lon) if we have a (lev,lat,lon)
+                # variable.  If the variable has fewer axes, we find weights which agree on the size of
+                # the axes it has, and add up over the other directions.  This works at the moment, but
+                # there are plenty of possibilities for it to fail - e.g. if you have two regions of the
+                # same shape, you need to compute weights in both of them, and this won't do that.
+                # Eventually we should have a more robust cacheing system: it should look at the actual
+                # range of lat,lon values, the region, the season; and maybe do something about levels.
                 lat = mvrs.getLatitude()
                 lon = mvrs.getLongitude()
                 if lat is None: llat = -1
@@ -336,6 +342,17 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
                     newllat = [k[0] for k in mvrs.filetable.weights['mass'] if k[1]==llon][0]
                     latlon_wts = mvrs.filetable.weights['mass'][(newllat,llon)]
                     # ... array of shape (lev,lat,lon); the sum over longitudes will happen later.
+                elif 'mass' in mvrs.filetable.weights and lat is None and lon is None:
+                    # No lat or lon.  Get weights with lat and lon, and sum over lat,lon.
+                    # Cross our fingers and hope that the first possibility is correct!
+                    if len(mvrs.filetable.weights['mass'].keys())<1:
+                        log.error("Cannot compute mass weights for spatially reduced variable %s",mvrs.id)
+                    if len(mvrs.filetable.weights['mass'].keys())>1:
+                        log.warning("Multiple candidate mass weights for spatially reduced variable %s; will choose one",mvrs.id)
+                    newllon = [k[1] for k in mvrs.filetable.weights['mass']][0]
+                    newllat = [k[0] for k in mvrs.filetable.weights['mass']][0]
+                    latlon_wts = mvrs.filetable.weights['mass'][(newllat,newllon)]
+                    # ... array of shape (lev,lat,lon); the sum over lat,lon will happen later.
                 else:
                     if 'mass' not in mvrs.filetable.weights:
                         mvrs.filetable.weights['mass'] = {}
@@ -3010,7 +3027,7 @@ class reduced_variable(ftrow,basic_id):
                 # in there:
 
                 duv_inputs = { rvid:self._rvs[rvid].reduce() for rvid in duv._inputs
-                               if rvid in self._rvs and hasattr( self._rvs[rvid],'reduce' ) }
+                                if rvid in self._rvs and hasattr( self._rvs[rvid],'reduce' ) }
 
                 duv_inputs = { rvid:self._rvs[rvid] for rvid in duv._inputs
                                if rvid in self._rvs and not hasattr( self._rvs[rvid],'reduce' ) }
@@ -3045,6 +3062,19 @@ class reduced_variable(ftrow,basic_id):
                     var = special_case_fixed_variable( 'CERES', var )
                 if not hasattr( var, 'filetable'): var.filetable = self.filetable
                 weighting = weighting_choice(var)
+                if weighting=='mass':
+                    # Save some mass weights before we possibly reduce away the lat,lon axes.
+                    # It would be better to index with more detailed domain information than llat,llon.
+                    from metrics.packages.amwg.derivations.massweighting import mass_weights
+                    lat = var.getLatitude()
+                    if lat is None: llat=-1
+                    else: llat=len(lat)
+                    lon = var.getLongitude()
+                    if lon is None: llon=-1
+                    else: llon=len(lon)
+                    if 'mass' not in var.filetable.weights:
+                        var.filetable.weights['mass'] = {}
+                    var.filetable.weights['mass'][(llat,llon)] = mass_weights(var)
                 reduced_data = self._reduction_function( var, vid=vid )
             elif self.variableid in f.axes.keys():
                 taxis = cdms2.createAxis(f[self.variableid])   # converts the FileAxis to a TransientAxis.
