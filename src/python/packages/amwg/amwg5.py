@@ -214,7 +214,6 @@ class amwg_plot_set5(amwg_plot_plan):
 
     def plan_computation_level_surface( self, model, obs, varnom, seasonid, aux=None, names={}, plotparms=None ):
         filetable1, filetable2 = self.getfts(model, obs)
-        model_case = get_model_case(filetable1)
         """Set up for a lat-lon contour plot, averaged in other directions - except that if the
         variable to be plotted depend on level, it is not averaged over level.  Instead, the value
         at a single specified pressure level, aux, is used. The units of aux are millbars."""
@@ -258,7 +257,7 @@ class amwg_plot_set5(amwg_plot_plan):
                 vid = ps.dict_idid(vidl1),
                 zvars = [vidl1],  zfunc = (lambda z: z),
                 plottype = self.plottype,
-                title = varnom + ' ' + seasonid + '\n model',
+                title = varnom + ' ' + seasonid + ' model ' + names['model'],
                 source = names['model'],
                 plotparms = plotparms[src2modobs(ft1src)] ) }
            
@@ -321,7 +320,7 @@ class amwg_plot_set5(amwg_plot_plan):
                 vid = ps.dict_idid(vidl2),
                 zvars = [vidl2],  zfunc = (lambda z: z),
                 plottype = self.plottype,
-                title = 'observation',
+                title = 'observation ' + names['obs'],
                 source = names['obs'],
                 plotparms = plotparms[src2obsmod(ft2src)] )
         self.single_plotspecs[self.plot3_id] = plotspec(

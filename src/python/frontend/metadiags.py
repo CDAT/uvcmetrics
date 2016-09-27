@@ -40,7 +40,7 @@ def getCollections(pname):
     for k in keys:
         fields = k.split()
         colls.append(fields[0])
-
+    
     # Find all mixed_plots sets that have the user-specified pname
     # Deal with mixed_plots next
     for c in allcolls:
@@ -339,7 +339,6 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, data_hash, colls
                 logger.debug('Processing collection %s ', collnum)
                 packagestr = '--package '+pname
 
-
         # Given this collection, see what variables we have for it.
         vlist = []
         special = set(collection_special_vars)
@@ -453,6 +452,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, data_hash, colls
                 # let's save what the defaults are for this plotset
                 g_seasons = g_season
                 g_regions = g_region
+                
                 for v in complex_vars:
                     # run these individually basically.
                     g_region = diags_collection[collnum][v].get('regions', g_regions)
@@ -494,16 +494,21 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, data_hash, colls
                                 cf1 = 'no'
 
                         pstr1 = '--model path=%s,climos=%s,type=model' % (modelpath, cf0)
+                        if name0 != None:
+                            pstr1 += ',name=' + name0
                         if modelpath1 != None:
                             pstr2 = '--model path=%s,climos=%s,type=model' % (modelpath1, cf1)
+                            if name1 != None:
+                                pstr2 += ',name=' + name1
                         else:
                             pstr2 = ''
 
-                        cmdline = (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, seasonstr, varstr, outstr, xmlstr, prestr, poststr, regionstr, varopts)
+                        cmdline = [def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, seasonstr, varstr, outstr, xmlstr, prestr, poststr, regionstr]
+                        if varopts:
+                            cmdline +=  [varopts]
                         if collnum != 'dontrun':
                             runcmdline(cmdline, outlogdir, dryrun)
                         else:
-
                             logger.debug('DONTRUN: %s', cmdline)
                 else: # different executable; just pass all option key:values as command line options.
                     # Look for a cmdline list in the options for this variable.
@@ -701,6 +706,7 @@ def runcmdline(cmdline, outlogdir, dryrun=False):
                                regionstr, '--log_level DEBUG ', '--log_file', log_file)
                     CMDLINES += [cmdline]
                 elif length == 15:
+                    #varopts must be non empty
                     for vo in varopts.split("--varopts")[-1].split():
                         if regionstr:
                             fname = "{pkg}_{set}_{obs}_{var}_{opt}_{season}_{region}.log".format(pkg=pkg, set=plotset, obs=obs, var=var, opt=vo, season=season, region=region)
@@ -713,6 +719,7 @@ def runcmdline(cmdline, outlogdir, dryrun=False):
                                    seasonstr, varstr, outstr, xmlstr, prestr, poststr,
                                    regionstr, "--varopts", vo, '--log_level DEBUG ', '--log_file', log_file)
                         CMDLINES += [cmdline]
+
     else:
         CMDLINES = [cmdline]
 

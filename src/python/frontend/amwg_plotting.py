@@ -29,6 +29,49 @@ def amwg_plot_plan_vcs_plot( self, canvas, var, gm, tm, ratio='autot', *args, **
     except:
         pass
     kwargs["ratio"] = ratio
+    if gm.colormap in ['AMIP',
+            'NCAR',
+            'bl_to_darkred',
+            'bl_to_drkorang',
+            'blends',
+            'blue2darkorange',
+            'blue2darkred',
+            'blue2green',
+            'blue2grey',
+            'blue2orange',
+            'blue2orange2red',
+            'blue_to_grey',
+            'blue_to_grn',
+            'blue_to_orange',
+            'blue_to_orgred',
+            'brown2blue',
+            'brown_to_blue',
+            'categorical',
+            'classic',
+            'green2magenta',
+            'grn_to_magenta',
+            'inferno',
+            'lightblue2darkblue',
+            'ltbl_to_drkbl',
+            'rainbow',
+            'rainbow_no_grn',
+            'rainbownogreen',
+            'sequential',
+            'white2blue',
+            'white2green',
+            'white2magenta',
+            'white2red',
+            'white2yellow',
+            'white_to_blue',
+            'white_to_green',
+            'white_to_magenta',
+            'white_to_red',
+            'white_to_yellow']:
+        # Restore old behaviour of default colors for old colormaps
+        vcs.utils.defaultColorsRange = range(16,240)
+    else:
+        vcs.utils.defaultColorsRange = range(256)
+
     canvas.plot( var, gm, tm, *args, **kwargs )
 
 amwg_plot_plan.vcs_plot = amwg_plot_plan_vcs_plot

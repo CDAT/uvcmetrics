@@ -252,12 +252,13 @@ def run_diags( opts ):
 
             computeall = not opts['output']['table']
             table = sclass( modelfts, obsfts, varid=varid, obsfilter=obsfilter, dryrun=opts['dryrun'], sbatch=opts["sbatch"], computeall=computeall, outdir=outdir)
-
+            
             if opts['dryrun'] or varid is not None:
                 continue
             #read the files and print the table
-            directory = outdir + '/amwg1_output/'
+            directory = outdir
             if opts['output']['table']:
+                directory += '/amwg1_output/'
                 table.get_data(directory)
 #jfp was            table.write_plot_data(where=directory, fname=directory+'table_output') 
             table.write_plot_data(where=directory, fname=form_filename( form_file_rootname(
@@ -321,6 +322,7 @@ def run_diags( opts ):
                                 logger.warning("No plots will be made.")
                     #get the names of the model and obs passed in from the command line
                     #or a default from the filetable
+                    
                     names = getNames(opts, modelfts, obsfts)
                     # now, the most inner loop. Looping over sets then seasons then vars then varopts
                     for aux in varopts:
@@ -341,7 +343,7 @@ def run_diags( opts ):
                                                plotparms = { 'model':{'levels':opts['levels'], 'colormap':opts['colormaps']['model']},
                                                              'obs':{'levels':opts['levels'], 'colormap':opts['colormaps']['obs']},
                                                              'diff':{'levels':opts['difflevels'], 'colormap':opts['colormaps']['diff']} } )
-
+                        
                         # Do the work (reducing variables, etc)
                         res = plot.compute(newgrid=-1) # newgrid=0 for original grid, -1 for coarse
                         # typically res is a list of uvc_simple_plotspec.  But an item might be a tuple.
@@ -353,7 +355,7 @@ def run_diags( opts ):
                             frname = form_file_rootname(
                                 snum, [varid], 'variable', dir=outdir, season=time, basen=basename,
                                 postn=postname, region=r_fname, aux=[aux] )
-                     
+                            
                             if opts['output']['plots'] == True:
                                 displayunits = opts.get('displayunits', None)                                    
                                 makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits=displayunits)
@@ -731,8 +733,8 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
             if savePNG:
                     vcanvas.png( fnamepng, ignore_alpha=True, metadata=provenance_dict() )
                     # vcanvas.svg() doesn't support ignore_alpha or metadata keywords
-                    vcanvas.svg( fnamesvg )
-                    vcanvas.pdf( fnamepdf)
+                    #vcanvas.svg( fnamesvg )
+                    #vcanvas.pdf( fnamepdf)
 
     if tmmobs[0] is not None:  # If anything was plotted to vcanvas2
         vname = varid.replace(' ', '_')
@@ -745,11 +747,11 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
     else:
         logger.info("writing png file2: %s",fnamepng)
         vcanvas2.png( fnamepng , ignore_alpha = True, metadata=provenance_dict())
-        logger.info("writing svg file2: %s",fnamesvg)
+        #logger.info("writing svg file2: %s",fnamesvg)
         # vcanvas2.svg() doesn't support ignore_alpha or metadata keywords
-        vcanvas2.svg( fnamesvg )
-        logger.info("writing pdf file2: %s",fnamepdf)
-        vcanvas2.pdf( fnamepdf )            
+        #vcanvas2.svg( fnamesvg )
+        #logger.info("writing pdf file2: %s",fnamepdf)
+        #vcanvas2.pdf( fnamepdf )            
 
 if __name__ == '__main__':
     print "UV-CDAT Diagnostics, command-line version"

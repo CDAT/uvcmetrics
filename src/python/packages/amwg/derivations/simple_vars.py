@@ -1,6 +1,6 @@
 # Derived variables which are simple to compute, but a bit too much to wrap in a lambda expression.
 
-import numpy, logging
+import numpy, logging, pdb
 import cdms2
 from metrics.computation.reductions import aminusb, aplusb, adivb, convert_units
 from metrics.common.utilities import DiagError
@@ -67,5 +67,10 @@ def prect2precip( PRECT, seasonid ):
     PRECIP = lenseason[seasonid] * convert_units( PRECT, 'mm/day' )
     PRECIP.units = 'mm'
     return PRECIP
-def land_TREFHT(TREFHT, LANDFRAC):
-    return mask_by( TREFHT, LANDFRAC, lo=0.5, hi=None )
+def land_only(var, LANDFRAC):
+    """Used by TREFHT"""
+    return mask_by( var, LANDFRAC, lo=0.5, hi=None )
+def ocean_only(var, OCNFRAC, units=None):
+    if units != None:
+        convert_units(var, units)
+    return mask_by(var, OCNFRAC, lo=0.5, hi=None)

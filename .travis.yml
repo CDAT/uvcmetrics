@@ -28,4 +28,4 @@ install:
 
 script:
     - export UVCDAT_ANONYMOUS_LOG=False
-    - ctest -D Experimental -VV
+    - ctest -D Experimental -VV -j2

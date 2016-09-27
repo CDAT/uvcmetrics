@@ -160,7 +160,7 @@
     "priority": 0, 
     "textorientation": "plotset5_max", 
     "texttable": "default", 
-    "x": 0.86, 
+    "x": 0.873, 
     "y": 0.99
    }, 
    "mean": {
@@ -168,7 +168,7 @@
     "priority": 0, 
     "textorientation": "plotset5_mean", 
     "texttable": "default", 
-    "x": 0.86, 
+    "x": 0.873, 
     "y": 0.975
    }, 
    "min": {
@@ -176,7 +176,7 @@
     "priority": 0, 
     "textorientation": "plotset5_min", 
     "texttable": "default", 
-    "x": 0.86, 
+    "x": 0.873, 
     "y": 0.96
    }, 
    "source": {
@@ -528,7 +528,7 @@
     "priority": 0, 
     "textorientation": "plotset5_max", 
     "texttable": "default", 
-    "x": 0.86, 
+    "x": 0.873, 
     "y": 0.6766666666666666
    }, 
    "mean": {
@@ -536,7 +536,7 @@
     "priority": 0, 
     "textorientation": "plotset5_mean", 
     "texttable": "default", 
-    "x": 0.86, 
+    "x": 0.873, 
     "y": 0.6616666666666666
    }, 
    "min": {
@@ -544,7 +544,7 @@
     "priority": 0, 
     "textorientation": "plotset5_min", 
     "texttable": "default", 
-    "x": 0.86, 
+    "x": 0.873, 
     "y": 0.6466666666666666
    }, 
    "source": {
@@ -773,14 +773,14 @@
     "priority": 0, 
     "textorientation": "plotset5_comment1", 
     "texttable": "default", 
-    "x": 0.865, 
+    "x": 0.873, 
     "y": 0.07499999999999993
    }, 
    "comment2": {
     "priority": 0, 
     "textorientation": "plotset5_comment1", 
     "texttable": "default", 
-    "x": 0.865, 
+    "x": 0.873, 
     "y": 0.05999999999999993
    }, 
    "comment3": {
@@ -896,7 +896,7 @@
     "priority": 0, 
     "textorientation": "plotset5_max", 
     "texttable": "default", 
-    "x": 0.86, 
+    "x": 0.873, 
     "y": 0.3633333333333333
    }, 
    "mean": {
@@ -904,7 +904,7 @@
     "priority": 0, 
     "textorientation": "plotset5_mean", 
     "texttable": "default", 
-    "x": 0.86, 
+    "x": 0.873, 
     "y": 0.3483333333333333
    }, 
    "min": {
@@ -912,7 +912,7 @@
     "priority": 0, 
     "textorientation": "plotset5_min", 
     "texttable": "default", 
-    "x": 0.86, 
+    "x": 0.873, 
     "y": 0.33333333333333326
    }, 
    "source": {

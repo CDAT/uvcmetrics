@@ -8,6 +8,12 @@
 from pprint import pprint
 from metrics.packages.amwg.amwg import amwg_plot_plan
 from metrics.packages.amwg.derivations.vertical import *
+
+#get the table row spec for the individual user
+import importlib
+from metrics.frontend.user_identifier import user
+usermodule = importlib.import_module( 'metrics.packages.amwg.table_row_spec_for_'+user )
+table_row_specs = usermodule.table_row_specs
 from metrics.packages.plotplan import plot_plan
 from metrics.computation.reductions import *
 from metrics.computation.plotspec import *
@@ -340,83 +346,6 @@ class Row:
 class amwg_plot_set1(amwg_plot_plan):
     name = '1 - Tables of Global, tropical, and extratropical DJF, JJA, ANN means and RMSE'
     number = '1'
-    # table row specs:
-    #   var variable name, mandatory (other entries are optional)
-    #   obs root of obs file name
-    #   lev level (in millibars) to which variable is restricted
-    #   obsprint obs name to be printed (default is obs)
-    #   units units of the output quantity (default is same as the input files)
-
-    # This is essentially duplicated in amwgmaster.
-
-    table_row_specs = [
-        { 'var':'RESTOM'},
-        { 'var':'RESSURF'},
-        { 'var':'RESTOA', 'obs':'CERES-EBAF'},
-        #obsolete { 'var':'RESTOA', 'obs':'ERBE'},
-        { 'var':'SOLIN', 'obs':'CERES-EBAF'},
-        #obsolete { 'var':'SOLIN', 'obs':'CERES'},
-        { 'var':'CLDTOT', 'obs':'ISCCP', 'units':'percent' },
-        { 'var':'CLDTOT', 'obs':'CLOUDSAT', 'units':'percent' },
-        { 'var':'FLDS', 'obs':'ISCCPFD', 'obsprint':'ISCCP'},
-        { 'var':'FLNS', 'obs':'ISCCPFD', 'obsprint':'ISCCP'},
-        { 'var':'FLUT', 'obs':'CERES-EBAF'},
-        #obsolete { 'var':'FLUT', 'obs':'CERES'},
-        #obsolete { 'var':'FLUT', 'obs':'ERBE'},
-        { 'var':'FLUTC', 'obs':'CERES-EBAF'},
-        #obsolete { 'var':'FLUTC', 'obs':'CERES'},
-        #obsolete { 'var':'FLUTC', 'obs':'ERBE'},
-        { 'var':'FLNT', 'obs':'CAM'},
-        { 'var':'FSDS', 'obs':'ISCCPFD', 'obsprint':'ISCCP'},
-        { 'var':'FSNS', 'obs':'ISCCPFD', 'obsprint':'ISCCP'},
-        { 'var':'FSNS', 'obs':'LARYEA'},
-        { 'var':'FSNTOA', 'obs':'CERES-EBAF'},
-        #obsolete { 'var':'FSNTOA', 'obs':'CERES'},
-        #obsolete { 'var':'FSNTOA', 'obs':'ERBE'},
-        { 'var':'FSNTOAC', 'obs':'CERES-EBAF'},
-        #obsolete { 'var':'FSNTOAC', 'obs':'CERES'},
-        #obsolete { 'var':'FSNTOAC', 'obs':'ERBE'},
-        { 'var':'FSNT', 'obs':'CAM'},
-        { 'var':'LHFLX', 'obs':'JRA25'},
-        { 'var':'LHFLX', 'obs':'ERA40'},
-        { 'var':'LHFLX', 'obs':'WHOI'},
-        { 'var':'LWCF', 'obs':'CERES-EBAF'},
-        #obsolete { 'var':'LWCF', 'obs':'CERES'},
-        #obsolete { 'var':'LWCF', 'obs':'ERBE'},
-        { 'var':'PRECT', 'obs':'GPCP'},
-        { 'var':'PREH2O', 'obs':'NVAP'},
-        { 'var':'PREH2O', 'obs':'AIRS'},
-        { 'var':'PREH2O', 'obs':'JRA25'},
-        { 'var':'PREH2O', 'obs':'ERAI'},
-        { 'var':'PREH2O', 'obs':'ERA40'},
-        { 'var':'PSL', 'obs':'JRA25', 'units':'millibar' },
-        { 'var':'PSL', 'obs':'ERAI', 'units':'millibar' },
-        { 'var':'SHFLX', 'obs':'JRA25'},
-        { 'var':'SHFLX', 'obs':'NCEP'},
-        { 'var':'SHFLX', 'obs':'LARYEA'},
-        { 'var':'STRESS_MAG', 'obs':'ERS'},
-        { 'var':'STRESS_MAG', 'obs':'LARYEA'},
-        { 'var':'STRESS_MAG', 'obs':'JRA25'},
-        { 'var':'SWCF', 'obs':'CERES-EBAF'},
-        #obsolete { 'var':'SWCF', 'obs':'CERES'},
-        #obsolete { 'var':'SWCF', 'obs':'ERBE'},
-        { 'var':'AODVIS'},
-        { 'var':'AODDUST'},
-        { 'var':'SST', 'obs':'HadISST'},
-        { 'var':'SST', 'obs':'HadISST_PI'},
-        { 'var':'SST', 'obs':'HadISST_PD'},
-        { 'var':'TREFHT', 'obs':'LEGATES'},
-        { 'var':'TREFHT', 'obs':'JRA25'},
-        { 'var':'TS', 'obs':'NCEP'},
-        { 'var':'TS_LAND', 'obs':'NCEP'},
-        { 'var':'U', 'obs':'JRA25', 'lev':'200'},
-        { 'var':'U', 'obs':'NCEP', 'lev':'200'},
-        { 'var':'Z3', 'obs':'JRA25', 'lev':'500', 'units':'hectometer'},
-        { 'var':'Z3', 'obs':'NCEP', 'lev':'500', 'units':'hectometer'}
-        ]
-
-    #this is a dummy table for testing
-    #table_row_specs = [{ 'var':'TS', 'obs':'NCEP'},{ 'var':'RESTOM'},{ 'var':'RESSURF'}]
 
     # These also appear, in another form, in frontend/defines.py.
     regions = { 'Global':(-90,90),
@@ -485,7 +414,7 @@ class amwg_plot_set1(amwg_plot_plan):
         directory = outdir + 'amwg1_output'
         self.rows = []
         if dryrun:
-            cmds = makeCmds(self.table_row_specs)
+            cmds = makeCmds(table_row_specs)
             #write them in a file for execution
             f = open(directory + '/table_commands.sh', 'w')
             print "List of commands is in: %s",f
@@ -506,7 +435,7 @@ class amwg_plot_set1(amwg_plot_plan):
             f.close()
         elif varid is not None:
             #execute a single row
-            for spec in self.table_row_specs:
+            for spec in table_row_specs:
                 if varid in spec.values():
                     #obsfilter may or may not be specified
                     if obsfilter is None or obsfilter in spec.values():
@@ -529,7 +458,7 @@ class amwg_plot_set1(amwg_plot_plan):
                         break
         elif computeall:
             #execute all rows
-            for spec in self.table_row_specs:
+            for spec in table_row_specs:
                 #if spec['var']!='SHFLX': continue # <<<<< for temporary testing <<<<
                 obs = spec.get('obs', None)
                 row = Row(  filetable1, filetable2,
@@ -562,7 +491,7 @@ class amwg_plot_set1(amwg_plot_plan):
         self.ptype = "text"
         if fname != "":
            logger.debug('filename was: %s', fname)
-           filename = fname
+           filename = where + fname
         else:
            filename = self.outfile( format, where )
         writer = open( filename, 'w' )
@@ -572,6 +501,9 @@ class amwg_plot_set1(amwg_plot_plan):
             logger.debug(s)
             writer.write(str(s)+'\n')
         writer.close()
+        
+        #print the table
+        self._results()
         return filename
     def __len__( self ):
         """__len__ returns 0 so that len(self)==0, so that scripts written for normal plot sets won't plot this one"""
@@ -581,7 +513,7 @@ class amwg_plot_set1(amwg_plot_plan):
         return self
     def get_data(self, directory):
         """the rows are in files. read them to make the table. """
-        for spec in self.table_row_specs:
+        for spec in table_row_specs:
             #pdb.set_trace()
             var = spec.get('var', '')
             obs = spec.get('obs', None)
