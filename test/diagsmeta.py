@@ -32,12 +32,17 @@ proc_status = proc.wait()
 if proc_status!=0: 
     raise "metadiags test failed"
 
-new = open(os.path.join("/tmp","metadiags_commands.sh")).readlines()
-old = open(os.path.join(baselinepath,"metadiags_commands.sh")).readlines()
+new = open(os.path.join("/tmp","metadiags_commands.sh"))
+old = open(os.path.join(baselinepath,"metadiags_commands.sh"))
+
+print "Comparing: %s %s" % (new.name, old.name)
+
+new = new.readlines()
+old = old.readlines()
 
 diff = False
 for i,l in enumerate(new):
-    new_content = l.replace(datadir,"/Users/mcenerney1/uvcmetrics/test/data/")
+    new_content = l.replace(datadir,"/export/doutriaux1/git/uvcmetrics/test/data/")
     l2 = old[i]
     sp = new_content.split("--log")[:-1]
     sp2 = l2.split("--log")[:-1]
