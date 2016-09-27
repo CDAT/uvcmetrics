@@ -69,11 +69,10 @@ def amwg_plot_plan_vcs_plot( self, canvas, var, gm, tm, ratio='autot', *args, **
             'white_to_yellow']:
         # Restore old behaviour of default colors for old colormaps
         vcs.utils.defaultColorsRange = range(16,240)
-        pass
+    else:
+        vcs.utils.defaultColorsRange = range(256)
 
     canvas.plot( var, gm, tm, *args, **kwargs )
-    # Restore current default behaviour
-    vcs.utils.defaultColorsRange = range(256)
 
 amwg_plot_plan.vcs_plot = amwg_plot_plan_vcs_plot
 
