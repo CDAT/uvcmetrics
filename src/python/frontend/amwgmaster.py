@@ -236,7 +236,7 @@ diags_collection['5']['SHFLX_OCN'] = {'plottype': '5', 'obs': ['LARYEA_1']}
 diags_collection['5']['LHFLX_OCN'] = {'plottype': '5', 'obs': ['WHOI_1', 'ECMWF_1', 'JRA25_1', 'ERA40_1']}
 diags_collection['5']['QFLX_OCN'] = {'plottype': '5', 'obs': ['WHOI_1', 'ECMWF_1', 'LARYEA_1']}
 diags_collection['5']['FLDS'] = {'plottype': '5', 'obs': ['ISCCP_1']}
-diags_collection['5']['FLDSC'] = {'plottype': '5', 'obs': ['ISCCP_1']}
+#diags_collection['5']['FLDSC'] = {'plottype': '5', 'obs': ['ISCCP_1']}
 diags_collection['5']['FSDS'] = {'plottype': '5', 'obs': ['ISCCP_1']}
 diags_collection['5']['FSDSC'] = {'plottype': '5', 'obs': ['ISCCP_1']}
 
@@ -285,7 +285,7 @@ diags_collection['5']['CLDTOT_VISIR'] = {'plottype': '5', 'obs': ['ISCCP_1'], 'm
 #diags_collection['5']['MEANPTOP'] = {'plottype': '5', 'obs': ['ISCCP_1', 'MODIS_1']}
 #diags_collection['5']['MEANTTOP'] = {'plottype': '5', 'obs': ['ISCCP_1', 'MODIS_1']}
 #diags_collection['5']['MEANTAU'] = {'plottype': '5', 'obs': ['ISCCP_1', 'MODIS_1']}
-diags_collection['5']['TCLDAREA'] = {'plottype': '5', 'obs': ['ISCCP_1', 'MODIS_1']}
+#diags_collection['5']['TCLDAREA'] = {'plottype': '5', 'obs': ['ISCCP_1', 'MODIS_1']}
 
 # *** Collection 6 ***
 diags_collection['6'] = OrderedDict()
