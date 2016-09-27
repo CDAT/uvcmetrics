@@ -248,7 +248,7 @@ user_derived_variables = {
 
     #added for Chris Golaz
     'SHFLX_OCN':[derived_var(   #this one must come first
-            vid='SHFLX_OCN', inputs=['SHFLX', 'OCNFRAC'], outputs=['SHFLX_OCN'],
+            vid='SHFLX_OCN', inputs=['SHFLX', 'OCNFRAC'], outputs=['SHFLX_OCNxxxx'],
             func=(lambda x, y: ocean_only(x,y)) ), 
                  derived_var(
             vid='SHFLX', inputs=['SHFLX'], outputs=['SHFLX_OCN'],
