@@ -123,7 +123,7 @@ class amwg_plot_plan(plot_plan):
         computable = False
         rvs = []
         dvs = []
-        pdb.set_trace()
+        
         #print "dbg in commvar2var to compute varnom=",varnom,"from filetable=",filetable
         for svd in cls.common_derived_variables[varnom]:  # loop over ways to compute varnom
             invarnoms = svd.inputs()
@@ -162,6 +162,7 @@ class amwg_plot_plan(plot_plan):
             # be dispensed with.  If we will never have such a system, then the above loop
             # can be dispensed with.
             for svd in cls.common_derived_variables[varnom]:  # loop over ways to compute varnom
+                pdb.set_trace()
                 invarnoms = svd.inputs()
                 for invar in invarnoms:
                     if invar in filetable.list_variables_incl_axes():
