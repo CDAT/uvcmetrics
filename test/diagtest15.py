@@ -25,7 +25,7 @@ imagethreshold = None
 ncfiles = {}
 #ncfiles['model_cam_output.nc'] = ['dv_T_Level model_ANN_ft1_cam_output']
 #ncfiles['obs_obs_atmos_NCEP.nc'] = ['dv_T_Level obs_ANN_ft2_obs_atmos_NCEP']
-ncfiles['figure-set15_Global_ANN_T_plot--model.nc'] = ['dv_T_Level model_ANN_ft1_cam_output']
+ncfiles['figure-set15_Global_ANN_T_plot--model.nc'] = ['dv_T_Level model_ANN_ft1_cam_output_model']
 ncfiles['figure-set15_Global_ANN_T_plot--obs.nc'] = ['dv_T_Level obs_ANN_ft2_obs_atmos_NCEP']
 
 # Test of NetCDF data (nc) file match:
