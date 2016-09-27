@@ -123,7 +123,7 @@ class amwg_plot_plan(plot_plan):
         computable = False
         rvs = []
         dvs = []
-        
+        pdb.set_trace()
         #print "dbg in commvar2var to compute varnom=",varnom,"from filetable=",filetable
         for svd in cls.common_derived_variables[varnom]:  # loop over ways to compute varnom
             invarnoms = svd.inputs()
@@ -154,7 +154,7 @@ class amwg_plot_plan(plot_plan):
         inputs = [ availdict[v].id() for v in svd._inputs if v in availdict ] +\
             [ v for v in svd._inputs if v in builtin_variables ]
         #print "dbg1 rvs ids=",[rv.id() for rv in rvs]
-        pdb.set_trace()
+        
         if not computable and recurse==True:
             # Maybe the input variables are themselves computed.  We'll only do this one
             # level of recursion before giving up.  This is enough to do a real computation
