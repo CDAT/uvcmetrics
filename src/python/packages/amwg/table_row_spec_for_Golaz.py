@@ -7,7 +7,9 @@
     #   obsprint obs name to be printed (default is obs)
     #   units units of the output quantity (default is same as the input files)
 
-table_row_specs = [
+#this is a dummy table for testing
+table_row_specs = [{ 'var':'SHFLX_OCN', 'obs':'NCEP'}, { 'var':'TS', 'obs':'NCEP'},{ 'var':'RESTOM'},{ 'var':'RESSURF'}]
+xxxtable_row_specs = [
     { 'var':'RESTOM'},
     { 'var':'RESSURF'},
     { 'var':'RESTOA', 'obs':'CERES-EBAF'},
@@ -72,5 +74,3 @@ table_row_specs = [
     { 'var':'Z3', 'obs':'JRA25', 'lev':'500', 'units':'hectometer'},
     { 'var':'Z3', 'obs':'NCEP', 'lev':'500', 'units':'hectometer'}
     ]
-#this is a dummy table for testing
-#table_row_specs = [{'var':'SST', 'obs':'HadISST_CI'}, { 'var':'TS', 'obs':'NCEP'},{ 'var':'RESTOM'},{ 'var':'RESSURF'}]
