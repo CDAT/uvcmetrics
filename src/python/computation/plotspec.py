@@ -108,7 +108,7 @@ class derived_var(basic_id):
 
             # Compute the mean right away.  Clearing the weight cache and especially the method
             # for doing it just once, are a temporary expedients;
-            outaxes = [ax.axis for ax in output.getAxisList()]
+            outaxes = [ax.axis for ax in output.getAxisList() if hasattr(ax,'axis')]
             outaxes.sort()
             if outaxes==['X','Y','Z'] and 'mass' in getattr(output.filetable,'weights',{}):
                 # This is the kind of domain we want to save mass weights for.

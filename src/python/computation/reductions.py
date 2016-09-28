@@ -240,7 +240,8 @@ def set_mean( mv, season=seasonsyr, region=None, gw=None ):
         mvmean = mv.mean.min()
         mv.mean = mvmean
     # And now for a sanity check:
-    if mv.mean<mv.min() or mv.mean>mv.max():
+    if hasattr(mv,'mean') and isinstance(mv.mean,Number) and\
+            (mv.mean<mv.min() or mv.mean>mv.max()):
         logger.warning("Mean for %s was computed as %s but the min and max values are %s, %s!",
                        mv.id,mv.mean,mv.min(),mv.max())
     return mvmean
