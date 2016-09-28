@@ -1,6 +1,6 @@
 from metrics.computation.region import *
 import metrics.frontend.defines as defines
-import logging
+import logging, pdb
 
 logger = logging.getLogger(__name__)
 
@@ -10,19 +10,20 @@ logger = logging.getLogger(__name__)
 def interpret_region( region ):
     """Tries to make sense of the input region, and returns the resulting instance of the class
     rectregion in region.py."""
-    if region is None:
+    if region is None or region=='' or region=='global':
         region = "Global"
     if type(region) is str:
         if region in defines.all_regions:
             region = defines.all_regions[region]
         else:
+            pdb.set_trace() #jfp
             raise ValueError, "cannot recognize region name %s"%region
             region = None
     return region
 
 def select_region(mv, region=None):
     # Select lat-lon region
-    if region is None or region=="global" or region=="Global" or\
+    if region is None or region=='' or region=="global" or region=="Global" or\
             getattr(region,'filekey',None)=="Global" or str(region)=="Global":
         mvreg = mv
     else:
