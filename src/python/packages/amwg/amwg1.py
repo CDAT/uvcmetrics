@@ -284,7 +284,6 @@ class Row:
         else:
             # It's a more complicated calculation, which we can treat as a derived variable.
             # If it's a common_derived_variable, we know how to do it...
-            pdb.set_trace()
             try:
                 vid,rvs,dvs = amwg_plot_plan.commvar2var(
                     self.var, filetable, self.season, reduction_function=\
