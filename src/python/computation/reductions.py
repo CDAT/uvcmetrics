@@ -232,6 +232,17 @@ def set_mean( mv, season=seasonsyr, region=None, gw=None ):
             tb = traceback.format_exc()
             logger.debug("traceback:\n%s", tb)
     #else: use the VCS default of area weighting
+
+    # Just in case, clean up mv.mean - make sure it's a number.
+    if hasattr(mv,'mean') and not isinstance(mv.mean,Number) and hasattr(mv.mean,'shape') and\
+            len(mv.mean.shape)==0:
+        # mv.mean is a TransientVariable of shape (), or something like that: only one value.
+        mvmean = mv.mean.min()
+        mv.mean = mvmean
+    # And now for a sanity check:
+    if mv.mean<mv.min() or mv.mean>mv.max():
+        logger.warning("Mean for %s was computed as %s but the min and max values are %s, %s!",
+                       mv.id,mv.mean,mv.min(),mv.max())
     return mvmean
 
 # -------- end of Miscellaneous  Utilities ---------
@@ -1681,6 +1692,8 @@ def select_lev( mv, slev ):
     else:
         logger.error("select_lev() does not support level axis except as first or second dimensions")
         return None
+    # createVariable will have copied all non-'_' attributes from mv to mvs; the mv mean is wrong for mvs.
+    mvs.mean = None
     mvs = delete_singleton_axis(mvs, vid=levax.id)
     return mvs
 
@@ -2445,6 +2458,7 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
 
 def mean_of_diff( aminusb, mv1, mv2, recursive=False ):
     """Sets aminusb.mean = mv1.mean - mv2.mean if it makes sense."""
+    # This is likely to be wrong if mv1, mv2 are differently masked!!!
     if hasattr(mv1,'mean') and hasattr(mv2,'mean'):
         # Note that mv1,mv2 will initially have a mean attribute which is a Numpy method.
         # We only need to compute a new mean if the mean attribute has been changed to a number.
