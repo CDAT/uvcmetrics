@@ -10,7 +10,6 @@ import sys, traceback, logging
 
 logger = logging.getLogger(__name__)
 
-
 class derived_var(basic_id):
     IDtuple = namedtuple( "derived_var_ID", "classid var varmod season ft1 ft2 region" )
 
@@ -106,6 +105,20 @@ class derived_var(basic_id):
             if hasattr(self,'filename'):  output.filename = self.filename
             if hasattr(self,'filetable'):  output.filetable = self.filetable
             self._file_attributes.update( getattr(output,'_file_attributes',{}) )
+
+            # Compute the mean right away.  Clearing the weight cache and especially the method
+            # for doing it just once, are a temporary expedients;
+            outaxes = [ax.axis for ax in output.getAxisList()]
+            outaxes.sort()
+            if outaxes==['X','Y','Z'] and 'mass' in getattr(output.filetable,'weights',{}):
+                # This is the kind of domain we want to save mass weights for.
+                # Whatever mass weights are in the filetable might be bad - that happens if it has
+                # mass weights for hybrid levels and we're now using pressure levels.
+                # So clear it out. New ones will get computed.
+                # This operation will be unnecessary once I implement something better than (latsize,lonsize)
+                # for looking up mass weights.
+                output.filetable.weights['mass']={}
+            set_mean(output)
         if hasattr(output,'__cdms_internals__'):  # probably a mv
             output.id = underscore_join(output._id)
         return output
