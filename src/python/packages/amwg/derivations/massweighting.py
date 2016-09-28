@@ -89,13 +89,17 @@ def axis_minmax( lax, f ):
         bnds0 = [b for b in bnds if (b[0]<=lax[0] and b[1]>=lax[0]) or (b[0]>=lax[0] and b[1]<=lax[0]) ][0]
         bnds1 = [b for b in bnds if (b[0]<=lax[-1] and b[1]>=lax[-1]) or (b[0]>=lax[-1] and b[1]<=lax[-1]) ][0]
         if lax[0]>lax[-1]:
-            assert( bnds0[1]>=lax[0] )
-            assert( bnds1[0]<=lax[-1] )
-            return bnds0[1], bnds1[0]
+            bnds0mx = max(bnds0[0],bnds0[1])
+            bnds1mn = min(bnds1[0],bnds1[1])
+            assert( bnds0mx>=lax[0] )
+            assert( bnds1mn<=lax[-1] )
+            return bnds0mx, bnds1mn
         else:
-            assert( bnds0[0]<=lax[0] )
-            assert( bnds1[1]>=lax[-1] )
-            return bnds0[0],bnds1[1]
+            bnds0mn = min(bnds0[0],bnds0[1])
+            bnds1mx = max(bnds1[0],bnds1[1])
+            assert( bnds0mn<=lax[0] )
+            assert( bnds1mx>=lax[-1] )
+            return bnds0mn,bnds1mx
     except:
         logger.error("axis %s has no bounds in file %s",lax.id,f.id)
         return -1.0e20, 1.0e20
