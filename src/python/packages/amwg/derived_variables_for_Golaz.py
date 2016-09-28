@@ -271,5 +271,8 @@ user_derived_variables = {
             func=(lambda x, y: ocean_only(x,y)) ),                
                 derived_var(    #rename FLNS
             vid='FLNS', inputs=['FLNS'], outputs=['FLNS_OCN'],
-            func=(lambda x: x) )]                            
+            func=(lambda x: x) )],
+    'junk':[derived_var(
+            vid='junk', inputs=['SHFLX'], outputs=['myjunk'],
+            func=(lambda x: x) ) ]                            
     }
