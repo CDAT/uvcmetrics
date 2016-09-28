@@ -224,7 +224,6 @@ class amwg_plot_set5(amwg_plot_plan):
 
     def plan_computation_level_surface( self, model, obs, varnom, seasonid, aux=None, names={}, plotparms=None ):
         filetable1, filetable2 = self.getfts(model, obs)
-        model_case = get_model_case(filetable1)
         """Set up for a lat-lon contour plot, averaged in other directions - except that if the
         variable to be plotted depend on level, it is not averaged over level.  Instead, the value
         at a single specified pressure level, aux, is used. The units of aux are millbars."""
@@ -268,8 +267,8 @@ class amwg_plot_set5(amwg_plot_plan):
                 vid = ps.dict_idid(vidl1),
                 zvars = [vidl1],  zfunc = (lambda z: z),
                 plottype = self.plottype,
-                title = ' '.join([varnom, seasonid, '\n model']),
-                title1 = ' '.join([varnom, seasonid, 'model']),
+                title = ' '.join([varnom, seasonid, 'model', names['model']]),
+                title1 = ' '.join([varnom, seasonid, 'model', names['model']]),
                 title2 = 'model',
                 source = names['model'],
                 plotparms = plotparms[src2modobs(ft1src)] ) }
@@ -333,8 +332,8 @@ class amwg_plot_set5(amwg_plot_plan):
                 vid = ps.dict_idid(vidl2),
                 zvars = [vidl2],  zfunc = (lambda z: z),
                 plottype = self.plottype,
-                title = ' '.join([varnom,seasonid,'observation']),
-                title1 = ' '.join([varnom, seasonid, 'obs']),
+                title = ' '.join([varnom,seasonid,'observation',names['obs']]),
+                title1 = ' '.join([varnom, seasonid, 'observation',names['obs']]),
                 title2 = 'obs',
                 source = names['obs'],
                 plotparms = plotparms[src2obsmod(ft2src)] )
