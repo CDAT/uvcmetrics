@@ -2964,6 +2964,7 @@ class reduced_variable(ftrow,basic_id):
             elif len(families)>1:
                 fam = families[0]
                 logger.warning("%s file families found, will use: %s",len(families),fam)
+                logger.debug("full list of file families: %s",families)
             else:
                 fam = families[0]
 
@@ -3006,7 +3007,7 @@ class reduced_variable(ftrow,basic_id):
             else:
                 logger.error("No data found for reduced variable %s in %s %s %s %s",self.variableid,
                              self.timerange, self.latrange, self.lonrange, self.levelrange)
-                logger.debug("filetable is %s",self.filetable)
+                logger.debug("(1) filetable is %s",self.filetable)
             return None
         if vid is None:
             vid = self._strid
@@ -3023,7 +3024,7 @@ class reduced_variable(ftrow,basic_id):
                     # this belongs in a log file:
                     logger.error("No data found for reduced variable %s in %s %s %s %s",self.variableid,
                                  self.timerange, self.latrange, self.lonrange, self.levelrange)
-                    logger.debug("filetable is %s",self.filetable)
+                    logger.debug("(2) filetable is %s",self.filetable)
                 return None
             else:
                 # DUVs (derived unreduced variables) would logically be treated as a separate stage

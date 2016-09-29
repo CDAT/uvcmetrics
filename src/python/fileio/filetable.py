@@ -5,6 +5,7 @@
 # subject to change!
 
 import sys, os, cdms2, re, logging
+import pdb
 from metrics.frontend.options import Options
 from metrics.common.id import *
 from metrics.common import *
@@ -393,7 +394,11 @@ class basic_filetable(basic_id):
                        lat_range.overlaps_with( ftrow.latrange ) and\
                        lon_range.overlaps_with( ftrow.lonrange ) and\
                        level_range.overlaps_with( ftrow.levelrange ):
-                   found.append( ftrow )
+                   if filefilter is None:
+                       found.append( ftrow )
+                   else:
+                      if filefilter(ftrow.fileid):
+                         found.append( ftrow )
                 elif time_range.overlaps_with( ftrow.timerange ) and\
                        lat_range.overlaps_with( ftrow.latrange ) and\
                        lon_range.overlaps_with( ftrow.lonrange ) and\
