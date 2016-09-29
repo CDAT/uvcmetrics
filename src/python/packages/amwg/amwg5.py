@@ -159,7 +159,7 @@ class amwg_plot_set5(amwg_plot_plan):
                 plottype = self.plottype,
                 title = ' '.join([varnom, seasonid, 'obs']),
                 title1 = ' '.join([varnom, seasonid, 'obs']),
-                title2 = "obs",
+                title2 = "observation",
                 source = names['obs'], 
                 plotparms = plotparms[src2obsmod(ft2src)] )
             all_plotnames.append(self.plot2_id)
@@ -334,7 +334,7 @@ class amwg_plot_set5(amwg_plot_plan):
                 plottype = self.plottype,
                 title = ' '.join([varnom,seasonid,'observation',names['obs']]),
                 title1 = ' '.join([varnom, seasonid, 'observation',names['obs']]),
-                title2 = 'obs',
+                title2 = 'observation',
                 source = names['obs'],
                 plotparms = plotparms[src2obsmod(ft2src)] )
         self.single_plotspecs[self.plot3_id] = plotspec(
