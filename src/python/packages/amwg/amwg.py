@@ -133,9 +133,17 @@ class amwg_plot_plan(plot_plan):
                 func = svd._func
                 computable = True
                 break
-        #check that some masking is not required
+        #check that some masking is required. If there is, perform masking first
         if set(['OCNFRAC', 'LANDFRAC']).intersection(invarnoms):
             pdb.set_trace()
+            mask_rvs = []
+            for ivn in invarnoms: #make a trivial reduced variable for each one
+                rv = reduced_variable( variableid=ivn, filetable=filetable, season=season,
+                                           reduction_function=(lambda x,vid:x) )
+                mask_rvs += [rv]
+            dv_dict  = {svd.id(): rv.reduce() for rv in mask_rvs} 
+            dv = svd.derive(dv_dict)
+            invarnoms = [ dv.id() ]
         if computable:
             #print "dbg",varnom,"is computable by",func,"from..."
             for ivn in invarnoms:
