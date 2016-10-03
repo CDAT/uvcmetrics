@@ -134,7 +134,7 @@ class amwg_plot_plan(plot_plan):
                 computable = True
                 break
         #check that some masking is not required
-        if set(['OCNFRAC', 'LANDFRAC']).intersection(invarnoms) is not set([]):
+        if set(['OCNFRAC', 'LANDFRAC']).intersection(invarnoms):
             pdb.set_trace()
         if computable:
             #print "dbg",varnom,"is computable by",func,"from..."
