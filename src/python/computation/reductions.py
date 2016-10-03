@@ -227,7 +227,8 @@ def set_mean( mv, season=seasonsyr, region=None, gw=None ):
             mv.mean = reduce2scalar( mv, season=season, region=region, gw=gw, weights='mass' )
             mvmean = mv.mean
         except Exception as e:
-            logger.error("Caught by set_mean, exception %s for variable %s", e, mv.id)
+            logger.error("Caught by set_mean, exception %s for variable %s", e,
+                         getattr(mv,'id',getattr(mv,'_id','unknown')))
             import traceback
             tb = traceback.format_exc()
             logger.debug("traceback:\n%s", tb)
@@ -244,6 +245,7 @@ def set_mean( mv, season=seasonsyr, region=None, gw=None ):
             (mv.mean<mv.min() or mv.mean>mv.max()):
         logger.warning("Mean for %s was computed as %s but the min and max values are %s, %s!",
                        mv.id,mv.mean,mv.min(),mv.max())
+
     return mvmean
 
 # -------- end of Miscellaneous  Utilities ---------
@@ -287,8 +289,8 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
     if mvrs is None:
         # Among other cases, this can happen if mv has all missing values.
         return None
-    mvrs.filename = mvr.filename
-    mvrs.filetable = mvr.filetable
+    mvrs.filename = getattr(mvr,'filename',None)
+    mvrs.filetable = getattr(mvr,'filetable',None)
 
     mv_axes = allAxes( mv )
     for a in mv_axes:
@@ -366,25 +368,40 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
                     latlon_wts = mvrs.filetable.weights['mass'][(newllat,newllon)]
                     # ... array of shape (lev,lat,lon); the sum over lat,lon will happen later.
                 else:
-                    if 'mass' not in mvrs.filetable.weights:
-                        mvrs.filetable.weights['mass'] = {}
                     # Note that mass_weights() requires mvrs to have lev,lat,lon axes.
-                    latlon_wts = mass_weights( mvrs )    # array of shape (lev,lat,lon) ...
-                    mvrs.filetable.weights['mass'][(llat,llon)] = latlon_wts
+                    if mvrs.getLevel() is None or mvrs.getLatitude() is None or mvrs.getLongitude() is None:
+                        # We're in trouble.  mvrs.filetable.weights['mass'] doesn't have what we need,
+                        # and mvrs doesn't have the three axes needed to compute mass weights.
+                        # When this happens, it means that we have to do more work someplace, to
+                        # make it possible to compute mass weights.
+                        logger.warning("Cannot compute mass weights for %s",
+                                       getattr(mvrs,'id',getattr(mvrs,'_id','unknown')))
+                        latlon_wts = None
+                    else:
+                        if 'mass' not in mvrs.filetable.weights:
+                            mvrs.filetable.weights['mass'] = {}
+                        latlon_wts = mass_weights( mvrs )    # array of shape (lev,lat,lon) ...
+                        mvrs.filetable.weights['mass'][(llat,llon)] = latlon_wts
                 # Previously I simply stored weights in the filetable, but it did't work in the occasional
                 # case that mvrs had been regridded to match another filetable!  These asserts helped catch
                 # such situations:
-                if mvrs.getLongitude() is not None and len(mvrs.getLongitude())>0:
-                    assert len(mvrs.getLongitude())==len(latlon_wts.getLongitude())
-                if mvrs.getLatitude() is not None and len(mvrs.getLatitude())>0:
-                    assert len(mvrs.getLatitude())==len(latlon_wts.getLatitude())
-                if mvrs.getLevel() is not None and len(mvrs.getLevel())>0:
-                    assert len(mvrs.getLevel())==len(latlon_wts.getLevel())
+                if latlon_wts is not None:
+                    if mvrs.getLongitude() is not None and len(mvrs.getLongitude())>0:
+                        assert len(mvrs.getLongitude())==len(latlon_wts.getLongitude())
+                    if mvrs.getLatitude() is not None and len(mvrs.getLatitude())>0:
+                        assert len(mvrs.getLatitude())==len(latlon_wts.getLatitude())
+                    if mvrs.getLevel() is not None and len(mvrs.getLevel())>0:
+                        assert len(mvrs.getLevel())==len(latlon_wts.getLevel())
             else:
                 latlon_wts = weights
-            klevs = [i for i,j in enumerate([a.isLevel() for a in axes]) if j==True]
-            klats = [i for i,j in enumerate([a.isLatitude() for a in axes]) if j==True]
-            klons = [i for i,j in enumerate([a.isLongitude() for a in axes]) if j==True]
+            if latlon_wts is None:
+                klevs = []
+                klats = []
+                klons = []
+            else:
+                klevs = [i for i,j in enumerate([a.isLevel() for a in axes]) if j==True]
+                klats = [i for i,j in enumerate([a.isLatitude() for a in axes]) if j==True]
+                klons = [i for i,j in enumerate([a.isLongitude() for a in axes]) if j==True]
             #assert( len(klats)>0 ), "no latitudes exist"
             ## equivalent to assert( any( [a.isLatitude() for a in axes] ) )
             #assert( len(klons)>0 ), "no longitudes exist"
@@ -401,7 +418,9 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
             # the weight array in the filetable was constructed.  This happens for polar plots.
             # So here we expand the weight array exactly the same way, if we can:
             # N.B.  It would likely be better to do this with genutil.grower().
-            if len(klons)>0:
+            if latlon_wts is None:
+                pass   # no mass weights available
+            elif len(klons)>0:
                 ll_lon = latlon_wts.getLongitude()
                 av_lon = avweights.getLongitude()
                 av_lat = avweights.getLatitude()
@@ -412,7 +431,9 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
                     # line in a more general location until another case turns up...
                     latlon_wts = latlon_wts( latitude=( av_lat[0], av_lat[-1] ) )
 
-            if len(klats)>0 and len(klons)>0:
+            if latlon_wts is None:
+                pass   # no mass weights available
+            elif len(klats)>0 and len(klons)>0:
                 # We have both latitudes and longitudes
                 if klevs==[0] and klats==[1] and klons==[2] and avweights.shape==latlon_wts.shape:
                     # avweights and latlon_wts are compatible
@@ -462,13 +483,18 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
                     # But we can go on with something sensible anyway.
                     ilev = -1   # means use the bottom, usually best if there are no levels
 
-                    logger.warning("Computing a mass-weighted average of %s with no spatial axes",mvrs.id)
+                    logger.warning("Computing a mass-weighted average of %s with no spatial axes",
+                                   getattr(mvrs,'id',getattr(mvrs,'_id','unknown')))
                 else:  # We have only levels
                     for inds in numpy.ndindex(avweights.shape):
                         ilev = inds[klev]
                         avweights[inds] = numpy.sum( latlon_wts[ilev,:,:] )
 
-            avmv = averager( mvrs, axis=axes_string, weights=avweights )
+            if latlon_wts is None:
+                # Although we have chosen mass weights, they are not available.
+                avmv = averager( mvrs, axis=axes_string )   # "normal" averaging
+            else:
+                avmv = averager( mvrs, axis=axes_string, weights=avweights )
 
         elif gw is None:
             avmv = averager( mvrs, axis=axes_string )   # "normal" averaging
@@ -2463,6 +2489,17 @@ def mean_of_diff( aminusb, mv1, mv2, recursive=False ):
     if hasattr(mv1,'mean') and hasattr(mv2,'mean'):
         # Note that mv1,mv2 will initially have a mean attribute which is a Numpy method.
         # We only need to compute a new mean if the mean attribute has been changed to a number.
+        if not numpy.array_equal( mv1.mask, mv2.mask ):
+            # Different masks, can't compute aminusb.mean from mv1.mean, mv2.mean.
+            # If we can't manage it now, let's hope that the diff mean will be computed later on.
+            # Note that different grids make for different masks.  aminusb=(mv1new-mv2new) but these
+            # new (interpolated) variants of mv1,mv2 haven't had means computed, and may not even be
+            # TransientVariables.
+            try:
+                del aminusb.mean
+            except AttributeError:  # del complains if aminusb.mean is a method, or already deleted.
+                pass
+            return
         try:
             aminusb.mean = mv1.mean - mv2.mean
             if len(aminusb.mean.shape)==0 and not isinstance(aminusb.mean,Number):
