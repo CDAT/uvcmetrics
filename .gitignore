@@ -9,8 +9,10 @@ git.py
 .metadata/
 .project
 .pydevproject
+obsolete
+work
+junk
 RemoteSystemsTempFiles/
-src/python/junk
 src/python/packages/amwg/CharlesMajic
 test/data/*.nc
 test/data/*/*
