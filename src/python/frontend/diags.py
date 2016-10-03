@@ -540,6 +540,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
                     else:
                         vname = var.id.replace(' ', '_')
                         var_id_save = var.id
+                        var._id = var.id
                         var.id = ''         # If id exists, vcs uses it as a plot title
                         # and if id doesn't exist, the system will create one before plotting!
                     vname = vname.replace('/', '_')
