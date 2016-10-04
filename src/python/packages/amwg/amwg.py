@@ -147,7 +147,7 @@ class amwg_plot_plan(plot_plan):
                 dv_dict[ivn] = RV.reduce()
             from metrics.packages.amwg.derivations import *
             dv = svd.derive(dv_dict)
-            invarnoms = [ dv.id ]
+            invarnoms = [ svd.id() ]
             
         if computable:
             #print "dbg",varnom,"is computable by",func,"from..."
@@ -160,7 +160,7 @@ class amwg_plot_plan(plot_plan):
                                            reduction_function=(lambda x,vid:x) )
                 else:
                     rv = reduced_variable( variableid=ivn, filetable=filetable, season=season,
-                                           reduction_function=reduction_function )
+                                           reduced_var_id=ivn, reduction_function=reduction_function )
                 #print "dbg   adding reduced variable rv=",rv
                 rvs.append(rv)
         pdb.set_trace()
