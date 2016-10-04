@@ -226,11 +226,12 @@ diags_collection['4a']['U'] = {'plottype': '4A', 'obs': ['ECMWF_1', 'NCEP_1', 'J
 # *** Collection 5 ***
 diags_collection['5'] = OrderedDict()
 diags_collection['5']['desc'] = 'Horizontal contour plots of DJF, JJA and ANN means'
-diags_collection['5']['seasons'] = ['DJF', 'JJA', 'ANN']
+diags_collection['5']['seasons'] = ['DJF', 'MAM', 'JJA', 'SON', 'ANN']
 diags_collection['5']['package'] = 'AMWG'
 diags_collection['5']['options'] = {'logo':'no'}
 diags_collection['5']['combined'] = True
 
+diags_collection['5']['SST'] = {'plottype': '5', 'obs': ['HadISST_PD_1', 'HadISST_PI_1', 'HadISST_CL_1']}
 diags_collection['5']['SHFLX'] = {'plottype': '5', 'obs': ['JRA25_1', 'NCEP_1']}
 diags_collection['5']['SHFLX_OCN'] = {'plottype': '5', 'obs': ['LARYEA_1']}
 diags_collection['5']['LHFLX'] = {'plottype': '5', 'obs': ['ECMWF_1', 'JRA25_1', 'ERA40_1']} #>>>>>>>>new
@@ -265,7 +266,7 @@ diags_collection['5']['TMQ'] = {'plottype': '5',
 diags_collection['5']['TGCLDLWP_OCN'] = {'plottype': '5', 'obs': ['NVAP_1'], 'regions':['Global']}
 diags_collection['5']['PSL'] = {'plottype': '5', 'obs': ['JRA25_1', 'NCEP_1']}
 diags_collection['5']['T'] = {'plottype': '5', 'obs': ['ECMWF_1', 'JRA25_1', 'AIRS_1', 'ERA40_1', 'NCEP_1'], 'varopts':['850', '200']}
-diags_collection['5']['SST'] = {'plottype': '5', 'obs': ['HadISST_PD_1', 'HadISST_PI_1', 'HadISST_CL_1']}
+
 diags_collection['5']['TTRP'] = {'plottype': '5', 'obs': ['ECMWF_1', 'NCEP_1']}
 diags_collection['5']['TS'] = {'plottype': '5', 'obs': ['NCEP_1']}
 diags_collection['5']['U'] = {'plottype': '5', 'obs': ['ECMWF_1', 'NCEP_1', 'JRA25_1', 'ERA40_1'], 'varopts':['200']}
@@ -605,6 +606,8 @@ diags_varlist['CLDHGH_CAL'] = {'desc': 'High-Level Cloud Cover from CALIPSO (det
 
 # *** Observation sets ***
 diags_obslist['HadISST_PI_1'] = {'filekey': 'HadISST_PI', 'desc': 'HadISST/OI.v2 (Pre-Indust) 1870-1900'}
+diags_obslist['HadISST_CL_1'] = {'filekey': 'HadISST_CL', 'desc': 'HadISST/OI.v2 (Climatology) 1982-2001'}
+diags_obslist['HadISST_PD_1'] = {'filekey': 'HadISST_PD', 'desc': 'HadISST/OI.v2 (Present Day) 1999-2008'}
 diags_obslist['LEGATES_1'] = {'filekey': 'LEGATES', 'desc': 'Legates and Willmott 1920-80'}
 diags_obslist['WILLMOTT_1'] = {'filekey': 'WILLMOTT', 'desc': 'Willmott and Matsuura 1950-99'}
 diags_obslist['GPCP_1'] = {'filekey': 'GPCP', 'desc': 'GPCP 1979-2003'}
@@ -630,8 +633,6 @@ diags_obslist['CLOUDSAT_1'] = {'filekey': 'CLOUDSAT', 'desc': 'CLOUDSAT (Radar+L
 diags_obslist['MODIS_1'] = {'filekey': 'MODIS', 'desc': 'MODIS Mar2000-Aug2004'}
 
 diags_obslist['CRU_1'] = {'filekey': 'CRU', 'desc': 'IPCC/CRU Climatology 1961-90'}
-diags_obslist['HadISST_CL_1'] = {'filekey': 'HadISST_CL', 'desc': 'HadISST/OI.v2 (Climatology) 1982-2001'}
-diags_obslist['HadISST_PD_1'] = {'filekey': 'HadISST_PD', 'desc': 'HadISST/OI.v2 (Present Day) 1999-2008'}
 diags_obslist['ERAI_1'] = {'filekey': 'ERAI', 'desc': 'ERA Interim Reanalysis'}
 diags_obslist['ERS_1'] = {'filekey': 'ERS', 'desc': 'ERS Scatterometer 1992-2000'}
 diags_obslist['CALIPSO_1'] = {'filekey': 'CALIPSO', 'desc': 'CALIPSO GOCCP 2007-2010'}
@@ -682,6 +683,7 @@ diags_collection['99']['seasons'] = ['ANN']
 diags_collection['99']['package'] = 'AMWG'
 diags_collection['99']['options'] = {'logo':'no'}
 diags_collection['99']['combined'] = True
+diags_collection['99']['SST'] = {'plottype': '5', 'obs': ['HadISST_PD_1', 'HadISST_PI_1', 'HadISST_CL_1']}
 diags_collection['99']['FSNS_OCN'] = {'plottype': '5', 'obs': ['LARYEA_1']}
 diags_collection['99']['FLNS_OCN'] = {'plottype': '5', 'obs': ['LARYEA_1']}
 #diags_collection['99']['SHFLX_OCN'] = {'plottype': '5', 'obs': ['LARYEA_1']}
