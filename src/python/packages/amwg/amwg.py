@@ -133,9 +133,8 @@ class amwg_plot_plan(plot_plan):
                 func = svd._func
                 computable = True
                 break
-        #check that some masking is required. If there is, perform masking first
+        #check that some masking is required. If there is a mask, perform masking first
         if set(['OCNFRAC', 'LANDFRAC']).intersection(invarnoms):
-            pdb.set_trace()
             mask_rvs = []
             dv_dict = {}
             for ivn in invarnoms: #make a trivial reduced variable for each one
@@ -145,7 +144,7 @@ class amwg_plot_plan(plot_plan):
                 #dv_dict  = {rv.id(): rv.reduce() for rv in mask_rvs} 
                 dv_dict[ivn] = rv.reduce()
             dv = svd.derive(dv_dict)
-            invarnoms = [ dv.id() ]
+            invarnoms = [ dv.id ]
         if computable:
             #print "dbg",varnom,"is computable by",func,"from..."
             for ivn in invarnoms:
@@ -160,7 +159,7 @@ class amwg_plot_plan(plot_plan):
                                            reduction_function=reduction_function )
                 #print "dbg   adding reduced variable rv=",rv
                 rvs.append(rv)
-
+        pdb.set_trace()
         available = rvs + dvs
         availdict = { v.id()[1]:v for v in available }
         inputs = [ availdict[v].id() for v in svd._inputs if v in availdict ] +\
