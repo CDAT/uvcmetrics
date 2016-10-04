@@ -143,6 +143,7 @@ class amwg_plot_plan(plot_plan):
                 mask_rvs += [rv]
                 #dv_dict  = {rv.id(): rv.reduce() for rv in mask_rvs} 
                 dv_dict[ivn] = rv.reduce()
+            from metrics.packages.amwg.derivations import *
             dv = svd.derive(dv_dict)
             invarnoms = [ dv.id ]
         if computable:
