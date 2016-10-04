@@ -1,4 +1,5 @@
 set(BASELINE_DIR "${metrics_SOURCE_DIR}/test/baselines")
+
   add_test("diags_test_01"
     "python"
 ${metrics_SOURCE_DIR}/test/diagtest01.py

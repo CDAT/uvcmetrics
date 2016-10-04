@@ -716,6 +716,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
                                                            varIndex=varIndex, graphicMethod=rsr.presentation,
                                                            var=var, uvcplotspec=rsr )
                     # Single plot
+                    
                     plot.vcs_plot(vcanvas, var(longitude=(-10,370)), rsr.presentation, tm, bg=1,
                                   title=title1, source=rsr.source,
                                   plotparms=getattr(rsr,'plotparms',None) )
@@ -752,7 +753,8 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
                         for i in range(len(var_id_save)):
                             var[i].id = var_id_save[i]
             if savePNG:
-                    vcanvas.png( fnamepng, ignore_alpha=True, metadata=provenance_dict() )
+                pass
+                    #vcanvas.png( fnamepng, ignore_alpha=True, metadata=provenance_dict() )
                     # vcanvas.svg() doesn't support ignore_alpha or metadata keywords
                     #vcanvas.svg( fnamesvg )
                     #vcanvas.pdf( fnamepdf)
@@ -771,8 +773,8 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
         #logger.info("writing svg file2: %s",fnamesvg)
         # vcanvas2.svg() doesn't support ignore_alpha or metadata keywords
         #vcanvas2.svg( fnamesvg )
-        #logger.info("writing pdf file2: %s",fnamepdf)
-        #vcanvas2.pdf( fnamepdf )            
+        logger.info("writing pdf file2: %s",fnamepdf)
+        vcanvas2.pdf( fnamepdf )            
 
 if __name__ == '__main__':
     print "UV-CDAT Diagnostics, command-line version"
