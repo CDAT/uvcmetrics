@@ -141,7 +141,7 @@ class amwg_plot_plan(plot_plan):
                 rv = reduced_variable( variableid=ivn, filetable=filetable, season=season,
                                            reduction_function=(lambda x,vid:x) )
                 mask_rvs += [rv]
-            dv_dict  = {svd.id(): rv.reduce() for rv in mask_rvs} 
+            dv_dict  = {rv.id(): rv.reduce() for rv in mask_rvs} 
             dv = svd.derive(dv_dict)
             invarnoms = [ dv.id() ]
         if computable:
