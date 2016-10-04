@@ -136,7 +136,8 @@ class amwg_plot_plan(plot_plan):
         #check that some masking is required. If there is a mask, perform masking first
         if set(['OCNFRAC', 'LANDFRAC']).intersection(invarnoms):
             mask_rvs = []
-            dv_dict = {}
+            import collections
+            dv_dict = collections.OrderedDict()
             for ivn in svd.inputs(): #make a trivial reduced variable for each one
                 RV = reduced_variable( variableid=ivn, filetable=filetable, season=season,
                                            reduction_function=(lambda x,vid:x) )
