@@ -263,6 +263,7 @@ class amwg_plot_set5(amwg_plot_plan):
 
         ft1src = filetable1.source()
         #note: the title in the following is parced in customizeTemplate. This is a garbage kludge! Mea culpa. 
+        varstr = varnom + '(' + PSELECT + ')'
         self.single_plotspecs = {
             self.plot1_id: plotspec(
                 # was vid = varnom+'_1',
@@ -270,9 +271,8 @@ class amwg_plot_set5(amwg_plot_plan):
                 vid = ps.dict_idid(vidl1),
                 zvars = [vidl1],  zfunc = (lambda z: z),
                 plottype = self.plottype,
-                varstr = varnom + '(' + PSELECT + ')'
                 title = ' '.join([varstr, seasonid, 'model', names['model']]),
-                title1 = ' '.join([var, seasonid, 'model', names['model']]),
+                title1 = ' '.join([varstr, seasonid, 'model', names['model']]),
                 title2 = 'model',
                 source = names['model'],
                 plotparms = plotparms[src2modobs(ft1src)] ) }
@@ -336,8 +336,8 @@ class amwg_plot_set5(amwg_plot_plan):
                 vid = ps.dict_idid(vidl2),
                 zvars = [vidl2],  zfunc = (lambda z: z),
                 plottype = self.plottype,
-                title = ' '.join([varnom,seasonid,'observation',names['obs']]),
-                title1 = ' '.join([varnom, seasonid, 'observation',names['obs']]),
+                title = ' '.join([varstr,seasonid,'observation',names['obs']]),
+                title1 = ' '.join([varstr, seasonid, 'observation',names['obs']]),
                 title2 = 'observation',
                 source = names['obs'],
                 plotparms = plotparms[src2obsmod(ft2src)] )
@@ -346,8 +346,8 @@ class amwg_plot_set5(amwg_plot_plan):
                 vid = ps.dict_id(varnom,'diff',seasonid,filetable1,filetable2),
                 zvars = [vidl1,vidl2],  zfunc = aminusb_2ax,
                 plottype = self.plottype,
-                title = ' '.join([varnom,seasonid,'difference']),
-                title1 = ' '.join([varnom, seasonid, 'difference']),
+                title = ' '.join([varstr,seasonid,'difference']),
+                title1 = ' '.join([varstr, seasonid, 'difference']),
                 title2 = 'difference',
                 plotparms = plotparms['diff'] )
 #                zerocontour=-1 )
@@ -399,7 +399,15 @@ class amwg_plot_set5(amwg_plot_plan):
             source = uvcplotspec.source # None should work, but it doesn't right now.
             #sourcenn = ftid.nickname   # not used at present
             if tm2.title.y > 0.8:   # top of the compound plot, the only case where we want a header
-                header = ' '.join([psid.vars[0], psid.season])
+                # header = ' '.join([psid.vars[0], psid.season])   # TO DO: restore something like this once aux is in psid
+                auxl = var.title.split(') ')[0].split('(')  # if title=="Var(aux)...", this is ["Var", "aux"]
+                # ... if title=="Var..." without (aux), then this is [title]
+                if len(auxl)>1:
+                    aux = auxl[1]  # e.g. '850 mbar'
+                    varstr = psid.vars + '(' + aux + ')'
+                else:
+                    varstr = psid.vars
+                header = ' '.join( [varstr, psid.season] )
 
         #pdb.set_trace()
 
