@@ -137,11 +137,13 @@ class amwg_plot_plan(plot_plan):
         if set(['OCNFRAC', 'LANDFRAC']).intersection(invarnoms):
             pdb.set_trace()
             mask_rvs = []
+            dv_dict = {}
             for ivn in invarnoms: #make a trivial reduced variable for each one
                 rv = reduced_variable( variableid=ivn, filetable=filetable, season=season,
                                            reduction_function=(lambda x,vid:x) )
                 mask_rvs += [rv]
-            dv_dict  = {rv.id(): rv.reduce() for rv in mask_rvs} 
+                #dv_dict  = {rv.id(): rv.reduce() for rv in mask_rvs} 
+                dv_dict[ivn] = rv.reduce()
             dv = svd.derive(dv_dict)
             invarnoms = [ dv.id() ]
         if computable:
