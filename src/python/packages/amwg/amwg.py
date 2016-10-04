@@ -137,7 +137,7 @@ class amwg_plot_plan(plot_plan):
         if set(['OCNFRAC', 'LANDFRAC']).intersection(invarnoms):
             mask_rvs = []
             dv_dict = {}
-            for ivn in svd.inouts(): #make a trivial reduced variable for each one
+            for ivn in svd.inputs(): #make a trivial reduced variable for each one
                 RV = reduced_variable( variableid=ivn, filetable=filetable, season=season,
                                            reduction_function=(lambda x,vid:x) )
                 mask_rvs += [RV]
