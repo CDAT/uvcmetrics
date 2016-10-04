@@ -139,15 +139,16 @@ class amwg_plot_plan(plot_plan):
             import collections
             dv_dict = collections.OrderedDict()
             for ivn in svd.inputs(): #make a trivial reduced variable for each one
+                pdb.set_trace()
                 RV = reduced_variable( variableid=ivn, filetable=filetable, season=season,
-                                           reduction_function=(lambda x,vid:x) )
+                                       reduced_var_id=ivn, reduction_function=(lambda x,vid:x) )
                 mask_rvs += [RV]
                 #dv_dict  = {rv.id(): rv.reduce() for rv in mask_rvs} 
                 dv_dict[ivn] = RV.reduce()
             from metrics.packages.amwg.derivations import *
             dv = svd.derive(dv_dict)
             invarnoms = [ dv.id ]
-            pdb.set_trace()
+            
         if computable:
             #print "dbg",varnom,"is computable by",func,"from..."
             for ivn in invarnoms:
