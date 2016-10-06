@@ -209,6 +209,15 @@ def set_spatial_avg_method( var ):
 
 def set_mean( mv, season=seasonsyr, region=None, gw=None ):
     """Set mean attribute of a variable.  Typically this appears in a plot header."""
+    if type(mv) is tuple and len(mv)==2:
+        mv1mean = set_mean( mv[0], season, region, gw )
+        mv2mean = set_mean( mv[1], season, region, gw )
+        return ( mv1mean, mv2mean )
+    if hasattr(mv,'mean') and callable(mv.mean):
+        # This mean() method is almost surely the one inherited from numpy.  It doesn't know about
+        # the grid, so it should not be used.
+        mv.mean = None  # a method can't be deleted in one step
+        del mv.mean
     if season is None: season=seasonsyr
     weighting = getattr( mv, 'weighting', None )
     if hasattr(mv,'mean') and isinstance(mv.mean,Number):
@@ -232,19 +241,28 @@ def set_mean( mv, season=seasonsyr, region=None, gw=None ):
             import traceback
             tb = traceback.format_exc()
             logger.debug("traceback:\n%s", tb)
-    #else: use the VCS default of area weighting
+    elif hasattr(mv,'filename') and mvmean is None: # default to area weighting
+        mv.mean = reduce2scalar( mv, season=season, region=region, gw=gw )
+        mvmean = mv.mean
 
-    # Just in case, clean up mv.mean - make sure it's a number.
+    # Just in case, clean up mv.mean - make sure it's a number.  And don't allow None.
     if hasattr(mv,'mean') and not isinstance(mv.mean,Number) and hasattr(mv.mean,'shape') and\
             len(mv.mean.shape)==0:
         # mv.mean is a TransientVariable of shape (), or something like that: only one value.
         mvmean = mv.mean.min()
         mv.mean = mvmean
+    if hasattr(mv,'mean') and mv.mean is None:
+        del mv.mean
     # And now for a sanity check:
     if hasattr(mv,'mean') and isinstance(mv.mean,Number) and\
             (mv.mean<mv.min() or mv.mean>mv.max()):
         logger.warning("Mean for %s was computed as %s but the min and max values are %s, %s!",
                        mv.id,mv.mean,mv.min(),mv.max())
+    if hasattr(mv,'mean'):
+        # It's useful to have a "_mean attribute because it isn't transmitted through calculations.
+        # Such transmissions are usually wrong.
+        # However VCS looks for a :mean attribute, so we need that too.
+        mv._mean = mv.mean
 
     return mvmean
 
@@ -2506,6 +2524,7 @@ def mean_of_diff( aminusb, mv1, mv2, recursive=False ):
                 # aminusb.mean is a TransientVariable with shape==() (or something similar);
                 # convert it to a simple scalar
                 aminusb.mean = aminusb.mean.min()
+                aminusb._mean = aminusb.mean
         except TypeError:
             # If this happens, "-" can't be applied to the means.
             # For sure they aren't numbers.  Probably they are the Numpy builtin mean() method.
