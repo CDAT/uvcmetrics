@@ -1,5 +1,6 @@
 import logging, pdb
 from numbers import Number
+from pprint import pprint
 import cdms2
 from metrics.packages.diagnostic_groups import *
 from metrics.computation.plotspec import plotspec
@@ -368,6 +369,11 @@ class plot_plan(object):
             logger.debug("in plotplan.py")
             logger.error("All values of %s are missing!", z.id)
             return None, None
+        if hasattr(z,'mean') and z.mean!=getattr(z,'_mean',None):
+            # If we computed the mean through set_mean() or mean_of_diff(), then there's an equal _mean attribute.
+            # If not, we can't trust the mean attribute.  Any calculation, e.g. a=b+c, may have transmitted :mean
+            # e.g. a.mean=b.mean.  But _mean doesn't get transmitted that way.
+            del z.mean
         if z is not None and not (hasattr(z, 'mean') and isinstance(z.mean, Number)):
             # Compute variable's mean.  For mass weighting, it should have already happened in a
             # dimensionality reduction functions.
