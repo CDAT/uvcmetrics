@@ -373,6 +373,7 @@ class plot_plan(object):
             # If we computed the mean through set_mean() or mean_of_diff(), then there's an equal _mean attribute.
             # If not, we can't trust the mean attribute.  Any calculation, e.g. a=b+c, may have transmitted :mean
             # e.g. a.mean=b.mean.  But _mean doesn't get transmitted that way.
+            z.mean = None # You can't simply delete z.mean if it's a method.
             del z.mean
         if z is not None and not (hasattr(z, 'mean') and isinstance(z.mean, Number)):
             # Compute variable's mean.  For mass weighting, it should have already happened in a
