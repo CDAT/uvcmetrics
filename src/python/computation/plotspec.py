@@ -106,7 +106,7 @@ class derived_var(basic_id):
             if hasattr(self,'filetable'):  output.filetable = self.filetable
             self._file_attributes.update( getattr(output,'_file_attributes',{}) )
 
-            # Compute the mean right away.  Clearing the weight cache and especially the method
+            # Compute the mean right away.  Clearing the weight cache and especially this method
             # for doing it just once, are a temporary expedients;
             outaxes = [ax.axis for ax in output.getAxisList() if hasattr(ax,'axis')]
             outaxes.sort()
@@ -118,6 +118,9 @@ class derived_var(basic_id):
                 # This operation will be unnecessary once I implement something better than (latsize,lonsize)
                 # for looking up mass weights.
                 output.filetable.weights['mass']={}
+            output.mean = None  # ensures that set_mean will compute a new mean.
+            #   Note that the previous calculation may have transmitted the :mean attribute from an
+            #   input variable to output, which would be incorrect.
             set_mean(output)
         if hasattr(output,'__cdms_internals__'):  # probably a mv
             output.id = underscore_join(output._id)
