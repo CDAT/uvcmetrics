@@ -318,8 +318,8 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
         elif a.isLevel(): a.axis = 'z'
     axis_names = [ a.id for a in mv_axes if not a.isTime() and a.id not in exclude_axes and
                    a not in target_axes and a.id not in target_axes and
-                   getattr(a,'axis').lower() not in target_axes and
-                   getattr(a,'axis').upper() not in target_axes ]
+                   getattr(a,'axis','spam').lower() not in target_axes and
+                   getattr(a,'axis','spam').upper() not in target_axes ]
     axes_string = '('+')('.join(axis_names)+')'
     axes = mvrs.getAxisList()
 
@@ -353,38 +353,54 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
                 # same shape, you need to compute weights in both of them, and this won't do that.
                 # Eventually we should have a more robust cacheing system: it should look at the actual
                 # range of lat,lon values, the region, the season; and maybe do something about levels.
+                lev = mvrs.getLevel()
+                if lev is None: llev = -1
+                else:llev = len(lev)
                 lat = mvrs.getLatitude()
-                lon = mvrs.getLongitude()
                 if lat is None: llat = -1
                 else:llat = len(lat)
+                lon = mvrs.getLongitude()
                 if lon is None: llon = -1
                 else: llon = len(lon)
-                if 'mass' in mvrs.filetable.weights and (llat,llon) in mvrs.filetable.weights['mass']:
-                    latlon_wts = mvrs.filetable.weights['mass'][(llat,llon)]
-                # Add "lat is None" etc. only if we realy need it.
+                if 'mass' in mvrs.filetable.weights and (llev,llat,llon) in mvrs.filetable.weights['mass']:
+                    latlon_wts = mvrs.filetable.weights['mass'][(llev,llat,llon)]
                 elif 'mass' in mvrs.filetable.weights and lon is None and\
-                        llat in [k[0] for k in mvrs.filetable.weights['mass'].keys()]:
-                    # No lon.  Get weights with lon (and the same lat), and sum over lon.
-                    newllon = [k[1] for k in mvrs.filetable.weights['mass'] if k[0]==llat][0]
-                    latlon_wts = mvrs.filetable.weights['mass'][(llat,newllon)]
+                        llev in [k[0] for k in mvrs.filetable.weights['mass'].keys()] and\
+                        llat in [k[1] for k in mvrs.filetable.weights['mass'].keys()]:
+                    # No lon.  Get weights with lon (and the same lev,lat), and sum over lon.
+                    # Cross our fingers and hope that the first possibility is correct!
+                    newllon = [k[2] for k in mvrs.filetable.weights['mass'] if k[0]==llev and k[1]==llat][0]
+                    latlon_wts = mvrs.filetable.weights['mass'][(llev,llat,newllon)]
                     # ... array of shape (lev,lat,lon); the sum over longitudes will happen later.
                 elif 'mass' in mvrs.filetable.weights and lat is None and\
-                        llon in [k[1] for k in mvrs.filetable.weights['mass'].keys()]:
-                    # No lat.  Get weights with lat (and the same lon), and sum over lon.
-                    newllat = [k[0] for k in mvrs.filetable.weights['mass'] if k[1]==llon][0]
-                    latlon_wts = mvrs.filetable.weights['mass'][(newllat,llon)]
-                    # ... array of shape (lev,lat,lon); the sum over longitudes will happen later.
-                elif 'mass' in mvrs.filetable.weights and lat is None and lon is None:
+                        llev in [k[0] for k in mvrs.filetable.weights['mass'].keys()] and\
+                        llon in [k[2] for k in mvrs.filetable.weights['mass'].keys()]:
+                    # No lat.  Get weights with lat (and the same lev,lon), and sum over lat.
+                    # Cross our fingers and hope that the first possibility is correct!
+                    newllat = [k[1] for k in mvrs.filetable.weights['mass'] if k[0]==llev and k[2]==llon][0]
+                    latlon_wts = mvrs.filetable.weights['mass'][(llev,newllat,llon)]
+                    # ... array of shape (lev,lat,lon); the sum over latitudes will happen later.
+                elif 'mass' in mvrs.filetable.weights and lat is None and\
+                        llat in [k[1] for k in mvrs.filetable.weights['mass'].keys()] and\
+                        llon in [k[2] for k in mvrs.filetable.weights['mass'].keys()]:
+                    # No lev.  Get weights with lev (and the same lat,lon), and sum over lev.
+                    # Cross our fingers and hope that the first possibility is correct!
+                    newllev = [k[0] for k in mvrs.filetable.weights['mass'] if k[1]==llat and k[2]==llon][0]
+                    latlon_wts = mvrs.filetable.weights['mass'][(newllev,llat,llon)]
+                    # ... array of shape (lev,lat,lon); the sum over latitudes will happen later.
+                elif 'mass' in mvrs.filetable.weights and lat is None and lon is None and\
+                        llev in [k[0] for k in mvrs.filetable.weights['mass'].keys()]:
                     # No lat or lon.  Get weights with lat and lon, and sum over lat,lon.
                     # Cross our fingers and hope that the first possibility is correct!
                     if len(mvrs.filetable.weights['mass'].keys())<1:
                         log.error("Cannot compute mass weights for spatially reduced variable %s",mvrs.id)
                     if len(mvrs.filetable.weights['mass'].keys())>1:
                         log.warning("Multiple candidate mass weights for spatially reduced variable %s; will choose one",mvrs.id)
-                    newllon = [k[1] for k in mvrs.filetable.weights['mass']][0]
-                    newllat = [k[0] for k in mvrs.filetable.weights['mass']][0]
-                    latlon_wts = mvrs.filetable.weights['mass'][(newllat,newllon)]
+                    newllon = [k[2] for k in mvrs.filetable.weights['mass']][0]
+                    newllat = [k[1] for k in mvrs.filetable.weights['mass']][0]
+                    latlon_wts = mvrs.filetable.weights['mass'][(llev,newllat,newllon)]
                     # ... array of shape (lev,lat,lon); the sum over lat,lon will happen later.
+                # >>>> cases not considered: no lev,lat; no lev,lon; no lev,lat,lon <<<<
                 else:
                     # Note that mass_weights() requires mvrs to have lev,lat,lon axes.
                     if mvrs.getLevel() is None or mvrs.getLatitude() is None or mvrs.getLongitude() is None:
@@ -399,17 +415,21 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
                         if 'mass' not in mvrs.filetable.weights:
                             mvrs.filetable.weights['mass'] = {}
                         latlon_wts = mass_weights( mvrs )    # array of shape (lev,lat,lon) ...
-                        mvrs.filetable.weights['mass'][(llat,llon)] = latlon_wts
+                        mvrs.filetable.weights['mass'][(llev,llat,llon)] = latlon_wts
                 # Previously I simply stored weights in the filetable, but it did't work in the occasional
                 # case that mvrs had been regridded to match another filetable!  These asserts helped catch
                 # such situations:
                 if latlon_wts is not None:
-                    if mvrs.getLongitude() is not None and len(mvrs.getLongitude())>0:
-                        assert len(mvrs.getLongitude())==len(latlon_wts.getLongitude())
-                    if mvrs.getLatitude() is not None and len(mvrs.getLatitude())>0:
-                        assert len(mvrs.getLatitude())==len(latlon_wts.getLatitude())
-                    if mvrs.getLevel() is not None and len(mvrs.getLevel())>0:
-                        assert len(mvrs.getLevel())==len(latlon_wts.getLevel())
+                    try:
+                        if mvrs.getLongitude() is not None and len(mvrs.getLongitude())>0:
+                            assert len(mvrs.getLongitude())==len(latlon_wts.getLongitude())
+                        if mvrs.getLatitude() is not None and len(mvrs.getLatitude())>0:
+                            assert len(mvrs.getLatitude())==len(latlon_wts.getLatitude())
+                        if mvrs.getLevel() is not None and len(mvrs.getLevel())>0:
+                            assert len(mvrs.getLevel())==len(latlon_wts.getLevel())
+                    except Exception as e:
+                        print e
+                        pdb.set_trace() #jfp
             else:
                 latlon_wts = weights
             if latlon_wts is None:
@@ -449,64 +469,71 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
                     # line in a more general location until another case turns up...
                     latlon_wts = latlon_wts( latitude=( av_lat[0], av_lat[-1] ) )
 
+            # Compute this variable's mass weight array based on the (lev,lat,lon) weight array in
+            # the filetable.  We just have to add up weights along any axis missing from the variable.
             if latlon_wts is None:
                 pass   # no mass weights available
-            elif len(klats)>0 and len(klons)>0:
-                # We have both latitudes and longitudes
+            elif len(klevs)>0 and len(klats)>0 and len(klons)>0:
+                # We have all three: levels, latitudes and longitudes
                 if klevs==[0] and klats==[1] and klons==[2] and avweights.shape==latlon_wts.shape:
                     # avweights and latlon_wts are compatible
                     numpy.copyto( avweights, latlon_wts ) # avweights[:,:,...]=latlon_wts[:,:,...]
                 else:
                     # avweights and latlon_wts are structured differently.  This loop is slow.
                     for inds in numpy.ndindex(avweights.shape):
-                        ilat = inds[klat]
-                        ilon = inds[klon]
-                        if len(klevs)>0:
-                            ilev = inds[klev]
-                        else:
-                            ilev = -1   # means use the bottom, usually best if there are no levels
-                        avweights[inds] = latlon_wts[ilev,ilat,ilon]
-            elif len(klats)>0:
-                # We have latitudes, no longitudes.  Normally this means that the longitudes have
-                # been averaged out.
-                if klevs==[0] and klats==[1] and avweights.shape==latlon_wts.shape:
-                    # avweights and latlon_wts are compatible
-                    numpy.copyto( avweights, latlon_wts ) # avweights[:,:,...]=latlon_wts[:,:,...]
-                else:
-                    for inds in numpy.ndindex(avweights.shape):
-                        ilat = inds[klat]
-                        if len(klevs)>0:
-                            ilev = inds[klev]
-                        else:
-                            ilev = -1   # means use the bottom, usually best if there are no levels
-                        avweights[inds] = numpy.sum( latlon_wts[ilev,ilat,:] )
-            elif len(klons)>0:
-                # We have longitudes, no latitudes.  Normally this means that the latitudes have
-                # been averaged out.
-                if klevs==[0] and klons==[1] and avweights.shape==latlon_wts.shape:
-                    # avweights and latlon_wts are compatible
-                    numpy.copyto( avweights, latlon_wts ) # avweights[:,:,...]=latlon_wts[:,:,...]
-                else:
-                    for inds in numpy.ndindex(avweights.shape):
-                        ilon = inds[klon]
-                        if len(klevs)>0:
-                            ilev = inds[klev]
-                        else:
-                            ilev = -1   # means use the bottom, usually best if there are no levels
-                        avweights[inds] = numpy.sum( latlon_wts[ilev,:,ilon] )
-            else:
-                # No latitudes, no longitudes!
-                if len(klevs)<=0:   # No levels either.
-                    # Probably something's wrong, there's basically nothing to do.
-                    # But we can go on with something sensible anyway.
-                    ilev = -1   # means use the bottom, usually best if there are no levels
-
-                    logger.warning("Computing a mass-weighted average of %s with no spatial axes",
-                                   getattr(mvrs,'id',getattr(mvrs,'_id','unknown')))
-                else:  # We have only levels
-                    for inds in numpy.ndindex(avweights.shape):
                         ilev = inds[klev]
-                        avweights[inds] = numpy.sum( latlon_wts[ilev,:,:] )
+                        ilat = inds[klat]
+                        ilon = inds[klon]
+                        avweights[inds] = latlon_wts[ilev,ilat,ilon]
+            elif len(klevs)==0 and len(klats)>0 and len(klons)>0:
+                # We have latitudes and longitudes, no levels.  We'll just use the bottom level.
+                ilev = -1   # means use the bottom, usually best if there are no levels
+                for inds in numpy.ndindex(avweights.shape):
+                    ilat = inds[klat]
+                    ilon = inds[klon]
+                    avweights[inds] = latlon_wts[ilev,ilat,ilon]
+            elif len(klevs)>0 and len(klats)>0 and len(klons)==0:
+                # We have levels and latitudes, no longitudes.  Normally this means that the variable
+                # represents a sum or average over longitudes.  For weights, sum over longitudes.
+                for inds in numpy.ndindex(avweights.shape):
+                    ilev = inds[klev]
+                    ilat = inds[klat]
+                    avweights[inds] = numpy.sum( latlon_wts[ilev,ilat,:] )
+            elif len(klevs)>0 and len(klats)==0 and len(klons)>0:
+                # We have levels and longitudes, no latitudes.  Normally this means that the variable
+                # represents a sum or average over latitudes.  For weights, sum over latitudes.
+                for inds in numpy.ndindex(avweights.shape):
+                    ilev = inds[klev]
+                    ilon = inds[klon]
+                    avweights[inds] = numpy.sum( latlon_wts[ilev,:,ilon] )
+            elif len(klevs)==0 and len(klats)>0 and len(klons)==0:
+                # We have latitudes, no levels or longitudes.  Use the bottom level and sum over
+                # the longitudes
+                ilev = -1   # means use the bottom, usually best if there are no levels
+                for inds in numpy.ndindex(avweights.shape):
+                    ilat = inds[klat]
+                    avweights[inds] = numpy.sum( latlon_wts[ilev,ilat,:] )
+            elif len(klevs)==0 and len(klats)==0 and len(klons)>0:
+                # We have longitudes, no levels or latitudes.  Use the bottom level and sum over
+                # the latitudes
+                ilev = -1   # means use the bottom, usually best if there are no levels
+                for inds in numpy.ndindex(avweights.shape):
+                    ilon = inds[klon]
+                    avweights[inds] = numpy.sum( latlon_wts[ilev,:,ilon] )
+            elif len(klevs)>0 and len(klats)==0 and len(klons)==0:
+                # We have levels, no latitudes or longitudes.  Sum over latitudes and longitudes.
+                for inds in numpy.ndindex(avweights.shape):
+                    ilev = inds[klev]
+                    avweights[inds] = numpy.sum( latlon_wts[ilev,:,:] )
+            else:
+                # No levels, latitudes, no longitudes!
+                # Probably something's wrong, there's basically nothing to do.
+                # But we can go on with something sensible anyway.
+                logger.warning("Computing a mass-weighted average of %s with no spatial axes",\
+                                   getattr(mvrs,'id',getattr(mvrs,'_id','unknown')))
+                ilev = -1   # means use the bottom, usually best if there are no levels
+                for inds in numpy.ndindex(avweights.shape):
+                    avweights[inds] = numpy.sum( latlon_wts[ilev,:,:] )
 
             if latlon_wts is None:
                 # Although we have chosen mass weights, they are not available.
@@ -3138,6 +3165,9 @@ class reduced_variable(ftrow,basic_id):
                     # Save some mass weights before we possibly reduce away the lat,lon axes.
                     # It would be better to index with more detailed domain information than llat,llon.
                     from metrics.packages.amwg.derivations.massweighting import mass_weights
+                    lev = var.getLevel()
+                    if lev is None: llev=-1
+                    else: llev = len(lev)
                     lat = var.getLatitude()
                     if lat is None: llat=-1
                     else: llat=len(lat)
@@ -3146,7 +3176,8 @@ class reduced_variable(ftrow,basic_id):
                     else: llon=len(lon)
                     if 'mass' not in var.filetable.weights:
                         var.filetable.weights['mass'] = {}
-                    var.filetable.weights['mass'][(llat,llon)] = mass_weights(var)
+                    if llev>0 and llat>0 and llon>0:
+                        var.filetable.weights['mass'][(llev,llat,llon)] = mass_weights(var)
                 reduced_data = self._reduction_function( var, vid=vid )
             elif self.variableid in f.axes.keys():
                 taxis = cdms2.createAxis(f[self.variableid])   # converts the FileAxis to a TransientAxis.
