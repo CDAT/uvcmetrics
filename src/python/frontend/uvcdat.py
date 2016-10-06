@@ -178,9 +178,10 @@ class uvc_composite_plotspec():
         filenames = []
         for p in self.plots:
             if type(p) is tuple:
-                logger.error("Cannot write_plot_data on tuple<<<<<<<<<<<<<<<<<")
+                p = p[0] # maybe something will be better than nothing!
+                logger.warning("Cannot write_plot_data on tuple, will write partial data")
                 logger.info(p)
-                continue
+                # continue
             filenames += p.write_plot_data( contents_format, where )
 
         filename = self.outfile( format, where )
@@ -189,8 +190,9 @@ class uvc_composite_plotspec():
         writer.write("<plotdata>\n")
         for p in self.plots:
             if type(p) is tuple:
-                logger.error("Again, cannot write_plot_data on tuple<<<<<<<<<<<<<<<<<")
-                continue
+                p = p[0] # maybe something will be better than nothing!
+                logger.warning("Again, cannot write_plot_data on tuple, will write something")
+                #continue
             pfn = p.outfile(where)
             writer.write( "<ncfile>"+pfn+"</ncfile>\n" )
         writer.write( "</plotdata>\n" )
@@ -465,7 +467,7 @@ class uvc_simple_plotspec(basic_id):
                         axy = axaxi['Z']
                     if axx == 'time':
                         t=var.getTime()
-                        if 'units' in dir(t) and t.units == "months since 1800":
+                        if 'units' in dir(t) and t.units.find("months since 1800")==0:
                             time_lables = {}
                             months_names = get_month_strings(length=3)             
                             tc=t.asComponentTime()
