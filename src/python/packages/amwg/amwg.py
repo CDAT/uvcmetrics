@@ -139,15 +139,20 @@ class amwg_plot_plan(plot_plan):
             import collections
             dv_dict = collections.OrderedDict()
             for ivn in svd.inputs(): #make a trivial reduced variable for each one
-                pdb.set_trace()
-                RV = reduced_variable( variableid=ivn, filetable=filetable, season=season,
+                RV = reduced_variable( variableid=ivn, filetable=filetable, #season=season,
                                        reduced_var_id=ivn, reduction_function=(lambda x,vid:x) )
                 mask_rvs += [RV]
                 #dv_dict  = {rv.id(): rv.reduce() for rv in mask_rvs} 
                 dv_dict[ivn] = RV.reduce()
-            from metrics.packages.amwg.derivations import *
+            #from metrics.packages.amwg.derivations import *
             dv = svd.derive(dv_dict)
-            invarnoms = [ svd.id() ]
+            DVvid = derived_var.dict_id( varnom, '', season.seasons[0], filetable )
+            DV = derived_var( vid=DVvid, inputs=[dv.id], outputs=[ svd.id() ], func=reduction_function )
+            pdb.set_trace()
+            DV.derive({dv.id: dv})
+                        
+            dv.id = svd.id()
+            invarnoms = [ dv.id ]
             
         if computable:
             #print "dbg",varnom,"is computable by",func,"from..."
@@ -160,10 +165,10 @@ class amwg_plot_plan(plot_plan):
                                            reduction_function=(lambda x,vid:x) )
                 else:
                     rv = reduced_variable( variableid=ivn, filetable=filetable, season=season,
-                                           reduced_var_id=ivn, reduction_function=reduction_function )
+                                           reduction_function=reduction_function )
                 #print "dbg   adding reduced variable rv=",rv
                 rvs.append(rv)
-        pdb.set_trace()
+
         available = rvs + dvs
         availdict = { v.id()[1]:v for v in available }
         inputs = [ availdict[v].id() for v in svd._inputs if v in availdict ] +\
