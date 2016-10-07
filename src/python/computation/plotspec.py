@@ -121,7 +121,7 @@ class derived_var(basic_id):
             output.mean = None  # ensures that set_mean will compute a new mean.
             #   Note that the previous calculation may have transmitted the :mean attribute from an
             #   input variable to output, which would be incorrect.
-            set_mean(output)
+            #not needed: set_mean(output)
         if hasattr(output,'__cdms_internals__'):  # probably a mv
             output.id = underscore_join(output._id)
         return output
