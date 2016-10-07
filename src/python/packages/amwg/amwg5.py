@@ -93,6 +93,14 @@ class amwg_plot_set5(amwg_plot_plan):
                 allvars[varname] = basic_plot_variable
         return allvars
     def plan_computation( self, model, obs, varid, seasonid, aux, names, plotparms ):
+        filetable1, filetable2 = self.getfts(model, obs)
+        for filetable in [filetable1, filetable2]:
+            if filetable.find_files( 'gw' ):
+                # data has Gaussian weights, prefer them over the averager's default
+                gw = reduced_variable(
+                    variableid='gw', filetable=filetable, season=self.season,
+                    reduction_function=(lambda x,vid=None: x) )
+                self.reduced_variables[gw.id()] = gw
         if isinstance(aux,Number):
             return self.plan_computation_level_surface( model, obs, varid, seasonid, aux, names, plotparms )
         else:
@@ -524,7 +532,24 @@ class amwg_plot_set5(amwg_plot_plan):
         except Exception,err:
             season = uvcplotspec.id().season
             region = uvcplotspec.id().region
-            set_mean( var, season, region ) # Note that gw is not provided in this call.
+            varid = getattr( var, 'id', '' )
+            if varid == '':
+                varid = getattr( var, '_id', '' )
+            if varid.find(uvcplotspec.id().ft1)>=0:
+                ft1 = uvcplotspec.id().ft1
+            elif varid.find(uvcplotspec.id().ft2)>=0:
+                ft1 = uvcplotspec.id().ft2
+            else:
+                ft1 = None
+            if False:
+                # unfinished; this late in the game gw may be the wrong shape; see my notes 2016.10.07.
+                gwid = reduced_variable.IDtuple( classid='rv', var='gw', season=season, region=region, ft1=ft1, ffilt1='' )
+                gw_rv = self.reduced_variables.get(gwid,None)
+                if gw_rv is None:
+                    gw = None
+                else:
+                    gw = uvcplotspec.varvals[gw_rv.id()]
+            set_mean( var, season, region, gw )
             mean_val = float(var.mean)
 
         mean = get_textobject(t,"mean","Mean   %.2f" % mean_val)
