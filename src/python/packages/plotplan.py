@@ -173,6 +173,8 @@ class plot_plan(object):
             #print value.id, value.shape
             self.variable_values[v] = value  # could be None
         varvals = self.variable_values
+        print "jfp1 varvals:"
+        pprint( [(v.id,v.shape) for v in varvals.values() if v is not None and type(v) is not str] )
 
         for p, ps in self.single_plotspecs.iteritems():
             logger.info("Plotplan preparing data for %s and %s", ps._strid, ps.plottype)
@@ -320,7 +322,8 @@ class plot_plan(object):
                 linecolors, levels=levels, more_id=more_id, plotparms=plotparms, idinfo={
                     'vars':[getattr(self,'varid','')],'season':self._seasonid, 'region':regionid,
                     'ft1':getattr(self,'ft1nom',''), 'ft2':getattr(self,'ft2nom',''),
-                    'ft1nn':getattr(self,'ft1nickname',''), 'ft2nn':getattr(self,'ft2nickname','') } )
+                    'ft1nn':getattr(self,'ft1nickname',''), 'ft2nn':getattr(self,'ft2nickname','') },
+                varvals=varvals )
         #pdb.set_trace()
 
         # dispose of any failed plots

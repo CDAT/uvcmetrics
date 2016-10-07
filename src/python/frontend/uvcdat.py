@@ -220,7 +220,7 @@ class uvc_simple_plotspec(basic_id):
     def __init__(
         self, pvars, presentation, labels=[], title='', title1='', title2='', source='', ranges=None, overplotline=False,
         linetypes=['solid'], linecolors=[241], levels=None, plotparms=None, displayunits=None,
-        more_id=None, idinfo={} ):
+        more_id=None, idinfo={}, varvals={} ):
 
         pvars = [v for v in pvars if v is not None]
         if idinfo=={}:
@@ -327,6 +327,7 @@ class uvc_simple_plotspec(basic_id):
                     }
         self.finalized = False
         self.more_id = more_id
+        self.varvals = varvals
 
     def make_ranges(self, var):
 
