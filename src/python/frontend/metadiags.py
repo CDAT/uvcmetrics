@@ -20,42 +20,26 @@ import glob
 logger = logging.getLogger(__name__)
 
 
-def get_png_name(plotset, variable, obs_set='', var_option=None, region="Global", season="ANN", combined=False):
+def filenames(plotset, variable, obs_set='', var_option=None, region="Global", season="ANN", combined=False):
     root_name = form_file_rootname(plotset, [variable],
                                    aux=[] if var_option is None else [var_option],
                                    basen="set%s" % plotset, postn=obs_set,
                                    season=season, region=region, combined=combined
                                    )
-    return form_filename(root_name, ["png"], descr=True, more_id="combined" if combined else "")[0]
-
-
-def get_other_files(fname, outpath):
-    other_files = glob.glob(os.path.join(outpath, fname.split("-combined")[0] + "*"))
     files = []
-    for of in other_files:
-        of = os.path.basename(of)
-        no_ext, e = os.path.splitext(of)
-        if e not in (".nc", ".pdf", ".svg"):
-            continue
-        if e in (".pdf", ".svg"):
-            should_skip = False
-            for filtered in ("model", "obs", "diff"):
-                if no_ext.endswith(filtered):
-                    should_skip = True
-            if should_skip:
-                continue
-
-        if e == ".nc":
-            try:
-                t = no_ext.split("--")[1]
-                t = t[0].upper() + t[1:]
-                t += " Data"
-            except:
-                t = no_ext
-            files.append({"title": t, "url": of})
-        else:
-            files.append({"url": of})
+    files.extend(form_filename(root_name, ["png", "pdf"], descr=True, more_id="combined" if combined else ""))
+    for dataset in ("obs", "ft1", "diff"):
+        files.extend(form_filename(root_name, ["nc"], descr=True, vname="_".join((variable,dataset))))
     return files
+
+
+def filename_to_fileobj(name):
+    if name.endswith(".nc"):
+        data = name[:-3].split("--")[1]
+        data = data[0].upper() + data[1:] + " Data"
+        return {"url": name, "title": data}
+    else:
+        return {"url": name}
 
 # If not specified on an individual variable, this is the default.
 def_executable = 'diags'
@@ -608,8 +592,8 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, data_hash, colls
                                         title = "{var} {addon}".format(var=var, addon=addon_info)
 
                                         for s in coll_def.get("seasons", ["ANN"]):
-                                            fname = get_png_name(collnum, var, obs_set=diags_obslist[o]["filekey"], combined=combined, season=s, var_option=option, region=region)
-                                            f = OutputFile(fname, title="{season}".format(season=s), other_files=get_other_files(fname, outpath))
+                                            files = filenames(collnum, var, obs_set=diags_obslist[o]["filekey"], combined=combined, season=s, var_option=option, region=region)
+                                            f = OutputFile(files[0], title="{season}".format(season=s), other_files=[filename_to_fileobj(f) for f in files[1:]])
                                             columns.append(f)
                                         row = OutputRow(title, columns)
                                         page.addRow(row, obs_index)
@@ -629,8 +613,8 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, data_hash, colls
                                         columns.append("")
 
                                     for s in coll_def.get("seasons", ["ANN"]):
-                                        fname = get_png_name(collnum, var, obs_set=diags_obslist[o]["filekey"], combined=combined, season=s, region=region)
-                                        f = OutputFile(fname, title="{season}".format(season=s), other_files=get_other_files(fname, outpath))
+                                        files = filenames(collnum, var, obs_set=diags_obslist[o]["filekey"], combined=combined, season=s, region=region)
+                                        f = OutputFile(files[0], title="{season}".format(season=s), other_files=[filename_to_fileobj(f) for f in files[1:]])
                                         columns.append(f)
                                     if collnum == "topten":
                                         page.addRow(OutputRow(title, columns), 0)
@@ -638,8 +622,8 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, data_hash, colls
                                         page.addRow(OutputRow(title, columns), obs_index)
                     elif collnum == "2":
                         for var in obsvars[o]:
-                            fname = get_png_name(collnum, var, obs_set=diags_obslist[o]["filekey"], combined=True)
-                            f = OutputFile(fname, title="Plot", other_files=get_other_files(fname, outpath))
+                            files = filenames(collnum, var, obs_set=diags_obslist[o]["filekey"], combined=True)
+                            f = OutputFile(files[0], title="Plot", other_files=[filename_to_fileobj(f) for f in files[1:]])
                             row = OutputRow(var, columns=[f])
                             page.addRow(row, 0)
                     elif collnum == "11":
@@ -649,8 +633,8 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, data_hash, colls
                             else:
                                 group = 1
                             obs = diags_obslist[o]["filekey"]
-                            fname = get_png_name(collnum, var, obs_set=obs)
-                            f = OutputFile(fname, other_files=get_other_files(fname, outpath))
+                            files = filenames(collnum, var, obs_set=obs)
+                            f = OutputFile(files[0], other_files=[filename_to_fileobj(f) for f in files[1:]])
                             row = OutputRow("{var} ({obs})".format(var=var, obs=obs), columns=[f])
                             page.addRow(row, group)
                     elif collnum == "12":
@@ -658,8 +642,8 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, data_hash, colls
                         for region in regions:
                             cols = []
                             for var in ["T", "Q", "H"]:
-                                fname = get_png_name(collnum, var, region=region)
-                                f = OutputFile(fname, other_files=get_other_files(fname, outpath))
+                                files = filenames(collnum, var, region=region)
+                                f = OutputFile(files[0], other_files=[filename_to_fileobj(f) for f in files[1:]])
                                 cols.append(f)
                             row = OutputRow(region, cols)
                             page.addRow(row, 0)
