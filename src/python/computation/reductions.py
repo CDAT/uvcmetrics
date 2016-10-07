@@ -2997,7 +2997,7 @@ class reduced_variable(ftrow,basic_id):
             regs = ''
         else:
             regs = str(region)
-        return basic_id._dict_id( cls, varid, seasonid, regs, ft._strid, ffs )
+        return basic_id._dict_id( cls, varid, seasonid, regs, ft.id().ftid, ffs )
 
     def extract_filefamilyname( self, filename ):
         """From a filename, extracts the first part of the filename as the possible
