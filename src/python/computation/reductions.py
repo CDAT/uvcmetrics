@@ -420,16 +420,12 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
                 # case that mvrs had been regridded to match another filetable!  These asserts helped catch
                 # such situations:
                 if latlon_wts is not None:
-                    try:
-                        if mvrs.getLongitude() is not None and len(mvrs.getLongitude())>0:
-                            assert len(mvrs.getLongitude())==len(latlon_wts.getLongitude())
-                        if mvrs.getLatitude() is not None and len(mvrs.getLatitude())>0:
-                            assert len(mvrs.getLatitude())==len(latlon_wts.getLatitude())
-                        if mvrs.getLevel() is not None and len(mvrs.getLevel())>0:
-                            assert len(mvrs.getLevel())==len(latlon_wts.getLevel())
-                    except Exception as e:
-                        print e
-                        pdb.set_trace() #jfp
+                    if mvrs.getLongitude() is not None and len(mvrs.getLongitude())>0:
+                        assert len(mvrs.getLongitude())==len(latlon_wts.getLongitude())
+                    if mvrs.getLatitude() is not None and len(mvrs.getLatitude())>0:
+                        assert len(mvrs.getLatitude())==len(latlon_wts.getLatitude())
+                    if mvrs.getLevel() is not None and len(mvrs.getLevel())>0:
+                        assert len(mvrs.getLevel())==len(latlon_wts.getLevel())
             else:
                 latlon_wts = weights
             if latlon_wts is None:
@@ -2621,8 +2617,13 @@ def delete_singleton_axis( mv, vid=None ):
             del axes[si]
             break
     if saxis is None: return mv
-    mv = mv(squeeze=1)  # C.D. recommended instead of following; preserves missing values
-    return mv
+    if mv.shape==(1,):
+        # special case because mv(squeeze=1) returns a float, not an MV of shape==() which we want.
+        mvnew = cdms2.createVariable( mv[0], id=mv.id )
+        if hasattr(mv,'units'): mvnew.units = mv.units
+    else:
+        mvnew = mv(squeeze=1)  # C.D. recommended instead of following; preserves missing values
+    return mvnew
     #data = ma.copy( mv.data )
     #if numpy.version.version >= '1.7.0':
     #    data = ma.squeeze( data, axis=si )
