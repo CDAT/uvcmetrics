@@ -197,8 +197,6 @@ class plot_plan(object):
             #print value.id, value.shape
             self.variable_values[v] = value  # could be None
         varvals = self.variable_values
-        print "jfp1 varvals:"
-        pprint( [(v.id,v.shape) for v in varvals.values() if v is not None and type(v) is not str] )
 
         for p, ps in self.single_plotspecs.iteritems():
             logger.info("Plotplan preparing data for %s and %s", ps._strid, ps.plottype)
@@ -409,9 +407,27 @@ class plot_plan(object):
                 zid = [zz.id for zz in z]
             else:
                 zid = z.id
-            logger.debug("No 'mean' attribute in variable %s; we may compute it in compute_plot_var_value.", zid)
+            logger.debug("No 'mean' attribute in variable %s; will try compute it in compute_plot_var_value.", zid)
 
-            set_mean( z, season=getattr(self,'season',None), region=getattr(self,'region',None) )
+            if self._seasonid=='JFMAMJJASOND':
+                seasonid='ANN'
+            else:
+                seasonid=self._seasonid
+            if 'Global' in self.region.id() or '' in self.region.id() or 'global' in self.region.id():
+                region = ''
+            from metrics.computation.reductions import reduced_variable
+            gwid = reduced_variable.IDtuple( classid='rv', var='gw', season=seasonid, region=region,
+                                             ft1=self.ft1nom, ffilt1='' )
+            gw = vvals.get(gwid,None)
+            try:
+                # By this point, variables such as z may have been regridded; but the regridding may not
+                # have been applied to gw.  If so, then it's hard to find compatible gw, so give up.
+                if gw.shape!=z.getLatitude().shape:
+                    gw = None
+            except:
+                gw = None
+
+            set_mean( z, season=getattr(self,'season',None), region=getattr(self,'region',None), gw=gw )
             if hasattr(z,'mean') and isinstance(z.mean,cdms2.tvariable.TransientVariable) and\
                     z.mean.shape==():
                 # ... adding 0.0 converts a numpy array of shape () to an actual number
