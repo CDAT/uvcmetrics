@@ -136,9 +136,33 @@ class plot_plan(object):
         that means a coarser grid, typically from regridding model data to the obs grid.
         In the future regrid>0 will mean regrid everything to the finest grid and regrid<0
         will mean regrid everything to the coarsest grid."""
+
+        # Get gw (latitude Gaussian weights) variables first, if available - everything else may
+        # possibly need it.
+        # Note that the reduced_variables dict could have several gw variables.  Most will be
+        # wrong for this plot - the wrong filetable, or the wrong season, etc.
         for v in self.reduced_variables.keys():
+            if v.var!='gw':
+                continue
             #print v
             value = self.reduced_variables[v].reduce(None)
+            try:
+                if  len(value.data)<=0:
+                    logger.error("No data for %s",v)
+            except: # value.data may not exist, or may not accept len()
+                try:
+                    if value.size<=0:
+                        logger.error("No data for %s",v)
+                except: # value.size may not exist
+                    pass
+            self.variable_values[v] = value  # could be None
+        for v in self.reduced_variables.keys():
+            if v.var=='gw':
+                continue
+            #print v
+            gwid = v._replace(var='gw')
+            gw = self.variable_values.get(gwid,None)
+            value = self.reduced_variables[v].reduce(vid=None,gw=gw)
             try:
                 if  len(value.data)<=0:
                     logger.error("No data for %s",v)

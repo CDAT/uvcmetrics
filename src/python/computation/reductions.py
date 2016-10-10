@@ -192,7 +192,7 @@ def compose( rf1, rf2 ):
         return mv2
     return rf12
 
-def set_spatial_avg_method( var ):
+def obsolete_set_spatial_avg_method( var ):
     # >>> probably obsolete <<<
     """Determines how to compute spatial averages of a variable var.
     Sets the attribute var.weighting to a string specifying how to compute spatial averages.
@@ -268,7 +268,7 @@ def set_mean( mv, season=seasonsyr, region=None, gw=None ):
 
 # -------- end of Miscellaneous  Utilities ---------
 
-def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=None, weights=None, exclude_axes=[] ):
+def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=True, weights=None, exclude_axes=[] ):
     """This is a generic reduction function.  It reduces dimensionality by averaging over all but
     specified axes.  This uses the averager module for greater capabilities
 
@@ -279,7 +279,7 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
     or axis objects.
     Axis names (ids) may be listed in exclude_axes, to exclude them from the averaging process.
 
-    Latitude weights may be provided as 'gw'.  The averager's default is reasonable, however.
+    Latitude weights may be provided as a variable 'gw'.  The averager's default is reasonable, however.
 
     The genutil averager() function performs the averaging.  This normally uses its default
     weighting, which typically is area weights.
@@ -331,6 +331,10 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
         weights = getattr( mv, 'weighting', weighting_choice(mv) )
         if not hasattr(mvrs,'filetable') and hasattr(mv,'filetable'):
             mvrs.filetable = mv.filetable
+    if gw is True:
+        # gw wasn't provided as an argument, but we can get it however we can
+        if hasattr(mv,'diags_gw'):
+            gw = mv.diags_gw
 
     if len(axes_string)<=2:
         avmv = mvrs
@@ -566,13 +570,13 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
     if not hasattr( avmv, 'filetable' ) and hasattr( mv,'filetable' ):
         avmv.filetable = mv.filetable
     avmv.weighting = weights
-    set_mean( avmv )
+    set_mean( avmv, season=season, region=region, gw=gw )
 
     return avmv
 
 
 
-def reduce2scalar_seasonal_zonal( mv, season=seasonsyr, latmin=-90, latmax=90, vid=None, gw=None,
+def reduce2scalar_seasonal_zonal( mv, season=seasonsyr, latmin=-90, latmax=90, vid=None, gw=True,
                                   seasons=seasonsyr):
     """returns the mean of the variable over the supplied latitude range (in degrees).
     The computed quantity is a scalar but is returned as a cdms2 variable, i.e. a MV.
@@ -588,6 +592,10 @@ def reduce2scalar_seasonal_zonal( mv, season=seasonsyr, latmin=-90, latmax=90, v
     # reduce size of lat axis to (latmin,latmax)
     mv2 = mv(latitude=(latmin, latmax))
     if not hasattr( mv2, 'filetable') and hasattr(mv,'filetable'): mv2.filetable = mv.filetable
+    if gw==True:
+        # gw wasn't provided as an argument, but we can get it however we can
+        if hasattr(mv,'diags_gw'):
+            gw = mv.diags_gw
     # reduce size of gw to (latmin,latmax)
     gw2 = None
     if gw is not None:
@@ -600,7 +608,7 @@ def reduce2scalar_seasonal_zonal( mv, season=seasonsyr, latmin=-90, latmax=90, v
     return sclr
 
 def reduce2scalar_seasonal_zonal_level( mv, season=seasonsyr, latmin=-90, latmax=90, level=None,
-                                        vid=None, gw=None, seasons=seasonsyr ):
+                                        vid=None, gw=True, seasons=seasonsyr ):
     """returns the mean of the variable at the supplied level and over the supplied latitude range
     The computed quantity is a scalar but is returned as a cdms2 variable, i.e. a MV.
     The input mv is a cdms2 variable too.  Its level axis *must* have pressure levels in millibars,
@@ -634,7 +642,7 @@ def reduce2scalar_seasonal_zonal_level( mv, season=seasonsyr, latmin=-90, latmax
         return None
     return reduce2scalar_seasonal_zonal( mvl, season, latmin=latmin, latmax=latmax, vid=vid, gw=gw )
 
-def reduce2scalar( mv, vid=None, gw=None, weights=None, season=seasonsyr, region=None ):
+def reduce2scalar( mv, vid=None, gw=True, weights=None, season=seasonsyr, region=None ):
     """averages mv over the full range all axes, to a single scalar.
     Uses the averager module for greater capabilities
     Latitude weights may be provided as 'gw'.  The averager's default is reasonable, however.
@@ -3067,7 +3075,21 @@ class reduced_variable(ftrow,basic_id):
         self.filename = filename
         return filename
 
-    def reduce( self, vid=None ):
+    def reduce_reduction_function( self, *args, **kwargs ):
+        try:
+            return self._reduction_function( *args, **kwargs )
+        except TypeError as e:
+            # can happen if kwargs includes a key not handled by self._reduction_function
+            if 'gw' in kwargs:
+                args[0].diags_gw = kwargs['gw']  # a way to pass gw through if there isn't an argument for it.
+                #  args[0] is a TransientVariable, called 'var' in reduce()
+                kwargs.pop('gw')
+                return self.reduce_reduction_function( *args, **kwargs )
+            else:
+                return None
+
+
+    def reduce( self, vid=None, gw=None ):
         """Finds and opens the files containing data required for the variable,
         Applies the reduction function to the data, and returns an MV.
         When completed, this will treat missing data as such.
@@ -3079,6 +3101,8 @@ class reduced_variable(ftrow,basic_id):
         Along with it may be a dict making available at least the input reduced variables,
         with elements of the form (variable id):(reduced_var object).  There is no check for
         circularity!
+        Latitude Gaussian weights gw may be provided.  They will be passed on to the reduction
+        function and used if appropriate.
         """
 
         from metrics.packages.amwg.derivations.massweighting import weighting_choice
@@ -3151,7 +3175,7 @@ class reduced_variable(ftrow,basic_id):
                 duv_inputs.update( { 'seasonid':self._season.seasons[0] } )
                 # Finally, we can compute the value of this DUV.
                 duv_value = duv.derive( duv_inputs )
-                reduced_data = self._reduction_function( duv_value, vid=vid )
+                reduced_data = self._reduction_function( duv_value, vid=vid, gw=gw )
         else:
             f = cdms2.open( filename )
             self._file_attributes.update(f.attributes)
@@ -3179,13 +3203,13 @@ class reduced_variable(ftrow,basic_id):
                         var.filetable.weights['mass'] = {}
                     if llev>0 and llat>0 and llon>0:
                         var.filetable.weights['mass'][(llev,llat,llon)] = mass_weights(var)
-                reduced_data = self._reduction_function( var, vid=vid )
+                reduced_data = self.reduce_reduction_function( var, vid=vid, gw=gw )
             elif self.variableid in f.axes.keys():
                 taxis = cdms2.createAxis(f[self.variableid])   # converts the FileAxis to a TransientAxis.
                 taxis.id = f[self.variableid].id
                 weighting = weighting_choice(taxis)
                 if not hasattr( taxis, 'filetable'): taxis.filetable = self.filetable
-                reduced_data = self._reduction_function( taxis, vid=vid )
+                reduced_data = self._reduction_function( taxis, vid=vid, gw=gw )
             else:
                 logger.error("Reduce failed to find variable %s in file %s. It did find variables %s and axes %s.",
                              self.variableid, filename, sorted(f.variables.keys()), sorted(f.axes.keys()))
