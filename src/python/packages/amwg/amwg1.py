@@ -12,7 +12,7 @@ from metrics.packages.amwg.derivations.vertical import *
 #get the table row spec for the individual user
 import importlib
 from metrics.frontend.user_identifier import user
-usermodule = importlib.import_module( 'metrics.packages.amwg.table_row_spec_for_'+user )
+usermodule = importlib.import_module( 'metrics.packages.amwg.table_row_spec')#_for_'+user )
 table_row_specs = usermodule.table_row_specs
 from metrics.packages.plotplan import plot_plan
 from metrics.computation.reductions import *
