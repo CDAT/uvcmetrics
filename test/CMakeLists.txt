@@ -130,3 +130,4 @@ ${metrics_SOURCE_DIR}/test/tabletest.py
 --datadir=${UVCMETRICS_TEST_DATA_DIRECTORY}/
 --baseline=${BASELINE_DIR}/ )
 #set_tests_properties(table_test PROPERTIES DEPENDS diags_meta)
+ 
