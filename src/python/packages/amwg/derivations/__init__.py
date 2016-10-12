@@ -1,3 +1,4 @@
+
 from oaht import *
 from ncl_isms import *
 from package_version import *
@@ -9,6 +10,7 @@ from masks import *
 from set13 import *
 from simple_vars import *
 from clouds import *
+from heat import *
 from WC_diag_amwg import *
 import WC_diag_amwg
 

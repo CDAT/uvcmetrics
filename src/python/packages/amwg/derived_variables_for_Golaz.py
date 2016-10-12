@@ -246,12 +246,12 @@ user_derived_variables = {
     # e.g. LHFLX (latent heat flux in W/m^2) vs. QFLX (evaporation in mm/day).
     # The conversion functions are defined in qflx_lhflx_conversions.py.
     # [SMB: 25 Feb 2015]
-    'LHFLX':[derived_var(
-            vid='LHFLX', inputs=['QFLX'], outputs=['LHFLX'],
-            func=(lambda x: x) ) ],
-    'QFLX':[derived_var(
-            vid='QFLX', inputs=['LHFLX'], outputs=['QFLX'],
-            func=(lambda x: x) ) ],
+    #'LHFLX':[derived_var(
+    #        vid='LHFLX', inputs=['QFLX'], outputs=['LHFLX'],
+    #        func=(lambda x: x) ) ],
+    #'QFLX':[derived_var(
+    #        vid='QFLX', inputs=['LHFLX'], outputs=['QFLX'],
+    #        func=(lambda x: x) ) ],
 
     #added for Chris Golaz
     'SHFLX_OCN':[derived_var(   #this one must come first
@@ -271,5 +271,18 @@ user_derived_variables = {
             func=(lambda x, y: ocean_only(x,y)) ),                
                 derived_var(    #rename FLNS
             vid='FLNS', inputs=['FLNS'], outputs=['FLNS_OCN'],
-            func=(lambda x: x) )]                            
+            func=(lambda x: x) )],
+    'LHFLX_COMPUTED':[derived_var(
+            vid='LHFLX_COMPUTED', inputs=[ 'QFLX', 'PRECC', 'PRECL', 'PRECSC', 'PRECSL' ],
+            outputs=['LHFLX_COMPUTED'],
+            func=heat.qflx_prec_2lhflx ),
+                      derived_var(
+            vid='LHFLX_COMPUTED', inputs=['QFLX'],  outputs=['LHFLX_COMPUTED'],
+            func=heat.qflx_2lhflx ),
+                      derived_var(
+            vid='LHFLX_COMPUTED', inputs=['LHFLX'], outputs=['LHFLX_COMPUTED'],
+            func=(lambda x: x)) ],
+    'LHFLX':[derived_var(
+            vid='LHFLX', inputs=['LHFLX_COMPUTED'], outputs=['LHFLX'],
+            func=(lambda x: x)) ]
     }

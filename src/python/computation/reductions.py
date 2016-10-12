@@ -259,8 +259,8 @@ def set_mean( mv, season=seasonsyr, region=None, gw=None ):
         logger.warning("Mean for %s was computed as %s but the min and max values are %s, %s!",
                        mv.id,mv.mean,mv.min(),mv.max())
     if hasattr(mv,'mean'):
-        # It's useful to have a "_mean attribute because it isn't transmitted through calculations.
-        # Such transmissions are usually wrong.
+        # It's useful to have a :_mean attribute because it isn't transmitted through calculations
+        # like the :mean attribute.  Such transmissions are usually wrong.
         # However VCS looks for a :mean attribute, so we need that too.
         mv._mean = mv.mean
 
@@ -2192,9 +2192,13 @@ def aminusb_ax2( mv1, mv2 ):
     if len(axes1[1])<=len(axes2[1]):
         a = mv1
         b = interp2( axes1[1], mv2 )
+        b.mean = None
+        set_mean(b)
         ab_axes.append(axes1[1])
     else:
         a = interp2( axes2[1], mv1 )
+        a.mean = None
+        set_mean(a)
         b = mv2
         ab_axes.append(axes2[1])
     aminusb = a - b
@@ -2211,11 +2215,15 @@ def aminusb_ax2( mv1, mv2 ):
 
 
 def convert_units(mv, units):
+   """Returns a new variable like mv but with the specified units"""
+   print "entering convert_units",mv.id,mv.units,units
    if type(mv) == float:
       return mv
    if not hasattr(mv,'units') and hasattr(mv,'lunits'):
        # Fix an apparent typo in two variables in CERES-EBAF data
        mv.units = mv.lunits
+   fix_troublesome_units(mv)
+   adhoc_convert_units( mv, units )
    if not hasattr(mv, 'units'):
       mv.units = '1'
    if mv.units == units or mv.units == 'none':
@@ -2242,6 +2250,48 @@ def convert_units(mv, units):
          mv.id = mvid
    mv.units = units
    return mv
+
+def fix_troublesome_units( mv ):
+    """This handles many special cases where a variable mv has units which are not understood
+    by udunits or otherwise troublesome.  It replaces the units with ones which work better."""
+        # Very ad-hoc, but more general would be less safe:
+        # BES - set 3 does not seem to call it rv_QFLX. It is set3_QFLX_ft0_climos, so make this just a substring search
+    if not hasattr(mv,'units'):
+        return mv
+    if mv.units == "gpm":
+        mv.units="m"
+    if mv.units=='mb':
+        mv.units = 'mbar' # udunits uses mb for something else
+    if mv.units=='mb/day':
+        mv.units = 'mbar/day' # udunits uses mb for something else
+    if mv.units == '(0 - 1)': # as in ERAI obs
+        mv.units = '1'
+    if mv.units == '(0-1)':   # as in ERAI obs
+        mv.units = '1'
+    if mv.units == 'fraction' or mv.units=='dimensionless':
+        mv.units = '1'
+    if mv.units == 'mixed':  # could mean anything...
+        mv.units = '1'       #... maybe this will work
+    if mv.units == 'unitless':  # could mean anything...
+        mv.units = '1'       #... maybe this will work
+    if mv.units == 'W/m~S~2~N~' or mv.units == 'W/m~S~2~N':
+        mv.units = 'W/m^2'
+    return mv
+
+def adhoc_convert_units( mv, units ):
+    """Some ad-hoc units conversions"""
+    if not hasattr(mv,'units'):
+        return mv
+    if mv.units =='fraction' and (units == 'percent' or units == '%'):
+        mv = 100*mv
+        mv.units=units
+    if mv.units=='kg/m2' and units=='mm':
+        mv.units = 'mm' # [if 1 kg = 10^6 mm^3 as for water]
+    if mv.units[0:7]=='kg/(m^2' and units[0:3]=='mm/':
+        mv.units = 'mm/('+mv.units[7:] # [if 1 kg = 10^6 mm^3 as for water]
+    if mv.units[0:3]=='mm/' and units[0:8]=='kg/(m^2 ':
+        mv.units = 'kg/(m^2 '+mv.units[3:]+')' # [if 1 kg = 10^6 mm^3 as for water]
+    return mv
 
 def reconcile_units( mv1, mv2, preferred_units=None ):
     """Changes the units of variables (instances of TransientVariable) mv1,mv2 to be the same,
@@ -2277,57 +2327,10 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
     # delete the above lines which set it to a default value.
     if hasattr(mv1,'units') and hasattr(mv2,'units') and\
             (preferred_units is not None or mv1.units!=mv2.units):
-        # Very ad-hoc, but more general would be less safe:
-        # BES - set 3 does not seem to call it rv_QFLX. It is set3_QFLX_ft0_climos, so make this just a substring search
-        if mv1.units == "gpm":
-            mv1.units="m"
-        if mv2.units == "gpm":
-            mv2.units="m"
-        if mv1.units=='mb':
-            mv1.units = 'mbar' # udunits uses mb for something else
-        if mv2.units=='mb':
-            mv2.units = 'mbar' # udunits uses mb for something else
-        if mv1.units=='mb/day':
-            mv1.units = 'mbar/day' # udunits uses mb for something else
-        if mv2.units=='mb/day':
-            mv2.units = 'mbar/day' # udunits uses mb for something else
-        if mv1.units == '(0 - 1)': # as in ERAI obs
-            mv1.units = '1'
-        if mv1.units == '(0-1)':   # as in ERAI obs
-            mv1.units = '1'
-        if mv2.units == '(0 - 1)': # as in ERAI obs
-            mv2.units = '1'
-        if mv2.units == '(0-1)':   # as in ERAI obs
-            mv2.units = '1'
-        if mv1.units == 'fraction' or mv1.units=='dimensionless':
-            mv1.units = '1'
-        if mv2.units == 'fraction' or mv2.units=='dimensionless':
-            mv2.units = '1'
-        if mv1.units == 'mixed':  # could mean anything...
-            mv1.units = '1'       #... maybe this will work
-        if mv2.units == 'mixed':  # could mean anything...
-            mv2.units = '1'       #... maybe this will work
-        if mv1.units == 'unitless':  # could mean anything...
-            mv1.units = '1'       #... maybe this will work
-        if mv2.units == 'unitless':  # could mean anything...
-            mv2.units = '1'       #... maybe this will work
-        if mv1.units == 'W/m~S~2~N~' or mv1.units == 'W/m~S~2~N':
-            mv1.units = 'W/m^2'
-        if mv2.units == 'W/m~S~2~N~' or mv2.units == 'W/m~S~2~N':
-            mv2.units = 'W/m^2'
-        if mv1.units =='fraction' and (mv2.units == 'percent' or mv2.units == '%'):
-            mv1 = 100*mv1
-            mv1.units=mv2.units
-            return mv1, mv2
-        if mv2.units =='fraction' and (mv1.units == 'percent' or mv1.units == '%'):
-            mv2 = 100*mv2
-            mv2.units=mv1.units
-            return mv1, mv2
-        if mv1.units=='kg/m2' and mv2.units=='mm':
-            mv1.units = 'mm' # [if 1 kg = 10^6 mm^3 as for water]
-        if mv2.units=='kg/m2' and mv1.units=='mm':
-            mv2.units = 'mm' # [if 1 kg = 10^6 mm^3 as for water]
-
+        fix_troublesome_units( mv1 )
+        fix_troublesome_units( mv2 )
+        adhoc_convert_units( mv1, mv2.units )
+        adhoc_convert_units( mv2, mv1.units )
 
         if preferred_units is None:
             # Look for whichever of mv1.units, mv2.units gives numbers more O(1).
@@ -2491,7 +2494,10 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
                              [a[0].id for a in mv1._TransientVariable__domain], len(axes1[0]), len(axes1[1]),
                              [a[0].id for a in mv2._TransientVariable__domain], len(axes2[0]), len(axes2[1]))
                 raise Exception("when regridding mv2 to mv1, failed to get or generate a grid for mv1")
-            mv2new = mv2.regrid(grid1)
+            mv1new = mv1.regrid(grid2,regridTool="libcf",regridMethod="linear")  # this is linear regridding, like AMWG.
+            mv2new.mean = None
+            set_mean(mv2new)
+            mv2new.filetable = mv2.filetable
             mv2.regridded = mv2new.id   # a GUI can use this
             regridded_vars[mv2new.id] = mv2new
 #        else:
@@ -2516,7 +2522,10 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
                              [a[0].id for a in mv1._TransientVariable__domain], len(axes1[0]), len(axes1[1]),
                              [a[0].id for a in mv2._TransientVariable__domain], len(axes2[0]), len(axes2[1]))
                 raise Exception("when regridding mv1 to mv2, failed to get or generate a grid for mv2")
-            mv1new = mv1.regrid(grid2,regridTool="regrid2")
+            mv1new = mv1.regrid(grid2,regridTool="libcf",regridMethod="linear")  # this is linear regridding, like AMWG.
+            mv1new.mean = None
+            set_mean(mv1new)
+            mv1new.filetable = mv1.filetable
             mv1.regridded = mv1new.id   # a GUI can use this
             regridded_vars[mv1new.id] = mv1new
     aminusb = mv1new - mv2new
@@ -2534,7 +2543,6 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
 
 def mean_of_diff( aminusb, mv1, mv2, recursive=False ):
     """Sets aminusb.mean = mv1.mean - mv2.mean if it makes sense."""
-    # This is likely to be wrong if mv1, mv2 are differently masked!!!
     if hasattr(mv1,'mean') and hasattr(mv2,'mean'):
         # Note that mv1,mv2 will initially have a mean attribute which is a Numpy method.
         # We only need to compute a new mean if the mean attribute has been changed to a number.

@@ -542,7 +542,7 @@ class amwg_plot_set5(amwg_plot_plan):
             else:
                 ft1 = None
             if False:
-                # unfinished; this late in the game gw may be the wrong shape; see my notes 2016.10.07.
+                # unfinished; this late in the game gw may be the wrong shape, due to regridding; see my notes 2016.10.07.
                 gwid = reduced_variable.IDtuple( classid='rv', var='gw', season=season, region=region, ft1=ft1, ffilt1='' )
                 gw_rv = self.reduced_variables.get(gwid,None)
                 if gw_rv is None:
