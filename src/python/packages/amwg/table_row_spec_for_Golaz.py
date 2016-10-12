@@ -7,17 +7,20 @@
     #   obsprint obs name to be printed (default is obs)
     #   units units of the output quantity (default is same as the input files)
 
+#this is a dummy table for testing
+table_row_specs = [{ 'var':'TMQ', 'obs':'NVAP'}]#{'var':'SST', 'obs':'HadISST_CI'}, { 'var':'TS', 'obs':'NCEP'},{ 'var':'RESTOM'},{ 'var':'RESSURF'}]
+
 table_row_specs = [
     { 'var':'RESTOM'},
     { 'var':'RESSURF'},
     { 'var':'RESTOA', 'obs':'CERES-EBAF'},
     #obsolete { 'var':'RESTOA', 'obs':'ERBE'},
-    { 'var':'SOLIN', 'obs':'CERES-EBAF'},
+    #{ 'var':'SOLIN', 'obs':'CERES-EBAF'},
     #obsolete { 'var':'SOLIN', 'obs':'CERES'},
-    { 'var':'CLDTOT', 'obs':'ISCCP', 'units':'percent' },
-    { 'var':'CLDTOT', 'obs':'CLOUDSAT', 'units':'percent' },
-    { 'var':'FLDS', 'obs':'ISCCPFD', 'obsprint':'ISCCP'},
-    { 'var':'FLNS', 'obs':'ISCCPFD', 'obsprint':'ISCCP'},
+    #{ 'var':'CLDTOT', 'obs':'ISCCP', 'units':'percent' },
+    #{ 'var':'CLDTOT', 'obs':'CLOUDSAT', 'units':'percent' },
+    #{ 'var':'FLDS', 'obs':'ISCCPFD', 'obsprint':'ISCCP'},
+    #{ 'var':'FLNS', 'obs':'ISCCPFD', 'obsprint':'ISCCP'},
     { 'var':'FLUT', 'obs':'CERES-EBAF'},
     #obsolete { 'var':'FLUT', 'obs':'CERES'},
     #obsolete { 'var':'FLUT', 'obs':'ERBE'},
@@ -34,7 +37,7 @@ table_row_specs = [
     { 'var':'FSNTOAC', 'obs':'CERES-EBAF'},
     #obsolete { 'var':'FSNTOAC', 'obs':'CERES'},
     #obsolete { 'var':'FSNTOAC', 'obs':'ERBE'},
-    { 'var':'FSNT', 'obs':'CAM'},
+    #{ 'var':'FSNT', 'obs':'CAM'},
     { 'var':'LHFLX', 'obs':'JRA25'},
     { 'var':'LHFLX', 'obs':'ERA40'},
     { 'var':'LHFLX', 'obs':'WHOI'},
@@ -42,19 +45,19 @@ table_row_specs = [
     #obsolete { 'var':'LWCF', 'obs':'CERES'},
     #obsolete { 'var':'LWCF', 'obs':'ERBE'},
     { 'var':'PRECT', 'obs':'GPCP'},
-    { 'var':'TMQ', 'obs':'NVAP'},
+    #{ 'var':'TMQ', 'obs':'NVAP'},
     #{ 'var':'TMQ', 'obs':'AIRS'},
-    { 'var':'TMQ', 'obs':'JRA25'},
+    #{ 'var':'TMQ', 'obs':'JRA25'},
     #{ 'var':'TMQ', 'obs':'ERAI'},
-    { 'var':'TMQ', 'obs':'ERA40'},
+    #{ 'var':'TMQ', 'obs':'ERA40'},
     { 'var':'PSL', 'obs':'JRA25', 'units':'millibar' },
     { 'var':'PSL', 'obs':'ERAI', 'units':'millibar' },
     { 'var':'SHFLX', 'obs':'JRA25'},
     { 'var':'SHFLX', 'obs':'NCEP'},
     { 'var':'SHFLX', 'obs':'LARYEA'},
-    { 'var':'STRESS_MAG', 'obs':'ERS'},
-    { 'var':'STRESS_MAG', 'obs':'LARYEA'},
-    { 'var':'STRESS_MAG', 'obs':'JRA25'},
+    #{ 'var':'STRESS_MAG', 'obs':'ERS'},
+    #{ 'var':'STRESS_MAG', 'obs':'LARYEA'},
+    #{ 'var':'STRESS_MAG', 'obs':'JRA25'},
     { 'var':'SWCF', 'obs':'CERES-EBAF'},
     #obsolete { 'var':'SWCF', 'obs':'CERES'},
     #obsolete { 'var':'SWCF', 'obs':'ERBE'},
@@ -66,11 +69,9 @@ table_row_specs = [
     { 'var':'TREFHT', 'obs':'LEGATES'},
     { 'var':'TREFHT', 'obs':'JRA25'},
     { 'var':'TS', 'obs':'NCEP'},
-    { 'var':'TS_LAND', 'obs':'NCEP'},
+    #{ 'var':'TS_LAND', 'obs':'NCEP'},
     { 'var':'U', 'obs':'JRA25', 'lev':'200'},
     { 'var':'U', 'obs':'NCEP', 'lev':'200'},
     { 'var':'Z3', 'obs':'JRA25', 'lev':'500', 'units':'hectometer'},
     { 'var':'Z3', 'obs':'NCEP', 'lev':'500', 'units':'hectometer'}
     ]
-#this is a dummy table for testing
-#table_row_specs = [{'var':'SST', 'obs':'HadISST_CI'}, { 'var':'TS', 'obs':'NCEP'},{ 'var':'RESTOM'},{ 'var':'RESSURF'}]

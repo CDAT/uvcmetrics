@@ -12,7 +12,8 @@ from metrics.packages.amwg.derivations.vertical import *
 #get the table row spec for the individual user
 import importlib
 from metrics.frontend.user_identifier import user
-usermodule = importlib.import_module( 'metrics.packages.amwg.table_row_spec')#_for_'+user )
+user = 'table_test'
+usermodule = importlib.import_module( 'metrics.packages.amwg.table_row_spec_for_'+user )
 table_row_specs = usermodule.table_row_specs
 from metrics.packages.plotplan import plot_plan
 from metrics.computation.reductions import *
@@ -311,7 +312,7 @@ class Row:
         from metrics.graphics.default_levels import default_levels
         from metrics.computation.units import convert_variable
         from metrics.computation.compute_rmse import compute_rmse
-        #pdb.set_trace()
+        pdb.set_trace()
 
         variable_values = { }
         for key, rv in self.reduced_variables.items():
@@ -460,6 +461,7 @@ class amwg_plot_set1(amwg_plot_plan):
             #execute all rows
             for spec in table_row_specs:
                 #if spec['var']!='SHFLX': continue # <<<<< for temporary testing <<<<
+                print spec
                 obs = spec.get('obs', None)
                 row = Row(  filetable1, filetable2,
                             seasonid=seasonid, region=region, var=spec['var'],

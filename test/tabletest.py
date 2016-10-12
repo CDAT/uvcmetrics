@@ -26,7 +26,8 @@ if 'rebaseline' in dir(args):
     rebaseline = args.rebaseline
     
 #run this from command line to get the files required
-command = 'diags --package AMWG  --set 1 --seasons ANN --model path=%s/cam35_data/  --obs path=%s/obs_for_diagnostics/,climos=yes  --outputdir %s '%(datadir, datadir, outpath)
+#command = 'diags --package AMWG  --set 1 --seasons ANN --model path=%s/cam35_data/  --obs path=%s/obs_for_diagnostics/,climos=yes  --outputdir %s '%(datadir, datadir, outpath)
+command = 'diags --package AMWG  --set 1 --seasons ANN --model path=%s/table_reference/  --obs path=%s/obs_for_diagnostics/,climos=yes  --outputdir %s '%(datadir, datadir, outpath)
 print command
 
 #run the command
