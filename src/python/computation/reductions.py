@@ -384,7 +384,7 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Tru
                     newllat = [k[1] for k in mvrs.filetable.weights['mass'] if k[0]==llev and k[2]==llon][0]
                     latlon_wts = mvrs.filetable.weights['mass'][(llev,newllat,llon)]
                     # ... array of shape (lev,lat,lon); the sum over latitudes will happen later.
-                elif 'mass' in mvrs.filetable.weights and lat is None and\
+                elif 'mass' in mvrs.filetable.weights and lev is None and\
                         llat in [k[1] for k in mvrs.filetable.weights['mass'].keys()] and\
                         llon in [k[2] for k in mvrs.filetable.weights['mass'].keys()]:
                     # No lev.  Get weights with lev (and the same lat,lon), and sum over lev.
@@ -412,6 +412,8 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Tru
                         # and mvrs doesn't have the three axes needed to compute mass weights.
                         # When this happens, it means that we have to do more work someplace, to
                         # make it possible to compute mass weights.
+                        # This currently happens in plot sets 4 and 4a, where the variable to be plotted
+                        # lives on a hybrid of the model and obs grids.  Suitable mass weights don't exist.
                         logger.warning("Cannot compute mass weights for %s",
                                        getattr(mvrs,'id',getattr(mvrs,'_id','unknown')))
                         latlon_wts = None
