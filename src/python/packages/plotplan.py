@@ -142,7 +142,9 @@ class plot_plan(object):
         # Note that the reduced_variables dict could have several gw variables.  Most will be
         # wrong for this plot - the wrong filetable, or the wrong season, etc.
         for v in self.reduced_variables.keys():
-            if v.var!='gw':
+            # v is normally a reduced_variable_ID (a named tuple) but for backwards compatibility
+            # we also have to support type(v)==str.
+            if v!='gw' and getattr(v,'var',None)!='gw':  
                 continue
             #print v
             value = self.reduced_variables[v].reduce(None)
@@ -157,10 +159,15 @@ class plot_plan(object):
                     pass
             self.variable_values[v] = value  # could be None
         for v in self.reduced_variables.keys():
-            if v.var=='gw':
+            # v is normally a reduced_variable_ID (a named tuple) but for backwards compatibility
+            # we also have to support type(v)==str.
+            if v=='gw' or getattr(v,'var',None)=='gw':  
                 continue
             #print v
-            gwid = v._replace(var='gw')
+            if type(v) is str:
+                gwid = 'gw'
+            else:
+                gwid = v._replace(var='gw')
             gw = self.variable_values.get(gwid,None)
             value = self.reduced_variables[v].reduce(vid=None,gw=gw)
             try:
@@ -282,6 +289,7 @@ class plot_plan(object):
                 title = ' '.join(labels)+' '+self._season_displayid  # do this better later
                 title1 = title
                 title2 = title
+            file_descr = getattr( ps, 'file_descr', None )
                 
             #process the ranges if present
             zrange = ps.zrangevars
@@ -340,7 +348,8 @@ class plot_plan(object):
             else:
                 plot_type_temp = ps.plottype
             self.plotspec_values[p] = uvc_simple_plotspec(
-                vars, plot_type_temp, labels, title, title1, title2, ps.source, ranges, overplotline, linetypes,
+                vars, plot_type_temp, labels, title, title1, title2, file_descr,
+                ps.source, ranges, overplotline, linetypes,
                 linecolors, levels=levels, more_id=more_id, plotparms=plotparms, idinfo={
                     'vars':[getattr(self,'varid','')],'season':self._seasonid, 'region':regionid,
                     'ft1':getattr(self,'ft1nom',''), 'ft2':getattr(self,'ft2nom',''),
@@ -387,7 +396,8 @@ class plot_plan(object):
         zrv = [ vvals[k] for k in zvars ]
 
         if any([a is None for a in zrv]):
-            logger.warning("Cannot compute plot results from zvars=%s\nbecause missing results for %s", ps.zvars, [k for k in ps.zvars if vvals[k] is None])
+            logger.warning("Cannot compute plot results from zvars=%s\nbecause missing results for %s",
+                           zvars, [k for k in zvars if vvals[k] is None])
             return None, None
         z = apply(zfunc, zrv)
         if hasattr(z, 'mask') and z.mask.all():
@@ -413,11 +423,12 @@ class plot_plan(object):
                 seasonid='ANN'
             else:
                 seasonid=self._seasonid
-            if 'Global' in self.region.id() or '' in self.region.id() or 'global' in self.region.id():
+            if not hasattr(self,'region') or 'Global' in self.region.id() or '' in self.region.id()\
+                    or 'global' in self.region.id():   # region.id() looks like ('rg', 'region name')
                 region = ''
             from metrics.computation.reductions import reduced_variable
             gwid = reduced_variable.IDtuple( classid='rv', var='gw', season=seasonid, region=region,
-                                             ft1=self.ft1nom, ffilt1='' )
+                                             ft1=getattr(self,'ft1nom',''), ffilt1='' )
             gw = vvals.get(gwid,None)
             try:
                 # By this point, variables such as z may have been regridded; but the regridding may not
