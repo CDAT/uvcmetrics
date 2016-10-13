@@ -1,4 +1,4 @@
-import logging, os
+import logging, os, pdb
 logger = logging.getLogger(__name__)
 from metrics.common.utilities import underscore_join
 
@@ -17,7 +17,10 @@ What this function returns depends on what fmt is.
 """
     if more_id is None: more_id=''
     if descr is not True:
-        fnamedot = '-'.join([rootname,more_id,descr]) + '.'
+        if descr=='':
+            fnamedot = '-'.join([rootname,more_id]) + '.'
+        else:
+            fnamedot = '-'.join([rootname,more_id,descr]) + '.'
         if type(fmt) is str:
             return fnamedot + fmt
         else:
