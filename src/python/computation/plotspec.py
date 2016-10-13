@@ -166,6 +166,7 @@ class plotspec(basic_id):
         title = None,
         title1 = None,
         title2 = None,
+        file_descr = None, # 'descr' field for forming a filename
         source = '',
         overplotline = False,
         levels = None,  # deprecated
@@ -257,6 +258,8 @@ class plotspec(basic_id):
             self.title1 = title1
         if title2 is not None:
             self.title2 = title2
+        if file_descr is not None:
+            self.file_descr = file_descr
         self.source = source
         self.overplotline = overplotline
         self.levels = levels
