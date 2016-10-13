@@ -144,6 +144,7 @@ class amwg_plot_set5(amwg_plot_plan):
                     title = ' '.join([varnom, seasonid, 'model']),
                     title1 = ' '.join([varnom, seasonid, 'model']),
                     title2 = 'model',
+                    file_descr = 'model',
                     source = names['model'], 
                     plotparms = plotparms[src2modobs(ft1src)])
                 all_plotnames.append(self.plot1_id)
@@ -156,6 +157,7 @@ class amwg_plot_set5(amwg_plot_plan):
                     title = ' '.join([varnom, seasonid, 'model variance']),
                     title1 = ' '.join([varnom, seasonid, 'model variance']),
                     title2 = 'model variance',
+                    file_descr = 'model variance',
                     source = names['model'],
                     plotparms = plotparms[src2modobs(ft1src)] )
                 all_plotnames.append(self.plot1var_id)
@@ -168,6 +170,7 @@ class amwg_plot_set5(amwg_plot_plan):
                 title = ' '.join([varnom, seasonid, 'obs']),
                 title1 = ' '.join([varnom, seasonid, 'obs']),
                 title2 = "observation",
+                file_descr = "obs",
                 source = names['obs'], 
                 plotparms = plotparms[src2obsmod(ft2src)] )
             all_plotnames.append(self.plot2_id)
@@ -180,6 +183,7 @@ class amwg_plot_set5(amwg_plot_plan):
                 title = ' '.join([varnom, seasonid, 'difference']),
                 title1 = ' '.join([varnom, seasonid, 'difference']),
                 title2 = 'difference',
+                file_descr = 'diff',
                 plotparms = plotparms['diff'] )
             all_plotnames.append(self.plot3_id)
 
@@ -282,6 +286,7 @@ class amwg_plot_set5(amwg_plot_plan):
                 title = ' '.join([varstr, seasonid, 'model', names['model']]),
                 title1 = ' '.join([varstr, seasonid, 'model', names['model']]),
                 title2 = 'model',
+                file_descr = 'model',
                 source = names['model'],
                 plotparms = plotparms[src2modobs(ft1src)] ) }
            
@@ -347,6 +352,7 @@ class amwg_plot_set5(amwg_plot_plan):
                 title = ' '.join([varstr,seasonid,'observation',names['obs']]),
                 title1 = ' '.join([varstr, seasonid, 'observation',names['obs']]),
                 title2 = 'observation',
+                file_descr = 'obs',
                 source = names['obs'],
                 plotparms = plotparms[src2obsmod(ft2src)] )
         self.single_plotspecs[self.plot3_id] = plotspec(
@@ -357,6 +363,7 @@ class amwg_plot_set5(amwg_plot_plan):
                 title = ' '.join([varstr,seasonid,'difference']),
                 title1 = ' '.join([varstr, seasonid, 'difference']),
                 title2 = 'difference',
+                file_descr = 'diff',
                 plotparms = plotparms['diff'] )
 #                zerocontour=-1 )
         self.composite_plotspecs = {

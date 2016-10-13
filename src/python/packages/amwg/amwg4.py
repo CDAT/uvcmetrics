@@ -143,18 +143,21 @@ class amwg_plot_set4and4A(amwg_plot_plan):
                 vid = ps.dict_idid(vid1), zvars=[vid1], zfunc=(lambda z: z),
                 plottype = self.plottype,
                 title = ' '.join([varid,seasonid,'(1)']),
+                file_descr = 'model',
                 source = ft1src,
                 plotparms = plotparms[src2modobs(ft1src)] ),
             self.plot2_id: plotspec(
                 vid = ps.dict_idid(vid2), zvars=[vid2], zfunc=(lambda z: z),
                 plottype = self.plottype,
                 title = ' '.join([varid,seasonid,'(2)']),
+                file_descr = 'obs',
                 source = ft2src,
                 plotparms = plotparms[src2obsmod(ft2src)] ),
             self.plot3_id: plotspec(
                 vid = ps.dict_id(varid,'diff',seasonid,filetable1,filetable2), zvars=[vid1,vid2],
                 zfunc=aminusb_2ax, plottype = self.plottype,
                 title = ' '.join([varid,seasonid,'(1)-(2)']),
+                file_descr = 'diff',
                 source = ', '.join([ft1src,ft2src]),
                 plotparms = plotparms['diff'] )
             }

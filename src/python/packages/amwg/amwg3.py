@@ -318,11 +318,13 @@ class amwg_plot_set3(amwg_plot_plan,basic_id):
             #title=' '.join([self._id[0],self._id[1],self._id[2],zunam,'and',z2unam]),
             title1 = ' '.join([self._id.classid,self._id.var,self._id.season,self._id.region]),
             title2 = ' '.join([self._id.classid,self._id.var,self._id.season,self._id.region]),
+            file_descr = 'model',  # actaully obs too
             source = ','.join([ft1src,ft2src] ))
         plot_b_val = uvc_plotspec(
             [v for v in [zdiffval] if v is not None],'Yxvsx', labels=['difference'],
             title1=' '.join([self._id.classid,self._id.var,self._id.season,self._id.region,'difference']),
             title2="difference",
+            file_descr = 'diff',
             source = ','.join([ft1src,ft2src] ))
         # no, we don't want same range for values & difference! plot_a_val.synchronize_ranges(plot_b_val)
         plot_a_val.finalize()
