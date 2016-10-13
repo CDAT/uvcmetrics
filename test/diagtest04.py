@@ -2,7 +2,7 @@
 """" In this file the inputs for the test are defined and passed to diags_test.execute"""
 
 import diags_test
-from metrics.packages.amwg.amwg import amwg_plot_set4
+from metrics.packages.amwg.amwg4 import amwg_plot_set4
 
 print amwg_plot_set4.name
 
@@ -25,7 +25,7 @@ imagefilename = 'figure-set4_Global_ANN_T_plot-combined.png'
 imagethreshold = None
 ncfiles = {}
 ncfiles['figure-set4_Global_ANN_T_plot--model.nc'] = ['dv_T_levlat_ANN_ft1_cam35_data_smaller_model']
-ncfiles['figure-set4_Global_ANN_T_plot--obs.nc'] = ['rv_T_ANN_ft2_NCEP']
+ncfiles['figure-set4_Global_ANN_T_plot--obs.nc'] = ['rv_T_ANN_NCEP']
 
 # Test of NetCDF data (nc) file match:
 rtol = 1.0e-3
