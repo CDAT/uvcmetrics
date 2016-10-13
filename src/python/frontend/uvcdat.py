@@ -218,7 +218,8 @@ class uvc_simple_plotspec(basic_id):
     IDtuple = namedtuple( "uvc_plotspec_ID", "classid vars varmod season ft1 ft2 ft1nn ft2nn region" )
 
     def __init__(
-        self, pvars, presentation, labels=[], title='', title1='', title2='', source='', ranges=None, overplotline=False,
+        self, pvars, presentation, labels=[], title='', title1='', title2='', file_descr= None,
+        source='', ranges=None, overplotline=False,
         linetypes=['solid'], linecolors=[241], levels=None, plotparms=None, displayunits=None,
         more_id=None, idinfo={}, varvals={} ):
 
@@ -272,6 +273,8 @@ class uvc_simple_plotspec(basic_id):
         self.title = title   # deprecated
         self.title1 = title1
         self.title2 = title2
+        if file_descr is not None:
+            self.file_descr = file_descr
         self.source = source
         self.type = ptype
         self.ptype = ptype
@@ -833,11 +836,25 @@ class uvc_simple_plotspec(basic_id):
             else:
                 # Incomplete filename.  We may need to extract the final bits from a variable name.
                 if type(self.vars[0]) is tuple:  # typically, a vector plot
-                    varn = self.vars[0][0].id
+                    var0 = self.vars[0][0]
                 else:
-                    varn = self.vars[0].id
+                    var0 = self.vars[0]
+                #varn = var0.id
+                #try:
+                #    if hasattr( var0, '_filetableid' ):
+                #        filetableid = var0._filetableid
+                #    elif hasattr( var0, 'filetableid' ):
+                #        filetableid = var0.filetableid
+                #    else:
+                #        filetableid = var0.filetable.id()
+                #    descr = filetableid.nickname
+                #except:
+                #    descr = True
+                descr = getattr(self,'file_descr',getattr(self,'title2',True))
+                if descr[0:3]=='obs': descr='obs'
+                if descr[0:4]=='diff': descr='diff'
                 if len(self.vars)>1:  where = where+'-combined'
-                return form_filename( where, 'nc', True, self.vars[0].id, more_id=self.more_id )
+                return form_filename( where, 'nc', descr, self.vars[0].id, more_id=self.more_id )
         elif len(self.title)<=0:
             fname = 'foo.nc'
         else:
@@ -882,6 +899,7 @@ class uvc_simple_plotspec(basic_id):
             except:
                 pass
             try:
+                zax._filetableid= zax.filetableid  # and the named tuple ids aren't writeable as such
                 zax.filetableid= str(zax.filetableid)  # and the named tuple ids aren't writeable as such
             except:
                 pass
