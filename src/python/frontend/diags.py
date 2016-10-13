@@ -356,7 +356,7 @@ def run_diags( opts ):
                                                              'diff':{'levels':opts['difflevels'], 'colormap':opts['colormaps']['diff']} } )
                         
                         # Do the work (reducing variables, etc)
-                        res = plot.compute(newgrid=-1) # newgrid=0 for original grid, -1 for coarse
+                        res = plot.compute(newgrid=0) # newgrid=0 for original grid, -1 for coarse
                         # typically res is a list of uvc_simple_plotspec.  But an item might be a tuple.
 
                         if res is not None and len(res)>0 and type(res) is not str: # Success, we have some plots to plot
@@ -558,7 +558,13 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
                 #### seasons/vars/setnames/varopts/etc used to create the plot. Otherwise, there is no
                 #### way for classic viewer to know the filename without lots more special casing. 
 
-                fnamepng,fnamesvg,fnamepdf = form_filename( frnamebase, ('png','svg','pdf'), descr=True,
+                try:
+                    descr = var.filetableid.nickname
+                    if len(descr)<1:
+                        descr = True
+                except:
+                    descr = True
+                fnamepng,fnamesvg,fnamepdf = form_filename( frnamebase, ('png','svg','pdf'), descr=descr,
                                                             vname=vname, more_id=more_id )
 
                 # Beginning of section for building plots; this depends on the plot set!
@@ -753,8 +759,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
                         for i in range(len(var_id_save)):
                             var[i].id = var_id_save[i]
             if savePNG:
-                pass
-                    #vcanvas.png( fnamepng, ignore_alpha=True, metadata=provenance_dict() )
+                vcanvas.png( fnamepng, ignore_alpha=True, metadata=provenance_dict() )
                     # vcanvas.svg() doesn't support ignore_alpha or metadata keywords
                     #vcanvas.svg( fnamesvg )
                     #vcanvas.pdf( fnamepdf)
@@ -773,8 +778,8 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
         #logger.info("writing svg file2: %s",fnamesvg)
         # vcanvas2.svg() doesn't support ignore_alpha or metadata keywords
         #vcanvas2.svg( fnamesvg )
-        logger.info("writing pdf file2: %s",fnamepdf)
-        vcanvas2.pdf( fnamepdf )            
+        #logger.info("writing pdf file2: %s",fnamepdf)
+        #vcanvas2.pdf( fnamepdf )            
 
 if __name__ == '__main__':
     print "UV-CDAT Diagnostics, command-line version"
