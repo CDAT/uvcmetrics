@@ -96,18 +96,21 @@ class amwg_plot_set7(amwg_plot_plan):
                 zvars = [vid1],  zfunc = (lambda z: z),
                 plottype = self.plottype,
                 source = ft1src,
+                file_descr = 'model',
                 plotparms = plotparms[src2modobs(ft1src)] ),
             self.plot2_id: plotspec(
                 vid = ps.dict_idid(vid2),
                 zvars = [vid2],  zfunc = (lambda z: z),
                 plottype = self.plottype,
                 source = ft2src,
+                file_descr = 'obs',
                 plotparms = plotparms[src2obsmod(ft2src)] ),
             self.plot3_id: plotspec(
                 vid = ps.dict_id(varid,'diff',seasonid,filetable1,filetable2),
                 zvars = [vid1,vid2],  zfunc = aminusb_2ax,
                 plottype = self.plottype,
                 source = ', '.join([ft1src,ft2src]),
+                file_descr = 'diff',
                 plotparms = plotparms['diff'] )         
             }
        self.composite_plotspecs = {

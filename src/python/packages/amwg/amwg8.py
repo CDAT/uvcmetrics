@@ -137,6 +137,7 @@ class amwg_plot_set8(amwg_plot_plan):
                                     source  = ft1src,
                                     title1 = ' '.join([vidModel.var, vidModel.season, vidModel.region]),
                                     title2 = ' '.join([vidModel.var, vidModel.season, vidModel.region]),
+                                    file_descr = 'model',
                                     plotparms = plotparms['model'] )}
         if self.FT2:
             self.single_plotspecs[self.plot2_id] = \
@@ -147,6 +148,7 @@ class amwg_plot_set8(amwg_plot_plan):
                                         source = ft2src,
                                         title1 = ' '.join([vidObs.var, vidObs.season, vidObs.region]),
                                         title2 = 'observations',
+                                        file_descr = 'obs',
                                         plotparms = plotparms['obs'] )
             self.single_plotspecs[self.plot3_id] = \
                                plotspec(vid = ps.dict_idid(vidDiff), 
@@ -156,6 +158,7 @@ class amwg_plot_set8(amwg_plot_plan):
                                         source = ', '.join([ft1src,ft2src]),
                                         title1 = ' '.join([vidDiff.var, vidDiff.season, vidDiff.region]),
                                         title2 = 'difference',
+                                        file_descr = 'diff',
                                         plotparms = plotparms['diff'] )
             
         self.composite_plotspecs = {
