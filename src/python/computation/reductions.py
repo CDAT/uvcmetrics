@@ -478,6 +478,10 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Tru
             elif len(klevs)>0 and len(klats)>0 and len(klons)>0:
                 # We have all three: levels, latitudes and longitudes
                 if klevs==[0] and klats==[1] and klons==[2] and avweights.shape==latlon_wts.shape:
+                    # test code useful if you think you may not be recalculating mass_weights often enough...
+                    #dwt = latlon_wts - mass_weights( mvrs )
+                    #assert( dwt.min()==0 and dwt.max()==0 )
+                    # ...jfp test code
                     # avweights and latlon_wts are compatible
                     numpy.copyto( avweights, latlon_wts ) # avweights[:,:,...]=latlon_wts[:,:,...]
                 else:
@@ -2218,7 +2222,6 @@ def aminusb_ax2( mv1, mv2 ):
 
 def convert_units(mv, units):
    """Returns a new variable like mv but with the specified units"""
-   print "entering convert_units",mv.id,mv.units,units
    if type(mv) == float:
       return mv
    if not hasattr(mv,'units') and hasattr(mv,'lunits'):
@@ -3212,6 +3215,10 @@ class reduced_variable(ftrow,basic_id):
                     if 'mass' not in var.filetable.weights:
                         var.filetable.weights['mass'] = {}
                     if llev>0 and llat>0 and llon>0:
+                        # This check would make it faster:
+                        #if (llev,llat,llon) not in var.filetable.weights['mass']:
+                        # but it's wrong for plot set 10, where you have to read out of several files.
+                        # They have different times, hence different PS, hence different mass_weights.
                         var.filetable.weights['mass'][(llev,llat,llon)] = mass_weights(var)
                 reduced_data = self.reduce_reduction_function( var, vid=vid, gw=gw )
             elif self.variableid in f.axes.keys():
@@ -3219,7 +3226,7 @@ class reduced_variable(ftrow,basic_id):
                 taxis.id = f[self.variableid].id
                 weighting = weighting_choice(taxis)
                 if not hasattr( taxis, 'filetable'): taxis.filetable = self.filetable
-                reduced_data = self._reduction_function( taxis, vid=vid, gw=gw )
+                reduced_data = self.reduce_reduction_function( taxis, vid=vid, gw=gw )
             else:
                 logger.error("Reduce failed to find variable %s in file %s. It did find variables %s and axes %s.",
                              self.variableid, filename, sorted(f.variables.keys()), sorted(f.axes.keys()))
