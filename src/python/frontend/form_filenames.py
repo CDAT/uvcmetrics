@@ -18,7 +18,10 @@ What this function returns depends on what fmt is.
     if more_id is None: more_id=''
     if descr is not True:
         if descr=='':
-            fnamedot = '-'.join([rootname,more_id]) + '.'
+            if more_id=='':
+                fnamedot = rootname + '.'
+            else:
+                fnamedot = '-'.join([rootname,more_id]) + '.'
         else:
             fnamedot = '-'.join([rootname,more_id,descr]) + '.'
         if type(fmt) is str:
