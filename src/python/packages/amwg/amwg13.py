@@ -189,6 +189,7 @@ class amwg_plot_set13(amwg_plot_plan):
                 plottype = self.plottype,
                 title = ' '.join([varnom,seasonid,str(region),'(1)']),
                 source = ft1src,
+                file_descr = 'model',
                 plotparms = plotparms[src2modobs(ft1src)] ),
             self.plot2_id: plotspec(
                 vid = ps.dict_idid(vid2), zvars=[vid2],\
@@ -196,12 +197,14 @@ class amwg_plot_set13(amwg_plot_plan):
                 plottype = self.plottype,
                 title = ' '.join([varnom,seasonid,str(region),'(2)']),
                 source = ft2src,
+                file_descr = 'obs',
                 plotparms = plotparms[src2obsmod(ft2src)] ),
             self.plot3_id: plotspec(
                 vid = ps.dict_id(varnom,'diff',seasonid,filetable1,filetable2,region=region), zvars=[vid1,vid2],
                 zfunc=aminusb_2ax, plottype = self.plottype,
                 title = ' '.join([varnom,seasonid,str(region),'(1)-(2)']),
                 source = ', '.join([ft1src,ft2src]),
+                file_descr = 'diff',
                 plotparms = plotparms['diff'] )
             }
         self.composite_plotspecs = {

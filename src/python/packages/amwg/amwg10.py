@@ -104,6 +104,7 @@ class amwg_plot_set10(amwg_plot_plan, basic_id):
                                                        z2func = (lambda z: z),
                                                        plottype = self.plottype,
                                                        source = ', '.join([ft1src,ft2src]),
+                                                       file_descr = '',
                                                        plotparms=plotparms[src2modobs(ft1src)] )
 
 
@@ -229,10 +230,12 @@ class amwg_plot_set10(amwg_plot_plan, basic_id):
         model = self.single_plotspecs[self.plot_id].zvars[0]
         obs   = self.single_plotspecs[self.plot_id].z2vars[0]
         modelVal = self.variable_values[model]
-        obsVal  = self.variable_values[obs]        
+        obsVal  = self.variable_values[obs]
+        ps = self.plotspec_values.values()[0]
+        file_descr = getattr( ps, 'file_descr', None )
                 
         plot_val = uvc_plotspec([modelVal, obsVal],
-                                self.plottype, 
+                                self.plottype, file_descr=file_descr,
                                 title1=self.plot_id, title2=self.plot_id )
         plot_val.finalize()
         return [ plot_val]

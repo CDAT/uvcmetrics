@@ -132,6 +132,7 @@ class amwg_plot_set9(amwg_plot_plan):
                 zfunc = (lambda z: z),
                 plottype = self.plottype,
                 source = ft1src,
+                file_descr = 'model',
                 plotparms = plotparms[src2modobs(ft1src)] ),
             self.plot2_id: plotspec(
                 vid = ps.dict_idid(vid2), 
@@ -139,6 +140,7 @@ class amwg_plot_set9(amwg_plot_plan):
                 zfunc = (lambda z: z),
                 plottype = self.plottype,
                 source = ft2src,
+                file_descr = 'obs',
                 plotparms = plotparms[src2obsmod(ft2src)] ),
             self.plot3_id: plotspec(
                 vid = ps.dict_idid(vid3), 
@@ -146,6 +148,7 @@ class amwg_plot_set9(amwg_plot_plan):
                 zfunc = (lambda x: x), 
                 plottype = self.plottype,
                 source = ', '.join([ft1src,ft2src]),
+                file_descr = 'diff',
                 plotparms = plotparms['diff'] )
             }
 
