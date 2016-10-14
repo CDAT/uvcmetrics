@@ -123,6 +123,7 @@ class amwg_plot_plan(plot_plan):
         computable = False
         rvs = []
         dvs = []
+        svd_rmse = None
         #print "dbg in commvar2var to compute varnom=",varnom,"from filetable=",filetable
         for svd in cls.common_derived_variables[varnom]:  # loop over ways to compute varnom
             invarnoms = svd.inputs()
@@ -132,6 +133,7 @@ class amwg_plot_plan(plot_plan):
                     - set(builtin_variables) )<=0:
                 func = svd._func
                 computable = True
+                svd_rmse = svd
                 break
         if computable:
             #print "dbg",varnom,"is computable by",func,"from..."
@@ -202,7 +204,23 @@ class amwg_plot_plan(plot_plan):
         newdv = derived_var( vid=vid, inputs=inputs, func=func )
         dvs.append(newdv)
         #print "dbg2 returning newdv.id=",newdv.id(),"rvs=",rvs,"dvs=",dvs
-        return newdv.id(), rvs, dvs
+        
+        #make the variables for the rmse and correlation calculation
+        #pdb.set_trace()
+        rmse_vars = None
+        if svd_rmse:
+            rmse_vars = {'rv':[], 'dv':None}
+            invarnoms = svd.inputs()
+            dv_inputs = []
+            for invar in invarnoms:
+                #keep a copy of rv to feed into the derived variable below
+                rv_rmse = reduced_variable( variableid=invar, filetable=filetable, season=season,
+                                       reduction_function=(lambda x,vid:x) )
+                rmse_vars['rv'].append(rv_rmse)
+                dv_inputs += [rv_rmse.id()]
+            #this derived variable takes the about rvs and applies the fuction
+            rmse_vars['dv'] = derived_var( vid=varnom, inputs=dv_inputs, outputs=[varnom], func=svd_rmse._func ) 
+        return newdv.id(), rvs, dvs, rmse_vars
 
     @staticmethod
     def _list_variables( model, obs ):

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """" This is a test of tables"""
-import sys, os, shutil, tempfile, subprocess, filecmp
+import sys, os, shutil, tempfile, subprocess, filecmp, metrics.frontend.user_identifier
 import argparse, pdb
 import diags_test
 
@@ -21,13 +21,11 @@ print "baselinepath = ", baselinepath
 #outpath = tempfile.mkdtemp() + "/"
 outpath = '/tmp/'
 print "outpath=", outpath
-rebaseline = False
-if 'rebaseline' in dir(args):
-    rebaseline = args.rebaseline
+rebaseline = args.rebaseline
+user = 'table_test'    
     
 #run this from command line to get the files required
-#command = 'diags --package AMWG  --set 1 --seasons ANN --model path=%s/cam35_data/  --obs path=%s/obs_for_diagnostics/,climos=yes  --outputdir %s '%(datadir, datadir, outpath)
-command = 'diags --package AMWG  --set 1 --seasons ANN --model path=%s/table_reference/  --obs path=%s/obs_for_diagnostics/,climos=yes  --outputdir %s '%(datadir, datadir, outpath)
+command = 'diags --package AMWG  --set 1 --seasons ANN --model path=%s/table_reference/  --obs path=%s/obs_for_diagnostics/,climos=yes  --outputdir %s --user %s '%(datadir, datadir, outpath, user)
 print command
 
 #run the command

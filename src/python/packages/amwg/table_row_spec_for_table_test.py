@@ -8,9 +8,9 @@
     #   units units of the output quantity (default is same as the input files)
 
 #this is a dummy table for testing
-table_row_specs = [{ 'var':'FLUT', 'obs':'CERES-EBAF'}, { 'var':'PRECT', 'obs':'GPCP'}]#{'var':'SST', 'obs':'HadISST_CI'}, { 'var':'TS', 'obs':'NCEP'},{ 'var':'RESTOM'},{ 'var':'RESSURF'}]
+#table_row_specs = [{ 'var':'PRECT', 'obs':'GPCP'}, { 'var':'FLUT', 'obs':'CERES-EBAF'}]#{'var':'SST', 'obs':'HadISST_CI'}, { 'var':'TS', 'obs':'NCEP'},{ 'var':'RESTOM'},{ 'var':'RESSURF'}]
 
-xxxtable_row_specs = [
+table_row_specs = [
     { 'var':'FLUT', 'obs':'CERES-EBAF'},
     { 'var':'LHFLX', 'obs':'JRA25'},
     { 'var':'LHFLX', 'obs':'ERA40'},

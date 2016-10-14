@@ -125,6 +125,9 @@ def setnum( setname ):
     return setnumber
 
 def run_diags( opts ):
+    #get user name
+    user = opts['user'] #unused in diags
+    
     # Setup filetable arrays
     modelfts = []
     obsfts = []
