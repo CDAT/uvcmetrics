@@ -598,7 +598,7 @@ def reduce2scalar_seasonal_zonal( mv, season=seasonsyr, latmin=-90, latmax=90, v
     # reduce size of lat axis to (latmin,latmax)
     mv2 = mv(latitude=(latmin, latmax))
     if not hasattr( mv2, 'filetable') and hasattr(mv,'filetable'): mv2.filetable = mv.filetable
-    if gw==True:
+    if gw is True:
         # gw wasn't provided as an argument, but we can get it however we can
         if hasattr(mv,'diags_gw'):
             gw = mv.diags_gw
@@ -2499,7 +2499,8 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
                              [a[0].id for a in mv1._TransientVariable__domain], len(axes1[0]), len(axes1[1]),
                              [a[0].id for a in mv2._TransientVariable__domain], len(axes2[0]), len(axes2[1]))
                 raise Exception("when regridding mv2 to mv1, failed to get or generate a grid for mv1")
-            mv1new = mv1.regrid(grid2,regridTool="libcf",regridMethod="linear")  # this is linear regridding, like AMWG.
+            #mv2new = mv2.regrid(grid1,regridTool="libcf",regridMethod="linear")  # this is linear regridding, like AMWG.
+            mv2new = mv2.regrid(grid1, regridTool="regrid2")
             mv2new.mean = None
             set_mean(mv2new)
             mv2new.filetable = mv2.filetable
@@ -2527,7 +2528,8 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
                              [a[0].id for a in mv1._TransientVariable__domain], len(axes1[0]), len(axes1[1]),
                              [a[0].id for a in mv2._TransientVariable__domain], len(axes2[0]), len(axes2[1]))
                 raise Exception("when regridding mv1 to mv2, failed to get or generate a grid for mv2")
-            mv1new = mv1.regrid(grid2,regridTool="libcf",regridMethod="linear")  # this is linear regridding, like AMWG.
+            #mv1new = mv1.regrid(grid2,regridTool="libcf",regridMethod="linear")  # this is linear regridding, like AMWG.
+            mv1new = mv1.regrid(grid2, regridTool="regrid2")
             mv1new.mean = None
             set_mean(mv1new)
             mv1new.filetable = mv1.filetable
