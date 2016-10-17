@@ -559,9 +559,9 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
                 #### way for classic viewer to know the filename without lots more special casing. 
 
                 try:
-                    descr = var.filetableid.nickname
-                    if len(descr)<1:
-                        descr = True
+                    descr = getattr(rsr,'file_descr',getattr(rsr,'title2',True))
+                    if descr[0:3]=='obs': descr='obs'
+                    if descr[0:4]=='diff': descr='diff'
                 except:
                     descr = True
                 fnamepng,fnamesvg,fnamepdf = form_filename( frnamebase, ('png','svg','pdf'), descr=descr,
