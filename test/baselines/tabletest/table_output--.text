@@ -1,57 +1,23 @@
 AMWG Diagnostics Set 1 ANN means Global
 
-Test Case: ft1_cam35_data
+Test Case: ft1_table_reference
 
 Control Case: various observational data
 
 Variable                 Test Case           Obs          Test-Obs           RMSE            Correlation
 
-RESTOM          	     4.043	        	        	        	        
-RESSURF          	        	        	        	        	        
-RESTOA_CERES-EBAF	        	     0.992	        	        	        
-SOLIN_CERES-EBAF 	   347.008	   340.054	     6.954	    78.652	     0.631
-CLDTOT_ISCCP     	    51.120	    66.800	   -15.679	    18.800	     0.736
-CLDTOT_CLOUDSAT  	    51.120	    66.824	   -15.703	    17.815	     0.820
-FLDS_ISCCP       	        	   343.347	        	        	        
-FLNS_ISCCP       	    59.090	    49.425	     9.666	    16.147	     0.735
-FLUT_CERES-EBAF  	   235.965	   239.574	    -3.609	    11.063	     0.939
-FLUTC_CERES-EBAF 	   262.765	   266.051	    -3.286	     8.457	     0.967
-FLNT_CAM         	   234.883	        	        	        	        
-FSDS_ISCCP       	   189.942	   189.390	     0.552	    49.071	     0.696
-FSNS_ISCCP       	   165.038	   165.893	    -0.855	    39.619	     0.824
-FSNS_LARYEA      	   165.038	   151.098	    13.940	    51.783	     0.757
-FSNTOA_CERES-EBAF	   241.701	   240.566	     1.135	    55.255	     0.792
-FSNTOAC_CERES-EBA	   293.801	   287.638	     6.163	    63.848	     0.791
-FSNT_CAM         	   238.926	        	        	        	        
-LHFLX_JRA25      	    84.661	    87.935	    -3.274	    24.673	     0.906
-LHFLX_ERA40      	    84.661	    82.367	     2.294	    24.121	     0.907
-LHFLX_WHOI       	    84.661	    88.325	    -3.664	    29.951	     0.868
-LWCF_CERES-EBAF  	    26.801	    26.476	     0.325	     7.609	     0.844
-PRECT_GPCP       	     2.921	     2.674	     0.247	        	        
-PREH2O_NVAP      	        	    24.597	        	        	        
-PREH2O_AIRS      	        	    20.425	        	        	        
-PREH2O_JRA25     	        	    24.314	        	        	        
-PREH2O_ERAI      	        	    24.247	        	        	        
-PREH2O_ERA40     	        	    24.948	        	        	        
-PSL_JRA25        	  1011.582	  1011.280	     0.302	     2.954	     0.940
-PSL_ERAI         	  1011.582	  1011.362	     0.220	     2.962	     0.940
-SHFLX_JRA25      	    16.832	    19.372	    -2.540	    13.410	     0.715
-SHFLX_NCEP       	    16.832	    15.795	     1.037	    14.405	     0.801
-SHFLX_LARYEA     	    16.832	    13.312	     3.520	    10.847	     0.601
-STRESS_MAG_ERS   	        	     0.066	        	        	        
-STRESS_MAG_LARYEA	        	     0.073	        	        	        
-STRESS_MAG_JRA25 	        	     0.080	        	        	        
-SWCF_CERES-EBAF  	   -52.100	   -47.071	    -5.028	    19.809	     0.742
-AODVIS          	        	        	        	        	        
-AODDUST          	        	        	        	        	        
-SST_HadISST      	   287.391	    16.645	   270.746	        	        
-SST_HadISST_PI   	   287.391	    20.038	   267.353	        	        
-SST_HadISST_PD   	   287.391	    20.127	   267.264	        	        
-TREFHT_LEGATES   	   286.609	   287.645	    -1.036	     4.292	     0.959
-TREFHT_JRA25     	   286.609	   287.605	    -0.996	     3.099	     0.981
-TS_NCEP          	   287.391	   287.683	    -0.291	     3.017	     0.980
-TS_LAND_NCEP     	        	        	        	        	        
-U_JRA25_200      	    15.782	    15.565	     0.217	        	        
-U_NCEP_200       	    15.782	    15.297	     0.486	        	        
-Z3_JRA25_500     	    54.957	    56.601	    -1.643	        	        
-Z3_NCEP_500      	    54.957	    56.581	    -1.624	        	        
+FLUT_CERES-EBAF  	   242.390	   239.574	     2.816	     8.214	     0.967
+LHFLX_JRA25      	    90.395	    87.935	     2.460	    15.344	     0.964
+LHFLX_ERA40      	    90.395	    82.367	     8.029	    15.774	     0.964
+LHFLX_WHOI       	    90.395	    88.325	     2.070	    26.289	     0.915
+LWCF_CERES-EBAF  	    23.973	    26.476	    -2.503	     6.556	     0.847
+PRECT_GPCP       	     3.126	     2.674	     0.452	     1.206	     0.850
+PSL_JRA25        	  1011.092	  1011.280	    -0.188	     1.891	     0.983
+PSL_ERAI         	  1011.092	  1011.362	    -0.270	     2.073	     0.980
+SHFLX_JRA25      	    19.203	    19.372	    -0.168	    10.194	     0.823
+SHFLX_NCEP       	    19.203	    15.795	     3.409	    14.664	     0.806
+SHFLX_LARYEA     	    19.203	    13.312	     5.892	    10.889	     0.341
+SWCF_CERES-EBAF  	   -46.873	   -47.071	     0.198	    11.014	     0.850
+TREFHT_LEGATES   	   286.926	   287.645	    -0.718	     3.778	     0.968
+TREFHT_JRA25     	   286.926	   287.605	    -0.679	     2.012	     0.991
+TS_NCEP          	   287.740	   287.683	     0.057	     2.163	     0.993
