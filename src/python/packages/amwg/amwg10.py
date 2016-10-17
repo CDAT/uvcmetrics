@@ -35,22 +35,26 @@ class amwg_plot_set10(amwg_plot_plan, basic_id):
     # Here, the plotspec contains the variables themselves.
     name = '10 - Annual Line Plots of  Global Means'
     number = '10'
+    IDtuple = namedtuple( "amwg_plot_set10_ID", "classid var season region" )
  
-    def __init__( self, model, obs, varid, seasonid='ANN', region=None, aux=None, names={}, plotparms=None ):
+    def __init__( self, model, obs, varnom, seasonid='ANN', regionid=None, aux=None, names={}, plotparms=None ):
         """filetable1, filetable2 should be filetables for model and obs.
-        varid is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'."""
+        varnom is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'."""
         filetable1, filetable2 = self.getfts(model, obs)
-        basic_id.__init__(self, varid, seasonid)
         plot_plan.__init__(self, seasonid)
         self.plottype = 'Yxvsx'
         self.season = cdutil.times.Seasons(self._seasonid)
         ft1id, ft2id = filetable_ids(filetable1, filetable2)
-        self.plot_id = '_'.join([ft1id, ft2id, varid, self.plottype])
+        self.plot_id = '_'.join([ft1id, ft2id, varnom, self.plottype])
+
+        region, self._regionid, idregionid = interpret_region2( regionid )
+        basic_id.__init__(self,'set10',varnom,seasonid,idregionid)
+
         self.computation_planned = False
         if not self.computation_planned:
-            self.plan_computation( model, obs, varid, seasonid, plotparms )
+            self.plan_computation( model, obs, varnom, seasonid, plotparms )
 
-    def plan_computation( self, model, obs, varid, seasonid, plotparms ):
+    def plan_computation( self, model, obs, varnom, seasonid, plotparms ):
         filetable1, filetable2 = self.getfts(model, obs)
         ft1src = filetable1.source()
         try:
@@ -66,9 +70,9 @@ class amwg_plot_set10(amwg_plot_plan, basic_id):
                 month = cdutil.times.getMonthString(i)
                 #pdb.set_trace()
                 #create identifiers
-                VID = rv.dict_id(varid, month, FT) #cdutil.times.getMonthIndex(VID[2])[0]-1
+                VID = rv.dict_id(varnom, month, FT) #cdutil.times.getMonthIndex(VID[2])[0]-1
                 RF = (lambda x, vid=id2str(VID), month = VID[2]:reduce2scalar_seasonal_zonal(x, seasons=cdutil.times.Seasons(month), vid=vid))
-                RV = reduced_variable(variableid = varid, 
+                RV = reduced_variable(variableid = varnom, 
                                       filetable = FT, 
                                       season = cdutil.times.Seasons(month), 
                                       reduction_function =  RF)
@@ -79,8 +83,8 @@ class amwg_plot_set10(amwg_plot_plan, basic_id):
             vidAll[FT] = VIDs 
         
         #create the identifiers 
-        vidModel = dv.dict_id(varid, 'model', "", filetable1)
-        vidObs   = dv.dict_id(varid, 'obs',   "", filetable2)
+        vidModel = dv.dict_id(varnom, 'model', "", filetable1)
+        vidObs   = dv.dict_id(varnom, 'obs',   "", filetable2)
         self.vidModel = id2str(vidModel)
         self.vidObs   = id2str(vidObs)
 
@@ -100,12 +104,14 @@ class amwg_plot_set10(amwg_plot_plan, basic_id):
                                                        z2func = (lambda z: z),
                                                        plottype = self.plottype,
                                                        source = ', '.join([ft1src,ft2src]),
+                                                       file_descr = '',
                                                        plotparms=plotparms[src2modobs(ft1src)] )
 
 
         self.computation_planned = True
 
-    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None,
+                           uvcplotspec=None ):
         """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
 
@@ -224,10 +230,12 @@ class amwg_plot_set10(amwg_plot_plan, basic_id):
         model = self.single_plotspecs[self.plot_id].zvars[0]
         obs   = self.single_plotspecs[self.plot_id].z2vars[0]
         modelVal = self.variable_values[model]
-        obsVal  = self.variable_values[obs]        
+        obsVal  = self.variable_values[obs]
+        ps = self.plotspec_values.values()[0]
+        file_descr = getattr( ps, 'file_descr', None )
                 
         plot_val = uvc_plotspec([modelVal, obsVal],
-                                self.plottype, 
-                                title=self.plot_id)
+                                self.plottype, file_descr=file_descr,
+                                title1=self.plot_id, title2=self.plot_id )
         plot_val.finalize()
         return [ plot_val]

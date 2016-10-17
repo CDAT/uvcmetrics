@@ -178,9 +178,10 @@ class uvc_composite_plotspec():
         filenames = []
         for p in self.plots:
             if type(p) is tuple:
-                logger.error("Cannot write_plot_data on tuple<<<<<<<<<<<<<<<<<")
+                p = p[0] # maybe something will be better than nothing!
+                logger.warning("Cannot write_plot_data on tuple, will write partial data")
                 logger.info(p)
-                continue
+                # continue
             filenames += p.write_plot_data( contents_format, where )
 
         filename = self.outfile( format, where )
@@ -189,8 +190,9 @@ class uvc_composite_plotspec():
         writer.write("<plotdata>\n")
         for p in self.plots:
             if type(p) is tuple:
-                logger.error("Again, cannot write_plot_data on tuple<<<<<<<<<<<<<<<<<")
-                continue
+                p = p[0] # maybe something will be better than nothing!
+                logger.warning("Again, cannot write_plot_data on tuple, will write something")
+                #continue
             pfn = p.outfile(where)
             writer.write( "<ncfile>"+pfn+"</ncfile>\n" )
         writer.write( "</plotdata>\n" )
@@ -204,7 +206,7 @@ def get_month_strings(length=15):
         months += [cdutil.getMonthString(i)[0:length]]
     return months
 
-class uvc_simple_plotspec():
+class uvc_simple_plotspec(basic_id):
     """This is a simplified version of the plotspec class, intended for the UV-CDAT GUI.
     Once it stabilizes, I may replace the plotspec class with this one.
     The plots will be of the type specified by presentation.  The data will be the
@@ -213,12 +215,22 @@ class uvc_simple_plotspec():
     # re presentation (plottype): Yxvsx is a line plot, for Y=Y(X).  It can have one or several lines.
     # Isofill is a contour plot.  To make it polar, set projection=polar.  I'll
     # probably communicate that by passing a name "Isofill_polar".
+    IDtuple = namedtuple( "uvc_plotspec_ID", "classid vars varmod season ft1 ft2 ft1nn ft2nn region" )
+
     def __init__(
-        self, pvars, presentation, labels=[], title='', source='', ranges=None, overplotline=False,
+        self, pvars, presentation, labels=[], title='', title1='', title2='', file_descr= None,
+        source='', ranges=None, overplotline=False,
         linetypes=['solid'], linecolors=[241], levels=None, plotparms=None, displayunits=None,
-        more_id=None ):
+        more_id=None, idinfo={}, varvals={} ):
 
         pvars = [v for v in pvars if v is not None]
+        if idinfo=={}:
+            idinfo['vars']=[getattr(p,'id','') for p in pvars]
+            idinfo['season']=''
+        if idinfo['season']=='JFMAMJJASOND': idinfo['season']='ANN'
+        basic_id.__init__(self, idinfo['vars'][0], '', idinfo['season'], idinfo.get('ft1'),
+                          idinfo.get('ft2'), idinfo.get('ft1nn'), idinfo.get('ft2nn'), idinfo.get('region') )
+
         # ... Maybe something else is broken to let None get into pvars.
         if len(pvars)<=0:
             zerovar = cdms2.createVariable([[0,0,0],[0,0,0]])
@@ -258,7 +270,11 @@ class uvc_simple_plotspec():
         ##     self.presentation = vcsx.create
         self.vars = pvars # vars[i] is either a cdms2 variable or a tuple of variables
         self.labels = labels
-        self.title = title
+        self.title = title   # deprecated
+        self.title1 = title1
+        self.title2 = title2
+        if file_descr is not None:
+            self.file_descr = file_descr
         self.source = source
         self.type = ptype
         self.ptype = ptype
@@ -314,6 +330,7 @@ class uvc_simple_plotspec():
                     }
         self.finalized = False
         self.more_id = more_id
+        self.varvals = varvals
 
     def make_ranges(self, var):
 
@@ -454,7 +471,7 @@ class uvc_simple_plotspec():
                         axy = axaxi['Z']
                     if axx == 'time':
                         t=var.getTime()
-                        if 'units' in dir(t) and t.units == "months since 1800":
+                        if 'units' in dir(t) and t.units.find("months since 1800")==0:
                             time_lables = {}
                             months_names = get_month_strings(length=3)             
                             tc=t.asComponentTime()
@@ -819,11 +836,25 @@ class uvc_simple_plotspec():
             else:
                 # Incomplete filename.  We may need to extract the final bits from a variable name.
                 if type(self.vars[0]) is tuple:  # typically, a vector plot
-                    varn = self.vars[0][0].id
+                    var0 = self.vars[0][0]
                 else:
-                    varn = self.vars[0].id
+                    var0 = self.vars[0]
+                #varn = var0.id
+                #try:
+                #    if hasattr( var0, '_filetableid' ):
+                #        filetableid = var0._filetableid
+                #    elif hasattr( var0, 'filetableid' ):
+                #        filetableid = var0.filetableid
+                #    else:
+                #        filetableid = var0.filetable.id()
+                #    descr = filetableid.nickname
+                #except:
+                #    descr = True
+                descr = getattr(self,'file_descr',getattr(self,'title2',True))
+                if descr[0:3]=='obs': descr='obs'
+                if descr[0:4]=='diff': descr='diff'
                 if len(self.vars)>1:  where = where+'-combined'
-                return form_filename( where, 'nc', True, self.vars[0].id, more_id=self.more_id )
+                return form_filename( where, 'nc', descr, self.vars[0].id, more_id=self.more_id )
         elif len(self.title)<=0:
             fname = 'foo.nc'
         else:
@@ -865,6 +896,11 @@ class uvc_simple_plotspec():
         for zax in self.vars:
             try:
                 del zax.filetable  # we'll write var soon, and can't write a filetable
+            except:
+                pass
+            try:
+                zax._filetableid= zax.filetableid  # and the named tuple ids aren't writeable as such
+                zax.filetableid= str(zax.filetableid)  # and the named tuple ids aren't writeable as such
             except:
                 pass
             for ax in zax.getAxisList():

@@ -79,11 +79,11 @@ class amwg_plot_set7(amwg_plot_plan):
            ft2src = ''
        reduced_varlis = [
            reduced_variable(
-                variableid=varid, filetable=filetable1, season=self.season,
-                reduction_function=(lambda x, vid, region=None: reduce2latlon_seasonal( x(latitude=aux, longitude=(0, 360)), self.season, region, vid=vid ) ) ),
-            reduced_variable(
-                variableid=varid, filetable=filetable2, season=self.season,
-                reduction_function=(lambda x,vid, region=None: reduce2latlon_seasonal( x(latitude=aux, longitude=(0, 360)), self.season, region, vid=vid ) ) )
+               variableid=varid, filetable=filetable1, season=self.season,
+               reduction_function=(lambda x,vid, region=None: reduce2latlon_seasonal( x(latitude=aux, longitude=(0, 360)), self.season, region, vid=vid ) ) ),
+           reduced_variable(
+               variableid=varid, filetable=filetable2, season=self.season,
+               reduction_function=(lambda x,vid, region=None: reduce2latlon_seasonal( x(latitude=aux, longitude=(0, 360)), self.season, region, vid=vid ) ) )
             ]
        self.reduced_variables = { v.id():v for v in reduced_varlis }
        vid1 = rv.dict_id( varid, seasonid, filetable1 )
@@ -96,18 +96,21 @@ class amwg_plot_set7(amwg_plot_plan):
                 zvars = [vid1],  zfunc = (lambda z: z),
                 plottype = self.plottype,
                 source = ft1src,
+                file_descr = 'model',
                 plotparms = plotparms[src2modobs(ft1src)] ),
             self.plot2_id: plotspec(
                 vid = ps.dict_idid(vid2),
                 zvars = [vid2],  zfunc = (lambda z: z),
                 plottype = self.plottype,
                 source = ft2src,
+                file_descr = 'obs',
                 plotparms = plotparms[src2obsmod(ft2src)] ),
             self.plot3_id: plotspec(
                 vid = ps.dict_id(varid,'diff',seasonid,filetable1,filetable2),
                 zvars = [vid1,vid2],  zfunc = aminusb_2ax,
                 plottype = self.plottype,
                 source = ', '.join([ft1src,ft2src]),
+                file_descr = 'diff',
                 plotparms = plotparms['diff'] )         
             }
        self.composite_plotspecs = {
@@ -115,7 +118,8 @@ class amwg_plot_set7(amwg_plot_plan):
             }
        self.computation_planned = True
        #pdb.set_trace()
-    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None,
+                           uvcplotspec=None ):
         """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
         

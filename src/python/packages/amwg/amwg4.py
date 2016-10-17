@@ -1,7 +1,7 @@
 # AMWG Diagnostics, plot set 4 and 4a.
 # Here's the title used by NCAR:
 # DIAG Set 4 - Vertical Contour Plots Zonal Means
-# DIAG Set $A - Horizontal Contour Plots of Meridional Means
+# DIAG Set 4A - Horizontal Contour Plots of Meridional Means
 
 from pprint import pprint
 from metrics.packages.amwg.amwg import amwg_plot_plan
@@ -110,6 +110,9 @@ class amwg_plot_set4and4A(amwg_plot_plan):
         self.derived_variables = {}
         if hybrid1:
             # >>>> actually last arg of the derived var should identify the coarsest level, not nec. 2
+            # Note also that it is dangerous to use input data from two filetables (though necessary here) - it
+            # can badly mess things up if derive() assigns to the new variable a filetable which is not the
+            # main source of the data, meaning its axes.  It gets the filetable from the first input listed here.
             vid1=dv.dict_id(varid,rf_id,seasonid,filetable1)
             self.derived_variables[vid1] = derived_var(
                 vid=vid1, inputs=[rv.dict_id(varid,seasonid,filetable1), rv.dict_id('hyam',seasonid,filetable1),
@@ -140,18 +143,21 @@ class amwg_plot_set4and4A(amwg_plot_plan):
                 vid = ps.dict_idid(vid1), zvars=[vid1], zfunc=(lambda z: z),
                 plottype = self.plottype,
                 title = ' '.join([varid,seasonid,'(1)']),
+                file_descr = 'model',
                 source = ft1src,
                 plotparms = plotparms[src2modobs(ft1src)] ),
             self.plot2_id: plotspec(
                 vid = ps.dict_idid(vid2), zvars=[vid2], zfunc=(lambda z: z),
                 plottype = self.plottype,
                 title = ' '.join([varid,seasonid,'(2)']),
+                file_descr = 'obs',
                 source = ft2src,
                 plotparms = plotparms[src2obsmod(ft2src)] ),
             self.plot3_id: plotspec(
                 vid = ps.dict_id(varid,'diff',seasonid,filetable1,filetable2), zvars=[vid1,vid2],
                 zfunc=aminusb_2ax, plottype = self.plottype,
                 title = ' '.join([varid,seasonid,'(1)-(2)']),
+                file_descr = 'diff',
                 source = ', '.join([ft1src,ft2src]),
                 plotparms = plotparms['diff'] )
             }
@@ -159,7 +165,8 @@ class amwg_plot_set4and4A(amwg_plot_plan):
             self.plotall_id: [self.plot1_id, self.plot2_id, self.plot3_id ]
             }
         self.computation_planned = True
-    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None,
+                           uvcplotspec=None ):
         """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
 

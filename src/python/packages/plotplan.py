@@ -1,5 +1,6 @@
-import logging
+import logging, pdb
 from numbers import Number
+from pprint import pprint
 import cdms2
 from metrics.packages.diagnostic_groups import *
 from metrics.computation.plotspec import plotspec
@@ -135,9 +136,40 @@ class plot_plan(object):
         that means a coarser grid, typically from regridding model data to the obs grid.
         In the future regrid>0 will mean regrid everything to the finest grid and regrid<0
         will mean regrid everything to the coarsest grid."""
+
+        # Get gw (latitude Gaussian weights) variables first, if available - everything else may
+        # possibly need it.
+        # Note that the reduced_variables dict could have several gw variables.  Most will be
+        # wrong for this plot - the wrong filetable, or the wrong season, etc.
         for v in self.reduced_variables.keys():
+            # v is normally a reduced_variable_ID (a named tuple) but for backwards compatibility
+            # we also have to support type(v)==str.
+            if v!='gw' and getattr(v,'var',None)!='gw':  
+                continue
             #print v
             value = self.reduced_variables[v].reduce(None)
+            try:
+                if  len(value.data)<=0:
+                    logger.error("No data for %s",v)
+            except: # value.data may not exist, or may not accept len()
+                try:
+                    if value.size<=0:
+                        logger.error("No data for %s",v)
+                except: # value.size may not exist
+                    pass
+            self.variable_values[v] = value  # could be None
+        for v in self.reduced_variables.keys():
+            # v is normally a reduced_variable_ID (a named tuple) but for backwards compatibility
+            # we also have to support type(v)==str.
+            if v=='gw' or getattr(v,'var',None)=='gw':  
+                continue
+            #print v
+            if type(v) is str:
+                gwid = 'gw'
+            else:
+                gwid = v._replace(var='gw')
+            gw = self.variable_values.get(gwid,None)
+            value = self.reduced_variables[v].reduce(vid=None,gw=gw)
             try:
                 if  len(value.data)<=0:
                     logger.error("No data for %s",v)
@@ -188,6 +220,9 @@ class plot_plan(object):
                 if ps._id != plotspec.dict_id( None, None, None, None, None ):
                     # not an empty plot
                     logger.warning("Cannot compute data for %s due to exception %s %s",ps._strid, e.__class__.__name__, e)
+                    import traceback
+                    tb = traceback.format_exc()
+                    logger.debug("traceback:\n%s", tb)
                 self.plotspec_values[p] = None
                 continue
             vars = []
@@ -242,10 +277,19 @@ class plot_plan(object):
                 continue
             #labels = [xlab,ylab,zlab]
             labels = [zlab,z2lab]
-            if hasattr(ps,'title'):
-                title = ps.title
-            else:
+            if hasattr(ps,'title1'):
+                title1 = ps.title1
+                title = title1      # deprecated
+                title2 = getattr( ps, 'title2', title1 )
+            elif hasattr(ps,'title'):  # deprecated
+                title1 = ps.title
+                title = title1
+                title2 = getattr( ps, 'title2', title )
+            else:  # Normally we won't get here because titles are normally built with the plotspec object.
                 title = ' '.join(labels)+' '+self._season_displayid  # do this better later
+                title1 = title
+                title2 = title
+            file_descr = getattr( ps, 'file_descr', None )
                 
             #process the ranges if present
             zrange = ps.zrangevars
@@ -284,6 +328,10 @@ class plot_plan(object):
             more_id = ps.more_id
             plotparms = getattr(ps,'plotparms',None)
                     
+            regionid = getattr(self,'region','')
+            if type(regionid) is not str: regionid = regionid.id()[1]
+            if regionid.lower().find('global')>=0: regionid=''
+
             # The following line is getting specific to UV-CDAT, although not any GUI...
             #pdb.set_trace()
             #new kludge added to handle scatter plots, 10/14/14, JMcE
@@ -300,10 +348,13 @@ class plot_plan(object):
             else:
                 plot_type_temp = ps.plottype
             self.plotspec_values[p] = uvc_simple_plotspec(
-                vars, plot_type_temp, labels, title, ps.source, ranges, overplotline, linetypes,
-                linecolors, levels=levels, more_id=more_id, plotparms=plotparms )
-            #print p
-            #print self.plotspec_values[p]
+                vars, plot_type_temp, labels, title, title1, title2, file_descr,
+                ps.source, ranges, overplotline, linetypes,
+                linecolors, levels=levels, more_id=more_id, plotparms=plotparms, idinfo={
+                    'vars':[getattr(self,'varid','')],'season':self._seasonid, 'region':regionid,
+                    'ft1':getattr(self,'ft1nom',''), 'ft2':getattr(self,'ft2nom',''),
+                    'ft1nn':getattr(self,'ft1nickname',''), 'ft2nn':getattr(self,'ft2nickname','') },
+                varvals=varvals )
         #pdb.set_trace()
 
         # dispose of any failed plots
@@ -345,13 +396,20 @@ class plot_plan(object):
         zrv = [ vvals[k] for k in zvars ]
 
         if any([a is None for a in zrv]):
-            logger.warning("Cannot compute plot results from zvars=%s\nbecause missing results for %s", ps.zvars, [k for k in ps.zvars if vvals[k] is None])
+            logger.warning("Cannot compute plot results from zvars=%s\nbecause missing results for %s",
+                           zvars, [k for k in zvars if vvals[k] is None])
             return None, None
         z = apply(zfunc, zrv)
         if hasattr(z, 'mask') and z.mask.all():
             logger.debug("in plotplan.py")
             logger.error("All values of %s are missing!", z.id)
             return None, None
+        if hasattr(z,'mean') and z.mean!=getattr(z,'_mean',None):
+            # If we computed the mean through set_mean() or mean_of_diff(), then there's an equal _mean attribute.
+            # If not, we can't trust the mean attribute.  Any calculation, e.g. a=b+c, may have transmitted :mean
+            # e.g. a.mean=b.mean.  But _mean doesn't get transmitted that way.
+            z.mean = None # You can't simply delete z.mean if it's a method.
+            del z.mean
         if z is not None and not (hasattr(z, 'mean') and isinstance(z.mean, Number)):
             # Compute variable's mean.  For mass weighting, it should have already happened in a
             # dimensionality reduction functions.
@@ -359,9 +417,28 @@ class plot_plan(object):
                 zid = [zz.id for zz in z]
             else:
                 zid = z.id
-            logger.warning("No 'mean' attribute in variable %s; we may compute it in compute_plot_var_value.", zid)
+            logger.debug("No 'mean' attribute in variable %s; will try compute it in compute_plot_var_value.", zid)
 
-            set_mean( z, season=getattr(self,'season',None), region=getattr(self,'region',None) )
+            if self._seasonid=='JFMAMJJASOND':
+                seasonid='ANN'
+            else:
+                seasonid=self._seasonid
+            if not hasattr(self,'region') or 'Global' in self.region.id() or '' in self.region.id()\
+                    or 'global' in self.region.id():   # region.id() looks like ('rg', 'region name')
+                region = ''
+            from metrics.computation.reductions import reduced_variable
+            gwid = reduced_variable.IDtuple( classid='rv', var='gw', season=seasonid, region=region,
+                                             ft1=getattr(self,'ft1nom',''), ffilt1='' )
+            gw = vvals.get(gwid,None)
+            try:
+                # By this point, variables such as z may have been regridded; but the regridding may not
+                # have been applied to gw.  If so, then it's hard to find compatible gw, so give up.
+                if gw.shape!=z.getLatitude().shape:
+                    gw = None
+            except:
+                gw = None
+
+            set_mean( z, season=getattr(self,'season',None), region=getattr(self,'region',None), gw=gw )
             if hasattr(z,'mean') and isinstance(z.mean,cdms2.tvariable.TransientVariable) and\
                     z.mean.shape==():
                 # ... adding 0.0 converts a numpy array of shape () to an actual number

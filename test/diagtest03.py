@@ -24,7 +24,7 @@ imagefilename = 'figure-set3_Global_JJA_T_plot-combined.png'
 imagethreshold = None
 ncfiles = {}
 ncfiles['figure-set3_Global_JJA_T_plot-combined--model.nc'] = ['set3_T_ft1_cam_output',
-                                                              'set3_T_ft2_obs_atmos_NCEP']
+                                                              'set3_T_ft2_NCEP']
 
 # Test of NetCDF data (nc) file match:
 rtol = 1.0e-3

@@ -129,9 +129,19 @@ def run_diags( opts ):
     modelfts = []
     obsfts = []
     for i in range(len(opts['model'])):
-        modelfts.append(path2filetable(opts, modelid=i))
+        ft = path2filetable(opts, modelid=i)
+        if ft._id.nickname=='':
+            newid = ft.IDtuple( classid=ft._id.classid, ftno=ft._id.ftno, ftid=ft._id.ftid,
+                                nickname='model' )
+            ft._id = newid
+        modelfts.append(ft)
     for i in range(len(opts['obs'])):
-        obsfts.append(path2filetable(opts, obsid=i))
+        ft = path2filetable(opts, obsid=i)
+        if ft._id.nickname=='':
+            newid = ft.IDtuple( classid=ft._id.classid, ftno=ft._id.ftno, ftid=ft._id.ftid,
+                                nickname='obs' )
+            ft._id = newid
+        obsfts.append(ft)
 
     for i in range(len(modelfts)):
         logging.info('model %s id: %s', i, modelfts[i]._strid)
@@ -278,7 +288,8 @@ def run_diags( opts ):
             # If the user sepcified variables, use them instead of the complete list
             variables = list( set(variables) & set(opts.get('vars',[])) )
             if len(variables)==0 and len(opts.get('vars',[]))>0:
-                logger.critical('Could not find any of the requested variables %s among %s', opts['vars'], variables)
+                logger.critical('Could not find any of the requested variables %s among %s', opts['vars'],
+                                pclass.list_variables(modelfts,obsfts,sname) )
                 logger.critical("among %s", variables)
                 sys.exit(1)
 
@@ -345,7 +356,7 @@ def run_diags( opts ):
                                                              'diff':{'levels':opts['difflevels'], 'colormap':opts['colormaps']['diff']} } )
                         
                         # Do the work (reducing variables, etc)
-                        res = plot.compute(newgrid=-1) # newgrid=0 for original grid, -1 for coarse
+                        res = plot.compute(newgrid=0) # newgrid=0 for original grid, -1 for coarse
                         # typically res is a list of uvc_simple_plotspec.  But an item might be a tuple.
 
                         if res is not None and len(res)>0 and type(res) is not str: # Success, we have some plots to plot
@@ -454,16 +465,13 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
     # tmmobs[ir] is the template for plotting a simple plot on a page
     #   which has the entire compound plot - that's vcanvas2
     gmobs, tmobs, tmmobs = return_templates_graphic_methods( vcanvas, gms, ovly, onPage )
-    if 1==1: # optional debugging:
-        logger.info('*************************************************')
-        logger.info("tmpl nsingleplots= %s nsimpleplots= %s ",nsingleplots , nsimpleplots)
-        logger.info("tmpl gms= %s" , gms)
-        logger.info("tmpl len(res)= %s ovly= %s onPage=%s", len(res),  ovly, onPage)
-        logger.info("tmpl gmobs= %s", gmobs)
-        logger.info('TMOBS/TMMOBS:')
-        logger.info("%s ", tmobs)
-        logger.info("%s ", tmobs)
-        logger.info('*************************************************')
+    logger.debug("tmpl nsingleplots= %s nsimpleplots= %s ",nsingleplots , nsimpleplots)
+    logger.debug("tmpl gms= %s" , gms)
+    logger.debug("tmpl len(res)= %s ovly= %s onPage=%s", len(res),  ovly, onPage)
+    logger.debug("tmpl gmobs= %s", gmobs)
+    logger.debug('TMOBS/TMMOBS:')
+    logger.debug("%s ", tmobs)
+    logger.debug("%s ", tmmobs)
 
     # gmobs provides the correct graphics methods to go with the templates.
     # Unfortunately, for the moment we have to use rmr.presentation instead
@@ -496,14 +504,19 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
             tm = tmobs[ir]
             if tmmobs != []:
                 tm2 = tmmobs[ir]
-            title = rsr.title
+            title1 = getattr( rsr, 'title1', rsr.title )
+            title2 = getattr( rsr, 'title2', rsr.title )
+            title = title1
+            #title = rsr.title
 
             rsr_presentation = rsr.presentation
             for varIndex, var in enumerate(rsr.vars):
                 savePNG = True
                 seqsetattr(var,'title',title)
                 try:
+                    ftid = var.filetable.id()
                     del var.filetable  # we'll write var soon, and can't write a filetable
+                    var.filetableid = ftid  # but we'll still need to know what the filetable is
                 except:
                     pass
 
@@ -527,6 +540,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
                     else:
                         vname = var.id.replace(' ', '_')
                         var_id_save = var.id
+                        var._id = var.id
                         var.id = ''         # If id exists, vcs uses it as a plot title
                         # and if id doesn't exist, the system will create one before plotting!
                     vname = vname.replace('/', '_')
@@ -544,7 +558,13 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
                 #### seasons/vars/setnames/varopts/etc used to create the plot. Otherwise, there is no
                 #### way for classic viewer to know the filename without lots more special casing. 
 
-                fnamepng,fnamesvg,fnamepdf = form_filename( frnamebase, ('png','svg','pdf'), descr=True,
+                try:
+                    descr = var.filetableid.nickname
+                    if len(descr)<1:
+                        descr = True
+                except:
+                    descr = True
+                fnamepng,fnamesvg,fnamepdf = form_filename( frnamebase, ('png','svg','pdf'), descr=descr,
                                                             vname=vname, more_id=more_id )
 
                 # Beginning of section for building plots; this depends on the plot set!
@@ -671,8 +691,14 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
                     # fjim.write(var,id="jim")
                     # fjim.close()
                 else:
-                    # Reverting to having an update otherwise we get double titles
-                    vcanvas2.setcolormap('bl_to_darkred')
+                    # Set canvas colormap back to default color
+                    # Formerly we did it this way:
+                    #  vcanvas2.setcolormap('bl_to_darkred')
+                    # But that redraws everything already drawn before, and does it with the wrong title.
+                    # And it's a drag on performance.
+                    # All setcolormap() does is the following line, which we want; plus an
+                    # update() line which we don't want.
+                    vcanvas2.colormap = 'bl_to_darkred'
 
                     #check for units specified for display purposes
                     var_save = var.clone()
@@ -693,11 +719,12 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
 
                     if hasattr(plot, 'customizeTemplates'):
                         tm, tm2 = plot.customizeTemplates( [(vcanvas, tm), (vcanvas2, tm2)], data=var,
-                                                           varIndex=varIndex, graphicMethod=rsr.presentation, var=var )
+                                                           varIndex=varIndex, graphicMethod=rsr.presentation,
+                                                           var=var, uvcplotspec=rsr )
                     # Single plot
                     
                     plot.vcs_plot(vcanvas, var(longitude=(-10,370)), rsr.presentation, tm, bg=1,
-                                  title=title, source=rsr.source,
+                                  title=title1, source=rsr.source,
                                   plotparms=getattr(rsr,'plotparms',None) )
 #                                      vcanvas3.clear()
 #                                      vcanvas3.plot(var, rsr.presentation )
@@ -708,7 +735,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
                         if tm2 is not None:
                             # Multiple plots on a page:
                             plot.vcs_plot( vcanvas2, var(longitude=(-10,370)), rsr.presentation, tm2, bg=1,
-                                           title=title, source=rsr.source,
+                                           title=title2, source=rsr.source,
                                            plotparms=getattr(rsr,'plotparms',None))#,
                                            #compoundplot=onPage )
                             plotcv2 = True
@@ -732,8 +759,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
                         for i in range(len(var_id_save)):
                             var[i].id = var_id_save[i]
             if savePNG:
-                pass
-                    #vcanvas.png( fnamepng, ignore_alpha=True, metadata=provenance_dict() )
+                vcanvas.png( fnamepng, ignore_alpha=True, metadata=provenance_dict() )
                     # vcanvas.svg() doesn't support ignore_alpha or metadata keywords
                     #vcanvas.svg( fnamesvg )
                     #vcanvas.pdf( fnamepdf)
@@ -752,8 +778,8 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
         #logger.info("writing svg file2: %s",fnamesvg)
         # vcanvas2.svg() doesn't support ignore_alpha or metadata keywords
         #vcanvas2.svg( fnamesvg )
-        logger.info("writing pdf file2: %s",fnamepdf)
-        vcanvas2.pdf( fnamepdf )            
+        #logger.info("writing pdf file2: %s",fnamepdf)
+        #vcanvas2.pdf( fnamepdf )            
 
 if __name__ == '__main__':
     print "UV-CDAT Diagnostics, command-line version"
