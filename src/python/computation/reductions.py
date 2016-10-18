@@ -547,7 +547,11 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Tru
             else:
                 avmv = averager( mvrs, axis=axes_string, weights=avweights )
 
-        elif gw is None:
+        elif gw is None or mvrs.getLatitude() is None:
+            avmv = averager( mvrs, axis=axes_string )   # "normal" averaging
+        elif len(gw)!=len(mvrs.getLatitude()):
+            # very likely mvrs is a model-obs difference, gw is for model and mvrs is on the obs grid
+            # We might be able to use gw from obs, but it's not worth making it work for a diff
             avmv = averager( mvrs, axis=axes_string )   # "normal" averaging
         else:
             weights = [ gw if a.isLatitude() else 'weighted' for a in axes ]
