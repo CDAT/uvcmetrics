@@ -2509,6 +2509,10 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
             set_mean(mv2new)
             mv2new.filetable = mv2.filetable
             mv2.regridded = mv2new.id   # a GUI can use this
+            if hasattr(mv1,'gw'):
+                mv2new.gw = mv1.gw
+            elif hasattr(mv2new,'gw'):
+                del mv2new.gw
             regridded_vars[mv2new.id] = mv2new
 #        else:
 #            # Interpolate mv1 from axis1[1] to axis2[1]
@@ -2538,6 +2542,10 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
             set_mean(mv1new)
             mv1new.filetable = mv1.filetable
             mv1.regridded = mv1new.id   # a GUI can use this
+            if hasattr(mv2,'gw'):
+                mv1new.gw = mv2.gw
+            elif hasattr(mv1new,'gw'):
+                del mv1new.gw
             regridded_vars[mv1new.id] = mv1new
     aminusb = mv1new - mv2new
     aminusb.id = 'difference of '+mv1.id
