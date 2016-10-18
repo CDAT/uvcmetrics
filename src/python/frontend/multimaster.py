@@ -2,8 +2,13 @@
 # For now, this is just an example showing the capabilities we want.
 
 from metrics.frontend.options import *
-# In the future we will import user-defined option files just as user-defined diagnostics are already
+# In the future we will import user-defined option files at runtime just as user-defined diagnostics are already
 # imported.
+from metrics.fileio.filters import *
+
+var_collection = {}
+obs_collection = {}
+diags_collection = {}
 
 var_collection['MyVars'] = ['SHFLX', 'LHFLX', 'FLUT', 'T', 'TS']
 
@@ -21,13 +26,34 @@ diags_collection['5'] = Options( sets=['5'], vars=['MyVars'], obs=['MyObs'],
 # However, a few options will need special treatment, causing replacement of this Options object
 # with another one, or a list of Options objects.  There are three reasons:
 # 1. When an option includes a key to a "collection" dict, that key will have to be expanded,
-#   and probably you'll end out with multiple instances of Options.
+#   and probably you'll end out with multiple instances of Options.  The same sort of thing
+#   happens if the option is a list, but the Options class and diags.py don't support it as a list.
 # 2. If information is provided at runtime, i.e. the multidiags command line, then multidiags
 # doesn't have complete information until runtime, and will have to add it to the existing Options
 # instances.  Thus, at runtime the model is specified and will become the final 'model' option.
 # The observation path is specified and will finalize the 'obs' option.
-# 3. Metadiags-specific options.  The present one is 'default-opts'.
+# 3. Multidiags-specific options.  The present one is 'default-opts'.  Note that it could be a
+# list and if so, should _not_ be expanded into multiple Options instances.
 
-key2collection = { k:var_collection for k in var_collection.keys() }
+# *** Collection 4 of amwgmaster.py, converted ***
+diags_collection['4base'] = Options(
+    sets=['4'], desc='Vertical contour plots of DJF, JJA and ANN zonal means', seasons=['DJF', 'JJA', 'ANN'],
+    package='AMWG', default_opts='MyDefaults' )
+diags_collection['4'] = [
+    Options(
+        vars=['OMEGA', 'U'], obs=['ECMWF_1', 'NCEP_1', 'ERA40_1', 'JRA25_1'], default_opts='4base' ),
+    Options(
+        vars=['RELHUM'], obs=['ECMWF_1', 'NCEP_1', 'ERA40_1', 'AIRS_1'], default_opts='4base' ),
+    Options(
+        vars=['SHUM', 'T'], obs=['ECMWF_1', 'NCEP_1', 'ERA40_1', 'JRA25_1', 'AIRS_1'], default_opts='4base' ) ]
+# This shows how to reproduce a feature of metadiags/amwgmaster in which the obs list
+# can depend on the variable.  However, this system is not limited to var/obs options.
+
+
+# Given a keyword, if it identifies a member of one of the collections, this will tell you
+# which collection.  diags_collection is omitted, as it is used for different purposes.
+key2collection = {}
 key2collection.update( { k:obs_collection for k in obs_collection.keys() } )
-key2collection.update( { k:diags_collection for k in diags_collection.keys()} )
+key2collection.update( { k:diags_collection for k in var_collection.keys()} )
+
+

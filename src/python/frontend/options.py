@@ -53,53 +53,89 @@ help_url="https://acme-climate.atlassian.net/wiki/pages/viewpage.action?pageId=1
 # --dataset path=/path,climos='no'
 
 class Options():
-    def __init__(self):
+    def __init__(self, **kwargs):
         # TO DO: allow any keyword arguments; use them to initialize _opts.
         self._opts = {}
         self.all_packages = packages.package_names
 
-        # This is the dictionary holding options
-        self._opts['model'] = []
-        self._opts['obs'] = []
-        self._opts['output'] = {} # output pre, post, directory, absolute filename, output options
-        self._opts['times'] = [] # This is where seasonal/monthly/yearly choices end up
-        self._opts['package'] = None
-        self._opts['vars'] = ['ALL']
-        self._opts['varopts' ] = None
-        self._opts['sets'] = None
-        self._opts['regions'] = []
-        self._opts['logging'] = {}
-        self._opts['uservars'] = []
+        # self._opts is the dictionary holding options
+        # N.B. Defaults are no longer set in the __init__ method.  Instead, a newly created instance
+        # of Options should be merged with whatever other Options instances are desired.  The last
+        # of them should be Options.defaults.  Use self.merge(Options.defaults)
+        if False:
+            self._opts['model'] = []
+            self._opts['obs'] = []
+            self._opts['output'] = {} # output pre, post, directory, absolute filename, output options
+            self._opts['times'] = [] # This is where seasonal/monthly/yearly choices end up
+            self._opts['package'] = None
+            self._opts['vars'] = ['ALL']
+            self._opts['varopts' ] = None
+            self._opts['sets'] = None
+            self._opts['regions'] = []
+            self._opts['logging'] = {}
+            self._opts['uservars'] = []
 
-        self._opts['reltime'] = None
-        self._opts['cachepath'] = '/tmp/'+getpass.getuser()+'/uvcmetrics'
-        self._opts['translate'] = True
-        self._opts['translations'] = {}
-        self._opts['levels'] = None
-        self._opts['difflevels'] = None #levels for a difference plot
-        self._opts['colormaps'] = {'model': 'viridis', 'obs': 'viridis', 'diff': 'bl_to_darkred'}
-        self._opts['taskspernode'] = None
-        self._opts["displayunits"] = None
+            self._opts['reltime'] = None
+            self._opts['cachepath'] = '/tmp/'+getpass.getuser()+'/uvcmetrics'
+            self._opts['translate'] = True
+            self._opts['translations'] = {}
+            self._opts['levels'] = None
+            self._opts['difflevels'] = None #levels for a difference plot
+            self._opts['colormaps'] = {'model': 'viridis', 'obs': 'viridis', 'diff': 'bl_to_darkred'}
+            self._opts['taskspernode'] = None
+            self._opts["displayunits"] = None
 
-        self._opts['output']['compress'] = True
-        self._opts['output']['json'] = False
-        self._opts['output']['xml'] = True
-        self._opts['output']['netcdf'] = True
-        self._opts['output']['plots'] = True
-        self._opts['output']['antialiasing'] = True
-        self._opts['output']['climos'] = True
-        self._opts['output']['outputdir'] = '/tmp'
-        self._opts['output']['prefix'] = ''
-        self._opts['output']['postfix'] = ''
-        self._opts['output']['logo'] = True
-        self._opts['output']['table'] = False
+            self._opts['output']['compress'] = True
+            self._opts['output']['json'] = False
+            self._opts['output']['xml'] = True
+            self._opts['output']['netcdf'] = True
+            self._opts['output']['plots'] = True
+            self._opts['output']['antialiasing'] = True
+            self._opts['output']['climos'] = True
+            self._opts['output']['outputdir'] = '/tmp'
+            self._opts['output']['prefix'] = ''
+            self._opts['output']['postfix'] = ''
+            self._opts['output']['logo'] = True
+            self._opts['output']['table'] = False
 
-        self._opts['logging']['level'] = logging.ERROR
-        self._opts['logging']['file'] = None
+            self._opts['logging']['level'] = logging.ERROR
+            self._opts['logging']['file'] = None
 
-        self._opts['dbhost'] = "https://diags-viewer.llnl.gov"
-        self._opts['dsname'] = None
-        self._opts['do_upload'] = False
+            self._opts['dbhost'] = "https://diags-viewer.llnl.gov"
+            self._opts['dsname'] = None
+            self._opts['do_upload'] = False
+
+        for key,value in kwargs.iteritems():
+            self._opts[key] = value
+
+    def clone( self, exception=None ):
+        """Generates and returns an exact copy of the present instance of Options, if 'exception' is
+        not supplied.  If the exception is supplied, it should be a 2-tuple: the first item is the
+        name of an option and the second its value.  Then the returned Options instance will be an
+        exact copy except for that option, where the supplied value will be used instead.
+        This copy is shallow; that is, the dictionary self._opts is copied but its elements are not.
+        """
+        newopts = Options()
+        for key,value in self._opts.iteritems():
+            newopts[key] = value
+        if exception is not None:
+            newopts[exception[0]] = exception[1]
+
+    def merge( self, opt2 ):
+        """Merge another instance of the Options class into this one.
+        If they have a conflict over the value of any option, then this instance gets priority."""
+        if opt2 is None:
+            return
+        for key,value in opt2._opts.iteritems():
+            if key not in self._opts:
+                self[key] = value
+            elif key in ['output', 'logging', 'translations']:
+                # For these options, the value is a dictionary which should be merged, not replaced
+                for k,v in opt2[key].iteritems():
+                    if k not in self[key]:
+                        self[key][k] = v
+            elif type(value) is dict and key!=colormap:
+                logger.warning("unrecognized dictionary-valued option %s",key)
 
    # Some short cut getter/setters
     def __getitem__(self, opt):
@@ -110,6 +146,9 @@ class Options():
 
     def get(self, opt, default=None):
         return self._opts.get(opt,default)
+
+    def keys(self):
+        return self._opts.keys()
 
    ###
    ### The next 4 functions all process dataset/obs options.
@@ -180,6 +219,8 @@ class Options():
         defkeys = ['start', 'end', 'filter', 'name', 'climos', 'path', 'type']
 
         for i in range(len(data)):
+            if dictkey not in self._opts:  #jfp
+                self._opts[dictkey] = []
             self._opts[dictkey].append({})
             for d in defkeys:
                 self._opts[dictkey][i][d] = None
@@ -837,12 +878,18 @@ class Options():
 
         # Set up the logging before anything else, so we can use the logger everywhere.
         self.processLogging(args.log_level, args.log_file)
-        # More information in each logging message at lower levels of logging
+        logsave = self._opts.get( "logging", None )   #jfp
+        if logsave==None:
+            self._opts["logging"] = { "level":logging.DEBUG, "file":None }
         if self._opts["logging"]["level"] < logging.INFO:
             fmt = "%(levelname)s (from %(filename)s %(lineno)d): %(message)s"
         else:
             fmt = "%(levelname)s: %(message)s"
         logging.basicConfig(level=self._opts["logging"]["level"], filename=self._opts["logging"]["file"], format=fmt)
+        if logsave is None:
+            del self._opts["logging"]
+        else:
+            self._opts["loggin"] = None
 
         # First, check for the --list option so we don't have to do as much work if it was passed.
         if(args.list != None):
@@ -880,9 +927,11 @@ class Options():
         if(args.cachepath != None):
             self._opts['cachepath'] = args.cachepath[0]
         try:
-            os.makedirs(self._opts['cachepath'])
+            cachepath = self._opts.get('cachepath','/tmp/'+getpass.getuser()+'/uvcmetrics') #jfp
+            os.makedirs(cachepath)
         except OSError as e:  # usually means path already exists, but make sure:
-            if not os.path.isdir(self._opts['cachepath']):
+            #jfpif not os.path.isdir(self._opts['cachepath']):
+            if not os.path.isdir(cachepath):
                 raise e
 
         if (args.levels) != None:
@@ -915,7 +964,12 @@ class Options():
             else:
                 self._opts['output']['compress'] = True
 
-        if self._opts['output']['compress'] == False:
+        #jfp if self._opts['output']['compress'] == False:
+        try:
+            compress = self._opts['output']['compress']
+        except:
+            compress = False #jfp
+        if compress == False:
             logger.info('Disabling NetCDF compression on output files')
             cdms2.setNetcdfShuffleFlag(0)
             cdms2.setNetcdfDeflateFlag(0)
@@ -992,8 +1046,9 @@ class Options():
             if not os.path.isdir(args.outputdir):
                 logging.critical("Output directory %s does not exist!",args.outputdir)
                 quit()
+            if 'output' not in self._opts:
+                self._opts['output'] = {}  #jfp
             self._opts['output']['outputdir'] = args.outputdir
-
 
 
         if 'climatology' not in progname and 'climatology.py' not in progname:
@@ -1121,6 +1176,45 @@ class Options():
                 self.processLevels(args.levels)
 
 ### Helper functions
+
+options_defaults = Options( 
+    model = [],
+    obs = [],
+    times = [],  # This is where seasonal/monthly/yearly choices end up
+    package = None,
+    vars = ['ALL'],
+    varopts = None,
+    sets = None,
+    regions = [],
+    uservars = [],
+
+    reltime = None,
+    cachepath = '/tmp/'+getpass.getuser()+'/uvcmetrics',
+    translate = True,
+    translations = {},
+    levels = None,
+    difflevels = None,   #levels for a difference plot
+    colormaps = {'model': 'viridis', 'obs': 'viridis', 'diff': 'bl_to_darkred'},
+    taskspernode = None,
+    displayunits = None,
+    # output pre, post, directory, absolute filename, output options:
+    output = { 'compress': True,
+               'json': False,
+               'xml': True,
+               'netcdf': True,
+               'plots': True,
+               'antialiasing': True,
+               'climos': True,
+               'outputdir': '/tmp',
+               'prefix': '',
+               'postfix': '',
+               'logo': True,
+               'table': False },
+    logging = { 'level': logging.ERROR,
+                'file' : None },
+    dbhost = "https://diags-viewer.llnl.gov",
+    dsname = None,
+    do_upload = False )
 
 ### make_ft_dict - provides an easily parsed dictionary of the climos/raws for a given set of datasets
 def make_ft_dict(models):
