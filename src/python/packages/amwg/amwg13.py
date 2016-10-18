@@ -141,7 +141,7 @@ class amwg_plot_set13(amwg_plot_plan):
     def var_from_cdv( self, filetable, varnom, seasonid, region ):
         """defines the derived variable for varnom when computable as a common derived variable using data
         in the specified filetable"""
-        varid,rvs,dvs = self.commvar2var(
+        varid, rvs, dvs, unused = self.commvar2var(
             varnom, filetable, self.season,\
                 (lambda x,vid,season=self.season,region=region:
                      reduce_time_space_seasonal_regional(x, season=season, region=region, vid=vid) ))

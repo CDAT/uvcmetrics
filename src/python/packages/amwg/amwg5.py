@@ -193,7 +193,7 @@ class amwg_plot_set5(amwg_plot_plan):
         a common_derived_variable.  Its inputs will be reduced, then it will be set up as a
         derived_var.
         """
-        varid,rvs,dvs = self.commvar2var(
+        varid,rvs,dvs,unused = self.commvar2var(
             varnom, filetable, self.season,\
                 (lambda x,vid:
                      reduce2latlon_seasonal(x, self.season, self.region, vid, exclude_axes=[
