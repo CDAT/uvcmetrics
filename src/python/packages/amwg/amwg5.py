@@ -193,7 +193,7 @@ class amwg_plot_set5(amwg_plot_plan):
         a common_derived_variable.  Its inputs will be reduced, then it will be set up as a
         derived_var.
         """
-        varid,rvs,dvs = self.commvar2var(
+        varid,rvs,dvs,unused = self.commvar2var(
             varnom, filetable, self.season,\
                 (lambda x,vid:
                      reduce2latlon_seasonal(x, self.season, self.region, vid, exclude_axes=[
@@ -222,6 +222,8 @@ class amwg_plot_set5(amwg_plot_plan):
         # If there were another axis, then we'd need a new function which reduces it as well.
         if not isinstance(aux,Number): return None
         pselect = udunits(aux,'mbar')
+        pselect.value=int(pselect.value)
+        PSELECT = str(pselect)
 
         reduced_varlis = [
             reduced_variable(  # var=var(time,lev,lat,lon)
@@ -250,6 +252,7 @@ class amwg_plot_set5(amwg_plot_plan):
                                 func=(lambda z,psl=pselect: select_lev(z,psl))) }
 
         ft1src = filetable1.source()
+        #note: the title in the following is parced in customizeTemplate. This is a garbage kludge! Mea culpa. 
         self.single_plotspecs = {
             self.plot1_id: plotspec(
                 # was vid = varnom+'_1',
@@ -257,7 +260,7 @@ class amwg_plot_set5(amwg_plot_plan):
                 vid = ps.dict_idid(vidl1),
                 zvars = [vidl1],  zfunc = (lambda z: z),
                 plottype = self.plottype,
-                title = varnom + ' ' + seasonid + ' model ' + names['model'],
+                title = varnom + '('+PSELECT+') ' + seasonid + ' model ' +  names['model'],
                 source = names['model'],
                 plotparms = plotparms[src2modobs(ft1src)] ) }
            
@@ -354,7 +357,11 @@ class amwg_plot_set5(amwg_plot_plan):
         #I think this was a result of another kludge
         header = None
         s = var.title.split(' ')
-        if len(s) == 4:
+        if len(s) == 5:
+            header = s[0] + ' ' + s[1] + ' ' + s[2]
+            var.title = s[3]
+            source = s[4]
+        elif len(s) == 4:
             header = s[0] + ' ' + s[1]
             var.title = s[2]
             source = s[3]

@@ -1,0 +1,23 @@
+AMWG Diagnostics Set 1 ANN means Global
+
+Test Case: ft1_table_reference
+
+Control Case: various observational data
+
+Variable                 Test Case           Obs          Test-Obs           RMSE            Correlation
+
+FLUT_CERES-EBAF  	   242.390	   239.574	     2.816	     8.214	     0.967
+LHFLX_JRA25      	    90.395	    87.935	     2.460	    15.344	     0.964
+LHFLX_ERA40      	    90.395	    82.367	     8.029	    15.774	     0.964
+LHFLX_WHOI       	    90.395	    88.325	     2.070	    26.289	     0.915
+LWCF_CERES-EBAF  	    23.973	    26.476	    -2.503	     6.556	     0.847
+PRECT_GPCP       	     3.126	     2.674	     0.452	     1.206	     0.850
+PSL_JRA25        	  1011.092	  1011.280	    -0.188	     1.891	     0.983
+PSL_ERAI         	  1011.092	  1011.362	    -0.270	     2.073	     0.980
+SHFLX_JRA25      	    19.203	    19.372	    -0.168	    10.194	     0.823
+SHFLX_NCEP       	    19.203	    15.795	     3.409	    14.664	     0.806
+SHFLX_LARYEA     	    19.203	    13.312	     5.892	    10.889	     0.341
+SWCF_CERES-EBAF  	   -46.873	   -47.071	     0.198	    11.014	     0.850
+TREFHT_LEGATES   	   286.926	   287.645	    -0.718	     3.778	     0.968
+TREFHT_JRA25     	   286.926	   287.605	    -0.679	     2.012	     0.991
+TS_NCEP          	   287.740	   287.683	     0.057	     2.163	     0.993

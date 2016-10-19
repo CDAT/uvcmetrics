@@ -1,4 +1,5 @@
 set(BASELINE_DIR "${metrics_SOURCE_DIR}/test/baselines")
+
   add_test("diags_test_01"
     "python"
 ${metrics_SOURCE_DIR}/test/diagtest01.py
@@ -122,3 +123,11 @@ ${metrics_SOURCE_DIR}/test/diagsmeta.py
 --datadir=${UVCMETRICS_TEST_DATA_DIRECTORY}/
 --baseline=${BASELINE_DIR}/ )
 #set_tests_properties(diags_meta PROPERTIES DEPENDS diags_test_15)
+
+add_test("table_test"
+"python"
+${metrics_SOURCE_DIR}/test/tabletest.py
+--datadir=${UVCMETRICS_TEST_DATA_DIRECTORY}/
+--baseline=${BASELINE_DIR}/ )
+#set_tests_properties(table_test PROPERTIES DEPENDS diags_meta)
+ 

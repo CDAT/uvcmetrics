@@ -3,7 +3,7 @@
 ### TODO: Seperate subclasses for datasets vs obs
 
 
-import cdms2, os, logging, pdb, getpass
+import cdms2, os, logging, pdb, getpass, metrics
 import metrics.packages as packages
 import argparse, re
 from metrics.frontend.defines import *
@@ -69,6 +69,7 @@ class Options():
         self._opts['regions'] = []
         self._opts['logging'] = {}
         self._opts['uservars'] = []
+        self._opts['user'] = None
 
         self._opts['reltime'] = None
         self._opts['cachepath'] = '/tmp/'+getpass.getuser()+'/uvcmetrics'
@@ -402,6 +403,9 @@ class Options():
                    else:
                         logger.debug('Variable %s in set %s from package %s at path %s has no options.', v, setname[0], package, self._opts['model'][0]['path'])
 
+    def processUserId(self, user):
+        self._opts["user"]=user[0]
+        metrics.frontend.user_identifier.user = self._opts["user"]
 
     ###
     ### This verifies a few command line options. It could probably use some more sanity checks
@@ -699,7 +703,8 @@ class Options():
             runopts.add_argument('--varopts', nargs='+',
                                  help="Variable auxillary options")
             #levels for isofill plots
-
+            runopts.add_argument('--user', nargs='+', help="Name of the user running diagnostics")
+            
             runopts.add_argument('--levels', nargs='*',
                                  help="Specify a file name containing a list of levels or the comma delimited levels directly")
             runopts.add_argument('--difflevels', nargs='*',
@@ -979,6 +984,8 @@ class Options():
             if args.sbatch>0:
                 self._opts["dryrun"] = True
         self._opts['verbose'] = args.verbose
+        if( args.user ):
+            self.processUserId( args.user )
 
         # Help create output file names
         if 'metadiags' not in progname and 'climatology' not in progname and 'climatology.py' not in progname and 'metadiags.py' not in progname:

@@ -107,3 +107,4 @@ d7fc6bbb9a2dfdb0fa44d7835f94a3d4  obs_data_5.6/ERS_DJF_climo.nc
 3cce9af23687f27d3b134f60039ebdce  obs_data_5.6/ERS_JJA_climo.nc
 aaedba911f145e711d05b6430e13ce4e  obs_data_5.6/ERS_MAM_climo.nc
 e40f05dfec15f145e9623290d5142705  obs_data_5.6/ERS_SON_climo.nc
+62210097c2b766aefa971941ef2585f9  table_reference/20160520.A_WCYCL1850.ne30_oEC.reference.alpha6_ANN_climo.nc
