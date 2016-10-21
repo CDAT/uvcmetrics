@@ -2217,6 +2217,8 @@ def aminusb_ax2( mv1, mv2 ):
     if hasattr(mv1,'long_name'):
         aminusb.long_name = 'difference of '+mv1.long_name
     if hasattr(mv1,'units'):  aminusb.units = mv1.units
+    aminusb.filetable = mv1.filetable
+    aminusb.filetable2 = mv2.filetable
 
     aminusb.initDomain( ab_axes )
     mean_of_diff( aminusb, mv1, mv2 )
@@ -2549,6 +2551,8 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
             regridded_vars[mv1new.id] = mv1new
     aminusb = mv1new - mv2new
     aminusb.id = 'difference of '+mv1.id
+    aminusb.filetable = mv1new.filetable
+    aminusb.filetable2 = mv2new.filetable
 
     #save arrays for rmse and correlations KLUDGE!
     aminusb.model = mv1new
