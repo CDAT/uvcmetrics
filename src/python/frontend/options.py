@@ -120,6 +120,7 @@ class Options():
             newopts[key] = value
         if exception is not None:
             newopts[exception[0]] = exception[1]
+        return newopts
 
     def merge( self, opt2 ):
         """Merge another instance of the Options class into this one.
@@ -132,8 +133,27 @@ class Options():
             elif key in ['output', 'logging', 'translations']:
                 # For these options, the value is a dictionary which should be merged, not replaced
                 for k,v in opt2[key].iteritems():
-                    if k not in self[key]:
+                    if k not in self[key].keys():
                         self[key][k] = v
+            elif key in ['model','obs'] and len(opt2[key])>0 :
+                # These options are composite, and complicated.  
+                # At the moment I cannot properly merge two obs lists if the length is >1.
+                if len(self[key])==0:
+                    self[key] = opt2[key]
+                elif len(self[key])>=1 and len(opt2[key])==1:
+                    for idx,mob in enumerate(self[key]):   # mob is a dict with keys such as filter, path, climos
+                        for k,v in opt2[key][0].iteritems():
+                            if k not in mob.keys() or mob[k] is None:
+                                mob[k] = v
+                elif len(self[key])==1 and len(opt2[key])>=1:
+                    self[key] = [ self[key][0].copy() for _ in opt2[key] ]
+                    for idx,mob in enumerate(opt2[key]):   # mob is a dict with keys such as filter, path, climos
+                        for k,v in mob.iteritems():
+                            if k not in self[key][idx].keys() or self[key][idx][k] is None:
+                                self[key][idx][k] = v
+                elif len(self[key])>1 and len(opt2[key])>1:
+                    logger.error("Options.merge not implemented for model or obs lists both of length>1")
+                print "jfp merged",key,"to",self[key]
             elif type(value) is dict and key!=colormap:
                 logger.warning("unrecognized dictionary-valued option %s",key)
 
@@ -326,7 +346,11 @@ class Options():
             "CRITICAL": logging.CRITICAL
         }
         if log_level:
+            if "logging" not in self.keys():
+                self["logging"] = {}
             # Use whatever value is in there already as the default.
+            if "level" not in self["logging"].keys():
+                self["logging"]["level"] = options_defaults["logging"]["level"]
             self._opts["logging"]["level"] = levels.get(log_level.upper(), self._opts["logging"]["level"])
         if log_file:
             log_path = os.path.abspath(os.path.expanduser(log_file))
@@ -459,6 +483,7 @@ class Options():
         import metrics.fileio.findfiles as fi
         import metrics.packages.diagnostic_groups
         import os
+        self.merge(options_defaults)  # jfp not really a "verify" step, but has to be done now that defaults are out of __init__
         if len(self._opts['model']) == 0 and len(self._opts['obs']) == 0:
             logging.critical('At least one model or obs set needs describted')
             quit()
@@ -885,6 +910,8 @@ class Options():
             fmt = "%(levelname)s (from %(filename)s %(lineno)d): %(message)s"
         else:
             fmt = "%(levelname)s: %(message)s"
+        if "file" not in self["logging"].keys():
+            self["logging"]["file"] = options_defaults["logging"]["file"]
         logging.basicConfig(level=self._opts["logging"]["level"], filename=self._opts["logging"]["file"], format=fmt)
         if logsave is None:
             del self._opts["logging"]
@@ -1110,7 +1137,10 @@ class Options():
                     logger.warning('Defaulting to using all seasons')
                 else:
                     slist = [x for x in all_seasons if x in args.seasons]
-                    self._opts['times'] = self._opts['times']+slist
+                    if 'times' in self.keys(): #jfp
+                        self._opts['times'] = self._opts['times']+slist
+                    else:
+                        self._opts['times'] = slist  #jfp
                 logger.debug('seasons: %s', self._opts['times'])
 
     def listOpts(self, args):

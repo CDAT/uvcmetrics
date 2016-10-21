@@ -1,5 +1,6 @@
 # Master list of definitions for multidiags.py.
 # For now, this is just an example showing the capabilities we want.
+# Note that I assume without checking that each key is unique.
 
 from metrics.frontend.options import *
 # In the future we will import user-defined option files at runtime just as user-defined diagnostics are already
@@ -12,9 +13,14 @@ diags_collection = {}
 
 var_collection['MyVars'] = ['SHFLX', 'LHFLX', 'FLUT', 'T', 'TS']
 
-obs_collection['MyObs'] = ['ISCCP', 'CERES', 'NCEP']
-obs_collection['ISCCP'] = [f_startswith('ISCCP_')]
-obs_collection['CERES'] = [f_and( f_startswith('CERES_'), f_not(f_contains('EBAF')))]
+obs_collection['MyObs'] = ['ISCCP', 'CERES', 'NCEP']   # not yet supported, but I'd like to
+obs_collection['ISCCP'] = {'filter':f_startswith('ISCCP_')}
+obs_collection['CERES'] = {'filter':f_and( f_startswith('CERES_'), f_not(f_contains('EBAF')))}
+obs_collection['ECMWF'] = {'filter':f_startswith('ECMWF')}
+obs_collection['NCEP']  = {'filter':f_startswith('NCEP')}
+obs_collection['ERA40'] = {'filter':f_startswith('ERA40')}
+obs_collection['AIRS']  = {'filter':f_startswith('AIRS')}
+obs_collection['JRA25'] = {'filter':f_startswith('JRA25')}
 
 diags_collection['MyDefaults'] = Options( desc = 'default options to be incorporated into other collections',
                                           logo='No' )
@@ -41,11 +47,11 @@ diags_collection['4base'] = Options(
     package='AMWG', default_opts='MyDefaults' )
 diags_collection['4'] = [
     Options(
-        vars=['OMEGA', 'U'], obs=['ECMWF_1', 'NCEP_1', 'ERA40_1', 'JRA25_1'], default_opts='4base' ),
+        vars=['OMEGA', 'U'], obs=['ECMWF', 'NCEP', 'ERA40', 'JRA25'], default_opts='4base' ),
     Options(
-        vars=['RELHUM'], obs=['ECMWF_1', 'NCEP_1', 'ERA40_1', 'AIRS_1'], default_opts='4base' ),
+        vars=['RELHUM'], obs=['ECMWF', 'NCEP', 'ERA40', 'AIRS'], default_opts='4base' ),
     Options(
-        vars=['SHUM', 'T'], obs=['ECMWF_1', 'NCEP_1', 'ERA40_1', 'JRA25_1', 'AIRS_1'], default_opts='4base' ) ]
+        vars=['SHUM', 'T'], obs=['ECMWF', 'NCEP', 'ERA40', 'JRA25', 'AIRS'], default_opts='4base' ) ]
 # This shows how to reproduce a feature of metadiags/amwgmaster in which the obs list
 # can depend on the variable.  However, this system is not limited to var/obs options.
 

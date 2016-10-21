@@ -2,23 +2,26 @@
 # The collection name is a key into multimaster.py, or (>>>> TO DO >>>>) another file provided by the user.
 
 from metrics.frontend.multimaster import *   # this file is just a demo
+import metrics.frontend.multimaster as multimaster
 from metrics.frontend.diags import run_diags
 from metrics.frontend.options import Options, options_defaults
-import logging, pdb
+import logging, pdb, importlib
+from pprint import pprint
 logger = logging.getLogger(__name__)
 
-def merge_option_with_its_defaults( opt, optmodule=None ):
-    """If opt, an Options instance from module optmodule, has a default_opts option set, this
-    will import the other Options instance specified by default_opts, and merge the two
+def merge_option_with_its_defaults( opt, diags_collection ):
+    """If opt, an Options instance, has a default_opts option set, this will import the
+    other Options instance specified by default_opts and present in diags_collection,
+    and merge the two.
     """
-    if opt is None or optmodule is None:
+    if opt is None or diags_collection is None:
         return opt
-    if 'default_opts' not in opt._opts:
+    if 'default_opts' not in opt.keys():
         return opt
-    import optmodule
-    if opt['default_opts'] not in optmodule.__dict__:
-        logger.warning("Can't find default options %s in module %s", opt['default_opts'], optmodule )
-    return  opt.merge( getattr(optmodule, opt.default_opts, None) )
+    if opt['default_opts'] not in diags_collection.keys():
+        logger.warning("Can't find default options %s in diags_collection %s", opt['default_opts'], diags_collection.keys() )
+    opt.merge( diags_collection[opt['default_opts']] )
+    return opt
 
 def merge_all_options( opt ):
     """Merge the supplied Options object with other Options instances.  Conflicts are resolved by
@@ -37,14 +40,64 @@ def merge_all_options( opt ):
     except:
         diags_opts = None
         diagsopts = None
-    if opt.get('sets') is not None:  # later use a specialized option name, e.g. 'collec' <<<<
-        for set in opt['sets']:
-            opt.merge( diags_collection[set] )
-    opt = merge_option_with_its_defaults( opt )
-    myopts = merge_option_with_its_defaults( myopts, my_opts )
-    opt.merge( myopts )
-    opt.merge( diagsopts )
-    opt.merge( options_defaults )
+    # The 'sets' or 'colls' option identifies a member (or more) of diags_collection, whose values
+    # are Options instances.  We have to expand it now, to a list 'opts' of real Options instances,
+    # in order to perform the merger.
+    # Similarly, if any 'model' or 'obs' option be a key into a collection, we have to expand it
+    # now in order to perform a proper merge.
+    if opt.get('sets') is None:  # later use a specialized option name, e.g. 'collec' <<<<
+        opts = [opt]
+    else:
+        opts = []
+        for dset in opt['sets']:
+            # Each set in opt['sets'] may be a list.  And opt['sets'] may be a list of length>1.
+            # Either way, we end out with a list of Options instances which should be merged with
+            # opt (opt having priority) but should not be merged together.
+            if isinstance(diags_collection[dset],Options):
+                merge_option_with_its_defaults(diags_collection[dset],diags_collection)
+                opt.merge( expand_model_obs( diags_collection[dset] ))
+                opts.append(opt)
+            elif type(diags_collection[dset]) is list:
+                for optset in diags_collection[dset]:
+                    merge_option_with_its_defaults(optset,diags_collection)
+                    newopt = opt.clone()
+                    newopt.merge( expand_model_obs(optset) )
+                    opts.append(newopt)
+    # >>>> TO DO: This should also be done for the myopts, diagsopts, etc. <<<<
+    if my_opts is not None:
+        merge_option_with_its_defaults( myopts, my_opts.diags_collection )
+    for op in opts:
+        expand_model_obs( op )
+    expand_model_obs( my_opts )
+    expand_model_obs( diagsopts )
+    for op in opts:
+        merge_option_with_its_defaults( op, diags_collection )
+        op.merge( myopts )
+        op.merge( diagsopts )
+        op.merge( options_defaults )
+    return opts
+
+def expand_modob( modobd ):
+    """Expands out collection keys in the dict which is a component of a model or obs specification."""
+    if modobd not in key2collection.keys():
+        return modobd  # modobd is a.s. a dict; doesn't need expansion
+    modob = key2collection[modobd][modobd]   # a dict suitable for model or obs.
+    # In the future I'd like another possibility: a list of such dicts, or keys identifying them.
+    return modob
+
+def expand_model_obs( opt ):
+    """The model and obs options are lists.  Each list element could be a dict, or a key into a
+    collection.  This expands each key into a dict.  Such an expansion is a prerequisite to any
+    merger."""
+    if opt is None:
+        return opt
+    for i,item in enumerate(opt.get('model',[])):
+        # Each item is *either* a key into model_collection; or a dict, with keys like 'climos', 'filter', 'path'.
+        opt['model'][i] = expand_modob(item)
+    for i,item in enumerate(opt.get('obs',[])):
+        # Each item is *either* a key into obs_collection; or a dict, with keys like 'climos', 'filter', 'path'.
+        opt['obs'][i] = expand_modob(item)
+    print "jfp expand_model_obs is returning opt with obs=",len(opt['obs']),opt['obs']
     return opt
 
 def expand_collection( onm, ovl, opt ):
@@ -55,14 +108,14 @@ def expand_collection( onm, ovl, opt ):
     2. If the collection member is an Options instance, merge it into opt.
     3. If the value isn't a collection name, do nothing but return [opt]."""
     # e.g. onm='vars', ovl='MyVars'; or onm='obs', ovl='MyObs'
-    if ovl not in key2collection:
+    if ovl not in key2collection.keys():
         return [opt]
     newvals = key2collection[ovl][ovl]
     # ... e.g. ovl='MyObs', newvals=obs_collection['MyObs']=['ISCCP', 'CERES', 'NCEP']
 
     # In the above example, if onm='obs', ovl='MyObs', there will be a member of newopts with
     # _opts['obs']=['ISCCP'] and another with _opts['obs']=['CERES'].
-    newopts = [ opts.clone((onm,v)) for v in newvals ]
+    newopts = [ opt.clone((onm,v)) for v in newvals ]
     return newopts
 
 def expand_lists_collections( opt, okeys=None ):
@@ -78,7 +131,7 @@ def expand_lists_collections( opt, okeys=None ):
     expanded.  At the moment, we expand them anyway.  In the future, we shouldn't."""
     opts = []
     if okeys is None:
-        okeys = opt._opts.keys()
+        okeys = opt.keys()
     remaining_keys = list(okeys)          # this copy will be passed on in any recursive call
     for idx,onm in enumerate(okeys):      # onm is the name of an option, e.g. 'vars'
         if type(opt[onm]) is list:
@@ -93,13 +146,21 @@ def expand_lists_collections( opt, okeys=None ):
                 optso = expand_collection( onm, ovl, opt )   # a list of Options instances
                 opts.extend(optso)
                 break
+            elif onm in ['model','obs']:
+                # These options have already been expanded, if necessary from keys to actual model/obs values.
+                # But these values are lists which probably have to be expanded to make multiple Options instances.
+                if onm=='obs' and len(opt['model'])==1 and len(opt['obs'])>1:   #only case implemented so far
+                    optso = [ opt.clone((onm,[ovl])) ]
+                    opts.extend(optso)
+                elif  len(opt['model']) + len(opt['obs']) >2 and len(opt['model'])!=1:
+                    logger.error("More model(=%s) and obs(=%s) than we know what to do with",len(opt['model']),len(opt['obs']) )
             else:
                 remaining_keys[idx] = None    # bottom of a tree; opts[onm] is an ordinary option
     remaining_keys = [ k for k in remaining_keys if k is not None ]
     if opts==[]:
         return [opt]  # We found nothing to expand.
     else:
-        expanded_opts = [ expand_collections(op,remaining_keys) for op in opts ]  # Usually this recursion should be shallow.
+        expanded_opts = [ expand_lists_collections(op,remaining_keys) for op in opts ]  # Usually this recursion should be shallow.
         flattened = [ o for ops in expanded_opts for o in ops ]
         return flattened
 
@@ -109,9 +170,12 @@ def multidiags1( opt ):
     list of simple Options instances.
     For each one separately, it computes the requested diagnostics.
     """
-    opt = merge_all_options(opt)
-    opts = expand_lists_collections( opt )
-    for o in opts:
+    opts = merge_all_options(opt)
+    newopts = []
+    for op in opts:
+        newopts.extend(expand_lists_collections( op ))
+    for o in newopts:
+        print "jfp about to run_diags on",o['vars'],len(o['obs']),o['obs'][0]
         run_diags(o)
 
 def multidiags( opts ):
@@ -141,8 +205,8 @@ if __name__ == '__main__':
     print "UV-CDAT Diagnostics, Experimental Multi-Diags version"
     print ' '.join(sys.argv)
     opt = Options()
-    opt.parseCmdLine()  # will need some changes to support multidiags
+    opt.parseCmdLine()
     multidiags(opt)
-    # need a version which supports multidiags: opt.verifyOptions()
+    # >>>> TO DO: need a version which supports multidiags: opt.verifyOptions()
 
 

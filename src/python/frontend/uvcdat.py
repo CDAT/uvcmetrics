@@ -850,9 +850,21 @@ class uvc_simple_plotspec(basic_id):
                 #    descr = filetableid.nickname
                 #except:
                 #    descr = True
-                descr = getattr(self,'file_descr',getattr(self,'title2',True))
-                if descr[0:3]=='obs': descr='obs'
-                if descr[0:4]=='diff': descr='diff'
+                file_descr = getattr(self,'file_descr',getattr(self,'title2',True))
+                if file_descr[0:3]=='obs': file_descr='obs'
+                if file_descr[0:4]=='diff': file_descr='diff'
+                var = self.vars[0]
+                if hasattr(var,'_filetableid'):
+                    ft1id = var._filetableid.ftid
+                else:
+                    ft1id = var.filetableid.ftid
+                if hasattr(var,'_filetable2id'):
+                    ft2id = var._filetable2id.ftid
+                elif hasattr(var,'filetable2id'):
+                    ft2id = var.filetable2id.ftid
+                else:
+                    ft2id = ''
+                descr = underscore_join([ft1id,ft2id,file_descr])
                 if len(self.vars)>1:  where = where+'-combined'
                 return form_filename( where, 'nc', descr, self.vars[0].id, more_id=self.more_id )
         elif len(self.title)<=0:
@@ -901,6 +913,11 @@ class uvc_simple_plotspec(basic_id):
             try:
                 zax._filetableid= zax.filetableid  # and the named tuple ids aren't writeable as such
                 zax.filetableid= str(zax.filetableid)  # and the named tuple ids aren't writeable as such
+            except:
+                pass
+            try:
+                zax._filetable2id= zax.filetable2id  # and the named tuple ids aren't writeable as such
+                zax.filetable2id= str(zax.filetable2id)  # and the named tuple ids aren't writeable as such
             except:
                 pass
             for ax in zax.getAxisList():

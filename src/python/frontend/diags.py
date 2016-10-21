@@ -212,10 +212,13 @@ def run_diags( opts ):
             vcanvas2.setantialiasing(0)
         vcanvas2.portrait()
         vcanvas2.setcolormap('bl_to_darkred') #Set the colormap to the NCAR colors
-        LINE = vcanvas.createline('LINE-DIAGS', 'default')
-        LINE.width = 3.0
-        LINE.type = 'solid'
-        LINE.color = 242
+        if 'LINE-DIAGS' in vcs.listelements('line'):
+            LINE = vcanvas.getline('LINE-DIAGS')
+        else:
+            LINE = vcanvas.createline('LINE-DIAGS', 'default')
+            LINE.width = 3.0
+            LINE.type = 'solid'
+            LINE.color = 242
         if opts['output']['logo'] == False:
             vcanvas.drawlogooff()
             vcanvas2.drawlogooff()
@@ -243,7 +246,11 @@ def run_diags( opts ):
     for sname in plotsets:
         logger.info("Working on %s plots ",  sname)
 
-        snum = sname.strip().split(' ')[0]
+        if basename=='':
+            basename = 'set'
+        snum = setnum(sname)
+        basename += snum
+
         # instantiate the class
         sclass = sm[sname]
 
@@ -519,6 +526,12 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
                     var.filetableid = ftid  # but we'll still need to know what the filetable is
                 except:
                     pass
+                try:
+                    ft2id = var.filetable2.id()
+                    del var.filetable2  # we'll write var soon, and can't write a filetable
+                    var.filetable2id = ft2id  # but we'll still need to know what the filetable is
+                except:
+                    pass
 
                 # ...But the VCS plot system will overwrite the title line
                 # with whatever else it can come up with:
@@ -559,7 +572,16 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
                 #### way for classic viewer to know the filename without lots more special casing. 
 
                 try:
-                    descr = var.filetableid.nickname
+                    #descr = var.filetableid.nickname
+                    file_descr = getattr(rsr,'file_descr',getattr(rsr,'title2',True))
+                    if file_descr[0:3]=='obs': file_descr='obs'
+                    if file_descr[0:4]=='diff': file_descr='diff'
+                    ft1id = var.filetableid.ftid
+                    if hasattr(var,'filetable2id'):
+                        ft2id = var.filetable2id.ftid
+                    else:
+                        ft2id = ''
+                    descr = underscore_join([ft1id,ft2id,file_descr])
                     if len(descr)<1:
                         descr = True
                 except:
@@ -767,6 +789,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
     if tmmobs[0] is not None:  # If anything was plotted to vcanvas2
         vname = varid.replace(' ', '_')
         vname = vname.replace('/', '_')
+
     fnamepng,fnamesvg,fnamepdf = form_filename( frnamebase, ('png','svg','pdf'),
                                                 descr=True, vname=vname, more_id='combined' )
 
