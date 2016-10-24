@@ -489,6 +489,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
     ovly  = None
 
     vcanvas2.clear()
+    source_descr2 = set([])  # set of strings describing source data in vcanvas2 (composite plot)
     plotcv2 = False
     ir = -1
     # Fixes scale in multiple polar plots on a page
@@ -524,12 +525,14 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
                     ftid = var.filetable.id()
                     del var.filetable  # we'll write var soon, and can't write a filetable
                     var.filetableid = ftid  # but we'll still need to know what the filetable is
+                    source_descr2.add(ftid.ftid)
                 except:
                     pass
                 try:
                     ft2id = var.filetable2.id()
                     del var.filetable2  # we'll write var soon, and can't write a filetable
                     var.filetable2id = ft2id  # but we'll still need to know what the filetable is
+                    source_descr2.add(ft2id.ftid)
                 except:
                     pass
 
@@ -789,9 +792,9 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
     if tmmobs[0] is not None:  # If anything was plotted to vcanvas2
         vname = varid.replace(' ', '_')
         vname = vname.replace('/', '_')
-
+    descr = underscore_join(source_descr2)
     fnamepng,fnamesvg,fnamepdf = form_filename( frnamebase, ('png','svg','pdf'),
-                                                descr=True, vname=vname, more_id='combined' )
+                                                descr, vname=vname, more_id='combined' )
 
     if vcanvas2.backend.renWin is None:
         logger.warning("no data to plot to file2: %s", fnamepng)
