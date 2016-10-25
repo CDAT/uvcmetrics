@@ -143,6 +143,7 @@ class amwg_plot_set2(amwg_plot_plan):
                 z2func=(lambda z: z[1][3]),
                 plottype = self.plottype,
                 title = 'CAM and NCEP HEAT_TRANSPORT GLOBAL',
+                file_descr = '',
                 source = ft1src,
                 more_id = 'Global',
                 plotparms = plotparms[src2modobs(ft1src)] ),
@@ -154,6 +155,7 @@ class amwg_plot_set2(amwg_plot_plan):
                 z2func=(lambda y: y[1][0]),
                 plottype = self.plottype,
                 title = 'CAM and NCEP HEAT_TRANSPORT PACIFIC',
+                file_descr = '',
                 source = ft1src,
                 more_id = 'Pacific',
                 plotparms = plotparms[src2modobs(ft1src)] ),
@@ -165,6 +167,7 @@ class amwg_plot_set2(amwg_plot_plan):
                 z2func=(lambda y: y[1][1]),
                 plottype = self.plottype ,
                 title = 'CAM and NCEP HEAT_TRANSPORT ATLANTIC',
+                file_descr = '',
                 source = ft1src,
                 more_id = 'Atlantic',
                 plotparms = plotparms[src2modobs(ft1src)] ),
@@ -176,6 +179,7 @@ class amwg_plot_set2(amwg_plot_plan):
                 z2func=(lambda y: y[1][2]),
                 plottype = self.plottype,
                 title = 'CAM and NCEP HEAT_TRANSPORT INDIAN',
+                file_descr = '',
                 source = ft1src,
                 more_id = 'Indian',
                 plotparms = plotparms[src2modobs(ft1src)] ),
@@ -187,7 +191,8 @@ class amwg_plot_set2(amwg_plot_plan):
             }
         self.computation_planned = True
 
-    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None,
+                           uvcplotspec=None ):
         """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
 

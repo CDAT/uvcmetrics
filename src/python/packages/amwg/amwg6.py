@@ -225,23 +225,25 @@ class amwg_plot_set6(amwg_plot_plan):
         else:
             vardict[vecid] = rv.dict_id( vecid, seasonid, filetable )
 
-        if tuple(vid_cont) and vid_cont[0]=='dv':  # need to compute STRESS_MAG from TAUX,TAUY
-            if uservar=='STRESS':
-                if filetable.filefmt.find('CAM')>=0:   # TAUX,TAUY are derived variables
-                        tau_x = dv.dict_id('TAUX','',seasonid,filetable)
-                        tau_y = dv.dict_id('TAUY','',seasonid,filetable)
+        if type(vid_cont) is derived_var.IDtuple:
+            if uservar=='STRESS':  # need to compute STRESS_MAG from TAUX,TAUY
+                if filetable.filefmt.find('CAM')<0:  # TAUX,TAUY are probably derived variables
+                    tau_x = dv.dict_id('TAUX','',seasonid,filetable)
+                    tau_y = dv.dict_id('TAUY','',seasonid,filetable)
                 else: #if filetable.filefmt.find('CAM')>=0:   # TAUX,TAUY are reduced variables
-                        tau_x = rv.dict_id('TAUX',seasonid,filetable)
-                        tau_y = rv.dict_id('TAUY',seasonid,filetable)
-                        new_derived_var = derived_var( vid=vid_cont, inputs=[tau_x,tau_y], func=abnorm )
-                        vardict['STRESS_MAG'] = vid_cont
+                    tau_x = rv.dict_id('TAUX',seasonid,filetable)
+                    tau_y = rv.dict_id('TAUY',seasonid,filetable)
+                new_derived_var = derived_var( vid=vid_cont, inputs=[tau_x,tau_y], func=abnorm )
+                vardict['STRESS_MAG'] = vid_cont
+                derived_vars.append( new_derived_var )
+                self.derived_variables[vid_cont] = new_derived_var
             elif uservar=='MOISTURE_TRANSPORT':
                         tq_x = rv.dict_id('TUQ',seasonid,filetable)
                         tq_y = rv.dict_id('TVQ',seasonid,filetable)
                         new_derived_var = derived_var( vid=vid_cont, inputs=[tq_x,tq_y], func=abnorm )
                         vardict['TQ_MAG'] = vid_cont
-            derived_vars.append( new_derived_var )
-            self.derived_variables[vid_cont] = new_derived_var
+                        derived_vars.append( new_derived_var )
+                        self.derived_variables[vid_cont] = new_derived_var
 
         return derived_vars
 
@@ -296,6 +298,7 @@ class amwg_plot_set6(amwg_plot_plan):
             # Draw two plots, contour and vector, over one another to get a single plot.
             # Only one needs title,source.
             title = ' '.join([varid,seasonid,'(1)'])
+
             contplot = plotspec(
                 vid = ps.dict_idid(vid_cont1),  zvars = [vid_cont1],  zfunc = (lambda z: z),
                 plottype = plot_type_temp[0],
@@ -303,8 +306,7 @@ class amwg_plot_set6(amwg_plot_plan):
                 plotparms = plotparms[src2modobs(ft1src)] )
             vecplot = plotspec(
                 vid = ps.dict_idid(vid_vec1), zvars=[vid_vec11,vid_vec12], zfunc = (lambda z,w: (z,w)),
-                plottype = plot_type_temp[1],
-                title = title,  source=ft1src,
+                plottype = plot_type_temp[1], title1='', title2='', source='',
                 plotparms = plotparms[src2modobs(ft1src)] )
             #self.single_plotspecs[self.plot1_id] = [contplot,vecplot]
             self.single_plotspecs[self.plot1_id+'c'] = contplot
@@ -320,8 +322,7 @@ class amwg_plot_set6(amwg_plot_plan):
                 plotparms = plotparms[src2obsmod(ft2src)] )
             vecplot = plotspec(
                 vid = ps.dict_idid(vid_vec2), zvars=[vid_vec21,vid_vec22], zfunc = (lambda z,w: (z,w)),
-                plottype = plot_type_temp[1],
-                title = title,  source=ft2src,
+                plottype = plot_type_temp[1], title1='', title2='', source='',
                 plotparms = plotparms[src2obsmod(ft2src)] )
             self.single_plotspecs[self.plot2_id+'c'] = contplot
             self.single_plotspecs[self.plot2_id+'v'] = vecplot
@@ -352,8 +353,7 @@ class amwg_plot_set6(amwg_plot_plan):
                 vid = ps.dict_id(vid_vec2,'diff',seasonid,filetable1,filetable2),
                 zvars = [vid_vec11,vid_vec12,vid_vec21,vid_vec22],
                 zfunc = (lambda z1,w1,z2,w2: (aminusb_2ax(z1,z2),aminusb_2ax(w1,w2))),
-                plottype = plot_type_temp[1],
-                title = title,  source = source,
+                plottype = plot_type_temp[1], title1='', title2='',  source='',
                 plotparms = plotparms['diff'] )
             self.single_plotspecs[self.plot3_id+'c'] = contplot
             self.single_plotspecs[self.plot3_id+'v'] = vecplot
@@ -367,7 +367,8 @@ class amwg_plot_set6(amwg_plot_plan):
             }
         self.computation_planned = True
 
-    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None,
+                           uvcplotspec=None ):
         """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
         

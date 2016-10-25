@@ -1,4 +1,4 @@
-import logging, os
+import logging, os, pdb
 logger = logging.getLogger(__name__)
 from metrics.common.utilities import underscore_join
 
@@ -17,7 +17,13 @@ What this function returns depends on what fmt is.
 """
     if more_id is None: more_id=''
     if descr is not True:
-        fnamedot = '-'.join([rootname,more_id,descr]) + '.'
+        if descr=='':
+            if more_id=='':
+                fnamedot = rootname + '.'
+            else:
+                fnamedot = '-'.join([rootname,more_id]) + '.'
+        else:
+            fnamedot = '-'.join([rootname,more_id,descr]) + '.'
         if type(fmt) is str:
             return fnamedot + fmt
         else:
@@ -67,7 +73,7 @@ What this function returns depends on what fmt is.
         else:
             logging.warning('Couldnt determine filename; defaulting to just .png. vname: %s, rootname: %s', vname, rootname)
             fnamedot = rootname+'.'
-    elif '_diff' in vname or ' diff' in vname or "Difference" in vname or\
+    elif '_diff' in vname or ' diff' in vname or "Difference" in vname or "difference" in vname or\
             ('_ft0_' in vname and '_ft1_' in vname) or ('_ft1_' in vname and '_ft2_' in vname):
         fnamedot = rootname+'-diff.'
     elif rootname[-9:]=='-combined':  # descr has really already been supplied by being stuck in the rootname
@@ -77,20 +83,24 @@ What this function returns depends on what fmt is.
     else:
         if '_ttest' in vname:
             if 'ft1' in vname and 'ft2' in vname:
-                fnamedot = rootname+'-model1_model2_ttest.'
+                #fnamedot = rootname+'-model1_model2_ttest.'
+                fnamedot = rootname+'-model_obs_ttest.'
             elif 'ft1' in vname and 'ft2' not in vname:
                 fnamedot = rootname+'-model1_ttest.'
             elif 'ft2' in vname and 'ft1' not in vname:
-                fnamedot = rootname+'-model2_ttest.'
+                #fnamedot = rootname+'-model2_ttest.'
+                fnamedot = rootname+'-obs_ttest.'
         elif '_ft1' in vname and '_ft2' not in vname:
             fnamedot = rootname+'-model.'  
             # if we had switched to model1 it would affect classic view, etc.
         elif '_ft2' in vname and '_ft1' not in vname:
-            fnamedot = rootname+'-model2.'
+            #fnamedot = rootname+'-model2.'
+            fnamedot = rootname+'-obs.'
         elif '_ft0' in vname and '_ft1' not in vname:
             fnamedot = rootname+'-model0.'
         elif '_ft1' in vname and '_ft2' in vname:
-            fnamedot = rootname+'-model-model2.'
+            #fnamedot = rootname+'-model-model2.'
+            fnamedot = rootname+'-model-obs.'
         elif '_fts' in vname: # a special variable; typically like lmwg set3/6 or amwg set 2
             fnamedot = rootname+'_'+vname.replace('_fts','')+'.'
         else:

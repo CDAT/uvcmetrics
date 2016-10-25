@@ -94,7 +94,7 @@ class amwg_plot_plan(plot_plan):
 
     @classmethod
     def commvar2var( cls, varnom, filetable, season, reduction_function, recurse=True,
-                    builtin_variables=[] ):
+                    filefilter=None, builtin_variables=[] ):
         """From a variable name, a filetable, and a season, this finds the variable name in
         common_derived_variables. If it's there, this method generates a variable as an instance
         of reduced_variable or derived_var, which represents the variable and how to compute it
@@ -143,10 +143,10 @@ class amwg_plot_plan(plot_plan):
                     # Note that we're not yet handling this case for recursive calculations (the
                     # next loop below), because we have no need, hence no test case.
                     rv = reduced_variable( variableid=ivn, filetable=filetable, season=season,
-                                           reduction_function=(lambda x,vid:x) )
+                                           reduction_function=(lambda x,vid:x), filefilter=filefilter )
                 else:
                     rv = reduced_variable( variableid=ivn, filetable=filetable, season=season,
-                                           reduction_function=reduction_function )
+                                           reduction_function=reduction_function, filefilter=filefilter )
                 #print "dbg   adding reduced variable rv=",rv
                 rvs.append(rv)
 
@@ -167,13 +167,14 @@ class amwg_plot_plan(plot_plan):
                 for invar in invarnoms:
                     if invar in filetable.list_variables_incl_axes():
                         rv = reduced_variable( variableid=invar, filetable=filetable, season=season,
-                                               reduction_function=reduction_function )
+                                               reduction_function=reduction_function, filefilter=filefilter )
                         rvs.append(rv)
                     else:
                         if invar not in cls.common_derived_variables:
                             break
                         dummy,irvs,idvs =\
-                            cls.commvar2var( invar, filetable, season, reduction_function, recurse=False )
+                            cls.commvar2var( invar, filetable, season, reduction_function,
+                                             recurse=False, filefilter=filefilter )
                         rvs += irvs
                         dvs += idvs
                 func = svd._func

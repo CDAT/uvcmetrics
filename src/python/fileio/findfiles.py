@@ -160,6 +160,8 @@ class basic_datafiles:
         self.opts = options
     def __repr__(self):
         return self.files.__repr__()
+    def shortest_name(self):
+        return self.short_name()
     def short_name(self):
         return ''
     def long_name(self):
@@ -199,7 +201,7 @@ class basic_datafiles:
         This function will cache the file table and use it if possible.
         If the cache be stale, call clear_filetable()."""
         if ftid is None:
-            ftid = self.short_name()
+            ftid = self.shortest_name()
         cachefile,ftid = self._cachefile( ftid )
         self._ftid = ftid
         if os.path.isfile(cachefile):
@@ -336,6 +338,12 @@ class dirtree_datafiles( basic_datafiles ):
         if len(self.files)<=0:
             logger.warning("No files found at %s with filter %s",root, filt)
         return self.files
+
+    def shortest_name(self):
+        if len(self._filt.mystr())>3:
+            return self._filt.mystr()
+        else:
+            return self.short_name()
 
     def short_name(self):
         if self._type == None or self._index == None or not hasattr(self,'_index'):

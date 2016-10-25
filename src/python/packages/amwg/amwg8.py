@@ -135,6 +135,9 @@ class amwg_plot_set8(amwg_plot_plan):
                                     zfunc = (lambda x: MV2.transpose(x)),
                                     plottype = self.plottype,
                                     source  = ft1src,
+                                    title1 = ' '.join([vidModel.var, vidModel.season, vidModel.region]),
+                                    title2 = ' '.join([vidModel.var, vidModel.season, vidModel.region]),
+                                    file_descr = 'model',
                                     plotparms = plotparms['model'] )}
         if self.FT2:
             self.single_plotspecs[self.plot2_id] = \
@@ -143,6 +146,9 @@ class amwg_plot_set8(amwg_plot_plan):
                                         zfunc = (lambda x: MV2.transpose(x)),                                
                                         plottype = self.plottype,
                                         source = ft2src,
+                                        title1 = ' '.join([vidObs.var, vidObs.season, vidObs.region]),
+                                        title2 = 'observations',
+                                        file_descr = 'obs',
                                         plotparms = plotparms['obs'] )
             self.single_plotspecs[self.plot3_id] = \
                                plotspec(vid = ps.dict_idid(vidDiff), 
@@ -150,6 +156,9 @@ class amwg_plot_set8(amwg_plot_plan):
                                         zfunc = (lambda x: MV2.transpose(x)),
                                         plottype = self.plottype,
                                         source = ', '.join([ft1src,ft2src]),
+                                        title1 = ' '.join([vidDiff.var, vidDiff.season, vidDiff.region]),
+                                        title2 = 'difference',
+                                        file_descr = 'diff',
                                         plotparms = plotparms['diff'] )
             
         self.composite_plotspecs = {
@@ -158,7 +167,8 @@ class amwg_plot_set8(amwg_plot_plan):
         #... was self.composite_plotspecs = { self.plotall_id: self.single_plotspecs.keys() }
         self.computation_planned = True
 
-    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None,
+                           uvcplotspec=None ):
         """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
         

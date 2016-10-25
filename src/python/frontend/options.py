@@ -54,6 +54,7 @@ help_url="https://acme-climate.atlassian.net/wiki/pages/viewpage.action?pageId=1
 
 class Options():
     def __init__(self):
+        # TO DO: allow any keyword arguments; use them to initialize _opts.
         self._opts = {}
         self.all_packages = packages.package_names
 

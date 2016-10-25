@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 #                                                                                                     #
 #######################################################################################################
 def return_templates_graphic_methods(canvas1=None, gms=None, ovly=None, onPage=None, disLegend=False):
-   logger.info("tmpl canvas1,gms,ovly,onPage: %s %s %s %s", canvas1,gms,ovly,onPage)
+   logger.debug("tmpl canvas1,gms,ovly,onPage: %s %s %s %s", canvas1,gms,ovly,onPage)
    
    if len(gms) == len(ovly): 
 

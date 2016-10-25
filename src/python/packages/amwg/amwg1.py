@@ -278,8 +278,7 @@ class Row:
                 vid, rvs, dvs, rmse_vars = amwg_plot_plan.commvar2var(
                     self.var, filetable, self.season, reduction_function=\
                         (lambda x, vid=None, season=self.season, dom0=domrange[0], dom1=domrange[1], gw=gw:
-                             reduce2scalar_seasonal_zonal(
-                            x,season,latmin=dom0,latmax=dom1,vid=vid,gw=gw) ))
+                             reduce2scalar_seasonal_zonal( x, season, latmin=dom0, latmax=dom1, vid=vid, gw=gw) ))
                 self.rmse_vars = rmse_vars
             except DiagError as e:
                 vid = None

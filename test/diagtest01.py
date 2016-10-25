@@ -72,7 +72,7 @@ if res is not None:
     if len(sys.argv)>2 and sys.argv[2]=='keep':
         print "saving output in",outpath," and",tmppth
     else:
-        for f in filenames: os.unlink(f)
+        for f in set(filenames): os.unlink(f)
         datafiles1.clear_filetable()
         datafiles2.clear_filetable()
         # N.B. There's something not cleaned up here - cdscan output, though it may not be
