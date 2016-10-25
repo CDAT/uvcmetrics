@@ -136,6 +136,7 @@ class amwg_plot_plan(plot_plan):
                 svd_rmse = svd
                 break
         #check that some masking is required. If there is a mask, perform masking first
+        pdb.set_trace()
         if set(['OCNFRAC', 'LANDFRAC']).intersection(invarnoms):
             mask_rvs = []
             import collections
