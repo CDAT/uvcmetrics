@@ -174,10 +174,8 @@ class amwg_plot_plan(plot_plan):
                 #print "dbg   adding reduced variable rv=",rv
                 rvs.append(rv)
 
-        #available = rvs + dvs
-        #availdict = { v.id()[1]:v for v in available }
-        availdict = { v.id()[1]:v for v in rvs }
-        availdict += { v.id:v for v in dvs }
+        available = rvs + dvs
+        availdict = { v.id()[1]:v for v in available }
         inputs = [ availdict[v].id() for v in svd._inputs if v in availdict ] +\
             [ v for v in svd._inputs if v in builtin_variables ]
         #print "dbg1 rvs ids=",[rv.id() for rv in rvs]
