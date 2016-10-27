@@ -34,6 +34,9 @@ from metrics.computation.region import *
 import logging
 logger = logging.getLogger(__name__)
 
+global vcs_elements   # used to prevent uncontrolled growth of vcs.elements if there are multiple calls of run_diags()
+vcs_elements = None
+
 def setManualColormap(canvas=None, level=0):
     """
     This function manualy creates a colormap based on the number of levels
@@ -125,6 +128,7 @@ def setnum( setname ):
     return setnumber
 
 def run_diags( opts ):
+    global vcs_elements
     # Setup filetable arrays
     modelfts = []
     obsfts = []
@@ -302,7 +306,7 @@ def run_diags( opts ):
 
         # Ok, start the next layer of work - seasons and regions
         # loop over the seasons for this plot
-        for time in use_times:
+        for utime in use_times:
             for region in regions:
                 # Get the current region's name, using the class wizardry.
                 region_rect = defines.all_regions[str(region)]
@@ -315,7 +319,7 @@ def run_diags( opts ):
                 vcount = len(variables)
                 counter = 0
                 for ivarid, varid in enumerate(variables):
-                    logger.info("Processing variable %s in season %s in plotset %s -variable %s of %s", varid, time, sname, counter, vcount)
+                    logger.info("Processing variable %s in season %s in plotset %s -variable %s of %s", varid, utime, sname, counter, vcount)
                     counter = counter+1
                     vard = pclass.all_variables( modelfts, obsfts, sname )
                     plotvar = vard[varid]
@@ -344,24 +348,33 @@ def run_diags( opts ):
                     names = getNames(opts, modelfts, obsfts)
                     # now, the most inner loop. Looping over sets then seasons then vars then varopts
                     for aux in varopts:
-                        #plot = sclass( modelfts, obsfts, varid, time, region, vvaropts[aux] )
+                        #plot = sclass( modelfts, obsfts, varid, utime, region, vvaropts[aux] )
 
                         # Since Options is a 2nd class (at best) citizen, we have to do something icky like this.
                         # hoping to change that in a future release. Also, I can see this being useful for amwg set 1.
                         # (Basically, if we output pre-defined json for the tables they can be trivially sorted)
                         if '5' in snum and package.upper() == 'LMWG' and opts['output']['json'] == True:
-                            plot = sclass( modelfts, obsfts, varid, time, region, vvaropts[aux], jsonflag=True )
+                            plot = sclass( modelfts, obsfts, varid, utime, region, vvaropts[aux], jsonflag=True )
                         else:
                             if snum == '14' and package.upper() == 'AMWG': #Taylor diagrams
                                 #this is a total kludge so that the list of variables is passed in for processing
-                                plot = sclass( modelfts, obsfts, variables, time, region, vvaropts[aux],
+                                plot = sclass( modelfts, obsfts, variables, utime, region, vvaropts[aux],
                                                plotparms = { 'model':{}, 'obs':{}, 'diff':{} } )
                             else:
-                                plot = sclass( modelfts, obsfts, varid, time, region, vvaropts[aux], names=names,
+                                plot = sclass( modelfts, obsfts, varid, utime, region, vvaropts[aux], names=names,
                                                plotparms = { 'model':{'levels':opts['levels'], 'colormap':opts['colormaps']['model']},
                                                              'obs':{'levels':opts['levels'], 'colormap':opts['colormaps']['obs']},
                                                              'diff':{'levels':opts['difflevels'], 'colormap':opts['colormaps']['diff']} } )
                         
+                        # To prevent a buildup of cruft and a huge performance hit, don't let vcs.elements['isofill', etc.]
+                        # grow.  Members (the ones we need) first get created in plot.compute().
+                        if vcs_elements is None:
+                            vcs_elements = dictcopy3(vcs.elements)
+                        else:
+                            vcsdisplays = vcs.elements['display']
+                            vcs.elements = dictcopy3(vcs_elements)
+                            vcs.elements['display'] = vcsdisplays
+
                         # Do the work (reducing variables, etc)
                         res = plot.compute(newgrid=0) # newgrid=0 for original grid, -1 for coarse
                         # typically res is a list of uvc_simple_plotspec.  But an item might be a tuple.
@@ -371,11 +384,11 @@ def run_diags( opts ):
                             # Are we running from metadiags? If so, lets keep the name as simple as possible.
 
                             frname = form_file_rootname(
-                                snum, [varid], 'variable', dir=outdir, season=time, basen=basename,
+                                snum, [varid], 'variable', dir=outdir, season=utime, basen=basename,
                                 postn=postname, region=r_fname, aux=[aux] )
                             
                             if opts['output']['plots'] == True:
-                                displayunits = opts.get('displayunits', None)                                    
+                                displayunits = opts.get('displayunits', None)
                                 makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits=displayunits)
                                 number_diagnostic_plots += 1
 
@@ -392,8 +405,8 @@ def run_diags( opts ):
                                     for PLOT in res:
                                         if hasattr(PLOT, 'title'):
                                             PLOT.title = PLOT.title.replace('\n', ' ')
-                                            if varid not in PLOT.title and time not in PLOT.title:
-                                                PLOT.title = varid + ' ' + time + ' ' + PLOT.title
+                                            if varid not in PLOT.title and utime not in PLOT.title:
+                                                PLOT.title = varid + ' ' + utime + ' ' + PLOT.title
                                     resc = uvc_composite_plotspec( res )
                                 filenames = resc.write_plot_data("xml-NetCDF", frname )
                                 logger.info("wrote plots %s to %s",resc.title, filenames)
@@ -404,7 +417,7 @@ def run_diags( opts ):
                             # the hack to speedup amwg1 does not need this. It's simpler.
                             if type(res) is str:
                                 f = open( form_filename( form_file_rootname(
-                                            'resstring', [varid], 'table', dir=outdir, season=time,
+                                            'resstring', [varid], 'table', dir=outdir, season=utime,
                                                          basen=basename, postn=postname, region=r_fname, aux=aux ),
                                                          'text' ))
                                 f.write(res)
@@ -419,10 +432,10 @@ def run_diags( opts ):
                                         fname = ""
                                     else:
                                         where = ""
-                                        #jfp former fname code: name = basename+'_'+time+'_'+r_fname+'-table.text'
+                                        #jfp former fname code: name = basename+'_'+utime+'_'+r_fname+'-table.text'
                                         #jfp was fname = os.path.join(outdir,name)
                                         fname = form_filename( form_file_rootname(
-                                            'res0', [], 'table', dir=outdir, season=time,
+                                            'res0', [], 'table', dir=outdir, season=utime,
                                             basen=basename, region=r_fname ), 'text' )
 
                                     filenames = resc.write_plot_data("text", where=where, fname=fname)
@@ -433,6 +446,8 @@ def run_diags( opts ):
 
     vcanvas.close()
     vcanvas2.close()
+#    vcanvas.destroy()
+#    vcanvas2.destroy()
     logger.info("total number of (compound) diagnostic plots generated = %s", number_diagnostic_plots)
 
 
@@ -454,6 +469,9 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
     ovly = nsimpleplots * [0]
     onPage = nsingleplots
     ir = 0
+    t1 = 0   # timing
+    tp = 0   # timing
+    tt0 = time.time() # timing
     for r,resr in enumerate(res):
         if type(resr) is tuple:
             for jr,rsr in enumerate(resr):
@@ -747,10 +765,11 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
                                                            varIndex=varIndex, graphicMethod=rsr.presentation,
                                                            var=var, uvcplotspec=rsr )
                     # Single plot
-                    
+                    t0 = time.time()
                     plot.vcs_plot(vcanvas, var(longitude=(-10,370)), rsr.presentation, tm, bg=1,
                                   title=title1, source=rsr.source,
                                   plotparms=getattr(rsr,'plotparms',None) )
+                    tp += time.time() - t0
 #                                      vcanvas3.clear()
 #                                      vcanvas3.plot(var, rsr.presentation )
                     savePNG = True
@@ -759,10 +778,12 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
                     try:
                         if tm2 is not None:
                             # Multiple plots on a page:
+                            t0 = time.time()
                             plot.vcs_plot( vcanvas2, var(longitude=(-10,370)), rsr.presentation, tm2, bg=1,
                                            title=title2, source=rsr.source,
                                            plotparms=getattr(rsr,'plotparms',None))#,
                                            #compoundplot=onPage )
+                            tp += time.time() - t0
                             plotcv2 = True
 
                     except vcs.error.vcsError as e:
@@ -784,7 +805,9 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
                         for i in range(len(var_id_save)):
                             var[i].id = var_id_save[i]
             if savePNG:
+                t0 = time.time()
                 vcanvas.png( fnamepng, ignore_alpha=True, metadata=provenance_dict() )
+                t1 += time.time() - t0
                     # vcanvas.svg() doesn't support ignore_alpha or metadata keywords
                     #vcanvas.svg( fnamesvg )
                     #vcanvas.pdf( fnamepdf)
@@ -800,12 +823,17 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
         logger.warning("no data to plot to file2: %s", fnamepng)
     else:
         logger.info("writing png file2: %s",fnamepng)
+        t0 = time.time()
         vcanvas2.png( fnamepng , ignore_alpha = True, metadata=provenance_dict())
+        t1 += time.time() - t0
         #logger.info("writing svg file2: %s",fnamesvg)
         # vcanvas2.svg() doesn't support ignore_alpha or metadata keywords
         #vcanvas2.svg( fnamesvg )
         #logger.info("writing pdf file2: %s",fnamepdf)
         #vcanvas2.pdf( fnamepdf )            
+    print "In makeplots, variable",vname,"running time for making plots:",tp
+    print "In makeplots, variable",vname,"running time for writing png files:",t1
+    print "Makeplots, variable",vname,"total time is",time.time()-tt0
 
 if __name__ == '__main__':
     print "UV-CDAT Diagnostics, command-line version"
