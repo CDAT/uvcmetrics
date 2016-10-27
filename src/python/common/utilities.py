@@ -155,3 +155,17 @@ def store_provenance( outputFile, script_file_name=None ):
         setattr( outputFile, key, val )
     return provdic
 
+def dictcopy3( lev1, depth=3 ):
+    """For a dictionary, makes a copy, to a depth of 3.  Non-dictionaries are not copied unless they behave like dictionaries."""
+    if depth<1:
+        return lev1
+    try:
+        lev2 = dict().fromkeys(lev1)
+    except:   # Nothing to copy: lev1 isn't a dict or even a suitable list, etc.
+        return lev1
+    try:
+        for k1,v1 in lev1.iteritems():
+            lev2[k1] = dictcopy3( v1, depth-1 )
+    except:
+        return lev1
+    return lev2
