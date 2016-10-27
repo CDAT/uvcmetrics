@@ -157,13 +157,13 @@ class amwg_plot_plan(plot_plan):
             DVvid = derived_var.dict_id( varnom, '', season.seasons[0], filetable )
             DV = derived_var( vid=DVvid, inputs=[dv_frac.id], outputs=[ svd.id() ], func=reduction_function )
             pdb.set_trace()
-            xxx=DV.derive({dv.id: dv})
+            xxx=DV.derive({dv_frac.id: dv_frac})
                         
-            dv.id = svd.id()
-            invarnoms = [ dv.id ]
-            svd._inputs = [ dv.id ] 
+            dv_frac.id = svd.id()
+            invarnoms = [ dv_frac.id ]
+            svd._inputs = [ dv_frac.id ] 
             rvs = [DV]
-            return DV.id(), [dv], [DV], None
+            return DV.id(), [dv_frac], [DV], None
         if computable and not fraction:
             #print "dbg",varnom,"is computable by",func,"from..."
             for ivn in invarnoms:
