@@ -156,7 +156,7 @@ class amwg_plot_plan(plot_plan):
                         
             dv.id = svd.id()
             invarnoms = [ dv.id ]
-            svd._inputs = dv.id 
+            svd._inputs = [ dv.id ] 
             
         if computable:
             #print "dbg",varnom,"is computable by",func,"from..."
@@ -241,7 +241,7 @@ class amwg_plot_plan(plot_plan):
                                        reduction_function=(lambda x,vid:x) )
                 rmse_vars['rv'].append(rv_rmse)
                 dv_inputs += [rv_rmse.id()]
-            #this derived variable takes the about rvs and applies the fuction
+            #this derived variable takes the above rvs and applies the fuction
             rmse_vars['dv'] = derived_var( vid=varnom, inputs=dv_inputs, outputs=[varnom], func=svd_rmse._func ) 
         return newdv.id(), rvs, dvs, rmse_vars
 
