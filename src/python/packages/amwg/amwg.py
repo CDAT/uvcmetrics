@@ -137,7 +137,8 @@ class amwg_plot_plan(plot_plan):
                 break
         #check that some masking is required. If there is a mask, perform masking first
         #intercept before any reduction takes place
-        if set(['OCNFRAC', 'LANDFRAC']).intersection(invarnoms):
+        fraction = set(['OCNFRAC', 'LANDFRAC']).intersection(invarnoms)
+        if fraction:
             mask_rvs = []
             import collections
             dv_dict = collections.OrderedDict()
@@ -157,8 +158,8 @@ class amwg_plot_plan(plot_plan):
             dv.id = svd.id()
             invarnoms = [ dv.id ]
             svd._inputs = [ dv.id ] 
-            
-        if computable:
+            dvs = [DV]
+        if computable and not fraction:
             #print "dbg",varnom,"is computable by",func,"from..."
             for ivn in invarnoms:
                 if ivn in svd.special_orders and svd.special_orders[ivn]=='dontreduce':
@@ -173,8 +174,10 @@ class amwg_plot_plan(plot_plan):
                 #print "dbg   adding reduced variable rv=",rv
                 rvs.append(rv)
 
-        available = rvs + dvs
-        availdict = { v.id()[1]:v for v in available }
+        #available = rvs + dvs
+        #availdict = { v.id()[1]:v for v in available }
+        availdict = { v.id()[1]:v for v in rvs }
+        availdict += { v.id:v for v in dvs }
         inputs = [ availdict[v].id() for v in svd._inputs if v in availdict ] +\
             [ v for v in svd._inputs if v in builtin_variables ]
         #print "dbg1 rvs ids=",[rv.id() for rv in rvs]
