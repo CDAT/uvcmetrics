@@ -159,6 +159,7 @@ class amwg_plot_plan(plot_plan):
             invarnoms = [ dv.id ]
             svd._inputs = [ dv.id ] 
             dvs = [DV]
+            recurse = False
         if computable and not fraction:
             #print "dbg",varnom,"is computable by",func,"from..."
             for ivn in invarnoms:
