@@ -136,13 +136,15 @@ class amwg_plot_plan(plot_plan):
                 svd_rmse = svd
                 break
         #check that some masking is required. If there is a mask, perform masking first
-        #intercept before any reduction takes place
         fraction = set(['OCNFRAC', 'LANDFRAC']).intersection(invarnoms)
-        if fraction:
+        intersection = set(['OCNFRAC', 'LANDFRAC']).intersection(invarnoms)
+        if intersection:            
+            #intercept before any reduction takes place
+            invarnoms.remove( intersection )
             mask_rvs = []
             import collections
             dv_dict = collections.OrderedDict()
-            for ivn in svd.inputs(): #make a trivial reduced variable for each one
+            for ivn in invarnoms: #make a trivial reduced variable for each input
                 RV = reduced_variable( variableid=ivn, filetable=filetable, #season=season,
                                        reduced_var_id=ivn, reduction_function=(lambda x,vid:x) )
                 mask_rvs += [RV]
