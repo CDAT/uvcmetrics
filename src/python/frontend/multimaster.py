@@ -11,6 +11,8 @@ var_collection = {}
 obs_collection = {}
 diags_collection = {}
 
+# If a collection value is a list, each list item should separately be a valid value.
+
 var_collection['MyVars'] = ['SHFLX', 'LHFLX', 'FLUT', 'T', 'TS']
 
 obs_collection['MyObs'] = ['ISCCP', 'CERES', 'NCEP']   # not yet supported, but I'd like to

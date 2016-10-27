@@ -2863,9 +2863,10 @@ def run_cdscan( fam, famfiles, cache_path=None ):
         try:
             cdscan_line = shlex.split(cdscan_line)
             cdscan.main(cdscan_line)
-        except:
+        except Exception as e:
             logger.error( 'ERROR: cdscan terminated. This is usually fatal. The arguments were:%s\n',
                            cdscan_line )
+            logger.error("The exception was %s",e)
     except:
         logger.error( 'importing cdscan failed' )
 

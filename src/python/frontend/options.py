@@ -131,31 +131,46 @@ class Options():
             if key not in self._opts:
                 self[key] = value
             elif key in ['output', 'logging', 'translations']:
-                # For these options, the value is a dictionary which should be merged, not replaced
+                # For these options, the value is a dictionary which should be merged, not replaced.
+                # Other dictionaries should generally be replaced (or not), not merged.
                 for k,v in opt2[key].iteritems():
                     if k not in self[key].keys():
                         self[key][k] = v
-            elif key in ['model','obs'] and len(opt2[key])>0 :
-                # These options are composite, and complicated.  
-                # At the moment I cannot properly merge two obs lists if the length is >1.
-                if len(self[key])==0:
-                    self[key] = opt2[key]
-                elif len(self[key])>=1 and len(opt2[key])==1:
-                    for idx,mob in enumerate(self[key]):   # mob is a dict with keys such as filter, path, climos
-                        for k,v in opt2[key][0].iteritems():
-                            if k not in mob.keys() or mob[k] is None:
-                                mob[k] = v
-                elif len(self[key])==1 and len(opt2[key])>=1:
-                    self[key] = [ self[key][0].copy() for _ in opt2[key] ]
-                    for idx,mob in enumerate(opt2[key]):   # mob is a dict with keys such as filter, path, climos
-                        for k,v in mob.iteritems():
-                            if k not in self[key][idx].keys() or self[key][idx][k] is None:
-                                self[key][idx][k] = v
-                elif len(self[key])>1 and len(opt2[key])>1:
-                    logger.error("Options.merge not implemented for model or obs lists both of length>1")
-                print "jfp merged",key,"to",self[key]
-            elif type(value) is dict and key!=colormap:
-                logger.warning("unrecognized dictionary-valued option %s",key)
+            elif key in ['model','obs']:
+                # A complete model/obs specification shouldn't be merged.  But usually they won't be
+                # complete: missing the path, or only the path.  To prevent a merger, add a
+                # 'merge':False item to the model/obs dict.
+                self.merge_modobs( opt2, key)
+
+    def merge_modobs( self, opt2, key ):
+        """Merges the model or obs option of two Options instances, self and opt2.
+        key should be 'model' or 'obs'.
+        This is generally needed only when the option self[key] hasn't been completely defined."""
+        # A complete model/obs specification shouldn't be merged.  But usually they won't be
+        # complete: missing the path, or only the path.  To prevent a merger, add a
+        # 'merge':False item to the model/obs dict.  c.f. the checks below on self[key].get('merge',True)
+        if key not in ['model','obs'] or len(opt2[key])<=0 :
+            return
+        # These options are composite, and complicated.  
+        # At the moment I cannot properly merge two obs lists if the length is >1.
+        if len(self[key])==0:
+            self[key] = opt2[key]
+        elif len(self[key])>=1 and len(opt2[key])==1:
+            for idx,mob in enumerate(self[key]):   # mob is a dict with keys such as filter, path, climos
+                if self[key].get('merge',True)==False:
+                    continue
+                for k,v in opt2[key][0].iteritems():
+                    if k not in mob.keys() or mob[k] is None:
+                        mob[k] = v
+        elif len(self[key])==1 and len(opt2[key])>=1 and self[key][0].get('merge',True)!=False:
+            self[key] = [ self[key][0].copy() for _ in opt2[key] ]
+            for idx,mob in enumerate(opt2[key]):   # mob is a dict with keys such as filter, path, climos
+                for k,v in mob.iteritems():
+                    if k not in self[key][idx].keys() or self[key][idx][k] is None:
+                        self[key][idx][k] = v
+        elif len(self[key])>1 and len(opt2[key])>1:
+            logger.error("Options.merge not implemented for model or obs lists both of length>1")
+        print "jfp merged",key,"to",self[key]
 
    # Some short cut getter/setters
     def __getitem__(self, opt):

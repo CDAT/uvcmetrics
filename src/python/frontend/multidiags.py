@@ -5,7 +5,7 @@ from metrics.frontend.multimaster import *   # this file is just a demo
 import metrics.frontend.multimaster as multimaster
 from metrics.frontend.diags import run_diags
 from metrics.frontend.options import Options, options_defaults
-import logging, pdb, importlib
+import logging, pdb, importlib, time
 from pprint import pprint
 logger = logging.getLogger(__name__)
 
@@ -77,26 +77,41 @@ def merge_all_options( opt ):
         op.merge( options_defaults )
     return opts
 
-def expand_modob( modobd ):
-    """Expands out collection keys in the dict which is a component of a model or obs specification."""
-    if modobd not in key2collection.keys():
-        return modobd  # modobd is a.s. a dict; doesn't need expansion
-    modob = key2collection[modobd][modobd]   # a dict suitable for model or obs.
-    # In the future I'd like another possibility: a list of such dicts, or keys identifying them.
-    return modob
+def lookup_collection( optval ):
+    """Expands out an options collection key to its values().  The input optval should be a valid
+    option value, or a key into an options collection; not a list.
+    If the values contain collection keys, these will be expanded to their values; but this will
+    not process to a greater depth.
+    This function returns a list of the option values found by the collection lookups.."""
+    if optval not in key2collection.keys():
+        if type(optval) is list:
+            return optval
+        else:
+            return [optval]
+    newval1 = key2collection[optval][optval]
+    newval2 = []
+    if type(newval1) is not list:
+        newval1 = [newval1]
+    for nv in newval1:
+        if nv in key2collection.keys():
+            newval2.append(  key2collection[nv][nv] )
+        else:
+            newval2.append(nv)
+    return newval2
 
 def expand_model_obs( opt ):
     """The model and obs options are lists.  Each list element could be a dict, or a key into a
-    collection.  This expands each key into a dict.  Such an expansion is a prerequisite to any
-    merger."""
+    collection.  This expands each key into a dict, or list of dicts.
+    Such an expansion is a prerequisite to any merger."""
     if opt is None:
         return opt
-    for i,item in enumerate(opt.get('model',[])):
-        # Each item is *either* a key into model_collection; or a dict, with keys like 'climos', 'filter', 'path'.
-        opt['model'][i] = expand_modob(item)
-    for i,item in enumerate(opt.get('obs',[])):
-        # Each item is *either* a key into obs_collection; or a dict, with keys like 'climos', 'filter', 'path'.
-        opt['obs'][i] = expand_modob(item)
+    for key in ['model','obs']:
+        for i,item in enumerate(opt.get(key,[])):
+            # Each item is *either* a key into model/obs_collection; or a dict, with keys like 'climos', 'filter', 'path'.
+            opt[key][i] = lookup_collection(item)
+        flattened = [ o for ops in opt.get(key,[]) for o in ops ]
+        if len(flattened)>0:
+            opt[key] = flattened
     print "jfp expand_model_obs is returning opt with obs=",len(opt['obs']),opt['obs']
     return opt
 
@@ -108,9 +123,7 @@ def expand_collection( onm, ovl, opt ):
     2. If the collection member is an Options instance, merge it into opt.
     3. If the value isn't a collection name, do nothing but return [opt]."""
     # e.g. onm='vars', ovl='MyVars'; or onm='obs', ovl='MyObs'
-    if ovl not in key2collection.keys():
-        return [opt]
-    newvals = key2collection[ovl][ovl]
+    newvals = lookup_collection( ovl )
     # ... e.g. ovl='MyObs', newvals=obs_collection['MyObs']=['ISCCP', 'CERES', 'NCEP']
 
     # In the above example, if onm='obs', ovl='MyObs', there will be a member of newopts with
@@ -125,6 +138,7 @@ def expand_lists_collections( opt, okeys=None ):
     2. If the option value is the name of a collection, replace opt with a list of Options
     instances, each of which contains a single value from that collection.
     3. If the option value is really a legitimate option do nothing.
+    By definition, a list is not a legitimate option except for the options 'model','obs'.
     What is returned is a list of Options instances in which no option has a list value and
     there are no collection names.
     Note that sometimes a list of values is a legitimate option value and doesn't have to be
@@ -170,13 +184,19 @@ def multidiags1( opt ):
     list of simple Options instances.
     For each one separately, it computes the requested diagnostics.
     """
+    t0 = time.time()
     opts = merge_all_options(opt)
     newopts = []
     for op in opts:
         newopts.extend(expand_lists_collections( op ))
+    print "jfp time to merge and extend options:",time.time() - t0
     for o in newopts:
         print "jfp about to run_diags on",o['vars'],len(o['obs']),o['obs'][0]
+        t0 = time.time()
         run_diags(o)
+        trun = time.time() - t0
+        print "jfp run_diags took",trun,"seconds"
+        
 
 def multidiags( opts ):
     """The input opts is an Options instance, or a dictionary key which identifies such an instance,
