@@ -140,7 +140,7 @@ class amwg_plot_plan(plot_plan):
         intersection = set(['OCNFRAC', 'LANDFRAC']).intersection(invarnoms)
         if intersection:            
             #intercept before any reduction takes place
-            invarnoms.remove( intersection.pop() )
+            #invarnoms.remove( intersection.pop() )
             mask_rvs = []
             import collections
             dv_dict = collections.OrderedDict()
