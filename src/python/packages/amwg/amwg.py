@@ -156,7 +156,7 @@ class amwg_plot_plan(plot_plan):
                         
             dv.id = svd.id()
             invarnoms = [ dv.id ]
-            svd._inputs = dv.id
+            svd._inputs = dv.id 
             
         if computable:
             #print "dbg",varnom,"is computable by",func,"from..."
