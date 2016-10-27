@@ -136,7 +136,7 @@ class amwg_plot_plan(plot_plan):
                 svd_rmse = svd
                 break
         #check that some masking is required. If there is a mask, perform masking first
-        pdb.set_trace()
+        #intercept before any reduction takes place
         if set(['OCNFRAC', 'LANDFRAC']).intersection(invarnoms):
             mask_rvs = []
             import collections
@@ -152,10 +152,11 @@ class amwg_plot_plan(plot_plan):
             DVvid = derived_var.dict_id( varnom, '', season.seasons[0], filetable )
             DV = derived_var( vid=DVvid, inputs=[dv.id], outputs=[ svd.id() ], func=reduction_function )
             pdb.set_trace()
-            DV.derive({dv.id: dv})
+            xxx=DV.derive({dv.id: dv})
                         
             dv.id = svd.id()
             invarnoms = [ dv.id ]
+            svd._inputs = dv.id()
             
         if computable:
             #print "dbg",varnom,"is computable by",func,"from..."
