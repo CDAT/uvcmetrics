@@ -150,8 +150,10 @@ class amwg_plot_plan(plot_plan):
                 mask_rvs += [RV]
                 #dv_dict  = {rv.id(): rv.reduce() for rv in mask_rvs} 
                 dv_dict[ivn] = RV.reduce()
-            #from metrics.packages.amwg.derivations import *
-            dv = svd.derive(dv_dict)
+            #NEXT: the derived variable is computed on the restricted inputs
+            dv = svd.derive(dv_dict) 
+            
+            #NEXT: create a derived variable that will compute the mean
             DVvid = derived_var.dict_id( varnom, '', season.seasons[0], filetable )
             DV = derived_var( vid=DVvid, inputs=[dv.id], outputs=[ svd.id() ], func=reduction_function )
             pdb.set_trace()
@@ -161,7 +163,7 @@ class amwg_plot_plan(plot_plan):
             invarnoms = [ dv.id ]
             svd._inputs = [ dv.id ] 
             rvs = [DV]
-
+            return DV.id(), rvs, dvs, None
         if computable and not fraction:
             #print "dbg",varnom,"is computable by",func,"from..."
             for ivn in invarnoms:

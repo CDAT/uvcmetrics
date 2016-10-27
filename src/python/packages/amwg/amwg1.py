@@ -287,7 +287,13 @@ class Row:
                 logger.warning("cannot compute mean for %s %s",self.var,filetable)
                 return self.undefined#-999.000     # In the NCAR table, this number means 'None'.
             else:
-                rvvs = {rv.id(): rv.reduce() for rv in rvs }
+                #rvvs = {rv.id(): rv.reduce() for rv in rvs }
+                rvvs = {}
+                for var in rvs:
+                    if hasattr(var, 'reduce'):
+                        rvvs[var.id()] = var.reduce()
+                    elif hasattr(var, 'derive'):
+                        rvvs[var.id()] = var.derive()
                 dvv = dvs[0].derive( rvvs )
                 if dvv is None:
                     return self.undefined#-999.000
