@@ -293,8 +293,8 @@ class Row:
                 for var in rvs:
                     if hasattr(var, 'reduce'):
                         rvvs[var.id()] = var.reduce()
-                    elif hasattr(var, 'derive'):
-                        rvvs[var.id()] = var
+                    else: #if hasattr(var, 'derive'):
+                        rvvs[var.id] = var
                 dvv = dvs[0].derive( rvvs )
                 if dvv is None:
                     return self.undefined#-999.000
