@@ -309,7 +309,7 @@ class Row:
         from metrics.graphics.default_levels import default_levels
         from metrics.computation.units import convert_variable
         from metrics.computation.compute_rmse import compute_rmse
-        
+        pdb.set_trace()
         #perform reductions for those derived variables that are user defined 
         if self.rmse_vars:
             rvs = {rv.id(): rv.reduce() for rv in self.rmse_vars['rv'] }
