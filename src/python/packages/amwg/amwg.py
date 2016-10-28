@@ -163,7 +163,7 @@ class amwg_plot_plan(plot_plan):
             svd._inputs = [ dv_frac.id ] 
             rvs = [DV]
             #make the variables for the rmse and correlation calculation
-            pdb.set_trace()
+            #pdb.set_trace()
             rmse_vars = None
             if svd_rmse:
                 rmse_vars = {'rv':[], 'dv':None}
@@ -177,7 +177,7 @@ class amwg_plot_plan(plot_plan):
                     dv_inputs += [rv_rmse.id()]
                 #this derived variable takes the above rvs and applies the fuction
                 rmse_vars['dv'] = derived_var( vid=varnom, inputs=dv_inputs, outputs=[varnom], func=svd_rmse._func ) 
-            return DV.id(), [dv_frac], [DV], None
+            return DV.id(), [dv_frac], [DV], rmse_vars
         if computable and not fraction:
             #print "dbg",varnom,"is computable by",func,"from..."
             for ivn in invarnoms:
