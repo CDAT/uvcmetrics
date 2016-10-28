@@ -138,6 +138,7 @@ class amwg_plot_plan(plot_plan):
         #check that some masking is required. If there is a mask, perform masking first
         fraction = set(['OCNFRAC', 'LANDFRAC']).intersection(invarnoms)
         intersection = set(['OCNFRAC', 'LANDFRAC']).intersection(invarnoms)
+        pdb.set_trace()
         if intersection:            
             #intercept before any reduction takes place
             #invarnoms.remove( intersection.pop() )
@@ -163,7 +164,6 @@ class amwg_plot_plan(plot_plan):
             svd._inputs = [ dv_frac.id ] 
             rvs = [DV]
             #make the variables for the rmse and correlation calculation
-            #pdb.set_trace()
             rmse_vars = None
             if svd_rmse:
                 rmse_vars = {'rv':[], 'dv':None}
