@@ -156,13 +156,27 @@ class amwg_plot_plan(plot_plan):
             #NEXT: create a derived variable that will compute the mean
             DVvid = derived_var.dict_id( varnom, '', season.seasons[0], filetable )
             DV = derived_var( vid=DVvid, inputs=[dv_frac.id], outputs=[ svd.id() ], func=reduction_function )
-            pdb.set_trace()
             xxx=DV.derive({dv_frac.id: dv_frac})
                         
             #dv_frac.id = svd.id()
             invarnoms = [ dv_frac.id ]
             svd._inputs = [ dv_frac.id ] 
             rvs = [DV]
+            #make the variables for the rmse and correlation calculation
+            pdb.set_trace()
+            rmse_vars = None
+            if svd_rmse:
+                rmse_vars = {'rv':[], 'dv':None}
+                invarnoms = svd.inputs()
+                dv_inputs = []
+                for invar in invarnoms:
+                    #keep a copy of rv to feed into the derived variable below
+                    rv_rmse = reduced_variable( variableid=invar+'_rmse', filetable=filetable, season=season,
+                                           reduction_function=(lambda x,vid:x) )
+                    rmse_vars['rv'].append(rv_rmse)
+                    dv_inputs += [rv_rmse.id()]
+                #this derived variable takes the above rvs and applies the fuction
+                rmse_vars['dv'] = derived_var( vid=varnom, inputs=dv_inputs, outputs=[varnom], func=svd_rmse._func ) 
             return DV.id(), [dv_frac], [DV], None
         if computable and not fraction:
             #print "dbg",varnom,"is computable by",func,"from..."
