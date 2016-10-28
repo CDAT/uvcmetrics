@@ -138,6 +138,7 @@ class amwg_plot_plan(plot_plan):
         #check that some masking is required. If there is a mask, perform masking first
         fraction = set(['OCNFRAC', 'LANDFRAC']).intersection(invarnoms)
         intersection = set(['OCNFRAC', 'LANDFRAC']).intersection(invarnoms)
+        print '<<<<<<<<<<<', intersection, filetable
         pdb.set_trace()
         if intersection:            
             #intercept before any reduction takes place

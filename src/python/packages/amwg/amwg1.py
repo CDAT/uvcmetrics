@@ -288,7 +288,6 @@ class Row:
                 return self.undefined#-999.000     # In the NCAR table, this number means 'None'.
             else:
                 #rvvs = {rv.id(): rv.reduce() for rv in rvs }
-                pdb.set_trace()
                 rvvs = {}
                 for var in rvs:
                     if hasattr(var, 'reduce'):
