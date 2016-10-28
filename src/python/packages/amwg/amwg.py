@@ -159,7 +159,7 @@ class amwg_plot_plan(plot_plan):
             pdb.set_trace()
             xxx=DV.derive({dv_frac.id: dv_frac})
                         
-            dv_frac.id = svd.id()
+            #dv_frac.id = svd.id()
             invarnoms = [ dv_frac.id ]
             svd._inputs = [ dv_frac.id ] 
             rvs = [DV]
