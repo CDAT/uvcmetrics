@@ -149,7 +149,7 @@ class Row:
         self.units = units   # The output table doesn't mention units, but they are essential
         #                      because different datasets may use different units.
         self.reduced_variables = []
-        self.rmse_vars = {}
+        self.rmse_vars = []
         self.variable_values  = {}
     def fpfmt( self, num ):
         """No standard floating-point format (e,f,g) will do what we need, so this switches between f and e"""
@@ -281,7 +281,7 @@ class Row:
                              reduce2scalar_seasonal_zonal(
                             x,season,latmin=dom0,latmax=dom1,vid=vid,gw=gw) ))
                 pdb.set_trace()
-                self.rmse_vars = rmse_vars
+                self.rmse_vars.append(rmse_vars)
             except DiagError as e:
                 vid = None
             if vid is None:
@@ -312,13 +312,14 @@ class Row:
         pdb.set_trace()
         #perform reductions for those derived variables that are user defined 
         if self.rmse_vars:
-            rvs = {rv.id(): rv.reduce() for rv in self.rmse_vars['rv'] }
-            dv = self.rmse_vars['dv'].derive( rvs )            
-            varnom = self.rmse_vars['dv']._outputs[0] 
-            #this derived variable takes the about rvs and applies the fuction
-            dv_rmse = derived_var( vid=varnom, inputs=[dv.id], outputs=[varnom], 
-                                   func=(lambda x, vid=None: reduce_time_seasonal( x, self.season, self.region, vid ) ) )
-            self.reduced_variables.append(  dv_rmse.derive({dv.id:dv}) )
+            for rmse_vars in self.rmse_vars:
+                rvs = {rv.id(): rv.reduce() for rv in rmse_vars['rv'] }
+                dv = rmse_vars['dv'].derive( rvs )            
+                varnom = rmse_vars['dv']._outputs[0] 
+                #this derived variable takes the about rvs and applies the fuction
+                dv_rmse = derived_var( vid=varnom, inputs=[dv.id], outputs=[varnom], 
+                                       func=(lambda x, vid=None: reduce_time_seasonal( x, self.season, self.region, vid ) ) )
+                self.reduced_variables.append(  dv_rmse.derive({dv.id:dv}) )
         
         #perform reductions and conversions as necessary
         variable_values = { }
