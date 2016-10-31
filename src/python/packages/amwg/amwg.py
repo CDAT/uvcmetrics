@@ -139,7 +139,6 @@ class amwg_plot_plan(plot_plan):
         fraction = set(['OCNFRAC', 'LANDFRAC']).intersection(invarnoms)
         intersection = set(['OCNFRAC', 'LANDFRAC']).intersection(invarnoms)
         print '<<<<<<<<<<<', intersection, filetable
-        pdb.set_trace()
         if intersection:            
             #intercept before any reduction takes place
             #invarnoms.remove( intersection.pop() )
