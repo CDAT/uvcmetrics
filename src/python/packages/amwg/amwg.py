@@ -141,7 +141,6 @@ class amwg_plot_plan(plot_plan):
         print '<<<<<<<<<<<', intersection, filetable
         if intersection:            
             #intercept before any reduction takes place
-            #invarnoms.remove( intersection.pop() )
             mask_rvs = []
             import collections
             dv_dict = collections.OrderedDict()
@@ -155,30 +154,32 @@ class amwg_plot_plan(plot_plan):
             dv_frac = svd.derive(dv_dict) 
             
             #NEXT: create a derived variable that will compute the mean
-            DVvid = derived_var.dict_id( varnom, '', season.seasons[0], filetable )
-            DV = derived_var( vid=DVvid, inputs=[dv_frac.id], outputs=[ svd.id() ], func=reduction_function )
-            xxx=DV.derive({dv_frac.id: dv_frac})
-                        
+            dv_mean_vid = derived_var.dict_id( varnom, '', season.seasons[0], filetable )
+            dv_mean = derived_var( vid=dv_mean_vid, inputs=[dv_frac.id], outputs=[ svd.id() ], func=reduction_function )
+            xxx=dv_mean.derive({dv_frac.id: dv_frac})
+            
+            return dv_mean.id(), [dv_frac], [dv_mean], [dv_frac]            
             #dv_frac.id = svd.id()
             invarnoms = [ dv_frac.id ]
             svd._inputs = [ dv_frac.id ] 
-            rvs = [DV]
-            #make the variables for the rmse and correlation calculation
-            rmse_vars = None
-            if svd_rmse:
-                rmse_vars = {'rv':[], 'dv':None}
-                invarnoms = svd.inputs()
-                dv_inputs = []
-                for invar in invarnoms:
-                    #keep a copy of rv to feed into the derived variable below
-                    rv_rmse = reduced_variable( variableid=invar+'_rmse', filetable=filetable, season=season,
-                                           reduction_function=(lambda x,vid:x) )
-                    rmse_vars['rv'].append(rv_rmse)
-                    dv_inputs += [rv_rmse.id()]
-                #this derived variable takes the above rvs and applies the fuction
-                rmse_vars['dv'] = derived_var( vid=varnom, inputs=dv_inputs, outputs=[varnom], func=svd_rmse._func ) 
-                pdb.set_trace()
-            return DV.id(), [dv_frac], [DV], rmse_vars
+            #rvs = [DV]
+            #make the variables for the rmse and correlation calculation; these contain the arrays
+            if True:
+                rmse_vars = None
+                if svd_rmse:
+                    rmse_vars = {'rv':[], 'dv':None}
+                    invarnoms = svd.inputs()
+                    dv_inputs = []
+                    for invar in invarnoms:
+                        #keep a copy of rv to feed into the derived variable below
+                        rv_rmse = reduced_variable( variableid=invar+'_rmse', filetable=filetable, season=season,
+                                               reduction_function=(lambda x,vid:x) )
+                        rmse_vars['rv'].append(rv_rmse)
+                        dv_inputs += [rv_rmse.variableid]
+                    #this derived variable takes the above rvs and applies the function passed in
+                    rmse_vars['dv'] = derived_var( vid=varnom, inputs=dv_inputs, outputs=[varnom], func=svd_rmse._func ) 
+            pdb.set_trace()
+            return dv_mean.id(), [dv_frac], [dv_mean], rmse_vars
         if computable and not fraction:
             #print "dbg",varnom,"is computable by",func,"from..."
             for ivn in invarnoms:
