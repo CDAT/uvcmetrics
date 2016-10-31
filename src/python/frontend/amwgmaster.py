@@ -231,7 +231,7 @@ diags_collection['5']['package'] = 'AMWG'
 diags_collection['5']['options'] = {'logo':'no'}
 diags_collection['5']['combined'] = True
 
-diags_collection['5']['SST'] = {'plottype': '5', 'obs': ['HadISST_PD_1', 'HadISST_PI_1', 'HadISST_CL_1']}
+diags_collection['5']['SST'] = {'plottype': '5', 'obs': ['HadISST_PD_1', 'HadISST_PI_1', 'HadISST_CL_1', 'MERRA_1']}
 diags_collection['5']['SHFLX'] = {'plottype': '5', 'obs': ['JRA25_1', 'NCEP_1']}
 diags_collection['5']['SHFLX_OCN'] = {'plottype': '5', 'obs': ['LARYEA_1']}
 diags_collection['5']['LHFLX'] = {'plottype': '5', 'obs': ['ECMWF_1', 'JRA25_1', 'ERA40_1']} #>>>>>>>>new
@@ -261,16 +261,16 @@ diags_collection['5']['SWCF'] = {'plottype': '5', 'obs': ['CERES-EBAF_1'], 'regi
 diags_collection['5']['LWCFSRF'] = {'plottype': '5', 'obs': ['ISCCP_1']}
 diags_collection['5']['SWCFSRF'] = {'plottype': '5', 'obs': ['ISCCP_1']}
 diags_collection['5']['TMQ'] = {'plottype': '5', 
-                                'obs': ['NCEP_1', 'NVAP_1', 'JRA25_1', 'ERA40_1', 'MODIS_1', 'ECMWF_1'], 
+                                'obs': ['NCEP_1', 'NVAP_1', 'JRA25_1', 'ERA40_1', 'MODIS_1', 'ECMWF_1', 'MERRA_1'], 
                                 'regions':['Global']}
 diags_collection['5']['TGCLDLWP_OCN'] = {'plottype': '5', 'obs': ['NVAP_1'], 'regions':['Global']}
-diags_collection['5']['PSL'] = {'plottype': '5', 'obs': ['JRA25_1', 'NCEP_1']}
-diags_collection['5']['T'] = {'plottype': '5', 'obs': ['ECMWF_1', 'JRA25_1', 'AIRS_1', 'ERA40_1', 'NCEP_1'], 'varopts':['850', '200']}
+diags_collection['5']['PSL'] = {'plottype': '5', 'obs': ['JRA25_1', 'NCEP_1', 'MERRA_1']}
+diags_collection['5']['T'] = {'plottype': '5', 'obs': ['ECMWF_1', 'JRA25_1', 'AIRS_1', 'ERA40_1', 'NCEP_1', 'MERRA_1'], 'varopts':['850', '200']}
 
 diags_collection['5']['TTRP'] = {'plottype': '5', 'obs': ['ECMWF_1', 'NCEP_1']}
-diags_collection['5']['TS'] = {'plottype': '5', 'obs': ['NCEP_1']}
-diags_collection['5']['U'] = {'plottype': '5', 'obs': ['ECMWF_1', 'NCEP_1', 'JRA25_1', 'ERA40_1'], 'varopts':['200']}
-diags_collection['5']['Z3'] = {'plottype': '5', 'obs': ['ECMWF_1', 'NCEP_1', 'JRA25_1', 'ERA40_1'], 'varopts':['500', '300']}
+diags_collection['5']['TS'] = {'plottype': '5', 'obs': ['NCEP_1', 'MERRA_1']}
+diags_collection['5']['U'] = {'plottype': '5', 'obs': ['ECMWF_1', 'NCEP_1', 'JRA25_1', 'ERA40_1', 'MERRA_1'], 'varopts':['200']}
+diags_collection['5']['Z3'] = {'plottype': '5', 'obs': ['ECMWF_1', 'NCEP_1', 'JRA25_1', 'ERA40_1', 'MERRA_1'], 'varopts':['500', '300']}
 diags_collection['5']['PRECT'] = {'plottype': '5', 'obs': ['XI_1', 'GPCP_1', 'LEGATES_1', 'TRMM_1'], 'regions':['Global']}
 diags_collection['5']['PRECT_LAND'] = {'plottype': '5', 'obs': ['PRECL_1']}
 diags_collection['5']['PRECIP_LAND'] = {'plottype': '5', 'obs': ['WILLMOTT_1']}
@@ -636,6 +636,7 @@ diags_obslist['CRU_1'] = {'filekey': 'CRU', 'desc': 'IPCC/CRU Climatology 1961-9
 diags_obslist['ERAI_1'] = {'filekey': 'ERAI', 'desc': 'ERA Interim Reanalysis'}
 diags_obslist['ERS_1'] = {'filekey': 'ERS', 'desc': 'ERS Scatterometer 1992-2000'}
 diags_obslist['CALIPSO_1'] = {'filekey': 'CALIPSO', 'desc': 'CALIPSO GOCCP 2007-2010'}
+diags_obslist['MERRA_1'] = {'filekey': 'MERRA', 'desc': 'MERRA Anaylsis 1979-2013 (NASA)'}
 
 # Just sort alphabetically for now...
 diags_obslist['AOD_550_1'] = {'filekey': 'sat', 'desc': 'AOD Data'}
