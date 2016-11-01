@@ -162,8 +162,8 @@ class amwg_plot_plan(plot_plan):
             #NEXT: create the derived variable 
             #pdb.set_trace()
             rmse_vars = {}
-            rmse_vars['rv'] = {dv_frac.id: dv_frac}
-            rmse_vars['dv'] = derived_var( vid=varnom, inputs=dv_inputs, outputs=svd.id(), func=svd_rmse._func )  
+            rmse_vars['rv'] = None
+            rmse_vars['dv'] = dv_frac 
             return dv_mean.id(), [dv_frac], [dv_mean], rmse_vars            
             #dv_frac.id = svd.id()
             invarnoms = [ dv_frac.id ]
