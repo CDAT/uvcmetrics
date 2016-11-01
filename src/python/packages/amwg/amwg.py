@@ -156,10 +156,15 @@ class amwg_plot_plan(plot_plan):
             
             #NEXT: create a derived variable that will compute the mean
             dv_mean_vid = derived_var.dict_id( varnom, '', season.seasons[0], filetable )
-            dv_mean = derived_var( vid=dv_mean_vid, inputs=[dv_frac.id], outputs=[ svd.id() ], func=reduction_function )
+            dv_mean = derived_var( vid=dv_mean_vid, inputs=[dv_frac.id], outputs=[ svd.id() ], func=svd_rmse._func )
             xxx=dv_mean.derive({dv_frac.id: dv_frac})
             
-            return dv_mean.id(), [dv_frac], [dv_mean], [dv_frac]            
+            #NEXT: create the derived variable 
+            pdb.set_trace()
+            rmse_vars = {}
+            rmse_vars['rv'] = {dv_frac.id: dv_frac}
+            rmse_vars['dv'] = derived_var( vid=varnom, inputs=dv_inputs, outputs=[varnom], func=svd_rmse._func )  
+            return dv_mean.id(), [dv_frac], [dv_mean], rmse_vars            
             #dv_frac.id = svd.id()
             invarnoms = [ dv_frac.id ]
             svd._inputs = [ dv_frac.id ] 
