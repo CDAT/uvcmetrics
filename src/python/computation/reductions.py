@@ -2508,9 +2508,9 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
                 raise Exception("when regridding mv2 to mv1, failed to get or generate a grid for mv1")
             mv2new = mv2.regrid(grid1, regridTool="esmf", regridMethod="linear")
             mv2new.mean = None
-            set_mean(mv2new)
             mv2new.filetable = mv2.filetable
             mv2.regridded = mv2new.id   # a GUI can use this
+            set_mean(mv2new)
             regridded_vars[mv2new.id] = mv2new
 #        else:
 #            # Interpolate mv1 from axis1[1] to axis2[1]
