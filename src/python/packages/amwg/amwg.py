@@ -157,19 +157,19 @@ class amwg_plot_plan(plot_plan):
             #NEXT: create a derived variable that will compute the mean
             dv_mean_vid = derived_var.dict_id( varnom, '', season.seasons[0], filetable )
             dv_mean = derived_var( vid=dv_mean_vid, inputs=[dv_frac.id], outputs=[ svd.id() ], func=svd_rmse._func )
-            xxx=dv_mean.derive({dv_frac.id: dv_frac})
+            #xxx=dv_mean.derive({dv_frac.id: dv_frac})
             
             #NEXT: create the derived variable 
-            pdb.set_trace()
+            #pdb.set_trace()
             rmse_vars = {}
             rmse_vars['rv'] = {dv_frac.id: dv_frac}
-            rmse_vars['dv'] = derived_var( vid=varnom, inputs=dv_inputs, outputs=[varnom], func=svd_rmse._func )  
+            rmse_vars['dv'] = derived_var( vid=varnom, inputs=dv_inputs, outputs=svd.id(), func=svd_rmse._func )  
             return dv_mean.id(), [dv_frac], [dv_mean], rmse_vars            
             #dv_frac.id = svd.id()
             invarnoms = [ dv_frac.id ]
             svd._inputs = [ dv_frac.id ] 
             #rvs = [DV]
-            #make the variables for the rmse and correlation calculation; these contain the arrays
+            #make the variables for the rmse and correlation calculation; these variables contain the arrays
             if True:
                 rmse_vars = None
                 if svd_rmse:
@@ -178,8 +178,9 @@ class amwg_plot_plan(plot_plan):
                     dv_inputs = []
                     for invar in invarnoms:
                         #keep a copy of rv to feed into the derived variable below
-                        rv_rmse = reduced_variable( variableid=invar+'_rmse', filetable=filetable, season=season,
-                                               reduction_function=(lambda x,vid:x) )
+                        #rv_rmse = reduced_variable( variableid=invar+'_rmse', filetable=filetable, season=season,
+                        #                       reduction_function=(lambda x,vid:x) )
+                        rv_rmse = derived_variable( variableid=invar+'_rmse',  func=(lambda x,vid:x) )
                         rmse_vars['rv'].append(rv_rmse)
                         dv_inputs += [rv_rmse.variableid]
                     #this derived variable takes the above rvs and applies the function passed in
