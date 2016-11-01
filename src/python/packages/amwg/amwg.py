@@ -151,6 +151,7 @@ class amwg_plot_plan(plot_plan):
                 #dv_dict  = {rv.id(): rv.reduce() for rv in mask_rvs} 
                 dv_dict[ivn] = RV.reduce()
             #NEXT: the derived variable is computed on the restricted inputs
+            #now it can be used for rmse and correlation
             dv_frac = svd.derive(dv_dict) 
             
             #NEXT: create a derived variable that will compute the mean
@@ -178,7 +179,6 @@ class amwg_plot_plan(plot_plan):
                         dv_inputs += [rv_rmse.variableid]
                     #this derived variable takes the above rvs and applies the function passed in
                     rmse_vars['dv'] = derived_var( vid=varnom, inputs=dv_inputs, outputs=[varnom], func=svd_rmse._func ) 
-            pdb.set_trace()
             return dv_mean.id(), [dv_frac], [dv_mean], rmse_vars
         if computable and not fraction:
             #print "dbg",varnom,"is computable by",func,"from..."
