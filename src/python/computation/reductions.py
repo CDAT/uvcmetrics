@@ -2506,8 +2506,7 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
                              [a[0].id for a in mv1._TransientVariable__domain], len(axes1[0]), len(axes1[1]),
                              [a[0].id for a in mv2._TransientVariable__domain], len(axes2[0]), len(axes2[1]))
                 raise Exception("when regridding mv2 to mv1, failed to get or generate a grid for mv1")
-            #mv2new = mv2.regrid(grid1,regridTool="libcf",regridMethod="linear")  # this is linear regridding, like AMWG.
-            mv2new = mv2.regrid(grid1, regridTool="regrid2")
+            mv2new = mv2.regrid(grid1, regridTool="esmf", regridMethod="linear")
             mv2new.mean = None
             set_mean(mv2new)
             mv2new.filetable = mv2.filetable
@@ -2535,12 +2534,14 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
                              [a[0].id for a in mv1._TransientVariable__domain], len(axes1[0]), len(axes1[1]),
                              [a[0].id for a in mv2._TransientVariable__domain], len(axes2[0]), len(axes2[1]))
                 raise Exception("when regridding mv1 to mv2, failed to get or generate a grid for mv2")
-            #mv1new = mv1.regrid(grid2,regridTool="libcf",regridMethod="linear")  # this is linear regridding, like AMWG.
-            mv1new = mv1.regrid(grid2, regridTool="regrid2")
+            # mv1new = mv1.regrid(grid2, regridTool="regrid2")   # our standard regridding
+            mv1new = mv1.regrid(grid2, regridTool="esmf", regridMethod="linear")  # treats missing data like AMWG
+            #           Another esmf method is "conservative".  It treats missing data like regrid2.
+            # mv1new = mv1.regrid(grid2,regridTool="libcf",regridMethod="linear")   # doesn't work at the moment
             mv1new.mean = None
-            set_mean(mv1new)
             mv1new.filetable = mv1.filetable
             mv1.regridded = mv1new.id   # a GUI can use this
+            set_mean(mv1new)
             regridded_vars[mv1new.id] = mv1new
     aminusb = mv1new - mv2new
     aminusb.id = 'difference of '+mv1.id
