@@ -316,7 +316,7 @@ class Row:
                 if hasattr(rmse_vars, 'reduce'):
                     rvs = {rv.id(): rv.reduce() for rv in rmse_vars['rv'] }
                 else: 
-                    rvs = [rmse_vars]
+                    rvs = rmse_vars
                 
                 dv = rmse_vars['dv'].derive( rvs )            
                 varnom = rmse_vars['dv']._outputs[0] 
