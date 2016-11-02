@@ -312,9 +312,10 @@ class Row:
         #perform reductions for those derived variables that are user defined 
         if self.rmse_vars:
             for rmse_vars in self.rmse_vars:
-                if type(rmse_vars) is dict:
+                if type(rmse_vars['rv']) is dict:
                     rvs = rmse_vars['rv']
-                else: 
+                else:
+                    #make a dictionary
                     rvs = {rv.id(): rv.reduce() for rv in rmse_vars['rv'] }
                 pdb.set_trace()
                 dv = rmse_vars['dv'].derive( rvs )            
