@@ -292,7 +292,7 @@ class Row:
                 for var in rvs:
                     if hasattr(var, 'reduce'):
                         rvvs[var.id()] = var.reduce()
-                    else: #if hasattr(var, 'derive'):
+                    else:
                         rvvs[var.id] = var
                 dvv = dvs[0].derive( rvvs )
                 if dvv is None:
@@ -313,7 +313,7 @@ class Row:
         if self.rmse_vars:
             for rmse_vars in self.rmse_vars:
                 if type(rmse_vars['rv']) is list:
-                    #make a dictionary for evaluation
+                    #make a dictionary for the derived variable to evaluate
                     rvs = {rv.id(): rv.reduce() for rv in rmse_vars['rv'] }
                 else:
                     #assume it is a dictionary or ordered dictionary already
