@@ -288,7 +288,6 @@ class Row:
                 return self.undefined#-999.000     # In the NCAR table, this number means 'None'.
             else:
                 #rvvs = {rv.id(): rv.reduce() for rv in rvs }
-                pdb.set_trace()
                 rvvs = {}
                 for var in rvs:
                     if hasattr(var, 'reduce'):
@@ -309,7 +308,7 @@ class Row:
         from metrics.graphics.default_levels import default_levels
         from metrics.computation.units import convert_variable
         from metrics.computation.compute_rmse import compute_rmse
-        pdb.set_trace()
+        
         #perform reductions for those derived variables that are user defined 
         if self.rmse_vars:
             for rmse_vars in self.rmse_vars:
@@ -317,7 +316,7 @@ class Row:
                     rvs = {rv.id(): rv.reduce() for rv in rmse_vars['rv'] }
                 else: 
                     rvs = rmse_vars['rv']
-                
+                pdb.set_trace()
                 dv = rmse_vars['dv'].derive( rvs )            
                 varnom = rmse_vars['dv']._outputs[0] 
                 #this derived variable takes the about rvs and applies the fuction
