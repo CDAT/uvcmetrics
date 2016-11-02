@@ -316,7 +316,7 @@ class Row:
                 if type(rmse_vars['rv']) is dict:
                     rvs = rmse_vars['rv']
                 else:
-                    #make a dictionary
+                    #make a dictionary for evaluation
                     rvs = {rv.id(): rv.reduce() for rv in rmse_vars['rv'] }
                 dv = rmse_vars['dv'].derive( rvs )            
                 varnom = rmse_vars['dv']._outputs[0] 
@@ -327,7 +327,8 @@ class Row:
         
         #perform reductions and conversions as necessary
         variable_values = { }
-        keys = ['data1', 'data2'] #these are model and obs with no particular order
+        #model and obs with no particular order
+        keys = ['data1', 'data2'] 
         for key, rv in zip(keys, self.reduced_variables):
             try:
                 variable_values[key] = rv.reduce() 
