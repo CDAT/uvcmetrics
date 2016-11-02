@@ -2506,7 +2506,10 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
                              [a[0].id for a in mv1._TransientVariable__domain], len(axes1[0]), len(axes1[1]),
                              [a[0].id for a in mv2._TransientVariable__domain], len(axes2[0]), len(axes2[1]))
                 raise Exception("when regridding mv2 to mv1, failed to get or generate a grid for mv1")
-            mv2new = mv2.regrid(grid1, regridTool="esmf", regridMethod="linear")
+            if Options.regridMethod is None:
+                mv2new = mv2.regrid(grid1, regridTool=Options.regridTool )
+            else:
+                mv2new = mv2.regrid(grid1, regridTool=Options.regridTool, regridMethod=Options.regridMethod )
             mv2new.mean = None
             mv2new.filetable = mv2.filetable
             mv2.regridded = mv2new.id   # a GUI can use this
@@ -2526,7 +2529,7 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
 #        else:
 
             mv2new = mv2
-            # Interpolate mv2 from axis2 to axis1 in both directions.  Use the CDAT regridder.
+            # Interpolate mv1 from axis1 to axis2 in both directions.  Use the CDAT regridder.
             grid2 = mv2.getGrid()
             if grid2 is None:
                 logger.error("When regridding mv1 to mv2, failed to get or generate a grid for mv2")
@@ -2535,9 +2538,13 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
                              [a[0].id for a in mv2._TransientVariable__domain], len(axes2[0]), len(axes2[1]))
                 raise Exception("when regridding mv1 to mv2, failed to get or generate a grid for mv2")
             # mv1new = mv1.regrid(grid2, regridTool="regrid2")   # our standard regridding
-            mv1new = mv1.regrid(grid2, regridTool="esmf", regridMethod="linear")  # treats missing data like AMWG
+            #mv1new = mv1.regrid(grid2, regridTool="esmf", regridMethod="linear")  # treats missing data like AMWG
             #           Another esmf method is "conservative".  It treats missing data like regrid2.
             # mv1new = mv1.regrid(grid2,regridTool="libcf",regridMethod="linear")   # doesn't work at the moment
+            if Options.regridMethod is None:
+                mv1new = mv1.regrid(grid2, regridTool=Options.regridTool )
+            else:
+                mv1new = mv1.regrid(grid2, regridTool=Options.regridTool, regridMethod=Options.regridMethod )
             mv1new.mean = None
             mv1new.filetable = mv1.filetable
             mv1.regridded = mv1new.id   # a GUI can use this
