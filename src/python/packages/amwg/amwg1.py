@@ -313,7 +313,11 @@ class Row:
         #perform reductions for those derived variables that are user defined 
         if self.rmse_vars:
             for rmse_vars in self.rmse_vars:
-                rvs = {rv.id(): rv.reduce() for rv in rmse_vars['rv'] }
+                if hasattr(rmse_vars, 'reduce'):
+                    rvs = {rv.id(): rv.reduce() for rv in rmse_vars['rv'] }
+                else: 
+                    rvs = [rmse_vars]
+                
                 dv = rmse_vars['dv'].derive( rvs )            
                 varnom = rmse_vars['dv']._outputs[0] 
                 #this derived variable takes the about rvs and applies the fuction

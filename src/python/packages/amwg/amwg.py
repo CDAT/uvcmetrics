@@ -153,12 +153,11 @@ class amwg_plot_plan(plot_plan):
                 dv_dict[ivn] = RV.reduce()
             #NEXT: the derived variable is computed on the restricted inputs according to the  fraction
             #now it can be used for rmse and correlation
-            dv_frac = svd.derive(dv_dict) 
+            dv_frac = svd.derive( dv_dict ) 
             
             #NEXT: create a derived variable that will compute the mean
             dv_mean_vid = derived_var.dict_id( varnom, '', season.seasons[0], filetable )
-            dv_mean = derived_var( vid=dv_mean_vid, inputs=[dv_frac.id], outputs=[ svd.id() ], func=reduction_function)#svd_rmse._func )
-            pdb.set_trace()
+            dv_mean = derived_var( vid=dv_mean_vid, inputs=[dv_frac.id], outputs=[ svd.id() ], func=reduction_function)
             xxx=dv_mean.derive({dv_frac.id: dv_frac})
             
             #NEXT: create the derived variable 
