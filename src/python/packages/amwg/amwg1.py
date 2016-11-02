@@ -313,11 +313,12 @@ class Row:
         if self.rmse_vars:
             pdb.set_trace()
             for rmse_vars in self.rmse_vars:
-                if type(rmse_vars['rv']) is dict:
-                    rvs = rmse_vars['rv']
-                else:
+                if type(rmse_vars['rv']) is list:
                     #make a dictionary for evaluation
                     rvs = {rv.id(): rv.reduce() for rv in rmse_vars['rv'] }
+                else:
+                    #assume it is a dictionary or ordered dictionary already
+                    rvs = rmse_vars['rv']
                 dv = rmse_vars['dv'].derive( rvs )            
                 varnom = rmse_vars['dv']._outputs[0] 
                 #this derived variable takes the about rvs and applies the fuction
