@@ -311,7 +311,6 @@ class Row:
         
         #perform reductions for those derived variables that are user defined 
         if self.rmse_vars:
-            pdb.set_trace()
             for rmse_vars in self.rmse_vars:
                 if type(rmse_vars['rv']) is list:
                     #make a dictionary for evaluation
