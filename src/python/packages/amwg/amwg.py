@@ -166,6 +166,9 @@ class amwg_plot_plan(plot_plan):
             rmse_vars['rv'] = dv_dict
             rmse_vars['dv'] = svd 
             return dv_mean.id(), [dv_frac], [dv_mean], rmse_vars            
+
+            
+            
             #dv_frac.id = svd.id()
             invarnoms = [ dv_frac.id ]
             svd._inputs = [ dv_frac.id ] 
