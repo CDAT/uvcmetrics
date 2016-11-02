@@ -144,20 +144,22 @@ class amwg_plot_plan(plot_plan):
             mask_rvs = []
             import collections
             dv_dict = collections.OrderedDict()
-            for ivn in invarnoms: #make a trivial reduced variable for each input
+            #make a trivial reduced variable for each input
+            for ivn in invarnoms: 
                 RV = reduced_variable( variableid=ivn, filetable=filetable, #season=season,
                                        reduced_var_id=ivn, reduction_function=(lambda x,vid:x) )
                 mask_rvs += [RV]
                 #dv_dict  = {rv.id(): rv.reduce() for rv in mask_rvs} 
                 dv_dict[ivn] = RV.reduce()
-            #NEXT: the derived variable is computed on the restricted inputs
+            #NEXT: the derived variable is computed on the restricted inputs according to the  fraction
             #now it can be used for rmse and correlation
             dv_frac = svd.derive(dv_dict) 
             
             #NEXT: create a derived variable that will compute the mean
             dv_mean_vid = derived_var.dict_id( varnom, '', season.seasons[0], filetable )
-            dv_mean = derived_var( vid=dv_mean_vid, inputs=[dv_frac.id], outputs=[ svd.id() ], func=svd_rmse._func )
-            #xxx=dv_mean.derive({dv_frac.id: dv_frac})
+            dv_mean = derived_var( vid=dv_mean_vid, inputs=[dv_frac.id], outputs=[ svd.id() ], func=reduction_function)#svd_rmse._func )
+            pdb.set_trace()
+            xxx=dv_mean.derive({dv_frac.id: dv_frac})
             
             #NEXT: create the derived variable 
             #pdb.set_trace()
