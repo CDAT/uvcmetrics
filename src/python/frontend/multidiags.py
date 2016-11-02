@@ -5,7 +5,7 @@ from metrics.frontend.multimaster import *   # this file is just a demo
 import metrics.frontend.multimaster as multimaster
 from metrics.frontend.diags import run_diags
 from metrics.frontend.options import Options, options_defaults
-import logging, pdb, importlib, time
+import logging, pdb, importlib, time, cProfile
 from pprint import pprint
 logger = logging.getLogger(__name__)
 
@@ -77,6 +77,16 @@ def merge_all_options( opt ):
         op.merge( options_defaults )
     return opts
 
+def merge_all_options_new( opt ):
+    """Merge the supplied Options object with other Options instances.  
+    When two Options instances are merged and only one has a value for an option, then that
+    value will be used.  If both have a value, then first one will be used.
+    The options are ordered as follows:
+    opt, opt['default_opts'], my_opts, my_opts['default_opts'], diags_opts, options_defaults
+    At present the use of 'default_opts' cannot be recursive."""
+    # >>>> TO DO <<<<
+    pass
+
 def lookup_collection( optval ):
     """Expands out an options collection key to its values().  The input optval should be a valid
     option value, or a key into an options collection; not a list.
@@ -139,6 +149,8 @@ def expand_lists_collections( opt, okeys=None ):
     instances, each of which contains a single value from that collection.
     3. If the option value is really a legitimate option do nothing.
     By definition, a list is not a legitimate option except for the options 'model','obs'.
+    (In several cases, e.g. vars, seasons, regions; a list actually can be a legitimate value.
+    But that usage isn't yet supported here.)
     What is returned is a list of Options instances in which no option has a list value and
     there are no collection names.
     Note that sometimes a list of values is a legitimate option value and doesn't have to be
@@ -153,14 +165,7 @@ def expand_lists_collections( opt, okeys=None ):
         else:
             ovls = [opt[onm]]
         for ovl in ovls:                  # e.g. ovl='T' or ovl='MyVars'
-            if type(ovl) is list:
-                opts.extend(ovl)
-                break
-            elif ovl in key2collection.keys():        # e.g. True for onm='vars', ovl='MyVars'
-                optso = expand_collection( onm, ovl, opt )   # a list of Options instances
-                opts.extend(optso)
-                break
-            elif onm in ['model','obs']:
+            if onm in ['model','obs']:
                 # These options have already been expanded, if necessary from keys to actual model/obs values.
                 # But these values are lists which probably have to be expanded to make multiple Options instances.
                 if onm=='obs' and len(opt['model'])==1 and len(opt['obs'])>1:   #only case implemented so far
@@ -168,6 +173,13 @@ def expand_lists_collections( opt, okeys=None ):
                     opts.extend(optso)
                 elif  len(opt['model']) + len(opt['obs']) >2 and len(opt['model'])!=1:
                     logger.error("More model(=%s) and obs(=%s) than we know what to do with",len(opt['model']),len(opt['obs']) )
+            elif type(ovl) is list:
+                opts.extend(ovl)
+                break
+            elif ovl in key2collection.keys():        # e.g. True for onm='vars', ovl='MyVars'
+                optso = expand_collection( onm, ovl, opt )   # a list of Options instances
+                opts.extend(optso)
+                break
             else:
                 remaining_keys[idx] = None    # bottom of a tree; opts[onm] is an ordinary option
     remaining_keys = [ k for k in remaining_keys if k is not None ]
@@ -184,19 +196,16 @@ def multidiags1( opt ):
     list of simple Options instances.
     For each one separately, it computes the requested diagnostics.
     """
-    t0 = time.time()
     opts = merge_all_options(opt)
     newopts = []
     for op in opts:
         newopts.extend(expand_lists_collections( op ))
-    print "jfp time to merge and extend options:",time.time() - t0
     for o in newopts:
         print "jfp about to run_diags on",o['vars'],len(o['obs']),o['obs'][0]
         t0 = time.time()
         run_diags(o)
         trun = time.time() - t0
         print "jfp run_diags took",trun,"seconds"
-        
 
 def multidiags( opts ):
     """The input opts is an Options instance, or a dictionary key which identifies such an instance,
@@ -226,7 +235,11 @@ if __name__ == '__main__':
     print ' '.join(sys.argv)
     opt = Options()
     opt.parseCmdLine()
+    #prof = cProfile.Profile()
+    #prof.enable()
     multidiags(opt)
+    #prof.disable()
+    #prof.dump_stats('results_stats')
     # >>>> TO DO: need a version which supports multidiags: opt.verifyOptions()
 
 
