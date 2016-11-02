@@ -34,8 +34,8 @@ from metrics.computation.region import *
 import logging
 logger = logging.getLogger(__name__)
 
-global vcs_elements   # used to prevent uncontrolled growth of vcs.elements if there are multiple calls of run_diags()
-vcs_elements = None
+#delete soon global vcs_elements   # used to prevent uncontrolled growth of vcs.elements if there are multiple calls of run_diags()
+#delete soon vcs_elements = None
 
 def setManualColormap(canvas=None, level=0):
     """
@@ -128,7 +128,7 @@ def setnum( setname ):
     return setnumber
 
 def run_diags( opts ):
-    global vcs_elements
+    #delete soon global vcs_elements
     # Setup filetable arrays
     modelfts = []
     obsfts = []
@@ -368,12 +368,14 @@ def run_diags( opts ):
                         
                         # To prevent a buildup of cruft and a huge performance hit, don't let vcs.elements['isofill', etc.]
                         # grow.  Members (the ones we need) first get created in plot.compute().
-                        if vcs_elements is None:
-                            vcs_elements = dictcopy3(vcs.elements)
-                        else:
-                            vcsdisplays = vcs.elements['display']
-                            vcs.elements = dictcopy3(vcs_elements)
-                            vcs.elements['display'] = vcsdisplays
+                        vcanvas.clean_auto_generated_objects()
+                        vcanvas2.clean_auto_generated_objects()
+                        #delete soon if vcs_elements is None:
+                        #delete soon     vcs_elements = dictcopy3(vcs.elements)
+                        #delete soon else:
+                        #delete soon     vcsdisplays = vcs.elements['display']
+                        #delete soon     vcs.elements = dictcopy3(vcs_elements)
+                        #delete soon     vcs.elements['display'] = vcsdisplays
 
                         # Do the work (reducing variables, etc)
                         res = plot.compute(newgrid=0) # newgrid=0 for original grid, -1 for coarse
