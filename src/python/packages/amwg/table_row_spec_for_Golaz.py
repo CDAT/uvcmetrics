@@ -9,7 +9,7 @@
 
 #this is a dummy table for testing
 
-table_row_specs = [ { 'var':'SHFLX_OCN', 'obs':'NCEP'}, { 'var':'TS', 'obs':'NCEP'},{ 'var':'RESTOM'}, {'var':'PRECT', 'obs':'GPCP'} ]#,{ 'var':'RESSURF'} ]#{ 'var':'junk', 'obs':'NCEP'} { 'var':'SWCF', 'obs':'CERES-EBAF'}
+table_row_specs = [ { 'var':'RESSURF'}]#, { 'var':'SHFLX_OCN', 'obs':'NCEP'}, { 'var':'TS', 'obs':'NCEP'},{ 'var':'RESTOM'}, {'var':'PRECT', 'obs':'GPCP'} ]#,{ 'var':'RESSURF'} ]#{ 'var':'junk', 'obs':'NCEP'} { 'var':'SWCF', 'obs':'CERES-EBAF'}
 xxxtable_row_specs = [
     { 'var':'RESTOM'},
     { 'var':'RESSURF'},
