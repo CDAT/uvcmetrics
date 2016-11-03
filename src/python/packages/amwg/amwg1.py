@@ -312,18 +312,19 @@ class Row:
         #perform reductions for those derived variables that are user defined 
         if self.rmse_vars:
             for rmse_vars in self.rmse_vars:
-                if type(rmse_vars['rv']) is list:
-                    #make a dictionary for the derived variable to evaluate
-                    rvs = {rv.id(): rv.reduce() for rv in rmse_vars['rv'] }
-                else:
-                    #assume it is a dictionary or ordered dictionary already
-                    rvs = rmse_vars['rv']
-                dv = rmse_vars['dv'].derive( rvs )            
-                varnom = rmse_vars['dv']._outputs[0] 
-                #this derived variable takes the about rvs and applies the fuction
-                dv_rmse = derived_var( vid=varnom, inputs=[dv.id], outputs=[varnom], 
-                                       func=(lambda x, vid=None: reduce_time_seasonal( x, self.season, self.region, vid ) ) )
-                self.reduced_variables.append(  dv_rmse.derive({dv.id:dv}) )
+                if rmse_vars:
+                    if type(rmse_vars['rv']) is list:
+                        #make a dictionary for the derived variable to evaluate
+                        rvs = {rv.id(): rv.reduce() for rv in rmse_vars['rv'] }
+                    else:
+                        #assume it is a dictionary or ordered dictionary already
+                        rvs = rmse_vars['rv']
+                    dv = rmse_vars['dv'].derive( rvs )            
+                    varnom = rmse_vars['dv']._outputs[0] 
+                    #this derived variable takes the about rvs and applies the fuction
+                    dv_rmse = derived_var( vid=varnom, inputs=[dv.id], outputs=[varnom], 
+                                           func=(lambda x, vid=None: reduce_time_seasonal( x, self.season, self.region, vid ) ) )
+                    self.reduced_variables.append(  dv_rmse.derive({dv.id:dv}) )
         
         #perform reductions and conversions as necessary
         variable_values = { }
