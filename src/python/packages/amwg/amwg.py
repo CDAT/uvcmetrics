@@ -116,10 +116,10 @@ class amwg_plot_plan(plot_plan):
         If unsuccessful, this will return None,[],[].
         """
         if filetable is None:
-            return None,[],[]
+            return None,[],[], None
         #if varnom not in amwg_plot_plan.common_derived_variables:
         if varnom not in cls.common_derived_variables:
-            return None,[],[]
+            return None,[],[], None
         computable = False
         rvs = []
         dvs = []
@@ -244,14 +244,14 @@ class amwg_plot_plan(plot_plan):
             logger.warning("no inputs found for %s in filetable %s",varnom, filetable.id())
             logger.warning("filetable source files= %s",filetable._filelist[0:10])
             logger.warning("need inputs %s",svd.inputs())
-            return None,[],[]
+            return None,[],[], None
             #raise DiagError( "ERROR, don't have %s, and don't have sufficient data to compute it!"\
                 #                     % varnom )
         if not computable:
             logger.debug("DEBUG: comm. derived variable %s is not computable", varnom)
             logger.debug( "need inputs %s" ,svd.inputs())
             logger.debug("found inputs %s",([rv.id() for rv in rvs]+[drv.id() for drv in dvs]))
-            return None,[],[]
+            return None,[],[], None
         seasonid = season.seasons[0]
         vid = derived_var.dict_id( varnom, '', seasonid, filetable )
         #print "dbg commvar2var is making a new derived_var, vid=",vid,"inputs=",inputs
