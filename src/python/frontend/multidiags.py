@@ -23,6 +23,34 @@ def merge_option_with_its_defaults( opt, diags_collection ):
     opt.merge( diags_collection[opt['default_opts']] )
     return opt
 
+def expand_and_merge_with_expanded_model_obs( opt ):
+    """If this Options instance, opt, is a list containing a key to diags_collection, we first
+    expand such keys to actual Options instances.  Then merge this option with its defaults.
+    Then, expand the model or obs options if they contain collection names rather than real values.
+    Note that this particular expansion is a necessary prerequisite to any mergers, because the
+    model/obs options are complicated and generally need to be merged themselves.  Other options
+    can and should be merged after the merge phase.
+    This function returns a list of options - either [opt] where opt has been modified, or a list
+    of modified clones of opt."""
+    if opt.get('sets') is None:  # later use a specialized option name, e.g. 'collec' <<<<
+        return [opt]
+    opts = []
+    for dset in opt['sets']:
+        # Each set in opt['sets'] may be a list.  And opt['sets'] may be a list of length>1.
+        # Either way, we end out with a list of Options instances which should be merged with
+        # opt (opt having priority) but should not be merged together.
+        if isinstance(diags_collection[dset],Options):
+            merge_option_with_its_defaults(diags_collection[dset],diags_collection)
+            opt.merge( expand_model_obs( diags_collection[dset] ))
+            opts.append(opt)
+        elif type(diags_collection[dset]) is list:
+            for optset in diags_collection[dset]:
+                merge_option_with_its_defaults(optset,diags_collection)
+                newopt = opt.clone()
+                newopt.merge( expand_model_obs(optset) )
+                opts.append(newopt)
+    return opts
+
 def merge_all_options( opt ):
     """Merge the supplied Options object with other Options instances.  Conflicts are resolved by
     ordering them in this priority:
@@ -63,7 +91,7 @@ def merge_all_options( opt ):
                     newopt = opt.clone()
                     newopt.merge( expand_model_obs(optset) )
                     opts.append(newopt)
-    # >>>> TO DO: This should also be done for the myopts, diagsopts, etc. <<<<
+    # (done in the newer version of this function): This should also be done for the myopts, diagsopts, etc.
     if my_opts is not None:
         merge_option_with_its_defaults( myopts, my_opts.diags_collection )
     for op in opts:
@@ -84,7 +112,26 @@ def merge_all_options_new( opt ):
     The options are ordered as follows:
     opt, opt['default_opts'], my_opts, my_opts['default_opts'], diags_opts, options_defaults
     At present the use of 'default_opts' cannot be recursive."""
-    # >>>> TO DO <<<<
+    # >>>> TO DO <<<<   I want to have a list of options, and treat all the same; should be shorter & simpler.
+    all_options = [opt]
+    # >>>> There has to be a briefer alternative to the following import clauses:
+    try:
+        import my_opts   # user can put my_opts.py in his PYTHONPATH
+        all_options.append( my_opts.my_opts )
+    except:
+        my_opts = None
+        myopts = None
+    try:
+        import metrics.frontend.diags_opts
+        all_options.append( diags_opts.diags_opts )
+    except:
+        diags_opts = None
+        diagsopts = None
+    all_options.append( options_defaults )
+    #all_opts_new = [ expand_and_merge_with_expanded_model_obs( opt ) for opt in all_options ] # list of lists
+    # ... the problem with this:  [[opt_AIRS,opt_NCEP],[def_AIRS,def_NCEP]] will not properly merge obs
+    # of opt_AIRS with obs of def_AIRS.
+    
     pass
 
 def lookup_collection( optval ):
@@ -112,7 +159,9 @@ def lookup_collection( optval ):
 def expand_model_obs( opt ):
     """The model and obs options are lists.  Each list element could be a dict, or a key into a
     collection.  This expands each key into a dict, or list of dicts.
-    Such an expansion is a prerequisite to any merger."""
+    Such an expansion is a prerequisite to any merger, because the model/obs options may themselves
+    need mergers.  Other options are simpler, usually strings, so they can be expanded later on if
+    needed."""
     if opt is None:
         return opt
     for key in ['model','obs']:
