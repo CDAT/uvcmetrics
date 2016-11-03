@@ -2250,7 +2250,14 @@ def convert_units(mv, units):
       mvid = mv.id
    if not ( numpy.allclose(s,1.0) and numpy.allclose(i,0.0) ):
       # The following line won't work if mv1 is an axis.
+      mvmean = mv.mean
       mv = s*mv + i
+      try:
+          mv.mean = s*mvmean + 1
+          if hasattr(mv,'_mean'):
+              mv._mean = mv.mean
+      except:
+          pass  # probably mv.mean is None, or a function
       if hasattr(mv,'id'):
          mv.id = mvid
    mv.units = units
