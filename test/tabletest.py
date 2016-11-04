@@ -25,7 +25,7 @@ rebaseline = args.rebaseline
 user = 'table_test'    
     
 #run this from command line to get the files required
-command = 'diags --package AMWG  --set 1 --seasons ANN --model path=%s/table_reference/  --obs path=%s/obs_for_diagnostics/,climos=yes  --outputdir %s --user %s '%(datadir, datadir, outpath, user)
+command = 'diags --package AMWG  --set 1 --seasons ANN --model path=%s/table_reference/,filter="f_startswith(%s)"  --obs path=%s/table_reference/,climos=yes  --outputdir %s --user %s '%(datadir, "'2016'", datadir, outpath, user)
 print command
 
 #run the command
