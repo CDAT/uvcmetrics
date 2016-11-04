@@ -108,7 +108,6 @@ d7fc6bbb9a2dfdb0fa44d7835f94a3d4  obs_data_5.6/ERS_DJF_climo.nc
 aaedba911f145e711d05b6430e13ce4e  obs_data_5.6/ERS_MAM_climo.nc
 e40f05dfec15f145e9623290d5142705  obs_data_5.6/ERS_SON_climo.nc
 62210097c2b766aefa971941ef2585f9  table_reference/20160520.A_WCYCL1850.ne30_oEC.reference.alpha6_ANN_climo.nc
-ad2bb19e111449b3a9e4339d51c569ab  table_reference/GPCP_ANN_climo.nc
 3927e60441d82e834fb7faaaa4fd583f  table_reference/CERES-EBAF_ANN_climo.nc
 ddf8a782fc1982e191f6ada4dbd7f0db  table_reference/ERA40_ANN_climo.nc
 27d831a972366bbb2cd0285a55c61e6c  table_reference/ERAI_ANN_climo.nc
@@ -118,4 +117,3 @@ ad2bb19e111449b3a9e4339d51c569ab  table_reference/GPCP_ANN_climo.nc
 287d97fd448b09f44fb045e7de57345f  table_reference/LEGATES_ANN_climo.nc
 578dcbfb4979cd3cbee2bde42a52d5c7  table_reference/NCEP_ANN_climo.nc
 cc8a9e2f322d7f7658b706aa363a8dae  table_reference/WHOI_ANN_climo.nc
-
