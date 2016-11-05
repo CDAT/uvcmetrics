@@ -2,6 +2,14 @@
 # For now, this is just an example showing the capabilities we want.
 # Note that I assume without checking that each key is unique.
 
+# This is the master collections file.  It defined the collections needed to make sense of the
+# command-line input options.
+# If you want collection definitions from another file, they should be imported into this master
+# file.
+# If you want to define default values of options, they should be defined as an Options object in
+# one of the options files which will get merged into the original Options object; only one per
+# file.
+
 from metrics.frontend.options import *
 # In the future we will import user-defined option files at runtime just as user-defined diagnostics are already
 # imported.
@@ -16,13 +24,13 @@ diags_collection = {}
 var_collection['MyVars'] = ['SHFLX', 'LHFLX', 'FLUT', 'T', 'TS']
 
 obs_collection['MyObs'] = ['ISCCP', 'CERES', 'NCEP']   # not yet supported, but I'd like to
-obs_collection['ISCCP'] = {'filter':f_startswith('ISCCP_')}
-obs_collection['CERES'] = {'filter':f_and( f_startswith('CERES_'), f_not(f_contains('EBAF')))}
-obs_collection['ECMWF'] = {'filter':f_startswith('ECMWF')}
-obs_collection['NCEP']  = {'filter':f_startswith('NCEP')}
-obs_collection['ERA40'] = {'filter':f_startswith('ERA40')}
-obs_collection['AIRS']  = {'filter':f_startswith('AIRS')}
-obs_collection['JRA25'] = {'filter':f_startswith('JRA25')}
+obs_collection['ISCCP'] = {'filter':f_startswith('ISCCP_'),'climos':'yes','name':None}
+obs_collection['CERES'] = {'filter':f_and( f_startswith('CERES_'), f_not(f_contains('EBAF'))),'climos':'yes','name':None}
+obs_collection['ECMWF'] = {'filter':f_startswith('ECMWF'),'climos':'yes','name':None}
+obs_collection['NCEP']  = {'filter':f_startswith('NCEP'),'climos':'yes','name':None}
+obs_collection['ERA40'] = {'filter':f_startswith('ERA40'),'climos':'yes','name':None}
+obs_collection['AIRS']  = {'filter':f_startswith('AIRS'),'climos':'yes','name':None}
+obs_collection['JRA25'] = {'filter':f_startswith('JRA25'),'climos':'yes','name':None}
 
 diags_collection['MyDefaults'] = Options( desc = 'default options to be incorporated into other collections',
                                           logo='No' )
@@ -62,6 +70,6 @@ diags_collection['4'] = [
 # which collection.  diags_collection is omitted, as it is used for different purposes.
 key2collection = {}
 key2collection.update( { k:obs_collection for k in obs_collection.keys() } )
-key2collection.update( { k:diags_collection for k in var_collection.keys()} )
+key2collection.update( { k:var_collection for k in var_collection.keys()} )
 
 

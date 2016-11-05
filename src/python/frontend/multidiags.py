@@ -23,15 +23,13 @@ def merge_option_with_its_defaults( opt, diags_collection ):
     opt.merge( diags_collection[opt['default_opts']] )
     return opt
 
-def expand_and_merge_with_expanded_model_obs( opt ):
+def expand_and_merge_with_defaults( opt ):
     """If this Options instance, opt, is a list containing a key to diags_collection, we first
     expand such keys to actual Options instances.  Then merge this option with its defaults.
-    Then, expand the model or obs options if they contain collection names rather than real values.
-    Note that this particular expansion is a necessary prerequisite to any mergers, because the
-    model/obs options are complicated and generally need to be merged themselves.  Other options
-    can and should be merged after the merge phase.
     This function returns a list of options - either [opt] where opt has been modified, or a list
     of modified clones of opt."""
+    print "jfp expand_and_merge_with_defaults is beginning with obs option",opt.get('obs',None),"sets options",\
+        opt['sets'],"seasons option",opt.get('seasons',None)
     if opt.get('sets') is None:  # later use a specialized option name, e.g. 'collec' <<<<
         return [opt]
     opts = []
@@ -40,18 +38,20 @@ def expand_and_merge_with_expanded_model_obs( opt ):
         # Either way, we end out with a list of Options instances which should be merged with
         # opt (opt having priority) but should not be merged together.
         if isinstance(diags_collection[dset],Options):
-            merge_option_with_its_defaults(diags_collection[dset],diags_collection)
-            opt.merge( expand_model_obs( diags_collection[dset] ))
+            opt.merge(diags_collection[dset])
+            opt = merge_option_with_its_defaults(opt,diags_collection)
             opts.append(opt)
         elif type(diags_collection[dset]) is list:
             for optset in diags_collection[dset]:
-                merge_option_with_its_defaults(optset,diags_collection)
+                opt.merge(optset)
+                opt = merge_option_with_its_defaults(opt,diags_collection)
                 newopt = opt.clone()
-                newopt.merge( expand_model_obs(optset) )
                 opts.append(newopt)
+    print "jfp expand_and_merge_with_defaults is returning obs options",[o.get('obs',None) for o in opts],"sets options",\
+        [o['sets'] for o in opts],"seasons options",[o.get('seasons',None) for o in opts]
     return opts
 
-def merge_all_options( opt ):
+def merge_all_options_old( opt ):
     """Merge the supplied Options object with other Options instances.  Conflicts are resolved by
     ordering them in this priority:
     opt, opt['default_opts'], my_opts, my_opts['default_opts'], diags_opts, options_defaults
@@ -83,21 +83,15 @@ def merge_all_options( opt ):
             # opt (opt having priority) but should not be merged together.
             if isinstance(diags_collection[dset],Options):
                 merge_option_with_its_defaults(diags_collection[dset],diags_collection)
-                opt.merge( expand_model_obs( diags_collection[dset] ))
                 opts.append(opt)
             elif type(diags_collection[dset]) is list:
                 for optset in diags_collection[dset]:
                     merge_option_with_its_defaults(optset,diags_collection)
                     newopt = opt.clone()
-                    newopt.merge( expand_model_obs(optset) )
                     opts.append(newopt)
     # (done in the newer version of this function): This should also be done for the myopts, diagsopts, etc.
     if my_opts is not None:
         merge_option_with_its_defaults( myopts, my_opts.diags_collection )
-    for op in opts:
-        expand_model_obs( op )
-    expand_model_obs( my_opts )
-    expand_model_obs( diagsopts )
     for op in opts:
         merge_option_with_its_defaults( op, diags_collection )
         op.merge( myopts )
@@ -105,14 +99,15 @@ def merge_all_options( opt ):
         op.merge( options_defaults )
     return opts
 
-def merge_all_options_new( opt ):
+def merge_all_options( opt ):
     """Merge the supplied Options object with other Options instances.  
     When two Options instances are merged and only one has a value for an option, then that
     value will be used.  If both have a value, then first one will be used.
     The options are ordered as follows:
     opt, opt['default_opts'], my_opts, my_opts['default_opts'], diags_opts, options_defaults
     At present the use of 'default_opts' cannot be recursive."""
-    # >>>> TO DO <<<<   I want to have a list of options, and treat all the same; should be shorter & simpler.
+    print "jfp merge_all_options input opt has obs option:", opt.get('obs',None)
+    print "jfp merge_all_options input opt has obspath option:", opt.get('obspath',None)
     all_options = [opt]
     # >>>> There has to be a briefer alternative to the following import clauses:
     try:
@@ -127,12 +122,32 @@ def merge_all_options_new( opt ):
     except:
         diags_opts = None
         diagsopts = None
+    print "jfp3 merge_all_options, obs option:", [ o.get('obs',None) for o in all_options ]
+    print "jfp3 merge_all_options, obspath option:", [ o.get('obspath',None) for o in all_options ]
     all_options.append( options_defaults )
-    #all_opts_new = [ expand_and_merge_with_expanded_model_obs( opt ) for opt in all_options ] # list of lists
-    # ... the problem with this:  [[opt_AIRS,opt_NCEP],[def_AIRS,def_NCEP]] will not properly merge obs
-    # of opt_AIRS with obs of def_AIRS.
-    
-    pass
+    print "jfp4 merge_all_options will call expand_and_merge_with_defaults on options with obs option:",\
+        [ o.get('obs',None) for o in all_options ]
+    print "jfp4 merge_all_options will call expand_and_merge_with_defaults on options with obspath option:",\
+        [ o.get('obspath',None) for o in all_options ]
+    all_opts_new = [ expand_and_merge_with_defaults( opt ) for opt in all_options ] # list of lists...
+    #...But we REQUIRE that all but the first be of length one.  That is, if there be a file
+    # defining defaults through an Options instance, it can have only one Options instance.
+    print "jfp5 merge_all_options is merging options with obs option:",\
+        [ [ o.get('obs',None) for o in olis ] for olis in all_opts_new ]
+    print "jfp5 merge_all_options is merging options with obspath option:",\
+        [ [ o.get('obspath',None) for o in olis ] for olis in all_opts_new ]
+    for optlist in all_opts_new[1:]:
+        if len(optlist)>1:
+            logger.error("a default file cannot contain more than one Options object; but we got %s",len(optlist))
+            logger.debug("%s",optlist)
+        for op in all_opts_new[0]:
+            for olis in all_opts_new[1:]:
+                op.merge(olis[0])
+    print "jfp merge_all_options is returning options with obs option:",\
+        [ o.get('obs',None) for o in all_opts_new[0] ]
+    print "jfp merge_all_options is returning options with obspath option:",\
+        [ o.get('obspath',None) for o in all_opts_new[0] ]
+    return all_opts_new[0]
 
 def lookup_collection( optval ):
     """Expands out an options collection key to its values().  The input optval should be a valid
@@ -154,25 +169,8 @@ def lookup_collection( optval ):
             newval2.append(  key2collection[nv][nv] )
         else:
             newval2.append(nv)
+    print "jfp lookup_collection is returning newval2=",newval2
     return newval2
-
-def expand_model_obs( opt ):
-    """The model and obs options are lists.  Each list element could be a dict, or a key into a
-    collection.  This expands each key into a dict, or list of dicts.
-    Such an expansion is a prerequisite to any merger, because the model/obs options may themselves
-    need mergers.  Other options are simpler, usually strings, so they can be expanded later on if
-    needed."""
-    if opt is None:
-        return opt
-    for key in ['model','obs']:
-        for i,item in enumerate(opt.get(key,[])):
-            # Each item is *either* a key into model/obs_collection; or a dict, with keys like 'climos', 'filter', 'path'.
-            opt[key][i] = lookup_collection(item)
-        flattened = [ o for ops in opt.get(key,[]) for o in ops ]
-        if len(flattened)>0:
-            opt[key] = flattened
-    print "jfp expand_model_obs is returning opt with obs=",len(opt['obs']),opt['obs']
-    return opt
 
 def expand_collection( onm, ovl, opt ):
     """For an option name, its value, and an Options instance opt:
@@ -204,6 +202,7 @@ def expand_lists_collections( opt, okeys=None ):
     there are no collection names.
     Note that sometimes a list of values is a legitimate option value and doesn't have to be
     expanded.  At the moment, we expand them anyway.  In the future, we shouldn't."""
+    print "jfp entering expand_lists_collections, obs option:", opt.get('obs',None),"sets option:",opt['sets']
     opts = []
     if okeys is None:
         okeys = opt.keys()
@@ -214,18 +213,11 @@ def expand_lists_collections( opt, okeys=None ):
         else:
             ovls = [opt[onm]]
         for ovl in ovls:                  # e.g. ovl='T' or ovl='MyVars'
-            if onm in ['model','obs']:
-                # These options have already been expanded, if necessary from keys to actual model/obs values.
-                # But these values are lists which probably have to be expanded to make multiple Options instances.
-                if onm=='obs' and len(opt['model'])==1 and len(opt['obs'])>1:   #only case implemented so far
-                    optso = [ opt.clone((onm,[ovl])) ]
-                    opts.extend(optso)
-                elif  len(opt['model']) + len(opt['obs']) >2 and len(opt['model'])!=1:
-                    logger.error("More model(=%s) and obs(=%s) than we know what to do with",len(opt['model']),len(opt['obs']) )
-            elif type(ovl) is list:
+            if type(ovl) is list:
                 opts.extend(ovl)
                 break
             elif ovl in key2collection.keys():        # e.g. True for onm='vars', ovl='MyVars'
+                print "jfp onm=",onm,"ovl=",ovl
                 optso = expand_collection( onm, ovl, opt )   # a list of Options instances
                 opts.extend(optso)
                 break
@@ -233,10 +225,14 @@ def expand_lists_collections( opt, okeys=None ):
                 remaining_keys[idx] = None    # bottom of a tree; opts[onm] is an ordinary option
     remaining_keys = [ k for k in remaining_keys if k is not None ]
     if opts==[]:
+        print "jfp1 leaving expand_lists_collections, obs option:", opt.get('obs',None),\
+            "sets option:",opt['sets']
         return [opt]  # We found nothing to expand.
     else:
         expanded_opts = [ expand_lists_collections(op,remaining_keys) for op in opts ]  # Usually this recursion should be shallow.
         flattened = [ o for ops in expanded_opts for o in ops ]
+        print "jfp2 leaving expand_lists_collections, obs options:", [o.get('obs',None) for o in flattened],\
+            "sets options:",[o['sets'] for o in flattened]
         return flattened
 
 def multidiags1( opt ):
@@ -250,7 +246,10 @@ def multidiags1( opt ):
     for op in opts:
         newopts.extend(expand_lists_collections( op ))
     for o in newopts:
-        print "jfp about to run_diags on",o['vars'],len(o['obs']),o['obs'][0]
+        #set_modelobs_path(o)
+        #restore_modelobs_path(o)
+        finalize_modelobs(o) # copies obspath to obs['path'], changes {} to [{}]
+        print "jfp about to run_diags on",o['vars'],len(o.get('obs',None)),o.get('obs',None)[0]
         t0 = time.time()
         run_diags(o)
         trun = time.time() - t0
@@ -278,6 +277,48 @@ def multidiags( opts ):
     for opt in nopts:
         multidiags1(opt)
 
+def finalize_modelobs(opt):
+    """For the model and obs options in opt, copies any modelpath or obspath option into its model or obs
+    option dictionary's 'path' value.  Also if the model or obs option is a dictionary, we change that to
+    a list of length 1."""
+    for key in ['obs','model']:
+        pathkey = key+'path'
+        if key not in opt.keys() or pathkey not in opt.keys():
+            continue
+        if type(opt[key]) is dict:
+            opt[key] = [opt[key]]
+        if type(opt[pathkey]) is str:
+            opt[pathkey] = [opt[pathkey]]
+        # to do if needed: check & deal with len(opt['obs'])!=len(opt['obspath'])
+        for i,mo in  enumerate(opt[key]):  # mo is a dict
+            opt[key][i]['path'] = opt[pathkey][i]
+    return opt
+
+def set_modelobs_path( opt ):
+    """OBSOLETE Extracts the :path part of any model/obs dicts in opt, and puts it in a separate modelpath
+    or obspath option.  Note that modelpath,obspath is a list.  This is essential to make options
+    mergers work."""
+    # Eventually this functionality should be in options.py.
+    for key in ['obs','model']:
+        if key not in opt.keys():
+            continue
+        pathkey = key+'path'
+        opt[pathkey] = []
+        for mo in opt[key]:  # mo is a dict
+            opt[pathkey].append( mo.get('path',None) )
+    return opt
+
+def restore_modelobs_path( opt ):
+    """OBSOLETE Copies the appropriate modelpath or obspath option to each :path part of any model/obs dicts
+    in opt.  Note that modelpath,obspath is a list.."""
+    # Eventually this functionality should be in options.py.
+    for key in ['obs','model']:
+        if key not in opt.keys():
+            continue
+        pathkey = key+'path'
+        for i,mo in  enumerate(opt[key]):  # mo is a dict
+            opt[key][i]['path'] = opt[pathkey][i]
+    return opt
 
 if __name__ == '__main__':
     print "UV-CDAT Diagnostics, Experimental Multi-Diags version"
@@ -286,7 +327,8 @@ if __name__ == '__main__':
     opt.parseCmdLine()
     #prof = cProfile.Profile()
     #prof.enable()
-    multidiags(opt)
+    #multidiags( set_modelobs_path(opt) )
+    multidiags( opt )
     #prof.disable()
     #prof.dump_stats('results_stats')
     # >>>> TO DO: need a version which supports multidiags: opt.verifyOptions()

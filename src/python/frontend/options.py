@@ -136,14 +136,9 @@ class Options():
                 for k,v in opt2[key].iteritems():
                     if k not in self[key].keys():
                         self[key][k] = v
-            elif key in ['model','obs']:
-                # A complete model/obs specification shouldn't be merged.  But usually they won't be
-                # complete: missing the path, or only the path.  To prevent a merger, add a
-                # 'merge':False item to the model/obs dict.
-                self.merge_modobs( opt2, key)
 
     def merge_modobs( self, opt2, key ):
-        """Merges the model or obs option of two Options instances, self and opt2.
+        """DEPRECATED Merges the model or obs option of two Options instances, self and opt2.
         key should be 'model' or 'obs'.
         This is generally needed only when the option self[key] hasn't been completely defined."""
         # A complete model/obs specification shouldn't be merged.  But usually they won't be
@@ -753,7 +748,11 @@ class Options():
         # Other options, useful at various times.
         otheropts = parser.add_argument_group('Other')
         otheropts.add_argument('--cachepath', nargs=1,
-                               help="Path for temporary and cached files. Defaults to /tmp/<username>/uvcmetrics/")
+                               help="Path for cached files. Defaults to /tmp/<username>/uvcmetrics/")
+        otheropts.add_argument('--obspath', nargs=1,
+                               help="Path for obs files.")
+        otheropts.add_argument('--modelpath', nargs=1,
+                               help="Path for model files.")
         otheropts.add_argument('--verbose', action='count',
                                help="Increase the verbosity level. Each -v option increases the verbosity more.") # count
         otheropts.add_argument('--list', '-l', nargs=1, choices=['sets', 'vars', 'variables', 'packages', 'seasons', 'regions', 'translations','options','varopts'],
@@ -975,6 +974,10 @@ class Options():
             #jfpif not os.path.isdir(self._opts['cachepath']):
             if not os.path.isdir(cachepath):
                 raise e
+        if args.modelpath != None:
+            self['modelpath'] = args.modelpath[0]
+        if args.obspath != None:
+            self['obspath'] = args.obspath[0]
 
         if (args.levels) != None:
             self.processLevels('levels', args.levels, extras)
