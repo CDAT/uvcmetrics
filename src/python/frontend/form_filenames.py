@@ -144,7 +144,7 @@ def form_file_rootname( plotset, vars, meanings='variable', dir='', filetables=[
         else:
             fname = underscore_join([ basen, season, underscore_join(vars), underscore_join(aux), postn ])
     elif plotset=='resstring':  # For "type(res) is str".
-        if aux is None or aux==[None] or aux=='':
+        if aux is None or aux==[None] or aux=='' or aux=='default' or aux==['default']:
             aux = []
         fname = underscore_join([basen, season, underscore_join(vars), underscore_join(aux)]) + '-table.text'
     elif plotset=='res0':    # For len(res)==0
