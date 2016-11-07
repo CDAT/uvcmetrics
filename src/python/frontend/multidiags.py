@@ -215,12 +215,11 @@ def expand_lists_collections( opt, okeys=None ):
         for ovl in ovls:                  # e.g. ovl='T' or ovl='MyVars'
             if type(ovl) is list:
                 opts.extend(ovl)
-                break
+                #break
             elif ovl in key2collection.keys():        # e.g. True for onm='vars', ovl='MyVars'
-                print "jfp onm=",onm,"ovl=",ovl
                 optso = expand_collection( onm, ovl, opt )   # a list of Options instances
                 opts.extend(optso)
-                break
+                #break
             else:
                 remaining_keys[idx] = None    # bottom of a tree; opts[onm] is an ordinary option
     remaining_keys = [ k for k in remaining_keys if k is not None ]

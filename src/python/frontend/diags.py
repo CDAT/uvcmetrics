@@ -368,6 +368,7 @@ def run_diags( opts ):
                         
                         # To prevent a buildup of cruft and a huge performance hit, don't let vcs.elements['isofill', etc.]
                         # grow.  Members (the ones we need) first get created in plot.compute().
+                        # print "jfp clean_auto_generated_objects is being called"
                         vcanvas.clean_auto_generated_objects()
                         vcanvas2.clean_auto_generated_objects()
                         #delete soon if vcs_elements is None:
