@@ -300,7 +300,7 @@ def run_diags( opts ):
 
         # Get this list of variables for this set (given these obs/model inputs)
         logging.info('opts vars: %s', opts.get('vars',[]))
-        variables = pclass.list_variables( modelfts, obsfts, sname )
+        variables = pclass.list_variables( modelfts, obsfts, sname )  # includes many derived variables
         logger.info('var list from pclass: %s', variables)
 
         # Get the reduced list of variables possibly specified by the user
