@@ -31,7 +31,6 @@ def filenames(collkey, plotset, variable, obs_set='', var_option=None, region="G
     files.extend(form_filename(root_name, ["png", "pdf"], descr=True, more_id="combined" if combined else ""))
     for dataset in ("obs", "ft1", "diff"):
         files.extend(form_filename(root_name, ["nc"], descr=True, vname="_".join((variable,dataset))))
-    print "jfp filenames is returning",files
     return files
 
 
@@ -772,7 +771,6 @@ def runcmdline(cmdline, outlogdir, dryrun=False):
         return
 
     for cmdline in CMDLINES:
-        print "jfp cmdline=",cmdline
         while len(active_processes) >= MAX_PROCS:
             for i, p in enumerate(active_processes):
                 if p.poll() is not None:

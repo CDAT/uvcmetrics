@@ -25,11 +25,9 @@ What this function returns depends on what fmt is.
         else:
             fnamedot = '-'.join([rootname,more_id,descr]) + '.'
         if type(fmt) is str:
-            print "jfp1 form_filename is returning",fnamedot+fmt
             return fnamedot + fmt
         else:
             return tuple(fnamedot+fm for fm in fmt)
-            print "jfp2 form_filename is returning",tuple(fnamedot+fm for fm in fmt)
 
     # At this point descr==True: we should compute it.  For the moment however, I'm only
     # slightly modifying code moved from a former section of makeplots().
@@ -110,10 +108,8 @@ What this function returns depends on what fmt is.
             fnamedot = rootname+'.'
 
     if type(fmt) is str:
-        print "jfp3 form_filename is returning",fnamedot+fmt
         return fnamedot + fmt
     else:
-        print "jfp4 form_filename is returning",tuple(fnamedot+fm for fm in fmt)
         return tuple(fnamedot+fm for fm in fmt)
 
 
@@ -153,10 +149,8 @@ def form_file_rootname( plotset, vars, meanings='variable', dir='', filetables=[
         # Very likely, plotset is one of the standard numbered plot sets, 1-15 or 4a.
         plotset = 'set'+plotset
 
-    print "jfp vars=",vars,"aux=",aux
     fname = underscore_join([ basen, plotset, season, underscore_join(vars), underscore_join(aux), postn ])
 
-    print "jfp fname=",fname
     return os.path.join( dir, fname )
 
 
