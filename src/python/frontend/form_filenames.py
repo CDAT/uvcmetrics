@@ -25,9 +25,11 @@ What this function returns depends on what fmt is.
         else:
             fnamedot = '-'.join([rootname,more_id,descr]) + '.'
         if type(fmt) is str:
+            print "jfp1 form_filename is returning",fnamedot+fmt
             return fnamedot + fmt
         else:
             return tuple(fnamedot+fm for fm in fmt)
+            print "jfp2 form_filename is returning",tuple(fnamedot+fm for fm in fmt)
 
     # At this point descr==True: we should compute it.  For the moment however, I'm only
     # slightly modifying code moved from a former section of makeplots().
@@ -108,8 +110,10 @@ What this function returns depends on what fmt is.
             fnamedot = rootname+'.'
 
     if type(fmt) is str:
+        print "jfp3 form_filename is returning",fnamedot+fmt
         return fnamedot + fmt
     else:
+        print "jfp4 form_filename is returning",tuple(fnamedot+fm for fm in fmt)
         return tuple(fnamedot+fm for fm in fmt)
 
 
@@ -129,27 +133,28 @@ def form_file_rootname( plotset, vars, meanings='variable', dir='', filetables=[
 - user-specified directory (if the directory is considered to be part of the filename)
 - output meaning: variable, diff, variance, rmse, etc.
 """
-# For a first cut at this function, I will simply try to reproduce the present behavior.
-
     if aux is None or aux==[None] or aux=='' or aux=='default' or aux==['default']:
         aux = []
     plotset = str(plotset)
+
+    # The name depends on the plotset.  First, do the plotsets which correspond to tables.
     if plotset=='1':
         fname = 'table_output'
         return os.path.join( dir, fname )
-
-    if plotset[0] in ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']: # i.e. [str(n) for n in range(10)]
-        # This is a normal plotset.
-        if basen == '' and postn == '':
-            fname = underscore_join(['figure-set'+plotset, region, season, underscore_join(vars),
-                                     'plot'])
-        else:
-            fname = underscore_join([ basen, season, underscore_join(vars), underscore_join(aux), postn ])
-    elif plotset=='resstring':  # For "type(res) is str".
+    if plotset=='resstring':  # For "type(res) is str".
         fname = underscore_join([basen, season, underscore_join(vars), underscore_join(aux)]) + '-table.text'
     elif plotset=='res0':    # For len(res)==0
         fname = underscore_join([basen, season, region]) + '-table.text'
 
+    # Numbered plotsets need a litle extra text.
+    if plotset[0] in ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']: # i.e. [str(n) for n in range(10)]
+        # Very likely, plotset is one of the standard numbered plot sets, 1-15 or 4a.
+        plotset = 'set'+plotset
+
+    print "jfp vars=",vars,"aux=",aux
+    fname = underscore_join([ basen, plotset, season, underscore_join(vars), underscore_join(aux), postn ])
+
+    print "jfp fname=",fname
     return os.path.join( dir, fname )
 
 
