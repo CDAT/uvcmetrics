@@ -136,6 +136,8 @@ def form_file_rootname( plotset, vars, meanings='variable', dir='', filetables=[
     if aux is None or aux==[None] or aux=='' or aux=='default' or aux==['default']:
         aux = []
     plotset = str(plotset)
+    if basen==plotset:
+        basen=''
 
     # The name depends on the plotset.  First, do the plotsets which correspond to tables.
     if plotset=='1':
