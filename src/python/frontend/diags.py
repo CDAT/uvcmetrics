@@ -365,12 +365,6 @@ def run_diags( opts ):
                                                plotparms = { 'model':{'levels':opts['levels'], 'colormap':opts['colormaps']['model']},
                                                              'obs':{'levels':opts['levels'], 'colormap':opts['colormaps']['obs']},
                                                              'diff':{'levels':opts['difflevels'], 'colormap':opts['colormaps']['diff']} } )
-                        
-                        # To prevent a buildup of cruft and a huge performance hit, don't let vcs.elements['isofill', etc.]
-                        # grow.  Members (the ones we need) first get created in plot.compute().
-                        # print "jfp clean_auto_generated_objects is being called"
-                        vcanvas.clean_auto_generated_objects()
-                        vcanvas2.clean_auto_generated_objects()
                         #delete soon if vcs_elements is None:
                         #delete soon     vcs_elements = dictcopy3(vcs.elements)
                         #delete soon else:
@@ -447,6 +441,11 @@ def run_diags( opts ):
                                 else:
                                     logger.info('No data to plot for %s %s', varid, aux)
 
+    # To prevent a buildup of cruft and a huge performance hit, don't let vcs.elements['isofill', etc.]
+    # grow.  Members (the ones we need) first get created in plot.compute().
+    print "jfp clean_auto_generated_objects is being called"
+    vcanvas.clean_auto_generated_objects()
+    vcanvas2.clean_auto_generated_objects()
     vcanvas.close()
     vcanvas2.close()
 #    vcanvas.destroy()
