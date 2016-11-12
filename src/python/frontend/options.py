@@ -947,10 +947,10 @@ class Options():
 
         # Generally if we've gotten this far, it means no --list was specified. If we don't have
         # at least a path, we should exit.
-        if(args.path == None and args.model == None and args.obs == None):
-            logging.critical('Must specify a --path or one of the --model/--obs options, or the --list option')
-            logging.critical('For help, type "diags --help".')
-            quit()
+        #if(args.path == None and args.model == None and args.obs == None):
+        #    logging.critical('Must specify a --path or one of the --model/--obs options, or the --list option')
+        #    logging.critical('For help, type "diags --help".')
+        #    quit()
 
         if args.path != None and (args.model != None or args.obs != None):
             logging.critical('Please do not combine --path and the --model/--obs methods right now')
