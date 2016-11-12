@@ -371,6 +371,11 @@ def run_diags( opts ):
                         #delete soon     vcsdisplays = vcs.elements['display']
                         #delete soon     vcs.elements = dictcopy3(vcs_elements)
                         #delete soon     vcs.elements['display'] = vcsdisplays
+                        # To prevent a buildup of cruft and a huge performance hit, don't let vcs.elements['isofill', etc.]
+                        # grow.  Members (the ones we need) first get created in plot.compute().
+                        print "jfp clean_auto_generated_objects is being called"
+                        vcanvas.clean_auto_generated_objects()
+                        vcanvas2.clean_auto_generated_objects()
 
                         # Do the work (reducing variables, etc)
                         res = plot.compute(newgrid=0) # newgrid=0 for original grid, -1 for coarse
@@ -441,11 +446,6 @@ def run_diags( opts ):
                                 else:
                                     logger.info('No data to plot for %s %s', varid, aux)
 
-    # To prevent a buildup of cruft and a huge performance hit, don't let vcs.elements['isofill', etc.]
-    # grow.  Members (the ones we need) first get created in plot.compute().
-    print "jfp clean_auto_generated_objects is being called"
-    vcanvas.clean_auto_generated_objects()
-    vcanvas2.clean_auto_generated_objects()
     vcanvas.close()
     vcanvas2.close()
 #    vcanvas.destroy()
