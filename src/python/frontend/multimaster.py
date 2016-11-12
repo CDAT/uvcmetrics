@@ -17,13 +17,15 @@ from metrics.fileio.filters import *
 
 var_collection = {}
 obs_collection = {}
+model_collection = {}
 diags_collection = {}
 
 # If a collection value is a list, each list item should separately be a valid value.
 
-var_collection['MyVars'] = ['SHFLX', 'LHFLX', 'FLUT', 'T', 'TS']
+#var_collection['MyVars'] = ['SHFLX', 'LHFLX', 'FLUT', 'T', 'TS']
+var_collection['MyVars'] = ['LHFLX', 'TS']
 
-obs_collection['MyObs'] = ['ISCCP', 'CERES', 'NCEP']   # not yet supported, but I'd like to
+obs_collection['MyObs'] = ['ISCCP', 'CERES', 'NCEP']
 obs_collection['ISCCP'] = {'filter':f_startswith('ISCCP_'),'climos':'yes','name':None}
 obs_collection['CERES'] = {'filter':f_and( f_startswith('CERES_'), f_not(f_contains('EBAF'))),'climos':'yes','name':None}
 obs_collection['ECMWF'] = {'filter':f_startswith('ECMWF'),'climos':'yes','name':None}
@@ -31,10 +33,11 @@ obs_collection['NCEP']  = {'filter':f_startswith('NCEP'),'climos':'yes','name':N
 obs_collection['ERA40'] = {'filter':f_startswith('ERA40'),'climos':'yes','name':None}
 obs_collection['AIRS']  = {'filter':f_startswith('AIRS'),'climos':'yes','name':None}
 obs_collection['JRA25'] = {'filter':f_startswith('JRA25'),'climos':'yes','name':None}
+model_collection['generic'] = {'climos':'yes', 'name':None}
 
 diags_collection['MyDefaults'] = Options( desc = 'default options to be incorporated into other collections',
                                           logo='No' )
-diags_collection['5'] = Options( sets=['5'], vars=['MyVars'], obs=['MyObs'],
+diags_collection['5'] = Options( sets=['5'], vars=['MyVars'], obs=['MyObs'], model=['generic'],
                                  seasons=['DJF','JJA','ANN'], package='AMWG', default_opts='MyDefaults',
                                  desc = 'Horizontal contour plots of DJF, JJA and ANN means' )
 # ...Yes, this is the same Options object as in options.py.  Anything it supports can be specified
@@ -70,6 +73,7 @@ diags_collection['4'] = [
 # which collection.  diags_collection is omitted, as it is used for different purposes.
 key2collection = {}
 key2collection.update( { k:obs_collection for k in obs_collection.keys() } )
+key2collection.update( { k:model_collection for k in model_collection.keys() } )
 key2collection.update( { k:var_collection for k in var_collection.keys()} )
 
 
