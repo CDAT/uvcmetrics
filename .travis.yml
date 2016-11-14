@@ -11,8 +11,8 @@ before_install:
   - bash miniconda.sh -b -p $HOME/miniconda
   - conda config --set always_yes yes --set changeps1 no
   - conda update -y -q conda
-  - conda install openssl=1.0.2d
-  - conda install -q -y --channel uvcdat/label/nightly --channel uvcdat uvcdat-nox
+    #  - conda install openssl=1.0.2d
+  - conda install -q -y --channel uvcdat/label/nightly --channel uvcdat --channel conda-forge uvcdat-nox
   # Useful for debugging any issues with conda
   - conda info -a
 
