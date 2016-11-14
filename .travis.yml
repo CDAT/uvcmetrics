@@ -4,8 +4,9 @@ os:
 language: python
     - "2.7"
 
+sudo: false
+
 before_install:
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-get update -qq; sudo apt-get install -y gfortran xvfb; fi
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh; fi
   - export PATH="$HOME/miniconda/bin:$PATH"
   - bash miniconda.sh -b -p $HOME/miniconda
@@ -20,8 +21,8 @@ install:
     - if [ -d build ]; then rm -rf build; fi
     - git clean -fd
     - df -h .
-    - cmake .
     - export UVCDAT_ANONYMOUS_LOG=False
+    - cmake .
     - python setup.py install
 
 #before_script:
