@@ -19,6 +19,7 @@ before_install:
 install:
     - if [ -d build ]; then rm -rf build; fi
     - git clean -fd
+    - df -h .
     - cmake .
     - export UVCDAT_ANONYMOUS_LOG=False
     - python setup.py install
