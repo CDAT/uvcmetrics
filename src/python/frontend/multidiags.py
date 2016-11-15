@@ -35,15 +35,19 @@ def expand_and_merge_with_defaults( opt ):
         # Each set in opt['sets'] may be a list.  And opt['sets'] may be a list of length>1.
         # Either way, we end out with a list of Options instances which should be merged with
         # opt (opt having priority) but should not be merged together.
-        if isinstance(diags_collection[dset],Options):
-            opt.merge(diags_collection[dset])
-            opt = merge_option_with_its_defaults(opt,diags_collection)
-            opts.append(opt)
+        if dset in diags_collection.keys() and isinstance(diags_collection[dset],Options):
+            newopt = opt.clone()
+            newopt['sets'] = diags_collection[dset].get('sets',None)
+            newopt.merge(diags_collection[dset])
+            newopt = merge_option_with_its_defaults(newopt,diags_collection)
+            opts.append(newopt)
         elif type(diags_collection[dset]) is list:
             for optset in diags_collection[dset]:
-                opt.merge(optset)
-                opt = merge_option_with_its_defaults(opt,diags_collection)
                 newopt = opt.clone()
+                if dset in diags_collection.keys():
+                    newopt['sets'] = optset.get('sets',None)
+                newopt.merge(optset)
+                nweopt = merge_option_with_its_defaults(newopt,diags_collection)
                 opts.append(newopt)
     return opts
 
@@ -213,10 +217,12 @@ def expand_lists_collections( opt, okeys=None ):
         for ovl in ovls:                  # e.g. ovl='T' or ovl='MyVars'
             if type(ovl) is list and not varslist(ovl):
                 optso = expand_collection( onm, ovl, opt )
-                opts.extend(optso)
+                #opts.extend(optso)
+                opts = optso
             elif ovl in key2collection.keys():        # e.g. True for onm='vars', ovl='MyVars'
                 optso = expand_collection( onm, ovl, opt )   # a list of Options instances
-                opts.extend(optso)
+                #opts.extend(optso)
+                opts = optso
             else:
                 remaining_keys[idx] = None    # bottom of a tree; opts[onm] is an ordinary option
     remaining_keys = [ k for k in remaining_keys if k is not None ]
@@ -237,6 +243,7 @@ def multidiags1( opt ):
     newopts = []
     for op in opts:
         newopts.extend(expand_lists_collections( op ))
+    print "jfp will run diags on",len(newopts),"Options objects"
     for o in newopts:
         #set_modelobs_path(o)
         #restore_modelobs_path(o)
@@ -245,6 +252,7 @@ def multidiags1( opt ):
         #pdb.set_trace()
         #continue #jfp testing
         t0 = time.time()
+        o.finalizeOpts()
         run_diags(o)
         trun = time.time() - t0
         print "jfp run_diags took",trun,"seconds"
