@@ -13,7 +13,7 @@ before_install:
   - conda config --set always_yes yes --set changeps1 no
   - conda update -y -q conda
     #  - conda install openssl=1.0.2d
-  - conda install -q -y --channel uvcdat --channel conda-forge uvcdat-nox
+  - conda install -q -y --channel conda-forge --channel uvcdat uvcdat-nox
   # Useful for debugging any issues with conda
   - conda info -a
 
