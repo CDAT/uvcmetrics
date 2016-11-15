@@ -40,6 +40,12 @@ diags_collection['MyDefaults'] = Options( desc = 'default options to be incorpor
 diags_collection['5'] = Options( sets=['5'], vars=['MyVars'], obs=['MyObs'], model=['generic'],
                                  seasons=['DJF','JJA','ANN'], package='AMWG', default_opts='MyDefaults',
                                  desc = 'Horizontal contour plots of DJF, JJA and ANN means' )
+diags_collection['5s'] = Options( sets=['5'], vars=['LHFLX'], obs=['NCEP'], model=['generic'],
+                                 seasons=['DJF'], package='AMWG', default_opts='MyDefaults',
+                                 desc = 'single-plot subset of collection 5' )
+diags_collection['5t'] = Options( sets=['5'], vars=['LHFLX'], obs=['CERES'], model=['generic'],
+                                 seasons=['DJF'], package='AMWG', default_opts='MyDefaults',
+                                 desc = 'single-plot subset of collection 5' )
 # ...Yes, this is the same Options object as in options.py.  Anything it supports can be specified
 # here and will get passed straight through to run_diags(opts) in diags.py.
 # However, a few options will need special treatment, causing replacement of this Options object
