@@ -299,10 +299,10 @@ def run_diags( opts ):
             # If the user sepcified variables, use them instead of the complete list
             variables = list( set(variables) & set(opts.get('vars',[])) )
             if len(variables)==0 and len(opts.get('vars',[]))>0:
-                logger.critical('Could not find any of the requested variables %s among %s', opts['vars'],
+                logger.warning('Could not find any of the requested variables %s among %s', opts['vars'],
                                 pclass.list_variables(modelfts,obsfts,sname) )
-                logger.critical("among %s", variables)
-                sys.exit(1)
+                logger.warning("among %s", variables)
+                return
 
         # Ok, start the next layer of work - seasons and regions
         # loop over the seasons for this plot
