@@ -107,7 +107,7 @@ d7fc6bbb9a2dfdb0fa44d7835f94a3d4  obs_data_5.6/ERS_DJF_climo.nc
 3cce9af23687f27d3b134f60039ebdce  obs_data_5.6/ERS_JJA_climo.nc
 aaedba911f145e711d05b6430e13ce4e  obs_data_5.6/ERS_MAM_climo.nc
 e40f05dfec15f145e9623290d5142705  obs_data_5.6/ERS_SON_climo.nc
-62210097c2b766aefa971941ef2585f9  table_reference/20160520.A_WCYCL1850.ne30_oEC.reference.alpha6_ANN_climo.nc
+c8134daed73a7d3f3d1fda2833eac2bd  table_reference/20160520.A_WCYCL1850.ne30_oEC.reference.alpha6_ANN_climo.nc
 3927e60441d82e834fb7faaaa4fd583f  table_reference/CERES-EBAF_ANN_climo.nc
 ddf8a782fc1982e191f6ada4dbd7f0db  table_reference/ERA40_ANN_climo.nc
 27d831a972366bbb2cd0285a55c61e6c  table_reference/ERAI_ANN_climo.nc

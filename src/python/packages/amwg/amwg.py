@@ -152,6 +152,10 @@ class amwg_plot_plan(plot_plan):
             #NEXT: the derived variable is computed on the restricted inputs according to the mask
             dv_mask = svd.derive( dv_dict ) 
             
+            #protect against a failure
+            if dv_mask is None:
+                logger.warning("There is a problem with the mask variable %s in filetable %s", invarnoms, filetable.id())
+                return None, [None], [None], {}
             #NEXT: create a derived variable that will compute the mean
             dv_mean_vid = derived_var.dict_id( varnom, '', season.seasons[0], filetable )
             dv_mean = derived_var( vid=dv_mean_vid, inputs=[dv_mask.id], outputs=[ svd.id() ], func=reduction_function)
