@@ -15,7 +15,7 @@ from metrics.fileio.findfiles import *
 from metrics.computation.reductions import *
 from metrics.frontend.form_filenames import *
 from metrics.frontend.amwg_plotting import *
-# These next 5 liens really shouldn't be necessary. We should have a top level
+# These next 5 lines really shouldn't be necessary. We should have a top level
 # file in packages/ that import them all. Otherwise, this needs done in every
 # script that does anything with diags, and would need updated if new packages
 # are added, etc.
@@ -34,8 +34,8 @@ from metrics.computation.region import *
 import logging
 logger = logging.getLogger(__name__)
 
-#delete soon global vcs_elements   # used to prevent uncontrolled growth of vcs.elements if there are multiple calls of run_diags()
-#delete soon vcs_elements = None
+global vcs_elements   # used to prevent uncontrolled growth of vcs.elements if there are multiple calls of run_diags()
+vcs_elements = None
 
 def setManualColormap(canvas=None, level=0):
     """
@@ -128,7 +128,7 @@ def setnum( setname ):
     return setnumber
 
 def run_diags( opts ):
-    #delete soon global vcs_elements
+    global vcs_elements
     # Setup filetable arrays
     modelfts = []
     obsfts = []
@@ -361,21 +361,22 @@ def run_diags( opts ):
                                 plot = sclass( modelfts, obsfts, variables, utime, region, vvaropts[aux],
                                                plotparms = { 'model':{}, 'obs':{}, 'diff':{} } )
                             else:
-                                plot = sclass( modelfts, obsfts, varid, utime, region, vvaropts[aux], names=names,
-                                               plotparms = { 'model':{'levels':opts['levels'], 'colormap':opts['colormaps']['model']},
-                                                             'obs':{'levels':opts['levels'], 'colormap':opts['colormaps']['obs']},
-                                                             'diff':{'levels':opts['difflevels'], 'colormap':opts['colormaps']['diff']} } )
-                        #delete soon if vcs_elements is None:
-                        #delete soon     vcs_elements = dictcopy3(vcs.elements)
-                        #delete soon else:
-                        #delete soon     vcsdisplays = vcs.elements['display']
-                        #delete soon     vcs.elements = dictcopy3(vcs_elements)
-                        #delete soon     vcs.elements['display'] = vcsdisplays
+                                plot = sclass(
+                                    modelfts, obsfts, varid, utime, region, vvaropts[aux], names=names,
+                                    plotparms = { 'model':{'levels':opts['levels'], 'colormap':opts['colormaps']['model']},
+                                                  'obs':{'levels':opts['levels'], 'colormap':opts['colormaps']['obs']},
+                                                  'diff':{'levels':opts['difflevels'], 'colormap':opts['colormaps']['diff']} } )
+                        if vcs_elements is None:
+                            vcs_elements = dictcopy3(vcs.elements)
+                        else:
+                            vcsdisplays = vcs.elements['display']
+                            vcs.elements = dictcopy3(vcs_elements)
+                            vcs.elements['display'] = vcsdisplays
                         # To prevent a buildup of cruft and a huge performance hit, don't let vcs.elements['isofill', etc.]
                         # grow.  Members (the ones we need) first get created in plot.compute().
-                        print "jfp clean_auto_generated_objects is being called"
-                        vcanvas.clean_auto_generated_objects()
-                        vcanvas2.clean_auto_generated_objects()
+                        #print "jfp clean_auto_generated_objects is being called"
+                        #vcanvas.clean_auto_generated_objects()
+                        #vcanvas2.clean_auto_generated_objects()
 
                         # Do the work (reducing variables, etc)
                         res = plot.compute(newgrid=0) # newgrid=0 for original grid, -1 for coarse
