@@ -128,7 +128,7 @@ class Options():
         if opt2 is None:
             return
         for key,value in opt2._opts.iteritems():
-            if key not in self._opts:
+            if key not in self._opts or self[key] is None:
                 self[key] = value
             elif key in ['output', 'logging', 'translations']:
                 # For these options, the value is a dictionary which should be merged, not replaced.
@@ -930,7 +930,7 @@ class Options():
         if logsave is None:
             del self._opts["logging"]
         else:
-            self._opts["loggin"] = None
+            self._opts["logging"] = None
 
         # First, check for the --list option so we don't have to do as much work if it was passed.
         if(args.list != None):
@@ -1153,6 +1153,7 @@ class Options():
                 if(args.seasonally == True):
                     logger.warning("Please specify just one of --seasonally or --seasons")
                     logger.warning('Defaulting to using seasons')
+                self['seasons'] = args.seasons
 
             self.finalizeOpts()
 
