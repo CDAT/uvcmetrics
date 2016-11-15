@@ -1152,14 +1152,21 @@ class Options():
             if(args.seasons != None):
                 if(args.seasonally == True):
                     logger.warning("Please specify just one of --seasonally or --seasons")
-                    logger.warning('Defaulting to using all seasons')
-                else:
-                    slist = [x for x in all_seasons if x in args.seasons]
-                    if 'times' in self.keys(): #jfp
-                        self._opts['times'] = self._opts['times']+slist
-                    else:
-                        self._opts['times'] = slist  #jfp
-                logger.debug('seasons: %s', self._opts['times'])
+                    logger.warning('Defaulting to using seasons')
+
+            self.finalizeOpts()
+
+    def finalizeOpts( self ):
+        """Clean up and finalize the options so they will be ready for use.  Most of this method
+        was adapted from code formerly in parseCmdLine."""
+        if 'seasons' in self.keys():
+            slist = [x for x in all_seasons if x in self['seasons']]
+            if 'times' in self.keys():
+                self['times'] = self['times']+slist
+            else:
+                self['times'] = slist
+            logger.debug('seasons: %s', self._opts['times'])
+
 
     def listOpts(self, args):
         print 'LIST - ', args.list
