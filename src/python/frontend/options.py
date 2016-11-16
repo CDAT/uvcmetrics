@@ -58,11 +58,15 @@ class Options():
         self._opts = {}
         self.all_packages = packages.package_names
 
+        # metadiags=True if we are running metadiags, or plain diags.  False for multidiags.
+        # The difference is whether defaults should be set here or by merging in options_defaults (below)
+        metadiags = True
+
         # self._opts is the dictionary holding options
         # N.B. Defaults are no longer set in the __init__ method.  Instead, a newly created instance
         # of Options should be merged with whatever other Options instances are desired.  The last
         # of them should be Options.defaults.  Use self.merge(Options.defaults)
-        if False:
+        if metadiags:
             self._opts['model'] = []
             self._opts['obs'] = []
             self._opts['output'] = {} # output pre, post, directory, absolute filename, output options
@@ -339,6 +343,7 @@ class Options():
         except:
             logging.critical('Invalid color map: '+ colormap)
             logging.critical('Must be in this list: ' + ', '.join(vcs.listelements('colormap')))
+            pdb.set_trace()
             sys.exit()
 
     def processDisplayunits(self, ID, displayunits):
