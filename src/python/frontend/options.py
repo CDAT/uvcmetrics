@@ -343,7 +343,6 @@ class Options():
         except:
             logging.critical('Invalid color map: '+ colormap)
             logging.critical('Must be in this list: ' + ', '.join(vcs.listelements('colormap')))
-            pdb.set_trace()
             sys.exit()
 
     def processDisplayunits(self, ID, displayunits):
@@ -801,6 +800,9 @@ class Options():
                                   default=0,
                                   type=int,
                                   )
+            runopts.add_argument('--regrid',
+                                 help="Regridder to use when necessary.  Possible values include esmf-linear, esmf-conserv, regrid2.",
+                                 default="esmf-linear" )
             if 'metadiags' not in progname and 'metadiags.py' not in progname:
                 runopts.add_argument('--vars', '--var', '-v', nargs='+',
                                      help="Specify variables of interest to process. The default is all variables which can also be specified with the keyword ALL")
@@ -1081,6 +1083,7 @@ class Options():
                 quit()
             self._opts['dryrun'] = args.dryrun
             self._opts['sbatch'] = args.sbatch
+            self._opts['regrid'] = args.regrid
             if args.sbatch>0:
                 self._opts["dryrun"] = True
         self._opts['verbose'] = args.verbose

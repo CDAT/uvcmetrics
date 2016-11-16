@@ -127,6 +127,25 @@ def setnum( setname ):
         setnumber = setname[index1:index1+index2]
     return setnumber
 
+def save_regrid( opts ):
+    """Saves regrid method as an Options class variable."""
+    if 'regrid' not in opts._opts.keys():
+        opts['regrid'] = 'esmf-linear'
+    if opts['regrid'] == 'esmf-linear' or opts['regrid']=='esmf':
+        Options.regridTool = 'esmf'
+        Options.regridMethod = 'linear'
+    elif opts['regrid'] == 'regrid2':
+        Options.regridTool = 'regrid2'
+        Options.regridMethod = None
+    elif opts['regrid'] == 'esmf-conserv':
+        Options.regridTool = 'esmf'
+        Options.regridMethod = 'conservative'
+    elif opts['regrid'] == 'libcf-linear' or opts['regrid']=='libcf':
+        Options.regridTool = 'libcf'
+        Options.regridMethod = 'linear'
+    else:
+        logger.error("do not recognize regrid option %s",opts['regrid'])
+
 def run_diags( opts ):
     global vcs_elements
     # Setup filetable arrays
@@ -198,6 +217,7 @@ def run_diags( opts ):
             regions.append(rectregion(r, defines.all_regions[r]))
     logger.info('Using regions %s',regions)
 
+    save_regrid(opts)
 
     number_diagnostic_plots = 0
 
@@ -291,7 +311,7 @@ def run_diags( opts ):
 
         # Get this list of variables for this set (given these obs/model inputs)
         logging.info('opts vars: %s', opts.get('vars',[]))
-        variables = pclass.list_variables( modelfts, obsfts, sname )
+        variables = pclass.list_variables( modelfts, obsfts, sname )  # includes many derived variables
         logger.info('var list from pclass: %s', variables)
 
         # Get the reduced list of variables possibly specified by the user

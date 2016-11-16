@@ -36,6 +36,8 @@ class amwg_plot_set7(amwg_plot_plan):
         varid is a string identifying the variable to be plotted, e.g. 'TREFHT'.
         seasonid is a string such as 'DJF'."""
 
+        if aux==None:
+            aux=slice(0,None)
         filetable1, filetable2 = self.getfts(model, obs)
         plot_plan.__init__(self,seasonid)
         self.plottype = 'Isofill_polar'
@@ -62,7 +64,8 @@ class amwg_plot_set7(amwg_plot_plan):
         return listvars
     @staticmethod
     def _all_variables( model, obs ):
-        allvars = amwg_plot_plan.package._all_variables( model, obs, "amwg_plot_plan" )
+        #allvars = amwg_plot_plan.package._all_variables( model, obs, "amwg_plot_plan" )  #past
+        allvars = amwg_plot_set5._all_variables( model, obs )   # makes output keys similar to _list_variables
         for varname in amwg_plot_plan.package._list_variables(
             model, obs, "amwg_plot_plan" ):
             allvars[varname] = basic_pole_variable
