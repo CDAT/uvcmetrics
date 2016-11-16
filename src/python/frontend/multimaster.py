@@ -23,16 +23,16 @@ diags_collection = {}
 # If a collection value is a list, each list item should separately be a valid value.
 
 #var_collection['MyVars'] = ['SHFLX', 'LHFLX', 'FLUT', 'T', 'TS']
-var_collection['MyVars'] = ['LHFLX', 'TS']
+var_collection['MyVars'] = ['FLUT', 'LWCF']
 
 obs_collection['MyObs'] = ['ISCCP', 'CERES', 'NCEP']
-obs_collection['ISCCP'] = {'filter':f_startswith('ISCCP_'),'climos':'yes','name':None}
-obs_collection['CERES'] = {'filter':f_and( f_startswith('CERES_'), f_not(f_contains('EBAF'))),'climos':'yes','name':None}
-obs_collection['ECMWF'] = {'filter':f_startswith('ECMWF'),'climos':'yes','name':None}
-obs_collection['NCEP']  = {'filter':f_startswith('NCEP'),'climos':'yes','name':None}
-obs_collection['ERA40'] = {'filter':f_startswith('ERA40'),'climos':'yes','name':None}
-obs_collection['AIRS']  = {'filter':f_startswith('AIRS'),'climos':'yes','name':None}
-obs_collection['JRA25'] = {'filter':f_startswith('JRA25'),'climos':'yes','name':None}
+obs_collection['ISCCP'] = {'filter':"f_startswith('ISCCP_')",'climos':'yes','name':None}
+obs_collection['CERES'] = {'filter':"f_and( f_startswith('CERES_'), f_not(f_contains('EBAF')))",'climos':'yes','name':None}
+obs_collection['ECMWF'] = {'filter':"f_startswith('ECMWF')",'climos':'yes','name':None}
+obs_collection['NCEP']  = {'filter':"f_startswith('NCEP')",'climos':'yes','name':None}
+obs_collection['ERA40'] = {'filter':"f_startswith('ERA40')",'climos':'yes','name':None}
+obs_collection['AIRS']  = {'filter':"f_startswith('AIRS')",'climos':'yes','name':None}
+obs_collection['JRA25'] = {'filter':"f_startswith('JRA25')",'climos':'yes','name':None}
 model_collection['generic'] = {'climos':'yes', 'name':None}
 
 diags_collection['MyDefaults'] = Options( desc = 'default options to be incorporated into other collections',
@@ -43,7 +43,7 @@ diags_collection['5'] = Options( sets=['5'], vars=['MyVars'], obs=['MyObs'], mod
 diags_collection['5s'] = Options( sets=['5'], vars=['LHFLX'], obs=['NCEP'], model=['generic'],
                                  seasons=['DJF'], package='AMWG', default_opts='MyDefaults',
                                  desc = 'single-plot subset of collection 5' )
-diags_collection['5t'] = Options( sets=['5'], vars=['LHFLX'], obs=['CERES'], model=['generic'],
+diags_collection['5t'] = Options( sets=['5'], vars=['LWCF'], obs=['CERES'], model=['generic'],
                                  seasons=['DJF'], package='AMWG', default_opts='MyDefaults',
                                  desc = 'single-plot subset of collection 5' )
 # ...Yes, this is the same Options object as in options.py.  Anything it supports can be specified
@@ -63,7 +63,7 @@ diags_collection['5t'] = Options( sets=['5'], vars=['LHFLX'], obs=['CERES'], mod
 # *** Collection 4 of amwgmaster.py, converted ***
 diags_collection['4base'] = Options(
     sets=['4'], desc='Vertical contour plots of DJF, JJA and ANN zonal means', seasons=['DJF', 'JJA', 'ANN'],
-    package='AMWG', default_opts='MyDefaults' )
+    package='AMWG', model='generic', default_opts='MyDefaults' )
 diags_collection['4'] = [
     Options(
         vars=['OMEGA', 'U'], obs=['ECMWF', 'NCEP', 'ERA40', 'JRA25'], default_opts='4base' ),
@@ -73,6 +73,10 @@ diags_collection['4'] = [
         vars=['SHUM', 'T'], obs=['ECMWF', 'NCEP', 'ERA40', 'JRA25', 'AIRS'], default_opts='4base' ) ]
 # This shows how to reproduce a feature of metadiags/amwgmaster in which the obs list
 # can depend on the variable.  However, this system is not limited to var/obs options.
+
+diags_collection['4s'] = [
+    Options(
+        vars=['SHUM'], obs=['ECMWF'], seasons=['DJF'], default_opts='4base' ) ]
 
 
 # Given a keyword, if it identifies a member of one of the collections, this will tell you
