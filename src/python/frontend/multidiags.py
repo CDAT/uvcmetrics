@@ -209,6 +209,11 @@ def expand_lists_collections( opt, okeys=None ):
     if okeys is None:
         okeys = opt.keys()
     remaining_keys = list(okeys)          # this copy will be passed on in any recursive call
+    # What is breakit about?  Inside the loop, the call of expand_collection uses our original opt.
+    # If part of it has already been expanded, we don't want to use the original one.  Breaking
+    # out of the loop will lead to a recursive call of expand_lists_collections, so that the next
+    # expansion will be based upon the correct opt.
+    breakit = False
     for idx,onm in enumerate(okeys):      # onm is the name of an option, e.g. 'vars'
         if type(opt[onm]) is list:
             ovls = opt[onm]
@@ -217,14 +222,15 @@ def expand_lists_collections( opt, okeys=None ):
         for ovl in ovls:                  # e.g. ovl='T' or ovl='MyVars'
             if type(ovl) is list and not varslist(ovl):
                 optso = expand_collection( onm, ovl, opt )
-                #opts.extend(optso)
-                opts = optso
+                opts.extend(optso)
+                breakit = True
             elif ovl in key2collection.keys():        # e.g. True for onm='vars', ovl='MyVars'
                 optso = expand_collection( onm, ovl, opt )   # a list of Options instances
-                #opts.extend(optso)
-                opts = optso
+                opts.extend(optso)
+                breakit = True
             else:
                 remaining_keys[idx] = None    # bottom of a tree; opts[onm] is an ordinary option
+        if breakit: break
     remaining_keys = [ k for k in remaining_keys if k is not None ]
     if opts==[]:
         return [opt]  # We found nothing to expand.
@@ -247,8 +253,8 @@ def multidiags1( opt ):
     for o in newopts:
         #set_modelobs_path(o)
         #restore_modelobs_path(o)
-        finalize_modelobs(o) # copies obspath to obs['path'], changes {} to [{}]
-        print "jfp about to run_diags on",o['vars'],len(o.get('obs',None)),o.get('obs',None)[0]
+        o = finalize_modelobs(o) # copies obspath to obs['path'], changes {} to [{}]
+        print "jfp about to run_diags on",o['vars'],len(o.get('obs',[])),o.get('obs',[])[0]
         #pdb.set_trace()
         #continue #jfp testing
         t0 = time.time()
