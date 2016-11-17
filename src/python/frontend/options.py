@@ -849,6 +849,7 @@ class Options():
             outopts.add_argument('--xml', '-x', choices=['no', 'yes'],
                help="Produce XML output files as part of climatology/diags generation")
             outopts.add_argument('--logo', choices=['no', 'yes']) # intentionally undocumented; meant to be passed via metadiags
+            outopts.add_argument("--metadiags", choices=['False','True'], help="if present, states that this program was run by metadiags.  This affects output file names.")
             outopts.add_argument('--no-antialiasing', action="store_true",default = False) # intentionally undocumented; meant to be passed via metadiags
             outopts.add_argument('--table', action='store_true', help="used to get data from individual files and create the table.") # intentionally undocumented; meant to be passed via metadiags
             outopts.add_argument('--colormaps', nargs='*', help="Specify one of 3 colormaps: model, obs or diff")
@@ -1071,6 +1072,8 @@ class Options():
                     self._opts['output']['plots'] = False
                 else:
                     self._opts['output']['plots'] = True
+            if(args.metadiags != None):
+                self['metadiags'] = True
 
             if(args.generate != None):
                 if(args.generate.lower() == 'no' or args.generate == 0):

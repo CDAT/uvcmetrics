@@ -270,10 +270,7 @@ def run_diags( opts ):
     for sname in plotsets:
         logger.info("Working on %s plots ",  sname)
 
-        if basename=='':
-            basename = 'set'
         snum = setnum(sname)
-        basename += snum
 
         # instantiate the class
         sclass = sm[sname]
@@ -392,11 +389,6 @@ def run_diags( opts ):
                             vcsdisplays = vcs.elements['display']
                             vcs.elements = dictcopy3(vcs_elements)
                             vcs.elements['display'] = vcsdisplays
-                        # To prevent a buildup of cruft and a huge performance hit, don't let vcs.elements['isofill', etc.]
-                        # grow.  Members (the ones we need) first get created in plot.compute().
-                        #print "jfp clean_auto_generated_objects is being called"
-                        #vcanvas.clean_auto_generated_objects()
-                        #vcanvas2.clean_auto_generated_objects()
 
                         # Do the work (reducing variables, etc)
                         res = plot.compute(newgrid=0) # newgrid=0 for original grid, -1 for coarse
@@ -412,7 +404,7 @@ def run_diags( opts ):
                             
                             if opts['output']['plots'] == True:
                                 displayunits = opts.get('displayunits', None)
-                                makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits=displayunits)
+                                makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, opts, displayunits=displayunits)
                                 number_diagnostic_plots += 1
 
                                 #tracker.print_diff()
@@ -455,8 +447,6 @@ def run_diags( opts ):
                                         fname = ""
                                     else:
                                         where = ""
-                                        #jfp former fname code: name = basename+'_'+utime+'_'+r_fname+'-table.text'
-                                        #jfp was fname = os.path.join(outdir,name)
                                         fname = form_filename( form_file_rootname(
                                             'res0', [], 'table', dir=outdir, season=utime,
                                             basen=basename, region=r_fname ), 'text' )
@@ -474,7 +464,7 @@ def run_diags( opts ):
     logger.info("total number of (compound) diagnostic plots generated = %s", number_diagnostic_plots)
 
 
-def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits=None):
+def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, opts, displayunits=None):
     # need to add plot and pacakge for the amwg 11,12 special cases. need to rethink how to deal with that
     # At this loop level we are making one compound plot.  In consists
     # of "single plots", each of which we would normally call "one" plot.
@@ -615,21 +605,25 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
                 #### seasons/vars/setnames/varopts/etc used to create the plot. Otherwise, there is no
                 #### way for classic viewer to know the filename without lots more special casing. 
 
-                try:
-                    #descr = var.filetableid.nickname
-                    file_descr = getattr(rsr,'file_descr',getattr(rsr,'title2',True))
-                    if file_descr[0:3]=='obs': file_descr='obs'
-                    if file_descr[0:4]=='diff': file_descr='diff'
-                    ft1id = var.filetableid.ftid
-                    if hasattr(var,'filetable2id'):
-                        ft2id = var.filetable2id.ftid
-                    else:
-                        ft2id = ''
-                    descr = underscore_join([ft1id,ft2id,file_descr])
-                    if len(descr)<1:
-                        descr = True
-                except:
+                if 'metadiags' in opts.keys():
+                    # metadiags computes its own filenames using descr=True; we have to be consistent
                     descr = True
+                else:
+                    try:
+                        #descr = var.filetableid.nickname
+                        file_descr = getattr(rsr,'file_descr',getattr(rsr,'title2',True))
+                        if file_descr[0:3]=='obs': file_descr='obs'
+                        if file_descr[0:4]=='diff': file_descr='diff'
+                        ft1id = var.filetableid.ftid
+                        if hasattr(var,'filetable2id'):
+                            ft2id = var.filetable2id.ftid
+                        else:
+                            ft2id = ''
+                        descr = underscore_join([ft1id,ft2id,file_descr])
+                        if len(descr)<1:
+                            descr = True
+                    except:
+                        descr = True
                 fnamepng,fnamesvg,fnamepdf = form_filename( frnamebase, ('png','svg','pdf'), descr=descr,
                                                             vname=vname, more_id=more_id )
 
@@ -838,7 +832,11 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
     if tmmobs[0] is not None:  # If anything was plotted to vcanvas2
         vname = varid.replace(' ', '_')
         vname = vname.replace('/', '_')
-    descr = underscore_join(source_descr2)
+    if 'metadiags' in opts.keys():
+        descr = True# For metadiags use, we want to force descr=True as it is in filenames()
+    else:
+        descr = underscore_join(source_descr2)
+    
     fnamepng,fnamesvg,fnamepdf = form_filename( frnamebase, ('png','svg','pdf'),
                                                 descr, vname=vname, more_id='combined' )
 
