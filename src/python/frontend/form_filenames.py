@@ -3,7 +3,7 @@ logger = logging.getLogger(__name__)
 from metrics.common.utilities import underscore_join
 
 global debug_filenames
-debug_filenames = True
+debug_filenames = False
 
 def form_filename( rootname, fmt, descr='', vname='', more_id='' ):
     """This information goes into a file name computation, or possibly should go:
