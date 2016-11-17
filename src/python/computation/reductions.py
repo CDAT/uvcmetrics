@@ -2869,7 +2869,7 @@ def run_cdscan( fam, famfiles, cache_path=None ):
         logger.error( 'importing cdscan failed' )
 
     # The old approach was to run cdscan as a separate process:
-    #print "cdscan_line=",cdscan_line
+    print "cdscan_line=",cdscan_line
     #proc = subprocess.Popen([cdscan_line],shell=True)
     #proc_status = proc.wait()
     #if proc_status!=0:
