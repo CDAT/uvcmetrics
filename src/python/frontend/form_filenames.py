@@ -2,6 +2,9 @@ import logging, os, pdb
 logger = logging.getLogger(__name__)
 from metrics.common.utilities import underscore_join
 
+global debug_filenames
+debug_filenames = True
+
 def form_filename( rootname, fmt, descr='', vname='', more_id='' ):
     """This information goes into a file name computation, or possibly should go:
 - root name, from form_file_rootname
@@ -15,6 +18,7 @@ What this function returns depends on what fmt is.
   If a tuple of strings (e.g. 'png','svg'), we will will return the corresponding tuple of filenames.
   (e.g. foo.png,foo.svg)
 """
+    global debug_filenames
     if more_id is None: more_id=''
     if descr is not True:
         if descr=='':
@@ -25,8 +29,12 @@ What this function returns depends on what fmt is.
         else:
             fnamedot = '-'.join([rootname,more_id,descr]) + '.'
         if type(fmt) is str:
+            if debug_filenames:
+                print "form_filename1 is returning",fnamedot+fmt
             return fnamedot + fmt
         else:
+            if debug_filenames:
+                print "form_filename2 is returning",tuple(fnamedot+fm for fm in fmt)
             return tuple(fnamedot+fm for fm in fmt)
 
     # At this point descr==True: we should compute it.  For the moment however, I'm only
@@ -107,9 +115,16 @@ What this function returns depends on what fmt is.
             logging.warning('Second spot - Couldnt determine filename; defaulting to just .png. vname: %s, rootname: %s', vname, rootname)
             fnamedot = rootname+'.'
 
+    if fnamedot[-2:]=='-.':
+        fnamedot = fnamedot[:-2]+'.'
+
     if type(fmt) is str:
+        if debug_filenames:
+            print "form_filename3 is returning",fnamedot+fmt
         return fnamedot + fmt
     else:
+        if debug_filenames:
+            print "form_filename4 is returning",tuple(fnamedot+fm for fm in fmt)
         return tuple(fnamedot+fm for fm in fmt)
 
 
@@ -129,6 +144,9 @@ def form_file_rootname( plotset, vars, meanings='variable', dir='', filetables=[
 - user-specified directory (if the directory is considered to be part of the filename)
 - output meaning: variable, diff, variance, rmse, etc.
 """
+    global debug_filenames
+    if debug_filenames:
+        print "entering form_file_rootname, plotset=",plotset,"basen=",basen,"postn=",postn
     if aux is None or aux==[None] or aux=='' or aux=='default' or aux==['default']:
         aux = []
     plotset = str(plotset)
@@ -151,6 +169,8 @@ def form_file_rootname( plotset, vars, meanings='variable', dir='', filetables=[
 
     fname = underscore_join([ basen, plotset, season, underscore_join(vars), underscore_join(aux), postn ])
 
+    if debug_filenames:
+        print "leaving form_file_rootname with fname=",fname
     return os.path.join( dir, fname )
 
 
