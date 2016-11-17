@@ -2798,6 +2798,7 @@ def run_cdscan( fam, famfiles, cache_path=None ):
               for f in famfiles ] )
     csum = hashlib.md5(file_list).hexdigest()
     xml_name = fam+'_cs'+csum+'.xml'
+    print "XML NAME:",xml_name
     if os.path.isfile( xml_name ):
         #print "using cached cdscan output",xml_name," (in data directory)"
         return xml_name
@@ -2863,9 +2864,11 @@ def run_cdscan( fam, famfiles, cache_path=None ):
             cdscan_line = shlex.split(cdscan_line)
             cdscan.main(cdscan_line)
         except:
+            print "CDSCAN RUN ERROR"
             logger.error( 'ERROR: cdscan terminated. This is usually fatal. The arguments were:%s\n',
                            cdscan_line )
     except:
+        print "CDSCAN IMPORT ERROR"
         logger.error( 'importing cdscan failed' )
 
     # The old approach was to run cdscan as a separate process:
