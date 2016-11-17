@@ -2863,8 +2863,12 @@ def run_cdscan( fam, famfiles, cache_path=None ):
         try:
             cdscan_line = shlex.split(cdscan_line)
             cdscan.main(cdscan_line)
-        except:
-            print "CDSCAN RUN ERROR"
+        except Exception,err:
+            print "CDSCAN RUN ERROR",err
+            import traceback,sys
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+            traceback.print_tb(exc_traceback)
+            print "END ERROR LOG"
             logger.error( 'ERROR: cdscan terminated. This is usually fatal. The arguments were:%s\n',
                            cdscan_line )
     except:
