@@ -2860,6 +2860,7 @@ def run_cdscan( fam, famfiles, cache_path=None ):
         from cdms2 import cdscan
         import shlex
         logger.info('cdscan command line: %s', cdscan_line)
+        print "RUNNNIG CDSCAN"
         try:
             cdscan_line = shlex.split(cdscan_line)
             cdscan.main(cdscan_line)
