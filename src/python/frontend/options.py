@@ -60,7 +60,7 @@ class Options():
 
         # metadiags=True if we are running metadiags, or plain diags.  False for multidiags.
         # The difference is whether defaults should be set here or by merging in options_defaults (below)
-        metadiags = True
+        metadiags = False
 
         # self._opts is the dictionary holding options
         # N.B. Defaults are no longer set in the __init__ method.  Instead, a newly created instance
