@@ -1,12 +1,15 @@
 # Run multiple diagnostics.  The user only specifies paths and a collection name.
 # The collection name is a key into multimaster.py, or (>>>> TO DO >>>>) another file provided by the user.
 
+import logging, pdb, importlib, time, cProfile
+from pprint import pprint
+from itertools import groupby
 from metrics.frontend.multimaster import *   # this file is just a demo
 import metrics.frontend.multimaster as multimaster
 from metrics.frontend.diags import run_diags
 from metrics.frontend.options import Options, options_defaults
-import logging, pdb, importlib, time, cProfile
-from pprint import pprint
+from output_viewer.index import OutputIndex, OutputPage, OutputGroup, OutputRow, OutputFile, OutputMenu
+
 logger = logging.getLogger(__name__)
 
 def merge_option_with_its_defaults( opt, diags_collection ):
@@ -40,6 +43,7 @@ def expand_and_merge_with_defaults( opt ):
             newopt['sets'] = diags_collection[dset].get('sets',None)
             newopt.merge(diags_collection[dset])
             newopt = merge_option_with_its_defaults(newopt,diags_collection)
+            newopt['collection'] = dset   # name of collection
             opts.append(newopt)
         elif type(diags_collection[dset]) is list:
             for optset in diags_collection[dset]:
@@ -47,7 +51,8 @@ def expand_and_merge_with_defaults( opt ):
                 if dset in diags_collection.keys():
                     newopt['sets'] = optset.get('sets',None)
                 newopt.merge(optset)
-                nweopt = merge_option_with_its_defaults(newopt,diags_collection)
+                newopt = merge_option_with_its_defaults(newopt,diags_collection)
+                newopt['collection'] = dset # name of collection
                 opts.append(newopt)
     return opts
 
@@ -249,6 +254,7 @@ def multidiags1( opt ):
     newopts = []
     for op in opts:
         newopts.extend(expand_lists_collections( op ))
+    setup_viewer(newopts)
     print "jfp will run diags on",len(newopts),"Options objects"
     for o in newopts:
         #set_modelobs_path(o)
@@ -276,7 +282,14 @@ def multidiags( opts ):
     nopts = []
     for opt in opts:
         if opt in diags_collection:
+            collnm = opt   # key in diags_collection, i.e. collection name
             opt = diags_collection[opt]  # could be an Option or list of Options
+            # We need to save the collection name for later use:
+            try:
+                opt['collection'] = collnm
+            except:  # opt is a list of Options
+                for op in opt:
+                    op['collection'] = collnm
         if isinstance(opt,Options):
             nopts.append(opt)
         elif type(opt) is list:
@@ -328,6 +341,85 @@ def restore_modelobs_path( opt ):
         for i,mo in  enumerate(opt[key]):  # mo is a dict
             opt[key][i]['path'] = opt[pathkey][i]
     return opt
+
+def organize_opts_for_viewer( opts ):
+    """Basically we have to re-organize the opts list into something structured by variable, season,
+    obs set, etc.  More precisely, the organization we need is lists nested as follows:
+    outside, the diags collection (page), normally just one of them.  Next in, the obs (group),
+    then the variable and region (row) and finally the season (file, aka column).
+    """
+    # It might be possible to implement this as a single humongous list comprehension.
+    # It would be amusing to see that done, but impossible to understand it or debug it.
+    collections = set([ o['collection'] for o in opts])
+    opts2 = [ [o for o in opts if o['collection']==coll] for coll in collections ]
+    # Each opt in opts also appears in one of the sub-lists of opts2, and vice-versa.
+    # Each sub-list of opts2 consistes of those Options instances which share a collection.
+    # Do the same for obs, noting that o['obs'] has length one at this point...
+    opts3 = []
+    for optsa in opts2:   # each optsa is a list of Options objects, all for one collection
+        obss1 = [ o['obs'] for o in optsa]
+        obss2 = [ ob[0] if (type(ob) is list) else ob for ob in obss1 ]
+        # ... python won't let me apply set(), complains "unhashable type"
+        obss = [ o for o,_ in groupby(obss2) ]
+        opts3.append( [ [o for o in optsa if o['obs']==obs] or o['obs'][0]==obs for obs in obss ] )
+    opts4 = []
+    for optsa in opts3:
+        opts4b = []
+        for optsb in optsa:
+            for o in optsb:
+                o['vars'].sort()
+            varss2 = [ o['vars'] for o in optsb ]   # for now, I'm ignoring regions
+            varss = [ v for v,_ in groupby(varss2) ]
+            print "jfp varss=",varss
+            # ... python won't let me apply set(), complains "unhashable type"
+            opts4b.append( [ [o for o in optsb if o['vars']==vars] for vars in varss ])
+        opts4.append(opts4b)
+    opts5 = []
+    for optsa in opts4:
+        opts5b = []
+        for optsb in optsa:
+            opts5c = []
+            for optsc in optsb:
+                for o in optsc:
+                    o['seasons'].sort()
+                seass2 = [ o['seasons'] for o in optsc ]
+                # ... python won't let me apply set(), complains "unhashable type"
+                seass = [ s for s,_ in groupby(seass2) ]
+                opts5c.append( [ [o for o in optsc if o['seasons']==seas] for seas in seass ])
+            opts5b.append(opts5c)
+        opts5.append(opts5b)
+    return opts5
+
+def setup_viewer( opts ):
+    """Sets up data structures needed by the viewer.  This input parameter opts is a list of
+    Options instances."""
+    optsnested = organize_opts_for_viewer( opts )
+    # When this is right, we should call a function to do the rest.
+
+    setup_viewer_1( opts[0] )  # just a place-holder
+
+def setup_viewer_1( opt ):
+    """Sets up data structures needed by the viewer.  This input parameter opt is a single
+    Options instance.  This function will likely be more useful for coding practice than for actual
+    use."""
+
+    collnum = opt['collection']   # collection name should be set up earlier; it doesn't exist yet
+    page_columns = ["Description"] + opt['seasons']
+    coll_def = { 'desc': "verbose description of the diagnostic collection" }
+    page = OutputPage( "Plot collection %s" % collnum, short_name="set_%s" % collnum, columns=page_columns,
+                       description=coll_def["desc"], icon="amwg_viewer/img/SET%s.png" % collnum)
+    columns = [ "row description", OutputFile("/Users/painter1/tmp/diagout/amwg/set5_DJF_LHFLX-combined-20160520_NCEP.png"), OutputFile("/Users/painter1/tmp/diagout/amwg/set5_JJA_LHFLX-combined-20160520_NCEP.png"), OutputFile("/Users/painter1/tmp/diagout/amwg/set5_ANN_LHFLX-combined-20160520_NCEP.png") ]
+    row = OutputRow( "row title", columns )
+    group = OutputGroup(opt['obs'].get('desc',str(opt['obs']['filter'])))  # also need to support opt['obs'][i]
+    page.addGroup(group)
+    obs_index = 0 # actually this should be the group index.  The group is the boldface row in the web page.
+    # and thus names the obs set.  The obs index is really an index into a list of observations.
+    page.addRow( row, obs_index )
+
+    index = OutputIndex("UVCMetrics %s" % opt['package'].upper(), version="version/dsname here" )
+    index.addPage( page )  # normally part of loop over pages
+    index.toJSON(os.path.join(opt['output']['outputdir'], opt['package'].lower(), "index.json"))
+
 
 if __name__ == '__main__':
     print "UV-CDAT Diagnostics, Experimental Multi-Diags version"
