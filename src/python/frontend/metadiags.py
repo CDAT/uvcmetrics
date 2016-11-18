@@ -792,13 +792,14 @@ def runcmdline(cmdline, outlogdir, dryrun=False):
                     del pid_to_tmpfile[p.pid]
         cmd = " ".join(cmdline)
         tmpfile = tempfile.NamedTemporaryFile()
-        active_processes.append(subprocess.Popen(cmd, stdout=tmpfile, stderr=tmpfile, shell=True))
-        DIAG_TOTAL += 1
-        PID = active_processes[-1].pid
-        pid_to_tmpfile[PID] = tmpfile
-        pid_to_cmd[PID] = cmd
+        if True:   # For some testing purposes, set to False to turn off all plotting.
+            active_processes.append(subprocess.Popen(cmd, stdout=tmpfile, stderr=tmpfile, shell=True))
+            DIAG_TOTAL += 1
+            PID = active_processes[-1].pid
+            pid_to_tmpfile[PID] = tmpfile
+            pid_to_cmd[PID] = cmd
 
-        logger.info("%s begun pid= %s diag_total= %s", cmd, PID, DIAG_TOTAL)
+            logger.info("%s begun pid= %s diag_total= %s", cmd, PID, DIAG_TOTAL)
 # These 3 functions are used to add the variables to the database for speeding up
 # classic view
 def setnum( setname ):
