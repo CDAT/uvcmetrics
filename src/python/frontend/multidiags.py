@@ -8,6 +8,7 @@ from metrics.frontend.multimaster import *   # this file is just a demo
 import metrics.frontend.multimaster as multimaster
 from metrics.frontend.diags import run_diags
 from metrics.frontend.options import Options, options_defaults
+from metrics.frontend.form_filenames import form_file_rootname, form_filename
 from output_viewer.index import OutputIndex, OutputPage, OutputGroup, OutputRow, OutputFile, OutputMenu
 
 logger = logging.getLogger(__name__)
@@ -369,9 +370,8 @@ def organize_opts_for_viewer( opts ):
             for o in optsb:
                 o['vars'].sort()
             varss2 = [ o['vars'] for o in optsb ]   # for now, I'm ignoring regions
-            varss = [ v for v,_ in groupby(varss2) ]
-            print "jfp varss=",varss
             # ... python won't let me apply set(), complains "unhashable type"
+            varss = [ v for v,_ in groupby(varss2) ]
             opts4b.append( [ [o for o in optsb if o['vars']==vars] for vars in varss ])
         opts4.append(opts4b)
     opts5 = []
@@ -396,18 +396,63 @@ def setup_viewer( opts ):
     optsnested = organize_opts_for_viewer( opts )
     # When this is right, we should call a function to do the rest.
 
-    setup_viewer_1( opts[0] )  # just a place-holder
+    #setup_viewer_1( opts[0] )  # just a place-holder
+    setup_viewer_2( optsnested ) # once it works, this will do it all
+
+def setup_viewer_2( optsnested ):
+    """Sets up the viewer's data structures and writes them out to a JSON file.
+    The input is all the Options instances we want to plot, organized as a hierarchy of nested lists
+    correcponding to the viewer's page/group/row/column.
+    """
+    pages = []
+    for opts1 in optsnested:  # pages, often only one
+        opt = opts1[0][0][0][0]     # sample Option to get info needed to set up page
+        collnm = opt['collection']  # This collection name applies throughout opts1.
+        coll_def = { 'desc': "verbose description of diagnostic collection %s" % collnm }
+        page_columns = ["Description"] + opt['seasons']  # best seasons list would merge opt['seasons']
+        #      with opt from everywhere in opts1.  But in practice this will usually work.
+        page = OutputPage( "Plot collection %s" % collnm, short_name="set_%s" % collnm, columns=page_columns,
+                           description=coll_def["desc"], icon="amwg_viewer/img/SET%s.png" % collnm)
+        pages.append(page)
+        for opts2 in opts1:   # groups/obs
+            opt = opts2[0][0][0]     # sample Option to get info needed to set up group
+            group = OutputGroup(opt['obs'].get('desc',str(opt['obs']['filter'])))  # also need to support opt['obs'][i]
+            page.addGroup(group)
+            for opts3 in opts2:   # row = variable+region, region ignored for now
+                opt = opts3[0][0]    # sample Option to get info needed to set up row
+                cols = [ "row description" ]
+                for opts4 in opts3:  # column = season or file.  opt is an instance of Options.
+                    # likely problem: opt['seasons'] may be a list of several seasons.  The viewer expects only one.
+                    # Similarly, opt['vars'] may be a list of several variable names.
+                    opt = opts4[0]   # Shouldn't opts4 be an Option?  It isn't, it's a list of Option objects.
+                    rootname = form_file_rootname( opt['sets'][0], opt['vars'],   # ignores other parts of opt['sets']
+                                                   aux=opt['varopts'], basen='', # basen=collnm wdb better
+                                                   season=opt['seasons'][0], region='',  # ignores other parts of opt['seasons']
+                                                   combined='combined' )
+                    vname = opt['vars'][0]  # We really need to iterate through all vars, if vname matters at all.
+                    fname = form_filename( rootname, 'png', descr=True, vname=vname, more_id='combined' )
+                    fname = fname[:-4] + "-20160520_NCEP" + ".png"  # ad-hoc, for testing only!
+                    path = os.path.join( opt['output']['outputdir'], fname )
+                    print "jfp path=",path
+                    cols.append( OutputFile(path) )
+                row = OutputRow( "row title", cols )
+                obs_index = 0 # actually this should be the group index.  The group is the boldface row in the web page.
+                # and thus names the obs set.  The obs index is really an index into a list of observations.
+                page.addRow( row, obs_index )
+        index = OutputIndex("UVCMetrics %s" % opt['package'].upper(), version="version/dsname here" )
+        index.addPage( page )  # normally part of loop over pages
+        index.toJSON(os.path.join(opt['output']['outputdir'], opt['package'].lower(), "index.json"))
 
 def setup_viewer_1( opt ):
     """Sets up data structures needed by the viewer.  This input parameter opt is a single
     Options instance.  This function will likely be more useful for coding practice than for actual
     use."""
 
-    collnum = opt['collection']   # collection name should be set up earlier; it doesn't exist yet
+    collnm = opt['collection']   # collection name should be set up earlier; it doesn't exist yet
     page_columns = ["Description"] + opt['seasons']
     coll_def = { 'desc': "verbose description of the diagnostic collection" }
-    page = OutputPage( "Plot collection %s" % collnum, short_name="set_%s" % collnum, columns=page_columns,
-                       description=coll_def["desc"], icon="amwg_viewer/img/SET%s.png" % collnum)
+    page = OutputPage( "Plot collection %s" % collnm, short_name="set_%s" % collnm, columns=page_columns,
+                       description=coll_def["desc"], icon="amwg_viewer/img/SET%s.png" % collnm)
     columns = [ "row description", OutputFile("/Users/painter1/tmp/diagout/amwg/set5_DJF_LHFLX-combined-20160520_NCEP.png"), OutputFile("/Users/painter1/tmp/diagout/amwg/set5_JJA_LHFLX-combined-20160520_NCEP.png"), OutputFile("/Users/painter1/tmp/diagout/amwg/set5_ANN_LHFLX-combined-20160520_NCEP.png") ]
     row = OutputRow( "row title", columns )
     group = OutputGroup(opt['obs'].get('desc',str(opt['obs']['filter'])))  # also need to support opt['obs'][i]
