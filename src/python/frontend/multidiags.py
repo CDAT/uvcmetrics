@@ -414,31 +414,33 @@ def setup_viewer_2( optsnested ):
         page = OutputPage( "Plot collection %s" % collnm, short_name="set_%s" % collnm, columns=page_columns,
                            description=coll_def["desc"], icon="amwg_viewer/img/SET%s.png" % collnm)
         pages.append(page)
-        for opts2 in opts1:   # groups/obs
+        for igroup,opts2 in enumerate(opts1):   # groups/obs
             opt = opts2[0][0][0]     # sample Option to get info needed to set up group
-            group = OutputGroup(opt['obs'].get('desc',str(opt['obs']['filter'])))  # also need to support opt['obs'][i]
+            filter = eval(opt['obs']['filter'])
+            obsname = filter.mystr().strip('-_')
+            group = OutputGroup(opt['obs'].get('desc',obsname))  # also need to support opt['obs'][i]
             page.addGroup(group)
-            for opts3 in opts2:   # row = variable+region, region ignored for now
-                opt = opts3[0][0]    # sample Option to get info needed to set up row
-                cols = [ "row description" ]
-                for opts4 in opts3:  # column = season or file.  opt is an instance of Options.
-                    # likely problem: opt['seasons'] may be a list of several seasons.  The viewer expects only one.
-                    # Similarly, opt['vars'] may be a list of several variable names.
-                    opt = opts4[0]   # Shouldn't opts4 be an Option?  It isn't, it's a list of Option objects.
-                    rootname = form_file_rootname( opt['sets'][0], opt['vars'],   # ignores other parts of opt['sets']
-                                                   aux=opt['varopts'], basen='', # basen=collnm wdb better
-                                                   season=opt['seasons'][0], region='',  # ignores other parts of opt['seasons']
-                                                   combined='combined' )
-                    vname = opt['vars'][0]  # We really need to iterate through all vars, if vname matters at all.
-                    fname = form_filename( rootname, 'png', descr=True, vname=vname, more_id='combined' )
-                    fname = fname[:-4] + "-20160520_NCEP" + ".png"  # ad-hoc, for testing only!
-                    path = os.path.join( opt['output']['outputdir'], fname )
-                    print "jfp path=",path
-                    cols.append( OutputFile(path) )
-                row = OutputRow( "row title", cols )
-                obs_index = 0 # actually this should be the group index.  The group is the boldface row in the web page.
-                # and thus names the obs set.  The obs index is really an index into a list of observations.
-                page.addRow( row, obs_index )
+            for opts3 in opts2:   # row = variable+region, region ignored for now.
+                opt = opts3[0][0]    # sample Option to get info needed to set up rows
+                for vname in opt['vars']:  # The viewer wants a separate row for each variable.
+                    cols = [ vname ]
+                    for opts4 in opts3:  # column = season or file.  opt is an instance of Options.
+                        opt = opts4[0]   # Shouldn't opts4 be an Option?  It isn't, it's a list of Option objects.
+                        for season in opt['seasons']:
+                            rootname = form_file_rootname(
+                                opt['sets'][0], [vname],   # ignores other parts of opt['sets']
+                                aux=opt['varopts'], basen='', # basen=collnm wdb better
+                                season=season, region='',
+                                combined='combined' )
+                            modelname = os.path.basename(os.path.normpath(opt['modelpath']))
+                            descr = underscore_join([ modelname, obsname ])
+                            fname = form_filename( rootname, 'png', descr, vname=vname, more_id='combined' )
+                            path = os.path.join( opt['output']['outputdir'], fname )
+                            cols.append( OutputFile(path) )
+                    rowtitle = "row with "+vname
+                    row = OutputRow( rowtitle, cols )
+                    # igroup:  The group is the boldface row in the web page and thus names the obs set.
+                    page.addRow( row, igroup )
         index = OutputIndex("UVCMetrics %s" % opt['package'].upper(), version="version/dsname here" )
         index.addPage( page )  # normally part of loop over pages
         index.toJSON(os.path.join(opt['output']['outputdir'], opt['package'].lower(), "index.json"))
