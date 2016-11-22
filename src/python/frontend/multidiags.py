@@ -255,20 +255,16 @@ def multidiags1( opt ):
     newopts = []
     for op in opts:
         newopts.extend(expand_lists_collections( op ))
-    setup_viewer(newopts)
     print "jfp will run diags on",len(newopts),"Options objects"
     for o in newopts:
-        #set_modelobs_path(o)
-        #restore_modelobs_path(o)
         o = finalize_modelobs(o) # copies obspath to obs['path'], changes {} to [{}]
         print "jfp about to run_diags on",o['vars'],len(o.get('obs',[])),o.get('obs',[])[0]
-        #pdb.set_trace()
-        #continue #jfp testing
         t0 = time.time()
         o.finalizeOpts()
         run_diags(o)
         trun = time.time() - t0
         print "jfp run_diags took",trun,"seconds"
+    setup_viewer(newopts)
 
 def multidiags( opts ):
     """The input opts is an Options instance, or a dictionary key which identifies such an instance,
@@ -317,32 +313,6 @@ def finalize_modelobs(opt):
             opt[key][i]['path'] = opt[pathkey][i]
     return opt
 
-def set_modelobs_path( opt ):
-    """OBSOLETE Extracts the :path part of any model/obs dicts in opt, and puts it in a separate modelpath
-    or obspath option.  Note that modelpath,obspath is a list.  This is essential to make options
-    mergers work."""
-    # Eventually this functionality should be in options.py.
-    for key in ['obs','model']:
-        if key not in opt.keys():
-            continue
-        pathkey = key+'path'
-        opt[pathkey] = []
-        for mo in opt[key]:  # mo is a dict
-            opt[pathkey].append( mo.get('path',None) )
-    return opt
-
-def restore_modelobs_path( opt ):
-    """OBSOLETE Copies the appropriate modelpath or obspath option to each :path part of any model/obs dicts
-    in opt.  Note that modelpath,obspath is a list.."""
-    # Eventually this functionality should be in options.py.
-    for key in ['obs','model']:
-        if key not in opt.keys():
-            continue
-        pathkey = key+'path'
-        for i,mo in  enumerate(opt[key]):  # mo is a dict
-            opt[key][i]['path'] = opt[pathkey][i]
-    return opt
-
 def organize_opts_for_viewer( opts ):
     """Basically we have to re-organize the opts list into something structured by variable, season,
     obs set, etc.  More precisely, the organization we need is lists nested as follows:
@@ -354,7 +324,7 @@ def organize_opts_for_viewer( opts ):
     collections = set([ o['collection'] for o in opts])
     opts2 = [ [o for o in opts if o['collection']==coll] for coll in collections ]
     # Each opt in opts also appears in one of the sub-lists of opts2, and vice-versa.
-    # Each sub-list of opts2 consistes of those Options instances which share a collection.
+    # Each sub-list of opts2 consists of those Options instances which share a collection.
     # Do the same for obs, noting that o['obs'] has length one at this point...
     opts3 = []
     for optsa in opts2:   # each optsa is a list of Options objects, all for one collection
@@ -362,7 +332,7 @@ def organize_opts_for_viewer( opts ):
         obss2 = [ ob[0] if (type(ob) is list) else ob for ob in obss1 ]
         # ... python won't let me apply set(), complains "unhashable type"
         obss = [ o for o,_ in groupby(obss2) ]
-        opts3.append( [ [o for o in optsa if o['obs']==obs] or o['obs'][0]==obs for obs in obss ] )
+        opts3.append( [ [o for o in optsa if o['obs']==obs or o['obs'][0]==obs] for obs in obss ] )
     opts4 = []
     for optsa in opts3:
         opts4b = []
@@ -390,40 +360,60 @@ def organize_opts_for_viewer( opts ):
         opts5.append(opts5b)
     return opts5
 
-def setup_viewer( opts ):
-    """Sets up data structures needed by the viewer.  This input parameter opts is a list of
-    Options instances."""
+def merge_vardesc( vardesc1 ):
+    """A variables description, or vardesc is a dictionary with varname:vardesc entries such as
+    'desc': 'TOA clearsky upward LW flux (Northern)'.  Here we merge the standard vardesc,
+    multimaster.vardesc, with one created dynamically from long_name attributes in data files,
+    vardesc1.  Preference is given to the standard one."""
+    vardesc = multimaster.vardesc
+    for var in vardesc1:
+        if var not in vardesc:
+            vardesc[var] = vardesc1[var]
+    return vardesc
+
+def setup_viewer( opts, vardesc1={} ):
+    """Sets up data structures needed by the viewer.  The first input parameter opts is a list of
+    Options instances.  An optional input parameter vardesc1 can provide text descriptions of
+    variables found in data files."""
     optsnested = organize_opts_for_viewer( opts )
-    # When this is right, we should call a function to do the rest.
+    if vardesc1 is None:
+        vardesc1 = {}
+    vardesc = merge_vardesc( vardesc1 )
+    setup_viewer_2( optsnested, vardesc ) # once it works, this will do it all
 
-    #setup_viewer_1( opts[0] )  # just a place-holder
-    setup_viewer_2( optsnested ) # once it works, this will do it all
-
-def setup_viewer_2( optsnested ):
+def setup_viewer_2( optsnested, vardesc ):
     """Sets up the viewer's data structures and writes them out to a JSON file.
     The input is all the Options instances we want to plot, organized as a hierarchy of nested lists
-    correcponding to the viewer's page/group/row/column.
+    correcponding to the viewer's page/group/row/column.  And there is a dictionary to match
+    variable names with text descriptions.
     """
     pages = []
     for opts1 in optsnested:  # pages, often only one
         opt = opts1[0][0][0][0]     # sample Option to get info needed to set up page
         collnm = opt['collection']  # This collection name applies throughout opts1.
-        coll_def = { 'desc': "verbose description of diagnostic collection %s" % collnm }
+        if 'desc' in opt.keys():
+            coll_desc = opt['desc']
+        else:
+            coll_desc = "diagnostic collection %s" % collnm
         page_columns = ["Description"] + opt['seasons']  # best seasons list would merge opt['seasons']
         #      with opt from everywhere in opts1.  But in practice this will usually work.
         page = OutputPage( "Plot collection %s" % collnm, short_name="set_%s" % collnm, columns=page_columns,
-                           description=coll_def["desc"], icon="amwg_viewer/img/SET%s.png" % collnm)
+                           description=coll_desc, icon="amwg_viewer/img/SET%s.png" % collnm)
         pages.append(page)
         for igroup,opts2 in enumerate(opts1):   # groups/obs
             opt = opts2[0][0][0]     # sample Option to get info needed to set up group
-            filter = eval(opt['obs']['filter'])
+            if type(opt['obs']) is list:
+                obs = opt['obs'][0]  # also need to support opt['obs'][i]
+            else:
+                obs = opt['obs']
+            filter = eval(obs['filter'])
             obsname = filter.mystr().strip('-_')
-            group = OutputGroup(opt['obs'].get('desc',obsname))  # also need to support opt['obs'][i]
+            group = OutputGroup(obs.get('desc',obsname))
             page.addGroup(group)
-            for opts3 in opts2:   # row = variable+region, region ignored for now.
+            for opts3 in opts2:   # row = variable+region, >>>> region ignored for now. <<<<
                 opt = opts3[0][0]    # sample Option to get info needed to set up rows
                 for vname in opt['vars']:  # The viewer wants a separate row for each variable.
-                    cols = [ vname ]
+                    cols = [ vardesc.get(vname,vname) ]  # 'Description' column
                     for opts4 in opts3:  # column = season or file.  opt is an instance of Options.
                         opt = opts4[0]   # Shouldn't opts4 be an Option?  It isn't, it's a list of Option objects.
                         for season in opt['seasons']:
@@ -432,12 +422,16 @@ def setup_viewer_2( optsnested ):
                                 aux=opt['varopts'], basen='', # basen=collnm wdb better
                                 season=season, region='',
                                 combined='combined' )
-                            modelname = os.path.basename(os.path.normpath(opt['modelpath']))
+                            if type(opt['modelpath']) is list:
+                                modelpath=opt['modelpath'][0]
+                            else:
+                                modelpath=opt['modelpath']
+                            modelname = os.path.basename(os.path.normpath(modelpath))
                             descr = underscore_join([ modelname, obsname ])
                             fname = form_filename( rootname, 'png', descr, vname=vname, more_id='combined' )
                             path = os.path.join( opt['output']['outputdir'], fname )
-                            cols.append( OutputFile(path) )
-                    rowtitle = "row with "+vname
+                            cols.append( OutputFile(path, title="{season}".format(season=season)) )
+                    rowtitle = vname
                     row = OutputRow( rowtitle, cols )
                     # igroup:  The group is the boldface row in the web page and thus names the obs set.
                     page.addRow( row, igroup )
@@ -475,7 +469,6 @@ if __name__ == '__main__':
     opt.parseCmdLine()
     #prof = cProfile.Profile()
     #prof.enable()
-    #multidiags( set_modelobs_path(opt) )
     multidiags( opt )
     #prof.disable()
     #prof.dump_stats('results_stats')
