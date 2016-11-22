@@ -53,19 +53,20 @@ help_url="https://acme-climate.atlassian.net/wiki/pages/viewpage.action?pageId=1
 # --dataset path=/path,climos='no'
 
 class Options():
-    def __init__(self, **kwargs):
-        # TO DO: allow any keyword arguments; use them to initialize _opts.
+    def __init__(self, metadiags=False, **kwargs):
+        # self._opts is the dictionary holding options.  But it can be accessed simply as self[key].
         self._opts = {}
         self.all_packages = packages.package_names
 
-        # metadiags=True if we are running metadiags, or plain diags.  False for multidiags.
-        # The difference is whether defaults should be set here or by merging in options_defaults (below)
-        metadiags = False
-
-        # self._opts is the dictionary holding options
-        # N.B. Defaults are no longer set in the __init__ method.  Instead, a newly created instance
-        # of Options should be merged with whatever other Options instances are desired.  The last
-        # of them should be Options.defaults.  Use self.merge(Options.defaults)
+        # metadiags=True if we are running metadiags, or want to plain diags as if it were from
+        # metadiags.  metadiags=False for multidiags.
+        # The difference is whether defaults should be set here or by merging in options_defaults.
+        # Normally, defaults come from options_defaults which is defined below.  A newly created
+        # instance of Options should be merged with it; use self.merge(options_defaults).
+        # This is automatically done when you call self.verifyOptions.
+        if metadiags in ['True', 'true', 'Yes', 'yes']:
+            metadiags = True
+        self['metadiags'] = metadiags
         if metadiags:
             self._opts['model'] = []
             self._opts['obs'] = []

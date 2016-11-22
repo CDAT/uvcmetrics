@@ -859,7 +859,12 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, opts, displa
 if __name__ == '__main__':
     print "UV-CDAT Diagnostics, command-line version"
     print ' '.join(sys.argv)
-    o = Options()
+    try:
+        imeta = sys.argv.index('--metadiags')
+        meta = sys.argv[imeta+1]
+        o = Options(metadiags=meta)
+    except ValueError:
+        o = Options()
     o.parseCmdLine()
     o.verifyOptions()
     #print o._opts['levels']
