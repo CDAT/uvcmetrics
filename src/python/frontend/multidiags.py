@@ -6,6 +6,7 @@ from pprint import pprint
 from itertools import groupby
 from metrics.frontend.multimaster import *   # this file is just a demo
 import metrics.frontend.multimaster as multimaster
+import metrics.frontend.defines as defines
 from metrics.frontend.diags import run_diags
 from metrics.frontend.options import Options, options_defaults
 from metrics.frontend.form_filenames import form_file_rootname, form_filename
@@ -261,7 +262,8 @@ def multidiags1( opt ):
         print "jfp about to run_diags on",o['vars'],len(o.get('obs',[])),o.get('obs',[])[0]
         t0 = time.time()
         o.finalizeOpts()
-        run_diags(o)
+        run_diags(o.clone())
+        # re o.clone(): diags.py should leave the options alone, but it doesn't: it replaces o['varopts'], at least.
         trun = time.time() - t0
         print "jfp run_diags took",trun,"seconds"
     setup_viewer(newopts)
@@ -413,28 +415,46 @@ def setup_viewer_2( optsnested, vardesc ):
             for opts3 in opts2:   # row = variable+region, >>>> region ignored for now. <<<<
                 opt = opts3[0][0]    # sample Option to get info needed to set up rows
                 for vname in opt['vars']:  # The viewer wants a separate row for each variable.
-                    cols = [ vardesc.get(vname,vname) ]  # 'Description' column
-                    for opts4 in opts3:  # column = season or file.  opt is an instance of Options.
-                        opt = opts4[0]   # Shouldn't opts4 be an Option?  It isn't, it's a list of Option objects.
-                        for season in opt['seasons']:
-                            rootname = form_file_rootname(
-                                opt['sets'][0], [vname],   # ignores other parts of opt['sets']
-                                aux=opt['varopts'], basen='', # basen=collnm wdb better
-                                season=season, region='',
-                                combined='combined' )
-                            if type(opt['modelpath']) is list:
-                                modelpath=opt['modelpath'][0]
-                            else:
-                                modelpath=opt['modelpath']
-                            modelname = os.path.basename(os.path.normpath(modelpath))
-                            descr = underscore_join([ modelname, obsname ])
-                            fname = form_filename( rootname, 'png', descr, vname=vname, more_id='combined' )
-                            path = os.path.join( opt['output']['outputdir'], fname )
-                            cols.append( OutputFile(path, title="{season}".format(season=season)) )
-                    rowtitle = vname
-                    row = OutputRow( rowtitle, cols )
-                    # igroup:  The group is the boldface row in the web page and thus names the obs set.
-                    page.addRow( row, igroup )
+                    if len(opt['regions'])>0:
+                        regions=opt['regions']
+                    else:
+                        regions=['']
+                    for region in regions:
+                        if len(region)>0:
+                            region_rect = defines.all_regions[str(region)]
+                            r_fname = region_rect.filekey
+                            regname = ' ('+r_fname+')'
+                        else:
+                            regname = ''
+                            r_fname = ''
+                        if opt['varopts'] is None:
+                            varopts = [None]
+                        else:
+                            varopts = opt['varopts']
+                        for varopt in varopts:
+                            varoptname = str(varopt)
+                            cols = [ vardesc.get(vname,vname)+regname ]  # 'Description' column
+                            for opts4 in opts3:  # column = season or file.  opt is an instance of Options.
+                                opt = opts4[0]   # Shouldn't opts4 be an Option?  It isn't, it's a list of Option objects.
+                                for season in opt['seasons']:
+                                    rootname = form_file_rootname(
+                                        opt['sets'][0], [vname],   # ignores other parts of opt['sets']
+                                        aux=varopt, basen='', # basen=collnm wdb better
+                                        season=season, region=r_fname,
+                                        combined='combined' )
+                                    if type(opt['modelpath']) is list:
+                                        modelpath=opt['modelpath'][0]
+                                    else:
+                                        modelpath=opt['modelpath']
+                                    modelname = os.path.basename(os.path.normpath(modelpath))
+                                    descr = underscore_join([ modelname, obsname ])
+                                    fname = form_filename( rootname, 'png', descr, vname=vname, more_id='combined' )
+                                    path = os.path.join( opt['output']['outputdir'], fname )
+                                    cols.append( OutputFile(path, title="{season}".format(season=season)) )
+                            rowtitle = vname+regname+varoptname
+                            row = OutputRow( rowtitle, cols )
+                            # igroup:  The group is the boldface row in the web page and thus names the obs set.
+                            page.addRow( row, igroup )
         index = OutputIndex("UVCMetrics %s" % opt['package'].upper(), version="version/dsname here" )
         index.addPage( page )  # normally part of loop over pages
         index.toJSON(os.path.join(opt['output']['outputdir'], opt['package'].lower(), "index.json"))
