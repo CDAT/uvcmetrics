@@ -605,7 +605,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, opts, displa
                 #### seasons/vars/setnames/varopts/etc used to create the plot. Otherwise, there is no
                 #### way for classic viewer to know the filename without lots more special casing. 
 
-                if 'metadiags' in opts.keys():
+                if 'metadiags' in opts.keys() and opts['metadiags']:
                     # metadiags computes its own filenames using descr=True; we have to be consistent
                     descr = True
                 else:
@@ -629,7 +629,6 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, opts, displa
 
                 # Beginning of section for building plots; this depends on the plot set!
                 if vcs.isscatter(rsr.presentation) or (plot.number in ['11', '12'] and package.upper() == 'AMWG'):
-                    #pdb.set_trace()
                     if hasattr(plot, 'customizeTemplates'):
                         if hasattr(plot, 'replaceIds'):
                             var = plot.replaceIds(var)
@@ -832,7 +831,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, opts, displa
     if tmmobs[0] is not None:  # If anything was plotted to vcanvas2
         vname = varid.replace(' ', '_')
         vname = vname.replace('/', '_')
-    if 'metadiags' in opts.keys():
+    if 'metadiags' in opts.keys() and opts['metadiags']:
         descr = True# For metadiags use, we want to force descr=True as it is in filenames()
     else:
         descr = underscore_join(source_descr2)

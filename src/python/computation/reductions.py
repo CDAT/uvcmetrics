@@ -2994,6 +2994,7 @@ def create_yvsx(x, y, stride=10):
     Y = cdms2.createVariable(ydata, axes=[X], id=y.id )
     Y.units = y.units
     return Y
+
 class reduced_variable(ftrow,basic_id):
     """Specifies a 'reduced variable', which is a single-valued part of an output specification.
     This would be a variable(s) and its domain, a reduction function, and perhaps
