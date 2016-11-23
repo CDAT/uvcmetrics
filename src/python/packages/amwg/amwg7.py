@@ -46,6 +46,7 @@ class amwg_plot_set7(amwg_plot_plan):
                           'obs':{'colormap':'rainbow'},
                           'diff':{'colormap':'bl_to_darkred'} }
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
+        self.region = region
 
         self.varid = varid
         ft1id,ft2id = filetable_ids(filetable1, filetable2)
@@ -76,21 +77,27 @@ class amwg_plot_set7(amwg_plot_plan):
        """
        filetable1, filetable2 = self.getfts(model, obs)
        ft1src = filetable1.source()
+       if region is not None:
+           regname = str(region)
+       else:
+           regname = None
        try:
            ft2src = filetable2.source()
        except:
            ft2src = ''
        reduced_varlis = [
            reduced_variable(
-               variableid=varid, filetable=filetable1, season=self.season,
-               reduction_function=(lambda x,vid, region=None: reduce2latlon_seasonal( x(latitude=aux, longitude=(0, 360)), self.season, region, vid=vid ) ) ),
+               variableid=varid, filetable=filetable1, season=self.season, region=regname,
+               reduction_function=(lambda x,vid, region=regname,aux1=aux: reduce2latlon_seasonal(
+                       x(latitude=aux1, longitude=(0, 360)), self.season, region, vid=vid ) ) ),
            reduced_variable(
-               variableid=varid, filetable=filetable2, season=self.season,
-               reduction_function=(lambda x,vid, region=None: reduce2latlon_seasonal( x(latitude=aux, longitude=(0, 360)), self.season, region, vid=vid ) ) )
+               variableid=varid, filetable=filetable2, season=self.season, region=regname,
+               reduction_function=(lambda x,vid, region=regname,aux1=aux: reduce2latlon_seasonal(
+                       x(latitude=aux1, longitude=(0, 360)), self.season, region, vid=vid ) ) )
             ]
        self.reduced_variables = { v.id():v for v in reduced_varlis }
-       vid1 = rv.dict_id( varid, seasonid, filetable1 )
-       vid2 = rv.dict_id( varid, seasonid, filetable2 )
+       vid1 = rv.dict_id( varid, seasonid, filetable1, region=regname )
+       vid2 = rv.dict_id( varid, seasonid, filetable2, region=regname )
 
        self.derived_variables = {}
        self.single_plotspecs = {
