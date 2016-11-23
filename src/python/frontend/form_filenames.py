@@ -129,7 +129,7 @@ What this function returns depends on what fmt is.
 
 
 def form_file_rootname( plotset, vars, meanings='variable', dir='', filetables=[],
-                   combined=False, season='ANN', basen='', postn='', aux=[], region='Global',
+                   combined=False, season='ANN', basen='', postn='', aux=[], region='',
                    times=None ):
     """This information goes into a file root name computation, or possibly should go:
 - plot set, a number, e.g. 5, or string, e.g. '4a'.  Or this could be a string identifying some special situation.
@@ -149,9 +149,15 @@ def form_file_rootname( plotset, vars, meanings='variable', dir='', filetables=[
         print "entering form_file_rootname, plotset=",plotset,"basen=",basen,"postn=",postn
     if aux is None or aux==[None] or aux=='' or aux=='default' or aux==['default']:
         aux = []
+    if type(aux) is str:
+        aux = [aux]
+    for i,a in enumerate(aux):
+        aux[i] = a.strip()
     plotset = str(plotset)
     if basen==plotset:
         basen=''
+    if region in ['Global','global'] or region is None:
+        region = ''
 
     # The name depends on the plotset.  First, do the plotsets which correspond to tables.
     if plotset=='1':
@@ -167,7 +173,7 @@ def form_file_rootname( plotset, vars, meanings='variable', dir='', filetables=[
         # Very likely, plotset is one of the standard numbered plot sets, 1-15 or 4a.
         plotset = 'set'+plotset
 
-    fname = underscore_join([ basen, plotset, season, underscore_join(vars), underscore_join(aux), postn ])
+    fname = underscore_join([ basen, plotset, season, region, underscore_join(vars), underscore_join(aux), postn ])
 
     if debug_filenames:
         print "leaving form_file_rootname with fname=",fname
