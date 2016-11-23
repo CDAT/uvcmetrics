@@ -33,6 +33,7 @@ obs_collection['NCEP']  = {'filter':"f_startswith('NCEP')",'climos':'yes','name'
 obs_collection['ERA40'] = {'filter':"f_startswith('ERA40')",'climos':'yes','name':None}
 obs_collection['AIRS']  = {'filter':"f_startswith('AIRS')",'climos':'yes','name':None}
 obs_collection['JRA25'] = {'filter':"f_startswith('JRA25')",'climos':'yes','name':None}
+obs_collection['WILLMOTT'] = {'filter':"f_startswith('WILLMOTT')", 'climos':'yes', 'name':None}
 model_collection['generic'] = {'climos':'yes', 'name':None}
 
 diags_collection['MyDefaults'] = Options( desc = 'default options to be incorporated into other collections',
@@ -77,6 +78,18 @@ diags_collection['4'] = [
 diags_collection['4s'] = [
     Options(
         vars=['SHUM'], obs=['ECMWF'], seasons=['DJF'], default_opts='4base' ) ]
+
+diags_collection['7s'] = [
+    Options( sets=['7'], vars=['TREFHT'], obs='WILLMOTT', model=['generic'],
+             seasons=['DJF', 'JJA', 'ANN'], package='AMWG', default_opts='MyDefaults',
+             varopts=[' Northern Hemisphere',' Southern Hemisphere'],
+             desc='Polar contour plots of DJF, JJA, and ANN means' ),
+    Options( sets=['7'], vars=['PSL','Z3'], obs='JRA25', model=['generic'],
+             seasons=['DJF', 'JJA', 'ANN'], package='AMWG', default_opts='MyDefaults',
+             varopts=[' Northern Hemisphere',' Southern Hemisphere'],
+             desc='Polar contour plots of DJF, JJA, and ANN means' )
+    ]
+
 
 
 # Given a keyword, if it identifies a member of one of the collections, this will tell you
