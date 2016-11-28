@@ -1,18 +1,26 @@
 import logging, os, pdb
 logger = logging.getLogger(__name__)
-from metrics.common.utilities import underscore_join
+from metrics.common.utilities import underscore_join, better_join
 
 global debug_filenames
 debug_filenames = False
 
-def form_filename( rootname, fmt, descr='', vname='', more_id='' ):
+def form_filename( rootname, fmt, modobs=['',''], descr='', vname='', more_id='' ):
     """This information goes into a file name computation, or possibly should go:
 - root name, from form_file_rootname
 - format of output (png,svg,pdf,nc).
-- optional descriptive string for uniqueness, e.g. 'model' or 'obs1'.  The user can provides this, or True
-  to have it computed here.  This differs from the postname which is used for the rootname computation.
-  If descr is to be computed, we will need a cleaned-up variable name, vname:  descr is computed by
-  extracting strings and making deductions from vname.
+- DEPRECATED: descr, an optional descriptive string for uniqueness, e.g. 'model' or 'obs1'.  The user
+ can provides this, or True to have it computed here.  This differs from the postname which is used
+ for the rootname computation.  If descr is provided (and not '', the replacement variable modobs
+ will be ignored.
+  DEPRECATED: If descr is to be computed, we will need a cleaned-up variable name, vname:  descr is
+  computed by extracting strings and making deductions from vname.
+- NEW: modobs, a list, of length 2, of strings identifying the model and obs data, e.g.
+  [ case1, obsset1 ] or [case1, case2].
+  DEPRECATED:  Also modobs can be a string.  If it is a string, it is vname, the long-form name of
+  the variable to plotted, e.g. v_Z3_JJA_Global_20160520_rv_Z3_JJA_Global_JRA25.  In this case an
+  attempt will be made to extract suitable substrings and compute a suitable filename, as was
+  formerly done when descr==True and vname was set.
 What this function returns depends on what fmt is.
   If a string (e.g. 'png'), we will return a full filename, and fmt will be the filename's suffix (e.g. foo.png).
   If a tuple of strings (e.g. 'png','svg'), we will will return the corresponding tuple of filenames.
@@ -20,14 +28,14 @@ What this function returns depends on what fmt is.
 """
     global debug_filenames
     if more_id is None: more_id=''
+    if descr is not '':
+        modobs=['','']
+    elif type(modobs) is str:
+        vname = modobs
+        descr = True
     if descr is not True:
-        if descr=='':
-            if more_id=='':
-                fnamedot = rootname + '.'
-            else:
-                fnamedot = '-'.join([rootname,more_id]) + '.'
-        else:
-            fnamedot = '-'.join([rootname,more_id,descr]) + '.'
+        modobsstr = underscore_join(modobs)
+        fnamedot = better_join( '-', [rootname,more_id,modobsstr,descr]) + '.'
         if type(fmt) is str:
             if debug_filenames:
                 print "form_filename1 is returning",fnamedot+fmt

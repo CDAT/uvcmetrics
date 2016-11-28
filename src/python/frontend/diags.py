@@ -520,7 +520,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, opts, displa
     ovly  = None
 
     vcanvas2.clear()
-    source_descr2 = set([])  # set of strings describing source data in vcanvas2 (composite plot)
+    source_descr2 = []  # list of strings describing source data in vcanvas2 (composite plot)
     plotcv2 = False
     ir = -1
     # Fixes scale in multiple polar plots on a page
@@ -556,14 +556,12 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, opts, displa
                     ftid = var.filetable.id()
                     del var.filetable  # we'll write var soon, and can't write a filetable
                     var.filetableid = ftid  # but we'll still need to know what the filetable is
-                    source_descr2.add(ftid.ftid)
                 except:
                     pass
                 try:
                     ft2id = var.filetable2.id()
                     del var.filetable2  # we'll write var soon, and can't write a filetable
                     var.filetable2id = ft2id  # but we'll still need to know what the filetable is
-                    source_descr2.add(ft2id.ftid)
                 except:
                     pass
 
@@ -613,7 +611,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, opts, displa
                         #descr = var.filetableid.nickname
                         file_descr = getattr(rsr,'file_descr',getattr(rsr,'title2',True))
                         if file_descr[0:3]=='obs': file_descr='obs'
-                        if file_descr[0:4]=='diff': file_descr='diff'
+                        if file_descr[0:4]=='diff': file_descr='diff'  #file_descr is used separately, see below
                         ft1id = var.filetableid.ftid
                         if hasattr(var,'filetable2id'):
                             ft2id = var.filetable2id.ftid
@@ -652,6 +650,8 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, opts, displa
                                 vcanvas2.plot(var,
                                               rsr_presentation, tm2, bg=1, title=title,
                                               source=subtitle)
+                                if file_descr!='diff':
+                                    source_descr2.append(rsr.source)
                                 plotcv2 = True
                                 savePNG = True
                         except vcs.error.vcsError as e:
@@ -686,7 +686,8 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, opts, displa
                                 vcanvas2.plot(xvar, yvar,
                                               rsr_presentation, tm2, bg=1, title=title,
                                               source=subtitle)
-
+                                if file_descr!='diff':
+                                    source_descr2.append(rsr.source)
                                 plotcv2 = True
                                 if varIndex+1 == len(rsr.vars):
                                     savePNG = True
@@ -728,6 +729,8 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, opts, displa
                             # the last two lines shouldn't be here.  These (title,units,source)
                             # should come from the contour plot, but that doesn't seem to
                             # have them.
+                            if file_descr!='diff':
+                                source_descr2.append(rsr.source)
                     except vcs.error.vcsError as e:
                         logger.exception("Making summary plot: %s", e)
                 elif vcs.istaylordiagram(rsr.presentation):
@@ -800,6 +803,8 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, opts, displa
                                            plotparms=getattr(rsr,'plotparms',None))#,
                                            #compoundplot=onPage )
                             tp += time.time() - t0
+                            if file_descr!='diff':
+                                source_descr2.append(rsr.source)
                             plotcv2 = True
 
                     except vcs.error.vcsError as e:
@@ -833,11 +838,11 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, opts, displa
         vname = vname.replace('/', '_')
     if 'metadiags' in opts.keys() and opts['metadiags']:
         descr = True# For metadiags use, we want to force descr=True as it is in filenames()
+        fnamepng,fnamesvg,fnamepdf = form_filename( frnamebase, ('png','svg','pdf'),
+                                                    descr=descr, vname=vname, more_id='combined' )
     else:
-        descr = underscore_join(source_descr2)
-    
-    fnamepng,fnamesvg,fnamepdf = form_filename( frnamebase, ('png','svg','pdf'),
-                                                descr, vname=vname, more_id='combined' )
+        fnamepng,fnamesvg,fnamepdf = form_filename( frnamebase, ('png','svg','pdf'),
+                                                    modobs=list(source_descr2), more_id='combined' )
 
     if vcanvas2.backend.renWin is None:
         logger.warning("no data to plot to file2: %s", fnamepng)

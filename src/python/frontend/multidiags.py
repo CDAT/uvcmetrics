@@ -446,9 +446,9 @@ def setup_viewer_2( optsnested, vardesc ):
                                         modelpath=opt['modelpath'][0]
                                     else:
                                         modelpath=opt['modelpath']
+                                    #...Note that this only supports [model,obs] not [model1,model2].  Doing both shouldn't be much harder.
                                     modelname = os.path.basename(os.path.normpath(modelpath))
-                                    descr = underscore_join([ modelname, obsname ])
-                                    fname = form_filename( rootname, 'png', descr, vname=vname, more_id='combined' )
+                                    fname = form_filename( rootname, 'png', modobs=[modelname,obsname], more_id='combined' )
                                     path = os.path.join( opt['output']['outputdir'], fname )
                                     cols.append( OutputFile(path, title="{season}".format(season=season)) )
                             rowtitle = vname+regname+varoptname
