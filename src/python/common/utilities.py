@@ -83,6 +83,9 @@ def round2(x,n=0,sigs4n=1):
 def underscore_join( strlis ):
     """Uses an underscore to join a list of strings into a long string."""
     return '_'.join( [s for s in strlis if s is not None and len(s)>0] )
+def better_join( char, strlis ):
+    """Uses the supplied character to join a list of strings into a long string."""
+    return char.join( [s for s in strlis if s is not None and len(s)>0] )
 
 class DiagError (Exception):
     """Error object for diagnostics"""
