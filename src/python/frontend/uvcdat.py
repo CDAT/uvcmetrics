@@ -373,7 +373,6 @@ class uvc_simple_plotspec(basic_id):
         #        self.presentation.__class__.__name__=="Gfi":
         # interim test here and below.  Once all the is* functions work, I should
         # drop the tests on self.presentation.__class__.__name__ :
-        #pdb.set_trace()
         #  We want missing value to be white
         try:
             self.presentation.missing = "grey"
@@ -406,7 +405,6 @@ class uvc_simple_plotspec(basic_id):
             self.presentation.markercolor = 1
             self.presentation.markersize = 10
             #self.presentation.list()   
-            #pdb.set_trace()
     
         elif vcs.isyxvsx(self.presentation) or\
                 vcs.isisofill(self.presentation) or\
@@ -414,7 +412,6 @@ class uvc_simple_plotspec(basic_id):
                 self.presentation.__class__.__name__=="GYx" or\
                 self.presentation.__class__.__name__=="G1d" or\
                 self.presentation.__class__.__name__=="Gv":
-            #pdb.set_trace()
             var = self.vars[0]
             axmax = self.axmax[seqgetattr(var,'id','')]
             axmin = self.axmin[seqgetattr(var,'id','')]
@@ -451,7 +448,6 @@ class uvc_simple_plotspec(basic_id):
             if vcs.isisofill(self.presentation) or self.presentation.__class__.__name__=="Gfi"\
                     or vcs.isboxfill(self.presentation):
                 # VCS Isofill or Boxfill
-                #pdb.set_trace()
                 # First we have to identify which axes will be plotted as X and Y.
                 # If the axes each had an 'axis' attribute, axaxi will look something like
                 # {'X':'axis1id', 'Y':'axis2id'}.  If one misses the attribute, 'axis0id':'axis0id'.
@@ -479,7 +475,6 @@ class uvc_simple_plotspec(basic_id):
                                 time_lables[v] = months_names[tc[i].month-1]
                             self.presentation.xticlabels1 = time_lables
                             self.presentation.datawc_timeunits = t.units
-                            #pdb.set_trace()
                             #self.presentation.list()
                 elif len(axaxi.keys())==2:
                     # It's not clear what should be the X variable and what the Y variable,
@@ -609,7 +604,6 @@ class uvc_simple_plotspec(basic_id):
                 # Former scale factor, didn't work on more than one variable.
                 #   That is, 100 workrf for moisture transport, 10 for wind stress:
                 vec.scale = min(vcsx.bgX,vcsx.bgY)/ 100.
-                #pdb.set_trace()
                 if hasattr(self.vars[0],'__getitem__') and not hasattr( self.vars[0], '__cdms_internals__'):
                     # generally a tuple of variables - we need 2 variables to describe a vector
                     v = self.vars[0][0]
@@ -631,7 +625,6 @@ class uvc_simple_plotspec(basic_id):
                 self.strideX = max(1, int( nlons/nlonvs )) # stride values must be at least 1
                 self.strideY = max(1, int( nlats/nlatvs ))
         elif vcs.istaylordiagram(self.presentation):
-            #pdb.set_trace()
             data = self.vars[0]
             
             #intercept the bias to be used as markersize
@@ -659,7 +652,6 @@ class uvc_simple_plotspec(basic_id):
             #self.presentation.Marker.color = dotcolors 
             #self.presentation.IDs = IDs
             #self.presentation.Marker.id = index
-            #pdb.set_trace()
             
             #create list of offsets
             XOFF = data[:,0]

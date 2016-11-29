@@ -376,8 +376,8 @@ class plot_plan(object):
             #print self.plotspec_values[p]
         # note: we may have to += other lists into the same ...[p]
         # note: if we have a composite of composites we can deal with it by building a second time
-        #print 'leaving _results'
-        #print self.plotspec_values.keys()
+        # print 'leaving _results'
+        # pprint( self.plotspec_values.keys() )
         return self
 
     def compute_plot_var_value( self, ps, zvars, zfunc ):
@@ -397,6 +397,19 @@ class plot_plan(object):
                            zvars, [k for k in zvars if vvals[k] is None])
             return None, None
         z = apply(zfunc, zrv)
+        if type(z) is tuple:  # for vector plot, tuple has two items
+            # My observation is that zrv is ordered to correspond to z[0],z[1],z[0],z[1],...
+            # but I doubt if that's guaranteed.  We need a better data structure to do this better.
+            iz = -1
+            for zr in zrv:
+                iz = (iz+1)%2
+                if hasattr(zr,'filetable') and not hasattr(z,'filetable'):
+                    z[iz].filetable = zr.filetable
+        else:
+            for zr in zrv:
+                if hasattr(zr,'filetable') and not hasattr(z,'filetable'):
+                    z.filetable = zr.filetable
+                    break
         if hasattr(z, 'mask') and z.mask.all():
             logger.debug("in plotplan.py")
             logger.error("All values of %s are missing!", z.id)
