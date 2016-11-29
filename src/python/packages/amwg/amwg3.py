@@ -296,17 +296,19 @@ class amwg_plot_set3(amwg_plot_plan,basic_id):
         #zval = self.variable_values[zvar._vid] # _vid is deprecated
         if zval is None: return None
         zunam = zvar.filetable._strid  # part of y1 distinguishing it from y2, e.g. ft_1
-        zval.id = '_'.join([self._id[0],self._id[1],zunam])
+        zval.id = '_'.join([self.id().classid,self.id().var,zunam])
         z2val = self.variable_values[z2var._strid]
         if z2val is None:
             z2unam = ''
             zdiffval = None
         else:
             z2unam = z2var.filetable._strid  # part of y2 distinguishing it from y1, e.g. ft_2
-            z2val.id = '_'.join([self._id[0],self._id[1],z2unam])
+            z2val.id = '_'.join([self.id().classid, self.id().var, z2unam])
             zdiffval = apply( self.plot_b.zfunc, [zval,z2val] )
-            zdiffval.id = '_'.join([self._id[0],self._id[1],
+            zdiffval.id = '_'.join([self.id().classid,self.id().var,
                                     zvar.filetable._strid, z2var.filetable._strid, 'diff'])
+            zdiffval.filetable = zvar.filetable
+            zdiffval.filetable2 = z2var.filetable
         # ... e.g. CLT_DJF_set3_CAM456_NCEP_diff
         ft1src = zvar.filetable.source()
         try:
@@ -315,7 +317,7 @@ class amwg_plot_set3(amwg_plot_plan,basic_id):
             ft2src = ''
         plot_a_val = uvc_plotspec(
             [v for v in [zval,z2val] if v is not None],'Yxvsx', labels=[zunam,z2unam],
-            #title=' '.join([self._id[0],self._id[1],self._id[2],zunam,'and',z2unam]),
+            #title=' '.join([self.id().classid,self.id().var,self._id[2],zunam,'and',z2unam]),
             title1 = ' '.join([self._id.classid,self._id.var,self._id.season,self._id.region]),
             title2 = ' '.join([self._id.classid,self._id.var,self._id.season,self._id.region]),
             file_descr = 'model',  # actaully obs too
