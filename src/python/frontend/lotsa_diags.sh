@@ -31,8 +31,8 @@ mkdir -p ~/tmp/diagout/13
 diags --outputdir ~/tmp/diagout/13 --model path=~/metrics_data/cam35_data/,climos=yes --obs path=~/metrics_data/obs_data_5.6/,filter='f_startswith("ISCCPCOSP")' --package AMWG --set 13 --seasons ANN --vars CLISCCP
 echo "set 14"
 diags.py --model path=~/metrics_data/ccsm35_data/,filter='f_startswith("ccsm")',climos=yes --model path=~/metrics_data/cam35_data/,climos=yes --obs path=~/metrics_data/obs_data_5.6/,filter='f_startswith("NCEP")',climos=yes --outputdir ~/tmp/diagout/ --package AMWG --sets 14 --seasons JAN --vars T Z3 --varopts "200 mbar"
-echo "set 15"
-diags.py --model path=~/metrics_data/cam35_data/,climos=yes --obs path=~/metrics_data/obs_data/,filter='f_startswith("NCEP")',climos=yes --outputdir ~/tmp/diagout/ --package AMWG --sets 15 --seasons ANN --plots yes --vars T
+echo "set 15"   # metadiags argument is needed to ensure default options are used.
+diags.py --model path=~/metrics_data/cam35_data/,climos=yes --obs path=~/metrics_data/obs_data/,filter='f_startswith("NCEP")',climos=yes --outputdir ~/tmp/diagout/ --package AMWG --sets 15 --seasons ANN --plots yes --vars T --metadiags True
 
 
 # Note that the next test uses a special dataset.  At PCMDI you can get it by
