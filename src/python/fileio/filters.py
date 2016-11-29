@@ -4,7 +4,7 @@
 # The __call__() method applies the filter to a single candidate file.
 # You will be able to combine filters by constructing an 'and','or',
 # or 'not' object.
-import logging
+import logging, os, re
 logger = logging.getLogger(__name__)
 
 # Note: A better style would be to have names like 'startwswith', 'and', etc. - without the 'f_' prefix.
