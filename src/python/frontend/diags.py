@@ -603,15 +603,15 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, opts, displa
                 #### seasons/vars/setnames/varopts/etc used to create the plot. Otherwise, there is no
                 #### way for classic viewer to know the filename without lots more special casing. 
 
+                file_descr = getattr(rsr,'file_descr',getattr(rsr,'title2',True))
+                if file_descr[0:3]=='obs': file_descr='obs'
+                if file_descr[0:4]=='diff': file_descr='diff'
                 if 'metadiags' in opts.keys() and opts['metadiags']:
                     # metadiags computes its own filenames using descr=True; we have to be consistent
                     descr = True
                 else:
                     try:
                         #descr = var.filetableid.nickname
-                        file_descr = getattr(rsr,'file_descr',getattr(rsr,'title2',True))
-                        if file_descr[0:3]=='obs': file_descr='obs'
-                        if file_descr[0:4]=='diff': file_descr='diff'  #file_descr is used separately, see below
                         ft1id = var.filetableid.ftid
                         if hasattr(var,'filetable2id'):
                             ft2id = var.filetable2id.ftid
@@ -622,8 +622,18 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, opts, displa
                             descr = True
                     except:
                         descr = True
-                fnamepng,fnamesvg,fnamepdf = form_filename( frnamebase, ('png','svg','pdf'), descr=descr,
-                                                            vname=vname, more_id=more_id )
+
+                if 'metadiags' in opts.keys() and opts['metadiags']:
+                    descr = True# For metadiags use, we want to force descr=True as it is in filenames()
+                    fnamepng,fnamesvg,fnamepdf = form_filename(
+                        frnamebase, ('png','svg','pdf'), descr=descr, vname=vname, more_id=more_id )
+                else:
+                    if file_descr=='diff':
+                        modobssrc = source_descr2  # diff: both sources
+                    else:
+                        modobssrc = [rsr.source]     # model or obs: only current source
+                    fnamepng,fnamesvg,fnamepdf = form_filename(
+                        frnamebase, ('png','svg','pdf'), modobs=modobssrc, more_id=more_id )
 
                 # Beginning of section for building plots; this depends on the plot set!
                 if vcs.isscatter(rsr.presentation) or (plot.number in ['11', '12'] and package.upper() == 'AMWG'):
@@ -724,8 +734,8 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, opts, displa
                                            var[1](longitude=(-10,370))[::strideY,::strideX],
                                            rsr.presentation, tm2, bg=1,
                                            title=title, units=getattr(var,'units',''),
-                                           ratio=ratio,
-                                           source=rsr.source )
+                                           ratio=ratio )
+                                          # the contour part of the plot does this: source=rsr.source
                             # the last two lines shouldn't be here.  These (title,units,source)
                             # should come from the contour plot, but that doesn't seem to
                             # have them.
@@ -825,13 +835,13 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, opts, displa
                     else:
                         for i in range(len(var_id_save)):
                             var[i].id = var_id_save[i]
-            if savePNG:
-                t0 = time.time()
-                vcanvas.png( fnamepng, ignore_alpha=True, metadata=provenance_dict() )
-                t1 += time.time() - t0
-                    # vcanvas.svg() doesn't support ignore_alpha or metadata keywords
-                    #vcanvas.svg( fnamesvg )
-                    #vcanvas.pdf( fnamepdf)
+        if savePNG:
+            t0 = time.time()
+            vcanvas.png( fnamepng, ignore_alpha=True, metadata=provenance_dict() )
+            t1 += time.time() - t0
+                # vcanvas.svg() doesn't support ignore_alpha or metadata keywords
+                #vcanvas.svg( fnamesvg )
+                #vcanvas.pdf( fnamepdf)
 
     if tmmobs[0] is not None:  # If anything was plotted to vcanvas2
         vname = varid.replace(' ', '_')

@@ -16,7 +16,7 @@ def form_filename( rootname, fmt, modobs=['',''], descr='', vname='', more_id=''
   DEPRECATED: If descr is to be computed, we will need a cleaned-up variable name, vname:  descr is
   computed by extracting strings and making deductions from vname.
 - NEW: modobs, a list, of length 2, of strings identifying the model and obs data, e.g.
-  [ case1, obsset1 ] or [case1, case2].
+  [ case1, obsset1 ] or [case1, case2].  If the length is 1, it will be filled out with an empty string.
   DEPRECATED:  Also modobs can be a string.  If it is a string, it is vname, the long-form name of
   the variable to plotted, e.g. v_Z3_JJA_Global_20160520_rv_Z3_JJA_Global_JRA25.  In this case an
   attempt will be made to extract suitable substrings and compute a suitable filename, as was
@@ -33,6 +33,8 @@ What this function returns depends on what fmt is.
     elif type(modobs) is str:
         vname = modobs
         descr = True
+    if type(modobs) is list and len(modobs)==1:
+        modobs = [ modobs[0], '' ]
     if descr is not True:
         modobsstr = underscore_join(modobs)
         fnamedot = better_join( '-', [rootname,more_id,modobsstr,descr]) + '.'
