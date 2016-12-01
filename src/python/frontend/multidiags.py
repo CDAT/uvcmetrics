@@ -259,6 +259,7 @@ def multidiags1( opt ):
     print "jfp will run diags on",len(newopts),"Options objects"
     for o in newopts:
         o = finalize_modelobs(o) # copies obspath to obs['path'], changes {} to [{}]
+        o['runby'] = 'multi'     # in case someone needs to know that multidiags is running it
         print "jfp about to run_diags on",o['vars'],len(o.get('obs',[])),o.get('obs',[])[0]
         t0 = time.time()
         o.finalizeOpts()

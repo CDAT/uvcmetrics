@@ -745,7 +745,7 @@ def runcmdline(cmdline, outlogdir, dryrun=False):
 
                     cmdline = (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr,
                                seasonstr, varstr, outstr, xmlstr, prestr, poststr,
-                               regionstr, '--metadiags True', '--log_level DEBUG ', '--log_file', log_file )
+                               regionstr, '--runby meta', '--log_level DEBUG ', '--log_file', log_file )
                     CMDLINES += [cmdline]
                 elif length == 15:
                     #varopts must be non empty

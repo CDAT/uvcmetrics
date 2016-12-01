@@ -53,7 +53,7 @@ help_url="https://acme-climate.atlassian.net/wiki/pages/viewpage.action?pageId=1
 # --dataset path=/path,climos='no'
 
 class Options():
-    def __init__(self, metadiags=False, **kwargs):
+    def __init__(self, runby='shell', **kwargs):
         # self._opts is the dictionary holding options.  But it can be accessed simply as self[key].
         self._opts = {}
         self.all_packages = packages.package_names
@@ -64,10 +64,16 @@ class Options():
         # Normally, defaults come from options_defaults which is defined below.  A newly created
         # instance of Options should be merged with it; use self.merge(options_defaults).
         # This is automatically done when you call self.verifyOptions.
-        if metadiags in ['True', 'true', 'Yes', 'yes']:
-            metadiags = True
-        self['metadiags'] = metadiags
-        if metadiags:
+        if runby[0:4] in ['meta','Meta']:
+            self['runby'] = runby[0:4]
+            set_defaults = True
+        elif runby[0:5] in ['shell','Shell']:
+            self['runby'] = runby[0:5]
+            set_defaults = True
+        elif runby[0:5] in ['multi','Multi']:
+            self['runby'] = runby[0:5]
+            set_defaults = False
+        if set_defaults:
             self._opts['model'] = []
             self._opts['obs'] = []
             self._opts['output'] = {} # output pre, post, directory, absolute filename, output options
@@ -850,7 +856,7 @@ class Options():
             outopts.add_argument('--xml', '-x', choices=['no', 'yes'],
                help="Produce XML output files as part of climatology/diags generation")
             outopts.add_argument('--logo', choices=['no', 'yes']) # intentionally undocumented; meant to be passed via metadiags
-            outopts.add_argument("--metadiags", choices=['False','True'], help="if present, states that this program was run by metadiags.  This affects output file names.")
+            outopts.add_argument("--runby", choices=['shell','meta','multi'], help="if present, states that which program is running at top level: multi (multidiags), meta (metadiags), or (default) shell (diags from the shell).  This affects output file names.")
             outopts.add_argument('--no-antialiasing', action="store_true",default = False) # intentionally undocumented; meant to be passed via metadiags
             outopts.add_argument('--table', action='store_true', help="used to get data from individual files and create the table.") # intentionally undocumented; meant to be passed via metadiags
             outopts.add_argument('--colormaps', nargs='*', help="Specify one of 3 colormaps: model, obs or diff")
@@ -1073,8 +1079,8 @@ class Options():
                     self._opts['output']['plots'] = False
                 else:
                     self._opts['output']['plots'] = True
-            if(args.metadiags != None):
-                self['metadiags'] = True
+            if(args.runby != None):
+                self['runby'] = args.runby
 
             if(args.generate != None):
                 if(args.generate.lower() == 'no' or args.generate == 0):

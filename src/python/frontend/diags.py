@@ -396,7 +396,6 @@ def run_diags( opts ):
 
                         if res is not None and len(res)>0 and type(res) is not str: # Success, we have some plots to plot
                             logger.info('--------------------------------- res is not none')
-                            # Are we running from metadiags? If so, lets keep the name as simple as possible.
 
                             frname = form_file_rootname(
                                 snum, [varid], 'variable', dir=outdir, season=utime, basen=basename,
@@ -606,7 +605,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, opts, displa
                 file_descr = getattr(rsr,'file_descr',getattr(rsr,'title2',True))
                 if file_descr[0:3]=='obs': file_descr='obs'
                 if file_descr[0:4]=='diff': file_descr='diff'
-                if 'metadiags' in opts.keys() and opts['metadiags']:
+                if 'runby' in opts.keys() and opts['runby']=='meta':
                     # metadiags computes its own filenames using descr=True; we have to be consistent
                     descr = True
                 else:
@@ -623,7 +622,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, opts, displa
                     except:
                         descr = True
 
-                if 'metadiags' in opts.keys() and opts['metadiags']:
+                if 'runby' in opts.keys() and opts['runby']=='meta':
                     descr = True# For metadiags use, we want to force descr=True as it is in filenames()
                     fnamepng,fnamesvg,fnamepdf = form_filename(
                         frnamebase, ('png','svg','pdf'), descr=descr, vname=vname, more_id=more_id )
@@ -846,7 +845,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, opts, displa
     if tmmobs[0] is not None:  # If anything was plotted to vcanvas2
         vname = varid.replace(' ', '_')
         vname = vname.replace('/', '_')
-    if 'metadiags' in opts.keys() and opts['metadiags']:
+    if 'runby' in opts.keys() and opts['runby']=='meta':
         descr = True# For metadiags use, we want to force descr=True as it is in filenames()
         fnamepng,fnamesvg,fnamepdf = form_filename( frnamebase, ('png','svg','pdf'),
                                                     descr=descr, vname=vname, more_id='combined' )
@@ -874,9 +873,9 @@ if __name__ == '__main__':
     print "UV-CDAT Diagnostics, command-line version"
     print ' '.join(sys.argv)
     try:
-        imeta = sys.argv.index('--metadiags')
-        meta = sys.argv[imeta+1]
-        o = Options(metadiags=meta)
+        irunby = sys.argv.index('--runby')
+        runby = sys.argv[irunby+1]
+        o = Options(runby=runby)
     except ValueError:
         o = Options()
     o.parseCmdLine()
