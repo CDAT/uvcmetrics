@@ -300,8 +300,7 @@ class amwg_plot_set6(amwg_plot_plan):
             contplot = plotspec(
                 vid = ps.dict_idid(vid_cont1),  zvars = [vid_cont1],  zfunc = (lambda z: z),
                 plottype = plot_type_temp[0],
-                title = ' '.join([varid, seasonid, 'model']),
-                title1 = ' '.join([varid, seasonid, 'model']),
+                title1 = ' '.join([varid, seasonid]),
                 title2 = 'model', 
                 file_descr = 'model',
                 source = names['model'], 
@@ -319,7 +318,7 @@ class amwg_plot_set6(amwg_plot_plan):
             contplot = plotspec(
                 vid = ps.dict_idid(vid_cont2),  zvars = [vid_cont2],  zfunc = (lambda z: z),
                 plottype = plot_type_temp[0],
-                title = ' '.join([varid,seasonid,'obs']), 
+                title1 = '',
                 title2 = "observation",
                 file_descr = "obs",
                 source = names['obs'], 
@@ -347,8 +346,8 @@ class amwg_plot_set6(amwg_plot_plan):
                 vid = ps.dict_id(var_cont1,'mag.of.diff',seasonid,filetable1,filetable2),
                 zvars = [diff1_vid,diff2_vid],  zfunc = abnorm,  # This is magnitude of difference of vectors
                 plottype = plot_type_temp[0], 
-                title = ' '.join([varid, seasonid, 'diff,mag.diff']),
-                title2 = 'mag.diff', 
+                title1 ='',
+                title2 = 'difference, mag.difference', 
                 plotparms = plotparms['diff'] )
             #contplot = plotspec(
             #    vid = ps.dict_id(var_cont1,'diff.of.mags',seasonid,filetable1,filetable2),
@@ -458,6 +457,17 @@ class amwg_plot_set6(amwg_plot_plan):
 
         #tm2.units.priority         = 1
         #tm2.legend.offset         += 0.011
+
+        #create the header for the plot    
+        header = getattr(var, 'title', None)
+        if header is not None:
+            text = cnvs2.createtext()
+            text.string = header
+            text.x = (tm2.data.x1 + tm2.data.x2)/2
+            text.y = tm2.data.y2 + 0.03
+            text.height = 16
+            text.halign = 1
+            cnvs2.plot(text, bg=1)  
         
         return tm1, tm2
     
