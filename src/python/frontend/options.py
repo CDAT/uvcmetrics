@@ -126,7 +126,7 @@ class Options():
         exact copy except for that option, where the supplied value will be used instead.
         This copy is shallow; that is, the dictionary self._opts is copied but its elements are not.
         """
-        newopts = Options()
+        newopts = Options(runby=self['runby'])
         for key,value in self._opts.iteritems():
             newopts[key] = value
         if exception is not None:
@@ -140,6 +140,8 @@ class Options():
             return
         for key,value in opt2._opts.iteritems():
             if key not in self._opts or self[key] is None:
+                self[key] = value
+            elif key in ['obs','model'] and self[key]==[]:
                 self[key] = value
             elif key in ['output', 'logging', 'translations']:
                 # For these options, the value is a dictionary which should be merged, not replaced.
@@ -176,7 +178,6 @@ class Options():
                         self[key][idx][k] = v
         elif len(self[key])>1 and len(opt2[key])>1:
             logger.error("Options.merge not implemented for model or obs lists both of length>1")
-        print "jfp merged",key,"to",self[key]
 
    # Some short cut getter/setters
     def __getitem__(self, opt):
