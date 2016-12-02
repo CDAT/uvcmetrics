@@ -751,6 +751,9 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, displayunits
                     savePNG = True
 
                     # Multi-plot
+                    #pdb.set_trace()
+                    #from metrics.packages.create_plotset_template import template_dump
+                    #template_dump(tm2, fileid="plotset6_")
                     try:
                         if tm2 is not None:
                             # Multiple plots on a page:

@@ -68,17 +68,17 @@ class amwg_plot_set6(amwg_plot_plan):
         self.plotall_id = ft1id+'_'+ft2id+'_'+varid+'_'+seasonid
 
         if not self.computation_planned:
-            self.plan_computation( model, obs, varid, seasonid, aux, plotparms )
+            self.plan_computation( model, obs, varid, seasonid, aux, names, plotparms )
     @staticmethod
     def _list_variables( model, obs ):
         return amwg_plot_set6.set6_variables.keys()
     @staticmethod
     def _all_variables( model, obs ):
         return { vn:basic_plot_variable for vn in amwg_plot_set6._list_variables( model, obs ) }
-    def plan_computation( self, model, obs, varid, seasonid, aux, plotparms ):
+    def plan_computation( self, model, obs, varid, seasonid, aux, names, plotparms ):
         if aux is None:
             return self.plan_computation_normal_contours( model, obs, varid, seasonid, aux,
-                                                          plotparms )
+                                                          names, plotparms )
         else:
             logger.error( "plot set 6 does not support auxiliary variable aux=%s", aux )
             return None
@@ -247,7 +247,7 @@ class amwg_plot_set6(amwg_plot_plan):
 
         return derived_vars
 
-    def plan_computation_normal_contours( self, model, obs, varid, seasonid, aux, plotparms ):
+    def plan_computation_normal_contours( self, model, obs, varid, seasonid, aux, names, plotparms ):
         """Set up for a lat-lon contour plot, as in plot set 5.  Data is averaged over all other
         axes."""
         filetable1, filetable2 = self.getfts(model, obs)
@@ -296,13 +296,15 @@ class amwg_plot_set6(amwg_plot_plan):
         plot_type_temp = ['Isofill','Vector'] # can't use self.plottype yet because don't support it elsewhere as a list or tuple <<<<<
         if vars1 is not None:
             # Draw two plots, contour and vector, over one another to get a single plot.
-            # Only one needs title,source.
-            title = ' '.join([varid,seasonid,'(1)'])
-
+            # Only one needs title,source
             contplot = plotspec(
                 vid = ps.dict_idid(vid_cont1),  zvars = [vid_cont1],  zfunc = (lambda z: z),
                 plottype = plot_type_temp[0],
-                title = title, source=ft1src,
+                title = ' '.join([varid, seasonid, 'model']),
+                title1 = ' '.join([varid, seasonid, 'model']),
+                title2 = 'model', 
+                file_descr = 'model',
+                source = names['model'], 
                 plotparms = plotparms[src2modobs(ft1src)] )
             vecplot = plotspec(
                 vid = ps.dict_idid(vid_vec1), zvars=[vid_vec11,vid_vec12], zfunc = (lambda z,w: (z,w)),
@@ -313,12 +315,14 @@ class amwg_plot_set6(amwg_plot_plan):
             self.single_plotspecs[self.plot1_id+'v'] = vecplot
         if vars2 is not None:
             # Draw two plots, contour and vector, over one another to get a single plot.
-            # Only one needs title,source.
-            title = ' '.join([varid,seasonid,'(2)'])
+            # Only one needs title,source
             contplot = plotspec(
                 vid = ps.dict_idid(vid_cont2),  zvars = [vid_cont2],  zfunc = (lambda z: z),
                 plottype = plot_type_temp[0],
-                title = title, source=ft2src,
+                title = ' '.join([varid,seasonid,'obs']), 
+                title2 = "observation",
+                file_descr = "obs",
+                source = names['obs'], 
                 plotparms = plotparms[src2obsmod(ft2src)] )
             vecplot = plotspec(
                 vid = ps.dict_idid(vid_vec2), zvars=[vid_vec21,vid_vec22], zfunc = (lambda z,w: (z,w)),
@@ -336,13 +340,15 @@ class amwg_plot_set6(amwg_plot_plan):
             diff2 = derived_var( vid=diff2_vid, inputs=[vid_vec12,vid_vec22], func=aminusb_2ax )
             
             self.derived_variables[diff2_vid] = diff2
-            title = ' '.join([varid,seasonid,'diff,mag.diff'])
-            source = ', '.join([ft1src,ft2src])
+            #title = ' '.join([varid,seasonid,'diff,mag.diff'])
+            #source = ', '.join([ft1src,ft2src])
 
             contplot = plotspec(
                 vid = ps.dict_id(var_cont1,'mag.of.diff',seasonid,filetable1,filetable2),
                 zvars = [diff1_vid,diff2_vid],  zfunc = abnorm,  # This is magnitude of difference of vectors
-                plottype = plot_type_temp[0], title=title, source=source,
+                plottype = plot_type_temp[0], 
+                title = ' '.join([varid, seasonid, 'diff,mag.diff']),
+                title2 = 'mag.diff', 
                 plotparms = plotparms['diff'] )
             #contplot = plotspec(
             #    vid = ps.dict_id(var_cont1,'diff.of.mags',seasonid,filetable1,filetable2),
@@ -371,13 +377,15 @@ class amwg_plot_set6(amwg_plot_plan):
                            uvcplotspec=None ):
         """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
+        #pdb.set_trace()
+        tm2 = cnvs1.gettemplate("plotset6_0_x_%s" % (tm2.name.split("_")[2]))
         
-        tm2.yname.priority  = 1
-        tm2.xname.priority  = 1
+        #tm2.yname.priority  = 1
+        #tm2.xname.priority  = 1
         tm1.yname.priority  = 1
         tm1.xname.priority  = 1
         tm1.legend.priority = 1
-        tm2.legend.priority = 1
+        #tm2.legend.priority = 1
 
         # Fix units if needed
         if data is not None:
@@ -425,31 +433,31 @@ class amwg_plot_set6(amwg_plot_plan):
         # Adjust labels and names for combined plots
         ynameOri                  = cnvs2.gettextorientation(tm2.yname.textorientation)
         ynameOri.height           = 9
-        tm2.yname.textorientation = ynameOri
-        tm2.yname.x              -= 0.009
+        #tm2.yname.textorientation = ynameOri
+        #tm2.yname.x              -= 0.009
 
         xnameOri                  = cnvs2.gettextorientation(tm2.xname.textorientation)
         xnameOri.height           = 9
-        tm2.xname.textorientation = xnameOri
-        tm2.xname.y              -= 0.003
+        #tm2.xname.textorientation = xnameOri
+        #tm2.xname.y              -= 0.003
 
-        tm2.mean.y -= 0.005
+        #tm2.mean.y -= 0.005
 
         titleOri                  = cnvs2.gettextorientation(tm2.title.textorientation)
         titleOri.height           = 11.5
-        tm2.title.textorientation = titleOri
+        #tm2.title.textorientation = titleOri
 
-        tm2.max.y -= 0.005
+        #tm2.max.y -= 0.005
         
         sourceOri                  = cnvs2.gettextorientation(tm2.source.textorientation)
         sourceOri.height           = 8.0
-        tm2.source.textorientation = sourceOri
-        tm2.source.y               = tm2.units.y - 0.01
-        tm2.source.x               = tm2.data.x1
-        tm2.source.priority        = 1
+        #tm2.source.textorientation = sourceOri
+        #tm2.source.y               = tm2.units.y - 0.01
+        #tm2.source.x               = tm2.data.x1
+        #tm2.source.priority        = 1
 
-        tm2.units.priority         = 1
-        tm2.legend.offset         += 0.011
+        #tm2.units.priority         = 1
+        #tm2.legend.offset         += 0.011
         
         return tm1, tm2
     
