@@ -82,7 +82,10 @@ def setManualColormap(canvas=None, level=0):
 
 def getNames(opts, model, obs):
     """ The purpose of this kludge is to get the names of the model and obs 
-    specified on the command line for output on the graphic"""
+    specified on the command line for output on the graphic.
+    Each of model and obs should be a list of instances of basic_filetable.
+    This function returns a dictionary of the form {'model':modelname, 'obs':obsname}
+    where modelname and obsname are strings."""
     def get_model_case(filetable):
         files = filetable._filelist
         try:
@@ -103,8 +106,12 @@ def getNames(opts, model, obs):
     if len(opts['obs'])>0 and opts['obs'][0]['name'] is not None:
         nicknames['obs'] = opts['obs'][0]['name']
     elif ft2 is not None:
-        nicknames['obs'] = ft2.source().split('_')[-1]
+        #nicknames['obs'] = ft2.source().split('_')[-1]
+        nicknames['obs'] = ft2.source().split('_')[0]
+    if nicknames['obs']=='EBAF':
+        pdb.set_trace()
     return nicknames
+
 def setnum( setname ):
     """extracts the plot set number from the full plot set name, and returns the number.
     The plot set name should begin with the set number, e.g.
@@ -319,7 +326,7 @@ def run_diags( opts ):
                 logger.warning('Could not find any of the requested variables %s among %s', opts['vars'],
                                 pclass.list_variables(modelfts,obsfts,sname) )
                 logger.warning("among %s", variables)
-                return
+                return {}
 
         # Ok, start the next layer of work - seasons and regions
         # loop over the seasons for this plot
@@ -461,6 +468,10 @@ def run_diags( opts ):
 #    vcanvas.destroy()
 #    vcanvas2.destroy()
     logger.info("total number of (compound) diagnostic plots generated = %s", number_diagnostic_plots)
+
+    # If this were called from multidiags, the names dictionary would be helpful.  In particular,
+    # it will help to not have to re-open a file to re-compute the case name for the model.
+    return names
 
 
 def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, opts, displayunits=None):
