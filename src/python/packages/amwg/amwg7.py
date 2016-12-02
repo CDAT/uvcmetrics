@@ -56,7 +56,7 @@ class amwg_plot_set7(amwg_plot_plan):
         self.plotall_id = ft1id+'_'+ft2id+'_'+varid+'_'+seasonid
 
         if not self.computation_planned:
-            self.plan_computation( model, obs, varid, seasonid, region, aux, plotparms=plotparms )
+            self.plan_computation( model, obs, varid, seasonid, region, aux, names=names, plotparms=plotparms )
     @staticmethod
     def _list_variables( model, obs ):
         allvars = amwg_plot_set5._all_variables( model, obs )
@@ -72,7 +72,7 @@ class amwg_plot_set7(amwg_plot_plan):
             allvars[varname] = basic_pole_variable
         return allvars
     def plan_computation( self, model, obs, varid, seasonid, region=None, aux=slice(0,None),
-                          plotparms=None ):
+                          names={}, plotparms=None ):
        """Set up for a lat-lon polar contour plot.  Data is averaged over all other axes.
        """
        filetable1, filetable2 = self.getfts(model, obs)
@@ -105,21 +105,21 @@ class amwg_plot_set7(amwg_plot_plan):
                 vid = ps.dict_idid(vid1),
                 zvars = [vid1],  zfunc = (lambda z: z),
                 plottype = self.plottype,
-                source = ft1src,
+                source = names.get('model',ft1src),
                 file_descr = 'model',
                 plotparms = plotparms[src2modobs(ft1src)] ),
             self.plot2_id: plotspec(
                 vid = ps.dict_idid(vid2),
                 zvars = [vid2],  zfunc = (lambda z: z),
                 plottype = self.plottype,
-                source = ft2src,
+                source = names.get('obs',ft2src),
                 file_descr = 'obs',
                 plotparms = plotparms[src2obsmod(ft2src)] ),
             self.plot3_id: plotspec(
                 vid = ps.dict_id(varid,'diff',seasonid,filetable1,filetable2),
                 zvars = [vid1,vid2],  zfunc = aminusb_2ax,
                 plottype = self.plottype,
-                source = ', '.join([ft1src,ft2src]),
+                source = ', '.join([names.get('model',ft1src),names.get('obs',ft2src)]),
                 file_descr = 'diff',
                 plotparms = plotparms['diff'] )         
             }

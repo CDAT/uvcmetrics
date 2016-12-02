@@ -61,7 +61,7 @@ class amwg_plot_set4and4A(amwg_plot_plan):
         self.plot3_id = '_'.join([ft1id+'-'+ft2id,varid,seasonid,'contour'])
         self.plotall_id = '_'.join([ft1id,ft2id,varid,seasonid])
         if not self.computation_planned:
-            self.plan_computation( model, obs, varid, seasonid, plotparms )
+            self.plan_computation( model, obs, varid, seasonid, names, plotparms )
     @staticmethod
     def _list_variables( model, obs ):
         allvars = amwg_plot_set4._all_variables( model, obs )
@@ -80,7 +80,7 @@ class amwg_plot_set4and4A(amwg_plot_plan):
         return reduced_variables_press_lev( filetable, varid, seasonid, region=self.region,  RF1=RF1, RF2=RF2 )
     def reduced_variables_hybrid_lev( self, filetable, varid, seasonid, ftno=None,  RF1=None, RF2=None):
         return reduced_variables_hybrid_lev( filetable, varid, seasonid, region=self.region,  RF1=RF1, RF2=RF2 )
-    def plan_computation( self, model, obs, varid, seasonid, plotparms ):
+    def plan_computation( self, model, obs, varid, seasonid, names, plotparms ):
         filetable1, filetable2 = self.getfts(model, obs)
         ft1_hyam = filetable1.find_files('hyam')
         if filetable2 is None:
@@ -144,21 +144,21 @@ class amwg_plot_set4and4A(amwg_plot_plan):
                 plottype = self.plottype,
                 title = ' '.join([varid,seasonid,'(1)']),
                 file_descr = 'model',
-                source = ft1src,
+                source = names['model'],
                 plotparms = plotparms[src2modobs(ft1src)] ),
             self.plot2_id: plotspec(
                 vid = ps.dict_idid(vid2), zvars=[vid2], zfunc=(lambda z: z),
                 plottype = self.plottype,
                 title = ' '.join([varid,seasonid,'(2)']),
                 file_descr = 'obs',
-                source = ft2src,
+                source = names['obs'],
                 plotparms = plotparms[src2obsmod(ft2src)] ),
             self.plot3_id: plotspec(
                 vid = ps.dict_id(varid,'diff',seasonid,filetable1,filetable2), zvars=[vid1,vid2],
                 zfunc=aminusb_2ax, plottype = self.plottype,
                 title = ' '.join([varid,seasonid,'(1)-(2)']),
                 file_descr = 'diff',
-                source = ', '.join([ft1src,ft2src]),
+                source = ', '.join([names['model'],names['obs']]),
                 plotparms = plotparms['diff'] )
             }
         self.composite_plotspecs = {
