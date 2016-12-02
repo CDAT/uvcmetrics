@@ -127,7 +127,6 @@ def merge_all_options( opt ):
     except:
         diags_opts = None
         diagsopts = None
-    all_options.append( options_defaults )
     all_opts_new = [ expand_and_merge_with_defaults( opt ) for opt in all_options ] # list of lists...
     #...But we REQUIRE that all but the first be of length one.  That is, if there be a file
     # defining defaults through an Options instance, it can have only one Options instance.
@@ -139,6 +138,14 @@ def merge_all_options( opt ):
             for olis in all_opts_new[1:]:
                 op.merge(olis[0])
     return all_opts_new[0]
+
+def merge_defaults( opt ):
+    """Merge the supplied Options object with the standard default object, options_defaults.
+    Note that this differs from user-supplied default options.  They have already been merged in.
+    Also note that this should not be called until all collection names have been expanded into
+    real option values.    This is the final merger operation."""
+    opt.merge(options_defaults)
+    return opt
 
 def lookup_collection( optval ):
     """Expands out an options collection key to its values().  The input optval should be a valid
@@ -258,16 +265,17 @@ def multidiags1( opt ):
         newopts.extend(expand_lists_collections( op ))
     print "jfp will run diags on",len(newopts),"Options objects"
     for o in newopts:
+        merge_defaults(o)
         o = finalize_modelobs(o) # copies obspath to obs['path'], changes {} to [{}]
         o['runby'] = 'multi'     # in case someone needs to know that multidiags is running it
-        print "jfp about to run_diags on",o['vars'],len(o.get('obs',[])),o.get('obs',[])[0]
+        print "jfp about to run_diags on",o['vars'],len(o.get('obs',[])),o.get('obs',[])
         t0 = time.time()
         o.finalizeOpts()
-        run_diags(o.clone())
+        o['modobs_names'] = run_diags(o.clone())
         # re o.clone(): diags.py should leave the options alone, but it doesn't: it replaces o['varopts'], at least.
         trun = time.time() - t0
         print "jfp run_diags took",trun,"seconds"
-    setup_viewer(newopts)
+    setup_viewer( newopts )
 
 def multidiags( opts ):
     """The input opts is an Options instance, or a dictionary key which identifies such an instance,
@@ -278,7 +286,6 @@ def multidiags( opts ):
     collection name in place of an actual option value.
     Finally, all the requested diagnostics will be computed."""
     if type(opts) is not list: opts=[opts]
-    #pdb.set_trace()
     nopts = []
     for opt in opts:
         if opt in diags_collection:
@@ -332,7 +339,7 @@ def organize_opts_for_viewer( opts ):
     opts3 = []
     for optsa in opts2:   # each optsa is a list of Options objects, all for one collection
         obss1 = [ o['obs'] for o in optsa]
-        obss2 = [ ob[0] if (type(ob) is list) else ob for ob in obss1 ]
+        obss2 = [ ob[0] if (type(ob) is list) else ob for ob in obss1 if len(ob)>0]
         # ... python won't let me apply set(), complains "unhashable type"
         obss = [ o for o,_ in groupby(obss2) ]
         opts3.append( [ [o for o in optsa if o['obs']==obs or o['obs'][0]==obs] for obs in obss ] )
@@ -376,13 +383,15 @@ def merge_vardesc( vardesc1 ):
 
 def setup_viewer( opts, vardesc1={} ):
     """Sets up data structures needed by the viewer.  The first input parameter opts is a list of
-    Options instances.  An optional input parameter vardesc1 can provide text descriptions of
-    variables found in data files."""
+    Options instances.  The second is a dictionary which usually provides preferred brief names
+    identifying the model and obs data sources.
+    An optional input parameter vardesc1 can provide text descriptions of variables found in data
+    files."""
     optsnested = organize_opts_for_viewer( opts )
     if vardesc1 is None:
         vardesc1 = {}
     vardesc = merge_vardesc( vardesc1 )
-    setup_viewer_2( optsnested, vardesc ) # once it works, this will do it all
+    setup_viewer_2( optsnested, vardesc )
 
 def setup_viewer_2( optsnested, vardesc ):
     """Sets up the viewer's data structures and writes them out to a JSON file.
@@ -410,10 +419,11 @@ def setup_viewer_2( optsnested, vardesc ):
             else:
                 obs = opt['obs']
             filter = eval(obs['filter'])
-            obsname = filter.mystr().strip('-_')
+            obsname_filt = filter.mystr().strip('-_')
+            obsname = opt['modobs_names'].get( 'obs', obsname_filt )
             group = OutputGroup(obs.get('desc',obsname))
             page.addGroup(group)
-            for opts3 in opts2:   # row = variable+region, >>>> region ignored for now. <<<<
+            for opts3 in opts2:   # row = variable+region
                 opt = opts3[0][0]    # sample Option to get info needed to set up rows
                 for vname in opt['vars']:  # The viewer wants a separate row for each variable.
                     if len(opt['regions'])>0:
@@ -434,6 +444,8 @@ def setup_viewer_2( optsnested, vardesc ):
                             varopts = opt['varopts']
                         for varopt in varopts:
                             varoptname = str(varopt)
+                            if varoptname is None or varoptname=='None':
+                                varoptname = ''
                             cols = [ vardesc.get(vname,vname)+regname ]  # 'Description' column
                             for opts4 in opts3:  # column = season or file.  opt is an instance of Options.
                                 opt = opts4[0]   # Shouldn't opts4 be an Option?  It isn't, it's a list of Option objects.
@@ -448,7 +460,8 @@ def setup_viewer_2( optsnested, vardesc ):
                                     else:
                                         modelpath=opt['modelpath']
                                     #...Note that this only supports [model,obs] not [model1,model2].  Doing both shouldn't be much harder.
-                                    modelname = os.path.basename(os.path.normpath(modelpath))
+                                    modelname_path = os.path.basename(os.path.normpath(modelpath))
+                                    modelname = opt['modobs_names'].get( 'model', modelname_path )
                                     fname = form_filename( rootname, 'png', modobs=[modelname,obsname], more_id='combined' )
                                     path = os.path.join( opt['output']['outputdir'], fname )
                                     cols.append( OutputFile(path, title="{season}".format(season=season)) )
@@ -486,7 +499,7 @@ def setup_viewer_1( opt ):
 if __name__ == '__main__':
     print "UV-CDAT Diagnostics, Experimental Multi-Diags version"
     print ' '.join(sys.argv)
-    opt = Options()
+    opt = Options(runby='multi')
     opt.parseCmdLine()
     #prof = cProfile.Profile()
     #prof.enable()
