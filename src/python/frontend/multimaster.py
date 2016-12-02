@@ -77,7 +77,7 @@ diags_collection['4'] = [
 
 diags_collection['4s'] = [
     Options(
-        vars=['SHUM'], obs=['ECMWF'], seasons=['DJF'], default_opts='4base' ) ]
+        vars=['U','V'], obs=['ERA40'], seasons=['ANN', 'DJF', 'JJA'], default_opts='4base' ) ]
 
 diags_collection['7s'] = [
     Options( sets=['7'], vars=['TREFHT'], obs='WILLMOTT', model=['generic'],
@@ -190,5 +190,6 @@ vardesc['TREFHT'] = '2-meter air temperature (land)'
 vardesc['TS'] = 'Surface temperature'
 vardesc['TTRP'] = 'Tropopause temperature'
 vardesc['U'] = 'Zonal Wind'
+vardesc['V'] = 'Meridional Wind'
 vardesc['U850'] = 'Zonal Wind - 850mb'
 vardesc['Z3'] = 'Geopotential height (Northern)'
