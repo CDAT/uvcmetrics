@@ -2294,7 +2294,8 @@ def fix_troublesome_units( mv ):
         mv.units = '1'       #... maybe this will work
     if mv.units == 'W/m~S~2~N~' or mv.units == 'W/m~S~2~N':
         mv.units = 'W/m^2'
-    if mv.filetable.id().ftid == 'ERA40' and mv.id[0:5]=='rv_V_' and mv.units=='meridional wind':
+    if hasattr(mv,'filetable') and mv.filetable.id().ftid == 'ERA40' and\
+            mv.id[0:5]=='rv_V_' and mv.units=='meridional wind':
         # work around a silly error in ERA40 obs
         mv.units = 'm/s'
     return mv
