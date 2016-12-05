@@ -46,6 +46,7 @@ class amwg_plot_set7(amwg_plot_plan):
                           'obs':{'colormap':'rainbow'},
                           'diff':{'colormap':'bl_to_darkred'} }
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
+
         self.region = region
 
         self.varid = varid

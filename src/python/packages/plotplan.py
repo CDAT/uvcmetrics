@@ -323,7 +323,10 @@ class plot_plan(object):
             plotparms = getattr(ps,'plotparms',None)
                     
             regionid = getattr(self,'region','')
-            if type(regionid) is not str: regionid = regionid.id()[1]
+            if regionid is None:
+                regionid = ''
+            if type(regionid) is not str:
+                regionid = regionid.id()[1]
             if regionid.lower().find('global')>=0: regionid=''
 
             # The following line is getting specific to UV-CDAT, although not any GUI...
@@ -433,11 +436,14 @@ class plot_plan(object):
                 seasonid='ANN'
             else:
                 seasonid=self._seasonid
-            if not hasattr(self,'region') or 'Global' in self.region.id() or '' in self.region.id()\
-                    or 'global' in self.region.id():   # region.id() looks like ('rg', 'region name')
-                region = ''
+            if not hasattr(self,'region') or self.region is None or 'Global' in self.region.id() or\
+                    '' in self.region.id() or 'global' in self.region.id():
+                # Note that region.id() looks like ('rg', 'region name')
+                regionnm = ''
+            else:
+                regionnm = self.region.id()[1]
             from metrics.computation.reductions import reduced_variable
-            gwid = reduced_variable.IDtuple( classid='rv', var='gw', season=seasonid, region=region,
+            gwid = reduced_variable.IDtuple( classid='rv', var='gw', season=seasonid, region=regionnm,
                                              ft1=getattr(self,'ft1nom',''), ffilt1='' )
             gw = vvals.get(gwid,None)
             try:
