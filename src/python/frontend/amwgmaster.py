@@ -344,6 +344,16 @@ diags_collection['7']['SST'] = {'plottype': '7', 'obs': ['HadISST_CL_1', 'HadISS
 diags_collection['7']['PRECT'] = {'plottype': '7', 'obs': ['GPCP_1']}
 diags_collection['7']['SURF_WIND'] = {'plottype': '7', 'obs': ['NCEP_1']}
 
+diags_collection['7s'] = OrderedDict()
+diags_collection['7s']['desc'] = 'Polar contour and vector plots of DJF, JJA and ANN means'
+diags_collection['7s']['seasons'] = ['DJF', 'JJA', 'ANN']
+diags_collection['7s']['regions'] = ['N_Hemisphere_Land', 'S_Hemisphere_Land']
+diags_collection['7s']['package'] = 'AMWG'
+diags_collection['7s']['options'] = {'logo':'no'}
+diags_collection['7s']['combined'] = True
+diags_collection['7s']['TREFHT'] = {'plottype': '7', 'obs': ['WILLMOTT_1']}
+diags_collection['7s']['PS'] = {'plottype': '7', 'obs': ['NCEP_1']}
+diags_collection['7s']['PSL'] = {'plottype': '7', 'obs': ['JRA25_1', 'NCEP_1']}
 
 # These 4 are northern only.
 
