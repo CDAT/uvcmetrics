@@ -22,6 +22,8 @@ logger = logging.getLogger(__name__)
 
 def filenames(collkey, plotset, variable, obs_set='', var_option=None, region="Global",
               season="ANN", combined=False):
+    if collkey=='7' or collkey=='7s':
+        region = ''
     root_name = form_file_rootname(plotset, [variable],
                                    aux=[] if var_option is None else [var_option],
                                    basen=collkey,
@@ -434,7 +436,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, data_hash, colls
 
                 # set up region str (and later overwrite it if needed)
                 g_region = diags_collection[collnum].get('regions', ['Global'])
-                if g_region == ['Global']:
+                if g_region == ['Global'] or collnum=='7' or collnum=='7s':
                     regionstr = ''
                 else:
                     regionstr = '--regions '+' '.join(g_region)
