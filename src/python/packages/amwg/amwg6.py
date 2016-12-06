@@ -4,7 +4,7 @@
 
 from pprint import pprint
 from metrics.packages.amwg.amwg import amwg_plot_plan
-from metrics.packages.amwg.tools import src2modobs, src2obsmod
+from metrics.packages.amwg.tools import src2modobs, src2obsmod, get_textobject, get_format, get_model_case, plot_value
 from metrics.packages.amwg.derivations.vertical import *
 from metrics.packages.plotplan import plot_plan
 from metrics.computation.reductions import *
@@ -457,7 +457,25 @@ class amwg_plot_set6(amwg_plot_plan):
 
         #tm2.units.priority         = 1
         #tm2.legend.offset         += 0.011
+        #pdb.set_trace()
+            
+        #plot the table of min, mean and max in upper right corner
+        MEAN = get_textobject(tm2,"mean", "Mean    %.2f" % float(var.mean) )
+        MEAN.halign = 0
+        MIN  = get_textobject(tm2, 'min', "Min")
+        MAX  = get_textobject(tm2, 'max', "Max")
 
+        cnvs2.plot(MAX)
+        cnvs2.plot(MEAN)
+        cnvs2.plot(MIN)
+        exts = cnvs2.gettextextent(MEAN)
+        plot_value(cnvs2, MIN, var.min(), exts[0][1])
+        plot_value(cnvs2, MAX, var.max(), exts[0][1])
+        #turn off any later min, mean & max plot value
+        tm2.max.priority = 0
+        tm2.mean.priority = 0
+        tm2.min.priority = 0
+        
         #create the header for the plot    
         header = getattr(var, 'title', None)
         if header is not None:

@@ -32,10 +32,22 @@ def get_textobject(t,att,text):
     return obj
 def get_format(value):
     v = abs(value)
-    if v<10E-2:
+    if v<10E-3:
+        fmt = "%.2f"
+    elif v<10E-2:
         fmt="%.3g"
     elif v<10000:
         fmt = "%.2f"
     else:
         fmt="%.5g"
     return fmt % value
+def plot_value(cnvs, text_obj, value, position):
+    import vcs
+    #pdb.set_trace()
+    to = cnvs.createtextorientation(source=text_obj.To_name)
+    to.halign = "right"
+    new_text_obj = vcs.createtext(To_source=to.name, Tt_source=text_obj.Tt_name)  
+    new_text_obj.string = [get_format(value)]
+    new_text_obj.x = [position]
+    cnvs.plot(new_text_obj)
+    return
