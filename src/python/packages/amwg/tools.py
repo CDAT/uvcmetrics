@@ -51,3 +51,15 @@ def plot_value(cnvs, text_obj, value, position):
     new_text_obj.x = [position]
     cnvs.plot(new_text_obj)
     return
+def plot_table(cnvs, tm, content, longest_id, value_delta):
+    
+    (out_id, value) = content[longest_id]
+    txt_obj = get_textobject(tm, longest_id, out_id)
+    value_position = cnvs.gettextextent(txt_obj)[0][1] + value_delta
+    
+    for key, (out_id, value) in content.items():
+        txt_obj = get_textobject(tm, key, out_id)
+        cnvs.plot(txt_obj)
+        plot_value(cnvs, txt_obj, value, value_position)
+    return cnvs, tm
+        
