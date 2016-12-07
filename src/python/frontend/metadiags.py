@@ -24,11 +24,13 @@ def filenames(collkey, plotset, variable, obs_set='', var_option=None, region="G
               season="ANN", combined=False):
     if collkey=='7' or collkey=='7s':
         region = ''
+#    root_name = form_file_rootname(plotset, [variable],
     root_name = form_file_rootname(plotset, [variable],
                                    aux=[] if var_option is None else [var_option],
-                                   basen=collkey,
+                                   postn=obs_set,
                                    season=season, region=region, combined=combined
                                    )
+                                   #basen="set%s"%collkey, postn=obs_set,
     files = []
     files.extend(form_filename(root_name, ["png", "pdf"], descr=True, more_id="combined" if combined else ""))
     for dataset in ("obs", "ft1", "diff"):
@@ -413,19 +415,16 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, data_hash, colls
                 if o != 'NA' and obspath != None:
                     obsfname = diags_obslist[o]['filekey']
                     obsstr = '--obs path='+obspath+',climos=yes,filter="f_startswith(\''+obsfname+'\')"'
-                    #poststr = '--postfix '+obsfname
-                    poststr = ''
+                    poststr = '--postfix '+obsfname
                 else:
                     if o != 'NA':
                         logger.warning('No observation path provided but this variable/collection combination specifies an obs set.')
                         logger.warning('Not making a comparison vs observations.')
                     obsstr = ''
-                    #poststr = ' --postfix \'\''
-                    poststr = ''
+                    poststr = ' --postfix \'\''
 
                 setstr = ' --set '+p
-                #prestr = ' --prefix set'+collnum
-                prestr = ' --prefix '+collnum
+                prestr = ' --prefix set'+collnum
 
                 # set up season str (and later overwrite it if needed)
                 g_season = diags_collection[collnum].get('seasons', ['ANN'])
