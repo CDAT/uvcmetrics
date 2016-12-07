@@ -108,8 +108,6 @@ def getNames(opts, model, obs):
     elif ft2 is not None:
         #nicknames['obs'] = ft2.source().split('_')[-1]
         nicknames['obs'] = ft2.source().split('_')[0]
-    if nicknames['obs']=='EBAF':
-        pdb.set_trace()
     return nicknames
 
 def setnum( setname ):
@@ -405,7 +403,7 @@ def run_diags( opts ):
                             logger.info('--------------------------------- res is not none')
 
                             frname = form_file_rootname(
-                                snum, [varid], 'variable', dir=outdir, season=utime, basen=basename,
+                                snum, [varid], 'variable', dir=outdir, season=utime, # basen=basename,
                                 postn=postname, region=r_fname, aux=[aux] )
                             
                             if opts['output']['plots'] == True:
@@ -619,6 +617,12 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, opts, displa
                 if 'runby' in opts.keys() and opts['runby']=='meta':
                     # metadiags computes its own filenames using descr=True; we have to be consistent
                     descr = True
+                    #try:
+                    #    descr = var.filetableid.ftid
+                    #    if len(descr)<1:
+                    #        descr = True
+                    #except:
+                    #    descr = True
                 else:
                     try:
                         #descr = var.filetableid.nickname

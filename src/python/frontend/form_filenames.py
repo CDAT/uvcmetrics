@@ -164,7 +164,7 @@ def form_file_rootname( plotset, vars, meanings='variable', dir='', filetables=[
     for i,a in enumerate(aux):
         aux[i] = a.strip()
     plotset = str(plotset)
-    if basen==plotset:
+    if basen==plotset or basen=='set'+plotset:
         basen=''
     if region in ['Global','global'] or region is None:
         region = ''
