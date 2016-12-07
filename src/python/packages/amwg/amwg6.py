@@ -457,10 +457,14 @@ class amwg_plot_set6(amwg_plot_plan):
 
         #tm2.units.priority         = 1
         #tm2.legend.offset         += 0.011
-            
+
+        try:
+            mean_value = float(var.mean)
+        except:
+            mean_value = var.mean()            
         #plot the table of min, mean and max in upper right corner
         content = {'min':('Min', var.min()),
-                   'mean':('Mean', var.mean),
+                   'mean':('Mean', mean_value),
                    'max': ('Max', var.max()) 
                    }
         cnvs2, tm2 = plot_table(cnvs2, tm2, content, 'mean', .065)

@@ -5,7 +5,7 @@
 
 from pprint import pprint
 from metrics.packages.amwg.amwg import amwg_plot_plan
-from metrics.packages.amwg.tools import src2modobs, src2obsmod
+from metrics.packages.amwg.tools import src2modobs, src2obsmod, plot_table
 from metrics.packages.amwg.amwg1 import reduced_variables_press_lev, reduced_variables_hybrid_lev
 from metrics.packages.amwg.derivations.vertical import *
 from metrics.packages.plotplan import plot_plan
@@ -61,7 +61,7 @@ class amwg_plot_set4and4A(amwg_plot_plan):
         self.plot3_id = '_'.join([ft1id+'-'+ft2id,varid,seasonid,'contour'])
         self.plotall_id = '_'.join([ft1id,ft2id,varid,seasonid])
         if not self.computation_planned:
-            self.plan_computation( model, obs, varid, seasonid, plotparms )
+            self.plan_computation( model, obs, varid, seasonid, names, plotparms )
     @staticmethod
     def _list_variables( model, obs ):
         allvars = amwg_plot_set4._all_variables( model, obs )
@@ -80,7 +80,7 @@ class amwg_plot_set4and4A(amwg_plot_plan):
         return reduced_variables_press_lev( filetable, varid, seasonid, region=self.region,  RF1=RF1, RF2=RF2 )
     def reduced_variables_hybrid_lev( self, filetable, varid, seasonid, ftno=None,  RF1=None, RF2=None):
         return reduced_variables_hybrid_lev( filetable, varid, seasonid, region=self.region,  RF1=RF1, RF2=RF2 )
-    def plan_computation( self, model, obs, varid, seasonid, plotparms ):
+    def plan_computation( self, model, obs, varid, seasonid, names, plotparms ):
         filetable1, filetable2 = self.getfts(model, obs)
         ft1_hyam = filetable1.find_files('hyam')
         if filetable2 is None:
@@ -142,23 +142,26 @@ class amwg_plot_set4and4A(amwg_plot_plan):
             self.plot1_id: plotspec(
                 vid = ps.dict_idid(vid1), zvars=[vid1], zfunc=(lambda z: z),
                 plottype = self.plottype,
-                title = ' '.join([varid,seasonid,'(1)']),
+                title1 = ' '.join([varid, seasonid]),
+                title2 = 'model', 
                 file_descr = 'model',
                 source = ft1src,
                 plotparms = plotparms[src2modobs(ft1src)] ),
             self.plot2_id: plotspec(
                 vid = ps.dict_idid(vid2), zvars=[vid2], zfunc=(lambda z: z),
                 plottype = self.plottype,
-                title = ' '.join([varid,seasonid,'(2)']),
+                title1 = '',
+                title2 = "observation",
                 file_descr = 'obs',
-                source = ft2src,
+                source = names['obs'],
                 plotparms = plotparms[src2obsmod(ft2src)] ),
             self.plot3_id: plotspec(
                 vid = ps.dict_id(varid,'diff',seasonid,filetable1,filetable2), zvars=[vid1,vid2],
                 zfunc=aminusb_2ax, plottype = self.plottype,
-                title = ' '.join([varid,seasonid,'(1)-(2)']),
+                title1 = '',
+                title2 = 'difference', 
                 file_descr = 'diff',
-                source = ', '.join([ft1src,ft2src]),
+                #source = ', '.join([ft1src,ft2src]),
                 plotparms = plotparms['diff'] )
             }
         self.composite_plotspecs = {
@@ -170,6 +173,8 @@ class amwg_plot_set4and4A(amwg_plot_plan):
         """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
 
+        tm2 = cnvs1.gettemplate("plotset4_0_x_%s" % (tm2.name.split("_")[2]))
+        
         tm2.yname.priority  = 1
         tm2.xname.priority  = 1
         tm1.yname.priority  = 1
@@ -231,31 +236,61 @@ class amwg_plot_set4and4A(amwg_plot_plan):
         # Adjust labels and names for combined plots
         ynameOri                  = cnvs2.gettextorientation(tm2.yname.textorientation)
         ynameOri.height           = 10
-        tm2.yname.textorientation = ynameOri
-        tm2.yname.x              -= 0.009
+        #tm2.yname.textorientation = ynameOri
+        #tm2.yname.x              -= 0.009
 
         xnameOri                  = cnvs2.gettextorientation(tm2.xname.textorientation)
         xnameOri.height           = 10
-        tm2.xname.textorientation = xnameOri
-        tm2.xname.y              -= 0.003
+        #tm2.xname.textorientation = xnameOri
+        #tm2.xname.y              -= 0.003
 
-        tm2.mean.y -= 0.005
+        #tm2.mean.y -= 0.005
 
         titleOri                  = cnvs2.gettextorientation(tm2.title.textorientation)
         titleOri.height           = 11.5
-        tm2.title.textorientation = titleOri
+        #tm2.title.textorientation = titleOri
 
-        tm2.max.y -= 0.005
+        #tm2.max.y -= 0.005
         
         sourceOri                  = cnvs2.gettextorientation(tm2.source.textorientation)
         sourceOri.height           = 8.0
-        tm2.source.textorientation = sourceOri
-        tm2.source.y               = tm2.units.y - 0.01
-        tm2.source.x               = tm2.data.x1
-        tm2.source.priority        = 1
+        #tm2.source.textorientation = sourceOri
+        #tm2.source.y               = tm2.units.y - 0.01
+        #tm2.source.x               = tm2.data.x1
+        #tm2.source.priority        = 1
 
-        tm2.units.priority = 1
+        #tm2.units.priority = 1
 
+        if True:        
+            #plot the table of min, mean and max in upper right corner
+            try:
+                mean_value = float(var.mean)
+            except:
+                mean_value = var.mean()
+            content = {'min':('Min', var.min()),
+                       'mean':('Mean', mean_value),
+                       'max': ('Max', var.max()) 
+                       }
+            #pdb.set_trace()
+            cnvs2, tm2 = plot_table(cnvs2, tm2, content, 'mean', .065)
+            print content
+            
+            #turn off any later plot of min, mean & max values
+            tm2.max.priority = 0
+            tm2.mean.priority = 0
+            tm2.min.priority = 0
+            
+            #create the header for the plot    
+            header = getattr(var, 'title', None)
+            if header is not None:
+                text = cnvs2.createtext()
+                text.string = header
+                text.x = (tm2.data.x1 + tm2.data.x2)/2
+                text.y = tm2.data.y2 + 0.03
+                text.height = 16
+                text.halign = 1
+                cnvs2.plot(text, bg=1)  
+        
         return tm1, tm2
     def _results(self,newgrid=0):
         results = plot_plan._results(self,newgrid)

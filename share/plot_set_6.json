@@ -236,7 +236,7 @@
     "line": "default", 
     "texttable": "default",
     "x1": 0.88, 
-    "x2": 0.9193066666666667, 
+    "x2": 0.919, 
     "y1": 0.7265, 
     "y2": 0.9251666666666666
    }, 
@@ -603,7 +603,7 @@
     "y1": 0.4131666666666666, 
     "textorientation": "__textorientation_148938777062833", 
     "offset": 0.0305, 
-    "x2": 0.9193066666666667, 
+    "x2": 0.919, 
     "line": "default", 
     "x1": 0.88, 
     "texttable": "default"
@@ -971,7 +971,7 @@
     "y1": 0.09983333333333325, 
     "textorientation": "__textorientation_536891801469538", 
     "offset": 0.0305, 
-    "x2": 0.9193066666666667, 
+    "x2": 0.919, 
     "line": "default", 
     "x1": 0.88, 
     "texttable": "default"
