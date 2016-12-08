@@ -2,7 +2,7 @@
 
 # Functions callable from the UV-CDAT GUI.
 
-import hashlib, os, pickle, sys, os, math, pdb, string, logging
+import hashlib, os, pickle, sys, os, math, pdb, string, logging, random
 from metrics import *
 from metrics.fileio.filetable import *
 from metrics.fileio.findfiles import *
@@ -860,7 +860,7 @@ class uvc_simple_plotspec(basic_id):
                 if len(self.vars)>1:  where = where+'-combined'
                 return form_filename( where, 'nc', descr, self.vars[0].id, more_id=self.more_id )
         elif len(self.title)<=0:
-            fname = 'foo.nc'
+            fname = 'foo'+''.join([random.choice('0123456789') for _ in range(4)])+'.nc'
         else:
             # the title join ends up with two spaces between fields. check for that first, then replace single spaces after.
             fname = underscore_join([self.title.strip(),self.source]).replace('  ','_').replace(' ','_').replace('/','_') + '.nc'
@@ -899,7 +899,12 @@ class uvc_simple_plotspec(basic_id):
         plot_these = []
         for zax in self.vars:
             try:
+                if not hasattr(zax,'filetableid'):
+                    zax.filetableid = zax.filetable.id()
                 del zax.filetable  # we'll write var soon, and can't write a filetable
+                if hasattr(zax,'filetable2'):
+                    zax.filetable2id = zax.filetable2.id()
+                    del zax.filetable2 # we'll write var soon, and can't write a filetable
             except:
                 pass
             try:
