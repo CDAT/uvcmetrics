@@ -23,6 +23,6 @@ def template_merge(files, fileid_output="plot_set_5"):
 if __name__ == '__main__':     
     import sys
     files = sys.argv[1:]
-    template_merge(files, fileid_output="plot_set_6")
+    template_merge(files, fileid_output="plot_set_xxx")
        
     

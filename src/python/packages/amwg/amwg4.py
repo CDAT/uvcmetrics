@@ -145,7 +145,7 @@ class amwg_plot_set4and4A(amwg_plot_plan):
                 title1 = ' '.join([varid, seasonid]),
                 title2 = 'model', 
                 file_descr = 'model',
-                source = ft1src,
+                source = names['model'],
                 plotparms = plotparms[src2modobs(ft1src)] ),
             self.plot2_id: plotspec(
                 vid = ps.dict_idid(vid2), zvars=[vid2], zfunc=(lambda z: z),
@@ -161,7 +161,6 @@ class amwg_plot_set4and4A(amwg_plot_plan):
                 title1 = '',
                 title2 = 'difference', 
                 file_descr = 'diff',
-                #source = ', '.join([ft1src,ft2src]),
                 plotparms = plotparms['diff'] )
             }
         self.composite_plotspecs = {
@@ -261,35 +260,34 @@ class amwg_plot_set4and4A(amwg_plot_plan):
 
         #tm2.units.priority = 1
 
-        if True:        
-            #plot the table of min, mean and max in upper right corner
-            try:
-                mean_value = float(var.mean)
-            except:
-                mean_value = var.mean()
-            content = {'min':('Min', var.min()),
-                       'mean':('Mean', mean_value),
-                       'max': ('Max', var.max()) 
-                       }
-            #pdb.set_trace()
-            cnvs2, tm2 = plot_table(cnvs2, tm2, content, 'mean', .065)
-            print content
-            
-            #turn off any later plot of min, mean & max values
-            tm2.max.priority = 0
-            tm2.mean.priority = 0
-            tm2.min.priority = 0
-            
-            #create the header for the plot    
-            header = getattr(var, 'title', None)
-            if header is not None:
-                text = cnvs2.createtext()
-                text.string = header
-                text.x = (tm2.data.x1 + tm2.data.x2)/2
-                text.y = tm2.data.y2 + 0.03
-                text.height = 16
-                text.halign = 1
-                cnvs2.plot(text, bg=1)  
+    
+        #plot the table of min, mean and max in upper right corner
+        try:
+            mean_value = float(var.mean)
+        except:
+            mean_value = var.mean()
+        content = {'min':('Min', var.min()),
+                   'mean':('Mean', mean_value),
+                   'max': ('Max', var.max()) 
+                   }
+        #pdb.set_trace()
+        cnvs2, tm2 = plot_table(cnvs2, tm2, content, 'mean', .065)
+        
+        #turn off any later plot of min, mean & max values
+        tm2.max.priority = 0
+        tm2.mean.priority = 0
+        tm2.min.priority = 0
+        
+        #create the header for the plot    
+        header = getattr(var, 'title', None)
+        if header is not None:
+            text = cnvs2.createtext()
+            text.string = header
+            text.x = (tm2.data.x1 + tm2.data.x2)/2
+            text.y = tm2.data.y2 + 0.03
+            text.height = 16
+            text.halign = 1
+            cnvs2.plot(text, bg=1)  
         
         return tm1, tm2
     def _results(self,newgrid=0):

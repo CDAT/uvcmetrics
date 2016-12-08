@@ -8,5 +8,6 @@ vcs_tmp_canvas.scriptrun(os.path.join(sys.prefix,"share","uvcmetrics","uvcmetric
 vcs_tmp_canvas.scriptrun(os.path.join(sys.prefix,"share","uvcmetrics","plot_set_4.json"))
 vcs_tmp_canvas.scriptrun(os.path.join(sys.prefix,"share","uvcmetrics","plot_set_5.json"))
 vcs_tmp_canvas.scriptrun(os.path.join(sys.prefix,"share","uvcmetrics","plot_set_6.json"))
+vcs_tmp_canvas.scriptrun(os.path.join(sys.prefix,"share","uvcmetrics","plot_set_9.json"))
 del(vcs_tmp_canvas)
 
