@@ -291,6 +291,15 @@ diags_collection['5']['CLDTOT_VISIR'] = {'plottype': '5', 'obs': ['ISCCP_1'], 'm
 #diags_collection['5']['MEANTAU'] = {'plottype': '5', 'obs': ['ISCCP_1', 'MODIS_1']}
 #diags_collection['5']['TCLDAREA'] = {'plottype': '5', 'obs': ['ISCCP_1', 'MODIS_1']}
 
+
+# *** Collection 5 ***
+diags_collection['5s'] = OrderedDict()
+diags_collection['5s']['desc'] = 'Horizontal contour plots of DJF, JJA and ANN means'
+diags_collection['5s']['seasons'] = ['DJF', 'JJA', 'ANN']
+diags_collection['5s']['package'] = 'AMWG'
+diags_collection['5s']['combined'] = True
+diags_collection['5s']['T'] = {'plottype': '5', 'obs': ['JRA25_1', 'NCEP_1'], 'varopts':['850', '200']}
+
 # *** Collection 6 ***
 diags_collection['6'] = OrderedDict()
 diags_collection['6']['desc'] = 'Horizontal vector plots of DJF, JJA and ANN means'
