@@ -20,7 +20,7 @@ dt = diags_test.DiagTest( modeldir, obsdir, plotset, filterid, obsid, varid, sea
 
 # Test of graphics (png) file match:
 # This just looks at combined plot, aka summary plot, which is a compound of three plots.
-imagefilename = 'set6_ANN_STRESS-combined.png'
+imagefilename = 'set6_ANN_STRESS-combined-obs_data_5.6_ERS_cam35_data_smaller.png'
 imagethreshold = None
 ncfiles = {}
 

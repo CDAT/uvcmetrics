@@ -21,11 +21,11 @@ dt = diags_test.DiagTest( modeldir, obsdir, plotset, filterid, obsid, varid, sea
 
 # Test of graphics (png) file match:
 # This just looks at combined plot, aka summary plot, which is a compound of three plots.
-imagefilename = 'set4_ANN_T-combined.png'
+imagefilename = 'set4_ANN_T-combined-cam3_5_fv1.9x2.5_NCEP.png'
 imagethreshold = None
 ncfiles = {}
-ncfiles['set4_ANN_T--model.nc'] = ['dv_T_levlat_ANN_ft1_cam35_data_smaller_model']
-ncfiles['set4_ANN_T--obs.nc'] = ['rv_T_ANN_NCEP']
+ncfiles['set4_ANN_T-cam35_data_smaller_model.nc'] = ['dv_T_levlat_ANN_ft1_cam35_data_smaller_model']
+ncfiles['set4_ANN_T-NCEP_obs.nc'] = ['rv_T_ANN_NCEP']
 
 # Test of NetCDF data (nc) file match:
 rtol = 1.0e-3
