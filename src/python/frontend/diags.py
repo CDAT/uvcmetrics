@@ -865,6 +865,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, opts, displa
         fnamepng,fnamesvg,fnamepdf = form_filename( frnamebase, ('png','svg','pdf'),
                                                     descr=descr, vname=vname, more_id='combined' )
     else:
+        source_descr2 = list(set(source_descr2))
         fnamepng,fnamesvg,fnamepdf = form_filename( frnamebase, ('png','svg','pdf'),
                                                     modobs=list(source_descr2), more_id='combined' )
 

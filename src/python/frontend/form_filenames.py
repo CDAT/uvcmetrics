@@ -35,6 +35,10 @@ What this function returns depends on what fmt is.
         descr = True
     if type(modobs) is list and len(modobs)==1:
         modobs = [ modobs[0], '' ]
+    if type(modobs) is list:
+        modobs = [ mo.replace(',','_') for mo in modobs ]
+        modobs = [ mo.replace(' ','_') for mo in modobs ]
+        modobs = [ mo.replace('__','_') for mo in modobs ]
     if descr is not True:
         modobsstr = underscore_join(modobs)
         fnamedot = better_join( '-', [rootname,more_id,modobsstr,descr]) + '.'

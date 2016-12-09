@@ -858,7 +858,7 @@ class uvc_simple_plotspec(basic_id):
                     ft2id = ''
                 descr = underscore_join([ft1id,ft2id,file_descr])
                 if len(self.vars)>1:  where = where+'-combined'
-                return form_filename( where, 'nc', descr, self.vars[0].id, more_id=self.more_id )
+                return form_filename( where, 'nc', descr=descr, vname=self.vars[0].id, more_id=self.more_id )
         elif len(self.title)<=0:
             fname = 'foo'+''.join([random.choice('0123456789') for _ in range(4)])+'.nc'
         else:
