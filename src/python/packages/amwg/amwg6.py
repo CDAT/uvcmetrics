@@ -337,7 +337,8 @@ class amwg_plot_set6(amwg_plot_plan):
             
             self.derived_variables[diff2_vid] = diff2
             title = ' '.join([varid,seasonid,'diff,mag.diff'])
-            source = underscore_join([ft1src,ft2src])
+            #source = underscore_join([ft1src,ft2src]) 
+            source = ''
 
             contplot = plotspec(
                 vid = ps.dict_id(var_cont1,'mag.of.diff',seasonid,filetable1,filetable2),
