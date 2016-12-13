@@ -152,9 +152,9 @@ def rhodz_from_plev( lev, nlev_want, mv ):
             # unit, but some obs files do.
             levunits = 'mbar' if lev.units=='mb' else lev.units
             PSunits = 'mbar' if PS.units=='mb' else PS.units
-            tmp = udunits(1.0,levunits)
+            tmp = udunits(1.0,PSunits)
             try:
-                s,i = tmp.how(PSunits)
+                s,i = tmp.how(levunits)
             except Exception as e:
                 # conversion not possible.
                 logging.exception("Could not convert from PS units %s to lev units %s",PS.units,lev.units)
