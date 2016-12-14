@@ -779,6 +779,9 @@ def reduce2level_seasonal( mv, season=seasonsyr, region='Global', vid=None, seas
 
     return avmv
 
+def identity( mv, *args, **kwargs ):
+    return mv
+
 def ttest_ab(mv1, mv2, constant = .1):
    mv1, mv2 = reconcile_units(mv1, mv2)
    ax1 = mv1.getAxisList()
