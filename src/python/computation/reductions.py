@@ -1692,7 +1692,7 @@ def calculate_seasonal_climatology(mv, season):
     In the future we may consider replacing climatology() by the functions in inc_reduce.py.
     """
     # Convert season to a season object if it isn't already
-    if season is None or season == 'ANN' or season.seasons[0] == 'ANN':
+    if season is None or season=='ANN' or getattr(season,'seasons',[None])[0] == 'ANN':
         season=seasonsyr
     elif type(season) == str:
         season=cdutil.times.Seasons(season)
