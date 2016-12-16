@@ -4,6 +4,9 @@
 import logging, pdb, importlib, time, cProfile
 from pprint import pprint
 from itertools import groupby
+from multiprocessing import Pool, current_process, Process, Queue
+import multiprocessing
+from os import getpid
 from metrics.frontend.multimaster import *   # this file is just a demo
 import metrics.frontend.multimaster as multimaster
 import metrics.frontend.defines as defines
@@ -253,7 +256,14 @@ def expand_lists_collections( opt, okeys=None ):
         flattened = [ o for ops in expanded_opts for o in ops ]
         return flattened
 
-def multidiags1( opt ):
+def md_run_diags( opt, queue1=None ):
+    #curr_proc = current_process()
+    #curr_proc.daemon = False
+    opt['modobs_names'] = run_diags(opt.clone())  # run_diags messes with its input arg, though it shouldn't
+    #queue1.put(opt)
+    return opt
+
+def multidiags1( opt, mp_pool ):
     """The input opt is a single Options instance, possibly with lists or collection names in place
     of real option values.  This function expands out such lists or collection names, giving us a
     list of simple Options instances.
@@ -269,12 +279,30 @@ def multidiags1( opt ):
         o = finalize_modelobs(o) # copies obspath to obs['path'], changes {} to [{}]
         o['runby'] = 'multi'     # in case someone needs to know that multidiags is running it
         print "jfp about to run_diags on",o['vars'],len(o.get('obs',[])),o.get('obs',[])
-        t0 = time.time()
         o.finalizeOpts()
-        o['modobs_names'] = run_diags(o.clone())
-        # re o.clone(): diags.py should leave the options alone, but it doesn't: it replaces o['varopts'], at least.
-        trun = time.time() - t0
-        print "jfp run_diags took",trun,"seconds"
+
+    # single-processing:
+    newopts = map( md_run_diags, newopts )
+
+    # multi-processing:
+    # doesn't work, and I tried it two ways.  I think VCS, Qt, or the like crashes when you
+    # try to make a plot in a forked process.  The multiprocessing module won't spawn for
+    # Unix-like systems except in Python >=3.4, which has set_start_method('spawn').
+#    newopts = mp_pool.map( md_run_diags, newopts )
+# thse two lines aren't necessary, but I was desperate enough to try them:
+#    mp_pool.close()
+#    mp_pool.join()
+##
+#    queues = []
+#    procs = []
+#    multiprocessing.set_start_method('spawn')
+#    for i,o in enumerate(newopts):
+#        queues.append( Queue() )
+#        procs.append( Process( target=md_run_diags, args=(o,queues[i]) ) )
+#        procs[i].start()
+#    for i,o in enumerate(newopts):
+#        procs[i].join()
+
     setup_viewer( newopts )
 
 def multidiags( opts ):
@@ -303,8 +331,16 @@ def multidiags( opts ):
             nopts.extend(opt)
         else:
             logger.error("cannot understand opt=%s",opt)
+    mp_pool = Pool(processes = 6)
     for opt in nopts:
-        multidiags1(opt)
+        multidiags1( opt, mp_pool )
+
+def p_run_diags( opt ):
+    """run_diags() but run as a separate process.  returns the process, the caller should
+    join it."""
+    p = Process( target=run_diags, args=(opt,) )
+    p.start()
+    return p
 
 def finalize_modelobs(opt):
     """For the model and obs options in opt, copies any modelpath or obspath option into its model or obs
