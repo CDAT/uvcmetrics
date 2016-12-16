@@ -83,6 +83,8 @@ def setManualColormap(canvas=None, level=0):
 def getNames(opts, model, obs):
     """ The purpose of this kludge is to get the names of the model and obs 
     specified on the command line for output on the graphic.
+    These particular names should be sufficiently unique and human-readable, and
+    reasonably short.
     Each of model and obs should be a list of instances of basic_filetable.
     This function returns a dictionary of the form {'model':modelname, 'obs':obsname}
     where modelname and obsname are strings."""
@@ -470,6 +472,7 @@ def run_diags( opts ):
 
     # If this were called from multidiags, the names dictionary would be helpful.  In particular,
     # it will help to not have to re-open a file to re-compute the case name for the model.
+    print "multidiags start here names=", names, "multidiags stop here"
     return names
 
 
@@ -889,14 +892,20 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, opts, displa
 if __name__ == '__main__':
     print "UV-CDAT Diagnostics, command-line version"
     print ' '.join(sys.argv)
-    try:
-        irunby = sys.argv.index('--runby')
-        runby = sys.argv[irunby+1]
-        o = Options(runby=runby)
-    except ValueError:
-        o = Options()
+    if sys.argv[1][:10]=='--optfile=':
+        # special case.  All options are described in a file containing a pickled Options object.
+        optfile = open( sys.argv[1][10:], 'rb' )
+        o = pickle.load(optfile)
+        optfile.close()
+    else:
+        # Normal case, with command-line options.  Their interpretation differs slightly according
+        # to how this was run, as specified in the '--runby' option.
+        try:
+            irunby = sys.argv.index('--runby')
+            runby = sys.argv[irunby+1]
+            o = Options(runby=runby)
+        except ValueError:
+            o = Options()
     o.parseCmdLine()
     o.verifyOptions()
-    #print o._opts['levels']
-    #print o._opts['displayunits']
     run_diags(o)

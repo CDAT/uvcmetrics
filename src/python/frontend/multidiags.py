@@ -1,12 +1,14 @@
 # Run multiple diagnostics.  The user only specifies paths and a collection name.
 # The collection name is a key into multimaster.py, or (>>>> TO DO >>>>) another file provided by the user.
 
-import logging, pdb, importlib, time, cProfile
+import logging, os, pdb, importlib, time, cProfile, pickle, tempfile, subprocess
 from pprint import pprint
 from itertools import groupby
 from multiprocessing import Pool, current_process, Process, Queue
 import multiprocessing
+from tempfile import NamedTemporaryFile
 from os import getpid
+from subprocess import PIPE
 from metrics.frontend.multimaster import *   # this file is just a demo
 import metrics.frontend.multimaster as multimaster
 import metrics.frontend.defines as defines
@@ -263,7 +265,7 @@ def md_run_diags( opt, queue1=None ):
     #queue1.put(opt)
     return opt
 
-def multidiags1( opt, mp_pool ):
+def multidiags1( opt ):
     """The input opt is a single Options instance, possibly with lists or collection names in place
     of real option values.  This function expands out such lists or collection names, giving us a
     list of simple Options instances.
@@ -282,20 +284,39 @@ def multidiags1( opt, mp_pool ):
         o.finalizeOpts()
 
     # single-processing:
-    newopts = map( md_run_diags, newopts )
+    #newopts = map( md_run_diags, newopts )
+    #for i,o in enumerate(newopts):
+    #    newopts[i] = md_run_diags(o)
 
     # multi-processing:
     # doesn't work, and I tried it two ways.  I think VCS, Qt, or the like crashes when you
     # try to make a plot in a forked process.  The multiprocessing module won't spawn for
     # Unix-like systems except in Python >=3.4, which has set_start_method('spawn').
+#mp_pool = Pool(processes = 6)  # normally done in multidiags() and passed to multidiags1()
 #    newopts = mp_pool.map( md_run_diags, newopts )
 # thse two lines aren't necessary, but I was desperate enough to try them:
 #    mp_pool.close()
 #    mp_pool.join()
 ##
 #    queues = []
-#    procs = []
-#    multiprocessing.set_start_method('spawn')
+    procs = []
+    tempfilens = []
+    for i,o in enumerate(newopts):
+        f = NamedTemporaryFile(delete=False)
+        fpath = os.path.realpath(f.name)
+        pickle.dump( o, f )  # easier than generating a full-length command line
+        f.close()
+        cmd = "diags --optfile=%s" % fpath  # don't change this syntax, c.f. bottom of diags.py
+        p = subprocess.Popen([cmd],shell=True,stdout=PIPE,stderr=PIPE)
+        tempfilens.append(fpath)
+        procs.append(p)
+    for i,o in enumerate(newopts):
+        stout,sterr = procs[i].communicate() # waits for process to finish, then reads pipes
+        namstr = stout[ stout.find("multidiags start here names=")+28 :
+                            stout.find("multidiags stop here") ]
+        os.remove(tempfilens[i])
+        o['modobs_names'] = eval( namstr )
+
 #    for i,o in enumerate(newopts):
 #        queues.append( Queue() )
 #        procs.append( Process( target=md_run_diags, args=(o,queues[i]) ) )
@@ -331,9 +352,8 @@ def multidiags( opts ):
             nopts.extend(opt)
         else:
             logger.error("cannot understand opt=%s",opt)
-    mp_pool = Pool(processes = 6)
     for opt in nopts:
-        multidiags1( opt, mp_pool )
+        multidiags1( opt )
 
 def p_run_diags( opt ):
     """run_diags() but run as a separate process.  returns the process, the caller should
