@@ -515,7 +515,7 @@ class Options():
                     logging.critical('Each dataset must have a path provided')
                     quit()
                 # check if the path exists
-                if not os.path.exists(self._opts['model'][i]['path']):
+                if not os.path.exists(os.path.expanduser(self._opts['model'][i]['path'])):
                     logging.critical('Path - %s - does not exist', self._opts['model'][i]['path'])
                     quit()
         if len(self._opts['obs']) != 0:
@@ -523,7 +523,7 @@ class Options():
                if self._opts['obs'][i]['path'] == None or self._opts['obs'][i]['path'] == '':
                    logging.critical('Each dataset must have a path provided')
                    quit()
-               if not os.path.exists(self._opts['obs'][i]['path']):
+               if not os.path.exists(os.path.expanduser(self._opts['obs'][i]['path'])):
                    logging.critical('Obs Path - %s - does not exist', self._opts['obs'][i]['path'])
                    quit()
         #      if(self._opts['package'] == None):
@@ -533,7 +533,7 @@ class Options():
         # A path is guaranteed, even if it is just /tmp. So check for it
         # We shouldn't get here anyway. This is primarily in case something gets postpended to the user-specified outputdir
         # in options(). Currently that happens elsewhere, but seems like a raesonable check to keep here anyway.
-        if not os.path.exists(self._opts['output']['outputdir']):
+        if not os.path.exists(os.path.expanduser(self._opts['output']['outputdir'])):
             logging.critical('output directory %s does not exist', self._opts['output']['outputdir'])
             quit()
 
