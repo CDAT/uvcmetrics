@@ -259,11 +259,55 @@ def expand_lists_collections( opt, okeys=None ):
         return flattened
 
 def md_run_diags( opt, queue1=None ):
-    #curr_proc = current_process()
-    #curr_proc.daemon = False
     opt['modobs_names'] = run_diags(opt.clone())  # run_diags messes with its input arg, though it shouldn't
-    #queue1.put(opt)
     return opt
+
+def run_next():
+    """Runs a diags process on the next option in the newopts list."""
+    global newopts
+    global optidx
+    global procs
+    global active
+    global tempfilens
+    if None in active:
+        active[active.index(None)] = optidx
+        o = newopts[optidx]
+        f = NamedTemporaryFile(delete=False)
+        fpath = os.path.realpath(f.name)
+        pickle.dump( o, f )  # easier than generating a full-length command line
+        f.close()
+        cmd = "diags --optfile=%s" % fpath  # don't change this syntax, c.f. bottom of diags.py
+        p = subprocess.Popen([cmd],shell=True,stdout=PIPE,stderr=PIPE)
+        procs[optidx] = p
+        tempfilens[optidx] = fpath
+        optidx += 1
+    elif optidx<len(newopts):
+        wait_next()
+    else:
+        return None
+
+def wait_next():
+    """Waits for any process to finish, then calls wait on it."""
+    global procs
+    global active
+    while True:
+        for idx in active:
+            if procs[idx].poll() is not None: # If the process hasn't finished will return None
+                wait(idx)
+                return idx
+
+def wait( idx ):
+    """waits for process/option no. idx to finish, and does the remaining work on it."""
+    global newopts
+    global procs
+    global active
+    global tempfilens
+    stout,sterr = procs[idx].communicate() # waits for process to finish, then reads pipes
+    namstr = stout[ stout.find("multidiags start here names=")+28 :
+                        stout.find("multidiags stop here") ]
+    os.remove(tempfilens[idx])
+    newopts[idx]['modobs_names'] = eval( namstr )
+    active[active.index(idx)] = None
 
 def multidiags1( opt ):
     """The input opt is a single Options instance, possibly with lists or collection names in place
@@ -271,6 +315,12 @@ def multidiags1( opt ):
     list of simple Options instances.
     For each one separately, it computes the requested diagnostics.
     """
+    global newopts
+    global optidx
+    global procs
+    global tempfilens
+    global active
+
     opts = merge_all_options(opt)
     newopts = []
     for op in opts:
@@ -284,45 +334,37 @@ def multidiags1( opt ):
         o.finalizeOpts()
 
     # single-processing:
-    #newopts = map( md_run_diags, newopts )
     #for i,o in enumerate(newopts):
-    #    newopts[i] = md_run_diags(o)
+    #    o['modobs_names'] = run_diags(o.clone()) # run_diags messes with its input arg, though it shouldn't
 
     # multi-processing:
-    # doesn't work, and I tried it two ways.  I think VCS, Qt, or the like crashes when you
-    # try to make a plot in a forked process.  The multiprocessing module won't spawn for
-    # Unix-like systems except in Python >=3.4, which has set_start_method('spawn').
-#mp_pool = Pool(processes = 6)  # normally done in multidiags() and passed to multidiags1()
-#    newopts = mp_pool.map( md_run_diags, newopts )
-# thse two lines aren't necessary, but I was desperate enough to try them:
-#    mp_pool.close()
-#    mp_pool.join()
-##
-#    queues = []
-    procs = []
-    tempfilens = []
-    for i,o in enumerate(newopts):
-        f = NamedTemporaryFile(delete=False)
-        fpath = os.path.realpath(f.name)
-        pickle.dump( o, f )  # easier than generating a full-length command line
-        f.close()
-        cmd = "diags --optfile=%s" % fpath  # don't change this syntax, c.f. bottom of diags.py
-        p = subprocess.Popen([cmd],shell=True,stdout=PIPE,stderr=PIPE)
-        tempfilens.append(fpath)
-        procs.append(p)
-    for i,o in enumerate(newopts):
-        stout,sterr = procs[i].communicate() # waits for process to finish, then reads pipes
-        namstr = stout[ stout.find("multidiags start here names=")+28 :
-                            stout.find("multidiags stop here") ]
-        os.remove(tempfilens[i])
-        o['modobs_names'] = eval( namstr )
+    procs = [None] * len(newopts)
+    active = [None] * 2  # For testing, this is MAX_N_PROCS, the maximimum number of simultaneous processes
+    tempfilens = [None] * len(newopts)
+    optidx = 0
+    while optidx<len(newopts):
+        run_next()  # runs a process for newopts[optidx], *or* waits for something to finish
+    for iactive in active:
+        if iactive is None:
+            continue
+        wait(iactive)
 
-#    for i,o in enumerate(newopts):
-#        queues.append( Queue() )
-#        procs.append( Process( target=md_run_diags, args=(o,queues[i]) ) )
-#        procs[i].start()
-#    for i,o in enumerate(newopts):
-#        procs[i].join()
+    if False:  # older, working, MP code:
+        for i,o in enumerate(newopts):
+            f = NamedTemporaryFile(delete=False)
+            fpath = os.path.realpath(f.name)
+            pickle.dump( o, f )  # easier than generating a full-length command line
+            f.close()
+            cmd = "diags --optfile=%s" % fpath  # don't change this syntax, c.f. bottom of diags.py
+            p = subprocess.Popen([cmd],shell=True,stdout=PIPE,stderr=PIPE)
+            tempfilens[i] = fpath
+            procs[i] = p
+        for i,o in enumerate(newopts):
+            stout,sterr = procs[i].communicate() # waits for process to finish, then reads pipes
+            namstr = stout[ stout.find("multidiags start here names=")+28 :
+                                stout.find("multidiags stop here") ]
+            os.remove(tempfilens[i])
+            o['modobs_names'] = eval( namstr )
 
     setup_viewer( newopts )
 
@@ -385,7 +427,7 @@ def organize_opts_for_viewer( opts ):
     outside, the diags collection (page), normally just one of them.  Next in, the obs (group),
     then the variable and region (row) and finally the season (file, aka column).
     """
-    # It might be possible to implement this as a single humongous list comprehension.
+    # It might be possible to implement this function as a single humongous list comprehension.
     # It would be amusing to see that done, but impossible to understand it or debug it.
     collections = set([ o['collection'] for o in opts])
     opts2 = [ [o for o in opts if o['collection']==coll] for coll in collections ]
@@ -528,28 +570,6 @@ def setup_viewer_2( optsnested, vardesc ):
         index = OutputIndex("UVCMetrics %s" % opt['package'].upper(), version="version/dsname here" )
         index.addPage( page )  # normally part of loop over pages
         index.toJSON(os.path.join(opt['output']['outputdir'], opt['package'].lower(), "index.json"))
-
-def setup_viewer_1( opt ):
-    """Sets up data structures needed by the viewer.  This input parameter opt is a single
-    Options instance.  This function will likely be more useful for coding practice than for actual
-    use."""
-
-    collnm = opt['collection']   # collection name should be set up earlier; it doesn't exist yet
-    page_columns = ["Description"] + opt['seasons']
-    coll_def = { 'desc': "verbose description of the diagnostic collection" }
-    page = OutputPage( "Plot collection %s" % collnm, short_name="set_%s" % collnm, columns=page_columns,
-                       description=coll_def["desc"], icon="amwg_viewer/img/SET%s.png" % collnm)
-    columns = [ "row description", OutputFile("/Users/painter1/tmp/diagout/amwg/set5_DJF_LHFLX-combined-20160520_NCEP.png"), OutputFile("/Users/painter1/tmp/diagout/amwg/set5_JJA_LHFLX-combined-20160520_NCEP.png"), OutputFile("/Users/painter1/tmp/diagout/amwg/set5_ANN_LHFLX-combined-20160520_NCEP.png") ]
-    row = OutputRow( "row title", columns )
-    group = OutputGroup(opt['obs'].get('desc',str(opt['obs']['filter'])))  # also need to support opt['obs'][i]
-    page.addGroup(group)
-    obs_index = 0 # actually this should be the group index.  The group is the boldface row in the web page.
-    # and thus names the obs set.  The obs index is really an index into a list of observations.
-    page.addRow( row, obs_index )
-
-    index = OutputIndex("UVCMetrics %s" % opt['package'].upper(), version="version/dsname here" )
-    index.addPage( page )  # normally part of loop over pages
-    index.toJSON(os.path.join(opt['output']['outputdir'], opt['package'].lower(), "index.json"))
 
 
 if __name__ == '__main__':
