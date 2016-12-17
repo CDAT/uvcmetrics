@@ -158,7 +158,7 @@ def run_diags( opts ):
     # Setup filetable arrays
     modelfts = []
     obsfts = []
-    names = {'model':'', 'obs':''}
+    names = {}
     for i in range(len(opts['model'])):
         ft = path2filetable(opts, modelid=i)
         if ft._id.nickname=='':
@@ -327,7 +327,8 @@ def run_diags( opts ):
                 logger.warning('Could not find any of the requested variables %s among %s', opts['vars'],
                                 pclass.list_variables(modelfts,obsfts,sname) )
                 logger.warning("among %s", variables)
-                return {}
+                print "multidiags start here names=", names, "multidiags stop here"
+                return names
 
         # Ok, start the next layer of work - seasons and regions
         # loop over the seasons for this plot
