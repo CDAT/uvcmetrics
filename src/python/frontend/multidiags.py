@@ -18,6 +18,9 @@ from metrics.frontend.form_filenames import form_file_rootname, form_filename
 from output_viewer.index import OutputIndex, OutputPage, OutputGroup, OutputRow, OutputFile, OutputMenu
 
 logger = logging.getLogger(__name__)
+MAX_N_PROCS = 2   # maximum number of simultaneous processes.
+                  # These are run with Popen or the multiprocessing module.
+ARG_MAX = subprocess.check_output(['getconf', 'ARG_MAX']) # max length of a command line
 
 def merge_option_with_its_defaults( opt, diags_collection ):
     """If opt, an Options instance, has a default_opts option set, this will import the
@@ -268,18 +271,19 @@ def run_next():
     global optidx
     global procs
     global active
-    global tempfilens
+    #old global tempfilens
     if None in active:
         active[active.index(None)] = optidx
         o = newopts[optidx]
-        f = NamedTemporaryFile(delete=False)
-        fpath = os.path.realpath(f.name)
-        pickle.dump( o, f )  # easier than generating a full-length command line
-        f.close()
-        cmd = "diags --optfile=%s" % fpath  # don't change this syntax, c.f. bottom of diags.py
+        ostr = pickle.dumps( o, 0 )  # easier than generating a full-length command line
+        ostr = ostr.replace('\'','jfpsingleq')
+        ostr = '\'' + ostr + '\''
+        cmd = r"diags --pickopt=%s" % ostr  # don't change this syntax, c.f. bottom of diags.py
+        if len(cmd)>=ARG_MAX:
+            logger.critical("generated command line is too long for the operating sytem!")
+            quit()
         p = subprocess.Popen([cmd],shell=True,stdout=PIPE,stderr=PIPE)
         procs[optidx] = p
-        tempfilens[optidx] = fpath
         optidx += 1
     elif optidx<len(newopts):
         wait_next()
@@ -301,12 +305,13 @@ def wait( idx ):
     global newopts
     global procs
     global active
-    global tempfilens
     stout,sterr = procs[idx].communicate() # waits for process to finish, then reads pipes
     namstr = stout[ stout.find("multidiags start here names=")+28 :
                         stout.find("multidiags stop here") ]
-    os.remove(tempfilens[idx])
-    newopts[idx]['modobs_names'] = eval( namstr )
+    #print "jfp stout=",stout
+    #print "jfp sterr=",sterr
+    if len(namstr)>0:
+        newopts[idx]['modobs_names'] = eval( namstr )
     active[active.index(idx)] = None
 
 def multidiags1( opt ):
@@ -318,7 +323,6 @@ def multidiags1( opt ):
     global newopts
     global optidx
     global procs
-    global tempfilens
     global active
 
     opts = merge_all_options(opt)
@@ -339,8 +343,7 @@ def multidiags1( opt ):
 
     # multi-processing:
     procs = [None] * len(newopts)
-    active = [None] * 2  # For testing, this is MAX_N_PROCS, the maximimum number of simultaneous processes
-    tempfilens = [None] * len(newopts)
+    active = [None] * MAX_N_PROCS  # MAX_N_PROCS is defined at the top of this file.
     optidx = 0
     while optidx<len(newopts):
         run_next()  # runs a process for newopts[optidx], *or* waits for something to finish
@@ -348,23 +351,6 @@ def multidiags1( opt ):
         if iactive is None:
             continue
         wait(iactive)
-
-    if False:  # older, working, MP code:
-        for i,o in enumerate(newopts):
-            f = NamedTemporaryFile(delete=False)
-            fpath = os.path.realpath(f.name)
-            pickle.dump( o, f )  # easier than generating a full-length command line
-            f.close()
-            cmd = "diags --optfile=%s" % fpath  # don't change this syntax, c.f. bottom of diags.py
-            p = subprocess.Popen([cmd],shell=True,stdout=PIPE,stderr=PIPE)
-            tempfilens[i] = fpath
-            procs[i] = p
-        for i,o in enumerate(newopts):
-            stout,sterr = procs[i].communicate() # waits for process to finish, then reads pipes
-            namstr = stout[ stout.find("multidiags start here names=")+28 :
-                                stout.find("multidiags stop here") ]
-            os.remove(tempfilens[i])
-            o['modobs_names'] = eval( namstr )
 
     setup_viewer( newopts )
 

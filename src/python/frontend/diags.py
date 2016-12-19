@@ -892,12 +892,12 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, opts, displa
 
 if __name__ == '__main__':
     print "UV-CDAT Diagnostics, command-line version"
-    print ' '.join(sys.argv)
-    if sys.argv[1][:10]=='--optfile=':
-        # special case.  All options are described in a file containing a pickled Options object.
-        optfile = open( sys.argv[1][10:], 'rb' )
-        o = pickle.load(optfile)
-        optfile.close()
+    print repr(repr(' '.join(sys.argv)))
+    if sys.argv[1][:10]=='--pickopt=':
+        # special case.  All options are described in the argument, a pickled Options object.
+        pickopt = sys.argv[1][10:]
+        pickopt = pickopt.replace('jfpsingleq','\'')
+        o = pickle.loads(pickopt)
     else:
         # Normal case, with command-line options.  Their interpretation differs slightly according
         # to how this was run, as specified in the '--runby' option.
