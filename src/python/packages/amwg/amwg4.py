@@ -34,7 +34,7 @@ class amwg_plot_set4and4A(amwg_plot_plan):
     #name = '4 - Vertical Contour Plots Zonal Means'
     #number = '4'
     reduction_functions = { '4':[reduce2lat_seasonal, reduce2levlat_seasonal], 
-                           '4A':[reduce2lon_seasonal, reduce2levlon_seasonal]}
+                           '4A':[reduce2lon_seasonal, reduce2levlon_seasonal] }
     rf_ids = { '4': 'levlat', '4A': 'levlon'}
     def __init__( self, model, obs, varid, seasonid=None, regionid=None, aux=None, names={}, plotparms=None ):
         """filetable1, filetable2 should be filetables for model and obs.
@@ -97,11 +97,13 @@ class amwg_plot_set4and4A(amwg_plot_plan):
         #print RF_1d
         #print RF_2d
         if hybrid1:
-            reduced_variables_1 = self.reduced_variables_hybrid_lev( filetable1, varid, seasonid, RF1=RF_1d, RF2=RF_2d)
+            reduced_variables_1 = self.reduced_variables_hybrid_lev(
+                filetable1, varid, seasonid, RF1=identity, RF2=identity )
         else:
             reduced_variables_1 = self.reduced_variables_press_lev( filetable1, varid, seasonid, RF2=RF_2d)
         if hybrid2:
-            reduced_variables_2 = self.reduced_variables_hybrid_lev( filetable2, varid, seasonid,  RF1=RF_1d, RF2=RF_2d)
+            reduced_variables_2 = self.reduced_variables_hybrid_lev(
+                filetable2, varid, seasonid,  RF1=identity, RF2=identity )
         else:
             reduced_variables_2 = self.reduced_variables_press_lev( filetable2, varid, seasonid, RF2=RF_2d )
         reduced_variables_1.update( reduced_variables_2 )
@@ -118,7 +120,9 @@ class amwg_plot_set4and4A(amwg_plot_plan):
                 vid=vid1, inputs=[rv.dict_id(varid,seasonid,filetable1), rv.dict_id('hyam',seasonid,filetable1),
                                   rv.dict_id('hybm',seasonid,filetable1), rv.dict_id('PS',seasonid,filetable1),
                                   rv.dict_id(varid,seasonid,filetable2) ],
-                func=verticalize )
+                func=(lambda T, hyam, hybm, ps, level_src, seasonid=seasonid, varid=varid:
+                                 RF_2d( verticalize(T,hyam,hybm,ps,level_src), season=seasonid, vid=varid ) )
+                )
         else:
             vid1 = rv.dict_id(varid,seasonid,filetable1)
         if hybrid2:
@@ -130,7 +134,9 @@ class amwg_plot_set4and4A(amwg_plot_plan):
                                   rv.dict_id('hybm',seasonid,filetable2),
                                   rv.dict_id('PS',seasonid,filetable2),
                                   rv.dict_id(varid,seasonid,filetable2) ],
-                func=verticalize )
+                func=(lambda T, hyam, hybm, ps, level_src, seasonid=seasonid, varid=varid:
+                                 RF_2d( verticalize(T,hyam,hybm,ps,level_src), season=seasonid, vid=varid ) )
+                )
         else:
             vid2 = rv.dict_id(varid,seasonid,filetable2)
         ft1src = filetable1.source()
