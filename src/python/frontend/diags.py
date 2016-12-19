@@ -156,7 +156,7 @@ def run_diags( opts ):
     # Setup filetable arrays
     modelfts = []
     obsfts = []
-    names = {'model':'', 'obs':''}
+    names = {}
     for i in range(len(opts['model'])):
         ft = path2filetable(opts, modelid=i)
         if ft._id.nickname=='':
