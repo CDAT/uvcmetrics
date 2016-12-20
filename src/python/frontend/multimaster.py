@@ -26,14 +26,22 @@ diags_collection = {}
 var_collection['MyVars'] = ['FLUT', 'LWCF']
 
 obs_collection['MyObs'] = ['ISCCP', 'CERES', 'NCEP']
-obs_collection['ISCCP'] = {'filter':"f_startswith('ISCCP_')",'climos':'yes','name':None}
-obs_collection['CERES'] = {'filter':"f_and( f_startswith('CERES_'), f_not(f_contains('EBAF')))",'climos':'yes','name':None}
-obs_collection['ECMWF'] = {'filter':"f_startswith('ECMWF')",'climos':'yes','name':None}
-obs_collection['NCEP']  = {'filter':"f_startswith('NCEP')",'climos':'yes','name':None}
-obs_collection['ERA40'] = {'filter':"f_startswith('ERA40')",'climos':'yes','name':None}
-obs_collection['AIRS']  = {'filter':"f_startswith('AIRS')",'climos':'yes','name':None}
-obs_collection['JRA25'] = {'filter':"f_startswith('JRA25')",'climos':'yes','name':None}
-obs_collection['WILLMOTT'] = {'filter':"f_startswith('WILLMOTT')", 'climos':'yes', 'name':None}
+obs_collection['AIRS']  =  {'filter':"f_startswith('AIRS')",'climos':'yes','name':None}
+obs_collection['CERES'] =  {'filter':"f_and( f_startswith('CERES_'), f_not(f_contains('EBAF')))",'climos':'yes','name':None}
+obs_collection['CERES2'] = {'filter':"f_startswith('CERES2')",'climos':'yes','name':None}
+obs_collection['ECMWF'] =  {'filter':"f_startswith('ECMWF')",'climos':'yes','name':None}
+obs_collection['ERA40'] =  {'filter':"f_startswith('ERA40')",'climos':'yes','name':None}
+obs_collection['ERBE'] =   {'filter':"f_startswith('ERBE')",'climos':'yes','name':None}
+obs_collection['GPCP'] =   {'filter':"f_startswith('GPCP')",'climos':'yes','name':None}
+obs_collection['HadISST_CL'] =  {'filter':"f_startswith('HadISST_CL_')",'climos':'yes','name':None}
+obs_collection['HadISST_PD'] =  {'filter':"f_startswith('HadISST_PD_')",'climos':'yes','name':None}
+obs_collection['HadISST_PI'] =  {'filter':"f_startswith('HadISST_PI_')",'climos':'yes','name':None}
+obs_collection['ISCCP'] =  {'filter':"f_startswith('ISCCP_')",'climos':'yes','name':None}
+obs_collection['JRA25'] =  {'filter':"f_startswith('JRA25')",'climos':'yes','name':None}
+obs_collection['LARYEA'] = {'filter':"f_startswith('LARYEA')",'climos':'yes','name':None}
+obs_collection['NCEP']  =  {'filter':"f_startswith('NCEP')",'climos':'yes','name':None}
+obs_collection['SSMI'] =   {'filter':"f_and( f_startswith('SSMI_'), f_not(f_contains('SEAICE')))",'climos':'yes','name':None}
+obs_collection['WILLMOTT']={'filter':"f_startswith('WILLMOTT')", 'climos':'yes', 'name':None}
 model_collection['generic'] = {'climos':'yes', 'name':None}
 
 diags_collection['MyDefaults'] = Options( desc = 'default options to be incorporated into other collections',
@@ -79,6 +87,11 @@ diags_collection['4s'] = [
     Options(
         vars=['U','V'], obs=['ERA40'], seasons=['ANN', 'DJF', 'JJA'], default_opts='4base' ) ]
 
+diags_collection['7base'] = Options(
+    sets=['7'], desc='Polar contour and vector plots of DJF, JJA and ANN means',
+    seasons=['DJF', 'JJA', 'ANN'], regions=['N_Hemisphere_Land', 'S_Hemisphere_Land'],
+    package='AMWG', model='generic', default_opts='MyDefaults' )
+
 diags_collection['7s'] = [
     Options( sets=['7'], vars=['TREFHT'], obs='WILLMOTT', model=['generic'],
              seasons=['DJF', 'JJA', 'ANN'], package='AMWG', default_opts='MyDefaults',
@@ -89,6 +102,47 @@ diags_collection['7s'] = [
              varopts=[' Northern Hemisphere',' Southern Hemisphere'],
              desc='Polar contour plots of DJF, JJA, and ANN means' )
     ]
+
+diags_collection['7'] = [
+    Options( 
+        vars=['TREFHT'], obs=['WILLMOTT'], default_opts='7base' ),
+    Options( 
+        vars=['PS','PSL', 'TS', 'SURF_WIND'], obs=['NCEP'], default_opts='7base' ),
+    Options( 
+        vars=['PSL'], obs=['JRA25'], default_opts='7base' ),
+    Options( 
+        vars=['Z3'], obs=['ECMWF', 'JRA25', 'NCEP', 'ERA40'], varopts=['500'], default_opts='7base' ),
+    Options( 
+        vars=['SHFLX', 'QFLX', 'FLNS', 'FSNS'], obs=['LARYEA'], default_opts='7base' ),
+    Options( 
+        vars=['ALBEDO', 'ALBEDOC', 'FLUT', 'FLUTC', 'FSNTOA', 'FSNTOAC'], obs=['CERES2', 'CERES'], default_opts='7base' ),
+    Options( 
+        vars=['FLUT', 'FLUTC', 'FSNTOA', 'FSNTOAC'], obs=['ERBE'], default_opts='7base' ),
+    Options( 
+        vars=['FLNS', 'FLDS', 'FLDSC', 'FLNSC', 'FSDS', 'FSDSC', 'FSNS', 'FSNSC'], obs=['ISCCP'], default_opts='7base' ),
+    Options( 
+        vars=['CLDLOW_VISIR','CLDMED_VISIR','CLDHGH_VISIR','CLDTOT_VISR'], obs=['ISCCP'], regions=['N_Hemisphere_Land'],
+        default_opts='7base' ),
+# ... 'modelvar':'CLDLOW'}
+# ... 'modelvar':'CLDMED'}
+# ... 'modelvar':'CLDHGH'}
+# ... 'modelvar':'CLDTOT'}
+    Options( 
+        vars=['CLDMED','CLDHGH'], obs=['ISCCP', 'CLOUDSAT'], default_opts='7base' ),
+    Options( 
+        vars=['CLDLOW','CLDTOT'], obs=['ISCCP', 'WARREN', 'CLOUDSAT'], default_opts='7base' ),
+    Options( 
+        vars=['ICEFRAC'], obs=['SSMI', 'HadISST_CL', 'HadISST_PD', 'HadISST_PI'], default_opts='7base' ),
+    Options( 
+        vars=['SST'], obs=['HadISST_CL', 'HadISST_PD', 'HadISST_PI'], default_opts='7base' ),
+    Options( 
+        vars=['PRECT'], obs=['GPCP'], default_opts='7base' ),
+]
+
+diags_collection['7t'] = [
+    Options( 
+        vars=['ICEFRAC'], obs=['SSMI', 'HadISST_CL', 'HadISST_PD', 'HadISST_PI'], default_opts='7base' ),
+]
 
 
 
