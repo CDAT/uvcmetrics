@@ -8,6 +8,9 @@ sudo: false
 env:
     global:
         - TMPDIR=/tmp
+cache:
+      directories:
+          ${HOME}/test_data
 
 before_install:
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh; fi
@@ -24,7 +27,7 @@ install:
     - git clean -fd
     - df -h .
     - export UVCDAT_ANONYMOUS_LOG=False
-    - cmake .
+    - cmake . -DUVCMETRICS_TEST_DATA_DIRECTORY=${HOME}/test_data
     - python setup.py install
     - which cdscan
 
