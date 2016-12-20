@@ -109,7 +109,8 @@ def getNames(opts, model, obs):
         nicknames['obs'] = opts['obs'][0]['name']
     elif ft2 is not None:
         #nicknames['obs'] = ft2.source().split('_')[-1]
-        nicknames['obs'] = ft2.source().split('_')[0]
+        #nicknames['obs'] = ft2.source().split('_')[0] #doesn't work on HadISST_CL, which isn't HadISST
+        nicknames['obs'] = ft2.source()
     return nicknames
 
 def setnum( setname ):
@@ -871,6 +872,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, opts, displa
                                                     descr=descr, vname=vname, more_id='combined' )
     else:
         source_descr2 = list(set(source_descr2))
+        source_descr2.sort()
         fnamepng,fnamesvg,fnamepdf = form_filename( frnamebase, ('png','svg','pdf'),
                                                     modobs=list(source_descr2), more_id='combined' )
 

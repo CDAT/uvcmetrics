@@ -1,6 +1,8 @@
 # Run multiple diagnostics.  The user only specifies paths and a collection name.
 # The collection name is a key into multimaster.py, or (>>>> TO DO >>>>) another file provided by the user.
 
+# ---------------- section 0: Imports and global initializations ----------------
+
 import logging, os, pdb, importlib, time, cProfile, pickle, tempfile, subprocess
 from pprint import pprint
 from itertools import groupby
@@ -18,9 +20,11 @@ from metrics.frontend.form_filenames import form_file_rootname, form_filename
 from output_viewer.index import OutputIndex, OutputPage, OutputGroup, OutputRow, OutputFile, OutputMenu
 
 logger = logging.getLogger(__name__)
-MAX_N_PROCS = 2   # maximum number of simultaneous processes.
+MAX_N_PROCS = 4   # maximum number of simultaneous processes.
                   # These are run with Popen or the multiprocessing module.
 ARG_MAX = subprocess.check_output(['getconf', 'ARG_MAX']) # max length of a command line
+
+# ---------------- section 1: Expand names and merge options. ----------------
 
 def merge_option_with_its_defaults( opt, diags_collection ):
     """If opt, an Options instance, has a default_opts option set, this will import the
@@ -64,54 +68,6 @@ def expand_and_merge_with_defaults( opt ):
                 newopt = merge_option_with_its_defaults(newopt,diags_collection)
                 newopt['collection'] = dset # name of collection
                 opts.append(newopt)
-    return opts
-
-def merge_all_options_old( opt ):
-    """Merge the supplied Options object with other Options instances.  Conflicts are resolved by
-    ordering them in this priority:
-    opt, opt['default_opts'], my_opts, my_opts['default_opts'], diags_opts, options_defaults
-    At present the use of 'default_opts' cannot be recursive."""
-    try:
-        import my_opts   # user can put my_opts.py in his PYTHONPATH
-        myopts = my_opts.my_opts
-    except:
-        my_opts = None
-        myopts = None
-    try:
-        import metrics.frontend.diags_opts
-        diagsopts = diags_opts.diags_opts
-    except:
-        diags_opts = None
-        diagsopts = None
-    # The 'sets' or 'colls' option identifies a member (or more) of diags_collection, whose values
-    # are Options instances.  We have to expand it now, to a list 'opts' of real Options instances,
-    # in order to perform the merger.
-    # Similarly, if any 'model' or 'obs' option be a key into a collection, we have to expand it
-    # now in order to perform a proper merge.
-    if opt.get('sets') is None:  # later use a specialized option name, e.g. 'collec' <<<<
-        opts = [opt]
-    else:
-        opts = []
-        for dset in opt['sets']:
-            # Each set in opt['sets'] may be a list.  And opt['sets'] may be a list of length>1.
-            # Either way, we end out with a list of Options instances which should be merged with
-            # opt (opt having priority) but should not be merged together.
-            if isinstance(diags_collection[dset],Options):
-                merge_option_with_its_defaults(diags_collection[dset],diags_collection)
-                opts.append(opt)
-            elif type(diags_collection[dset]) is list:
-                for optset in diags_collection[dset]:
-                    merge_option_with_its_defaults(optset,diags_collection)
-                    newopt = opt.clone()
-                    opts.append(newopt)
-    # (done in the newer version of this function): This should also be done for the myopts, diagsopts, etc.
-    if my_opts is not None:
-        merge_option_with_its_defaults( myopts, my_opts.diags_collection )
-    for op in opts:
-        merge_option_with_its_defaults( op, diags_collection )
-        op.merge( myopts )
-        op.merge( diagsopts )
-        op.merge( options_defaults )
     return opts
 
 def merge_all_options( opt ):
@@ -261,9 +217,7 @@ def expand_lists_collections( opt, okeys=None ):
         flattened = [ o for ops in expanded_opts for o in ops ]
         return flattened
 
-def md_run_diags( opt, queue1=None ):
-    opt['modobs_names'] = run_diags(opt.clone())  # run_diags messes with its input arg, though it shouldn't
-    return opt
+# ---------------- section 2: Higher-level run functions, including multiprocessing ----------------
 
 def run_next():
     """Runs a diags process on the next option in the newopts list."""
@@ -271,7 +225,6 @@ def run_next():
     global optidx
     global procs
     global active
-    #old global tempfilens
     if None in active:
         active[active.index(None)] = optidx
         o = newopts[optidx]
@@ -384,13 +337,6 @@ def multidiags( opts ):
     for opt in nopts:
         multidiags1( opt )
 
-def p_run_diags( opt ):
-    """run_diags() but run as a separate process.  returns the process, the caller should
-    join it."""
-    p = Process( target=run_diags, args=(opt,) )
-    p.start()
-    return p
-
 def finalize_modelobs(opt):
     """For the model and obs options in opt, copies any modelpath or obspath option into its model or obs
     option dictionary's 'path' value.  Also if the model or obs option is a dictionary, we change that to
@@ -407,6 +353,8 @@ def finalize_modelobs(opt):
         for i,mo in  enumerate(opt[key]):  # mo is a dict
             opt[key][i]['path'] = opt[pathkey][i]
     return opt
+
+# ---------------- section 3: Interface to viewer ----------------
 
 def organize_opts_for_viewer( opts ):
     """Basically we have to re-organize the opts list into something structured by variable, season,
@@ -547,7 +495,9 @@ def setup_viewer_2( optsnested, vardesc ):
                                     #...Note that this only supports [model,obs] not [model1,model2].  Doing both shouldn't be much harder.
                                     modelname_path = os.path.basename(os.path.normpath(modelpath))
                                     modelname = opt['modobs_names'].get( 'model', modelname_path )
-                                    fname = form_filename( rootname, 'png', modobs=[modelname,obsname], more_id='combined' )
+                                    modobs = [modelname,obsname]
+                                    modobs.sort()
+                                    fname = form_filename( rootname, 'png', modobs=modobs, more_id='combined' )
                                     path = os.path.join( opt['output']['outputdir'], fname )
                                     cols.append( OutputFile(path, title="{season}".format(season=season)) )
                             rowtitle = vname+regname+varoptname
@@ -558,6 +508,8 @@ def setup_viewer_2( optsnested, vardesc ):
         index.addPage( page )  # normally part of loop over pages
         index.toJSON(os.path.join(opt['output']['outputdir'], opt['package'].lower(), "index.json"))
 
+
+# ---------------- section 4: Shell (command-line) driver ----------------
 
 if __name__ == '__main__':
     print "UV-CDAT Diagnostics, Experimental Multi-Diags version"
