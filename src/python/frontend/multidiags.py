@@ -337,20 +337,21 @@ def multidiags1( opt ):
         print "jfp about to run_diags on",o['vars'],len(o.get('obs',[])),o.get('obs',[])
         o.finalizeOpts()
 
-    # single-processing:
-    #for i,o in enumerate(newopts):
-    #    o['modobs_names'] = run_diags(o.clone()) # run_diags messes with its input arg, though it shouldn't
-
-    # multi-processing:
-    procs = [None] * len(newopts)
-    active = [None] * MAX_N_PROCS  # MAX_N_PROCS is defined at the top of this file.
-    optidx = 0
-    while optidx<len(newopts):
-        run_next()  # runs a process for newopts[optidx], *or* waits for something to finish
-    for iactive in active:
-        if iactive is None:
-            continue
-        wait(iactive)
+    if len(newopts)==1 or MAX_N_PROCS==1:
+        # single-processing:
+        for i,o in enumerate(newopts):
+            o['modobs_names'] = run_diags(o.clone()) # run_diags messes with its input arg, though it shouldn't
+    else:
+        # multi-processing:
+        procs = [None] * len(newopts)
+        active = [None] * MAX_N_PROCS  # MAX_N_PROCS is defined at the top of this file.
+        optidx = 0
+        while optidx<len(newopts):
+            run_next()  # runs a process for newopts[optidx], *or* waits for something to finish
+        for iactive in active:
+            if iactive is None:
+                continue
+            wait(iactive)
 
     setup_viewer( newopts )
 
