@@ -2856,7 +2856,8 @@ def run_cdscan( fam, famfiles, cache_path=None ):
             # get here.
             # Another problem is that units stuck in the long_name sometimes are
             # nonstandard.  So fix them!
-            if hasattr(f['time'],'long_name'):
+            if hasattr(f['time'],'long_name') and\
+                    getattr(f['time'],'long_name',None) not in ['time',None,'']:
                 time_units = f['time'].long_name
             else:
                 time_units = 'days'  # probably wrong but we can't go on without something

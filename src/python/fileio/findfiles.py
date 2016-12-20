@@ -209,7 +209,9 @@ class dirtree_datafiles( basic_datafiles ):
 
     def shortest_name(self):
         if len(self._filt.mystr())>3:
-            return self._filt.mystr()
+            shortname = self._filt.mystr()
+            shortname = shortname.strip('-_')
+            return shortname
         else:
             return self.short_name()
 
@@ -226,6 +228,7 @@ class dirtree_datafiles( basic_datafiles ):
         else:
             shortname = ','.join([os.path.basename(str(r))
                                   for r in self._root])   # <base directory> <filter name>
+        shortname = shortname.strip('-_')
         return shortname
 
     def long_name(self):
