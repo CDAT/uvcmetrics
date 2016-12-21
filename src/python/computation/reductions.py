@@ -2855,8 +2855,6 @@ def run_cdscan( fam, famfiles, cache_path=None ):
     except:
         pass
     try:
-        path = sys.prefix+'/bin/'
-        sys.path.insert(0, path)
         from cdms2 import cdscan
         import shlex
         logger.info('cdscan command line: %s', cdscan_line)
@@ -2872,8 +2870,13 @@ def run_cdscan( fam, famfiles, cache_path=None ):
             print "END ERROR LOG"
             logger.error( 'ERROR: cdscan terminated. This is usually fatal. The arguments were:%s\n',
                            cdscan_line )
-    except:
-        print "CDSCAN IMPORT ERROR"
+    except Exception,err:
+        print "CDSCAN IMPORT ERROR",err
+        import traceback
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        print "<<<<<<<<<<<< BEG TRACEBACK >>>>>>>>>>>>>>>>>>"
+        traceback.print_tb(exc_traceback)
+        print "<<<<<<<<<<<< END TRACEBACK >>>>>>>>>>>>>>>>>>"
         logger.error( 'importing cdscan failed' )
 
     # The old approach was to run cdscan as a separate process:
