@@ -18,16 +18,16 @@ before_install:
   - bash miniconda.sh -b -p $HOME/miniconda
   - conda config --set always_yes yes --set changeps1 no
   - conda update -y conda
-  - conda create -n travis -y --channel conda-forge --channel uvcdat uvcdat-nox
+  - conda install -y --channel conda-forge --channel uvcdat uvcdat-nox
   # Useful for debugging any issues with conda
   - conda info -a
+  - patch ${HOME}/miniconda/bin/cdscan cdscan.patch
 
 install:
     - if [ -d build ]; then rm -rf build; fi
     - git clean -fd
     - df -h .
     - export UVCDAT_ANONYMOUS_LOG=False
-    - source activate travis
     - cmake . -DUVCMETRICS_TEST_DATA_DIRECTORY=${HOME}/test_data
     - python setup.py install
     - which cdscan
@@ -38,5 +38,4 @@ install:
 
 script:
     - export UVCDAT_ANONYMOUS_LOG=False
-    - source activate travis
     - ctest -D Experimental -VV -j2
