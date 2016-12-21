@@ -39,8 +39,8 @@ class amwg_plot_set5(amwg_plot_plan):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the variable to be plotted, e.g. 'TREFHT'.
         seasonid is a string such as 'DJF'."""
+        amwg_plot_plan.__init__( self, seasonid, regionid )
         filetable1, filetable2 = self.getfts(model, obs)
-        plot_plan.__init__(self,seasonid, regionid)
         self.plottype = 'Isofill'
         if plotparms is None:
             plotparms = { 'model':{'colormap':'rainbow'},
@@ -57,8 +57,6 @@ class amwg_plot_set5(amwg_plot_plan):
         self.ft1nom,self.ft2nom = filetable_names(filetable1,filetable2)
         self.ft1nickname,self.ft2nickname = filetable_nicknames(filetable1,filetable2)
         ft1id,ft2id = filetable_ids(filetable1,filetable2)
-        self.reduced_variables = {}
-        self.derived_variables = {}
         self.plot1_id = ft1id+'_'+varid+'_'+seasonid
         self.plot2_id = ft2id+'_'+varid+'_'+seasonid
         self.plot3_id = ft1id+' - '+ft2id+'_'+varid+'_'+seasonid
@@ -102,31 +100,32 @@ class amwg_plot_set5(amwg_plot_plan):
                     reduction_function=(lambda x,vid=None: x) )
                 self.reduced_variables[gw.id()] = gw
         if isinstance(aux,Number):
-            return self.plan_computation_level_surface( model, obs, varid, seasonid, aux, names, plotparms )
+            return self.plan_computation_level_surface( model, obs, varid, seasonid, aux, names,
+                                                        plotparms )
         else:
-            return self.plan_computation_normal_contours( model, obs, varid, seasonid, aux, names, plotparms )
-    def plan_computation_normal_contours( self, model, obs, varnom, seasonid, aux=None, names={}, plotparms=None ):
+            return self.plan_computation_normal_contours( model, obs, varid, seasonid, aux, names,
+                                                          plotparms )
+    def plan_computation_normal_contours( self, model, obs, varnom, seasonid, aux=None, names={},
+                                          plotparms=None ):
         filetable1, filetable2 = self.getfts(model, obs)
 
         """Set up for a lat-lon contour plot, as in plot set 5.  Data is averaged over all other
         axes."""
-        if varnom in filetable1.list_variables():
-            vid1,vid1var = self.vars_normal_contours(
-                filetable1, varnom, seasonid, aux=None )
-        elif varnom in self.common_derived_variables.keys():
-            vid1,vid1var = self.vars_commdervar_normal_contours(
-                filetable1, varnom, seasonid, aux=None )
-        else:
-            logger.error("variable %s not found in and cannot be computed from %s",varnom, filetable1)
-            return None
-        if filetable2 is not None and varnom in filetable2.list_variables():
-            vid2,vid2var = self.vars_normal_contours(
-                filetable2, varnom, seasonid, aux=None )
-        elif varnom in self.common_derived_variables.keys():
-            vid2,vid2var = self.vars_commdervar_normal_contours(
-                filetable2, varnom, seasonid, aux=None )
+        reduction_function =\
+            (lambda x,vid:
+                 reduce2latlon_seasonal(x, self.season, self.region, vid, exclude_axes=[
+                        'isccp_prs','isccp_tau','cosp_prs','cosp_tau',
+                        'modis_prs','modis_tau','cosp_tau_modis',
+                        'misr_cth','misr_tau','cosp_htmisr']) )
+            # ... isccp_prs, isccp_tau etc. are used for cloud variables and need special treatment
+        vid1,vid1var = self.variable_setup(
+            varnom, filetable1, reduction_function, seasonid='ANN', aux=None )
+        if filetable2 is not None:
+            vid2,vid2var = self.variable_setup(
+                varnom, filetable2, reduction_function, seasonid='ANN', aux=None )
         else:
             vid2,vid2var = None,None
+
         self.single_plotspecs = {}
         ft1src = filetable1.source()
         try:
@@ -194,45 +193,6 @@ class amwg_plot_set5(amwg_plot_plan):
         else:
             self.composite_plotspecs = {}
         self.computation_planned = True
-    def vars_normal_contours( self, filetable, varnom, seasonid, aux=None ):
-        reduced_varlis = [
-            reduced_variable(
-                variableid=varnom, filetable=filetable, season=self.season,
-                reduction_function=(lambda x,vid: reduce2latlon_seasonal( x, self.season, self.region, vid) ) ),
-            reduced_variable(
-                # variance, for when there are variance climatology files
-                variableid=varnom+'_var', filetable=filetable, season=self.season,
-                reduction_function=(lambda x,vid: reduce2latlon_seasonal( x, self.season, self.region, vid ) ) )
-            ]
-        for v in reduced_varlis:
-            self.reduced_variables[v.id()] = v
-        vid = rv.dict_id( varnom, seasonid, filetable )
-        vidvar = rv.dict_id( varnom+'_var', seasonid, filetable ) # variance
-        return vid, vidvar
-    def vars_commdervar_normal_contours( self, filetable, varnom, seasonid, aux=None ):
-        """Set up for a lat-lon contour plot, as in plot set 5.  Data is averaged over all other
-        axes.  The variable given by varnom is *not* a data variable suitable for reduction.  It is
-        a common_derived_variable.  Its inputs will be reduced, then it will be set up as a
-        derived_var.
-        """
-        varid,rvs,dvs = self.commvar2var(
-            varnom, filetable, self.season,\
-                (lambda x,vid:
-                     reduce2latlon_seasonal(x, self.season, self.region, vid, exclude_axes=[
-                        'isccp_prs','isccp_tau','cosp_prs','cosp_tau',
-                        'modis_prs','modis_tau','cosp_tau_modis',
-                        'misr_cth','misr_tau','cosp_htmisr']) ),
-        #            ... isccp_prs, isccp_tau etc. are used for cloud variables and need special treatment
-            builtin_variables=self.variable_values.keys()
-            )
-        if varid is None:
-            return None,None
-        for rv in rvs:
-            self.reduced_variables[rv.id()] = rv
-        for dv in dvs:
-            self.derived_variables[dv.id()] = dv
-
-        return varid, None
 
     def plan_computation_level_surface( self, model, obs, varnom, seasonid, aux=None, names={}, plotparms=None ):
         filetable1, filetable2 = self.getfts(model, obs)

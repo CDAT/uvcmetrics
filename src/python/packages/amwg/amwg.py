@@ -92,6 +92,14 @@ class amwg_plot_plan(plot_plan):
     package = AMWG  # Note that this is a class not an object; also not a string.
     from atmos_derived_vars import *
 
+    def __init__( self, seasonid, regionid ):
+        self.reduced_variables = {}
+        self.derived_variables = {}
+        plot_plan.__init__(self,seasonid, regionid)
+
+    # >>>> ALL CHILD CLASSES should now have "amwg_plot_plan.__init__(...)" in their __init__ methods. <<<<
+
+
     @classmethod
     def commvar2var( cls, varnom, filetable, season, reduction_function, recurse=True,
                     filefilter=None, builtin_variables=[] ):
@@ -211,6 +219,76 @@ class amwg_plot_plan(plot_plan):
     @staticmethod
     def _all_variables( model, obs ):
         return amwg_plot_plan.package._all_variables( model, obs, "amwg_plot_plan" )
+
+    def variable_setup( self, varnom, filetable, reduction_function, seasonid='ANN', aux=None ):
+        """Sets this instance's reduced_variables and derived_variables dicts.
+        Returns the ids in those dicts of a reduced or derived variable based on:
+        - varnom, a string naming a variable (e.g. 'T', 'RELHUM')
+        - filetable, which identifies the data to be used
+        - seasonid, a string identifying the season
+        - reduction_function, as used by the present plot set to reduce dimensionality of variables
+        - aux, auxiliary data ('variable options') if implemented.
+        The first returned id corresponds to the variable itself, or None if not available.
+        The second returned id corresponds to its variance. If not supported, it may be None.
+        """
+        if varnom in filetable.list_variables():
+            vid,vidvar = self.vars_normal(
+                varnom, filetable, reduction_function, seasonid, aux )
+        elif varnom in self.common_derived_variables.keys():
+            vid,vidvar = self.vars_commdervar(
+                varnom, filetable, reduction_function, seasonid, aux )
+        else:
+            logger.error("variable %s not found in and cannot be computed from %s",varnom, filetable1)
+            vid, vidvar = None, None
+        return vid, vidvar
+
+# reduction_functions originally used by plot set 5 for vars_normal and vars_commdervar:
+# (lambda x,vid:
+#      reduce2latlon_seasonal( x, self.season, self.region, vid ) )
+# (lambda x,vid:
+#      reduce2latlon_seasonal(x, self.season, self.region, vid, exclude_axes=[
+#         'isccp_prs','isccp_tau','cosp_prs','cosp_tau',
+#         'modis_prs','modis_tau','cosp_tau_modis',
+#         'misr_cth','misr_tau','cosp_htmisr']) )
+#         ... isccp_prs, isccp_tau etc. are used for cloud variables and need special treatment
+
+    def vars_normal( self, varnom, filetable, reduction_function, seasonid='ANN', aux=None ):
+        """like variable_setup, but only if the variable varnom is in the filetable"""
+        reduced_varlis = [
+            reduced_variable(
+                variableid=varnom, filetable=filetable, season=self.season,
+                reduction_function=reduction_function ),
+            reduced_variable(
+                # variance, for when there are variance climatology files
+                variableid=varnom+'_var', filetable=filetable, season=self.season,
+                reduction_function=reduction_function )
+            ]
+        for v in reduced_varlis:
+            self.reduced_variables[v.id()] = v
+        vid = reduced_variable.dict_id( varnom, seasonid, filetable )
+        vidvar = reduced_variable.dict_id( varnom+'_var', seasonid, filetable ) # variance
+        return vid, vidvar
+
+    def vars_commdervar( self, varnom, filetable, reduction_function, seasonid='ANN', aux=None ):
+        """like variable_setup, but only if the variable varnom is a common_derived_variable not in
+        the filetable.  
+        The variable given by varnom is *not* a data variable suitable for reduction.  It is
+        a common_derived_variable.  Its inputs will be reduced, then it will be set up as a
+        derived_var.
+        """
+        varid,rvs,dvs = self.commvar2var(
+            varnom, filetable, self.season, reduction_function,
+            builtin_variables=self.variable_values.keys()   # usually just 'seasonid' at this point
+            )
+        if varid is None:
+            return None,None
+        for rv in rvs:
+            self.reduced_variables[rv.id()] = rv
+        for dv in dvs:
+            self.derived_variables[dv.id()] = dv
+
+        return varid, None
+
 
 # plot set classes in other files:
 #import the individual plot modules
