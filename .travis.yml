@@ -21,8 +21,6 @@ before_install:
   - conda install -y --channel conda-forge --channel uvcdat uvcdat-nox
   # Useful for debugging any issues with conda
   - conda info -a
-  - patch ${HOME}/miniconda/bin/cdscan cdscan.patch
-  - patch ${HOME}/miniconda/lib/python2.7/site-packages/cdms2/cdscan.py cdscan.patch
 
 install:
     - if [ -d build ]; then rm -rf build; fi
@@ -31,8 +29,6 @@ install:
     - export UVCDAT_ANONYMOUS_LOG=False
     - cmake . -DUVCMETRICS_TEST_DATA_DIRECTORY=${HOME}/test_data
     - python setup.py install
-    - which cdscan
-    - python -c "import cdms2.cdscan"
 
 #before_script:
 #  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then export DISPLAY=:99.0 ; sh -e /etc/init.d/xvfb start ; sleep 3 ; fi

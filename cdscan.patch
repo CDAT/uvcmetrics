@@ -1,6 +1,0 @@
-464c464,466
-<             if len(attval)==1:
----
->             if attval.ndim == 0:
->                 continue
->             elif len(attval)==1:
