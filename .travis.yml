@@ -22,6 +22,7 @@ before_install:
   # Useful for debugging any issues with conda
   - conda info -a
   - patch ${HOME}/miniconda/bin/cdscan cdscan.patch
+  - patch ${HOME}/miniconda/lib/python2.7/site-packages/cdms2/cdscan.py cdscan.patch
 
 install:
     - if [ -d build ]; then rm -rf build; fi
