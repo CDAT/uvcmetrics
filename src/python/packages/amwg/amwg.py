@@ -92,10 +92,42 @@ class amwg_plot_plan(plot_plan):
     package = AMWG  # Note that this is a class not an object; also not a string.
     from atmos_derived_vars import *
 
-    def __init__( self, seasonid, regionid ):
+    def __init__( self, varid, seasonid, region, model, obs, plotparms ):
         self.reduced_variables = {}
         self.derived_variables = {}
-        plot_plan.__init__(self,seasonid, regionid)
+        self.varid = varid
+
+        if type(region) is str:
+            regionid = region
+            if regionid=="Global" or regionid=="global" or regionid is None:
+                self._regionid="Global"
+            else:
+                self._regionid=regionid
+            self.region = interpret_region(regionid)
+            region = self.region
+        else:
+            self.region = region
+            self._regionid = region._name
+            regionid = self._regionid
+        plot_plan.__init__(self,seasonid, region)
+        
+        if plotparms is None:
+            plotparms = { 'model':{'colormap':'rainbow'},
+                          'obs':{'colormap':'rainbow'},
+                          'diff':{'colormap':'bl_to_darkred'} }
+        self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
+
+        filetable1, filetable2 = self.getfts(model, obs)
+        self.ft1nom,self.ft2nom = filetable_names(filetable1,filetable2)
+        self.ft1nickname,self.ft2nickname = filetable_nicknames(filetable1,filetable2)
+        ft1id,ft2id = filetable_ids(filetable1,filetable2)
+
+        self.plot1_id = ft1id+'_'+varid+'_'+seasonid
+        self.plot2_id = ft2id+'_'+varid+'_'+seasonid
+        self.plot3_id = ft1id+' - '+ft2id+'_'+varid+'_'+seasonid
+        self.plot1var_id = ft1id+'_'+varid+'_var_'+seasonid
+        self.plotall_id = ft1id+'_'+ft2id+'_'+varid+'_'+seasonid
+
 
     # >>>> ALL CHILD CLASSES should now have "amwg_plot_plan.__init__(...)" in their __init__ methods. <<<<
 
@@ -220,12 +252,12 @@ class amwg_plot_plan(plot_plan):
     def _all_variables( model, obs ):
         return amwg_plot_plan.package._all_variables( model, obs, "amwg_plot_plan" )
 
-    def variable_setup( self, varnom, filetable, reduction_function, seasonid='ANN', aux=None ):
+    def variable_setup( self, varnom, filetable, reduction_function, seasonid, aux=None ):
         """Sets this instance's reduced_variables and derived_variables dicts.
         Returns the ids in those dicts of a reduced or derived variable based on:
         - varnom, a string naming a variable (e.g. 'T', 'RELHUM')
         - filetable, which identifies the data to be used
-        - seasonid, a string identifying the season
+        - season: from self.season, but seasonid is used for making ids
         - reduction_function, as used by the present plot set to reduce dimensionality of variables
         - aux, auxiliary data ('variable options') if implemented.
         The first returned id corresponds to the variable itself, or None if not available.

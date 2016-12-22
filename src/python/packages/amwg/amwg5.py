@@ -35,36 +35,15 @@ class amwg_plot_set5(amwg_plot_plan):
     name = '5 - Horizontal Contour Plots of Seasonal Means'
     number = '5'
 
-    def __init__( self, model, obs,  varid, seasonid=None, regionid=None, aux=None, names={}, plotparms=None ):
+    def __init__( self, model, obs,  varid, seasonid=None, region=None, aux=None, names={}, plotparms=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the variable to be plotted, e.g. 'TREFHT'.
         seasonid is a string such as 'DJF'."""
-        amwg_plot_plan.__init__( self, seasonid, regionid )
-        filetable1, filetable2 = self.getfts(model, obs)
+        amwg_plot_plan.__init__( self, varid, seasonid, region, model, obs, plotparms )
         self.plottype = 'Isofill'
-        if plotparms is None:
-            plotparms = { 'model':{'colormap':'rainbow'},
-                          'obs':{'colormap':'rainbow'},
-                          'diff':{'colormap':'bl_to_darkred'} }
-        self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
-        if regionid=="Global" or regionid=="global" or regionid is None:
-            self._regionid="Global"
-        else:
-            self._regionid=regionid
-        self.region = interpret_region(regionid)
-
-        self.varid = varid
-        self.ft1nom,self.ft2nom = filetable_names(filetable1,filetable2)
-        self.ft1nickname,self.ft2nickname = filetable_nicknames(filetable1,filetable2)
-        ft1id,ft2id = filetable_ids(filetable1,filetable2)
-        self.plot1_id = ft1id+'_'+varid+'_'+seasonid
-        self.plot2_id = ft2id+'_'+varid+'_'+seasonid
-        self.plot3_id = ft1id+' - '+ft2id+'_'+varid+'_'+seasonid
-        self.plot1var_id = ft1id+'_'+varid+'_var_'+seasonid
-        self.plotall_id = ft1id+'_'+ft2id+'_'+varid+'_'+seasonid
-        
         if not self.computation_planned:
             self.plan_computation( model, obs, varid, seasonid, aux, names, plotparms )
+
     @staticmethod
     def _list_variables( model, obs ):
         """returns a list of variable names"""
@@ -90,6 +69,7 @@ class amwg_plot_set5(amwg_plot_plan):
             for varname in amwg_plot_plan.common_derived_variables.keys():
                 allvars[varname] = basic_plot_variable
         return allvars
+
     def plan_computation( self, model, obs, varid, seasonid, aux, names, plotparms ):
         filetable1, filetable2 = self.getfts(model, obs)
         for filetable in [filetable1, filetable2]:
@@ -105,6 +85,7 @@ class amwg_plot_set5(amwg_plot_plan):
         else:
             return self.plan_computation_normal_contours( model, obs, varid, seasonid, aux, names,
                                                           plotparms )
+
     def plan_computation_normal_contours( self, model, obs, varnom, seasonid, aux=None, names={},
                                           plotparms=None ):
         filetable1, filetable2 = self.getfts(model, obs)
@@ -119,10 +100,10 @@ class amwg_plot_set5(amwg_plot_plan):
                         'misr_cth','misr_tau','cosp_htmisr']) )
             # ... isccp_prs, isccp_tau etc. are used for cloud variables and need special treatment
         vid1,vid1var = self.variable_setup(
-            varnom, filetable1, reduction_function, seasonid='ANN', aux=None )
+            varnom, filetable1, reduction_function, seasonid, aux )
         if filetable2 is not None:
             vid2,vid2var = self.variable_setup(
-                varnom, filetable2, reduction_function, seasonid='ANN', aux=None )
+                varnom, filetable2, reduction_function, seasonid, aux )
         else:
             vid2,vid2var = None,None
 
