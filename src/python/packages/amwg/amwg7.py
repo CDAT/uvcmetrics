@@ -96,14 +96,17 @@ class amwg_plot_set7(amwg_plot_plan):
                 plotparms = plotparms[src2modobs(ft1src)] ),
             self.plot2_id: plotspec(
                 vid = ps.dict_idid(vid2),
-                zvars = [vid2],  zfunc = (lambda z: z),
+                zvars = [vid2],  zfunc =  (lambda z,aux1=aux: z(latitude=aux1,longitude=(0,360))),
                 plottype = self.plottype,
                 source = names.get('obs',ft2src),
                 file_descr = 'obs',
                 plotparms = plotparms[src2obsmod(ft2src)] ),
             self.plot3_id: plotspec(
                 vid = ps.dict_id(varnom,'diff',seasonid,filetable1,filetable2),
-                zvars = [vid1,vid2],  zfunc = aminusb_2ax,
+                zvars = [vid1,vid2],
+                zfunc = (lambda z1,z2,aux1=aux:
+                             aminusb_2ax(z1(latitude=aux1,longitude=(0,360)),
+                                         z2(latitude=aux1,longitude=(0,360)))),
                 plottype = self.plottype,
                 source = ', '.join([names.get('model',ft1src),names.get('obs',ft2src)]),
                 file_descr = 'diff',
