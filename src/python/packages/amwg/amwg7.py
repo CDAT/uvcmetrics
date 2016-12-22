@@ -30,34 +30,19 @@ class amwg_plot_set7(amwg_plot_plan):
     """
     name = '7 - Polar Contour and Vector Plots of Seasonal Means'
     number = '7'
+
     def __init__( self, model, obs, varid, seasonid=None, region=None, aux=slice(0,None), names={},
                   plotparms=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string identifying the variable to be plotted, e.g. 'TREFHT'.
         seasonid is a string such as 'DJF'."""
-
+        amwg_plot_plan.__init__( self, varid, seasonid, region, model, obs, plotparms )
         if aux==None:
             aux=slice(0,None)
-        filetable1, filetable2 = self.getfts(model, obs)
-        plot_plan.__init__(self,seasonid)
         self.plottype = 'Isofill_polar'
-        if plotparms is None:
-            plotparms = { 'model':{'colormap':'rainbow'},
-                          'obs':{'colormap':'rainbow'},
-                          'diff':{'colormap':'bl_to_darkred'} }
-        self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
-
-        self.region = region
-
-        self.varid = varid
-        ft1id,ft2id = filetable_ids(filetable1, filetable2)
-        self.plot1_id = ft1id+'_'+varid+'_'+seasonid
-        self.plot2_id = ft2id+'_'+varid+'_'+seasonid
-        self.plot3_id = ft1id+' - '+ft2id+'_'+varid+'_'+seasonid
-        self.plotall_id = ft1id+'_'+ft2id+'_'+varid+'_'+seasonid
-
         if not self.computation_planned:
             self.plan_computation( model, obs, varid, seasonid, region, aux, names=names, plotparms=plotparms )
+
     @staticmethod
     def _list_variables( model, obs ):
         allvars = amwg_plot_set5._all_variables( model, obs )
@@ -66,13 +51,16 @@ class amwg_plot_set7(amwg_plot_plan):
         return listvars
     @staticmethod
     def _all_variables( model, obs ):
+        # kludgily patched up; works for the moment but these functions need a re-thinking.
         #allvars = amwg_plot_plan.package._all_variables( model, obs, "amwg_plot_plan" )  #past
         allvars = amwg_plot_set5._all_variables( model, obs )   # makes output keys similar to _list_variables
-        for varname in amwg_plot_plan.package._list_variables(
-            model, obs, "amwg_plot_plan" ):
+        #vlistv = amwg_plot_plan.package._list_variables( model, obs, "amwg_plot_plan" )
+        vlistv = amwg_plot_set5._list_variables( model, obs )
+        for varname in vlistv:
             allvars[varname] = basic_pole_variable
         return allvars
-    def plan_computation( self, model, obs, varid, seasonid, region=None, aux=slice(0,None),
+
+    def plan_computation( self, model, obs, varnom, seasonid, region=None, aux=slice(0,None),
                           names={}, plotparms=None ):
        """Set up for a lat-lon polar contour plot.  Data is averaged over all other axes.
        """
@@ -86,25 +74,22 @@ class amwg_plot_set7(amwg_plot_plan):
            ft2src = filetable2.source()
        except:
            ft2src = ''
-       reduced_varlis = [
-           reduced_variable(
-               variableid=varid, filetable=filetable1, season=self.season, region=regname,
-               reduction_function=(lambda x,vid, region=regname,aux1=aux: reduce2latlon_seasonal(
-                       x(latitude=aux1, longitude=(0, 360)), self.season, region, vid=vid ) ) ),
-           reduced_variable(
-               variableid=varid, filetable=filetable2, season=self.season, region=regname,
-               reduction_function=(lambda x,vid, region=regname,aux1=aux: reduce2latlon_seasonal(
-                       x(latitude=aux1, longitude=(0, 360)), self.season, region, vid=vid ) ) )
-            ]
-       self.reduced_variables = { v.id():v for v in reduced_varlis }
-       vid1 = rv.dict_id( varid, seasonid, filetable1, region=regname )
-       vid2 = rv.dict_id( varid, seasonid, filetable2, region=regname )
 
-       self.derived_variables = {}
+       reduction_function =\
+           (lambda x,vid, region=regname,aux1=aux: reduce2latlon_seasonal(
+               x(latitude=aux1, longitude=(0, 360)), self.season, region, vid=vid ) )
+       vid1,vid1var = self.variable_setup(
+           varnom, filetable1, reduction_function, seasonid, aux )
+       if filetable2 is not None:
+           vid2,vid2var = self.variable_setup(
+               varnom, filetable2, reduction_function, seasonid, aux )
+       else:
+           vid2,vid2var = None,None
+
        self.single_plotspecs = {
             self.plot1_id: plotspec(
                 vid = ps.dict_idid(vid1),
-                zvars = [vid1],  zfunc = (lambda z: z),
+                zvars = [vid1],  zfunc = (lambda z,aux1=aux: z(latitude=aux1,longitude=(0,360))),
                 plottype = self.plottype,
                 source = names.get('model',ft1src),
                 file_descr = 'model',
@@ -117,7 +102,7 @@ class amwg_plot_set7(amwg_plot_plan):
                 file_descr = 'obs',
                 plotparms = plotparms[src2obsmod(ft2src)] ),
             self.plot3_id: plotspec(
-                vid = ps.dict_id(varid,'diff',seasonid,filetable1,filetable2),
+                vid = ps.dict_id(varnom,'diff',seasonid,filetable1,filetable2),
                 zvars = [vid1,vid2],  zfunc = aminusb_2ax,
                 plottype = self.plottype,
                 source = ', '.join([names.get('model',ft1src),names.get('obs',ft2src)]),
@@ -128,7 +113,7 @@ class amwg_plot_set7(amwg_plot_plan):
             self.plotall_id: [ self.plot1_id, self.plot2_id, self.plot3_id]
             }
        self.computation_planned = True
-       #pdb.set_trace()
+
     def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None,
                            uvcplotspec=None ):
         """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
@@ -211,7 +196,6 @@ class amwg_plot_set7(amwg_plot_plan):
         
         return tm1, tm2
     def _results(self, newgrid=0):
-        #pdb.set_trace()
         results = plot_plan._results(self,newgrid)
         if results is None: return None
         psv = self.plotspec_values
