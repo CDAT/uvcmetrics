@@ -104,40 +104,25 @@ diags_collection['7s'] = [
     ]
 
 diags_collection['7'] = [
-    Options( 
-        vars=['TREFHT'], obs=['WILLMOTT'], default_opts='7base' ),
-    Options( 
-        vars=['PS','PSL', 'TS', 'SURF_WIND'], obs=['NCEP'], default_opts='7base' ),
-    Options( 
-        vars=['PSL'], obs=['JRA25'], default_opts='7base' ),
-    Options( 
-        vars=['Z3'], obs=['ECMWF', 'JRA25', 'NCEP', 'ERA40'], varopts=['500'], default_opts='7base' ),
-    Options( 
-        vars=['SHFLX', 'QFLX', 'FLNS', 'FSNS'], obs=['LARYEA'], default_opts='7base' ),
-    Options( 
-        vars=['ALBEDO', 'ALBEDOC', 'FLUT', 'FLUTC', 'FSNTOA', 'FSNTOAC'], obs=['CERES2', 'CERES'], default_opts='7base' ),
-    Options( 
-        vars=['FLUT', 'FLUTC', 'FSNTOA', 'FSNTOAC'], obs=['ERBE'], default_opts='7base' ),
-    Options( 
-        vars=['FLNS', 'FLDS', 'FLDSC', 'FLNSC', 'FSDS', 'FSDSC', 'FSNS', 'FSNSC'], obs=['ISCCP'], default_opts='7base' ),
-    Options( 
-        vars=['CLDLOW_VISIR','CLDMED_VISIR','CLDHGH_VISIR','CLDTOT_VISR'], obs=['ISCCP'], regions=['N_Hemisphere_Land'],
+    Options( vars=['TREFHT'], obs=['WILLMOTT'], default_opts='7base' ),
+    Options( vars=['PS','PSL', 'TS', 'SURF_WIND'], obs=['NCEP'], default_opts='7base' ),
+    Options( vars=['PSL'], obs=['JRA25'], default_opts='7base' ),
+    Options( vars=['Z3'], obs=['ECMWF', 'JRA25', 'NCEP', 'ERA40'], varopts=['500'], default_opts='7base' ),
+    Options( vars=['SHFLX', 'QFLX', 'FLNS', 'FSNS'], obs=['LARYEA'], default_opts='7base' ),
+    Options( vars=['ALBEDO', 'ALBEDOC', 'FLUT', 'FLUTC', 'FSNTOA', 'FSNTOAC'], obs=['CERES2', 'CERES'], default_opts='7base' ),
+    Options( vars=['FLUT', 'FLUTC', 'FSNTOA', 'FSNTOAC'], obs=['ERBE'], default_opts='7base' ),
+    Options( vars=['FLNS', 'FLDS', 'FLDSC', 'FLNSC', 'FSDS', 'FSDSC', 'FSNS', 'FSNSC'], obs=['ISCCP'], default_opts='7base' ),
+    Options( vars=['CLDLOW_VISIR','CLDMED_VISIR','CLDHGH_VISIR','CLDTOT_VISR'], obs=['ISCCP'], regions=['N_Hemisphere_Land'],
         default_opts='7base' ),
+    Options( vars=['CLDMED','CLDHGH'], obs=['ISCCP', 'CLOUDSAT'], default_opts='7base' ),
+    Options( vars=['CLDLOW','CLDTOT'], obs=['ISCCP', 'WARREN', 'CLOUDSAT'], default_opts='7base' ),
+    Options( vars=['ICEFRAC'], obs=['SSMI', 'HadISST_CL', 'HadISST_PD', 'HadISST_PI'], default_opts='7base' ),
+    Options( vars=['SST'], obs=['HadISST_CL', 'HadISST_PD', 'HadISST_PI'], default_opts='7base' ),
+    Options( vars=['PRECT'], obs=['GPCP'], default_opts='7base' ) ]
 # ... 'modelvar':'CLDLOW'}
 # ... 'modelvar':'CLDMED'}
 # ... 'modelvar':'CLDHGH'}
 # ... 'modelvar':'CLDTOT'}
-    Options( 
-        vars=['CLDMED','CLDHGH'], obs=['ISCCP', 'CLOUDSAT'], default_opts='7base' ),
-    Options( 
-        vars=['CLDLOW','CLDTOT'], obs=['ISCCP', 'WARREN', 'CLOUDSAT'], default_opts='7base' ),
-    Options( 
-        vars=['ICEFRAC'], obs=['SSMI', 'HadISST_CL', 'HadISST_PD', 'HadISST_PI'], default_opts='7base' ),
-    Options( 
-        vars=['SST'], obs=['HadISST_CL', 'HadISST_PD', 'HadISST_PI'], default_opts='7base' ),
-    Options( 
-        vars=['PRECT'], obs=['GPCP'], default_opts='7base' ),
-]
 
 diags_collection['7t'] = [
     Options( 
