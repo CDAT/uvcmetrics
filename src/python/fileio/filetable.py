@@ -356,9 +356,10 @@ class basic_filetable(basic_id):
        A filter filefilter may be supplied, to restrict which files will be found.
        For ranges, None means you want all values."""
        if variable not in self._varindex.keys():
-          logger.warning('Couldnt find variable %s in %s. If needed, we will try to compute it', variable, self)
-          # print "  variables of",self,"are:",self._varindex.keys()
-          return None
+           if variable[-4:]!='_var': # don't bother to warn if variance climatologies don't exist
+               logger.warning('Couldnt find variable %s in %s. If needed, we will try to compute it', variable, self)
+           # print "  variables of",self,"are:",self._varindex.keys()
+           return None
        candidates = self._varindex[ variable ]
        found = []
        if seasonid is not None:

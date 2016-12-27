@@ -3179,10 +3179,11 @@ class reduced_variable(ftrow,basic_id):
         if filename is None:
             if self.variableid not in self._duvs:
                 if self.variableid[-4:]=='_var':
+                    pass
                     # This is a variance; requires climatology variance files which are rarely computed.
-                    logger.debug("No data found for reduced variable %s in %s %s %s %s",self.variableid,
-                                 self.timerange, self.latrange, self.lonrange, self.levelrange)
-                    logger.debug("filetable is %s",self.filetable)
+                    #logger.debug("No data found for reduced variable %s in %s %s %s %s",self.variableid,
+                    #             self.timerange, self.latrange, self.lonrange, self.levelrange)
+                    #logger.debug("filetable is %s",self.filetable)
                 else:
                     # this belongs in a log file:
                     logger.error("No data found for reduced variable %s in %s %s %s %s",self.variableid,
