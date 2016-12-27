@@ -98,6 +98,9 @@ user_derived_variables = {
     'RESTOM':[derived_var(
             vid='RESTOM', inputs=['FSNT','FLNT'], outputs=['RESTOM'],
             func=aminusb )],   # RESTOM = net radiative flux
+    'TTEST':[derived_var(      # for when we want to test on a 3-D member of common_derived_variables
+            vid='TTEST', inputs=['T'], outputs=['TTEST'],
+            func=(lambda x: x) )],
 
     # clouds, Yuying Zhang:
     'CLISCCP':[
