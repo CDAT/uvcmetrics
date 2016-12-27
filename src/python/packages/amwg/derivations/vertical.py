@@ -26,7 +26,6 @@ def verticalize( T, hyam, hybm, ps, level_src=plvlO ):
     T should be interpolated.  Or it can be a cdms2 variable, in which case the
     levels will be obtained from its 'lev' or 'plev' axis, if any.
     """
-    #pdb.set_trace()
     from metrics.computation.reductions import levAxis
     # constants as in functions_vertical.ncl, lines 5-10:
     p0 = 1000.   # mb

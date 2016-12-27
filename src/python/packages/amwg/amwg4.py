@@ -36,32 +36,17 @@ class amwg_plot_set4and4A(amwg_plot_plan):
     reduction_functions = { '4':[reduce2lat_seasonal, reduce2levlat_seasonal], 
                            '4A':[reduce2lon_seasonal, reduce2levlon_seasonal] }
     rf_ids = { '4': 'levlat', '4A': 'levlon'}
-    def __init__( self, model, obs, varid, seasonid=None, regionid=None, aux=None, names={}, plotparms=None ):
+
+    def __init__( self, model, obs, varid, seasonid=None, region=None, aux=None, names={}, plotparms=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varid is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'.
         At the moment we assume that data from filetable1 has CAM hybrid levels,
         and data from filetable2 has pressure levels."""
-        filetable1, filetable2 = self.getfts(model, obs)
-        plot_plan.__init__(self,seasonid)
+        amwg_plot_plan.__init__( self, varid, seasonid, region, model, obs, plotparms )
         self.plottype = 'Isofill'
-        if plotparms is None:
-            plotparms = { 'model':{'colormap':'rainbow'},
-                          'obs':{'colormap':'rainbow'},
-                          'diff':{'colormap':'bl_to_darkred'} }
-        self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
-        if regionid=="Global" or regionid=="global" or regionid is None:
-            self._regionid="Global"
-        else:
-            self._regionid=regionid
-        self.region = interpret_region(regionid)
-
-        ft1id,ft2id = filetable_ids(filetable1,filetable2)
-        self.plot1_id = '_'.join([ft1id,varid,seasonid,'contour'])
-        self.plot2_id = '_'.join([ft2id,varid,seasonid,'contour'])
-        self.plot3_id = '_'.join([ft1id+'-'+ft2id,varid,seasonid,'contour'])
-        self.plotall_id = '_'.join([ft1id,ft2id,varid,seasonid])
         if not self.computation_planned:
             self.plan_computation( model, obs, varid, seasonid, names, plotparms )
+
     @staticmethod
     def _list_variables( model, obs ):
         allvars = amwg_plot_set4._all_variables( model, obs )
@@ -80,7 +65,7 @@ class amwg_plot_set4and4A(amwg_plot_plan):
         return reduced_variables_press_lev( filetable, varid, seasonid, region=self.region,  RF1=RF1, RF2=RF2 )
     def reduced_variables_hybrid_lev( self, filetable, varid, seasonid, ftno=None,  RF1=None, RF2=None):
         return reduced_variables_hybrid_lev( filetable, varid, seasonid, region=self.region,  RF1=RF1, RF2=RF2 )
-    def plan_computation( self, model, obs, varid, seasonid, names, plotparms ):
+    def plan_computation( self, model, obs, varnom, seasonid, names, plotparms ):
         filetable1, filetable2 = self.getfts(model, obs)
         ft1_hyam = filetable1.find_files('hyam')
         if filetable2 is None:
@@ -96,49 +81,69 @@ class amwg_plot_set4and4A(amwg_plot_plan):
         
         #print RF_1d
         #print RF_2d
+        vid1 = None
+        vid2 = None
         if hybrid1:
-            reduced_variables_1 = self.reduced_variables_hybrid_lev(
-                filetable1, varid, seasonid, RF1=identity, RF2=identity )
+            if False:   # old way
+                reduced_variables_1 = self.reduced_variables_hybrid_lev(
+                    filetable1, varnom, seasonid, RF1=identity, RF2=identity )
+                self.reduced_variables.update( reduced_variables_1 )
+            else:       # new way
+                rf = (lambda x,vid=varnom,season=seasonid,region=self._regionid: RF_2d(x,season,region,vid))
+                rfh = (lambda x, vid=None, region=self._regionid: select_region(x, region))
+                rf_PS=(lambda x,vid='PS', season=seasonid,region=self._regionid: RF_1d(x,season,region,vid))
+                rfdic = { varnom:rf, 'hyam':rfh, 'hybm':rfh, 'PS':rf_PS, (varnom,filetable2):rf }
+                vid1,ignore = self.variable_setup( varnom, filetable1, rfdic, seasonid )
+             # For varnom=T, this vid1=
+             # reduced_variable_ID(classid='rv', var='T', season='ANN', region='', ft1='cam35_data', ffilt1='')
+             # The actual vid1 we need for the final (pressure levels) T is:
+             # derived_var_ID(classid='dv', var='T', varmod='levlat', season='ANN', ft1='ft1_cam35_data',
+             #                ft2='', region='')
+             # and we need to make a derived variable to match, and put it in self.derived_variables.
         else:
-            reduced_variables_1 = self.reduced_variables_press_lev( filetable1, varid, seasonid, RF2=RF_2d)
-        if hybrid2:
+            #reduced_variables_1 = self.reduced_variables_press_lev( filetable1, varnom, seasonid, RF2=RF_2d)
+            rf = (lambda x,vid=varnom,season=seasonid,region=self._regionid: RF_2d(x,season,region,vid))
+            vid1,ignore = self.variable_setup( varnom, filetable1, {varnom:rf}, seasonid )
+        if hybrid2:  # >>>> to do: update as for hybrid1 <<<<
             reduced_variables_2 = self.reduced_variables_hybrid_lev(
-                filetable2, varid, seasonid,  RF1=identity, RF2=identity )
+                filetable2, varnom, seasonid,  RF1=identity, RF2=identity )
+            self.reduced_variables.update( reduced_variables_2 )
         else:
-            reduced_variables_2 = self.reduced_variables_press_lev( filetable2, varid, seasonid, RF2=RF_2d )
-        reduced_variables_1.update( reduced_variables_2 )
-        self.reduced_variables = reduced_variables_1
+            #reduced_variables_2 = self.reduced_variables_press_lev( filetable2, varnom, seasonid, RF2=RF_2d )
+            rf = (lambda x,vid=varnom,season=seasonid,region=self._regionid: RF_2d(x,season,region,vid))
+            vid2,ignore = self.variable_setup( varnom, filetable2, {varnom:rf}, seasonid )
 
-        self.derived_variables = {}
         if hybrid1:
             # >>>> actually last arg of the derived var should identify the coarsest level, not nec. 2
             # Note also that it is dangerous to use input data from two filetables (though necessary here) - it
             # can badly mess things up if derive() assigns to the new variable a filetable which is not the
             # main source of the data, meaning its axes.  It gets the filetable from the first input listed here.
-            vid1=dv.dict_id(varid,rf_id,seasonid,filetable1)
+            vid1=dv.dict_id(varnom,rf_id,seasonid,filetable1)
             self.derived_variables[vid1] = derived_var(
-                vid=vid1, inputs=[rv.dict_id(varid,seasonid,filetable1), rv.dict_id('hyam',seasonid,filetable1),
+                vid=vid1, inputs=[rv.dict_id(varnom,seasonid,filetable1), rv.dict_id('hyam',seasonid,filetable1),
                                   rv.dict_id('hybm',seasonid,filetable1), rv.dict_id('PS',seasonid,filetable1),
-                                  rv.dict_id(varid,seasonid,filetable2) ],
-                func=(lambda T, hyam, hybm, ps, level_src, seasonid=seasonid, varid=varid:
-                                 RF_2d( verticalize(T,hyam,hybm,ps,level_src), season=seasonid, vid=varid ) )
+                                  rv.dict_id(varnom,seasonid,filetable2) ],
+                func=(lambda T, hyam, hybm, ps, level_src, seasonid=seasonid, varid=varnom:
+                                 RF_2d( verticalize(T,hyam,hybm,ps,level_src), season=seasonid, vid=varnom ) )
                 )
         else:
-            vid1 = rv.dict_id(varid,seasonid,filetable1)
+            #vid1 = rv.dict_id(varnom,seasonid,filetable1) # already set by call of variable_setup above
+            pass
         if hybrid2:
             # >>>> actually last arg of the derived var should identify the coarsest level, not nec. 2
-            vid2=dv.dict_id(varid,rf_id,seasonid,filetable2)
+            vid2=dv.dict_id(varnom,rf_id,seasonid,filetable2)
             self.derived_variables[vid2] = derived_var(
-                vid=vid2, inputs=[rv.dict_id(varid,seasonid,filetable2),
+                vid=vid2, inputs=[rv.dict_id(varnom,seasonid,filetable2),
                                   rv.dict_id('hyam',seasonid,filetable2),
                                   rv.dict_id('hybm',seasonid,filetable2),
                                   rv.dict_id('PS',seasonid,filetable2),
-                                  rv.dict_id(varid,seasonid,filetable2) ],
-                func=(lambda T, hyam, hybm, ps, level_src, seasonid=seasonid, varid=varid:
-                                 RF_2d( verticalize(T,hyam,hybm,ps,level_src), season=seasonid, vid=varid ) )
+                                  rv.dict_id(varnom,seasonid,filetable2) ],
+                func=(lambda T, hyam, hybm, ps, level_src, seasonid=seasonid, varid=varnom:
+                                 RF_2d( verticalize(T,hyam,hybm,ps,level_src), season=seasonid, vid=varnom ) )
                 )
         else:
-            vid2 = rv.dict_id(varid,seasonid,filetable2)
+            #vid2 = rv.dict_id(varnom,seasonid,filetable2) # already set by call of variable_setup above
+            pass
         ft1src = filetable1.source()
         try:
             ft2src = filetable2.source()
@@ -148,21 +153,21 @@ class amwg_plot_set4and4A(amwg_plot_plan):
             self.plot1_id: plotspec(
                 vid = ps.dict_idid(vid1), zvars=[vid1], zfunc=(lambda z: z),
                 plottype = self.plottype,
-                title = ' '.join([varid,seasonid,'(1)']),
+                title = ' '.join([varnom,seasonid,'(1)']),
                 file_descr = 'model',
                 source = names['model'],
                 plotparms = plotparms[src2modobs(ft1src)] ),
             self.plot2_id: plotspec(
                 vid = ps.dict_idid(vid2), zvars=[vid2], zfunc=(lambda z: z),
                 plottype = self.plottype,
-                title = ' '.join([varid,seasonid,'(2)']),
+                title = ' '.join([varnom,seasonid,'(2)']),
                 file_descr = 'obs',
                 source = names['obs'],
                 plotparms = plotparms[src2obsmod(ft2src)] ),
             self.plot3_id: plotspec(
-                vid = ps.dict_id(varid,'diff',seasonid,filetable1,filetable2), zvars=[vid1,vid2],
+                vid = ps.dict_id(varnom,'diff',seasonid,filetable1,filetable2), zvars=[vid1,vid2],
                 zfunc=aminusb_2ax, plottype = self.plottype,
-                title = ' '.join([varid,seasonid,'(1)-(2)']),
+                title = ' '.join([varnom,seasonid,'(1)-(2)']),
                 file_descr = 'diff',
                 source = ', '.join([names['model'],names['obs']]),
                 plotparms = plotparms['diff'] )

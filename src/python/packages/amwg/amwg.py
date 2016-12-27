@@ -252,23 +252,31 @@ class amwg_plot_plan(plot_plan):
     def _all_variables( model, obs ):
         return amwg_plot_plan.package._all_variables( model, obs, "amwg_plot_plan" )
 
-    def variable_setup( self, varnom, filetable, reduction_function, seasonid, aux=None ):
+#>>>> TO DO: implement this new call sequence for plot sets 5,7 <<<<
+    def variable_setup( self, varnom, filetable, rfdic, seasonid, aux=None ):
         """Sets this instance's reduced_variables and derived_variables dicts.
         Returns the ids in those dicts of a reduced or derived variable based on:
-        - varnom, a string naming a variable (e.g. 'T', 'RELHUM')
+        - varnom, a string identifying the variable we need, e.g. 'T', 'RELHUM'
+        - rfdic, a dict.  Each element has:
+        - - key=varn, a string naming a variable.  varnom must be one of them; sometimes there
+            may be other keys, for variables needed to compute varnom.  This also can be a tuple,
+            (variable_name,filetable2) for a variable coming from a different filetable.
+        - - value=reduction_function, as needed by the plot set to reduce dimensionality of
+            variable varnom
         - filetable, which identifies the data to be used
         - season: from self.season, but seasonid is used for making ids
-        - reduction_function, as used by the present plot set to reduce dimensionality of variables
         - aux, auxiliary data ('variable options') if implemented.
         The first returned id corresponds to the variable itself, or None if not available.
         The second returned id corresponds to its variance. If not supported, it may be None.
         """
+        if filetable is None:
+            return None,None
         if varnom in filetable.list_variables():
             vid,vidvar = self.vars_normal(
-                varnom, filetable, reduction_function, seasonid, aux )
+                varnom, filetable, rfdic, seasonid, aux )
         elif varnom in self.common_derived_variables.keys():
             vid,vidvar = self.vars_commdervar(
-                varnom, filetable, reduction_function, seasonid, aux )
+                varnom, filetable, rfdic, seasonid, aux )
         else:
             logger.error("variable %s not found in and cannot be computed from %s",varnom, filetable1)
             vid, vidvar = None, None
@@ -284,24 +292,36 @@ class amwg_plot_plan(plot_plan):
 #         'misr_cth','misr_tau','cosp_htmisr']) )
 #         ... isccp_prs, isccp_tau etc. are used for cloud variables and need special treatment
 
-    def vars_normal( self, varnom, filetable, reduction_function, seasonid='ANN', aux=None ):
+    def vars_normal( self, varnom, filetable, rfdic, seasonid='ANN', aux=None ):
         """like variable_setup, but only if the variable varnom is in the filetable"""
-        reduced_varlis = [
+        assert( varnom in rfdic )
+        reduced_varlis = []
+        for varn in rfdic:
+            if type(varn) is str:    # normal
+                varnom = varn
+                ft = filetable
+            elif type(varn) is tuple:  # happens when a variable comes from another filetable
+                varnom = varn[0]
+                ft = varn[1]
+            else:
+                logger.critial("unexpected key %s among inputs for computing %s",
+                               varn, varnom )
+            reduced_varlis.append(
+                reduced_variable(
+                    variableid=varnom, filetable=ft, season=self.season,
+                    reduction_function=rfdic[varn] )),
+        # variance, for when there are variance climatology files:
+        reduced_varlis.append( 
             reduced_variable(
-                variableid=varnom, filetable=filetable, season=self.season,
-                reduction_function=reduction_function ),
-            reduced_variable(
-                # variance, for when there are variance climatology files
                 variableid=varnom+'_var', filetable=filetable, season=self.season,
-                reduction_function=reduction_function )
-            ]
+                reduction_function=rfdic[varn] ))
         for v in reduced_varlis:
             self.reduced_variables[v.id()] = v
         vid = reduced_variable.dict_id( varnom, seasonid, filetable )
         vidvar = reduced_variable.dict_id( varnom+'_var', seasonid, filetable ) # variance
         return vid, vidvar
 
-    def vars_commdervar( self, varnom, filetable, reduction_function, seasonid='ANN', aux=None ):
+    def vars_commdervar( self, varnom, filetable, rfdic, seasonid='ANN', aux=None, filetable2=None ):
         """like variable_setup, but only if the variable varnom is a common_derived_variable not in
         the filetable.  
         The variable given by varnom is *not* a data variable suitable for reduction.  It is
@@ -318,6 +338,17 @@ class amwg_plot_plan(plot_plan):
             self.reduced_variables[rv.id()] = rv
         for dv in dvs:
             self.derived_variables[dv.id()] = dv
+        reduced_varlis = []
+        for varn in rfdic:
+            if varn==varnom:  continue
+            if type(varn) is not str:
+                logger.critical("non-string varn=%s hasn't been implemented here",varn)
+            reduced_varlis.append(
+                reduced_variable(
+                    variableid=varnom, filetable=filetable, season=self.season,
+                    reduction_function=rfdic[varn] )),
+        for v in reduced_varlis:
+            self.reduced_variables[v.id()] = v
 
         return varid, None
 
