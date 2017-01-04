@@ -18,7 +18,7 @@ before_install:
   - bash miniconda.sh -b -p $HOME/miniconda
   - conda config --set always_yes yes --set changeps1 no
   - conda update -y conda
-  - conda install -y --channel conda-forge --channel uvcdat uvcdat-nox
+  - conda install -y --channel conda-forge --channel uvcdat/label/test_cdms2 --channel uvcdat uvcdat-nox
   # Useful for debugging any issues with conda
   - conda info -a
 
