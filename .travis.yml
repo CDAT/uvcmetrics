@@ -4,6 +4,7 @@ os:
 language: python
     - "2.7"
 
+dist: trusty
 sudo: false
 env:
     global:
