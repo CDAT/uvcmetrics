@@ -4,7 +4,7 @@
 # import Ngl
 import numpy, cdms2, cdutil, pdb, logging
 from unidata import udunits
-
+from metrics.computation.reductions import set_mean
 
 
 logger = logging.getLogger(__name__)
@@ -60,5 +60,6 @@ def verticalize( T, hyam, hybm, ps, level_src=plvlO ):
     # Ngl doesn't work yet onoceanonly:
     #newT = Ngl.vinth2p( T, hyam, hybm, plvlO, ps, interp, p0, 1 ,extrap )
 
+    set_mean(newT)  # otherwise, mean may not be computed
     return newT
 
