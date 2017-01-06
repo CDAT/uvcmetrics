@@ -134,9 +134,9 @@ class amwg_plot_set8(amwg_plot_plan):
                                     zvars = [vidModel],
                                     zfunc = (lambda x: MV2.transpose(x)),
                                     plottype = self.plottype,
-                                    source  = names['model'], #ft1src,
-                                    title1 = ' '.join([varid, seasonid]), #' '.join([vidModel.var, vidModel.season, vidModel.region]),
-                                    title2 = 'model', #' '.join([vidModel.var, vidModel.season, vidModel.region]),
+                                    source  = names['model'],
+                                    title1 = ' '.join([varid, seasonid]),
+                                    title2 = 'model',
                                     file_descr = 'model',
                                     plotparms = plotparms['model'] )}
         if self.FT2:
@@ -145,8 +145,8 @@ class amwg_plot_set8(amwg_plot_plan):
                                         zvars=[vidObs],   
                                         zfunc = (lambda x: MV2.transpose(x)),                                
                                         plottype = self.plottype,
-                                        source = names['obs'], #ft2src,
-                                        title1 = '', #' '.join([vidObs.var, vidObs.season, vidObs.region]),
+                                        source = names['obs'],
+                                        title1 = '',
                                         title2 = 'observations',
                                         file_descr = 'obs',
                                         plotparms = plotparms['obs'] )
@@ -155,8 +155,8 @@ class amwg_plot_set8(amwg_plot_plan):
                                         zvars = [vidDiff],
                                         zfunc = (lambda x: MV2.transpose(x)),
                                         plottype = self.plottype,
-                                        source = ', '.join([ft1src,ft2src]),
-                                        title1 = '', #' '.join([vidDiff.var, vidDiff.season, vidDiff.region]),
+                                        source = '',
+                                        title1 = '',
                                         title2 = 'difference',
                                         file_descr = 'diff',
                                         plotparms = plotparms['diff'] )
@@ -173,7 +173,7 @@ class amwg_plot_set8(amwg_plot_plan):
         (cnvs1, tm1), (cnvs2, tm2) = templates
         #pdb.set_trace()
         tm2 = cnvs1.gettemplate("plotset8_0_x_%s" % (tm2.name.split("_")[2]))
-        pdb.set_trace()
+        #pdb.set_trace()
         # Fix units if needed
         if data is not None:
             if (getattr(data, 'units', '') == ''):
@@ -187,17 +187,12 @@ class amwg_plot_set8(amwg_plot_plan):
                     data.getAxis(1).id = 'Latitude'
                 if data.getAxis(1).id.count('lon'):
                     data.getAxis(1).id = 'Longitude'
-                    
-        # Adjust y label position
-        #tm2.yname.x = 0.075
-        #tm2.mean.y -= 0.01
-        
-        
+
         # Adjust source position
         tm1.source.priority = 1
         tm1.source.y = tm1.max.y - 0.02
 
-
+        #return tm1, tm2
         try:
             mean_value = float(var.mean)
         except:
@@ -207,17 +202,15 @@ class amwg_plot_set8(amwg_plot_plan):
                    'mean': ('Mean', mean_value),
                    'max': ('Max', var.max())
                    }
-        #cnvs2, tm2 = plot_table(cnvs2, tm2, content, 'mean', .065)
+        cnvs2, tm2 = plot_table(cnvs2, tm2, content, 'mean', .065)
 
         # turn off any later plot of min, mean & max values
-        #tm2.max.priority = 0
-        #tm2.mean.priority = 0
-        #tm2.min.priority = 0
+        tm2.max.priority = 0
+        tm2.mean.priority = 0
+        tm2.min.priority = 0
 
         # create the header for the plot
         header = getattr(var, 'title', None)
-        print 'header=', header
-
         if header is not None:
             text = cnvs2.createtext()
             text.string = header
