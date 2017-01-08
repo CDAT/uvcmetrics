@@ -19,10 +19,10 @@ cache:
 before_install:
   - export UVCDAT_FEATURE=""
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then export UVCDAT_FEATURE="-nox"; fi
-  - if [ "$TRAVIS_OS_NAME" = "linux" ] && ! [ -d ${HOME}/miniconda] ; then wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ] && ! [ -d ${HOME}/miniconda] ; then wget https://repo.continuum.io/miniconda/Miniconda2-latest-MacOSX-x86_64.sh -O miniconda.sh; fi
+  - if [ "$TRAVIS_OS_NAME" = "linux" ] && ! [ -d ${HOME}/miniconda/bin ] ; then wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ] && ! [ -d ${HOME}/miniconda/bin ] ; then wget https://repo.continuum.io/miniconda/Miniconda2-latest-MacOSX-x86_64.sh -O miniconda.sh; fi
   - export PATH="$HOME/miniconda/bin:$PATH"
-  - if [ ! -d ${HOME}/miniconda ]; then bash miniconda.sh -b -p $HOME/miniconda ; fi
+  - if [ ! -d ${HOME}/miniconda/bin ]; then bash miniconda.sh -b -p $HOME/miniconda ; fi
   - conda config --set always_yes yes --set changeps1 no
   - conda update -y conda
   - conda create -p ${HOME}/miniconda_uvcdat_env --show-channel-urls --yes -c conda-forge -c uvcdat uvcdat${UVCDAT_FEATURE}
