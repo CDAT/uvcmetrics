@@ -6,7 +6,6 @@ os:
 language: python
     - "2.7"
 
-dist: trusty
 sudo: false
 env:
     global:
@@ -14,20 +13,20 @@ env:
 cache:
       directories:
           ${HOME}/test_data/uvcmetrics/test/data
-          ${HOME}/miniconda
+          ${HOME}/anaconda2
 
 before_install:
   - export UVCDAT_FEATURE=""
-  - if ! [ -d ${HOME}/miniconda/bin ] ; then rm -rf ${HOME}/miniconda ; fi
+  - if ! [ -d ${HOME}/anaconda2/bin ] ; then rm -rf ${HOME}/anaconda2 ; fi
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then export UVCDAT_FEATURE="-nox"; fi
-  - if [ "$TRAVIS_OS_NAME" = "linux" ] && ! [ -d ${HOME}/miniconda ] ; then wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ] && ! [ -d ${HOME}/miniconda ] ; then wget https://repo.continuum.io/miniconda/Miniconda2-latest-MacOSX-x86_64.sh -O miniconda.sh; fi
-  - export PATH="$HOME/miniconda/bin:$PATH"
-  - if [ ! -d ${HOME}/miniconda ]; then bash miniconda.sh -b -p $HOME/miniconda ; fi
+  - if [ "$TRAVIS_OS_NAME" = "linux" ] && ! [ -d ${HOME}/anaconda2 ] ; then wget https://repo.continuum.io/archive/Anaconda2-4.2.0-Linux-x86_64.sh -O anaconda2.sh ; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ] && ! [ -d ${HOME}/anaconda2 ] ; then wget https://repo.continuum.io/archive/Anaconda2-4.2.0-MacOSX-x86_64.sh -O anaconda2.sh ; fi
+  - export PATH="$HOME/anaconda2/bin:$PATH"
+  - if [ ! -d ${HOME}/anaconda2 ]; then bash anaconda2.sh -b -p $HOME/anaconda2 ; fi
   - conda config --set always_yes yes --set changeps1 no
   - conda update -y conda
-  - conda create -p ${HOME}/miniconda_uvcdat_env --show-channel-urls --yes -c conda-forge -c uvcdat uvcdat${UVCDAT_FEATURE}
-  - source activate ${HOME}/miniconda_uvcdat_env
+  - conda create -p ${HOME}/anaconda2_uvcdat_env --show-channel-urls --yes -c conda-forge -c uvcdat uvcdat${UVCDAT_FEATURE}
+  - source activate ${HOME}/anaconda2_uvcdat_env
   # Useful for debugging any issues with conda
   - conda list
   - conda info -a
@@ -37,12 +36,12 @@ install:
     - git clean -fd
     - df -h .
     - export UVCDAT_ANONYMOUS_LOG=False
-    - source activate ${HOME}/miniconda_uvcdat_env
+    - source activate ${HOME}/anaconda2_uvcdat_env
     - cmake . -DUVCMETRICS_TEST_DATA_DIRECTORY=${HOME}/test_data/uvcmetrics/test/data
     - python setup.py install
 
 
 script:
     - export UVCDAT_ANONYMOUS_LOG=False
-    - source activate ${HOME}/miniconda_uvcdat_env
-    - ctest -D Experimental -VV -j2
+    - source activate ${HOME}/anaconda2_uvcdat_env
+    - ctest -D Experimental -VV 
