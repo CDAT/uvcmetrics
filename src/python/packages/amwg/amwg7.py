@@ -4,7 +4,7 @@
 
 from pprint import pprint
 from metrics.packages.amwg.amwg import amwg_plot_plan
-from metrics.packages.amwg.tools import src2modobs, src2obsmod
+from metrics.packages.amwg.tools import src2modobs, src2obsmod, get_textobject, plot_table
 from metrics.packages.amwg.amwg5 import amwg_plot_set5
 from metrics.packages.amwg.derivations.vertical import *
 from metrics.packages.plotplan import plot_plan
@@ -53,7 +53,7 @@ class amwg_plot_set7(amwg_plot_plan):
         self.plotall_id = ft1id+'_'+ft2id+'_'+varid+'_'+seasonid
 
         if not self.computation_planned:
-            self.plan_computation( model, obs, varid, seasonid, region, aux, plotparms=plotparms )
+            self.plan_computation( model, obs, varid, seasonid, region, aux, names, plotparms=plotparms )
     @staticmethod
     def _list_variables( model, obs ):
         allvars = amwg_plot_set5._all_variables( model, obs )
@@ -67,7 +67,7 @@ class amwg_plot_set7(amwg_plot_plan):
             model, obs, "amwg_plot_plan" ):
             allvars[varname] = basic_pole_variable
         return allvars
-    def plan_computation( self, model, obs, varid, seasonid, region=None, aux=slice(0,None),
+    def plan_computation( self, model, obs, varid, seasonid, region=None, aux=slice(0,None), names=None,
                           plotparms=None ):
        """Set up for a lat-lon polar contour plot.  Data is averaged over all other axes.
        """
@@ -95,21 +95,27 @@ class amwg_plot_set7(amwg_plot_plan):
                 vid = ps.dict_idid(vid1),
                 zvars = [vid1],  zfunc = (lambda z: z),
                 plottype = self.plottype,
-                source = ft1src,
+                title1=' '.join([varid, seasonid]),
+                title2='model',
+                source = names['model'],
                 file_descr = 'model',
                 plotparms = plotparms[src2modobs(ft1src)] ),
             self.plot2_id: plotspec(
                 vid = ps.dict_idid(vid2),
                 zvars = [vid2],  zfunc = (lambda z: z),
                 plottype = self.plottype,
-                source = ft2src,
+                title1='',
+                title2="observation",
+                source = names['obs'],
                 file_descr = 'obs',
                 plotparms = plotparms[src2obsmod(ft2src)] ),
             self.plot3_id: plotspec(
                 vid = ps.dict_id(varid,'diff',seasonid,filetable1,filetable2),
                 zvars = [vid1,vid2],  zfunc = aminusb_2ax,
                 plottype = self.plottype,
-                source = ', '.join([ft1src,ft2src]),
+                title1='',
+                title2='difference',
+                #source = ', '.join([ft1src,ft2src]),
                 file_descr = 'diff',
                 plotparms = plotparms['diff'] )         
             }
@@ -122,6 +128,7 @@ class amwg_plot_set7(amwg_plot_plan):
                            uvcplotspec=None ):
         """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
+        tm2 = cnvs1.gettemplate("plotset7_0_x_%s" % (tm2.name.split("_")[2]))
         
         tm2.yname.priority  = 1
         tm2.xname.priority  = 1
@@ -171,33 +178,49 @@ class amwg_plot_set7(amwg_plot_plan):
 
         # Adjusting intersection of title and xlabels.
         dy                        = (tm2.data.y2-tm2.data.y1) * 0.095
-        tm2.data.y2              -= dy
+#        tm2.data.y2              -= dy
     
         maxOri                   = cnvs2.gettextorientation(tm2.max.textorientation)
         meanOri                  = cnvs2.gettextorientation(tm2.mean.textorientation)
         meanOri.height           = maxOri.height
-        tm2.mean.textorientation = meanOri
-        tm2.mean.y               = tm2.max.y - 0.005
-        tm2.mean.x               = tm2.max.x - 0.08
+#        tm2.mean.textorientation = meanOri
+#        tm2.mean.y               = tm2.max.y - 0.005
+#        tm2.mean.x               = tm2.max.x - 0.08
         
         titleOri                  = cnvs2.gettextorientation(tm2.title.textorientation)
         titleOri.height           = 12
-        tm2.title.textorientation = titleOri
-        tm2.title.y              -= 0.005
+#        tm2.title.textorientation = titleOri
+#        tm2.title.y              -= 0.005
 
-        tm2.max.y                -= 0.005
+#        tm2.max.y                -= 0.005
 
-        tm2.legend.x1            -= 0.01
-        tm2.legend.offset        += 0.013
+#        tm2.legend.x1            -= 0.01
+#        tm2.legend.offset        += 0.013
         
-        tm2.source.priority       = 1
+#        tm2.source.priority       = 1
 
         unitsOri                  = cnvs2.gettextorientation(tm2.units.textorientation)
         unitsOri.height          += 1
-        tm2.units.textorientation = unitsOri
-        tm2.units.y               = tm2.min.y
-        tm2.units.priority        = 1
-        
+#        tm2.units.textorientation = unitsOri
+#        tm2.units.y               = tm2.min.y
+#        tm2.units.priority        = 1
+
+        try:
+            mean_value = float(var.mean)
+        except:
+            mean_value = var.mean()
+            # plot the table of min, mean and max in upper right corner
+        content = {'min': ('Min', var.min()),
+                   'mean': ('Mean', mean_value),
+                   'max': ('Max', var.max())
+                   }
+        cnvs2, tm2 = plot_table(cnvs2, tm2, content, 'mean', .065)
+
+        # turn off any later plot of min, mean & max values
+        tm2.max.priority = 0
+        tm2.mean.priority = 0
+        tm2.min.priority = 0
+
         return tm1, tm2
     def _results(self, newgrid=0):
         #pdb.set_trace()

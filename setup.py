@@ -92,7 +92,7 @@ setup (name = "metrics",
                   "src/python/viewer/viewer",
                   "src/python/packages/create_plotset_template.py"
                   ],
-       data_files = [("share/uvcmetrics",("share/uvcmetrics.json", "share/plot_set_4.json", "share/plot_set_5.json", "share/plot_set_6.json", "share/plot_set_8.json", "share/plot_set_9.json")),
+       data_files = [("share/uvcmetrics",("share/uvcmetrics.json", "share/plot_set_4.json", "share/plot_set_5.json", "share/plot_set_6.json", "share/plot_set_7.json", "share/plot_set_8.json", "share/plot_set_9.json")),
                      ("share/uvcmetrics/viewer/img", ["share/viewer/imgs/SET4A.png"] + [os.path.join("share/viewer/imgs", "SET%d.png" % (setnum)) for setnum in range(1, 16)])
                     ],
        include_dirs = [numpy.lib.utils.get_include()],
