@@ -44,4 +44,6 @@ install:
 script:
     - export UVCDAT_ANONYMOUS_LOG=False
     - source activate ${HOME}/anaconda2_uvcdat_env
-    - ctest -D Experimental -VV 
+    #- ctest -D Experimental -VV 
+    - mkdir /tmp/tmpem7bfm
+    - diags  --outputdir /tmp/tmpem7bfm/  --no-antialiasing --model path=/Users/travis/test_data/uvcmetrics/test/data/cam_output,climos=no  --obs path=/Users/travis/test_data/uvcmetrics/test/data/obs_atmos,filter="f_contains('NCEP')",climos=yes  --package AMWG  --set 2  --var Ocean_Heat --seasons JAN
