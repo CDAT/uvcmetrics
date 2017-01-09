@@ -103,7 +103,7 @@ class amwg_plot_set4and4A(amwg_plot_plan):
             reduced_variables_1 = self.reduced_variables_press_lev( filetable1, varid, seasonid, RF2=RF_2d)
         if hybrid2:
             reduced_variables_2 = self.reduced_variables_hybrid_lev(
-                filetable2, varid, seasonid,  RF1=identity, RF2=identity )
+                filetable2, varid, seasonid, RF1=identity, RF2=identity )
         else:
             reduced_variables_2 = self.reduced_variables_press_lev( filetable2, varid, seasonid, RF2=RF_2d )
         reduced_variables_1.update( reduced_variables_2 )
