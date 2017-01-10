@@ -42,12 +42,13 @@ class amwg_plot_set8(amwg_plot_plan):
                   plotparms=None ):
         """filetable1, should be a directory filetable for each model.
         varid is a string, e.g. 'TREFHT'.  The zonal mean is computed for each month. """
-        filetable1, filetable2 = self.getfts(model, obs)
+        amwg_plot_plan.__init__( self, varid, seasonid, region, model, obs, plotparms )
+        self.plottype = 'Isofill'
         
-        self.season = seasonid          
+        filetable1, filetable2 = self.getfts(model, obs)
+        ft1id,ft2id = filetable_ids(filetable1,filetable2)
         self.FT1 = (filetable1 != None)
         self.FT2 = (filetable2 != None)
-        
         self.CONTINUE = self.FT1
         if not self.CONTINUE:
             logger.info("user must specify a file table")
@@ -56,31 +57,38 @@ class amwg_plot_set8(amwg_plot_plan):
         if self.FT2:
             self.filetables +=[filetable2]
 
-        if region in ["Global", "global", None]:
-            self._regionid="Global"
-        else:
-            self._regionid=region
-        self.region = interpret_region(self._regionid)
-        
-        plot_plan.__init__(self, seasonid)
-        if plotparms is None:
-            plotparms = { 'model':{'colormap':'rainbow'},
-                          'obs':{'colormap':'rainbow'},
-                          'diff':{'colormap':'bl_to_darkred'} }
-        self.plottype = 'Isofill'
-        self._seasonid = seasonid
-        self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
-        ft1id, ft2id = filetable_ids(filetable1, filetable2)
-
+        # The following block overrides amwg_plot_plan.__init__
         self.plot1_id = '_'.join([ft1id, varid, 'composite', 'contour'])
         if self.FT2:
             self.plot2_id = '_'.join([ft2id, varid, 'composite', 'contour'])
             self.plot3_id = '_'.join([ft1id+'-'+ft2id, varid, seasonid, 'contour'])
         self.plotall_id = '_'.join([ft1id,ft2id, varid, seasonid])
+
         if not self.computation_planned:
             self.plan_computation( model, obs, varid, seasonid, plotparms )
 
-    def plan_computation( self, model, obs, varid, seasonid, plotparms ):
+    @staticmethod
+    def _list_variables( model, obs ):
+        """returns a list of variable names"""
+        allvars = amwg_plot_set8._all_variables( model, obs )
+        listvars = allvars.keys()
+        listvars.sort()
+        return listvars
+    @staticmethod
+    def _all_variables( model, obs, use_common_derived_vars=True ):
+        """returns a dict of varname:varobject entries"""
+        allvars = amwg_plot_plan.package._all_variables( model, obs, "amwg_plot_plan" )
+        # ...this is what's in the data.  varname:basic_plot_variable
+        if use_common_derived_vars:
+            # Now we add varname:basic_plot_variable for all common_derived_variables.
+            # This needs work because we don't always have the data needed to compute them...
+            # BTW when this part is done better, it should (insofar as it's reasonable) be moved to
+            # amwg_plot_plan and shared by all AMWG plot sets.
+            for varname in amwg_plot_plan.common_derived_variables.keys():
+                allvars[varname] = basic_plot_variable
+        return allvars
+
+    def plan_computation( self, model, obs, varnom, seasonid, plotparms ):
         filetable1, filetable2 = self.getfts(model, obs)
         ft1src = filetable1.source()
         try:
@@ -94,33 +102,22 @@ class amwg_plot_set8(amwg_plot_plan):
         self.reduced_variables = {}
         vidAll = {}
         for FT in self.filetables:
-            #pdb.set_trace()
             VIDs = []
             for i in range(1, 13):
-                month = cdutil.times.getMonthString(i)
-                #pdb.set_trace()
-                #create identifiers
-                VID = rv.dict_id(varid, month, FT)
-                RF = (lambda x, vid=id2str(VID), month=VID[2]:
+                month = cdutil.times.getMonthString(i)[:3]
+                RF = (lambda x, vid='dummy', month=month, gw=None:
                           reduce2lat_seasonal(x, seasons=cdutil.times.Seasons(month), region=self.region, vid=vid))
-                RV = reduced_variable(variableid = varid, 
-                                      filetable = FT, 
-                                      season = cdutil.times.Seasons(VID[2]), 
-                                      reduction_function =  RF)
-
-
-                self.reduced_variables[RV.id()] = RV
+                VID,ignore = self.variable_setup( varnom, FT, {varnom:RF}, month )
                 VIDs += [VID]
-            vidAll[FT] = VIDs               
-        vidModel = dv.dict_id(varid, 'ZonalMean model', self._seasonid, filetable1)
+            vidAll[FT] = VIDs
+        vidModel = dv.dict_id(varnom, 'ZonalMean model', self._seasonid, filetable1)
         if self.FT2:
-            vidObs  = dv.dict_id(varid, 'ZonalMean obs', self._seasonid, filetable2)
-            vidDiff = dv.dict_id(varid, 'ZonalMean difference', self._seasonid, filetable1)
+            vidObs  = dv.dict_id(varnom, 'ZonalMean obs', self._seasonid, filetable2)
+            vidDiff = dv.dict_id(varnom, 'ZonalMean difference', self._seasonid, filetable1)
         else:
             vidObs  = None
             vidDiff = None
       
-        self.derived_variables = {}
         #create the derived variables which is the composite of the months
         self.derived_variables[vidModel] = derived_var(vid=id2str(vidModel), inputs=vidAll[filetable1], func=join_data) 
         if self.FT2:
