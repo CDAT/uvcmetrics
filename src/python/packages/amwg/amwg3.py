@@ -32,18 +32,16 @@ class amwg_plot_set3(amwg_plot_plan,basic_id):
     # Here, the plotspec contains the variables themselves.
     name = '3 - Line Plots of  Zonal Means'
     number = '3'
+    IDtuple = namedtuple( "amwg_plot_set3_ID", "classid var season region" )
     def __init__( self, model, obs, varnom, seasonid=None, regionid=None, aux=None, names={},
                   plotparms=None ):
         """filetable1, filetable2 should be filetables for model and obs.
         varnom is a string, e.g. 'TREFHT'.  Seasonid is a string, e.g. 'DJF'."""
-        basic_id.__init__(self,varnom,seasonid)
         plot_plan.__init__(self,seasonid)
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
-        if regionid=="Global" or regionid=="global" or regionid is None:
-            self._regionid="Global"
-        else:
-            self._regionid=regionid
-        self.region = interpret_region(regionid)
+
+        self.region, self._regionid, idregionid = interpret_region2( regionid )
+        basic_id.__init__(self,'set3',varnom,seasonid,idregionid)
 
         if not self.computation_planned:
             self.plan_computation( model, obs, varnom, seasonid, plotparms )
@@ -112,12 +110,13 @@ class amwg_plot_set3(amwg_plot_plan,basic_id):
         #z2var._vid = varnom+'_2'      # _vid is deprecated
         self.plot_a = basic_two_line_plot( zvar, z2var, plotparms=plotparms['model'] )
         ft1id,ft2id = filetable_ids(filetable1,filetable2)
-        vid = '_'.join([self._id[0],self._id[1],ft1id,ft2id,'diff'])
+        vid = underscore_join([self._id.classid,self._id.season,self._id.region,ft1id,ft2id,'diff'])
         # ... e.g. CLT_DJF_ft1_ft2_diff
         self.plot_b = one_line_diff_plot( zvar, z2var, vid, plotparms=plotparms['diff'] )
         self.computation_planned = True
         
-    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None,
+                           uvcplotspec=None ):
         """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
 
@@ -297,17 +296,19 @@ class amwg_plot_set3(amwg_plot_plan,basic_id):
         #zval = self.variable_values[zvar._vid] # _vid is deprecated
         if zval is None: return None
         zunam = zvar.filetable._strid  # part of y1 distinguishing it from y2, e.g. ft_1
-        zval.id = '_'.join([self._id[0],self._id[1],zunam])
+        zval.id = '_'.join([self.id().classid,self.id().var,zunam])
         z2val = self.variable_values[z2var._strid]
         if z2val is None:
             z2unam = ''
             zdiffval = None
         else:
             z2unam = z2var.filetable._strid  # part of y2 distinguishing it from y1, e.g. ft_2
-            z2val.id = '_'.join([self._id[0],self._id[1],z2unam])
+            z2val.id = '_'.join([self.id().classid, self.id().var, z2unam])
             zdiffval = apply( self.plot_b.zfunc, [zval,z2val] )
-            zdiffval.id = '_'.join([self._id[0],self._id[1],
+            zdiffval.id = '_'.join([self.id().classid,self.id().var,
                                     zvar.filetable._strid, z2var.filetable._strid, 'diff'])
+            zdiffval.filetable = zvar.filetable
+            zdiffval.filetable2 = z2var.filetable
         # ... e.g. CLT_DJF_set3_CAM456_NCEP_diff
         ft1src = zvar.filetable.source()
         try:
@@ -316,13 +317,17 @@ class amwg_plot_set3(amwg_plot_plan,basic_id):
             ft2src = ''
         plot_a_val = uvc_plotspec(
             [v for v in [zval,z2val] if v is not None],'Yxvsx', labels=[zunam,z2unam],
-            #title=' '.join([self._id[0],self._id[1],self._id[2],zunam,'and',z2unam]),
-            title = ' '.join([self._id[0],self._id[1],self._id[2]]),
-            source = ','.join([ft1src,ft2src] ))
+            #title=' '.join([self.id().classid,self.id().var,self._id[2],zunam,'and',z2unam]),
+            title1 = ' '.join([self._id.classid,self._id.var,self._id.season,self._id.region]),
+            title2 = ' '.join([self._id.classid,self._id.var,self._id.season,self._id.region]),
+            file_descr = 'model',  # actaully obs too
+            source = better_join(',',[ft1src,ft2src] ))
         plot_b_val = uvc_plotspec(
             [v for v in [zdiffval] if v is not None],'Yxvsx', labels=['difference'],
-            title=' '.join([self._id[0],self._id[1],self._id[2],'difference']),
-            source = ','.join([ft1src,ft2src] ))
+            title1=' '.join([self._id.classid,self._id.var,self._id.season,self._id.region,'difference']),
+            title2="difference",
+            file_descr = 'diff',
+            source = better_join(',',[ft1src,ft2src] ))
         # no, we don't want same range for values & difference! plot_a_val.synchronize_ranges(plot_b_val)
         plot_a_val.finalize()
         plot_b_val.finalize()

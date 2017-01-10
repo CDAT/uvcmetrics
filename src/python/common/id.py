@@ -1,5 +1,6 @@
 
 from metrics.common.utilities import *
+from collections import namedtuple
 
 def id2str( id ):
     """computes a string id from a tuple id and returns it.
@@ -55,7 +56,6 @@ class basic_id():
             self._id = self.__class__.dict_id( *args )
         if type(self._id) is tuple: assert( len(self._id)<=self._idmx )
         self._strid = id2str(self._id)
-        #print "debug basic_id,",self.__class__.__name__,", just made self._strid=",self._strid,"from args",args
     def __str__(self):
         return self._strid
     @classmethod
@@ -70,14 +70,20 @@ class basic_id():
     @staticmethod
     def _dict_id( cls, *args ):
         classid = basic_id.abbrev(cls.__name__)
-        return tuple([classid]+[ getattr(a,'_strid',str(a)) for a in args ])
+        if hasattr( cls, 'IDtuple' ):
+            return apply(cls.IDtuple, [classid]+[ getattr(a,'_strid',str(a)) for a in args ])
+        else:
+            if classid not in ['rg','ft','rv','plot']:
+                print "debug.  Class",classid,"needs an IDtuple member"
+            return tuple([classid]+[ getattr(a,'_strid',str(a)) for a in args ])
     @classmethod
     def str_id( cls, *args ):
         return id2str( cls.dict_id( *args ) )
     def id( self ):
         return self._id
     abbrevs = { 'basic_filetable':'ft', 'derived_var':'dv', 'dv':'dv', 'reduced_variable':'rv', 'rv':'rv',
-                'amwg_plot_set3':'set3', 'plotspec':'plot', 'ps':'plot', 'rectregion':'rg', 'rg':'rg'
+                'amwg_plot_set3':'set3', 'amwg_plot_set10':'set10',
+                'plotspec':'plot', 'ps':'plot', 'rectregion':'rg', 'rg':'rg'
                 }
     @staticmethod
     def abbrev( str ):
@@ -97,3 +103,25 @@ def filetable_ids( filetable1, filetable2 ):
         else:
             ft2id  = filetable2._strid
         return ft1id,ft2id
+
+def filetable_names( filetable1, filetable2 ):
+        if filetable1 is None:
+            ft1id = ''
+        else:
+            ft1id  = filetable1._id.ftid
+        if filetable2 is None:
+            ft2id = ''
+        else:
+            ft2id  = filetable2._id.ftid
+        return ft1id,ft2id
+
+def filetable_nicknames( filetable1, filetable2 ):
+    if filetable1 is None:
+        ft1nn = ''
+    else:
+        ft1nn  = filetable1._id.nickname
+    if filetable2 is None:
+        ft2nn = ''
+    else:
+        ft2nn  = filetable2._id.nickname
+    return ft1nn,ft2nn

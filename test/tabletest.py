@@ -25,7 +25,7 @@ rebaseline = args.rebaseline
 user = 'table_test'    
     
 #run this from command line to get the files required
-command = 'diags --package AMWG  --set 1 --seasons ANN --model path=%s/table_reference/,filter="f_startswith(%s)"  --obs path=%s/table_reference/,climos=yes  --outputdir %s --user %s '%(datadir, "'2016'", datadir, outpath, user)
+command = 'diags --package AMWG  --set 1 --seasons ANN --model path=%s/table_reference/,filter="f_startswith(%s)"  --obs path=%s/obs_for_diagnostics/,climos=yes  --outputdir %s --user %s '%(datadir, "'2016'", datadir, outpath, user)
 print command
 
 #run the command
@@ -34,8 +34,8 @@ proc_status = proc.wait()
 if proc_status!=0: 
     raise "diags test failed"
 
-new = open(os.path.join(outpath,"table_output--.text"))
-old = open(os.path.join(baselinepath,"table_output--.text"))
+new = open(os.path.join(outpath,"table_output.text"))
+old = open(os.path.join(baselinepath,"table_output.text"))
 
 print "Comparing: %s %s" % (new.name, old.name)
 
@@ -53,5 +53,5 @@ for OLD, NEW in zip(old, new):
             print NEW
             raise Exception("diags generates a different files")
 if rebaseline:
-    print 'new baseline is /tmp/table_output--.text'
+    print 'new baseline is /tmp/table_output.text'
 print 'table test passed'

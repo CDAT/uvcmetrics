@@ -1,7 +1,7 @@
 # AMWG Diagnostics, plot set 4 and 4a.
 # Here's the title used by NCAR:
 # DIAG Set 4 - Vertical Contour Plots Zonal Means
-# DIAG Set $A - Horizontal Contour Plots of Meridional Means
+# DIAG Set 4A - Horizontal Contour Plots of Meridional Means
 
 from pprint import pprint
 from metrics.packages.amwg.amwg import amwg_plot_plan
@@ -34,7 +34,7 @@ class amwg_plot_set4and4A(amwg_plot_plan):
     #name = '4 - Vertical Contour Plots Zonal Means'
     #number = '4'
     reduction_functions = { '4':[reduce2lat_seasonal, reduce2levlat_seasonal], 
-                           '4A':[reduce2lon_seasonal, reduce2levlon_seasonal]}
+                           '4A':[reduce2lon_seasonal, reduce2levlon_seasonal] }
     rf_ids = { '4': 'levlat', '4A': 'levlon'}
     def __init__( self, model, obs, varid, seasonid=None, regionid=None, aux=None, names={}, plotparms=None ):
         """filetable1, filetable2 should be filetables for model and obs.
@@ -61,7 +61,7 @@ class amwg_plot_set4and4A(amwg_plot_plan):
         self.plot3_id = '_'.join([ft1id+'-'+ft2id,varid,seasonid,'contour'])
         self.plotall_id = '_'.join([ft1id,ft2id,varid,seasonid])
         if not self.computation_planned:
-            self.plan_computation( model, obs, varid, seasonid, plotparms )
+            self.plan_computation( model, obs, varid, seasonid, names, plotparms )
     @staticmethod
     def _list_variables( model, obs ):
         allvars = amwg_plot_set4._all_variables( model, obs )
@@ -80,7 +80,7 @@ class amwg_plot_set4and4A(amwg_plot_plan):
         return reduced_variables_press_lev( filetable, varid, seasonid, region=self.region,  RF1=RF1, RF2=RF2 )
     def reduced_variables_hybrid_lev( self, filetable, varid, seasonid, ftno=None,  RF1=None, RF2=None):
         return reduced_variables_hybrid_lev( filetable, varid, seasonid, region=self.region,  RF1=RF1, RF2=RF2 )
-    def plan_computation( self, model, obs, varid, seasonid, plotparms ):
+    def plan_computation( self, model, obs, varid, seasonid, names, plotparms ):
         filetable1, filetable2 = self.getfts(model, obs)
         ft1_hyam = filetable1.find_files('hyam')
         if filetable2 is None:
@@ -97,11 +97,13 @@ class amwg_plot_set4and4A(amwg_plot_plan):
         #print RF_1d
         #print RF_2d
         if hybrid1:
-            reduced_variables_1 = self.reduced_variables_hybrid_lev( filetable1, varid, seasonid, RF1=RF_1d, RF2=RF_2d)
+            reduced_variables_1 = self.reduced_variables_hybrid_lev(
+                filetable1, varid, seasonid, RF1=identity, RF2=identity )
         else:
             reduced_variables_1 = self.reduced_variables_press_lev( filetable1, varid, seasonid, RF2=RF_2d)
         if hybrid2:
-            reduced_variables_2 = self.reduced_variables_hybrid_lev( filetable2, varid, seasonid,  RF1=RF_1d, RF2=RF_2d)
+            reduced_variables_2 = self.reduced_variables_hybrid_lev(
+                filetable2, varid, seasonid, RF1=identity, RF2=identity )
         else:
             reduced_variables_2 = self.reduced_variables_press_lev( filetable2, varid, seasonid, RF2=RF_2d )
         reduced_variables_1.update( reduced_variables_2 )
@@ -110,12 +112,17 @@ class amwg_plot_set4and4A(amwg_plot_plan):
         self.derived_variables = {}
         if hybrid1:
             # >>>> actually last arg of the derived var should identify the coarsest level, not nec. 2
+            # Note also that it is dangerous to use input data from two filetables (though necessary here) - it
+            # can badly mess things up if derive() assigns to the new variable a filetable which is not the
+            # main source of the data, meaning its axes.  It gets the filetable from the first input listed here.
             vid1=dv.dict_id(varid,rf_id,seasonid,filetable1)
             self.derived_variables[vid1] = derived_var(
                 vid=vid1, inputs=[rv.dict_id(varid,seasonid,filetable1), rv.dict_id('hyam',seasonid,filetable1),
                                   rv.dict_id('hybm',seasonid,filetable1), rv.dict_id('PS',seasonid,filetable1),
                                   rv.dict_id(varid,seasonid,filetable2) ],
-                func=verticalize )
+                func=(lambda T, hyam, hybm, ps, level_src, seasonid=seasonid, varid=varid:
+                                 RF_2d( verticalize(T,hyam,hybm,ps,level_src), season=seasonid, vid=varid ) )
+                )
         else:
             vid1 = rv.dict_id(varid,seasonid,filetable1)
         if hybrid2:
@@ -127,7 +134,9 @@ class amwg_plot_set4and4A(amwg_plot_plan):
                                   rv.dict_id('hybm',seasonid,filetable2),
                                   rv.dict_id('PS',seasonid,filetable2),
                                   rv.dict_id(varid,seasonid,filetable2) ],
-                func=verticalize )
+                func=(lambda T, hyam, hybm, ps, level_src, seasonid=seasonid, varid=varid:
+                                 RF_2d( verticalize(T,hyam,hybm,ps,level_src), season=seasonid, vid=varid ) )
+                )
         else:
             vid2 = rv.dict_id(varid,seasonid,filetable2)
         ft1src = filetable1.source()
@@ -140,26 +149,30 @@ class amwg_plot_set4and4A(amwg_plot_plan):
                 vid = ps.dict_idid(vid1), zvars=[vid1], zfunc=(lambda z: z),
                 plottype = self.plottype,
                 title = ' '.join([varid,seasonid,'(1)']),
-                source = ft1src,
+                file_descr = 'model',
+                source = names['model'],
                 plotparms = plotparms[src2modobs(ft1src)] ),
             self.plot2_id: plotspec(
                 vid = ps.dict_idid(vid2), zvars=[vid2], zfunc=(lambda z: z),
                 plottype = self.plottype,
                 title = ' '.join([varid,seasonid,'(2)']),
-                source = ft2src,
+                file_descr = 'obs',
+                source = names['obs'],
                 plotparms = plotparms[src2obsmod(ft2src)] ),
             self.plot3_id: plotspec(
                 vid = ps.dict_id(varid,'diff',seasonid,filetable1,filetable2), zvars=[vid1,vid2],
                 zfunc=aminusb_2ax, plottype = self.plottype,
                 title = ' '.join([varid,seasonid,'(1)-(2)']),
-                source = ', '.join([ft1src,ft2src]),
+                file_descr = 'diff',
+                source = ', '.join([names['model'],names['obs']]),
                 plotparms = plotparms['diff'] )
             }
         self.composite_plotspecs = {
             self.plotall_id: [self.plot1_id, self.plot2_id, self.plot3_id ]
             }
         self.computation_planned = True
-    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None):
+    def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None,
+                           uvcplotspec=None ):
         """This method does what the title says.  It is a hack that will no doubt change as diags changes."""
         (cnvs1, tm1), (cnvs2, tm2) = templates
 

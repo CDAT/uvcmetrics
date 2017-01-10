@@ -20,13 +20,13 @@ dt = diags_test.DiagTest( modeldir, obsdir, plotset, filterid, obsid, varid, sea
 
 # Test of graphics (png) file match:
 # This just looks at combined plot, aka summary plot, which is a compound of three plots.
-imagefilename = 'figure-set2_Global_JAN_Ocean_Heat_plot-combined.png'
+imagefilename = 'set2_JAN_Ocean_Heat-combined-'+modeldir+'.png'
 imagethreshold = None
 ncfiles = {}
-ncfiles['figure-set2_Global_JAN_Ocean_Heat_plot-Atlantic.nc'] = ['CAM_HEAT_TRANSPORT_ALL_1']
-ncfiles['figure-set2_Global_JAN_Ocean_Heat_plot-Global.nc'] = ['CAM_HEAT_TRANSPORT_ALL_1']
-ncfiles['figure-set2_Global_JAN_Ocean_Heat_plot-Indian.nc'] = ['CAM_HEAT_TRANSPORT_ALL_1']
-ncfiles['figure-set2_Global_JAN_Ocean_Heat_plot-Pacific.nc'] = ['CAM_HEAT_TRANSPORT_ALL_1']
+ncfiles['set2_JAN_Ocean_Heat-Atlantic-cam_output.nc'] = ['CAM_HEAT_TRANSPORT_ALL_1']
+ncfiles['set2_JAN_Ocean_Heat-Global-cam_output.nc'] = ['CAM_HEAT_TRANSPORT_ALL_1']
+ncfiles['set2_JAN_Ocean_Heat-Indian-cam_output.nc'] = ['CAM_HEAT_TRANSPORT_ALL_1']
+ncfiles['set2_JAN_Ocean_Heat-Pacific-cam_output.nc'] = ['CAM_HEAT_TRANSPORT_ALL_1']
 # Test of NetCDF data (nc) file match:
 rtol = 1.0e-3
 atol = 1.0e-2   # suitable for temperatures

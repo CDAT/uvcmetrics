@@ -192,7 +192,7 @@ def compose( rf1, rf2 ):
         return mv2
     return rf12
 
-def set_spatial_avg_method( var ):
+def obsolete_set_spatial_avg_method( var ):
     # >>> probably obsolete <<<
     """Determines how to compute spatial averages of a variable var.
     Sets the attribute var.weighting to a string specifying how to compute spatial averages.
@@ -209,25 +209,66 @@ def set_spatial_avg_method( var ):
 
 def set_mean( mv, season=seasonsyr, region=None, gw=None ):
     """Set mean attribute of a variable.  Typically this appears in a plot header."""
+    if type(mv) is tuple and len(mv)==2:
+        mv1mean = set_mean( mv[0], season, region, gw )
+        mv2mean = set_mean( mv[1], season, region, gw )
+        return ( mv1mean, mv2mean )
+    if hasattr(mv,'mean') and callable(mv.mean):
+        # This mean() method is almost surely the one inherited from numpy.  It doesn't know about
+        # the grid, so it should not be used.
+        mv.mean = None  # a method can't be deleted in one step
+        del mv.mean
     if season is None: season=seasonsyr
     weighting = getattr( mv, 'weighting', None )
     if hasattr(mv,'mean') and isinstance(mv.mean,Number):
         mvmean = mv.mean
+    elif hasattr(mv,'mean') and not isinstance(mv.mean,Number) and hasattr(mv.mean,'shape') and\
+            len(mv.mean.shape)==0:
+        # mv.mean is a TransientVariable of shape (), or something like that: only one value.
+        mvmean = mv.mean.min()
+        mv.mean = mvmean
     else:
         mvmean = None
-    if weighting=='mass' and hasattr(mv,'_filename') and mvmean is None:
-        # The _filename attribute, or else a lot of data we don't have, is needed to compute
+    if weighting=='mass' and hasattr(mv,'filename') and mvmean is None:
+        # The filename attribute, or else a lot of data we don't have, is needed to compute
         # mass-based weights.
         try:
             mv.mean = reduce2scalar( mv, season=season, region=region, gw=gw, weights='mass' )
+            mvmean = mv.mean
         except Exception as e:
-            logger.error("Caught by set_mean, exception %s for variable %s", e, mv.id)
-    #else: use the VCS default of area weighting
+            logger.error("Caught by set_mean, exception %s for variable %s", e,
+                         getattr(mv,'id',getattr(mv,'_id','unknown')))
+            import traceback
+            tb = traceback.format_exc()
+            logger.debug("traceback:\n%s", tb)
+    elif hasattr(mv,'filename') and mvmean is None: # default to area weighting
+        mv.mean = reduce2scalar( mv, season=season, region=region, gw=gw )
+        mvmean = mv.mean
 
+    # Just in case, clean up mv.mean - make sure it's a number.  And don't allow None.
+    if hasattr(mv,'mean') and not isinstance(mv.mean,Number) and hasattr(mv.mean,'shape') and\
+            len(mv.mean.shape)==0:
+        # mv.mean is a TransientVariable of shape (), or something like that: only one value.
+        mvmean = mv.mean.min()
+        mv.mean = mvmean
+    if hasattr(mv,'mean') and mv.mean is None:
+        del mv.mean
+    # And now for a sanity check:
+    if hasattr(mv,'mean') and isinstance(mv.mean,Number) and\
+            (mv.mean<mv.min() or mv.mean>mv.max()):
+        logger.warning("Mean for %s was computed as %s but the min and max values are %s, %s!",
+                       mv.id,mv.mean,mv.min(),mv.max())
+    if hasattr(mv,'mean'):
+        # It's useful to have a :_mean attribute because it isn't transmitted through calculations
+        # like the :mean attribute.  Such transmissions are usually wrong.
+        # However VCS looks for a :mean attribute, so we need that too.
+        mv._mean = mv.mean
+
+    return mvmean
 
 # -------- end of Miscellaneous  Utilities ---------
 
-def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=None, weights=None, exclude_axes=[] ):
+def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=True, weights=None, exclude_axes=[] ):
     """This is a generic reduction function.  It reduces dimensionality by averaging over all but
     specified axes.  This uses the averager module for greater capabilities
 
@@ -238,7 +279,7 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
     or axis objects.
     Axis names (ids) may be listed in exclude_axes, to exclude them from the averaging process.
 
-    Latitude weights may be provided as 'gw'.  The averager's default is reasonable, however.
+    Latitude weights may be provided as a variable 'gw'.  The averager's default is reasonable, however.
 
     The genutil averager() function performs the averaging.  This normally uses its default
     weighting, which typically is area weights.
@@ -266,17 +307,19 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
     if mvrs is None:
         # Among other cases, this can happen if mv has all missing values.
         return None
+    mvrs.filename = getattr(mvr,'filename',None)
+    mvrs.filetable = getattr(mvr,'filetable',None)
 
     mv_axes = allAxes( mv )
     for a in mv_axes:
         if hasattr(a,'axis'): continue
-        if a.isLatitude: a.axis = 'y'
-        elif a.isLongitude: a.axis = 'x'
-        elif a.isLevel: a.axis = 'z'
+        if a.isLatitude(): a.axis = 'y'
+        elif a.isLongitude(): a.axis = 'x'
+        elif a.isLevel(): a.axis = 'z'
     axis_names = [ a.id for a in mv_axes if not a.isTime() and a.id not in exclude_axes and
                    a not in target_axes and a.id not in target_axes and
-                   getattr(a,'axis').lower() not in target_axes and
-                   getattr(a,'axis').upper() not in target_axes ]
+                   getattr(a,'axis','spam').lower() not in target_axes and
+                   getattr(a,'axis','spam').upper() not in target_axes ]
     axes_string = '('+')('.join(axis_names)+')'
     axes = mvrs.getAxisList()
 
@@ -284,9 +327,14 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
         # weights unspecified (probably).  Are they specified in a variable attribute?
         # If mass weighting is appropriate, the weighting attribute should say so.  It was set by
         # an earlier weighting_choice() call.
-        weights = getattr( mv, 'weighting', None )
+        from metrics.packages.amwg.derivations.massweighting import weighting_choice
+        weights = getattr( mv, 'weighting', weighting_choice(mv) )
         if not hasattr(mvrs,'filetable') and hasattr(mv,'filetable'):
             mvrs.filetable = mv.filetable
+    if gw is True:
+        # gw wasn't provided as an argument, but we can get it however we can
+        if hasattr(mv,'diags_gw'):
+            gw = mv.diags_gw
 
     if len(axes_string)<=2:
         avmv = mvrs
@@ -299,12 +347,101 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
             # In this case we will provide the averager with a full weight array, i.e.
             # "of the same shape as V" in the language of the genutil averager() documentation (with V=mvrs)
             if weights=='mass':
-                latlon_wts = mvrs.filetable.weights['mass']  # array of shape (lev,lat,lon)
+                # doesn't work for atmos set 7: latlon_wts = mvrs.filetable.weights['mass']  # array of shape (lev,lat,lon)
+                from metrics.packages.amwg.derivations.massweighting import mass_weights
+                # We don't want to recompute weights if unnecessary.  So here, when possible, we are
+                # retrieving cached weights, based on the (lev,lat,lon) if we have a (lev,lat,lon)
+                # variable.  If the variable has fewer axes, we find weights which agree on the size of
+                # the axes it has, and add up over the other directions.  This works at the moment, but
+                # there are plenty of possibilities for it to fail - e.g. if you have two regions of the
+                # same shape, you need to compute weights in both of them, and this won't do that.
+                # Eventually we should have a more robust cacheing system: it should look at the actual
+                # range of lat,lon values, the region, the season; and maybe do something about levels.
+                lev = mvrs.getLevel()
+                if lev is None: llev = -1
+                else:llev = len(lev)
+                lat = mvrs.getLatitude()
+                if lat is None: llat = -1
+                else:llat = len(lat)
+                lon = mvrs.getLongitude()
+                if lon is None: llon = -1
+                else: llon = len(lon)
+                if 'mass' in mvrs.filetable.weights and (llev,llat,llon) in mvrs.filetable.weights['mass']:
+                    latlon_wts = mvrs.filetable.weights['mass'][(llev,llat,llon)]
+                elif 'mass' in mvrs.filetable.weights and lon is None and\
+                        llev in [k[0] for k in mvrs.filetable.weights['mass'].keys()] and\
+                        llat in [k[1] for k in mvrs.filetable.weights['mass'].keys()]:
+                    # No lon.  Get weights with lon (and the same lev,lat), and sum over lon.
+                    # Cross our fingers and hope that the first possibility is correct!
+                    newllon = [k[2] for k in mvrs.filetable.weights['mass'] if k[0]==llev and k[1]==llat][0]
+                    latlon_wts = mvrs.filetable.weights['mass'][(llev,llat,newllon)]
+                    # ... array of shape (lev,lat,lon); the sum over longitudes will happen later.
+                elif 'mass' in mvrs.filetable.weights and lat is None and\
+                        llev in [k[0] for k in mvrs.filetable.weights['mass'].keys()] and\
+                        llon in [k[2] for k in mvrs.filetable.weights['mass'].keys()]:
+                    # No lat.  Get weights with lat (and the same lev,lon), and sum over lat.
+                    # Cross our fingers and hope that the first possibility is correct!
+                    newllat = [k[1] for k in mvrs.filetable.weights['mass'] if k[0]==llev and k[2]==llon][0]
+                    latlon_wts = mvrs.filetable.weights['mass'][(llev,newllat,llon)]
+                    # ... array of shape (lev,lat,lon); the sum over latitudes will happen later.
+                elif 'mass' in mvrs.filetable.weights and lev is None and\
+                        llat in [k[1] for k in mvrs.filetable.weights['mass'].keys()] and\
+                        llon in [k[2] for k in mvrs.filetable.weights['mass'].keys()]:
+                    # No lev.  Get weights with lev (and the same lat,lon), and sum over lev.
+                    # Cross our fingers and hope that the first possibility is correct!
+                    newllev = [k[0] for k in mvrs.filetable.weights['mass'] if k[1]==llat and k[2]==llon][0]
+                    latlon_wts = mvrs.filetable.weights['mass'][(newllev,llat,llon)]
+                    # ... array of shape (lev,lat,lon); the sum over latitudes will happen later.
+                elif 'mass' in mvrs.filetable.weights and lat is None and lon is None and\
+                        llev in [k[0] for k in mvrs.filetable.weights['mass'].keys()]:
+                    # No lat or lon.  Get weights with lat and lon, and sum over lat,lon.
+                    # Cross our fingers and hope that the first possibility is correct!
+                    if len(mvrs.filetable.weights['mass'].keys())<1:
+                        log.error("Cannot compute mass weights for spatially reduced variable %s",mvrs.id)
+                    if len(mvrs.filetable.weights['mass'].keys())>1:
+                        log.warning("Multiple candidate mass weights for spatially reduced variable %s; will choose one",mvrs.id)
+                    newllon = [k[2] for k in mvrs.filetable.weights['mass']][0]
+                    newllat = [k[1] for k in mvrs.filetable.weights['mass']][0]
+                    latlon_wts = mvrs.filetable.weights['mass'][(llev,newllat,newllon)]
+                    # ... array of shape (lev,lat,lon); the sum over lat,lon will happen later.
+                # >>>> cases not considered: no lev,lat; no lev,lon; no lev,lat,lon <<<<
+                else:
+                    # Note that mass_weights() requires mvrs to have lev,lat,lon axes.
+                    if mvrs.getLevel() is None or mvrs.getLatitude() is None or mvrs.getLongitude() is None:
+                        # We're in trouble.  mvrs.filetable.weights['mass'] doesn't have what we need,
+                        # and mvrs doesn't have the three axes needed to compute mass weights.
+                        # When this happens, it means that we have to do more work someplace, to
+                        # make it possible to compute mass weights.
+                        # This currently happens in plot sets 4 and 4a, where the variable to be plotted
+                        # lives on a hybrid of the model and obs grids.  Suitable mass weights don't exist.
+                        logger.warning("Cannot compute mass weights for %s",
+                                       getattr(mvrs,'id',getattr(mvrs,'_id','unknown')))
+                        latlon_wts = None
+                    else:
+                        if 'mass' not in mvrs.filetable.weights:
+                            mvrs.filetable.weights['mass'] = {}
+                        latlon_wts = mass_weights( mvrs )    # array of shape (lev,lat,lon) ...
+                        mvrs.filetable.weights['mass'][(llev,llat,llon)] = latlon_wts
+                # Previously I simply stored weights in the filetable, but it did't work in the occasional
+                # case that mvrs had been regridded to match another filetable!  These asserts helped catch
+                # such situations:
+                if latlon_wts is not None:
+                    if mvrs.getLongitude() is not None and len(mvrs.getLongitude())>0:
+                        assert len(mvrs.getLongitude())==len(latlon_wts.getLongitude())
+                    if mvrs.getLatitude() is not None and len(mvrs.getLatitude())>0:
+                        assert len(mvrs.getLatitude())==len(latlon_wts.getLatitude())
+                    if mvrs.getLevel() is not None and len(mvrs.getLevel())>0:
+                        assert len(mvrs.getLevel())==len(latlon_wts.getLevel())
             else:
                 latlon_wts = weights
-            klevs = [i for i,j in enumerate([a.isLevel() for a in axes]) if j==True]
-            klats = [i for i,j in enumerate([a.isLatitude() for a in axes]) if j==True]
-            klons = [i for i,j in enumerate([a.isLongitude() for a in axes]) if j==True]
+            if latlon_wts is None:
+                klevs = []
+                klats = []
+                klons = []
+            else:
+                klevs = [i for i,j in enumerate([a.isLevel() for a in axes]) if j==True]
+                klats = [i for i,j in enumerate([a.isLatitude() for a in axes]) if j==True]
+                klons = [i for i,j in enumerate([a.isLongitude() for a in axes]) if j==True]
             #assert( len(klats)>0 ), "no latitudes exist"
             ## equivalent to assert( any( [a.isLatitude() for a in axes] ) )
             #assert( len(klons)>0 ), "no longitudes exist"
@@ -321,7 +458,9 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
             # the weight array in the filetable was constructed.  This happens for polar plots.
             # So here we expand the weight array exactly the same way, if we can:
             # N.B.  It would likely be better to do this with genutil.grower().
-            if len(klons)>0:
+            if latlon_wts is None:
+                pass   # no mass weights available
+            elif len(klons)>0:
                 ll_lon = latlon_wts.getLongitude()
                 av_lon = avweights.getLongitude()
                 av_lat = avweights.getLatitude()
@@ -332,65 +471,87 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
                     # line in a more general location until another case turns up...
                     latlon_wts = latlon_wts( latitude=( av_lat[0], av_lat[-1] ) )
 
-            if len(klats)>0 and len(klons)>0:
-                # We have both latitudes and longitudes
+            # Compute this variable's mass weight array based on the (lev,lat,lon) weight array in
+            # the filetable.  We just have to add up weights along any axis missing from the variable.
+            if latlon_wts is None:
+                pass   # no mass weights available
+            elif len(klevs)>0 and len(klats)>0 and len(klons)>0:
+                # We have all three: levels, latitudes and longitudes
                 if klevs==[0] and klats==[1] and klons==[2] and avweights.shape==latlon_wts.shape:
+                    # test code useful if you think you may not be recalculating mass_weights often enough...
+                    #dwt = latlon_wts - mass_weights( mvrs )
+                    #assert( dwt.min()==0 and dwt.max()==0 )
+                    # ...jfp test code
                     # avweights and latlon_wts are compatible
                     numpy.copyto( avweights, latlon_wts ) # avweights[:,:,...]=latlon_wts[:,:,...]
                 else:
                     # avweights and latlon_wts are structured differently.  This loop is slow.
                     for inds in numpy.ndindex(avweights.shape):
-                        ilat = inds[klat]
-                        ilon = inds[klon]
-                        if len(klevs)>0:
-                            ilev = inds[klev]
-                        else:
-                            ilev = -1   # means use the bottom, usually best if there are no levels
-                        avweights[inds] = latlon_wts[ilev,ilat,ilon]
-            elif len(klats)>0:
-                # We have latitudes, no longitudes.  Normally this means that the longitudes have
-                # been averaged out.
-                if klevs==[0] and klats==[1] and avweights.shape==latlon_wts.shape:
-                    # avweights and latlon_wts are compatible
-                    numpy.copyto( avweights, latlon_wts ) # avweights[:,:,...]=latlon_wts[:,:,...]
-                else:
-                    for inds in numpy.ndindex(avweights.shape):
-                        ilat = inds[klat]
-                        if len(klevs)>0:
-                            ilev = inds[klev]
-                        else:
-                            ilev = -1   # means use the bottom, usually best if there are no levels
-                        avweights[inds] = numpy.sum( latlon_wts[ilev,ilat,:] )
-            elif len(klons)>0:
-                # We have longitudes, no latitudes.  Normally this means that the latitudes have
-                # been averaged out.
-                if klevs==[0] and klons==[1] and avweights.shape==latlon_wts.shape:
-                    # avweights and latlon_wts are compatible
-                    numpy.copyto( avweights, latlon_wts ) # avweights[:,:,...]=latlon_wts[:,:,...]
-                else:
-                    for inds in numpy.ndindex(avweights.shape):
-                        ilon = inds[klon]
-                        if len(klevs)>0:
-                            ilev = inds[klev]
-                        else:
-                            ilev = -1   # means use the bottom, usually best if there are no levels
-                        avweights[inds] = numpy.sum( latlon_wts[ilev,:,ilon] )
-            else:
-                # No latitudes, no longitudes!
-                if len(klevs)<=0:   # No levels either.
-                    # Probably something's wrong, there's basically nothing to do.
-                    # But we can go on with something sensible anyway.
-                    ilev = -1   # means use the bottom, usually best if there are no levels
-
-                    logger.warning("Computing a mass-weighted average of %s with no spatial axes",mvrs.id)
-                else:  # We have only levels
-                    for inds in numpy.ndindex(avweights.shape):
                         ilev = inds[klev]
-                        avweights[inds] = numpy.sum( latlon_wts[ilev,:,:] )
+                        ilat = inds[klat]
+                        ilon = inds[klon]
+                        avweights[inds] = latlon_wts[ilev,ilat,ilon]
+            elif len(klevs)==0 and len(klats)>0 and len(klons)>0:
+                # We have latitudes and longitudes, no levels.  We'll just use the bottom level.
+                ilev = -1   # means use the bottom, usually best if there are no levels
+                for inds in numpy.ndindex(avweights.shape):
+                    ilat = inds[klat]
+                    ilon = inds[klon]
+                    avweights[inds] = latlon_wts[ilev,ilat,ilon]
+            elif len(klevs)>0 and len(klats)>0 and len(klons)==0:
+                # We have levels and latitudes, no longitudes.  Normally this means that the variable
+                # represents a sum or average over longitudes.  For weights, sum over longitudes.
+                for inds in numpy.ndindex(avweights.shape):
+                    ilev = inds[klev]
+                    ilat = inds[klat]
+                    avweights[inds] = numpy.sum( latlon_wts[ilev,ilat,:] )
+            elif len(klevs)>0 and len(klats)==0 and len(klons)>0:
+                # We have levels and longitudes, no latitudes.  Normally this means that the variable
+                # represents a sum or average over latitudes.  For weights, sum over latitudes.
+                for inds in numpy.ndindex(avweights.shape):
+                    ilev = inds[klev]
+                    ilon = inds[klon]
+                    avweights[inds] = numpy.sum( latlon_wts[ilev,:,ilon] )
+            elif len(klevs)==0 and len(klats)>0 and len(klons)==0:
+                # We have latitudes, no levels or longitudes.  Use the bottom level and sum over
+                # the longitudes
+                ilev = -1   # means use the bottom, usually best if there are no levels
+                for inds in numpy.ndindex(avweights.shape):
+                    ilat = inds[klat]
+                    avweights[inds] = numpy.sum( latlon_wts[ilev,ilat,:] )
+            elif len(klevs)==0 and len(klats)==0 and len(klons)>0:
+                # We have longitudes, no levels or latitudes.  Use the bottom level and sum over
+                # the latitudes
+                ilev = -1   # means use the bottom, usually best if there are no levels
+                for inds in numpy.ndindex(avweights.shape):
+                    ilon = inds[klon]
+                    avweights[inds] = numpy.sum( latlon_wts[ilev,:,ilon] )
+            elif len(klevs)>0 and len(klats)==0 and len(klons)==0:
+                # We have levels, no latitudes or longitudes.  Sum over latitudes and longitudes.
+                for inds in numpy.ndindex(avweights.shape):
+                    ilev = inds[klev]
+                    avweights[inds] = numpy.sum( latlon_wts[ilev,:,:] )
+            else:
+                # No levels, latitudes, no longitudes!
+                # Probably something's wrong, there's basically nothing to do.
+                # But we can go on with something sensible anyway.
+                logger.warning("Computing a mass-weighted average of %s with no spatial axes",\
+                                   getattr(mvrs,'id',getattr(mvrs,'_id','unknown')))
+                ilev = -1   # means use the bottom, usually best if there are no levels
+                for inds in numpy.ndindex(avweights.shape):
+                    avweights[inds] = numpy.sum( latlon_wts[ilev,:,:] )
 
-            avmv = averager( mvrs, axis=axes_string, weights=avweights )
+            if latlon_wts is None:
+                # Although we have chosen mass weights, they are not available.
+                avmv = averager( mvrs, axis=axes_string )   # "normal" averaging
+            else:
+                avmv = averager( mvrs, axis=axes_string, weights=avweights )
 
-        elif gw is None:
+        elif gw is None or mvrs.getLatitude() is None:
+            avmv = averager( mvrs, axis=axes_string )   # "normal" averaging
+        elif len(gw)!=len(mvrs.getLatitude()):
+            # very likely mvrs is a model-obs difference, gw is for model and mvrs is on the obs grid
+            # We might be able to use gw from obs, but it's not worth making it work for a diff
             avmv = averager( mvrs, axis=axes_string )   # "normal" averaging
         else:
             weights = [ gw if a.isLatitude() else 'weighted' for a in axes ]
@@ -414,18 +575,18 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Non
         # >>> special ad-hoc code.  The target units should be provided in an argument, not by this if statement>>>>
         if avmv.units=="Pa" or avmv.units.lower()=="pascal" or avmv.units.lower()=="pascals":
             avmv = convert_variable( avmv, "millibar" )
-    if not hasattr( avmv, '_filename' ) and hasattr( mv,'_filename' ):
-        avmv._filename = mv._filename
+    if not hasattr( avmv, 'filename' ) and hasattr( mv,'filename' ):
+        avmv.filename = mv.filename
     if not hasattr( avmv, 'filetable' ) and hasattr( mv,'filetable' ):
         avmv.filetable = mv.filetable
     avmv.weighting = weights
-    set_mean( avmv )
+    set_mean( avmv, season=season, region=region, gw=gw )
 
     return avmv
 
 
 
-def reduce2scalar_seasonal_zonal( mv, season=seasonsyr, latmin=-90, latmax=90, vid=None, gw=None,
+def reduce2scalar_seasonal_zonal( mv, season=seasonsyr, latmin=-90, latmax=90, vid=None, gw=True,
                                   seasons=seasonsyr):
     """returns the mean of the variable over the supplied latitude range (in degrees).
     The computed quantity is a scalar but is returned as a cdms2 variable, i.e. a MV.
@@ -441,6 +602,10 @@ def reduce2scalar_seasonal_zonal( mv, season=seasonsyr, latmin=-90, latmax=90, v
     # reduce size of lat axis to (latmin,latmax)
     mv2 = mv(latitude=(latmin, latmax))
     if not hasattr( mv2, 'filetable') and hasattr(mv,'filetable'): mv2.filetable = mv.filetable
+    if gw is True:
+        # gw wasn't provided as an argument, but we can get it however we can
+        if hasattr(mv,'diags_gw'):
+            gw = mv.diags_gw
     # reduce size of gw to (latmin,latmax)
     gw2 = None
     if gw is not None:
@@ -449,10 +614,11 @@ def reduce2scalar_seasonal_zonal( mv, season=seasonsyr, latmin=-90, latmax=90, v
         else:
             #print "debug For mv",mv.id,"gw rejected, domain is",gw.getDomain()
             pass
-    return reduce2any( mv2, target_axes=[], vid=vid, season=season, gw=gw2 )
+    sclr = reduce2any( mv2, target_axes=[], vid=vid, season=season, gw=gw2 )
+    return sclr
 
 def reduce2scalar_seasonal_zonal_level( mv, season=seasonsyr, latmin=-90, latmax=90, level=None,
-                                        vid=None, gw=None, seasons=seasonsyr ):
+                                        vid=None, gw=True, seasons=seasonsyr ):
     """returns the mean of the variable at the supplied level and over the supplied latitude range
     The computed quantity is a scalar but is returned as a cdms2 variable, i.e. a MV.
     The input mv is a cdms2 variable too.  Its level axis *must* have pressure levels in millibars,
@@ -486,19 +652,20 @@ def reduce2scalar_seasonal_zonal_level( mv, season=seasonsyr, latmin=-90, latmax
         return None
     return reduce2scalar_seasonal_zonal( mvl, season, latmin=latmin, latmax=latmax, vid=vid, gw=gw )
 
-def reduce2scalar( mv, vid=None, gw=None, weights=None, season=seasonsyr, region=None ):
+def reduce2scalar( mv, vid=None, gw=True, weights=None, season=seasonsyr, region=None ):
     """averages mv over the full range all axes, to a single scalar.
     Uses the averager module for greater capabilities
     Latitude weights may be provided as 'gw'.  The averager's default is reasonable, however.
     If weights='mass', mass weighting will be used.  This requires several variables to be
-    available in a file mv._filename, which attribute must exist if mv has hybrid levels.
+    available in a file mv.filename, which attribute must exist if mv has hybrid levels.
     Alternatively, you can compute mass (or other) weights into a 3-D (lev,lat,lon) array (or MV)
     and pass it as the 'weights' argument.
     For the moment we expect mv to have lat and lon axes; and if it has no level axis,
     the bottom level, i.e. the last in any level array, lev=levels[-1], will be assumed.
     """
-    return reduce2any( mv, target_axes=[], vid=vid, gw=gw, weights=weights, season=season,
+    sclr = reduce2any( mv, target_axes=[], vid=vid, gw=gw, weights=weights, season=season,
                        region=region )
+    return sclr
 
 def reduce2levlat_seasonal( mv, season=seasonsyr, region=None, vid=None ):
     """returns the mean of the variable over all axes but level and latitude, as a cdms2 variable, i.e. a MV.
@@ -611,6 +778,9 @@ def reduce2level_seasonal( mv, season=seasonsyr, region='Global', vid=None, seas
     axis.designateLevel()
 
     return avmv
+
+def identity( mv, *args, **kwargs ):
+    return mv
 
 def ttest_ab(mv1, mv2, constant = .1):
    mv1, mv2 = reconcile_units(mv1, mv2)
@@ -1522,7 +1692,7 @@ def calculate_seasonal_climatology(mv, season):
     In the future we may consider replacing climatology() by the functions in inc_reduce.py.
     """
     # Convert season to a season object if it isn't already
-    if season is None or season == 'ANN' or season.seasons[0] == 'ANN':
+    if season is None or season=='ANN' or getattr(season,'seasons',[None])[0] == 'ANN':
         season=seasonsyr
     elif type(season) == str:
         season=cdutil.times.Seasons(season)
@@ -1583,35 +1753,6 @@ def calculate_seasonal_climatology(mv, season):
         mvt.units = mv.units
     return mvt
 
-# Moved this here from amwg.py set13 class, because it can be used by all the AMWG classes.
-def interpret_region( region ):
-    """Tries to make sense of the input region, and returns the resulting instance of the class
-    rectregion in region.py."""
-    if region is None:
-        region = "Global"
-    if type(region) is str:
-        if region in defines.all_regions:
-            region = defines.all_regions[region]
-        else:
-            raise ValueError, "cannot recognize region name %s"%region
-            region = None
-    if region == None:
-        raise Exception( 'this code should never be hit. please sent smithbe@ornl.gov an email detailing how you got here.' )
-    return region
-
-def select_region(mv, region=None):
-    # Select lat-lon region
-    if region is None or region=="global" or region=="Global" or\
-            getattr(region,'filekey',None)=="Global" or str(region)=="Global":
-#        print 'first case'
-        mvreg = mv
-    else:
-#        print 'second case'
-        region = interpret_region(region)
-#        print 'region after interpret region:', region
-        mvreg = mv(latitude=(region[0], region[1]), longitude=(region[2], region[3]))
-    return mvreg
-
 def select_lev( mv, slev ):
     """Input is a level-dependent variable mv and a level slev to select.
     slev is an instance of udunits - thus it has a value and a units attribute.
@@ -1640,6 +1781,8 @@ def select_lev( mv, slev ):
     else:
         logger.error("select_lev() does not support level axis except as first or second dimensions")
         return None
+    # createVariable will have copied all non-'_' attributes from mv to mvs; the mv mean is wrong for mvs.
+    mvs.mean = None
     mvs = delete_singleton_axis(mvs, vid=levax.id)
     return mvs
 
@@ -2062,9 +2205,13 @@ def aminusb_ax2( mv1, mv2 ):
     if len(axes1[1])<=len(axes2[1]):
         a = mv1
         b = interp2( axes1[1], mv2 )
+        b.mean = None
+        set_mean(b)
         ab_axes.append(axes1[1])
     else:
         a = interp2( axes2[1], mv1 )
+        a.mean = None
+        set_mean(a)
         b = mv2
         ab_axes.append(axes2[1])
     aminusb = a - b
@@ -2073,32 +2220,24 @@ def aminusb_ax2( mv1, mv2 ):
     if hasattr(mv1,'long_name'):
         aminusb.long_name = 'difference of '+mv1.long_name
     if hasattr(mv1,'units'):  aminusb.units = mv1.units
+    aminusb.filetable = mv1.filetable
+    aminusb.filetable2 = mv2.filetable
 
     aminusb.initDomain( ab_axes )
-
-    if hasattr(mv1,'mean') and hasattr(mv2,'mean'):
-        # Note that mv1,mv2 will initially have a mean attribute which is a Numpy method.
-        # We only need to compute a new mean if the mean attribute has been changed to a number.
-        try:
-            aminusb.mean = mv1.mean - mv2.mean
-        except TypeError:
-            # If this happens, "-" can't be applied to the means.
-            # For sure they aren't numbers.  Probably they are the Numpy builtin mean() method.
-            pass
-        except Exception:
-            if hasattr(aminusb,'mean') and isinstance(aminusb.mean,Number):
-                logger.warning("When computing the difference of %s and %s, the mean of the difference cannot be correctly be computed",mv1.id,mv2.id)
-            del aminusb.mean
+    mean_of_diff( aminusb, mv1, mv2 )
 
     return aminusb
 
 
 def convert_units(mv, units):
+   """Returns a new variable like mv but with the specified units"""
    if type(mv) == float:
       return mv
    if not hasattr(mv,'units') and hasattr(mv,'lunits'):
        # Fix an apparent typo in two variables in CERES-EBAF data
        mv.units = mv.lunits
+   fix_troublesome_units(mv)
+   adhoc_convert_units( mv, units )
    if not hasattr(mv, 'units'):
       mv.units = '1'
    if mv.units == units or mv.units == 'none':
@@ -2120,11 +2259,64 @@ def convert_units(mv, units):
       mvid = mv.id
    if not ( numpy.allclose(s,1.0) and numpy.allclose(i,0.0) ):
       # The following line won't work if mv1 is an axis.
+      mvmean = mv.mean
       mv = s*mv + i
+      try:
+          mv.mean = s*mvmean + 1
+          if hasattr(mv,'_mean'):
+              mv._mean = mv.mean
+      except:
+          pass  # probably mv.mean is None, or a function
       if hasattr(mv,'id'):
          mv.id = mvid
    mv.units = units
    return mv
+
+def fix_troublesome_units( mv ):
+    """This handles many special cases where a variable mv has units which are not understood
+    by udunits or otherwise troublesome.  It replaces the units with ones which work better."""
+        # Very ad-hoc, but more general would be less safe:
+        # BES - set 3 does not seem to call it rv_QFLX. It is set3_QFLX_ft0_climos, so make this just a substring search
+    if not hasattr(mv,'units'):
+        return mv
+    if mv.units == "gpm":
+        mv.units="m"
+    if mv.units=='mb':
+        mv.units = 'mbar' # udunits uses mb for something else
+    if mv.units=='mb/day':
+        mv.units = 'mbar/day' # udunits uses mb for something else
+    if mv.units == '(0 - 1)': # as in ERAI obs
+        mv.units = '1'
+    if mv.units == '(0-1)':   # as in ERAI obs
+        mv.units = '1'
+    if mv.units == 'fraction' or mv.units=='dimensionless':
+        mv.units = '1'
+    if mv.units == 'mixed':  # could mean anything...
+        mv.units = '1'       #... maybe this will work
+    if mv.units == 'unitless':  # could mean anything...
+        mv.units = '1'       #... maybe this will work
+    if mv.units == 'W/m~S~2~N~' or mv.units == 'W/m~S~2~N':
+        mv.units = 'W/m^2'
+    if hasattr(mv,'filetable') and mv.filetable.id().ftid == 'ERA40' and\
+            mv.id[0:5]=='rv_V_' and mv.units=='meridional wind':
+        # work around a silly error in ERA40 obs
+        mv.units = 'm/s'
+    return mv
+
+def adhoc_convert_units( mv, units ):
+    """Some ad-hoc units conversions"""
+    if not hasattr(mv,'units'):
+        return mv
+    if mv.units =='fraction' and (units == 'percent' or units == '%'):
+        mv = 100*mv
+        mv.units=units
+    if mv.units=='kg/m2' and units=='mm':
+        mv.units = 'mm' # [if 1 kg = 10^6 mm^3 as for water]
+    if mv.units[0:7]=='kg/(m^2' and units[0:3]=='mm/':
+        mv.units = 'mm/('+mv.units[7:] # [if 1 kg = 10^6 mm^3 as for water]
+    if mv.units[0:3]=='mm/' and units[0:8]=='kg/(m^2 ':
+        mv.units = 'kg/(m^2 '+mv.units[3:]+')' # [if 1 kg = 10^6 mm^3 as for water]
+    return mv
 
 def reconcile_units( mv1, mv2, preferred_units=None ):
     """Changes the units of variables (instances of TransientVariable) mv1,mv2 to be the same,
@@ -2160,57 +2352,10 @@ def reconcile_units( mv1, mv2, preferred_units=None ):
     # delete the above lines which set it to a default value.
     if hasattr(mv1,'units') and hasattr(mv2,'units') and\
             (preferred_units is not None or mv1.units!=mv2.units):
-        # Very ad-hoc, but more general would be less safe:
-        # BES - set 3 does not seem to call it rv_QFLX. It is set3_QFLX_ft0_climos, so make this just a substring search
-        if mv1.units == "gpm":
-            mv1.units="m"
-        if mv2.units == "gpm":
-            mv2.units="m"
-        if mv1.units=='mb':
-            mv1.units = 'mbar' # udunits uses mb for something else
-        if mv2.units=='mb':
-            mv2.units = 'mbar' # udunits uses mb for something else
-        if mv1.units=='mb/day':
-            mv1.units = 'mbar/day' # udunits uses mb for something else
-        if mv2.units=='mb/day':
-            mv2.units = 'mbar/day' # udunits uses mb for something else
-        if mv1.units == '(0 - 1)': # as in ERAI obs
-            mv1.units = '1'
-        if mv1.units == '(0-1)':   # as in ERAI obs
-            mv1.units = '1'
-        if mv2.units == '(0 - 1)': # as in ERAI obs
-            mv2.units = '1'
-        if mv2.units == '(0-1)':   # as in ERAI obs
-            mv2.units = '1'
-        if mv1.units == 'fraction' or mv1.units=='dimensionless':
-            mv1.units = '1'
-        if mv2.units == 'fraction' or mv2.units=='dimensionless':
-            mv2.units = '1'
-        if mv1.units == 'mixed':  # could mean anything...
-            mv1.units = '1'       #... maybe this will work
-        if mv2.units == 'mixed':  # could mean anything...
-            mv2.units = '1'       #... maybe this will work
-        if mv1.units == 'unitless':  # could mean anything...
-            mv1.units = '1'       #... maybe this will work
-        if mv2.units == 'unitless':  # could mean anything...
-            mv2.units = '1'       #... maybe this will work
-        if mv1.units == 'W/m~S~2~N~' or mv1.units == 'W/m~S~2~N':
-            mv1.units = 'W/m^2'
-        if mv2.units == 'W/m~S~2~N~' or mv2.units == 'W/m~S~2~N':
-            mv2.units = 'W/m^2'
-        if mv1.units =='fraction' and (mv2.units == 'percent' or mv2.units == '%'):
-            mv1 = 100*mv1
-            mv1.units=mv2.units
-            return mv1, mv2
-        if mv2.units =='fraction' and (mv1.units == 'percent' or mv1.units == '%'):
-            mv2 = 100*mv2
-            mv2.units=mv1.units
-            return mv1, mv2
-        if mv1.units=='kg/m2' and mv2.units=='mm':
-            mv1.units = 'mm' # [if 1 kg = 10^6 mm^3 as for water]
-        if mv2.units=='kg/m2' and mv1.units=='mm':
-            mv2.units = 'mm' # [if 1 kg = 10^6 mm^3 as for water]
-
+        fix_troublesome_units( mv1 )
+        fix_troublesome_units( mv2 )
+        adhoc_convert_units( mv1, mv2.units )
+        adhoc_convert_units( mv2, mv1.units )
 
         if preferred_units is None:
             # Look for whichever of mv1.units, mv2.units gives numbers more O(1).
@@ -2312,7 +2457,6 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
     If this works out, it should be generalized and reproduced in other aminusb_* functions."""
     ""
     import pdb
-    #pdb.set_trace()
     global regridded_vars   # experimental for now
     if mv1 is None or mv2 is None:
         logger.warning("aminusb_2ax missing an input variable.")
@@ -2375,8 +2519,18 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
                              [a[0].id for a in mv1._TransientVariable__domain], len(axes1[0]), len(axes1[1]),
                              [a[0].id for a in mv2._TransientVariable__domain], len(axes2[0]), len(axes2[1]))
                 raise Exception("when regridding mv2 to mv1, failed to get or generate a grid for mv1")
-            mv2new = mv2.regrid(grid1)
+            if Options.regridMethod is None:
+                mv2new = mv2.regrid(grid1, regridTool=Options.regridTool )
+            else:
+                mv2new = mv2.regrid(grid1, regridTool=Options.regridTool, regridMethod=Options.regridMethod )
+            mv2new.mean = None
+            mv2new.filetable = mv2.filetable
             mv2.regridded = mv2new.id   # a GUI can use this
+            if hasattr(mv1,'gw'):
+                mv2new.gw = mv1.gw
+            elif hasattr(mv2new,'gw'):
+                del mv2new.gw
+            set_mean(mv2new)
             regridded_vars[mv2new.id] = mv2new
 #        else:
 #            # Interpolate mv1 from axis1[1] to axis2[1]
@@ -2392,7 +2546,7 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
 #        else:
 
             mv2new = mv2
-            # Interpolate mv2 from axis2 to axis1 in both directions.  Use the CDAT regridder.
+            # Interpolate mv1 from axis1 to axis2 in both directions.  Use the CDAT regridder.
             grid2 = mv2.getGrid()
             if grid2 is None:
                 logger.error("When regridding mv1 to mv2, failed to get or generate a grid for mv2")
@@ -2400,24 +2554,61 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
                              [a[0].id for a in mv1._TransientVariable__domain], len(axes1[0]), len(axes1[1]),
                              [a[0].id for a in mv2._TransientVariable__domain], len(axes2[0]), len(axes2[1]))
                 raise Exception("when regridding mv1 to mv2, failed to get or generate a grid for mv2")
-            mv1new = mv1.regrid(grid2,regridTool="regrid2")
+            # mv1new = mv1.regrid(grid2, regridTool="regrid2")   # our standard regridding
+            #mv1new = mv1.regrid(grid2, regridTool="esmf", regridMethod="linear")  # treats missing data like AMWG
+            #           Another esmf method is "conservative".  It treats missing data like regrid2.
+            # mv1new = mv1.regrid(grid2,regridTool="libcf",regridMethod="linear")   # doesn't work at the moment
+            if Options.regridMethod is None:
+                mv1new = mv1.regrid(grid2, regridTool=Options.regridTool )
+            else:
+                mv1new = mv1.regrid(grid2, regridTool=Options.regridTool, regridMethod=Options.regridMethod )
+            mv1new.mean = None
+            mv1new.filetable = mv1.filetable
             mv1.regridded = mv1new.id   # a GUI can use this
+            if hasattr(mv2,'gw'):
+                mv1new.gw = mv2.gw
+            elif hasattr(mv1new,'gw'):
+                del mv1new.gw
+            set_mean(mv1new)
             regridded_vars[mv1new.id] = mv1new
     aminusb = mv1new - mv2new
     aminusb.id = 'difference of '+mv1.id
+    aminusb.filetable = mv1new.filetable
+    aminusb.filetable2 = mv2new.filetable
 
     #save arrays for rmse and correlations KLUDGE!
     aminusb.model = mv1new
     aminusb.obs   = mv2new
-
+    mean_of_diff( aminusb, mv1, mv2 )
     if hasattr(mv1,'long_name'):
         aminusb.long_name = 'difference of '+mv1.long_name
     if hasattr(mv1,'units'):  aminusb.units = mv1.units
+    
+    return aminusb
+
+def mean_of_diff( aminusb, mv1, mv2, recursive=False ):
+    """Sets aminusb.mean = mv1.mean - mv2.mean if it makes sense."""
     if hasattr(mv1,'mean') and hasattr(mv2,'mean'):
         # Note that mv1,mv2 will initially have a mean attribute which is a Numpy method.
         # We only need to compute a new mean if the mean attribute has been changed to a number.
+        if not numpy.array_equal( mv1.mask, mv2.mask ):
+            # Different masks, can't compute aminusb.mean from mv1.mean, mv2.mean.
+            # If we can't manage it now, let's hope that the diff mean will be computed later on.
+            # Note that different grids make for different masks.  aminusb=(mv1new-mv2new) but these
+            # new (interpolated) variants of mv1,mv2 haven't had means computed, and may not even be
+            # TransientVariables.
+            try:
+                del aminusb.mean
+            except AttributeError:  # del complains if aminusb.mean is a method, or already deleted.
+                pass
+            return
         try:
             aminusb.mean = mv1.mean - mv2.mean
+            if len(aminusb.mean.shape)==0 and not isinstance(aminusb.mean,Number):
+                # aminusb.mean is a TransientVariable with shape==() (or something similar);
+                # convert it to a simple scalar
+                aminusb.mean = aminusb.mean.min()
+                aminusb._mean = aminusb.mean
         except TypeError:
             # If this happens, "-" can't be applied to the means.
             # For sure they aren't numbers.  Probably they are the Numpy builtin mean() method.
@@ -2426,7 +2617,7 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
             if hasattr(aminusb,'mean') and isinstance(aminusb.mean,Number):
                 logger.warning("When computing the difference of %s and %s the mean of the difference cannot be correctly computed.", mv1.id, mv1.id)
             del aminusb.mean
-    return aminusb
+
 
 def aminusb_1ax( mv1, mv2 ):
     """returns a transient variable representing mv1-mv2, where mv1 and mv2 are variables, normally
@@ -2487,8 +2678,13 @@ def delete_singleton_axis( mv, vid=None ):
             del axes[si]
             break
     if saxis is None: return mv
-    mv = mv(squeeze=1)  # C.D. recommended instead of following; preserves missing values
-    return mv
+    if mv.shape==(1,):
+        # special case because mv(squeeze=1) returns a float, not an MV of shape==() which we want.
+        mvnew = cdms2.createVariable( mv[0], id=mv.id )
+        if hasattr(mv,'units'): mvnew.units = mv.units
+    else:
+        mvnew = mv(squeeze=1)  # C.D. recommended instead of following; preserves missing values
+    return mvnew
     #data = ma.copy( mv.data )
     #if numpy.version.version >= '1.7.0':
     #    data = ma.squeeze( data, axis=si )
@@ -2681,22 +2877,30 @@ def run_cdscan( fam, famfiles, cache_path=None ):
     except:
         pass
     try:
-        path = sys.prefix+'/bin/'
-        sys.path.insert(0, path)
         from cdms2 import cdscan
         import shlex
         logger.info('cdscan command line: %s', cdscan_line)
         try:
             cdscan_line = shlex.split(cdscan_line)
             cdscan.main(cdscan_line)
-        except:
+        except Exception,err:
+            print "CDSCAN RUN ERROR",err
+            import traceback,sys
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+            traceback.print_tb(exc_traceback)
+            print "END ERROR LOG"
             logger.error( 'ERROR: cdscan terminated. This is usually fatal. The arguments were:%s\n',
                            cdscan_line )
-    except:
+    except Exception,err:
+        print "CDSCAN IMPORT ERROR",err
+        import traceback
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        print "<<<<<<<<<<<< BEG TRACEBACK >>>>>>>>>>>>>>>>>>"
+        traceback.print_tb(exc_traceback)
+        print "<<<<<<<<<<<< END TRACEBACK >>>>>>>>>>>>>>>>>>"
         logger.error( 'importing cdscan failed' )
 
     # The old approach was to run cdscan as a separate process:
-    #print "cdscan_line=",cdscan_line
     #proc = subprocess.Popen([cdscan_line],shell=True)
     #proc_status = proc.wait()
     #if proc_status!=0:
@@ -2713,7 +2917,6 @@ def join_data(*args ):
     versus zonal mean.
     """
     import cdms2, cdutil
-    #pdb.set_trace()
     M = cdms2.MV2.masked_array(args)
     #M.shape
     M.setAxis(-1,args[0].getAxis(-1))
@@ -2726,7 +2929,6 @@ def join_data(*args ):
     cdutil.times.setTimeBoundsMonthly(T)
     #print M.getAxis(1)
     #M.info()
-    #pdb.set_trace()
     return M
 
 def join_1d_data(*args ):
@@ -2735,7 +2937,6 @@ def join_1d_data(*args ):
     versus zonal mean.
     """
     import cdms2, cdutil, numpy
-    #pdb.set_trace()
     nargs = len(args)
     T = cdms2.createAxis(numpy.arange(nargs, dtype='d'))
     T.designateTime()
@@ -2772,20 +2973,17 @@ def correlateData(mv1, mv2, aux):
     from genutil.statistics import correlation
     #print mv1.shape, mv2.shape
 
-    #pdb.set_trace()
     sliced_mvs = []
     if isinstance(aux,Number):
         for mv in [mv1, mv2]:
             level = mv.getLevel()
             index = mv.getAxisIndex('lev')
             UNITS = level.units #mbar or level
-            #pdb.set_trace()
             if UNITS != 'mbar':
                 level.units = 'mbar'
                 mv.setAxis(index, level)
             pselect = udunits(aux, 'mbar')
             sliced_mvs += [ select_lev(mv, pselect) ]
-            #pdb.set_trace()
     else:
         sliced_mvs = [mv1, mv2]
     mv1_new, mv2_new = sliced_mvs
@@ -2798,7 +2996,6 @@ def correlateData(mv1, mv2, aux):
 def create_yvsx(x, y, stride=10):
     """ create a variable that is y(x).  It is a assumed that x.shape=y.shape."""
     import cdms2, numpy
-    #pdb.set_trace()
     xdata = x.data.flatten()
     N = len(xdata)/stride
     index = stride*numpy.arange(N)
@@ -2811,6 +3008,7 @@ def create_yvsx(x, y, stride=10):
     Y = cdms2.createVariable(ydata, axes=[X], id=y.id )
     Y.units = y.units
     return Y
+
 class reduced_variable(ftrow,basic_id):
     """Specifies a 'reduced variable', which is a single-valued part of an output specification.
     This would be a variable(s) and its domain, a reduction function, and perhaps
@@ -2820,6 +3018,8 @@ class reduced_variable(ftrow,basic_id):
     # In reality we will have a more generic function, and some additional parameters.
     # So this reduction function will typically be specified as a lambda expression, e.g.
     # (lambda mv: return zonal_mean( mv, sourcefile, -20, 20 )
+    IDtuple = namedtuple( "reduced_variable_ID", "classid var season region ft1 ffilt1" )
+
     def __init__( self, fileid=None, variableid='', timerange=None,
                   latrange=None, lonrange=None, levelrange=None,
                   season=seasonsyr, region=None, reduced_var_id=None,
@@ -2829,19 +3029,16 @@ class reduced_variable(ftrow,basic_id):
         self._season = season
         self._region = interpret_region(region) # this could probably change lat/lon range, or lat/lon ranges could be passed in
         if reduced_var_id is not None:
+            # lmwg.py provides a string here - a feature which should be removed eventually.
             basic_id.__init__( self, reduced_var_id )
         else:
             seasonid=self._season.seasons[0]
             if seasonid=='JFMAMJJASOND':
                 seasonid='ANN'
-            basic_id.__init__( self, variableid, seasonid, filetable, None, region )
+            basic_id.__init__( self, variableid, seasonid, filetable, filefilter, region )
         ftrow.__init__( self, fileid, variableid, timerange, latrange, lonrange, levelrange )
         self._reduction_function = reduction_function
         self._axes = axes
-        #if reduced_var_id is None:      # self._vid is deprecated
-        #    self._vid = ""      # self._vid is deprecated
-        #else:
-        #    self._vid = reduced_var_id      # self._vid is deprecated
         if filetable is None:
             logger.warning("No filetable specified for reduced_variable instance %s",variableid)
         self.filetable = filetable
@@ -2849,7 +3046,7 @@ class reduced_variable(ftrow,basic_id):
         self._file_attributes = {}
         self._duvs = duvs
         self._rvs = rvs
-        self._filename = None  # will be set later.  This attribute shouldn't be used, but sometimes it's just too tempting.
+        self.filename = None  # will be set later.  This attribute shouldn't be used, but sometimes it's just too tempting.
     def __repr__(self):
         return self._strid
 
@@ -2870,7 +3067,7 @@ class reduced_variable(ftrow,basic_id):
             regs = ''
         else:
             regs = str(region)
-        return basic_id._dict_id( cls, varid, seasonid, regs, ft._strid, ffs )
+        return basic_id._dict_id( cls, varid, seasonid, regs, ft.id().ftid, ffs )
 
     def extract_filefamilyname( self, filename ):
         """From a filename, extracts the first part of the filename as the possible
@@ -2921,6 +3118,7 @@ class reduced_variable(ftrow,basic_id):
             elif len(families)>1:
                 fam = families[0]
                 logger.warning("%s file families found, will use: %s",len(families),fam)
+                logger.debug("full list of file families: %s",families)
             else:
                 fam = families[0]
 
@@ -2936,10 +3134,24 @@ class reduced_variable(ftrow,basic_id):
             # the easy case, just one file has all the data on this variable
             filename = files[0]
         #fcf = get_datafile_filefmt(f)
-        self._filename = filename
+        self.filename = filename
         return filename
 
-    def reduce( self, vid=None ):
+    def reduce_reduction_function( self, *args, **kwargs ):
+        try:
+            return self._reduction_function( *args, **kwargs )
+        except TypeError as e:
+            # can happen if kwargs includes a key not handled by self._reduction_function
+            if 'gw' in kwargs:
+                args[0].diags_gw = kwargs['gw']  # a way to pass gw through if there isn't an argument for it.
+                #  args[0] is a TransientVariable, called 'var' in reduce()
+                kwargs.pop('gw')
+                return self.reduce_reduction_function( *args, **kwargs )
+            else:
+                return None
+
+
+    def reduce( self, vid=None, gw=None ):
         """Finds and opens the files containing data required for the variable,
         Applies the reduction function to the data, and returns an MV.
         When completed, this will treat missing data as such.
@@ -2951,6 +3163,8 @@ class reduced_variable(ftrow,basic_id):
         Along with it may be a dict making available at least the input reduced variables,
         with elements of the form (variable id):(reduced_var object).  There is no check for
         circularity!
+        Latitude Gaussian weights gw may be provided.  They will be passed on to the reduction
+        function and used if appropriate.
         """
 
         from metrics.packages.amwg.derivations.massweighting import weighting_choice
@@ -2963,10 +3177,9 @@ class reduced_variable(ftrow,basic_id):
             else:
                 logger.error("No data found for reduced variable %s in %s %s %s %s",self.variableid,
                              self.timerange, self.latrange, self.lonrange, self.levelrange)
-                logger.debug("filetable is %s",self.filetable)
+                logger.debug("(1) filetable is %s",self.filetable)
             return None
         if vid is None:
-            #vid = self._vid      # self._vid is deprecated
             vid = self._strid
 
         filename = self.get_variable_file( self.variableid )
@@ -2981,7 +3194,7 @@ class reduced_variable(ftrow,basic_id):
                     # this belongs in a log file:
                     logger.error("No data found for reduced variable %s in %s %s %s %s",self.variableid,
                                  self.timerange, self.latrange, self.lonrange, self.levelrange)
-                    logger.debug("filetable is %s",self.filetable)
+                    logger.debug("(2) filetable is %s",self.filetable)
                 return None
             else:
                 # DUVs (derived unreduced variables) would logically be treated as a separate stage
@@ -3000,7 +3213,7 @@ class reduced_variable(ftrow,basic_id):
                 # in there:
 
                 duv_inputs = { rvid:self._rvs[rvid].reduce() for rvid in duv._inputs
-                               if rvid in self._rvs and hasattr( self._rvs[rvid],'reduce' ) }
+                                if rvid in self._rvs and hasattr( self._rvs[rvid],'reduce' ) }
 
                 duv_inputs = { rvid:self._rvs[rvid] for rvid in duv._inputs
                                if rvid in self._rvs and not hasattr( self._rvs[rvid],'reduce' ) }
@@ -3024,41 +3237,59 @@ class reduced_variable(ftrow,basic_id):
                 duv_inputs.update( { 'seasonid':self._season.seasons[0] } )
                 # Finally, we can compute the value of this DUV.
                 duv_value = duv.derive( duv_inputs )
-                reduced_data = self._reduction_function( duv_value, vid=vid )
+                reduced_data = self._reduction_function( duv_value, vid=vid, gw=gw )
         else:
             f = cdms2.open( filename )
             self._file_attributes.update(f.attributes)
             if self.variableid in f.variables.keys():
                 var = f(self.variableid)
-                var._filename = self._filename
-                weighting = weighting_choice(var)
-                if weighting=='mass':
-                    from metrics.packages.amwg.derivations.massweighting import mass_weights
-                    if 'mass' not in self.filetable.weights:
-                        self.filetable.weights['mass'] = mass_weights( var )
+                var.filename = self.filename
                 if os.path.basename(filename)[0:5]=='CERES':
                     var = special_case_fixed_variable( 'CERES', var )
                 if not hasattr( var, 'filetable'): var.filetable = self.filetable
-                reduced_data = self._reduction_function( var, vid=vid )
+                weighting = weighting_choice(var)
+                if weighting=='mass':
+                    # Save some mass weights before we possibly reduce away the lat,lon axes.
+                    # It would be better to index with more detailed domain information than llat,llon.
+                    from metrics.packages.amwg.derivations.massweighting import mass_weights
+                    lev = var.getLevel()
+                    if lev is None: llev=-1
+                    else: llev = len(lev)
+                    lat = var.getLatitude()
+                    if lat is None: llat=-1
+                    else: llat=len(lat)
+                    lon = var.getLongitude()
+                    if lon is None: llon=-1
+                    else: llon=len(lon)
+                    if 'mass' not in var.filetable.weights:
+                        var.filetable.weights['mass'] = {}
+                    if llev>0 and llat>0 and llon>0:
+                        # This check would make it faster:
+                        #if (llev,llat,llon) not in var.filetable.weights['mass']:
+                        # but it's wrong for plot set 10, where you have to read out of several files.
+                        # They have different times, hence different PS, hence different mass_weights.
+                        var.filetable.weights['mass'][(llev,llat,llon)] = mass_weights(var)
+                reduced_data = self.reduce_reduction_function( var, vid=vid, gw=gw )
             elif self.variableid in f.axes.keys():
                 taxis = cdms2.createAxis(f[self.variableid])   # converts the FileAxis to a TransientAxis.
                 taxis.id = f[self.variableid].id
                 weighting = weighting_choice(taxis)
                 if not hasattr( taxis, 'filetable'): taxis.filetable = self.filetable
-                reduced_data = self._reduction_function( taxis, vid=vid )
+                reduced_data = self.reduce_reduction_function( taxis, vid=vid, gw=gw )
             else:
                 logger.error("Reduce failed to find variable %s in file %s. It did find variables %s and axes %s.",
                              self.variableid, filename, sorted(f.variables.keys()), sorted(f.axes.keys()))
-            if reduced_data is not None and type(reduced_data) is not list:
+            if reduced_data is not None and type(reduced_data) is not list and\
+                    not isinstance(reduced_data,Number):
                 reduced_data._vid = vid
-            if reduced_data is not None:
                 reduced_data.weighting = weighting  # needed if we have to average it further later on
             f.close()
-        if hasattr(reduced_data,'mask') and reduced_data.mask.all():
-            reduced_data = None
-        if reduced_data is not None:
-            reduced_data._filename = self._filename
-            reduced_data.filetable = self.filetable
+        if not isinstance(reduced_data,Number):
+            if hasattr(reduced_data,'mask') and reduced_data.mask.all():
+                reduced_data = None
+            if reduced_data is not None:
+                reduced_data.filename = self.filename
+                reduced_data.filetable = self.filetable
         return reduced_data
 
 class rv(reduced_variable):

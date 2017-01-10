@@ -83,6 +83,9 @@ def round2(x,n=0,sigs4n=1):
 def underscore_join( strlis ):
     """Uses an underscore to join a list of strings into a long string."""
     return '_'.join( [s for s in strlis if s is not None and len(s)>0] )
+def better_join( char, strlis ):
+    """Uses the supplied character to join a list of strings into a long string."""
+    return char.join( [s for s in strlis if s is not None and len(s)>0] )
 
 class DiagError (Exception):
     """Error object for diagnostics"""
@@ -155,3 +158,17 @@ def store_provenance( outputFile, script_file_name=None ):
         setattr( outputFile, key, val )
     return provdic
 
+def dictcopy3( lev1, depth=3 ):
+    """For a dictionary, makes a copy, to a depth of 3.  Non-dictionaries are not copied unless they behave like dictionaries."""
+    if depth<1:
+        return lev1
+    try:
+        lev2 = dict().fromkeys(lev1)
+    except:   # Nothing to copy: lev1 isn't a dict or even a suitable list, etc.
+        return lev1
+    try:
+        for k1,v1 in lev1.iteritems():
+            lev2[k1] = dictcopy3( v1, depth-1 )
+    except:
+        return lev1
+    return lev2

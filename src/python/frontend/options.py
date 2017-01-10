@@ -53,53 +53,132 @@ help_url="https://acme-climate.atlassian.net/wiki/pages/viewpage.action?pageId=1
 # --dataset path=/path,climos='no'
 
 class Options():
-    def __init__(self):
+    def __init__(self, runby='shell', **kwargs):
+        # self._opts is the dictionary holding options.  But it can be accessed simply as self[key].
         self._opts = {}
         self.all_packages = packages.package_names
 
-        # This is the dictionary holding options
-        self._opts['model'] = []
-        self._opts['obs'] = []
-        self._opts['output'] = {} # output pre, post, directory, absolute filename, output options
-        self._opts['times'] = [] # This is where seasonal/monthly/yearly choices end up
-        self._opts['package'] = None
-        self._opts['vars'] = ['ALL']
-        self._opts['varopts' ] = None
-        self._opts['sets'] = None
-        self._opts['regions'] = []
-        self._opts['logging'] = {}
-        self._opts['uservars'] = []
-        self._opts['user'] = None
+        # metadiags=True if we are running metadiags, or want to plain diags as if it were from
+        # metadiags.  metadiags=False for multidiags.
+        # The difference is whether defaults should be set here or by merging in options_defaults.
+        # Normally, defaults come from options_defaults which is defined below.  A newly created
+        # instance of Options should be merged with it; use self.merge(options_defaults).
+        # This is automatically done when you call self.verifyOptions.
+        if runby[0:4] in ['meta','Meta']:
+            self['runby'] = runby[0:4]
+            set_defaults = True
+        elif runby[0:5] in ['shell','Shell']:
+            self['runby'] = runby[0:5]
+            set_defaults = True
+        elif runby[0:5] in ['multi','Multi']:
+            self['runby'] = runby[0:5]
+            set_defaults = False
+        if set_defaults:
+            self._opts['model'] = []
+            self._opts['obs'] = []
+            self._opts['output'] = {} # output pre, post, directory, absolute filename, output options
+            self._opts['times'] = [] # This is where seasonal/monthly/yearly choices end up
+            self._opts['package'] = None
+            self._opts['vars'] = ['ALL']
+            self._opts['varopts' ] = None
+            self._opts['sets'] = None
+            self._opts['regions'] = []
+            self._opts['logging'] = {}
+            self._opts['uservars'] = []
+            self._opts['user'] = None
 
-        self._opts['reltime'] = None
-        self._opts['cachepath'] = '/tmp/'+getpass.getuser()+'/uvcmetrics'
-        self._opts['translate'] = True
-        self._opts['translations'] = {}
-        self._opts['levels'] = None
-        self._opts['difflevels'] = None #levels for a difference plot
-        self._opts['colormaps'] = {'model': 'viridis', 'obs': 'viridis', 'diff': 'bl_to_darkred'}
-        self._opts['taskspernode'] = None
-        self._opts["displayunits"] = None
+            self._opts['reltime'] = None
+            self._opts['cachepath'] = '/tmp/'+getpass.getuser()+'/uvcmetrics'
+            self._opts['translate'] = True
+            self._opts['translations'] = {}
+            self._opts['levels'] = None
+            self._opts['difflevels'] = None #levels for a difference plot
+            self._opts['colormaps'] = {'model': 'viridis', 'obs': 'viridis', 'diff': 'bl_to_darkred'}
+            self._opts['taskspernode'] = None
+            self._opts["displayunits"] = None
 
-        self._opts['output']['compress'] = True
-        self._opts['output']['json'] = False
-        self._opts['output']['xml'] = True
-        self._opts['output']['netcdf'] = True
-        self._opts['output']['plots'] = True
-        self._opts['output']['antialiasing'] = True
-        self._opts['output']['climos'] = True
-        self._opts['output']['outputdir'] = '/tmp'
-        self._opts['output']['prefix'] = ''
-        self._opts['output']['postfix'] = ''
-        self._opts['output']['logo'] = True
-        self._opts['output']['table'] = False
+            self._opts['output']['compress'] = True
+            self._opts['output']['json'] = False
+            self._opts['output']['xml'] = True
+            self._opts['output']['netcdf'] = True
+            self._opts['output']['plots'] = True
+            self._opts['output']['antialiasing'] = True
+            self._opts['output']['climos'] = True
+            self._opts['output']['outputdir'] = '/tmp'
+            self._opts['output']['prefix'] = ''
+            self._opts['output']['postfix'] = ''
+            self._opts['output']['logo'] = True
+            self._opts['output']['table'] = False
 
-        self._opts['logging']['level'] = logging.ERROR
-        self._opts['logging']['file'] = None
+            self._opts['logging']['level'] = logging.ERROR
+            self._opts['logging']['file'] = None
 
-        self._opts['dbhost'] = "https://diags-viewer.llnl.gov"
-        self._opts['dsname'] = None
-        self._opts['do_upload'] = False
+            self._opts['dbhost'] = "https://diags-viewer.llnl.gov"
+            self._opts['dsname'] = None
+            self._opts['do_upload'] = False
+
+        for key,value in kwargs.iteritems():
+            self._opts[key] = value
+
+    def clone( self, exception=None ):
+        """Generates and returns an exact copy of the present instance of Options, if 'exception' is
+        not supplied.  If the exception is supplied, it should be a 2-tuple: the first item is the
+        name of an option and the second its value.  Then the returned Options instance will be an
+        exact copy except for that option, where the supplied value will be used instead.
+        This copy is shallow; that is, the dictionary self._opts is copied but its elements are not.
+        """
+        newopts = Options(runby=self['runby'])
+        for key,value in self._opts.iteritems():
+            newopts[key] = value
+        if exception is not None:
+            newopts[exception[0]] = exception[1]
+        return newopts
+
+    def merge( self, opt2 ):
+        """Merge another instance of the Options class into this one.
+        If they have a conflict over the value of any option, then this instance gets priority."""
+        if opt2 is None:
+            return
+        for key,value in opt2._opts.iteritems():
+            if key not in self._opts or self[key] is None:
+                self[key] = value
+            elif key in ['obs','model'] and self[key]==[]:
+                self[key] = value
+            elif key in ['output', 'logging', 'translations']:
+                # For these options, the value is a dictionary which should be merged, not replaced.
+                # Other dictionaries should generally be replaced (or not), not merged.
+                for k,v in opt2[key].iteritems():
+                    if k not in self[key].keys():
+                        self[key][k] = v
+
+    def merge_modobs( self, opt2, key ):
+        """DEPRECATED Merges the model or obs option of two Options instances, self and opt2.
+        key should be 'model' or 'obs'.
+        This is generally needed only when the option self[key] hasn't been completely defined."""
+        # A complete model/obs specification shouldn't be merged.  But usually they won't be
+        # complete: missing the path, or only the path.  To prevent a merger, add a
+        # 'merge':False item to the model/obs dict.  c.f. the checks below on self[key].get('merge',True)
+        if key not in ['model','obs'] or len(opt2[key])<=0 :
+            return
+        # These options are composite, and complicated.  
+        # At the moment I cannot properly merge two obs lists if the length is >1.
+        if len(self[key])==0:
+            self[key] = opt2[key]
+        elif len(self[key])>=1 and len(opt2[key])==1:
+            for idx,mob in enumerate(self[key]):   # mob is a dict with keys such as filter, path, climos
+                if self[key].get('merge',True)==False:
+                    continue
+                for k,v in opt2[key][0].iteritems():
+                    if k not in mob.keys() or mob[k] is None:
+                        mob[k] = v
+        elif len(self[key])==1 and len(opt2[key])>=1 and self[key][0].get('merge',True)!=False:
+            self[key] = [ self[key][0].copy() for _ in opt2[key] ]
+            for idx,mob in enumerate(opt2[key]):   # mob is a dict with keys such as filter, path, climos
+                for k,v in mob.iteritems():
+                    if k not in self[key][idx].keys() or self[key][idx][k] is None:
+                        self[key][idx][k] = v
+        elif len(self[key])>1 and len(opt2[key])>1:
+            logger.error("Options.merge not implemented for model or obs lists both of length>1")
 
    # Some short cut getter/setters
     def __getitem__(self, opt):
@@ -110,6 +189,9 @@ class Options():
 
     def get(self, opt, default=None):
         return self._opts.get(opt,default)
+
+    def keys(self):
+        return self._opts.keys()
 
    ###
    ### The next 4 functions all process dataset/obs options.
@@ -180,6 +262,8 @@ class Options():
         defkeys = ['start', 'end', 'filter', 'name', 'climos', 'path', 'type']
 
         for i in range(len(data)):
+            if dictkey not in self._opts:  #jfp
+                self._opts[dictkey] = []
             self._opts[dictkey].append({})
             for d in defkeys:
                 self._opts[dictkey][i][d] = None
@@ -285,7 +369,11 @@ class Options():
             "CRITICAL": logging.CRITICAL
         }
         if log_level:
+            if "logging" not in self.keys():
+                self["logging"] = {}
             # Use whatever value is in there already as the default.
+            if "level" not in self["logging"].keys():
+                self["logging"]["level"] = options_defaults["logging"]["level"]
             self._opts["logging"]["level"] = levels.get(log_level.upper(), self._opts["logging"]["level"])
         if log_file:
             log_path = os.path.abspath(os.path.expanduser(log_file))
@@ -421,6 +509,7 @@ class Options():
         import metrics.fileio.findfiles as fi
         import metrics.packages.diagnostic_groups
         import os
+        self.merge(options_defaults)  # jfp not really a "verify" step, but has to be done now that defaults are out of __init__
         if len(self._opts['model']) == 0 and len(self._opts['obs']) == 0:
             logging.critical('At least one model or obs set needs describted')
             quit()
@@ -675,7 +764,11 @@ class Options():
         # Other options, useful at various times.
         otheropts = parser.add_argument_group('Other')
         otheropts.add_argument('--cachepath', nargs=1,
-                               help="Path for temporary and cached files. Defaults to /tmp/<username>/uvcmetrics/")
+                               help="Path for cached files. Defaults to /tmp/<username>/uvcmetrics/")
+        otheropts.add_argument('--obspath', nargs=1,
+                               help="Path for obs files.")
+        otheropts.add_argument('--modelpath', nargs=1,
+                               help="Path for model files.")
         otheropts.add_argument('--verbose', action='count',
                                help="Increase the verbosity level. Each -v option increases the verbosity more.") # count
         otheropts.add_argument('--list', '-l', nargs=1, choices=['sets', 'vars', 'variables', 'packages', 'seasons', 'regions', 'translations','options','varopts'],
@@ -720,6 +813,9 @@ class Options():
                                   default=0,
                                   type=int,
                                   )
+            runopts.add_argument('--regrid',
+                                 help="Regridder to use when necessary.  Possible values include esmf-linear, esmf-conserv, regrid2.",
+                                 default="esmf-linear" )
             if 'metadiags' not in progname and 'metadiags.py' not in progname:
                 runopts.add_argument('--vars', '--var', '-v', nargs='+',
                                      help="Specify variables of interest to process. The default is all variables which can also be specified with the keyword ALL")
@@ -766,6 +862,7 @@ class Options():
             outopts.add_argument('--xml', '-x', choices=['no', 'yes'],
                help="Produce XML output files as part of climatology/diags generation")
             outopts.add_argument('--logo', choices=['no', 'yes']) # intentionally undocumented; meant to be passed via metadiags
+            outopts.add_argument("--runby", choices=['shell','meta','multi'], help="if present, states that which program is running at top level: multi (multidiags), meta (metadiags), or (default) shell (diags from the shell).  This affects output file names.")
             outopts.add_argument('--no-antialiasing', action="store_true",default = False) # intentionally undocumented; meant to be passed via metadiags
             outopts.add_argument('--table', action='store_true', help="used to get data from individual files and create the table.") # intentionally undocumented; meant to be passed via metadiags
             outopts.add_argument('--colormaps', nargs='*', help="Specify one of 3 colormaps: model, obs or diff")
@@ -841,12 +938,20 @@ class Options():
 
         # Set up the logging before anything else, so we can use the logger everywhere.
         self.processLogging(args.log_level, args.log_file)
-        # More information in each logging message at lower levels of logging
+        logsave = self._opts.get( "logging", None )   #jfp
+        if logsave==None:
+            self._opts["logging"] = { "level":logging.DEBUG, "file":None }
         if self._opts["logging"]["level"] < logging.INFO:
             fmt = "%(levelname)s (from %(filename)s %(lineno)d): %(message)s"
         else:
             fmt = "%(levelname)s: %(message)s"
+        if "file" not in self["logging"].keys():
+            self["logging"]["file"] = options_defaults["logging"]["file"]
         logging.basicConfig(level=self._opts["logging"]["level"], filename=self._opts["logging"]["file"], format=fmt)
+        if logsave is None:
+            del self._opts["logging"]
+        else:
+            self._opts["logging"] = None
 
         # First, check for the --list option so we don't have to do as much work if it was passed.
         if(args.list != None):
@@ -863,10 +968,10 @@ class Options():
 
         # Generally if we've gotten this far, it means no --list was specified. If we don't have
         # at least a path, we should exit.
-        if(args.path == None and args.model == None and args.obs == None):
-            logging.critical('Must specify a --path or one of the --model/--obs options, or the --list option')
-            logging.critical('For help, type "diags --help".')
-            quit()
+        #if(args.path == None and args.model == None and args.obs == None):
+        #    logging.critical('Must specify a --path or one of the --model/--obs options, or the --list option')
+        #    logging.critical('For help, type "diags --help".')
+        #    quit()
 
         if args.path != None and (args.model != None or args.obs != None):
             logging.critical('Please do not combine --path and the --model/--obs methods right now')
@@ -884,10 +989,16 @@ class Options():
         if(args.cachepath != None):
             self._opts['cachepath'] = args.cachepath[0]
         try:
-            os.makedirs(self._opts['cachepath'])
+            cachepath = self._opts.get('cachepath','/tmp/'+getpass.getuser()+'/uvcmetrics') #jfp
+            os.makedirs(cachepath)
         except OSError as e:  # usually means path already exists, but make sure:
-            if not os.path.isdir(self._opts['cachepath']):
+            #jfpif not os.path.isdir(self._opts['cachepath']):
+            if not os.path.isdir(cachepath):
                 raise e
+        if args.modelpath != None:
+            self['modelpath'] = args.modelpath[0]
+        if args.obspath != None:
+            self['obspath'] = args.obspath[0]
 
         if (args.levels) != None:
             self.processLevels('levels', args.levels, extras)
@@ -919,7 +1030,12 @@ class Options():
             else:
                 self._opts['output']['compress'] = True
 
-        if self._opts['output']['compress'] == False:
+        #jfp if self._opts['output']['compress'] == False:
+        try:
+            compress = self._opts['output']['compress']
+        except:
+            compress = False #jfp
+        if compress == False:
             logger.info('Disabling NetCDF compression on output files')
             cdms2.setNetcdfShuffleFlag(0)
             cdms2.setNetcdfDeflateFlag(0)
@@ -969,6 +1085,8 @@ class Options():
                     self._opts['output']['plots'] = False
                 else:
                     self._opts['output']['plots'] = True
+            if(args.runby != None):
+                self['runby'] = args.runby
 
             if(args.generate != None):
                 if(args.generate.lower() == 'no' or args.generate == 0):
@@ -981,6 +1099,7 @@ class Options():
                 quit()
             self._opts['dryrun'] = args.dryrun
             self._opts['sbatch'] = args.sbatch
+            self._opts['regrid'] = args.regrid
             if args.sbatch>0:
                 self._opts["dryrun"] = True
         self._opts['verbose'] = args.verbose
@@ -998,8 +1117,9 @@ class Options():
             if not os.path.isdir(args.outputdir):
                 logging.critical("Output directory %s does not exist!",args.outputdir)
                 quit()
+            if 'output' not in self._opts:
+                self._opts['output'] = {}  #jfp
             self._opts['output']['outputdir'] = args.outputdir
-
 
 
         if 'climatology' not in progname and 'climatology.py' not in progname:
@@ -1058,11 +1178,22 @@ class Options():
             if(args.seasons != None):
                 if(args.seasonally == True):
                     logger.warning("Please specify just one of --seasonally or --seasons")
-                    logger.warning('Defaulting to using all seasons')
-                else:
-                    slist = [x for x in all_seasons if x in args.seasons]
-                    self._opts['times'] = self._opts['times']+slist
-                logger.debug('seasons: %s', self._opts['times'])
+                    logger.warning('Defaulting to using seasons')
+                self['seasons'] = args.seasons
+
+            self.finalizeOpts()
+
+    def finalizeOpts( self ):
+        """Clean up and finalize the options so they will be ready for use.  Most of this method
+        was adapted from code formerly in parseCmdLine."""
+        if 'seasons' in self.keys():
+            slist = [x for x in all_seasons if x in self['seasons']]
+            if 'times' in self.keys():
+                self['times'] = self['times']+slist
+            else:
+                self['times'] = slist
+            logger.debug('seasons: %s', self._opts['times'])
+
 
     def listOpts(self, args):
         print 'LIST - ', args.list
@@ -1127,6 +1258,45 @@ class Options():
                 self.processLevels(args.levels)
 
 ### Helper functions
+
+options_defaults = Options( 
+    model = [],
+    obs = [],
+    times = [],  # This is where seasonal/monthly/yearly choices end up
+    package = None,
+    vars = ['ALL'],
+    varopts = None,
+    sets = None,
+    regions = [],
+    uservars = [],
+
+    reltime = None,
+    cachepath = '/tmp/'+getpass.getuser()+'/uvcmetrics',
+    translate = True,
+    translations = {},
+    levels = None,
+    difflevels = None,   #levels for a difference plot
+    colormaps = {'model': 'viridis', 'obs': 'viridis', 'diff': 'bl_to_darkred'},
+    taskspernode = None,
+    displayunits = None,
+    # output pre, post, directory, absolute filename, output options:
+    output = { 'compress': True,
+               'json': False,
+               'xml': True,
+               'netcdf': True,
+               'plots': True,
+               'antialiasing': True,
+               'climos': True,
+               'outputdir': '/tmp',
+               'prefix': '',
+               'postfix': '',
+               'logo': True,
+               'table': False },
+    logging = { 'level': logging.ERROR,
+                'file' : None },
+    dbhost = "https://diags-viewer.llnl.gov",
+    dsname = None,
+    do_upload = False )
 
 ### make_ft_dict - provides an easily parsed dictionary of the climos/raws for a given set of datasets
 def make_ft_dict(models):

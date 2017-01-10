@@ -2,7 +2,7 @@
 
 # Functions callable from the UV-CDAT GUI.
 
-import hashlib, os, pickle, sys, os, math, pdb, string, logging
+import hashlib, os, pickle, sys, os, math, pdb, string, logging, random
 from metrics import *
 from metrics.fileio.filetable import *
 from metrics.fileio.findfiles import *
@@ -178,9 +178,10 @@ class uvc_composite_plotspec():
         filenames = []
         for p in self.plots:
             if type(p) is tuple:
-                logger.error("Cannot write_plot_data on tuple<<<<<<<<<<<<<<<<<")
+                p = p[0] # maybe something will be better than nothing!
+                logger.warning("Cannot write_plot_data on tuple, will write partial data")
                 logger.info(p)
-                continue
+                # continue
             filenames += p.write_plot_data( contents_format, where )
 
         filename = self.outfile( format, where )
@@ -189,8 +190,9 @@ class uvc_composite_plotspec():
         writer.write("<plotdata>\n")
         for p in self.plots:
             if type(p) is tuple:
-                logger.error("Again, cannot write_plot_data on tuple<<<<<<<<<<<<<<<<<")
-                continue
+                p = p[0] # maybe something will be better than nothing!
+                logger.warning("Again, cannot write_plot_data on tuple, will write something")
+                #continue
             pfn = p.outfile(where)
             writer.write( "<ncfile>"+pfn+"</ncfile>\n" )
         writer.write( "</plotdata>\n" )
@@ -204,7 +206,7 @@ def get_month_strings(length=15):
         months += [cdutil.getMonthString(i)[0:length]]
     return months
 
-class uvc_simple_plotspec():
+class uvc_simple_plotspec(basic_id):
     """This is a simplified version of the plotspec class, intended for the UV-CDAT GUI.
     Once it stabilizes, I may replace the plotspec class with this one.
     The plots will be of the type specified by presentation.  The data will be the
@@ -213,12 +215,22 @@ class uvc_simple_plotspec():
     # re presentation (plottype): Yxvsx is a line plot, for Y=Y(X).  It can have one or several lines.
     # Isofill is a contour plot.  To make it polar, set projection=polar.  I'll
     # probably communicate that by passing a name "Isofill_polar".
+    IDtuple = namedtuple( "uvc_plotspec_ID", "classid vars varmod season ft1 ft2 ft1nn ft2nn region" )
+
     def __init__(
-        self, pvars, presentation, labels=[], title='', source='', ranges=None, overplotline=False,
+        self, pvars, presentation, labels=[], title='', title1='', title2='', file_descr= None,
+        source='', ranges=None, overplotline=False,
         linetypes=['solid'], linecolors=[241], levels=None, plotparms=None, displayunits=None,
-        more_id=None ):
+        more_id=None, idinfo={}, varvals={} ):
 
         pvars = [v for v in pvars if v is not None]
+        if idinfo=={}:
+            idinfo['vars']=[getattr(p,'id','') for p in pvars]
+            idinfo['season']=''
+        if idinfo['season']=='JFMAMJJASOND': idinfo['season']='ANN'
+        basic_id.__init__(self, idinfo['vars'][0], '', idinfo['season'], idinfo.get('ft1'),
+                          idinfo.get('ft2'), idinfo.get('ft1nn'), idinfo.get('ft2nn'), idinfo.get('region') )
+
         # ... Maybe something else is broken to let None get into pvars.
         if len(pvars)<=0:
             zerovar = cdms2.createVariable([[0,0,0],[0,0,0]])
@@ -258,7 +270,11 @@ class uvc_simple_plotspec():
         ##     self.presentation = vcsx.create
         self.vars = pvars # vars[i] is either a cdms2 variable or a tuple of variables
         self.labels = labels
-        self.title = title
+        self.title = title   # deprecated
+        self.title1 = title1
+        self.title2 = title2
+        if file_descr is not None:
+            self.file_descr = file_descr
         self.source = source
         self.type = ptype
         self.ptype = ptype
@@ -314,6 +330,7 @@ class uvc_simple_plotspec():
                     }
         self.finalized = False
         self.more_id = more_id
+        self.varvals = varvals
 
     def make_ranges(self, var):
 
@@ -356,7 +373,6 @@ class uvc_simple_plotspec():
         #        self.presentation.__class__.__name__=="Gfi":
         # interim test here and below.  Once all the is* functions work, I should
         # drop the tests on self.presentation.__class__.__name__ :
-        #pdb.set_trace()
         #  We want missing value to be white
         try:
             self.presentation.missing = "grey"
@@ -389,7 +405,6 @@ class uvc_simple_plotspec():
             self.presentation.markercolor = 1
             self.presentation.markersize = 10
             #self.presentation.list()   
-            #pdb.set_trace()
     
         elif vcs.isyxvsx(self.presentation) or\
                 vcs.isisofill(self.presentation) or\
@@ -397,7 +412,6 @@ class uvc_simple_plotspec():
                 self.presentation.__class__.__name__=="GYx" or\
                 self.presentation.__class__.__name__=="G1d" or\
                 self.presentation.__class__.__name__=="Gv":
-            #pdb.set_trace()
             var = self.vars[0]
             axmax = self.axmax[seqgetattr(var,'id','')]
             axmin = self.axmin[seqgetattr(var,'id','')]
@@ -434,7 +448,6 @@ class uvc_simple_plotspec():
             if vcs.isisofill(self.presentation) or self.presentation.__class__.__name__=="Gfi"\
                     or vcs.isboxfill(self.presentation):
                 # VCS Isofill or Boxfill
-                #pdb.set_trace()
                 # First we have to identify which axes will be plotted as X and Y.
                 # If the axes each had an 'axis' attribute, axaxi will look something like
                 # {'X':'axis1id', 'Y':'axis2id'}.  If one misses the attribute, 'axis0id':'axis0id'.
@@ -454,7 +467,7 @@ class uvc_simple_plotspec():
                         axy = axaxi['Z']
                     if axx == 'time':
                         t=var.getTime()
-                        if 'units' in dir(t) and t.units == "months since 1800":
+                        if 'units' in dir(t) and t.units.find("months since 1800")==0:
                             time_lables = {}
                             months_names = get_month_strings(length=3)             
                             tc=t.asComponentTime()
@@ -462,7 +475,6 @@ class uvc_simple_plotspec():
                                 time_lables[v] = months_names[tc[i].month-1]
                             self.presentation.xticlabels1 = time_lables
                             self.presentation.datawc_timeunits = t.units
-                            #pdb.set_trace()
                             #self.presentation.list()
                 elif len(axaxi.keys())==2:
                     # It's not clear what should be the X variable and what the Y variable,
@@ -592,7 +604,6 @@ class uvc_simple_plotspec():
                 # Former scale factor, didn't work on more than one variable.
                 #   That is, 100 workrf for moisture transport, 10 for wind stress:
                 vec.scale = min(vcsx.bgX,vcsx.bgY)/ 100.
-                #pdb.set_trace()
                 if hasattr(self.vars[0],'__getitem__') and not hasattr( self.vars[0], '__cdms_internals__'):
                     # generally a tuple of variables - we need 2 variables to describe a vector
                     v = self.vars[0][0]
@@ -614,7 +625,6 @@ class uvc_simple_plotspec():
                 self.strideX = max(1, int( nlons/nlonvs )) # stride values must be at least 1
                 self.strideY = max(1, int( nlats/nlatvs ))
         elif vcs.istaylordiagram(self.presentation):
-            #pdb.set_trace()
             data = self.vars[0]
             
             #intercept the bias to be used as markersize
@@ -642,7 +652,6 @@ class uvc_simple_plotspec():
             #self.presentation.Marker.color = dotcolors 
             #self.presentation.IDs = IDs
             #self.presentation.Marker.id = index
-            #pdb.set_trace()
             
             #create list of offsets
             XOFF = data[:,0]
@@ -819,13 +828,39 @@ class uvc_simple_plotspec():
             else:
                 # Incomplete filename.  We may need to extract the final bits from a variable name.
                 if type(self.vars[0]) is tuple:  # typically, a vector plot
-                    varn = self.vars[0][0].id
+                    var0 = self.vars[0][0]
                 else:
-                    varn = self.vars[0].id
+                    var0 = self.vars[0]
+                #varn = var0.id
+                #try:
+                #    if hasattr( var0, '_filetableid' ):
+                #        filetableid = var0._filetableid
+                #    elif hasattr( var0, 'filetableid' ):
+                #        filetableid = var0.filetableid
+                #    else:
+                #        filetableid = var0.filetable.id()
+                #    descr = filetableid.nickname
+                #except:
+                #    descr = True
+                file_descr = getattr(self,'file_descr',getattr(self,'title2',True))
+                if file_descr[0:3]=='obs': file_descr='obs'
+                if file_descr[0:4]=='diff': file_descr='diff'
+                var = self.vars[0]
+                if hasattr(var,'_filetableid'):
+                    ft1id = var._filetableid.ftid
+                else:
+                    ft1id = var.filetableid.ftid
+                if hasattr(var,'_filetable2id'):
+                    ft2id = var._filetable2id.ftid
+                elif hasattr(var,'filetable2id'):
+                    ft2id = var.filetable2id.ftid
+                else:
+                    ft2id = ''
+                descr = underscore_join([ft1id,ft2id,file_descr])
                 if len(self.vars)>1:  where = where+'-combined'
-                return form_filename( where, 'nc', True, self.vars[0].id, more_id=self.more_id )
+                return form_filename( where, 'nc', descr=descr, vname=self.vars[0].id, more_id=self.more_id )
         elif len(self.title)<=0:
-            fname = 'foo.nc'
+            fname = 'foo'+''.join([random.choice('0123456789') for _ in range(4)])+'.nc'
         else:
             # the title join ends up with two spaces between fields. check for that first, then replace single spaces after.
             fname = underscore_join([self.title.strip(),self.source]).replace('  ','_').replace(' ','_').replace('/','_') + '.nc'
@@ -864,7 +899,22 @@ class uvc_simple_plotspec():
         plot_these = []
         for zax in self.vars:
             try:
+                if not hasattr(zax,'filetableid'):
+                    zax.filetableid = zax.filetable.id()
                 del zax.filetable  # we'll write var soon, and can't write a filetable
+                if hasattr(zax,'filetable2'):
+                    zax.filetable2id = zax.filetable2.id()
+                    del zax.filetable2 # we'll write var soon, and can't write a filetable
+            except:
+                pass
+            try:
+                zax._filetableid= zax.filetableid  # and the named tuple ids aren't writeable as such
+                zax.filetableid= str(zax.filetableid)  # and the named tuple ids aren't writeable as such
+            except:
+                pass
+            try:
+                zax._filetable2id= zax.filetable2id  # and the named tuple ids aren't writeable as such
+                zax.filetable2id= str(zax.filetable2id)  # and the named tuple ids aren't writeable as such
             except:
                 pass
             for ax in zax.getAxisList():
