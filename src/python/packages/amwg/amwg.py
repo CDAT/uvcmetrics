@@ -15,7 +15,6 @@ from metrics.common.utilities import *
 from metrics.fileio import stationData
 from metrics.packages.amwg.derivations import *
 from metrics.packages.amwg.derivations import qflx_lhflx_conversions as flxconv
-from metrics.frontend.defines import *
 from unidata import udunits
 import cdutil.times, numpy
 from numbers import Number
@@ -115,7 +114,9 @@ class amwg_plot_plan(plot_plan):
             plotparms = { 'model':{'colormap':'rainbow'},
                           'obs':{'colormap':'rainbow'},
                           'diff':{'colormap':'bl_to_darkred'} }
-        self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
+        # By now, plot_plan.__init__ has set self._seasonid.  It may differ from seasonid
+        # because it replaces 'ANN' or None with 'JFMAMJJASOND'.
+        self.season = cdutil.times.Seasons(self._seasonid)
 
         filetable1, filetable2 = self.getfts(model, obs)
         self.ft1nom,self.ft2nom = filetable_names(filetable1,filetable2)
@@ -161,6 +162,7 @@ class amwg_plot_plan(plot_plan):
         if varnom not in cls.common_derived_variables:
             return None,[],[]
         computable = False
+        reduce_after = False
         rvs = []
         dvs = []
         #print "dbg in commvar2var to compute varnom=",varnom,"from filetable=",filetable
@@ -182,6 +184,7 @@ class amwg_plot_plan(plot_plan):
                     # next loop below), because we have no need, hence no test case.
                     rv = reduced_variable( variableid=ivn, filetable=filetable, season=season,
                                            reduction_function=(lambda x,vid:x), filefilter=filefilter )
+                    reduce_after = True
                 else:
                     rv = reduced_variable( variableid=ivn, filetable=filetable, season=season,
                                            reduction_function=reduction_function, filefilter=filefilter )
@@ -240,7 +243,11 @@ class amwg_plot_plan(plot_plan):
         vid = derived_var.dict_id( varnom, '', seasonid, filetable )
         #print "dbg commvar2var is making a new derived_var, vid=",vid,"inputs=",inputs
         #print "dbg function=",func
-        newdv = derived_var( vid=vid, inputs=inputs, func=func )
+        if reduce_after:
+            funcr = (lambda x: apply( reduction_function, [apply( func, x)] ) )
+        else:
+            funcr = func
+        newdv = derived_var( vid=vid, inputs=inputs, func=funcr )
         dvs.append(newdv)
         #print "dbg2 returning newdv.id=",newdv.id(),"rvs=",rvs,"dvs=",dvs
         return newdv.id(), rvs, dvs
@@ -252,7 +259,6 @@ class amwg_plot_plan(plot_plan):
     def _all_variables( model, obs ):
         return amwg_plot_plan.package._all_variables( model, obs, "amwg_plot_plan" )
 
-#>>>> TO DO: implement this new call sequence for plot sets 5,7 <<<<
     def variable_setup( self, varnom, filetable, rfdic, seasonid, aux=None ):
         """Sets this instance's reduced_variables and derived_variables dicts.
         Returns the ids in those dicts of a reduced or derived variable based on:
@@ -295,6 +301,7 @@ class amwg_plot_plan(plot_plan):
     def vars_normal( self, varnom, filetable, rfdic, seasonid='ANN', aux=None ):
         """like variable_setup, but only if the variable varnom is in the filetable"""
         assert( varnom in rfdic )
+        season = cdutil.times.Seasons(seasonid)  # usually same as self.season, but not for set 8
         reduced_varlis = []
         for varn in rfdic:
             if type(varn) is str:    # normal
@@ -308,12 +315,12 @@ class amwg_plot_plan(plot_plan):
                                varn, varnom )
             reduced_varlis.append(
                 reduced_variable(
-                    variableid=varnom, filetable=ft, season=self.season,
+                    variableid=varnom, filetable=ft, season=season,
                     reduction_function=rfdic[varn] )),
         # variance, for when there are variance climatology files:
         reduced_varlis.append( 
             reduced_variable(
-                variableid=varnom+'_var', filetable=filetable, season=self.season,
+                variableid=varnom+'_var', filetable=filetable, season=season,
                 reduction_function=rfdic[varn] ))
         for v in reduced_varlis:
             self.reduced_variables[v.id()] = v
@@ -328,8 +335,9 @@ class amwg_plot_plan(plot_plan):
         a common_derived_variable.  Its inputs will be reduced, then it will be set up as a
         derived_var.
         """
+        season = cdutil.times.Seasons(seasonid)  # usually same as self.season, but not for set 8
         varid,rvs,dvs = self.commvar2var(
-            varnom, filetable, self.season, reduction_function,
+            varnom, filetable, season, rfdic[varnom],
             builtin_variables=self.variable_values.keys()   # usually just 'seasonid' at this point
             )
         if varid is None:
@@ -345,7 +353,7 @@ class amwg_plot_plan(plot_plan):
                 logger.critical("non-string varn=%s hasn't been implemented here",varn)
             reduced_varlis.append(
                 reduced_variable(
-                    variableid=varnom, filetable=filetable, season=self.season,
+                    variableid=varnom, filetable=filetable, season=season,
                     reduction_function=rfdic[varn] )),
         for v in reduced_varlis:
             self.reduced_variables[v.id()] = v
