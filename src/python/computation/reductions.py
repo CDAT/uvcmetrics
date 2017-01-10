@@ -331,10 +331,12 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Tru
         weights = getattr( mv, 'weighting', weighting_choice(mv) )
         if not hasattr(mvrs,'filetable') and hasattr(mv,'filetable'):
             mvrs.filetable = mv.filetable
-    if gw is True:
+    if gw is True or gw is None:
         # gw wasn't provided as an argument, but we can get it however we can
         if hasattr(mv,'diags_gw'):
             gw = mv.diags_gw
+        else:
+            gw = []
 
     if len(axes_string)<=2:
         avmv = mvrs
@@ -750,7 +752,8 @@ def reduce2lat_seasonal( mv, season=seasonsyr, region=None, vid=None, seasons=se
     # backwards compatibility with old keyword 'seasons':
     if seasons!=seasonsyr:
         season = seasons
-    return reduce2any( mv, target_axes=['y'], season=season, region=region, vid=vid )
+    mvr = reduce2any( mv, target_axes=['y'], season=season, region=region, vid=vid )
+    return mvr
 
 def reduce2lon_seasonal( mv, season=seasonsyr, region=None, vid=None ):
     """This code was ripped from reduce2lat_seasonal.  The season
@@ -2883,11 +2886,12 @@ def run_cdscan( fam, famfiles, cache_path=None ):
         import shlex
         logger.info('cdscan command line: %s', cdscan_line)
         try:
-            cdscan_line = shlex.split(cdscan_line)
-            cdscan.main(cdscan_line)
+            cdscan_line_args = shlex.split(cdscan_line)
+            cdscan.main(cdscan_line_args)
         except Exception as e:
             logger.error( 'ERROR: cdscan terminated. This is usually fatal. The arguments were:%s\n',
-                           cdscan_line )
+                           cdscan_line_args )
+            logger.debug( 'The equivalent cdscan line is %s', cdscan_line )
             logger.error("The exception was %s",e)
     except:
         logger.error( 'importing cdscan failed' )
@@ -2909,6 +2913,8 @@ def join_data(*args ):
     single derived variable.  It is used to produce a contour plot of months
     versus zonal mean.
     """
+    if len(args)==0:
+        return None
     import cdms2, cdutil
     M = cdms2.MV2.masked_array(args)
     #M.shape
@@ -3141,6 +3147,7 @@ class reduced_variable(ftrow,basic_id):
                 kwargs.pop('gw')
                 return self.reduce_reduction_function( *args, **kwargs )
             else:
+                logger.error(e)
                 return None
 
 
@@ -3159,7 +3166,6 @@ class reduced_variable(ftrow,basic_id):
         Latitude Gaussian weights gw may be provided.  They will be passed on to the reduction
         function and used if appropriate.
         """
-
         from metrics.packages.amwg.derivations.massweighting import weighting_choice
         if self.filetable is None:
             if self.variableid[-4:]=='_var':
