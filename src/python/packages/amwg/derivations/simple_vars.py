@@ -13,17 +13,26 @@ def albedo( SOLIN, FSNTOA ):
     return alb
 
 def tropopause_temperature( T ):
-    """temperate of the tropopause, tpt=tpt[lat,lon].  Input is temperature T=T[time,lev,lat,lon],
-    but only one time, t=0, is considered."""
+    """temperate of the tropopause, tpt=tpt[lat,lon].  Input is temperature T=T[time,lev,lat,lon]
+    or T=T[lev,lat,lon].  If there be a time axis, only one time, t=0, is considered."""
     # We restrict level to the range of values [50:250] in hPa==mb.
     # Then find the coldest level.
     lev = T.getLevel()
     lev1 = numpy.searchsorted( lev, 50., 'left' )
     lev2 = numpy.searchsorted( lev, 250., 'right' )
-    # Find minumum along the level axis, for each lat,lon.  Time is fixed at index 0.
-    tpt = cdms2.createVariable( numpy.amin( T[0,lev1:lev2,:,:], 0 ),   # amin understands masks; I've checked
-                                axes=[T.getLatitude(),T.getLongitude()] )
+    # Find minumum along the level axis, for each lat,lon.  Time, if any, is fixed at index 0.
+    if T.getTime() is None:
+        tpt = cdms2.createVariable( numpy.amin( T[lev1:lev2,:,:], 0 ),   # amin understands masks; I've checked
+                                    axes=[T.getLatitude(),T.getLongitude()] )
+    else:
+        tpt = cdms2.createVariable( numpy.amin( T[0,lev1:lev2,:,:], 0 ),   # amin understands masks; I've checked
+                                    axes=[T.getLatitude(),T.getLongitude()] )
+    if hasattr(T,'filetable'):
+        tpt.filetable = T.filetable
+    if hasattr(T,'diags_gw') and T.diags_gw is not None:
+        tpt.diags_gw = T.diags_gw
     tpt.units = T.units
+    tpt.id = 'T_tropopause'
     return tpt
 
 def mask_by( var, maskvar, lo=None, hi=None ):
