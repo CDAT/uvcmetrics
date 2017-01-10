@@ -18,15 +18,15 @@ datadir = args.datadir
 print 'datadir = ', datadir
 baselinepath = args.baseline + '/diagsmeta/'
 print "baselinepath = ", baselinepath
-#outpath = tempfile.mkdtemp() + "/"
-#print "outpath=", outpath
+outpath = tempfile.mkdtemp() + "/"
+print "outpath=", outpath
 rebaseline = False
 if 'rebaseline' in dir(args):
     rebaseline = args.rebaseline
     
 test_str = 'metadiags\n'
 #run this from command line to get the files required
-command = "metadiags.py  --package AMWG --set 5  --model path=%s/cam35_data_smaller/,climos=yes  --obs path=%sobs_data_5.6/,climos=yes --dryrun "%(datadir, datadir)
+command = "metadiags.py  --package AMWG --set 5  --model path=%s/cam35_data_smaller/,climos=yes  --obs path=%sobs_data_5.6/,climos=yes --dryrun --outputdir=%s "%(datadir, datadir, outpath)
 print command
 #+ "--outputdir " + outpath 
 
@@ -36,7 +36,7 @@ proc_status = proc.wait()
 if proc_status!=0: 
     raise "metadiags test failed"
 
-new = open(os.path.join("/tmp","metadiags_commands.sh"))
+new = open(os.path.join(outpath,"metadiags_commands.sh"))
 old = open(os.path.join(baselinepath,"metadiags_commands.sh"))
 
 print "Comparing: %s %s" % (new.name, old.name)
@@ -47,6 +47,7 @@ old = old.readlines()
 diff = False
 for OLD, NEW in zip(old, new):
     #compare up to the log option
+    NEW=NEW.replace(outpath+"amwg","/tmp/amwg")
     OLD = OLD.split('--log_level')[0]
     NEW = NEW.split('--log_level')[0]
     old_cmd = OLD.split(' ')

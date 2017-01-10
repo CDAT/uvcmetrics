@@ -1,26 +1,36 @@
+sudo: required
 os:
   - linux
 
 language: python
     - "2.7"
 
+dist: trusty
+sudo: false
+env:
+    global:
+        - TMPDIR=/tmp
+cache:
+      directories:
+          ${HOME}/test_data/uvcmetrics/test/data
+
 before_install:
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-get update -qq; sudo apt-get install -y gfortran xvfb; fi
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh; fi
   - export PATH="$HOME/miniconda/bin:$PATH"
   - bash miniconda.sh -b -p $HOME/miniconda
   - conda config --set always_yes yes --set changeps1 no
-  - conda update -y -q conda
-  - conda install openssl=1.0.2d
-  - conda install -q -y --channel uvcdat/label/nightly --channel uvcdat uvcdat-nox
+  - conda update -y conda
+  - conda install -y --channel conda-forge --channel uvcdat uvcdat-nox
   # Useful for debugging any issues with conda
+  - conda list
   - conda info -a
 
 install:
     - if [ -d build ]; then rm -rf build; fi
     - git clean -fd
-    - cmake .
+    - df -h .
     - export UVCDAT_ANONYMOUS_LOG=False
+    - cmake . -DUVCMETRICS_TEST_DATA_DIRECTORY=${HOME}/test_data/uvcmetrics/test/data
     - python setup.py install
 
 #before_script:
