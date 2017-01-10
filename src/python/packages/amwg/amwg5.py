@@ -100,10 +100,10 @@ class amwg_plot_set5(amwg_plot_plan):
                         'misr_cth','misr_tau','cosp_htmisr']) )
             # ... isccp_prs, isccp_tau etc. are used for cloud variables and need special treatment
         vid1,vid1var = self.variable_setup(
-            varnom, filetable1, reduction_function, seasonid, aux )
+            varnom, filetable1, {varnom:reduction_function}, seasonid, aux )
         if filetable2 is not None:
             vid2,vid2var = self.variable_setup(
-                varnom, filetable2, reduction_function, seasonid, aux )
+                varnom, filetable2, {varnom:reduction_function}, seasonid, aux )
         else:
             vid2,vid2var = None,None
 

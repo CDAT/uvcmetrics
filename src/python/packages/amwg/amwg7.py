@@ -79,10 +79,10 @@ class amwg_plot_set7(amwg_plot_plan):
            (lambda x,vid, region=regname,aux1=aux: reduce2latlon_seasonal(
                x(latitude=aux1, longitude=(0, 360)), self.season, region, vid=vid ) )
        vid1,vid1var = self.variable_setup(
-           varnom, filetable1, reduction_function, seasonid, aux )
+           varnom, filetable1, {varnom:reduction_function}, seasonid, aux )
        if filetable2 is not None:
            vid2,vid2var = self.variable_setup(
-               varnom, filetable2, reduction_function, seasonid, aux )
+               varnom, filetable2, {varnom:reduction_function}, seasonid, aux )
        else:
            vid2,vid2var = None,None
 

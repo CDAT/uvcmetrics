@@ -184,7 +184,10 @@ class plot_plan(object):
         for v in self.derived_variables.keys():
             #print v
             value = self.derived_variables[v].derive(self.variable_values)
-            #print value.id, value.shape
+            #if value is None:
+            #    print value
+            #else:
+            #    print value.id, value.shape
             if value is None:
                 # couldn't compute v - probably it depends on another derived variables which
                 # hasn't been computed yet
