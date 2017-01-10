@@ -626,6 +626,9 @@ class NCAR_climo_filefmt(NCAR_filefmt):
                   '_07':'JUL', '_08':'AUG', '_09':'SEP', '_10':'OCT', '_11':'NOV', '_12':'DEC',
                   'ANN':'ANN', 'DJF':'DJF', 'MAM':'MAM', 'JJA':'JJA', 'SON':'SON',
                   'ASO':'ASO', 'FMA':'FMA',
+                  'JANUARY':'JAN', 'FEBRUARY':'FEB', 'MARCH':'MAR', 'APRIL':'APR', 'MAY':'MAY',
+                  'JUNE':'JUN', 'JULY':'JUL', 'AUGUST':'AUG', 'SEPTEMBER':'SEP', 'OCTOBER':'OCT',
+                  'NOVEMBER':'NOV', 'DECEMBER':'DEC',
                   'JAN':'JAN', 'FEB':'FEB', 'MAR':'MAR', 'APR':'APR', 'MAY':'MAY', 'JUN':'JUN',
                   'JUL':'JUL', 'AUG':'AUG', 'SEP':'SEP', 'OCT':'OCT', 'NOV':'NOV', 'DEC':'DEC' }
       if season in seasnms:
