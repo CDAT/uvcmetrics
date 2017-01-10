@@ -2,7 +2,7 @@
 
 # Functions callable from the UV-CDAT GUI.
 
-import hashlib, os, pickle, sys, os, math, pdb, string, logging
+import hashlib, os, pickle, sys, os, math, pdb, string, logging, random
 from metrics import *
 from metrics.fileio.filetable import *
 from metrics.fileio.findfiles import *
@@ -373,7 +373,6 @@ class uvc_simple_plotspec(basic_id):
         #        self.presentation.__class__.__name__=="Gfi":
         # interim test here and below.  Once all the is* functions work, I should
         # drop the tests on self.presentation.__class__.__name__ :
-        #pdb.set_trace()
         #  We want missing value to be white
         try:
             self.presentation.missing = "grey"
@@ -406,7 +405,6 @@ class uvc_simple_plotspec(basic_id):
             self.presentation.markercolor = 1
             self.presentation.markersize = 10
             #self.presentation.list()   
-            #pdb.set_trace()
     
         elif vcs.isyxvsx(self.presentation) or\
                 vcs.isisofill(self.presentation) or\
@@ -414,7 +412,6 @@ class uvc_simple_plotspec(basic_id):
                 self.presentation.__class__.__name__=="GYx" or\
                 self.presentation.__class__.__name__=="G1d" or\
                 self.presentation.__class__.__name__=="Gv":
-            #pdb.set_trace()
             var = self.vars[0]
             axmax = self.axmax[seqgetattr(var,'id','')]
             axmin = self.axmin[seqgetattr(var,'id','')]
@@ -451,7 +448,6 @@ class uvc_simple_plotspec(basic_id):
             if vcs.isisofill(self.presentation) or self.presentation.__class__.__name__=="Gfi"\
                     or vcs.isboxfill(self.presentation):
                 # VCS Isofill or Boxfill
-                #pdb.set_trace()
                 # First we have to identify which axes will be plotted as X and Y.
                 # If the axes each had an 'axis' attribute, axaxi will look something like
                 # {'X':'axis1id', 'Y':'axis2id'}.  If one misses the attribute, 'axis0id':'axis0id'.
@@ -479,7 +475,6 @@ class uvc_simple_plotspec(basic_id):
                                 time_lables[v] = months_names[tc[i].month-1]
                             self.presentation.xticlabels1 = time_lables
                             self.presentation.datawc_timeunits = t.units
-                            #pdb.set_trace()
                             #self.presentation.list()
                 elif len(axaxi.keys())==2:
                     # It's not clear what should be the X variable and what the Y variable,
@@ -609,7 +604,6 @@ class uvc_simple_plotspec(basic_id):
                 # Former scale factor, didn't work on more than one variable.
                 #   That is, 100 workrf for moisture transport, 10 for wind stress:
                 vec.scale = min(vcsx.bgX,vcsx.bgY)/ 100.
-                #pdb.set_trace()
                 if hasattr(self.vars[0],'__getitem__') and not hasattr( self.vars[0], '__cdms_internals__'):
                     # generally a tuple of variables - we need 2 variables to describe a vector
                     v = self.vars[0][0]
@@ -631,7 +625,6 @@ class uvc_simple_plotspec(basic_id):
                 self.strideX = max(1, int( nlons/nlonvs )) # stride values must be at least 1
                 self.strideY = max(1, int( nlats/nlatvs ))
         elif vcs.istaylordiagram(self.presentation):
-            #pdb.set_trace()
             data = self.vars[0]
             
             #intercept the bias to be used as markersize
@@ -659,7 +652,6 @@ class uvc_simple_plotspec(basic_id):
             #self.presentation.Marker.color = dotcolors 
             #self.presentation.IDs = IDs
             #self.presentation.Marker.id = index
-            #pdb.set_trace()
             
             #create list of offsets
             XOFF = data[:,0]
@@ -850,13 +842,25 @@ class uvc_simple_plotspec(basic_id):
                 #    descr = filetableid.nickname
                 #except:
                 #    descr = True
-                descr = getattr(self,'file_descr',getattr(self,'title2',True))
-                if descr[0:3]=='obs': descr='obs'
-                if descr[0:4]=='diff': descr='diff'
+                file_descr = getattr(self,'file_descr',getattr(self,'title2',True))
+                if file_descr[0:3]=='obs': file_descr='obs'
+                if file_descr[0:4]=='diff': file_descr='diff'
+                var = self.vars[0]
+                if hasattr(var,'_filetableid'):
+                    ft1id = var._filetableid.ftid
+                else:
+                    ft1id = var.filetableid.ftid
+                if hasattr(var,'_filetable2id'):
+                    ft2id = var._filetable2id.ftid
+                elif hasattr(var,'filetable2id'):
+                    ft2id = var.filetable2id.ftid
+                else:
+                    ft2id = ''
+                descr = underscore_join([ft1id,ft2id,file_descr])
                 if len(self.vars)>1:  where = where+'-combined'
-                return form_filename( where, 'nc', descr, self.vars[0].id, more_id=self.more_id )
+                return form_filename( where, 'nc', descr=descr, vname=self.vars[0].id, more_id=self.more_id )
         elif len(self.title)<=0:
-            fname = 'foo.nc'
+            fname = 'foo'+''.join([random.choice('0123456789') for _ in range(4)])+'.nc'
         else:
             # the title join ends up with two spaces between fields. check for that first, then replace single spaces after.
             fname = underscore_join([self.title.strip(),self.source]).replace('  ','_').replace(' ','_').replace('/','_') + '.nc'
@@ -895,12 +899,22 @@ class uvc_simple_plotspec(basic_id):
         plot_these = []
         for zax in self.vars:
             try:
+                if not hasattr(zax,'filetableid'):
+                    zax.filetableid = zax.filetable.id()
                 del zax.filetable  # we'll write var soon, and can't write a filetable
+                if hasattr(zax,'filetable2'):
+                    zax.filetable2id = zax.filetable2.id()
+                    del zax.filetable2 # we'll write var soon, and can't write a filetable
             except:
                 pass
             try:
                 zax._filetableid= zax.filetableid  # and the named tuple ids aren't writeable as such
                 zax.filetableid= str(zax.filetableid)  # and the named tuple ids aren't writeable as such
+            except:
+                pass
+            try:
+                zax._filetable2id= zax.filetable2id  # and the named tuple ids aren't writeable as such
+                zax.filetable2id= str(zax.filetable2id)  # and the named tuple ids aren't writeable as such
             except:
                 pass
             for ax in zax.getAxisList():

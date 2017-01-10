@@ -296,7 +296,7 @@ class amwg_plot_set6(amwg_plot_plan):
         plot_type_temp = ['Isofill','Vector'] # can't use self.plottype yet because don't support it elsewhere as a list or tuple <<<<<
         if vars1 is not None:
             # Draw two plots, contour and vector, over one another to get a single plot.
-            # Only one needs title,source.
+            # Only one needs to plot title,source; but both need source to get the filenames right.
             title = ' '.join([varid,seasonid,'(1)'])
 
             contplot = plotspec(
@@ -306,7 +306,7 @@ class amwg_plot_set6(amwg_plot_plan):
                 plotparms = plotparms[src2modobs(ft1src)] )
             vecplot = plotspec(
                 vid = ps.dict_idid(vid_vec1), zvars=[vid_vec11,vid_vec12], zfunc = (lambda z,w: (z,w)),
-                plottype = plot_type_temp[1], title1='', title2='', source='',
+                plottype = plot_type_temp[1], title1='', title2='', source=ft1src,
                 plotparms = plotparms[src2modobs(ft1src)] )
             #self.single_plotspecs[self.plot1_id] = [contplot,vecplot]
             self.single_plotspecs[self.plot1_id+'c'] = contplot
@@ -322,7 +322,7 @@ class amwg_plot_set6(amwg_plot_plan):
                 plotparms = plotparms[src2obsmod(ft2src)] )
             vecplot = plotspec(
                 vid = ps.dict_idid(vid_vec2), zvars=[vid_vec21,vid_vec22], zfunc = (lambda z,w: (z,w)),
-                plottype = plot_type_temp[1], title1='', title2='', source='',
+                plottype = plot_type_temp[1], title1='', title2='', source=ft2src,
                 plotparms = plotparms[src2obsmod(ft2src)] )
             self.single_plotspecs[self.plot2_id+'c'] = contplot
             self.single_plotspecs[self.plot2_id+'v'] = vecplot
@@ -337,7 +337,8 @@ class amwg_plot_set6(amwg_plot_plan):
             
             self.derived_variables[diff2_vid] = diff2
             title = ' '.join([varid,seasonid,'diff,mag.diff'])
-            source = ', '.join([ft1src,ft2src])
+            #source = underscore_join([ft1src,ft2src]) 
+            source = ''
 
             contplot = plotspec(
                 vid = ps.dict_id(var_cont1,'mag.of.diff',seasonid,filetable1,filetable2),
@@ -353,7 +354,7 @@ class amwg_plot_set6(amwg_plot_plan):
                 vid = ps.dict_id(vid_vec2,'diff',seasonid,filetable1,filetable2),
                 zvars = [vid_vec11,vid_vec12,vid_vec21,vid_vec22],
                 zfunc = (lambda z1,w1,z2,w2: (aminusb_2ax(z1,z2),aminusb_2ax(w1,w2))),
-                plottype = plot_type_temp[1], title1='', title2='',  source='',
+                plottype = plot_type_temp[1], title1='', title2='',  source=source,
                 plotparms = plotparms['diff'] )
             self.single_plotspecs[self.plot3_id+'c'] = contplot
             self.single_plotspecs[self.plot3_id+'v'] = vecplot

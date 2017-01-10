@@ -20,12 +20,17 @@ import glob
 logger = logging.getLogger(__name__)
 
 
-def filenames(plotset, variable, obs_set='', var_option=None, region="Global", season="ANN", combined=False):
+def filenames(collkey, plotset, variable, obs_set='', var_option=None, region="Global",
+              season="ANN", combined=False):
+    if collkey=='7' or collkey=='7s':
+        region = ''
+#    root_name = form_file_rootname(plotset, [variable],
     root_name = form_file_rootname(plotset, [variable],
                                    aux=[] if var_option is None else [var_option],
-                                   basen="set%s" % plotset, postn=obs_set,
+                                   postn=obs_set,
                                    season=season, region=region, combined=combined
                                    )
+                                   #basen="set%s"%collkey, postn=obs_set,
     files = []
     files.extend(form_filename(root_name, ["png", "pdf"], descr=True, more_id="combined" if combined else ""))
     for dataset in ("obs", "ft1", "diff"):
@@ -430,7 +435,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, data_hash, colls
 
                 # set up region str (and later overwrite it if needed)
                 g_region = diags_collection[collnum].get('regions', ['Global'])
-                if g_region == ['Global']:
+                if g_region == ['Global'] or collnum=='7' or collnum=='7s':
                     regionstr = ''
                 else:
                     regionstr = '--regions '+' '.join(g_region)
@@ -592,7 +597,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, data_hash, colls
                                         title = "{var} {addon}".format(var=var, addon=addon_info)
 
                                         for s in coll_def.get("seasons", ["ANN"]):
-                                            files = filenames(collnum, var, obs_set=diags_obslist[o]["filekey"], combined=combined, season=s, var_option=option, region=region)
+                                            files = filenames(collnum, p, var, obs_set=diags_obslist[o]["filekey"], combined=combined, season=s, var_option=option, region=region)
                                             f = OutputFile(files[0], title="{season}".format(season=s), other_files=[filename_to_fileobj(f) for f in files[1:]])
                                             columns.append(f)
                                         row = OutputRow(title, columns)
@@ -613,7 +618,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, data_hash, colls
                                         columns.append("")
 
                                     for s in coll_def.get("seasons", ["ANN"]):
-                                        files = filenames(collnum, var, obs_set=diags_obslist[o]["filekey"], combined=combined, season=s, region=region)
+                                        files = filenames(collnum, p, var, obs_set=diags_obslist[o]["filekey"], combined=combined, season=s, region=region)
                                         f = OutputFile(files[0], title="{season}".format(season=s), other_files=[filename_to_fileobj(f) for f in files[1:]])
                                         columns.append(f)
                                     if collnum == "topten":
@@ -622,7 +627,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, data_hash, colls
                                         page.addRow(OutputRow(title, columns), obs_index)
                     elif collnum == "2":
                         for var in obsvars[o]:
-                            files = filenames(collnum, var, obs_set=diags_obslist[o]["filekey"], combined=True)
+                            files = filenames(collnum, p, var, obs_set=diags_obslist[o]["filekey"], combined=True)
                             f = OutputFile(files[0], title="Plot", other_files=[filename_to_fileobj(f) for f in files[1:]])
                             row = OutputRow(var, columns=[f])
                             page.addRow(row, 0)
@@ -633,7 +638,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, data_hash, colls
                             else:
                                 group = 1
                             obs = diags_obslist[o]["filekey"]
-                            files = filenames(collnum, var, obs_set=obs)
+                            files = filenames(collnum, p, var, obs_set=obs)
                             f = OutputFile(files[0], other_files=[filename_to_fileobj(f) for f in files[1:]])
                             row = OutputRow("{var} ({obs})".format(var=var, obs=obs), columns=[f])
                             page.addRow(row, group)
@@ -642,7 +647,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, data_hash, colls
                         for region in regions:
                             cols = []
                             for var in ["T", "Q", "H"]:
-                                files = filenames(collnum, var, region=region)
+                                files = filenames(collnum, p, var, region=region)
                                 f = OutputFile(files[0], other_files=[filename_to_fileobj(f) for f in files[1:]])
                                 cols.append(f)
                             row = OutputRow(region, cols)
@@ -741,7 +746,7 @@ def runcmdline(cmdline, outlogdir, dryrun=False):
 
                     cmdline = (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr,
                                seasonstr, varstr, outstr, xmlstr, prestr, poststr,
-                               regionstr, '--log_level DEBUG ', '--log_file', log_file)
+                               regionstr, '--log_level DEBUG ', '--log_file', log_file, '--runby meta' )
                     CMDLINES += [cmdline]
                 elif length == 15:
                     #varopts must be non empty
@@ -755,7 +760,7 @@ def runcmdline(cmdline, outlogdir, dryrun=False):
 
                         cmdline = (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr,
                                    seasonstr, varstr, outstr, xmlstr, prestr, poststr,
-                                   regionstr, "--varopts", vo, '--log_level DEBUG ', '--log_file', log_file)
+                                   regionstr, "--varopts", vo, '--log_level DEBUG ', '--log_file', log_file, '--runby meta')
                         CMDLINES += [cmdline]
 
     else:
@@ -788,13 +793,14 @@ def runcmdline(cmdline, outlogdir, dryrun=False):
                     del pid_to_tmpfile[p.pid]
         cmd = " ".join(cmdline)
         tmpfile = tempfile.NamedTemporaryFile()
-        active_processes.append(subprocess.Popen(cmd, stdout=tmpfile, stderr=tmpfile, shell=True))
-        DIAG_TOTAL += 1
-        PID = active_processes[-1].pid
-        pid_to_tmpfile[PID] = tmpfile
-        pid_to_cmd[PID] = cmd
+        if True:   # For some testing purposes, set to False to turn off all plotting.
+            active_processes.append(subprocess.Popen(cmd, stdout=tmpfile, stderr=tmpfile, shell=True))
+            DIAG_TOTAL += 1
+            PID = active_processes[-1].pid
+            pid_to_tmpfile[PID] = tmpfile
+            pid_to_cmd[PID] = cmd
 
-        logger.info("%s begun pid= %s diag_total= %s", cmd, PID, DIAG_TOTAL)
+            logger.info("%s begun pid= %s diag_total= %s", cmd, PID, DIAG_TOTAL)
 # These 3 functions are used to add the variables to the database for speeding up
 # classic view
 def setnum( setname ):

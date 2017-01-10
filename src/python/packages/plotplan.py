@@ -66,25 +66,22 @@ class plot_plan(object):
 
     def getfts(self, model, obs):
         if len(model) == 2:
-#           print 'Two models'
            filetable1 = model[0]
            filetable2 = model[1]
-        if len(model) == 1 and len(obs) == 1:
-#           print 'Model and Obs'
+        elif len(model) == 1 and len(obs) == 1:
             filetable1 = model[0]
             filetable2 = obs[0]
-        if len(obs) == 2: # seems unlikely but whatever
-#           print 'Two obs'
+        elif len(obs) == 2:
            filetable1 = obs[0]
            filetable2 = obs[1]
-        if len(model) == 1 and (obs != None and len(obs) == 0):
-#           print 'Model only'
+        elif len(model) == 1 and (obs != None and len(obs) == 0):
            filetable1 = model[0]
            filetable2 = None
-        if len(obs) == 1 and (model != None and len(model) == 0): #also unlikely
-#           print 'Obs only'
+        elif len(obs) == 1 and (model != None and len(model) == 0):
            filetable1 = obs[0]
            filetable2 = None
+        else:
+            logger.error("Unexpected numbers of models=%s and obs=%s",len(model),len(obs))
         return filetable1, filetable2
 
     # This takes the list of filetables and returns 3 lists:
@@ -181,12 +178,10 @@ class plot_plan(object):
                     pass
             self.variable_values[v] = value  # could be None
             #print value.id, value.shape
-            #pdb.set_trace()
         postponed = []   # derived variables we won't do right away
 
         #print 'derived var'
         for v in self.derived_variables.keys():
-            #pdb.set_trace()
             #print v
             value = self.derived_variables[v].derive(self.variable_values)
             #print value.id, value.shape
@@ -207,7 +202,6 @@ class plot_plan(object):
 
         for p, ps in self.single_plotspecs.iteritems():
             logger.info("Plotplan preparing data for %s and %s", ps._strid, ps.plottype)
-            #pdb.set_trace()
             try:
                 zax,zrv  = self.compute_plot_var_value( ps, ps.zvars, ps.zfunc )
                 z2ax,z2rv = self.compute_plot_var_value( ps, ps.z2vars, ps.z2func )
@@ -329,11 +323,13 @@ class plot_plan(object):
             plotparms = getattr(ps,'plotparms',None)
                     
             regionid = getattr(self,'region','')
-            if type(regionid) is not str: regionid = regionid.id()[1]
+            if regionid is None:
+                regionid = ''
+            if type(regionid) is not str:
+                regionid = regionid.id()[1]
             if regionid.lower().find('global')>=0: regionid=''
 
             # The following line is getting specific to UV-CDAT, although not any GUI...
-            #pdb.set_trace()
             #new kludge added to handle scatter plots, 10/14/14, JMcE
             if self.plottype == 'Vector':
                 if type(vars[0])==tuple:
@@ -355,7 +351,6 @@ class plot_plan(object):
                     'ft1':getattr(self,'ft1nom',''), 'ft2':getattr(self,'ft2nom',''),
                     'ft1nn':getattr(self,'ft1nickname',''), 'ft2nn':getattr(self,'ft2nickname','') },
                 varvals=varvals )
-        #pdb.set_trace()
 
         # dispose of any failed plots
         self.plotspec_values = { p:ps for p,ps in self.plotspec_values.items() if ps is not None }
@@ -384,8 +379,8 @@ class plot_plan(object):
             #print self.plotspec_values[p]
         # note: we may have to += other lists into the same ...[p]
         # note: if we have a composite of composites we can deal with it by building a second time
-        #print 'leaving _results'
-        #print self.plotspec_values.keys()
+        # print 'leaving _results'
+        # pprint( self.plotspec_values.keys() )
         return self
 
     def compute_plot_var_value( self, ps, zvars, zfunc ):
@@ -393,13 +388,31 @@ class plot_plan(object):
         This method computes the variable z to be plotted as zfunc(zvars), and returns it.
         It also returns zrv for use in building a label."""
         vvals = self.variable_values
-        zrv = [ vvals[k] for k in zvars ]
+        try:
+            zrv = [ vvals[k] for k in zvars ]
+        except KeyError as e:
+            logger.error("In compute_plot_var_value, cannot find values for all variables.")
+            logger.error("Exception is %s",e)
+            raise e
 
         if any([a is None for a in zrv]):
             logger.warning("Cannot compute plot results from zvars=%s\nbecause missing results for %s",
                            zvars, [k for k in zvars if vvals[k] is None])
             return None, None
         z = apply(zfunc, zrv)
+        if type(z) is tuple:  # for vector plot, tuple has two items
+            # My observation is that zrv is ordered to correspond to z[0],z[1],z[0],z[1],...
+            # but I doubt if that's guaranteed.  We need a better data structure to do this better.
+            iz = -1
+            for zr in zrv:
+                iz = (iz+1)%2
+                if hasattr(zr,'filetable') and not hasattr(z,'filetable'):
+                    z[iz].filetable = zr.filetable
+        else:
+            for zr in zrv:
+                if hasattr(zr,'filetable') and not hasattr(z,'filetable'):
+                    z.filetable = zr.filetable
+                    break
         if hasattr(z, 'mask') and z.mask.all():
             logger.debug("in plotplan.py")
             logger.error("All values of %s are missing!", z.id)
@@ -423,11 +436,14 @@ class plot_plan(object):
                 seasonid='ANN'
             else:
                 seasonid=self._seasonid
-            if not hasattr(self,'region') or 'Global' in self.region.id() or '' in self.region.id()\
-                    or 'global' in self.region.id():   # region.id() looks like ('rg', 'region name')
-                region = ''
+            if not hasattr(self,'region') or self.region is None or 'Global' in self.region.id() or\
+                    '' in self.region.id() or 'global' in self.region.id():
+                # Note that region.id() looks like ('rg', 'region name')
+                regionnm = ''
+            else:
+                regionnm = self.region.id()[1]
             from metrics.computation.reductions import reduced_variable
-            gwid = reduced_variable.IDtuple( classid='rv', var='gw', season=seasonid, region=region,
+            gwid = reduced_variable.IDtuple( classid='rv', var='gw', season=seasonid, region=regionnm,
                                              ft1=getattr(self,'ft1nom',''), ffilt1='' )
             gw = vvals.get(gwid,None)
             try:
