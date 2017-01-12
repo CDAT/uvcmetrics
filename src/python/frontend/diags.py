@@ -295,7 +295,11 @@ def run_diags( opts ):
             filter = opts._opts['obs'][0]['filter']
             obsfilter = None
             if filter != None:
-                obsfilter  = filter.split('"')[1]
+                # Assume the filter is something simple like 'f_startswith("NCEP")', or "f_startswith('NCEP')"
+                splitfilt =  filter.split('"')
+                if len(splitfilt)<=1:
+                    splitfilt =  filter.split("'")
+                obsfilter  = splitfilt[1]
 
             computeall = not opts['output']['table']
             table = sclass( modelfts, obsfts, varid=varid, obsfilter=obsfilter, dryrun=opts['dryrun'], sbatch=opts["sbatch"], computeall=computeall, outdir=outdir)
