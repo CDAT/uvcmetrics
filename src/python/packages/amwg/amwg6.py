@@ -307,7 +307,7 @@ class amwg_plot_set6(amwg_plot_plan):
                 plotparms = plotparms[src2modobs(ft1src)] )
             vecplot = plotspec(
                 vid = ps.dict_idid(vid_vec1), zvars=[vid_vec11,vid_vec12], zfunc = (lambda z,w: (z,w)),
-                plottype = plot_type_temp[1], title1='', title2='', source='',
+                plottype = plot_type_temp[1], title1='', title2='', source=ft1src,
                 plotparms = plotparms[src2modobs(ft1src)] )
             #self.single_plotspecs[self.plot1_id] = [contplot,vecplot]
             self.single_plotspecs[self.plot1_id+'c'] = contplot
@@ -325,7 +325,7 @@ class amwg_plot_set6(amwg_plot_plan):
                 plotparms = plotparms[src2obsmod(ft2src)] )
             vecplot = plotspec(
                 vid = ps.dict_idid(vid_vec2), zvars=[vid_vec21,vid_vec22], zfunc = (lambda z,w: (z,w)),
-                plottype = plot_type_temp[1], title1='', title2='', source='',
+                plottype = plot_type_temp[1], title1='', title2='', source=ft2src,
                 plotparms = plotparms[src2obsmod(ft2src)] )
             self.single_plotspecs[self.plot2_id+'c'] = contplot
             self.single_plotspecs[self.plot2_id+'v'] = vecplot
@@ -358,7 +358,7 @@ class amwg_plot_set6(amwg_plot_plan):
                 vid = ps.dict_id(vid_vec2,'diff',seasonid,filetable1,filetable2),
                 zvars = [vid_vec11,vid_vec12,vid_vec21,vid_vec22],
                 zfunc = (lambda z1,w1,z2,w2: (aminusb_2ax(z1,z2),aminusb_2ax(w1,w2))),
-                plottype = plot_type_temp[1], title1='', title2='',  source='',
+                plottype = plot_type_temp[1], title1='', title2='',  source=source,
                 plotparms = plotparms['diff'] )
             self.single_plotspecs[self.plot3_id+'c'] = contplot
             self.single_plotspecs[self.plot3_id+'v'] = vecplot

@@ -547,7 +547,11 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Tru
             else:
                 avmv = averager( mvrs, axis=axes_string, weights=avweights )
 
-        elif gw is None:
+        elif gw is None or mvrs.getLatitude() is None:
+            avmv = averager( mvrs, axis=axes_string )   # "normal" averaging
+        elif len(gw)!=len(mvrs.getLatitude()):
+            # very likely mvrs is a model-obs difference, gw is for model and mvrs is on the obs grid
+            # We might be able to use gw from obs, but it's not worth making it work for a diff
             avmv = averager( mvrs, axis=axes_string )   # "normal" averaging
         else:
             weights = [ gw if a.isLatitude() else 'weighted' for a in axes ]
@@ -774,6 +778,9 @@ def reduce2level_seasonal( mv, season=seasonsyr, region='Global', vid=None, seas
     axis.designateLevel()
 
     return avmv
+
+def identity( mv, *args, **kwargs ):
+    return mv
 
 def ttest_ab(mv1, mv2, constant = .1):
    mv1, mv2 = reconcile_units(mv1, mv2)
@@ -1685,7 +1692,7 @@ def calculate_seasonal_climatology(mv, season):
     In the future we may consider replacing climatology() by the functions in inc_reduce.py.
     """
     # Convert season to a season object if it isn't already
-    if season is None or season == 'ANN' or season.seasons[0] == 'ANN':
+    if season is None or season=='ANN' or getattr(season,'seasons',[None])[0] == 'ANN':
         season=seasonsyr
     elif type(season) == str:
         season=cdutil.times.Seasons(season)
@@ -2213,6 +2220,8 @@ def aminusb_ax2( mv1, mv2 ):
     if hasattr(mv1,'long_name'):
         aminusb.long_name = 'difference of '+mv1.long_name
     if hasattr(mv1,'units'):  aminusb.units = mv1.units
+    aminusb.filetable = mv1.filetable
+    aminusb.filetable2 = mv2.filetable
 
     aminusb.initDomain( ab_axes )
     mean_of_diff( aminusb, mv1, mv2 )
@@ -2288,6 +2297,10 @@ def fix_troublesome_units( mv ):
         mv.units = '1'       #... maybe this will work
     if mv.units == 'W/m~S~2~N~' or mv.units == 'W/m~S~2~N':
         mv.units = 'W/m^2'
+    if hasattr(mv,'filetable') and mv.filetable.id().ftid == 'ERA40' and\
+            mv.id[0:5]=='rv_V_' and mv.units=='meridional wind':
+        # work around a silly error in ERA40 obs
+        mv.units = 'm/s'
     return mv
 
 def adhoc_convert_units( mv, units ):
@@ -2513,6 +2526,10 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
             mv2new.mean = None
             mv2new.filetable = mv2.filetable
             mv2.regridded = mv2new.id   # a GUI can use this
+            if hasattr(mv1,'gw'):
+                mv2new.gw = mv1.gw
+            elif hasattr(mv2new,'gw'):
+                del mv2new.gw
             set_mean(mv2new)
             regridded_vars[mv2new.id] = mv2new
 #        else:
@@ -2548,10 +2565,16 @@ def aminusb_2ax( mv1, mv2, axes1=None, axes2=None ):
             mv1new.mean = None
             mv1new.filetable = mv1.filetable
             mv1.regridded = mv1new.id   # a GUI can use this
+            if hasattr(mv2,'gw'):
+                mv1new.gw = mv2.gw
+            elif hasattr(mv1new,'gw'):
+                del mv1new.gw
             set_mean(mv1new)
             regridded_vars[mv1new.id] = mv1new
     aminusb = mv1new - mv2new
     aminusb.id = 'difference of '+mv1.id
+    aminusb.filetable = mv1new.filetable
+    aminusb.filetable2 = mv2new.filetable
 
     #save arrays for rmse and correlations KLUDGE!
     aminusb.model = mv1new
@@ -2854,22 +2877,30 @@ def run_cdscan( fam, famfiles, cache_path=None ):
     except:
         pass
     try:
-        path = sys.prefix+'/bin/'
-        sys.path.insert(0, path)
         from cdms2 import cdscan
         import shlex
         logger.info('cdscan command line: %s', cdscan_line)
         try:
             cdscan_line = shlex.split(cdscan_line)
             cdscan.main(cdscan_line)
-        except:
+        except Exception,err:
+            print "CDSCAN RUN ERROR",err
+            import traceback,sys
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+            traceback.print_tb(exc_traceback)
+            print "END ERROR LOG"
             logger.error( 'ERROR: cdscan terminated. This is usually fatal. The arguments were:%s\n',
                            cdscan_line )
-    except:
+    except Exception,err:
+        print "CDSCAN IMPORT ERROR",err
+        import traceback
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        print "<<<<<<<<<<<< BEG TRACEBACK >>>>>>>>>>>>>>>>>>"
+        traceback.print_tb(exc_traceback)
+        print "<<<<<<<<<<<< END TRACEBACK >>>>>>>>>>>>>>>>>>"
         logger.error( 'importing cdscan failed' )
 
     # The old approach was to run cdscan as a separate process:
-    #print "cdscan_line=",cdscan_line
     #proc = subprocess.Popen([cdscan_line],shell=True)
     #proc_status = proc.wait()
     #if proc_status!=0:
@@ -2977,6 +3008,7 @@ def create_yvsx(x, y, stride=10):
     Y = cdms2.createVariable(ydata, axes=[X], id=y.id )
     Y.units = y.units
     return Y
+
 class reduced_variable(ftrow,basic_id):
     """Specifies a 'reduced variable', which is a single-valued part of an output specification.
     This would be a variable(s) and its domain, a reduction function, and perhaps

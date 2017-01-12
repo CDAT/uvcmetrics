@@ -20,7 +20,7 @@ dt = diags_test.DiagTest( modeldir, obsdir, plotset, filterid, obsid, varid, sea
 
 # Test of graphics (png) file match:
 # This just looks at combined plot, aka summary plot, which is a compound of three plots.
-imagefilename = 'figure-set11_Global_JAN_LWCF_plot-combined.png'
+imagefilename = 'set11_JAN_LWCF-combined-cam35_data_smaller_NCEP.png'
 imagethreshold = None
 ncfiles = {}
 

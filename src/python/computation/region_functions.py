@@ -16,7 +16,6 @@ def interpret_region( region ):
         if region in defines.all_regions:
             region = defines.all_regions[region]
         else:
-            pdb.set_trace() #jfp
             raise ValueError, "cannot recognize region name %s"%region
             region = None
     return region

@@ -36,6 +36,8 @@ class amwg_plot_set7(amwg_plot_plan):
         varid is a string identifying the variable to be plotted, e.g. 'TREFHT'.
         seasonid is a string such as 'DJF'."""
 
+        if aux==None:
+            aux=slice(0,None)
         filetable1, filetable2 = self.getfts(model, obs)
         plot_plan.__init__(self,seasonid)
         self.plottype = 'Isofill_polar'
@@ -44,6 +46,8 @@ class amwg_plot_set7(amwg_plot_plan):
                           'obs':{'colormap':'rainbow'},
                           'diff':{'colormap':'bl_to_darkred'} }
         self.season = cdutil.times.Seasons(self._seasonid)  # note that self._seasonid can differ froms seasonid
+
+        self.region = region
 
         self.varid = varid
         ft1id,ft2id = filetable_ids(filetable1, filetable2)
@@ -54,6 +58,7 @@ class amwg_plot_set7(amwg_plot_plan):
 
         if not self.computation_planned:
             self.plan_computation( model, obs, varid, seasonid, region, aux, names, plotparms=plotparms )
+
     @staticmethod
     def _list_variables( model, obs ):
         allvars = amwg_plot_set5._all_variables( model, obs )
@@ -62,32 +67,40 @@ class amwg_plot_set7(amwg_plot_plan):
         return listvars
     @staticmethod
     def _all_variables( model, obs ):
-        allvars = amwg_plot_plan.package._all_variables( model, obs, "amwg_plot_plan" )
+        #allvars = amwg_plot_plan.package._all_variables( model, obs, "amwg_plot_plan" )  #past
+        allvars = amwg_plot_set5._all_variables( model, obs )   # makes output keys similar to _list_variables
         for varname in amwg_plot_plan.package._list_variables(
             model, obs, "amwg_plot_plan" ):
             allvars[varname] = basic_pole_variable
         return allvars
     def plan_computation( self, model, obs, varid, seasonid, region=None, aux=slice(0,None), names=None,
                           plotparms=None ):
+
        """Set up for a lat-lon polar contour plot.  Data is averaged over all other axes.
        """
        filetable1, filetable2 = self.getfts(model, obs)
        ft1src = filetable1.source()
+       if region is not None:
+           regname = str(region)
+       else:
+           regname = None
        try:
            ft2src = filetable2.source()
        except:
            ft2src = ''
        reduced_varlis = [
            reduced_variable(
-               variableid=varid, filetable=filetable1, season=self.season,
-               reduction_function=(lambda x,vid, region=None: reduce2latlon_seasonal( x(latitude=aux, longitude=(0, 360)), self.season, region, vid=vid ) ) ),
+               variableid=varid, filetable=filetable1, season=self.season, region=regname,
+               reduction_function=(lambda x,vid, region=regname,aux1=aux: reduce2latlon_seasonal(
+                       x(latitude=aux1, longitude=(0, 360)), self.season, region, vid=vid ) ) ),
            reduced_variable(
-               variableid=varid, filetable=filetable2, season=self.season,
-               reduction_function=(lambda x,vid, region=None: reduce2latlon_seasonal( x(latitude=aux, longitude=(0, 360)), self.season, region, vid=vid ) ) )
+               variableid=varid, filetable=filetable2, season=self.season, region=regname,
+               reduction_function=(lambda x,vid, region=regname,aux1=aux: reduce2latlon_seasonal(
+                       x(latitude=aux1, longitude=(0, 360)), self.season, region, vid=vid ) ) )
             ]
        self.reduced_variables = { v.id():v for v in reduced_varlis }
-       vid1 = rv.dict_id( varid, seasonid, filetable1 )
-       vid2 = rv.dict_id( varid, seasonid, filetable2 )
+       vid1 = rv.dict_id( varid, seasonid, filetable1, region=regname )
+       vid2 = rv.dict_id( varid, seasonid, filetable2, region=regname )
 
        self.derived_variables = {}
        self.single_plotspecs = {
