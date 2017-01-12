@@ -2972,7 +2972,7 @@ def correlateData(mv1, mv2, aux):
 
     from genutil.statistics import correlation
     #print mv1.shape, mv2.shape
-
+    #pdb.set_trace()
     sliced_mvs = []
     if isinstance(aux,Number):
         for mv in [mv1, mv2]:
@@ -2988,8 +2988,13 @@ def correlateData(mv1, mv2, aux):
         sliced_mvs = [mv1, mv2]
     mv1_new, mv2_new = sliced_mvs
 
-    mv2_new = mv2_new.regrid(mv1_new.getGrid(), regridTool='esmf', regridMethod='linear')
+    #mv2_new = mv2_new.regrid(mv1_new.getGrid(), regridTool='esmf', regridMethod='linear')
+    mv1_new = reduce2latlon_seasonal(mv1)
+    mv2_new = reduce2latlon_seasonal(mv2)
+    mv1_new = mv1_new.regrid(mv2_new.getGrid(), regridTool='esmf', regridMethod='linear')
+    pdb.set_trace()
     corr = correlation(mv1_new.flatten(), mv2_new.flatten())
+
     #print corr
 
     return corr

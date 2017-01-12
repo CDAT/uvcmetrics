@@ -514,6 +514,7 @@ class amwg_plot_set1(amwg_plot_plan):
         """writes to the specified location, which may be a directory path or sys.stdout.
         The only allowed format is text"""
         logger.debug('IN AMWG1 WRITE PLOT')
+        pdb.set_trace()
         self.ptype = "text"
         if fname != "":
            logger.debug('filename was: %s', fname)
