@@ -328,7 +328,6 @@ def run_diags( opts ):
                 logger.warning('Could not find any of the requested variables %s among %s', opts['vars'],
                                 pclass.list_variables(modelfts,obsfts,sname) )
                 logger.warning("among %s", variables)
-                print "multidiags start here names=", names, "multidiags stop here"
                 return names
 
         # Ok, start the next layer of work - seasons and regions
@@ -474,7 +473,6 @@ def run_diags( opts ):
 
     # If this were called from multidiags, the names dictionary would be helpful.  In particular,
     # it will help to not have to re-open a file to re-compute the case name for the model.
-    print "multidiags start here names=", names, "multidiags stop here"
     return names
 
 
@@ -872,7 +870,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, opts, displa
                                                     descr=descr, vname=vname, more_id='combined' )
     else:
         source_descr2 = list(set(source_descr2))
-        source_descr2.sort()
+        #source_descr2.sort()
         fnamepng,fnamesvg,fnamepdf = form_filename( frnamebase, ('png','svg','pdf'),
                                                     modobs=list(source_descr2), more_id='combined' )
 
