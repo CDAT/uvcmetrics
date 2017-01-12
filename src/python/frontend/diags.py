@@ -310,7 +310,6 @@ def run_diags( opts ):
                 directory += '/amwg1_output/'
                 table.get_data(directory)
 #jfp was            table.write_plot_data(where=directory, fname=directory+'table_output')
-            pdb.set_trace()
             table.write_plot_data(where=directory, fname=form_filename( form_file_rootname(
                         sclass.number, [], 'table'), 'text' ) )
             continue
