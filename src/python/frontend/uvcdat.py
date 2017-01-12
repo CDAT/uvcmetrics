@@ -819,6 +819,22 @@ class uvc_simple_plotspec(basic_id):
                 self.axmin[vids][aid] = axmins[aid]
                 pset.axmin[vidp][aid] = axmins[aid]
         
+    def var_ftid( self, var ):
+        """from a variable (normally TransientVariable) var, returns the variable id and the ftid
+        field of the id of the corresponding filetable."""
+        if type(var) is tuple:  # happens for plot set 6
+            var0 = var[0]
+            varid = var[0].id+var[1].id
+        else:
+            var0 = var
+            varid = var.id
+        if hasattr(var0,'_filetableid'):
+            return varid, var0._filetableid.ftid
+        if hasattr(var0,'filetableid'):
+            return varid, var0.filetableid.ftid
+        if hasattr(var0,'filetable'):
+            return varid, var0.filetable.id().ftid
+
     def outfile( self, format="", where="" ):
         """returns a filename for writing out this plot"""
         if not os.path.isdir(where):
@@ -846,10 +862,7 @@ class uvc_simple_plotspec(basic_id):
                 if file_descr[0:3]=='obs': file_descr='obs'
                 if file_descr[0:4]=='diff': file_descr='diff'
                 var = self.vars[0]
-                if hasattr(var,'_filetableid'):
-                    ft1id = var._filetableid.ftid
-                else:
-                    ft1id = var.filetableid.ftid
+                varid, ft1id = self.var_ftid( var )
                 if hasattr(var,'_filetable2id'):
                     ft2id = var._filetable2id.ftid
                 elif hasattr(var,'filetable2id'):
@@ -858,7 +871,7 @@ class uvc_simple_plotspec(basic_id):
                     ft2id = ''
                 descr = underscore_join([ft1id,ft2id,file_descr])
                 if len(self.vars)>1:  where = where+'-combined'
-                return form_filename( where, 'nc', descr=descr, vname=self.vars[0].id, more_id=self.more_id )
+                return form_filename( where, 'nc', descr=descr, vname=varid, more_id=self.more_id )
         elif len(self.title)<=0:
             fname = 'foo'+''.join([random.choice('0123456789') for _ in range(4)])+'.nc'
         else:
@@ -917,7 +930,11 @@ class uvc_simple_plotspec(basic_id):
                 zax.filetable2id= str(zax.filetable2id)  # and the named tuple ids aren't writeable as such
             except:
                 pass
-            for ax in zax.getAxisList():
+            if type(zax) is tuple:
+                axes = zax[0].getAxisList()
+            else:
+                axes = zax.getAxisList()
+            for ax in axes:
                 try:
                     del ax.filetable
                 except:

@@ -261,8 +261,6 @@ def wait( idx ):
     stout,sterr = procs[idx].communicate() # waits for process to finish, then reads pipes
     namstr = stout[ stout.find("multidiags start here names=")+28 :
                         stout.find("multidiags stop here") ]
-    #print "jfp stout=",stout
-    #print "jfp sterr=",sterr
     if len(namstr)>0:
         newopts[idx]['modobs_names'] = eval( namstr )
     active[active.index(idx)] = None
@@ -287,7 +285,6 @@ def multidiags1( opt ):
         merge_defaults(o)
         o = finalize_modelobs(o) # copies obspath to obs['path'], changes {} to [{}]
         o['runby'] = 'multi'     # in case someone needs to know that multidiags is running it
-        print "jfp about to run_diags on",o['vars'],len(o.get('obs',[])),o.get('obs',[])
         o.finalizeOpts()
 
     if len(newopts)==1 or MAX_N_PROCS==1:
