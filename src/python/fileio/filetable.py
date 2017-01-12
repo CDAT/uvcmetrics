@@ -266,7 +266,8 @@ class basic_filetable(basic_id):
         filesupp = get_datafile_filefmt( dfile, options )
         if self.filefmt is None:
            self.filefmt = filesupp.name
-        elif self.filefmt!= filesupp.name:
+        elif self.filefmt!= filesupp.name and self.filefmt.find(filesupp.name)<0 and\
+                filesupp.name.find(self.filefmt)<0:
            self.filefmt = "various"
         vars = filesupp.interesting_variables()
         if len(vars)>0:
