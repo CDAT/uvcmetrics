@@ -21,7 +21,7 @@ from metrics.fileio.findfiles import *
 from metrics.common.utilities import *
 from metrics.computation.region import *
 from unidata import udunits
-import cdutil.times, numpy, pdb
+import cdutil.times, numpy, pdb, os
 import logging
 
 logger = logging.getLogger(__name__)
@@ -491,7 +491,7 @@ class amwg_plot_set1(amwg_plot_plan):
         self.ptype = "text"
         if fname != "":
            logger.debug('filename was: %s', fname)
-           filename = where + fname
+           filename = os.path.join( where, fname )
         else:
            filename = self.outfile( format, where )
         writer = open( filename, 'w' )
