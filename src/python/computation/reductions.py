@@ -1662,6 +1662,7 @@ def reduce2latlon_seasonal( mv, season=seasonsyr, region=None, vid=None, exclude
     # backwards compatibility with old keyword 'seasons':
     pdb.set_trace()
     print "vid ", vid
+
     if seasons!=seasonsyr:
         season = seasons
     return reduce2any( mv, target_axes=['x','y'], season=season, region=region, vid=vid,
