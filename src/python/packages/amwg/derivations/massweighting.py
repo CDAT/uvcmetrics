@@ -82,6 +82,7 @@ def axis_minmax( lax, f ):
     max,min depending on whether lax[0]<lax[-1] or lax[-1]>lax[0].  Thus either min<=lax[0]<lax[-1]<=max
     or max>=lax[0]>lax[-1]>=min."""
     try:
+        bnds = 'dummy'
         if hasattr(lax,'bounds'):
             bnds = f(lax.bounds)
         else:
@@ -101,6 +102,9 @@ def axis_minmax( lax, f ):
             assert( bnds1mx>=lax[-1] )
             return bnds0mn,bnds1mx
     except:
+        print bnds
+        import pdb
+        pdb.set_trace()
         logger.error("axis %s has no bounds in file %s",lax.id,f.id)
         return -1.0e20, 1.0e20
     
@@ -132,9 +136,9 @@ def rhodz_from_plev( lev, nlev_want, mv ):
         # For simplicity, if data is available at multiple times we will use just the first time.
         f = cdms2.open(lev.filename)
         fvars = f.variables.keys()
-        import pdb
-        pdb.set_trace()
         if 'PS' in fvars:
+            print mv.info()
+            print lev.filename
             latm1,latm2 = axis_minmax( lat, f )
             lonm1,lonm2 = axis_minmax( lon, f )
             PS = f('PS')(latitude=(latm1,latm2),longitude=(lonm1,lonm2))
