@@ -1660,6 +1660,7 @@ def reduce2latlon_seasonal( mv, season=seasonsyr, region=None, vid=None, exclude
     Axis names (ids) may be listed in exclude_axes, to exclude them from the averaging process.
     """
     # backwards compatibility with old keyword 'seasons':
+    pdb.set_trace()
     if seasons!=seasonsyr:
         season = seasons
     return reduce2any( mv, target_axes=['x','y'], season=season, region=region, vid=vid,
