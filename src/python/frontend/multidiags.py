@@ -279,10 +279,18 @@ def multidiags_dryrun( newopts, dryrun ):
     except TypeError:  # happens in the common case, dryrun==True
         outfile = None
     for opt in newopts:
-        print( "Options instance", file=outfile )
-        for key in ['outpath', 'obspath','vars']:
+        print( "Options instance", file=outfile )   # also want obs filter>>>>>
+        #print( "keys=", sorted(opt.keys()) )
+        for key in [('output','outputdir'), 'modelpath', 'obspath', ('obs','filter'), 'package',
+                    'sets', 'seasons', 'vars' ]:
             try:
-                print( "  ", key, "=", opt[key], file=outfile )
+                if type(key) is str:
+                    print( "  ", key, "=", opt[key], file=outfile )
+                else: # nested dictionaries, two keys in a tuple
+                    if type(opt[key[0]]) is list:  # we also have to drill through a list! (happens with model,obs)
+                        print( "  ", key[0], "[0][", key[1], "] =", opt[key[0]][0][key[1]], file=outfile )
+                    else:
+                        print( "  ", key[0], "[", key[1], "] =", opt[key[0]][key[1]], file=outfile )
             except KeyError:
                 print( "  ", key, "undefined" )
     if outfile is not None:
