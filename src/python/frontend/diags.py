@@ -332,6 +332,7 @@ def run_diags( opts ):
                 logger.warning('Could not find any of the requested variables %s among %s', opts['vars'],
                                 pclass.list_variables(modelfts,obsfts,sname) )
                 logger.warning("among %s", variables)
+                print "multidiags start here names=", names, "multidiags stop here"  # do not mess with this!
                 return names
 
         # Ok, start the next layer of work - seasons and regions
@@ -477,6 +478,7 @@ def run_diags( opts ):
 
     # If this were called from multidiags, the names dictionary would be helpful.  In particular,
     # it will help to not have to re-open a file to re-compute the case name for the model.
+    print "multidiags start here names=", names, "multidiags stop here"  # do not mess with this!
     return names
 
 
