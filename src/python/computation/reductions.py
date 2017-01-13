@@ -1660,7 +1660,7 @@ def reduce2latlon_seasonal( mv, season=seasonsyr, region=None, vid=None, exclude
     Axis names (ids) may be listed in exclude_axes, to exclude them from the averaging process.
     """
     # backwards compatibility with old keyword 'seasons':
-    print "vid ", vid
+    print "<<<<<<<<<<<<<<<<<vid ", vid
 
     if seasons!=seasonsyr:
         season = seasons

@@ -137,8 +137,8 @@ def rhodz_from_plev( lev, nlev_want, mv ):
         f = cdms2.open(lev.filename)
         fvars = f.variables.keys()
         if 'PS' in fvars:
-            print mv.info()
-            print lev.filename
+            #print mv.info()
+            #print lev.filename
             latm1,latm2 = axis_minmax( lat, f )
             lonm1,lonm2 = axis_minmax( lon, f )
             PS = f('PS')(latitude=(latm1,latm2),longitude=(lonm1,lonm2))
