@@ -2882,8 +2882,8 @@ def run_cdscan( fam, famfiles, cache_path=None ):
         import shlex
         logger.info('cdscan command line: %s', cdscan_line)
         try:
-            cdscan_line = shlex.split(cdscan_line)
-            cdscan.main(cdscan_line)
+            cdscan_lineargs = shlex.split(cdscan_line)
+            cdscan.main(cdscan_lineargs)
         except Exception,err:
             print "CDSCAN RUN ERROR",err
             import traceback,sys
@@ -2891,7 +2891,8 @@ def run_cdscan( fam, famfiles, cache_path=None ):
             traceback.print_tb(exc_traceback)
             print "END ERROR LOG"
             logger.error( 'ERROR: cdscan terminated. This is usually fatal. The arguments were:%s\n',
-                           cdscan_line )
+                           cdscan_lineargs )
+            print "original cdscan_line:",cdscan_line
     except Exception,err:
         print "CDSCAN IMPORT ERROR",err
         import traceback
