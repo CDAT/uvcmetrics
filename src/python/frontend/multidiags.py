@@ -3,6 +3,8 @@
 
 # ---------------- section 0: Imports and global initializations ----------------
 
+from __future__ import print_function   # for new-style print( string, file=outputfile )
+
 import logging, os, pdb, importlib, time, cProfile, pickle, tempfile, subprocess
 from pprint import pprint
 from itertools import groupby
@@ -259,11 +261,57 @@ def wait( idx ):
     global procs
     global active
     stout,sterr = procs[idx].communicate() # waits for process to finish, then reads pipes
-    namstr = stout[ stout.find("multidiags start here names=")+28 :
-                        stout.find("multidiags stop here") ]
+    multifirst = stout.find("multidiags start here names=")+28
+    multilast  = stout.find("multidiags stop here")
+    if multifirst <0 or multilast<0:
+        namstr = ''
+    else:
+        namstr = stout[ multifirst : multilast ]
     if len(namstr)>0:
         newopts[idx]['modobs_names'] = eval( namstr )
     active[active.index(idx)] = None
+
+def multidiags_dryrun( newopts, dryrun ):
+    """A list of Options objects newopts is set up, but we don'e want to actually run the
+    diagnostics.  Just print out something about what we have to do."""
+    try:
+        outfile = open(dryrun,'w')
+    except TypeError:  # happens in the common case, dryrun==True
+        outfile = None
+    for opt in newopts:
+        print( "Options instance", file=outfile )
+        for key in ['outpath', 'obspath','vars']:
+            try:
+                print( "  ", key, "=", opt[key], file=outfile )
+            except KeyError:
+                print( "  ", key, "undefined" )
+    if outfile is not None:
+        outfile.close()
+
+def multidiags2( optslist ):
+    """Now that a list of Options objects newopts is set up, actually run the diagnostics.  Then
+    set up for running the viewer."""
+    global optidx
+    global procs
+    global active
+
+    if len(optslist)==1 or MAX_N_PROCS==1:
+        # single-processing:
+        for i,o in enumerate(optslist):
+            o['modobs_names'] = run_diags(o.clone()) # run_diags messes with its input arg, though it shouldn't
+    else:
+        # multi-processing:
+        procs = [None] * len(optslist)
+        active = [None] * MAX_N_PROCS  # MAX_N_PROCS is defined at the top of this file.
+        optidx = 0
+        while optidx<len(optslist):
+            run_next()  # runs a process for optslist[optidx], *or* waits for something to finish
+        for iactive in active:
+            if iactive is None:
+                continue
+            wait(iactive)
+
+    setup_viewer( optslist )
 
 def multidiags1( opt ):
     """The input opt is a single Options instance, possibly with lists or collection names in place
@@ -272,38 +320,23 @@ def multidiags1( opt ):
     For each one separately, it computes the requested diagnostics.
     """
     global newopts
-    global optidx
-    global procs
-    global active
 
     opts = merge_all_options(opt)
     newopts = []
     for op in opts:
         newopts.extend(expand_lists_collections( op ))
-    print "jfp will run diags on",len(newopts),"Options objects"
+    print( "jfp will run diags on",len(newopts),"Options objects" )
     for o in newopts:
         merge_defaults(o)
         o = finalize_modelobs(o) # copies obspath to obs['path'], changes {} to [{}]
         o['runby'] = 'multi'     # in case someone needs to know that multidiags is running it
         o.finalizeOpts()
 
-    if len(newopts)==1 or MAX_N_PROCS==1:
-        # single-processing:
-        for i,o in enumerate(newopts):
-            o['modobs_names'] = run_diags(o.clone()) # run_diags messes with its input arg, though it shouldn't
+    dryrun = newopts[0]['dryrun']  # I'm assuming that all or none of the opts should be run.
+    if dryrun is False:
+        multidiags2( newopts )
     else:
-        # multi-processing:
-        procs = [None] * len(newopts)
-        active = [None] * MAX_N_PROCS  # MAX_N_PROCS is defined at the top of this file.
-        optidx = 0
-        while optidx<len(newopts):
-            run_next()  # runs a process for newopts[optidx], *or* waits for something to finish
-        for iactive in active:
-            if iactive is None:
-                continue
-            wait(iactive)
-
-    setup_viewer( newopts )
+        multidiags_dryrun( newopts, dryrun )
 
 def multidiags( opts ):
     """The input opts is an Options instance, or a dictionary key which identifies such an instance,
@@ -509,8 +542,8 @@ def setup_viewer_2( optsnested, vardesc ):
 # ---------------- section 4: Shell (command-line) driver ----------------
 
 if __name__ == '__main__':
-    print "UV-CDAT Diagnostics, Experimental Multi-Diags version"
-    print ' '.join(sys.argv)
+    print( "UV-CDAT Diagnostics, Experimental Multi-Diags version" )
+    print( ' '.join(sys.argv) )
     opt = Options(runby='multi')
     opt.parseCmdLine()
     #prof = cProfile.Profile()
