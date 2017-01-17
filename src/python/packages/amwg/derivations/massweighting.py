@@ -81,6 +81,7 @@ def axis_minmax( lax, f ):
     attribute and an open file f containing the bounds variable.  The return values will be min,max or
     max,min depending on whether lax[0]<lax[-1] or lax[-1]>lax[0].  Thus either min<=lax[0]<lax[-1]<=max
     or max>=lax[0]>lax[-1]>=min."""
+    import pdb
     try:
         bnds = 'dummy'
         if hasattr(lax,'bounds'):
@@ -88,7 +89,12 @@ def axis_minmax( lax, f ):
         else:
             bnds = lax.genGenericBounds()
         bnds0 = [b for b in bnds if (b[0]<=lax[0] and b[1]>=lax[0]) or (b[0]>=lax[0] and b[1]<=lax[0]) ][0]
-        bnds1 = [b for b in bnds if (b[0]<=lax[-1] and b[1]>=lax[-1]) or (b[0]>=lax[-1] and b[1]<=lax[-1]) ][0]
+        #bnds1 = [b for b in bnds if (b[0]<=lax[-1] and b[1]>=lax[-1]) or (b[0]>=lax[-1] and b[1]<=lax[-1]) ][0]
+        bnds1=[]
+        for b in bnds:
+            pdb.set_trace()
+            if (b[0] <= lax[-1] and b[1] >= lax[-1]) or (b[0] >= lax[-1] and b[1] <= lax[-1]):
+                bnds1 += [b]
         if lax[0]>lax[-1]:
             bnds0mx = max(bnds0[0],bnds0[1])
             bnds1mn = min(bnds1[0],bnds1[1])
@@ -102,7 +108,7 @@ def axis_minmax( lax, f ):
             assert( bnds1mx>=lax[-1] )
             return bnds0mn,bnds1mx
     except:
-        print bnds
+        print bnds.shape
         import pdb
         pdb.set_trace()
         logger.error("axis %s has no bounds in file %s",lax.id,f.id)
