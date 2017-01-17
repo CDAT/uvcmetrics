@@ -145,11 +145,12 @@ def rhodz_from_plev( lev, nlev_want, mv ):
         # For simplicity, if data is available at multiple times we will use just the first time.
         f = cdms2.open(lev.filename)
         fvars = f.variables.keys()
+        print '<<<<<<<<<<<', lev.filename
+        print fvars
         if 'PS' in fvars:
             #print mv.info()
             #print lev.filename
             latm1,latm2 = axis_minmax( lat, f )
-            print '<<<<<<<<<<<', lev.filename
             print '<<<<<<<<<<<', latm1,latm2
             lonm1,lonm2 = axis_minmax( lon, f )
             print '<<<<<<<<<<<', lonm1,lonm2
