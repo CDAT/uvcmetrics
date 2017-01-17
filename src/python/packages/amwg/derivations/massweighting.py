@@ -94,8 +94,8 @@ def axis_minmax( lax, f ):
             bnds1 = bnds1[0]
         else:
             bnds1=[]
+            pdb.set_trace()
             for b in bnds:
-                pdb.set_trace()
                 if (b[0] <= lax[-1] and b[1] >= lax[-1]) or (b[0] >= lax[-1] and b[1] <= lax[-1]):
                     bnds1 += [b]
         if lax[0]>lax[-1]:
@@ -146,7 +146,7 @@ def rhodz_from_plev( lev, nlev_want, mv ):
         f = cdms2.open(lev.filename)
         fvars = f.variables.keys()
         print '<<<<<<<<<<<', lev.filename
-        print fvars
+        #print fvars
         if 'PS' in fvars:
             #print mv.info()
             #print lev.filename
