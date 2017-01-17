@@ -149,7 +149,10 @@ def rhodz_from_plev( lev, nlev_want, mv ):
             #print mv.info()
             #print lev.filename
             latm1,latm2 = axis_minmax( lat, f )
+            print '<<<<<<<<<<<', lev.filename
+            print '<<<<<<<<<<<', latm1,latm2
             lonm1,lonm2 = axis_minmax( lon, f )
+            print '<<<<<<<<<<<', lonm1,lonm2
             PS = f('PS')(latitude=(latm1,latm2),longitude=(lonm1,lonm2))
             # I could relax all of the following assertions, but not without a test
             # problem, and I don't have one.  An assertion failure will provide a test
