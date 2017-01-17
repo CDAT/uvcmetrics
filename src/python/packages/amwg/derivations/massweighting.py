@@ -89,12 +89,15 @@ def axis_minmax( lax, f ):
         else:
             bnds = lax.genGenericBounds()
         bnds0 = [b for b in bnds if (b[0]<=lax[0] and b[1]>=lax[0]) or (b[0]>=lax[0] and b[1]<=lax[0]) ][0]
-        #bnds1 = [b for b in bnds if (b[0]<=lax[-1] and b[1]>=lax[-1]) or (b[0]>=lax[-1] and b[1]<=lax[-1]) ][0]
-        bnds1=[]
-        for b in bnds:
-            pdb.set_trace()
-            if (b[0] <= lax[-1] and b[1] >= lax[-1]) or (b[0] >= lax[-1] and b[1] <= lax[-1]):
-                bnds1 += [b]
+        bnds1 = [b for b in bnds if (b[0]<=lax[-1] and b[1]>=lax[-1]) or (b[0]>=lax[-1] and b[1]<=lax[-1]) ] #[0]
+        if bnds1 != []:
+            bnds1 = bnds1[0]
+        else:
+            bnds1=[]
+            for b in bnds:
+                pdb.set_trace()
+                if (b[0] <= lax[-1] and b[1] >= lax[-1]) or (b[0] >= lax[-1] and b[1] <= lax[-1]):
+                    bnds1 += [b]
         if lax[0]>lax[-1]:
             bnds0mx = max(bnds0[0],bnds0[1])
             bnds1mn = min(bnds1[0],bnds1[1])
