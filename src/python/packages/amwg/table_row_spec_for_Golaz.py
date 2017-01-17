@@ -31,7 +31,6 @@ table_row_specs = [
     { 'var':'TREFHT', 'obs':'LEGATES'},
     { 'var':'TREFHT', 'obs':'JRA25'},
     { 'var':'TS', 'obs':'NCEP'},
-    { 'var':'TS_LAND', 'obs':'NCEP'},
     { 'var':'U', 'obs':'JRA25', 'lev':'200'},
     { 'var':'U', 'obs':'NCEP', 'lev':'200'},
     { 'var':'Z3', 'obs':'JRA25', 'lev':'500', 'units':'hectometer'},
