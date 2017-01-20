@@ -171,31 +171,33 @@ class Row:
         ulev = udunits(self.lev,'mbar')
         # We have to compute on a level surface.
         if self.var not in filetable.list_variables_with_levelaxis():
-            return -999.000
+            return self.undefined#-999.000
         # The specified level is in millibars.  Do we have hybrid level coordinates?
         ft_hyam = filetable.find_files('hyam')
         hybrid = ft_hyam is not None and ft_hyam!=[]    # true iff filetable uses hybrid level coordinates
+
         if hybrid: # hybrid level coordinates
             reduced_variables = reduced_variables_hybrid_lev( filetable, self.var, self.seasonid,
                                                               filefilter=ffilt )
-            vid1= dv.dict_id(self.var,'p',self.seasonid,filetable)
-            vidl1=dv.dict_id(self.var,'lp',self.seasonid,filetable)
-            vidm1=dv.dict_id(self.var,'mp',self.seasonid,filetable)
-            derived_variables = { vid1: derived_var(
+            vid1  = dv.dict_id(self.var,'p',self.seasonid,filetable)
+            vidl1 = dv.dict_id(self.var,'lp',self.seasonid,filetable)
+            vidm1 = dv.dict_id(self.var,'mp',self.seasonid,filetable)
+
+            derived_variables = {}
+            derived_variables[vid1] = derived_var(
                     vid=vid1, inputs=[reduced_variable.dict_id(self.var,self.seasonid,filetable),
                                       reduced_variable.dict_id('hyam',self.seasonid,filetable),
                                       reduced_variable.dict_id('hybm',self.seasonid,filetable),
                                       reduced_variable.dict_id('PS',self.seasonid,filetable),
                                       reduced_variable.dict_id(self.var,self.seasonid,filetable) ],
-                    func=verticalize ),
-                                  vidl1: derived_var(
-                    vid=vidl1, inputs=[vid1], func=(lambda z: select_lev(z,ulev)) ),
-                                  vidm1: derived_var(
-                    vid=vidm1, inputs=[vidl1], func=\
-                        (lambda x,vid=None,season=self.season,dom0=domrange[0],dom1=domrange[1],gw=gw:
-                             reduce2scalar_seasonal_zonal(
-                            x,season,latmin=dom0,latmax=dom1,vid=vid,gw=gw) ) )
-                                  }
+                                      func=verticalize )
+
+            derived_variables[vidl1] = derived_var( vid=vidl1, inputs=[vid1], func=(lambda z: select_lev(z,ulev)) )
+
+            derived_variables[vidm1] = derived_var( vid=vidm1, inputs=[vidl1], func=\
+                                       (lambda x,vid=None,season=self.season,dom0=domrange[0],dom1=domrange[1],gw=gw:
+                                        reduce2scalar_seasonal_zonal( x,season,latmin=dom0,latmax=dom1,vid=vid,gw=gw) ) )
+
             variable_values = {}  # the following is similar to code in plot_plan._results()
             for v,rv1 in reduced_variables.iteritems():
                 value = rv1.reduce(None)
@@ -205,6 +207,13 @@ class Row:
             value = derived_variables[vidl1].derive( variable_values )
             variable_values[vidl1] = value
             mean1 = derived_variables[vidm1].derive( variable_values )
+
+            #pdb.set_trace()
+            # retrieve data for rmse and correlation
+            dummy = { 'dv_inputs_hybrid': variable_values[vid1] }
+            dv_rmse = derived_var(vid="dv_rmse", inputs=['dv_inputs_hybrid'], func= (lambda x: select_lev(x, ulev)) )
+            self.reduced_variables.append( dv_rmse.derive(dummy) )
+
         else: # pressure level coordinates in millibars, as "mbar"
             # There are other possibilities, but we aren't checking yet.
             reduced_variables = reduced_variables_press_lev(
@@ -220,11 +229,21 @@ class Row:
             #VID = rv.dict_id(self.var, self.season, filetable, ffilt)
             #self.reduced_variables[VID] = rv1
 
+            # retrieve data for rmse and correlation
+            pdb.set_trace()
+            #rv_rmse = reduced_variable(
+            #    variableid='rv_rmse', filetable=filetable, season=self.season, filefilter=ffilt,
+            #    reduction_function=(lambda x, ulev: select_lev(x, ulev)))
+            #self.reduced_variables.append(rv_rmse)
+
+            dummy = { 'dv_inputs': 'NOT YET DETERMINED' }
+            dv_rmse = derived_var(vid="dv_rmse", inputs=['dv_inputs'], func= (lambda x: select_lev(x, ulev)) )
+            self.reduced_variables.append( dv_rmse.derive(dummy) )
+
             mean1 = rv1.reduce()
             #self.variable_values[VID] = mean1
         return mean1
     def mean( self, filetable, filefam=None ):
-        #pdb.set_trace()
         if filetable is None:
             return self.undefined #-999.000
         if filefam is not None:
@@ -307,7 +326,7 @@ class Row:
         from metrics.graphics.default_levels import default_levels
         from metrics.computation.units import convert_variable
         from metrics.computation.compute_rmse import compute_rmse
-        
+
         #perform reductions for those derived variables that are user defined 
         if self.rmse_vars:
             for rmse_vars in self.rmse_vars:
@@ -330,9 +349,9 @@ class Row:
         #model and obs with no particular order
         keys = ['data1', 'data2'] 
         for key, rv in zip(keys, self.reduced_variables):
-            try:
+            if hasattr(rv, 'reduce'):
                 variable_values[key] = rv.reduce() 
-            except:
+            else:
                 variable_values[key] = rv #it is already reduced
             if self.var in default_levels.keys():
                 #convert to the units specified in the default levels disctionary
@@ -343,6 +362,7 @@ class Row:
 
         RMSE = self.undefined
         CORR = self.undefined
+        pdb.set_trace()
         if len(variable_values.keys()) == 2:
             dv = derived_var(vid='diff', inputs=variable_values.keys(), func=aminusb_2ax)
             value = dv.derive( variable_values )
