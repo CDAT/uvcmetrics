@@ -802,7 +802,11 @@ class Options():
                                  help="Enable translation for obs sets to datasets. Optional provide a colon separated input to output list e.g. DSVAR1:OBSVAR1")
             runopts.add_argument('--dryrun',
                                   help="Do not run anything simply store list of commands in file table_commands.sh for diags or metadiags_commands.sh for metadiags",
-                                  action="store_true")
+                                 nargs='?', default=False, const=True,
+                                 action="store")
+            # ... Thus there are three normal ways to specify dryrun:  (1) leave the option out - means self['dryrun']==False,
+            # (2) --dryrun (with no value provided) - means self['dryrun']==True, print dryrun output to stdout,
+            # (3) --dryrun path - means print dryrun output to the specified path
             runopts.add_argument('--sbatch',
                                   help="Run sbatch with the specified number of nodes",
                                   default=0,
