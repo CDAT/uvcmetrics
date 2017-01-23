@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # Run multiple diagnostics.  The user only specifies paths and a collection name.
 # The collection name is a key into multimaster.py, or (>>>> TO DO >>>>) another file provided by the user.
 
@@ -281,7 +283,7 @@ def multidiags_dryrun( newopts, dryrun ):
     for opt in newopts:
         print( "Options instance", file=outfile )   # also want obs filter>>>>>
         #print( "keys=", sorted(opt.keys()) )
-        for key in [('output','outputdir'), 'modelpath', 'obspath', ('obs','filter'), 'package',
+        for key in ['modelpath', 'obspath', ('obs','filter'), 'package',
                     'sets', 'seasons', 'vars' ]:
             try:
                 if type(key) is str:

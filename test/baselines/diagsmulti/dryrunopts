@@ -1,0 +1,24 @@
+Options instance
+   modelpath = ['<pathroot>/test/data//cam35_data_smaller/']
+   obspath = ['<pathroot>/test/data/obs_data_5.6/']
+   obs [0][ filter ] = f_startswith('ISCCP_')
+   package = AMWG
+   sets = ['5']
+   seasons = ['DJF', 'JJA', 'ANN']
+   vars = ['FLUT', 'LWCF']
+Options instance
+   modelpath = ['<pathroot>/test/data//cam35_data_smaller/']
+   obspath = ['<pathroot>/test/data/obs_data_5.6/']
+   obs [0][ filter ] = f_and( f_startswith('CERES_'), f_not(f_contains('EBAF')))
+   package = AMWG
+   sets = ['5']
+   seasons = ['DJF', 'JJA', 'ANN']
+   vars = ['FLUT', 'LWCF']
+Options instance
+   modelpath = ['<pathroot>/test/data//cam35_data_smaller/']
+   obspath = ['<pathroot>/test/data/obs_data_5.6/']
+   obs [0][ filter ] = f_startswith('NCEP')
+   package = AMWG
+   sets = ['5']
+   seasons = ['DJF', 'JJA', 'ANN']
+   vars = ['FLUT', 'LWCF']
