@@ -200,7 +200,8 @@ def makeTables(collnum, model_dict, obspath, outpath, pname, outlogdir, dryrun=F
                 runcmdline(cmdline, outlogdir, dryrun)
 
 
-def generatePlots(model_dict, obspath, outpath, pname, xmlflag, data_hash, colls=None, dryrun=False):
+def generatePlots(model_dict, obspath, outpath, pname, xmlflag, data_hash, colls=None,
+                  dryrun=False, opts_dryrun=False):
     import os
     # Did the user specify a single collection? If not find out what collections we have
     if colls == None:
@@ -469,7 +470,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, data_hash, colls
                         pstr2 = ''
                     cmdline = (def_executable, pstr1, pstr2, obsstr, optionsstr, packagestr, setstr, seasonstr, varstr, outstr, xmlstr, prestr, poststr, regionstr)
                     if collnum != 'dontrun':
-                        runcmdline(cmdline, outlogdir, dryrun)
+                        runcmdline(cmdline, outlogdir, dryrun, opts_dryrun)
                     else:
                         message = cmdline
                         logger.debug('DONTRUN: %s', cmdline)
@@ -532,7 +533,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, data_hash, colls
                         if varopts:
                             cmdline +=  [varopts]
                         if collnum != 'dontrun':
-                            runcmdline(cmdline, outlogdir, dryrun)
+                            runcmdline(cmdline, outlogdir, dryrun, opts_dryrun)
                         else:
                             logger.debug('DONTRUN: %s', cmdline)
                 else: # different executable; just pass all option key:values as command line options.
@@ -569,7 +570,7 @@ def generatePlots(model_dict, obspath, outpath, pname, xmlflag, data_hash, colls
                             execstr = execstr+' --figurebase '+ fnamebase
 
                     if execstr != def_executable:
-                        runcmdline([execstr], outlogdir, dryrun)
+                        runcmdline([execstr], outlogdir, dryrun, opts_dryrun)
 
                 # VIEWER Code
                 # Build rows for this group in the index...
@@ -688,15 +689,74 @@ pid_to_cmd = {}
 pid_to_tmpfile = {}
 active_processes = []
 DIAG_TOTAL = 0
+optsout = None
 
+
+def dequote(s):  # from stackoverflow, and a little better than the way I would have done it:
+    """
+    If a string has single or double quotes around it, remove them.
+    Make sure the pair of quotes match.
+    If a matching pair of quotes is not found, return the string unchanged.
+    """
+    if (s[0] == s[-1]) and s.startswith(("'", '"')):
+        return s[1:-1]
+    return s
+
+def cmd2opts( cmdline ):
+    """Input is a metadiags command line, a tuple or list of strings.
+    This function computes and returns the corresponding Options object."""
+    opts = Options()
+    # Some strings in cmdline contain blanks, e.g. '--seasons DJF JJA'.
+    # We have to convert this to a list of strings like sys.argv when cmdline is run, i.e. '--seasons','DJF','JJA'.
+    cmdl = ' '.join(cmdline)
+    sys.argv = [item for item in cmdl.split(' ') if item!='']
+    opts.parseCmdLine()
+    return opts
+
+def cmd2print( cmdline, opts_dryrun=True ):
+    """Input is a metadiags command line, and optionally the dryrun option.  This dryrun option may
+    be the name of a file, or True or False.  This function will print values of some key options.
+    If dryrun be True, they will be printed to stdout.  If dryrun be the name of a file, they will
+    be written to the file.  Nothing will happen if dryrun be False."""
+    global optsout
+    if opts_dryrun==False:
+        return
+    opts = cmd2opts( cmdline )
+
+    if optsout is None:
+        try:
+            optsout = open(opts_dryrun,'w')
+        except TypeError:
+            # happens in the common case, opts_dryrun==True
+            optsout = None   # print to this means print to stdout
+    if 'modelpath' not in opts.keys():
+        opts['modelpath'] = [os.path.abspath(opts['model'][0]['path'])]
+    if 'obspath' not in opts.keys():
+        opts['obspath'] = [os.path.abspath(opts['obs'][0]['path'])]
+
+    print >>optsout, "Options instance"
+    for key in ['modelpath', 'obspath', ('obs','filter'), 'package',
+                'sets', 'seasons', 'vars' ]:
+        try:
+            if type(key) is str:
+                print >>optsout, "  ", key, "=", opts[key]
+            else: # nested dictionaries, two keys in a tuple
+                if type(opts[key[0]]) is list:  # we also have to drill through a list! (happens with model,obs)
+                    print >>optsout, "  ", key[0], "[0][", key[1], "] =", dequote( opts[key[0]][0][key[1]] )
+                else:
+                    print >>optsout, "  ", key[0], "[", key[1], "] =", opts[key[0]][key[1]]
+        except KeyError:
+            print( "  ", key, "undefined" )
 
 def cmderr(popened):
     logfile = pid_to_cmd[popened.pid].split(" ")[-1]
     logger.error("Command \n%s\n failed with code of %d. Log file is at %s.", pid_to_cmd[popened.pid], popened.returncode, logfile)
 
 
-def runcmdline(cmdline, outlogdir, dryrun=False):
+def runcmdline(cmdline, outlogdir, dryrun=False, opts_dryrun=False):
     global DIAG_TOTAL
+
+    cmd2print( cmdline, opts_dryrun )
 
     # the following is a total KLUDGE. It's more of a KLUDGE than last time.
     # I'm not proud of this but I feel threatned if I don't do it.
@@ -928,6 +988,7 @@ if __name__ == '__main__':
         cmaps = opts._opts["colormaps"]
         tmpDict["colormaps"] = " ".join(["%s=%s" % (k, cmaps[k]) for k in cmaps])
         diags_collection[K]["options"] = tmpDict
+    print "jfp opts['dryrun']=",opts['dryrun']
     if opts["dryrun"]:
         fnm = os.path.join(outpath, "metadiags_commands.sh")
         dryrun = open(fnm, "w")
@@ -945,6 +1006,7 @@ if __name__ == '__main__':
 module use /usr/common/contrib/acme/modulefiles
 module load uvcdat/batch
 """ % (opts["sbatch"])
+
     else:
         dryrun = False
 
@@ -960,7 +1022,8 @@ module load uvcdat/batch
     data_path_hmac.update(obspath)
     data_hash = data_path_hmac.hexdigest()
 
-    menus, pages = generatePlots(model_dict, obspath, outpath, package, xmlflag, data_hash, colls=colls,dryrun=dryrun)
+    menus, pages = generatePlots(model_dict, obspath, outpath, package, xmlflag, data_hash,
+                                 colls=colls,dryrun=dryrun,opts_dryrun=opts['dryrun'])
 
     for page in pages:
         # Grab file metadata for every image that exists.

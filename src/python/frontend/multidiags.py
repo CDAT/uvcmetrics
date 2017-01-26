@@ -281,7 +281,7 @@ def multidiags_dryrun( newopts, dryrun ):
     except TypeError:  # happens in the common case, dryrun==True
         outfile = None
     for opt in newopts:
-        print( "Options instance", file=outfile )   # also want obs filter>>>>>
+        print( "Options instance", file=outfile )
         #print( "keys=", sorted(opt.keys()) )
         for key in ['modelpath', 'obspath', ('obs','filter'), 'package',
                     'sets', 'seasons', 'vars' ]:

@@ -508,6 +508,9 @@ class Options():
         self.merge(options_defaults)  # jfp not really a "verify" step, but has to be done now that defaults are out of __init__
         if len(self._opts['model']) == 0 and len(self._opts['obs']) == 0:
             logging.critical('At least one model or obs set needs describted')
+            import traceback
+            tb = traceback.format_exc()
+            logger.debug("traceback:\n%s", tb)
             quit()
         if len(self._opts['model']) != 0:
             for i in range(len(self._opts['model'])):
@@ -996,8 +999,16 @@ class Options():
                 raise e
         if args.modelpath != None:
             self['modelpath'] = args.modelpath[0]
+            if type(self['modelpath']) is str:
+                self['modelpath'] = os.path.abspath( self['modelpath'] )
+            else:
+                self['modelpath'] = [ os.path.abspath(pth) for pth in self['modelpath'] ]
         if args.obspath != None:
             self['obspath'] = args.obspath[0]
+            if type(self['obspath']) is str:
+                self['obspath'] = os.path.abspath( self['obspath'] )
+            else:
+                self['obspath'] = [ os.path.abspath(pth) for pth in self['obspath'] ]
 
         if (args.levels) != None:
             self.processLevels('levels', args.levels, extras)
@@ -1189,7 +1200,7 @@ class Options():
                 self['times'] = self['times']+slist
             else:
                 self['times'] = slist
-            logger.debug('seasons: %s', self._opts['times'])
+            #logger.debug('seasons: %s', self._opts['times'])
 
 
     def listOpts(self, args):

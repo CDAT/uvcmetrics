@@ -361,8 +361,9 @@ diags_collection['7s']['package'] = 'AMWG'
 diags_collection['7s']['options'] = {'logo':'no'}
 diags_collection['7s']['combined'] = True
 diags_collection['7s']['TREFHT'] = {'plottype': '7', 'obs': ['WILLMOTT_1']}
-diags_collection['7s']['PS'] = {'plottype': '7', 'obs': ['NCEP_1']}
-diags_collection['7s']['PSL'] = {'plottype': '7', 'obs': ['JRA25_1', 'NCEP_1']}
+diags_collection['7s']['PSL'] = {'plottype': '7', 'obs': ['JRA25_1']}
+diags_collection['7s']['Z3'] = {'plottype': '7', 'obs': ['JRA25_1']}
+
 
 # These 4 are northern only.
 
