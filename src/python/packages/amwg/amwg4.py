@@ -171,6 +171,7 @@ class amwg_plot_set4and4A(amwg_plot_plan):
             self.plotall_id: [self.plot1_id, self.plot2_id, self.plot3_id ]
             }
         self.computation_planned = True
+
     def customizeTemplates(self, templates, data=None, varIndex=None, graphicMethod=None, var=None,
                            uvcplotspec=None ):
         """This method does what the title says.  It is a hack that will no doubt change as diags changes."""

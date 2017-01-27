@@ -194,6 +194,7 @@ class amwg_plot_set5(amwg_plot_plan):
         else:
             self.composite_plotspecs = {}
         self.computation_planned = True
+
     def vars_normal_contours( self, filetable, varnom, seasonid, aux=None ):
         reduced_varlis = [
             reduced_variable(

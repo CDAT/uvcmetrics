@@ -111,6 +111,10 @@ def rhodz_from_plev( lev, nlev_want, mv ):
     computation.  If nlev_want>0, then first lev should be changed to something with that
     number of levels, by some interpolation/extrapolation process."""
     # Thus rhodz will depend on lat,lon,level (and time).
+    if lev[0]>lev[-1]:
+        ibottom = 0  # lev is ordered bottom-up , assuming it is pressure levels
+    else:
+        ibottom = -1 # lev is ordered top-down, assuming it is pressure levels
     g = AtmConst.g     # 9.80665 m/s2.
     lat = mv.getLatitude()
     lon = mv.getLongitude()
@@ -159,20 +163,24 @@ def rhodz_from_plev( lev, nlev_want, mv ):
                 # conversion not possible.
                 logging.exception("Could not convert from PS units %s to lev units %s",PS.units,lev.units)
                 return None
-            # Now, s*PS+i would be PS in the units of lev.  In all cases I've seen, s==1 and i==0
+            # Now, s*PS+i would be PS in the units of lev.  In all cases I've seen, i==0
 
             nlat = PS.shape[1]  # normally lat, but doesn't have to be
             nlon = PS.shape[2]  # normally lon, but doesn't have to be
+            # Adjust the lowest level of lev3d, if above the surface, to be the surface pressure.
             for ilat in range(nlat):
                 for ilon in range(nlon):
                     psl = s*PS[0,ilat,ilon] + i
-                    if psl>lev[0]:
-                        lev3d[0,ilat,ilon] = psl
+                    if psl>lev[ibottom]:
+                        lev3d[ibottom,ilat,ilon] = psl
                     # else some levels are underground.  Subterranean data should later get
                     # masked out, but even if it doesn't, doing nothing here does no harm.
         f.close()
 
-    dp = lev3d[0:-1,:,:] - lev3d[1:,:,:]
+    if ibottom==0:
+        dp = lev3d[0:-1,:,:] - lev3d[1:,:,:]  # for bottom-up, i.e. level 0 is near the surface
+    else:
+        dp = lev3d[1:,:,:] - lev3d[0:-1:,:,:]   # for top-down
     rhodz = dp/g   # (lev) shape
 
     # Fix level axis attributes:
