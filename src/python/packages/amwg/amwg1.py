@@ -226,19 +226,27 @@ class Row:
             rv1 = reduced_variables[reduced_variables.keys()[0]]
 
             #save the reduce variable
-            #VID = rv.dict_id(self.var, self.season, filetable, ffilt)
-            #self.reduced_variables[VID] = rv1
+            VID = rv.dict_id(self.var, self.season, filetable, ffilt)
+            self.reduced_variables[VID] = rv1
 
             # retrieve data for rmse and correlation
-            pdb.set_trace()
+            #pdb.set_trace()
             #rv_rmse = reduced_variable(
             #    variableid='rv_rmse', filetable=filetable, season=self.season, filefilter=ffilt,
             #    reduction_function=(lambda x, ulev: select_lev(x, ulev)))
             #self.reduced_variables.append(rv_rmse)
 
-            dummy = { 'dv_inputs': 'NOT YET DETERMINED' }
-            dv_rmse = derived_var(vid="dv_rmse", inputs=['dv_inputs'], func= (lambda x: select_lev(x, ulev)) )
-            self.reduced_variables.append( dv_rmse.derive(dummy) )
+            #season = season2Season(self.seasonid)
+            #RF = (lambda x, season=season, level=ulev, vid='dummy', gw=gw: reduce2latlon_seasonal_level( x, season, level, vid) )
+            RF = (lambda x, vid=None: x)
+            #RF = (lambda x, ulev, vid=None: select_lev(x, ulev))
+            rv2=reduced_variable( variableid=self.var, filetable=filetable, filefilter=ffilt,  reduced_var_id='dummy_rv', reduction_function=RF )
+            rv2_data = rv2.reduce()
+            yyy=select_lev(xxx, ulev)
+            #pdb.set_trace()
+            #dummy = { 'dv_inputs': 'NOT YET DETERMINED' }
+            #dv_rmse = derived_var(vid="dv_rmse", inputs=['dv_inputs'], func= (lambda x: select_lev(x, ulev)) )
+            self.reduced_variables.append( select_lev(rv2_data, ulev) )
 
             mean1 = rv1.reduce()
             #self.variable_values[VID] = mean1

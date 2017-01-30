@@ -1636,7 +1636,6 @@ def reduce_time_space_seasonal_regional( mv, season=seasonsyr, region=None, vid=
 # Brian Smith
 # 2/25/15
 def reduce2latlon_seasonal_level( mv, season, level, vid=None):
-
    if vid is None:
       vid = 'reduced_'+mv.id
    levax = levAxis(mv)
