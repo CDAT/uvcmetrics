@@ -16,7 +16,7 @@ from metrics.fileio.findfiles import *
 from metrics.common.utilities import *
 from metrics.computation.region import *
 from unidata import udunits
-import cdutil.times, numpy, pdb
+import cdutil.times, numpy, pdb, collections
 import logging
 
 logger = logging.getLogger(__name__)
@@ -76,7 +76,9 @@ def reduced_variables_hybrid_lev( filetable, varid, season, region='Global', fil
         reduced_variable(
             variableid='PS', filetable=filetable, season=season, filefilter=filefilter,
             reduction_function=rf_PS ) ]
-    reduced_variables = { v.id():v for v in reduced_varlis }
+    reduced_variables = collections.OrderedDict()
+    for v in reduced_varlis:
+        reduced_variables[v.id()] = v
     return reduced_variables
 def makeCmds(specs):
     import sys
@@ -176,21 +178,23 @@ class Row:
         ft_hyam = filetable.find_files('hyam')
         hybrid = ft_hyam is not None and ft_hyam!=[]    # true iff filetable uses hybrid level coordinates
 
+
         if hybrid: # hybrid level coordinates
-            reduced_variables = reduced_variables_hybrid_lev( filetable, self.var, self.seasonid,
-                                                              filefilter=ffilt )
+            reduced_variables = reduced_variables_hybrid_lev( filetable, self.var, self.seasonid, filefilter=ffilt,
+                                                              rf = (lambda x,vid: x(squeeze=1)),
+                                                              rf_PS = ( lambda x, vid=None: x(squeeze=1) )
+                                                              )
+
+            level_src = reduced_variable( variableid=self.var, filetable=filetable, season=season2Season(self.seasonid), filefilter=ffilt,
+                                           reduction_function=(lambda x, vid=None: x.getLevel() ) )
+
             vid1  = dv.dict_id(self.var,'p',self.seasonid,filetable)
             vidl1 = dv.dict_id(self.var,'lp',self.seasonid,filetable)
             vidm1 = dv.dict_id(self.var,'mp',self.seasonid,filetable)
 
             derived_variables = {}
-            derived_variables[vid1] = derived_var(
-                    vid=vid1, inputs=[reduced_variable.dict_id(self.var,self.seasonid,filetable),
-                                      reduced_variable.dict_id('hyam',self.seasonid,filetable),
-                                      reduced_variable.dict_id('hybm',self.seasonid,filetable),
-                                      reduced_variable.dict_id('PS',self.seasonid,filetable),
-                                      reduced_variable.dict_id(self.var,self.seasonid,filetable) ],
-                                      func=verticalize )
+            vid1_inputs = reduced_variables.keys() + [level_src.id()]
+            derived_variables[vid1] = derived_var( vid=vid1, inputs=vid1_inputs, func=verticalize )
 
             derived_variables[vidl1] = derived_var( vid=vidl1, inputs=[vid1], func=(lambda z: select_lev(z,ulev)) )
 
@@ -208,9 +212,11 @@ class Row:
             variable_values[vidl1] = value
             mean1 = derived_variables[vidm1].derive( variable_values )
 
-            #pdb.set_trace()
             # retrieve data for rmse and correlation
-            dummy = { 'dv_inputs_hybrid': variable_values[vid1] }
+            ref = reduced_variable( variableid=self.var, filetable=filetable, season=season2Season(self.seasonid), filefilter=ffilt,
+                                    reduction_function=(lambda x, vid=None: x(squeeze=1) ) )
+
+            dummy = { 'dv_inputs_hybrid': ref.reduce() }
             dv_rmse = derived_var(vid="dv_rmse", inputs=['dv_inputs_hybrid'], func= (lambda x: select_lev(x, ulev)) )
             self.reduced_variables.append( dv_rmse.derive(dummy) )
 
@@ -226,8 +232,8 @@ class Row:
             rv1 = reduced_variables[reduced_variables.keys()[0]]
 
             #save the reduce variable
-            VID = rv.dict_id(self.var, self.season, filetable, ffilt)
-            self.reduced_variables[VID] = rv1
+            #VID = rv.dict_id(self.var, self.season, filetable, ffilt)
+            #self.reduced_variables[VID] = rv1
 
             # retrieve data for rmse and correlation
             #pdb.set_trace()
@@ -242,7 +248,7 @@ class Row:
             #RF = (lambda x, ulev, vid=None: select_lev(x, ulev))
             rv2=reduced_variable( variableid=self.var, filetable=filetable, filefilter=ffilt,  reduced_var_id='dummy_rv', reduction_function=RF )
             rv2_data = rv2.reduce()
-            yyy=select_lev(xxx, ulev)
+            #yyy=select_lev(xxx, ulev)
             #pdb.set_trace()
             #dummy = { 'dv_inputs': 'NOT YET DETERMINED' }
             #dv_rmse = derived_var(vid="dv_rmse", inputs=['dv_inputs'], func= (lambda x: select_lev(x, ulev)) )
@@ -370,7 +376,7 @@ class Row:
 
         RMSE = self.undefined
         CORR = self.undefined
-        pdb.set_trace()
+
         if len(variable_values.keys()) == 2:
             dv = derived_var(vid='diff', inputs=variable_values.keys(), func=aminusb_2ax)
             value = dv.derive( variable_values )
