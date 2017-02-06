@@ -178,7 +178,6 @@ class Row:
         ft_hyam = filetable.find_files('hyam')
         hybrid = ft_hyam is not None and ft_hyam!=[]    # true iff filetable uses hybrid level coordinates
 
-
         if hybrid: # hybrid level coordinates
             reduced_variables = reduced_variables_hybrid_lev( filetable, self.var, self.seasonid, filefilter=ffilt,
                                                               rf = (lambda x,vid: x(squeeze=1)),
