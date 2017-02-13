@@ -65,7 +65,7 @@ setup (name = "metrics",
                    'metrics.graphics',
                    'metrics.frontend',
                    'metrics.computation',
-                   'metrics.conversion'
+                   'metrics.conversion',
                    'metrics.viewer'
                    ],
        package_dir = packages,
