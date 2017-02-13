@@ -8,8 +8,8 @@
     #   units units of the output quantity (default is same as the input files)
 
 #this is a dummy table for testing
-table_row_specs = [ { 'var':'FLUT', 'obs':'CERES-EBAF'}, { 'var':'U', 'obs':'JRA25', 'lev':'200'} ]
-xxxtable_row_specs = [
+#table_row_specs = [{ 'var':'Z3', 'obs':'JRA25', 'lev':'500', 'units':'hectometer'}]#{ 'var':'U', 'obs':'JRA25', 'lev':'200'}, { 'var':'FLUT', 'obs':'CERES_EBAF-TOA'} ]
+table_row_specs = [
     { 'var':'FLUT', 'obs':'CERES-EBAF'},
     { 'var':'FLUTC', 'obs':'CERES-EBAF'},
     { 'var':'FSNS', 'obs':'LARYEA'},
@@ -24,9 +24,9 @@ xxxtable_row_specs = [
     { 'var':'SHFLX', 'obs':'NCEP'},
     { 'var':'SHFLX', 'obs':'LARYEA'},
     { 'var':'SWCF', 'obs':'CERES-EBAF'},
-    { 'var':'SST', 'obs':'HadISST_CL'},
-    { 'var':'SST', 'obs':'HadISST_PI'},
-    { 'var':'SST', 'obs':'HadISST_PD'},
+    { 'var':'SST', 'obs':'HadISST_CL', 'units': 'degC'},
+    { 'var':'SST', 'obs':'HadISST_PI', 'units': 'degC'},
+    { 'var':'SST', 'obs':'HadISST_PD', 'units': 'degC'},
     { 'var':'TREFHT', 'obs':'LEGATES'},
     { 'var':'TREFHT', 'obs':'JRA25'},
     { 'var':'TS', 'obs':'NCEP'},
