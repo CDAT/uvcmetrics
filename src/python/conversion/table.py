@@ -145,7 +145,7 @@ def compute_row(spec):
     if units:
         model = convert_units(model, units)
 
-    model_mean = reduce2scalar_seasonal_zonal( model, season, latmin=latmin, latmax=latmax, vid=None, gw=gw )
+    model_mean = reduce2scalar_seasonal_zonal( model, season, latmin=latmin, latmax=latmax, vid=None, gw=None )
 
     #compute obs mean
     obs, dummy1 = obs_data #obs rarely has gw if ever
