@@ -130,7 +130,10 @@ def compute_row(spec):
         return [rowname, obs_data]
 
     #compute model mean
-    model, gw = model_data
+    model, weights = model_data
+    gw = None
+    if use_weights:
+        gw = weights
     if level:
         if hybrid:
             #make sure the level axes are the same for the model and PS
@@ -145,7 +148,7 @@ def compute_row(spec):
     if units:
         model = convert_units(model, units)
 
-    model_mean = reduce2scalar_seasonal_zonal( model, season, latmin=latmin, latmax=latmax, vid=None, gw=None )
+    model_mean = reduce2scalar_seasonal_zonal( model, season, latmin=latmin, latmax=latmax, gw=gw )
 
     #compute obs mean
     obs, dummy1 = obs_data #obs rarely has gw if ever
