@@ -1,9 +1,10 @@
-import sys, logging, cdms2, numpy, pdb
+import sys, logging, cdms2, MV2, numpy, pdb
 from metrics.packages.amwg.derivations.vertical import verticalize
 from metrics.computation.reductions import select_lev, reduce2scalar_seasonal_zonal, convert_units, reconcile_units
 from metrics.graphics.default_levels import default_levels
 from metrics.computation.units import convert_variable
 from metrics.computation.compute_rmse import compute_rmse
+from metrics.packages.amwg.derivations.simple_vars import mask_by
 from unidata import udunits
 
 from table_parameter import *
@@ -32,6 +33,12 @@ hyam = None
 hybm = None
 PS = None
 
+
+def ncar_mask(x, y):
+    """Apply the mask of x to y and y to x. This seems to apply only for SST and HadISST"""
+    X = MV2.masked_where(y.mask, x)
+    Y = MV2.masked_where(x.mask, y)
+    return X, Y
 def get_data(var_file, varid, season):
     global first_model_data_read, hybrid, hyam, hybm, PS
     vars = []
@@ -107,8 +114,8 @@ def compute_row(spec):
 
     varid = spec['var']
 
-    prefix = spec['obs']
-    obs_fn = findfile(obs_path, prefix, season)
+    obs_prefix = spec['obs']
+    obs_fn = findfile(obs_path, obs_prefix, season)
     obs_file = obs_path + obs_fn
 
     level = spec.get('lev', None)
@@ -117,19 +124,19 @@ def compute_row(spec):
 
     units = spec.get('units', None)
 
-    rowname = varid + '_'+prefix
+    rowname = varid + '_'+obs_prefix
     if level:
         rowname += '_' + level
 
+    #get the model and obs data
     model_data = get_data(model_file, varid, season)
     if type(model_data) is str:
         return [rowname, model_data]
-
     obs_data = get_data(obs_file, varid, season)
     if type(obs_data) is str:
         return [rowname, obs_data]
 
-    #compute model mean
+    #prepare model data
     model, weights = model_data
     gw = None
     if use_weights:
@@ -148,21 +155,29 @@ def compute_row(spec):
     if units:
         model = convert_units(model, units)
 
-    model_mean = reduce2scalar_seasonal_zonal( model, season, latmin=latmin, latmax=latmax, gw=gw )
-
-    #compute obs mean
+    #prepare obs data
     obs, dummy1 = obs_data #obs rarely has gw if ever
     if level:
         obs = select_lev(obs, ulevel)
     if units:
         obs = convert_units(obs, units)
-    obs_mean = reduce2scalar_seasonal_zonal( obs, season, latmin=latmin, latmax=latmax, gw=None ) #CHECK WHAT THE WEIGHTS ARE FOR OBS
 
-    #compute rmse & correlation
+    #put model and obs on the same grid
     model_new, obs_new = regrid_to_common_grid( model, obs, regridMethod=regridMethod, regridTool=regridTool )
-    RMSE, CORR = compute_rmse( model_new, obs_new)
 
-    return [rowname, model_mean.item(), obs_mean.item(), model_mean.item()-obs_mean.item(), RMSE, CORR]
+    #special masking for SST
+    #Take note. If the model data file does not have SST but does have TS and OCNFRAC(this is common) then
+    #SST is derived according to these parameters by masking.  So using the mcart mask is a second mask.
+    if varid == 'SST' and obs_prefix.startswith('HadISST') and use_ncar_mask:
+        model_new, obs_new = ncar_mask( model_new, obs_new)
+
+    #the data preparation is complete. perform the calculations
+    model_mean = reduce2scalar_seasonal_zonal( model_new, season, latmin=latmin, latmax=latmax, gw=gw)
+    obs_mean = reduce2scalar_seasonal_zonal( obs_new, season, latmin=latmin, latmax=latmax, gw=None)
+    RMSE, CORR = compute_rmse(model_new, obs_new)
+
+    return [rowname, model_mean.item(), obs_mean.item(), model_mean.item() - obs_mean.item(), RMSE, CORR]
+
 rows = []
 for spec in table_row_specs:
     row = compute_row(spec)

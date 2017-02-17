@@ -30,7 +30,7 @@ user_derived_variables = {
     'PRECIP':[ (['PRECT','seasonid'], prect2precip )],# cumulative precipitation (over the season)
     'PRECIP_LAND':[ (['PRECT_LAND','seasonid'], prect2precip )],  # cumulative precipitation (over the season; restricted to land)
     # sea surface temperature.  Usually it's in the data file, but not always.
-    'SST':[ ( ['TS','OCNFRAC'], (lambda ts,of: mask_by(ts,of,lo=0.9)) ) ],
+    'SST':[ ( ['TS','OCNFRAC'], (lambda ts,of: mask_by(ts,of,lo=.9)) ) ],
     'SWCFSRF':[ (['FSNS', 'FSNSC'], aminusb )],
     'SWCF':[ (['FSNTOA', 'FSNTOAC'], aminusb )],
     # miscellaneous:
