@@ -1,1 +1,1 @@
-import git
+from src.python.conversion.table import git
