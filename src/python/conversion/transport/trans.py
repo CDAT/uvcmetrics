@@ -1,13 +1,8 @@
 # Here's the title used by NCAR:
-# DIAG Set 2 - polar projection
+# DIAG Set 2 - Line Plots of Annual Implied Northward Transport
 
-import cdms2, MV2, cdutil.times, vcs, logging, sys, pdb
-from acme_diags.plot_tools.tools import plot_table
-
-#from acme_diags.regrid_to_common_grid import regrid_to_common_grid
-from genutil import averager
+import cdutil.times, vcs, cdms2, logging, sys, pdb
 from parameter import *
-from metrics.computation.reductions import *
 from metrics.packages.amwg.derivations.oaht import oceanic_heat_transport, ncep_ocean_heat_transport
 logger = logging.getLogger(__name__)
 
