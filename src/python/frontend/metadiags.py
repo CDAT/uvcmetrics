@@ -2,6 +2,7 @@
 
 # This file converts a dictionary file (like amwgmaster.py or lmwgmaster.py) to a series of diags.py commands.
 import sys, getopt, os, subprocess, logging, pdb
+from time import sleep
 from argparse import ArgumentParser
 from functools import partial
 from collections import OrderedDict
@@ -794,7 +795,12 @@ def runcmdline(cmdline, outlogdir, dryrun=False):
         cmd = " ".join(cmdline)
         tmpfile = tempfile.NamedTemporaryFile()
         if True:   # For some testing purposes, set to False to turn off all plotting.
-            active_processes.append(subprocess.Popen(cmd, stdout=tmpfile, stderr=tmpfile, shell=True))
+            while True:
+                try:
+                    active_processes.append(subprocess.Popen(cmd, stdout=tmpfile, stderr=tmpfile, shell=True))
+                    break
+                except:
+                    sleep(1)
             DIAG_TOTAL += 1
             PID = active_processes[-1].pid
             pid_to_tmpfile[PID] = tmpfile
