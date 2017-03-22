@@ -381,6 +381,7 @@ def run_diags( opts ):
                         # Since Options is a 2nd class (at best) citizen, we have to do something icky like this.
                         # hoping to change that in a future release. Also, I can see this being useful for amwg set 1.
                         # (Basically, if we output pre-defined json for the tables they can be trivially sorted)
+
                         if '5' in snum and package.upper() == 'LMWG' and opts['output']['json'] == True:
                             plot = sclass( modelfts, obsfts, varid, utime, region, vvaropts[aux], jsonflag=True )
                         else:

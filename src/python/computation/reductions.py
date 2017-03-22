@@ -294,6 +294,7 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Tru
     """
     # So far I've checked this code (without testing) for doing essentially the same thing
     # (with appropriate arguments) as reduce2scalar and reduce2latlon_seasonal
+
     if len(mv.shape)==0:
         return mv
     if vid is None:   # Note that the averager function returns a variable with meaningless id.
@@ -323,7 +324,7 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Tru
     axes_string = '('+')('.join(axis_names)+')'
     axes = mvrs.getAxisList()
 
-    if weights==None:
+    if weights is None:
         # weights unspecified (probably).  Are they specified in a variable attribute?
         # If mass weighting is appropriate, the weighting attribute should say so.  It was set by
         # an earlier weighting_choice() call.
@@ -343,10 +344,10 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Tru
             if axis.getBounds() is None:   # note that axis is not a time axis
                 axis._bounds_ = axis.genGenericBounds()
 
-        if weights=='mass' or (hasattr(weights,'shape') and len(weights.shape)==3):
+        if weights is 'mass' or (hasattr(weights,'shape') and len(weights.shape)==3):
             # In this case we will provide the averager with a full weight array, i.e.
             # "of the same shape as V" in the language of the genutil averager() documentation (with V=mvrs)
-            if weights=='mass':
+            if weights is 'mass':
                 # doesn't work for atmos set 7: latlon_wts = mvrs.filetable.weights['mass']  # array of shape (lev,lat,lon)
                 from metrics.packages.amwg.derivations.massweighting import mass_weights
                 # We don't want to recompute weights if unnecessary.  So here, when possible, we are
@@ -545,11 +546,11 @@ def reduce2any( mv, target_axes, vid=None, season=seasonsyr, region=None, gw=Tru
                 # Although we have chosen mass weights, they are not available.
                 avmv = averager( mvrs, axis=axes_string )   # "normal" averaging
             else:
-                avmv = averager( mvrs, axis=axes_string, weights=avweights )
+                avmv = averager( mvrs, axis=axes_string, weights=avweights)
 
         elif gw is None or mvrs.getLatitude() is None:
             avmv = averager( mvrs, axis=axes_string )   # "normal" averaging
-        elif len(gw)!=len(mvrs.getLatitude()):
+        elif len(weights)!=len(mvrs.getLatitude()):
             # very likely mvrs is a model-obs difference, gw is for model and mvrs is on the obs grid
             # We might be able to use gw from obs, but it's not worth making it work for a diff
             avmv = averager( mvrs, axis=axes_string )   # "normal" averaging
