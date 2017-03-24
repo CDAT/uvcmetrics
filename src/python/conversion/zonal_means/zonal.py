@@ -1,5 +1,5 @@
 # Here's the title used by NCAR:
-# DIAG Set 2 - Line Plots of Annual Implied Northward Transport
+# DIAG Set 3 - Line Plot of Zonal Means
 
 import cdutil, cdutil.times, vcs, cdms2, logging, sys, pdb
 import numpy as np
@@ -29,9 +29,9 @@ def get_data(var_file, varid, season):
     f.close()
     return var
 
-def plot(zonal_data):
-    def customTemplate(cnvs, template, zonal_data, data_key):
-        data = zonal_data[data_key]
+def plot(zonal_means):
+    def customTemplate(cnvs, template, zonal_means, data_key):
+        data = zonal_means[data_key]
 
         # Fix units if needed
         if data is not None:
@@ -81,8 +81,8 @@ def plot(zonal_data):
 
         return data
 
-    MIN = min( zonal_data['model'].min(), zonal_data['obs'].min() )
-    MAX = max( zonal_data['model'].max(), zonal_data['obs'].max() )
+    MIN = min( zonal_means['model'].min(), zonal_means['obs'].min() )
+    MAX = max( zonal_means['model'].max(), zonal_means['obs'].max() )
 
     cnvs = vcs.init( bg=True , geometry=(1212, 1628) )
     cnvs.clear()
@@ -94,13 +94,13 @@ def plot(zonal_data):
 
     cnvs.scriptrun('zonal_means_data.json')
     template = cnvs.gettemplate('zonal_means_data')
-    data = customTemplate( cnvs, template, zonal_data, 'model' )
+    data = customTemplate( cnvs, template, zonal_means, 'model' )
     presentation.linetype = 'solid'
     presentation.linecolor = "black"
     presentation.linewidth = 1
     cnvs.plot(data, template, presentation, title='Line Plot of Zonal Means: '+varid+' '+season, source=model_name)
 
-    data = customTemplate( cnvs, template, zonal_data, 'obs' )
+    data = customTemplate( cnvs, template, zonal_means, 'obs' )
     presentation.linetype = 'dash'
     presentation.linecolor = "red"
     presentation.linewidth = 2
@@ -108,12 +108,12 @@ def plot(zonal_data):
 
     cnvs.scriptrun('zonal_means_diff.json')
     template = cnvs.gettemplate('zonal_means_diff')
-    presentation.datawc_y1 = zonal_data['diff'].min()
-    presentation.datawc_y2 = zonal_data['diff'].max()
+    presentation.datawc_y1 = zonal_means['diff'].min()
+    presentation.datawc_y2 = zonal_means['diff'].max()
     presentation.linetype = 'solid'
     presentation.linecolor = "black"
     presentation.linewidth = 1
-    data = customTemplate(cnvs, template, zonal_data, 'diff' )
+    data = customTemplate(cnvs, template, zonal_means, 'diff' )
     cnvs.plot(data, template, presentation, title='Difference', source=obs_name)
 
     cnvs.png(outputfile, ignore_alpha=True)
@@ -129,20 +129,20 @@ def compute(var):
         weights = mass_weights(var)
     axes = '(lev)(lon)'
     if weights is None:
-        xxx=averager(var, axis=axes)
+        zonal_mean = averager(var, axis=axes)
     else:
-        xxx = averager(var, axis=axes, weights=weights)
+        zonal_mean = averager(var, axis=axes, weights=weights)
 
-    return xxx
+    return zonal_mean
 
 model = get_data(model_file, varid, season)
 obs = get_data(obs_file, varid, season)
 
-zonal_mean_data = {}
-zonal_mean_data['model'] = compute(model)
-zonal_mean_data['obs']   = compute(obs)
-zonal_mean_data['diff'] = aminusb_1ax(zonal_mean_data['model'], zonal_mean_data['obs'])
-zonal_mean_data['diff'].long_name = zonal_mean_data['model'].long_name
-zonal_mean_data['diff'].units = zonal_mean_data['model'].units
+zonal_means = {}
+zonal_means['model'] = compute(model)
+zonal_means['obs']   = compute(obs)
+zonal_means['diff'] = aminusb_1ax(zonal_means['model'], zonal_means['obs'])
+zonal_means['diff'].long_name = zonal_means['model'].long_name
+zonal_means['diff'].units = zonal_means['model'].units
 
-plot(zonal_mean_data)
+plot(zonal_means)
