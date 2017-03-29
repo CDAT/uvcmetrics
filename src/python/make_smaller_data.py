@@ -1,4 +1,4 @@
-import cdms2
+import cdms2, pdb
 indir = '/space/golaz1/ACME_simulations/20160520.A_WCYCL1850.ne30_oEC.edison.alpha6_01/pp/clim_rgr/0070-0099/'
 outdir = '~/smaller_golaz_data/'
 
@@ -38,6 +38,7 @@ ANN = '20160520.A_WCYCL1850.ne30_oEC.edison.alpha6_01_ANN_climo.nc'
 
 for season in seasons:
     fn = ANN.replace('ANN', season)
+    pdb.set_trace()
     fin  = cdms2.open(indir+fn)
     fout = cdms2.open(outdir+fn, 'w')
 
