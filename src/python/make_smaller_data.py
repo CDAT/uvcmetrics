@@ -44,8 +44,8 @@ for season in seasons:
 
     for varid in vars:
         pdb.set_trace()
-        var = fin[varid]
-        fout.write[var]
+        var = fin(varid)
+        fout.write(var)
 
     fin.close()
     fout.close()
