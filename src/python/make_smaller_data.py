@@ -38,13 +38,14 @@ ANN = '20160520.A_WCYCL1850.ne30_oEC.edison.alpha6_01_ANN_climo.nc'
 
 for season in seasons:
     fn = ANN.replace('ANN', season)
-    pdb.set_trace()
+
     fin  = cdms2.open(indir+fn)
     fout = cdms2.open(outdir+fn, 'w')
 
     for varid in vars:
-        data = fin(varid)
-        fout.write(varid, data)
+        pdb.set_trace()
+        var = fin[varid]
+        fout.write[var]
 
     fin.close()
     fout.close()
