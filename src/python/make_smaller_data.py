@@ -38,8 +38,8 @@ ANN = '20160520.A_WCYCL1850.ne30_oEC.edison.alpha6_01_ANN_climo.nc'
 
 for season in seasons:
     fn = ANN.replace('ANN', season)
-    fin  = cdms2.open(indir+file)
-    fout = cdms2.open(outdir+file, 'w')
+    fin  = cdms2.open(indir+fn)
+    fout = cdms2.open(outdir+fn, 'w')
 
     for varid in vars:
         data = fin(varid)
