@@ -725,6 +725,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, opts, displa
                         except vcs.error.vcsError as e:
                             logger.exception("Making summary plot: %s", e)
                             savePNG = True
+                    pdb.set_trace()
                 elif vcs.isvector(rsr.presentation) or rsr.presentation.__class__.__name__=="Gv":
                     strideX = rsr.strideX
                     strideY = rsr.strideY
