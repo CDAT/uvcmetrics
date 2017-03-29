@@ -43,7 +43,7 @@ for season in seasons:
     fout = cdms2.open(outdir+fn, 'w')
 
     for varid in vars:
-        pdb.set_trace()
+        #pdb.set_trace()
         var = fin(varid)
         fout.write(var)
 
