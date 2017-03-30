@@ -3,7 +3,7 @@ seasons = ['ANN', 'DJF', 'JJA']
 region = 'Global'
 
 #model_path = '/Users/mcenerney1/uvcmetrics_test_data/alpha6_test_run_001-010/'
-model_path = '/Users/mcenerney1/uvcmetrics_test_data/table_test/'
+model_path = '/Users/mcenerney1/uvcmetrics_test_data/smaller_golaz_data/'
 
 model_name = 'b30.009'
 #model_path = '/space/potter/table_test/' #on aims4
