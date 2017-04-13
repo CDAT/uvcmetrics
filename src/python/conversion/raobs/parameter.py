@@ -16,10 +16,10 @@ obs_path = '/Users/mcenerney1/uvcmetrics_test_data/obs_for_diagnostics/'
 obs_name = 'NCEP'
 
 outputdir  = './' #'~/diagout/'
-outputfile = 'global_means'
+outputfile = 'station'
 
 #model_file = model_path + '20160520.A_WCYCL1850.ne30_oEC.edison.alpha6_01_ANN_climo.nc'
-obs_file = 'NCEP_01_climo.nc'
+obs_file = 'RAOBS.nc'
 varid = 'T'
 
 data_ids = {'model':(model_path, model_file), 'obs':(obs_path, obs_file)}

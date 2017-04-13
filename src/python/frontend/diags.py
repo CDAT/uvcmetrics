@@ -372,7 +372,7 @@ def run_diags( opts ):
                                 logger.warning("No plots will be made.")
                     #get the names of the model and obs passed in from the command line
                     #or a default from the filetable
-                    
+
                     names = getNames(opts, modelfts, obsfts)
                     # now, the most inner loop. Looping over sets then seasons then vars then varopts
                     for aux in varopts:
@@ -673,6 +673,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, opts, displa
                         savePNG = False
                         #plot the multibox plot
                         try:
+                            pdb.set_trace()
                             if tm2 is not None and varIndex+1 == len(rsr.vars):
                                 if hasattr(plot, 'compositeTitle'):
                                     title = plot.compositeTitle
@@ -725,7 +726,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, opts, displa
                         except vcs.error.vcsError as e:
                             logger.exception("Making summary plot: %s", e)
                             savePNG = True
-                    pdb.set_trace()
+
                 elif vcs.isvector(rsr.presentation) or rsr.presentation.__class__.__name__=="Gv":
                     strideX = rsr.strideX
                     strideY = rsr.strideY
