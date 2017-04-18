@@ -74,7 +74,7 @@ class amwg_plot_set3(amwg_plot_plan,basic_id):
                 reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,self.season,self.region,vid=vid)) )
             self.reduced_variables[zvar._strid] = zvar
         elif varnom in self.common_derived_variables.keys():
-                    zvar,rvs,dvs = self.commvar2var(
+                    zvar,rvs,dvs,unused = self.commvar2var(
                         varnom, filetable1, self.season,\
                             (lambda x,vid=None:
                                  reduce2lat_seasonal(x, self.season, self.region, vid=vid) ))
@@ -95,7 +95,7 @@ class amwg_plot_set3(amwg_plot_plan,basic_id):
                 reduction_function=(lambda x,vid=None: reduce2lat_seasonal(x,self.season,self.region,vid=vid)) )
             self.reduced_variables[z2var._strid] = z2var
         elif varnom in self.common_derived_variables.keys():
-                    z2var,rvs,dvs = self.commvar2var(
+                    z2var,rvs,dvs,unused = self.commvar2var(
                         varnom, filetable2, self.season,\
                             (lambda x,vid:
                                  reduce2latlon_seasonal(x, self.season, self.region, vid) ))

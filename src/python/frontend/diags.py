@@ -152,7 +152,12 @@ def save_regrid( opts ):
         logger.error("do not recognize regrid option %s",opts['regrid'])
 
 def run_diags( opts ):
+
+    #get user name
+    user = opts['user'] #unused in diags
+
     global vcs_elements
+
     # Setup filetable arrays
     modelfts = []
     obsfts = []
@@ -304,7 +309,7 @@ def run_diags( opts ):
             if opts['output']['table']:
                 directory += '/amwg1_output/'
                 table.get_data(directory)
-#jfp was            table.write_plot_data(where=directory, fname=directory+'table_output') 
+#jfp was            table.write_plot_data(where=directory, fname=directory+'table_output')
             table.write_plot_data(where=directory, fname=form_filename( form_file_rootname(
                         sclass.number, [], 'table'), 'text' ) )
             continue
@@ -376,6 +381,7 @@ def run_diags( opts ):
                         # Since Options is a 2nd class (at best) citizen, we have to do something icky like this.
                         # hoping to change that in a future release. Also, I can see this being useful for amwg set 1.
                         # (Basically, if we output pre-defined json for the tables they can be trivially sorted)
+
                         if '5' in snum and package.upper() == 'LMWG' and opts['output']['json'] == True:
                             plot = sclass( modelfts, obsfts, varid, utime, region, vvaropts[aux], jsonflag=True )
                         else:
@@ -819,6 +825,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, opts, displa
                     savePNG = True
 
                     # Multi-plot
+                    #pdb.set_trace()
                     try:
                         if tm2 is not None:
                             # Multiple plots on a page:

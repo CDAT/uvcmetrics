@@ -1,4 +1,4 @@
-#!/usr/local/uvcdat/1.3.1/bin/python
+#/usr/local/uvcdat/1.3.1/bin/python
 
 # general-purpose classes (i.e., not specific to any GUI or diagnostic group) used in computing data for plots
 from metrics.common import *

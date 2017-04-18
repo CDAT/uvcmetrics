@@ -116,13 +116,14 @@ class amwg_plot_plan(plot_plan):
         If unsuccessful, this will return None,[],[].
         """
         if filetable is None:
-            return None,[],[]
+            return None,[],[], None
         #if varnom not in amwg_plot_plan.common_derived_variables:
         if varnom not in cls.common_derived_variables:
-            return None,[],[]
+            return None,[],[], None
         computable = False
         rvs = []
         dvs = []
+        svd_rmse = None
         #print "dbg in commvar2var to compute varnom=",varnom,"from filetable=",filetable
         for svd in cls.common_derived_variables[varnom]:  # loop over ways to compute varnom
             invarnoms = svd.inputs()
@@ -132,7 +133,39 @@ class amwg_plot_plan(plot_plan):
                     - set(builtin_variables) )<=0:
                 func = svd._func
                 computable = True
+                svd_rmse = svd
                 break
+        #check if some masking is required. If so, perform masking first
+        intersection = set(['OCNFRAC', 'LANDFRAC']).intersection(invarnoms)
+        if intersection:            
+            #intercept before any reduction takes place
+            mask_rvs = []
+            import collections
+            dv_dict = collections.OrderedDict()
+            #make a trivial reduced variable for each input
+            for ivn in invarnoms: 
+                RV = reduced_variable( variableid=ivn, filetable=filetable, #season=season,
+                                       reduced_var_id=ivn, reduction_function=(lambda x,vid:x) )
+                mask_rvs += [RV]
+                #dv_dict  = {rv.id(): rv.reduce() for rv in mask_rvs} 
+                dv_dict[ivn] = RV.reduce()
+            #NEXT: the derived variable is computed on the restricted inputs according to the mask
+            dv_mask = svd.derive( dv_dict ) 
+            
+            #protect against a failure
+            if dv_mask is None:
+                logger.warning("There is a problem with the mask variable %s in filetable %s", invarnoms, filetable.id())
+                return None, [None], [None], {}
+            #NEXT: create a derived variable that will compute the mean
+            dv_mean_vid = derived_var.dict_id( varnom, '', season.seasons[0], filetable )
+            dv_mean = derived_var( vid=dv_mean_vid, inputs=[dv_mask.id], outputs=[ svd.id() ], func=reduction_function)
+            
+            #NEXT: create the derived variable used for rmse and correlation
+            rmse_vars = {}
+            rmse_vars['rv'] = dv_dict
+            rmse_vars['dv'] = svd 
+            return dv_mean.id(), [dv_mask], [dv_mean], rmse_vars            
+
         if computable:
             #print "dbg",varnom,"is computable by",func,"from..."
             for ivn in invarnoms:
@@ -170,7 +203,7 @@ class amwg_plot_plan(plot_plan):
                     else:
                         if invar not in cls.common_derived_variables:
                             break
-                        dummy,irvs,idvs =\
+                        dummy,irvs,idvs, dummy1 =\
                             cls.commvar2var( invar, filetable, season, reduction_function,
                                              recurse=False, filefilter=filefilter )
                         rvs += irvs
@@ -188,14 +221,14 @@ class amwg_plot_plan(plot_plan):
             logger.warning("no inputs found for %s in filetable %s",varnom, filetable.id())
             logger.warning("filetable source files= %s",filetable._filelist[0:10])
             logger.warning("need inputs %s",svd.inputs())
-            return None,[],[]
+            return None,[],[], None
             #raise DiagError( "ERROR, don't have %s, and don't have sufficient data to compute it!"\
                 #                     % varnom )
         if not computable:
             logger.debug("DEBUG: comm. derived variable %s is not computable", varnom)
             logger.debug( "need inputs %s" ,svd.inputs())
             logger.debug("found inputs %s",([rv.id() for rv in rvs]+[drv.id() for drv in dvs]))
-            return None,[],[]
+            return None,[],[], None
         seasonid = season.seasons[0]
         vid = derived_var.dict_id( varnom, '', seasonid, filetable )
         #print "dbg commvar2var is making a new derived_var, vid=",vid,"inputs=",inputs
@@ -203,7 +236,23 @@ class amwg_plot_plan(plot_plan):
         newdv = derived_var( vid=vid, inputs=inputs, func=func )
         dvs.append(newdv)
         #print "dbg2 returning newdv.id=",newdv.id(),"rvs=",rvs,"dvs=",dvs
-        return newdv.id(), rvs, dvs
+        
+        #make the variables for the rmse and correlation calculation
+        #pdb.set_trace()
+        rmse_vars = None
+        if svd_rmse:
+            rmse_vars = {'rv':[], 'dv':None}
+            invarnoms = svd.inputs()
+            dv_inputs = []
+            for invar in invarnoms:
+                #keep a copy of rv to feed into the derived variable below
+                rv_rmse = reduced_variable( variableid=invar, filetable=filetable, season=season,
+                                       reduction_function=(lambda x,vid:x) )
+                rmse_vars['rv'].append(rv_rmse)
+                dv_inputs += [rv_rmse.id()]
+            #this derived variable takes the above rvs and applies the fuction
+            rmse_vars['dv'] = derived_var( vid=varnom, inputs=dv_inputs, outputs=[varnom], func=svd_rmse._func ) 
+        return newdv.id(), rvs, dvs, rmse_vars
 
     @staticmethod
     def _list_variables( model, obs ):

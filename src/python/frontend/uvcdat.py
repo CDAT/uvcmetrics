@@ -403,7 +403,7 @@ class uvc_simple_plotspec(basic_id):
             #self.presentation.yticlabels2 = {(yMIN+yMAX)/2.: ylabel}
             self.presentation.linewidth = 0
             self.presentation.markercolor = 1
-            self.presentation.markersize = 10
+            self.presentationarkersize = 10
             #self.presentation.list()   
     
         elif vcs.isyxvsx(self.presentation) or\
