@@ -825,7 +825,7 @@ def makeplots(res, vcanvas, vcanvas2, varid, frname, plot, package, opts, displa
                     savePNG = True
 
                     # Multi-plot
-                    #pdb.set_trace()
+                    pdb.set_trace()
                     try:
                         if tm2 is not None:
                             # Multiple plots on a page:

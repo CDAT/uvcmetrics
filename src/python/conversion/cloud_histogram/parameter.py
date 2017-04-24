@@ -1,7 +1,7 @@
 season = 'ANN'
 region = 'Global'
 
-model_path = '~/uvcmetrics/test/data/cam35_data_smaller/'
+model_path = '~/uvcmetrics_test_data/chris_data/'
 
 model_name = 'b30.009'
 #model_path = '/space/potter/table_test/' #on aims4
@@ -13,6 +13,7 @@ obs_path = '~/uvcmetrics/test/data/obs_data_13/'
 obs_name = 'C'
 
 outputdir  = './' #'~/diagout/'
+outputfile = outputdir + 'cloud.png'
 
 model_file = model_path + '20160520.A_WCYCL1850.ne30_oEC.edison.alpha6_01_ANN_climo.nc'
 obs_file = obs_path+'ISCCPCOSP_ANN_climo.nc'

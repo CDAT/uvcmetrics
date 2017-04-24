@@ -516,7 +516,7 @@ class uvc_simple_plotspec(basic_id):
                 # you have to give it all the contour levels.  So...
                 if vcs.isboxfill(self.presentation):
                     self.presentation.boxfill_type = 'custom'  # without this, can't set levels
-                
+
                 if self.levels:
                     levels = self.levels
                 else:
