@@ -108,6 +108,7 @@ def get_textobject(t,att,text):
     obj.string = [text]
     obj.x = [getattr(t,att).x]
     obj.y = [getattr(t,att).y]
+    obj.halign = "left"
     return obj
 def get_format(value):
     v = abs(value)
@@ -122,7 +123,7 @@ def get_format(value):
     return fmt % value
 def plot_value(cnvs, text_obj, value, position):
     import vcs
-    pdb.set_trace()
+    #pdb.set_trace()
     to = cnvs.createtextorientation(source=text_obj.To_name)
     to.halign = "right"
     new_text_obj = vcs.createtext(To_source=to.name, Tt_source=text_obj.Tt_name)
@@ -167,9 +168,6 @@ def plot(cloud_data):
         template.yname.priority = 1
         template.xname.priority = 1
         template.legend.priority = 1
-        template.min.priority = 0
-        template.mean.priority = 0
-        template.max.priority = 0
         template.dataname.priority = 0
         #cnvs.landscape()
         # Gray colormap as a request
@@ -180,17 +178,24 @@ def plot(cloud_data):
         ynameOri = cnvs.gettextorientation(template.yname.textorientation)
         ynameOri.height = 16
         template.yname.textorientation = ynameOri
-        template.yname.x += 0.01
+        template.yname.x -= 0.005
 
         xnameOri = cnvs.gettextorientation(template.xname.textorientation)
         xnameOri.height = 16
         template.xname.textorientation = xnameOri
-        template.xname.y              -= 0.04
+        template.xname.y              -= 0.02
 
-        #meanOri = cnvs.gettextorientation(template.mean.textorientation)
-        #meanOri.height = 14
-        #template.mean.textorientation = meanOri
-        #template.mean.y -= 0.005
+        meanOri = cnvs.gettextorientation(template.mean.textorientation)
+        meanOri.height = 11
+        template.mean.textorientation = meanOri
+        template.max.x = template.legend.x1
+        template.max.y = template.min.y + 0.015
+        template.mean.y = template.max.y - 0.015
+        template.mean.x = template.max.x
+        template.min.y = template.mean.y - 0.015
+        template.min.priority = 0
+        template.mean.priority = 0
+        template.max.priority = 0
 
         titleOri = cnvs.gettextorientation(template.title.textorientation)
         titleOri.height = 16
@@ -206,18 +211,19 @@ def plot(cloud_data):
         template.source.priority = 0
 
         template.units.priority = 1
+        template.units.x -= .01
+
+        #template.legend.x1            -= 0.01
+        #template.legend.offset        += 0.013
 
         return cnvs, template
-    cnvs = vcs.init(bg=False, geometry=(1212, 1628) )
+    cnvs = vcs.init(bg=True, geometry=(1212, 1628) )
 
     keys = [ 'model', 'obs', 'diff']
-
-    #isofills = ['test_isofill', 'reference_isofill', 'diff_isofill']
-    #template_ids = ['plotset7_0_x_0', 'plotset7_0_x_1', 'plotset7_0_x_2']
     colormaps = {'model': 'viridis', 'obs': 'viridis', 'diff': 'viridis'}
     names = {'model': model_name, 'obs': obs_name, 'diff': ''}
     titles = {'model':'model', 'obs':'observation', 'diff':'difference'}
-    for key in keys:#cloud_data.keys():
+    for key in keys:
         title = titles[key]
 
         presentation = cnvs.createboxfill( key + '_boxfill' )
@@ -245,20 +251,16 @@ def plot(cloud_data):
         nlevels = 16
         presentation.levels = [float(v) for v in vcs.mkscale(data.min(), data.max(), nlevels, zero=1)]
 
-        #plot the table of min, mean and max in upper right corner
+        #generate the table of min, mean and max in upper right corner
         try:
             mean_value = float(data.mean)
         except:
-            mean_value = data.mean()
-        content = {'min': ('Min', data.min()),
-                   'mean': ('Mean', mean_value),
-                   'max': ('Max', data.max())
-                   }
-
-        cnvs, template = plot_table(cnvs, template, content, 'mean', .065)
+            mean_value = float(data.mean())
+        content = {'min': ('Min', data.min()), 'mean': ('Mean', mean_value), 'max': ('Max', data.max()) }
 
         cnvs, template = customizeTemplates(cnvs, template, colormap=colormaps[key])
         cloud_custom_plot(cnvs, data, presentation, template, title=title, source=names[key])
+        cnvs, template = plot_table(cnvs, template, content, 'mean', 0.05)
 
     cnvs.png(outputfile, ignore_alpha=True)
 
@@ -278,12 +280,10 @@ data = get_data(obs_file, varid, season)
 obs = reduce_time_space_seasonal_regional( data, season=season, region=region, vid=None,
                                            exclude_axes=exclude_axes )
 obs = standardize_and_check_cloud_variable(obs)
-# put model and obs on the same grid
+
 cloud_data = {}
 cloud_data['model'] = model
 cloud_data['obs'] = obs
-# regrid_to_common_grid(model, obs, regridMethod=regridMethod, regridTool=regridTool)
 cloud_data['diff'] = cloud_data['model'] - cloud_data['obs']
 
 plot( cloud_data )
-pdb.set_trace()
