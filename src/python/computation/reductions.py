@@ -1,3 +1,4 @@
+
 #!/usr/local/uvcdat/bin/python
 
 # Data reduction functions.
@@ -13,7 +14,7 @@ from numpy import sin, ma
 import dateparser
 from numbers import Number
 import datetime
-from unidata import udunits
+from genutil import udunits
 from metrics.fileio.filetable import *
 from metrics.computation.units import *
 #from climo_test import cdutil_climatology

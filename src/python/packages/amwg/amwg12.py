@@ -1,3 +1,4 @@
+
 # AMWG Diagnostics, plot set 12.
 # Here's the title used by NCAR:
 # DIAG Set 12 - Vertical Profiles at 17 selected raobs stations
@@ -13,7 +14,7 @@ from metrics.fileio.findfiles import *
 from metrics.fileio import stationData
 from metrics.common.utilities import *
 from metrics.computation.region import *
-from unidata import udunits
+from genutil import udunits
 import cdutil.times, numpy, pdb
 import logging
 

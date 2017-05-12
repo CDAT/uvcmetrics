@@ -1,3 +1,4 @@
+
 #!/usr/local/uvcdat/bin/python
 
 # Functions to convert between representations of energy flux and
@@ -9,7 +10,7 @@
 #          - density (water)
 
 from metrics.common.utilities import *
-from unidata import udunits
+from genutil import udunits
 import numpy
 import logging
 

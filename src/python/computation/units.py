@@ -1,3 +1,4 @@
+
 #!/usr/local/uvcdat/bin/python
 
 # Units conversion, supplements to udunits.
@@ -5,7 +6,7 @@
 # this is the place to put the fix.
 # Several code segments in reductions.py still need to be brought over to here.
 
-from unidata import udunits
+from genutil import udunits
 import logging
 
 # Each key of the following dictionary is a unit not supported by udunits; or (e.g. 'mb')

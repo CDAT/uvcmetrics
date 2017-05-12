@@ -1,3 +1,4 @@
+
 #!/usr/local/uvcdat/1.3.1/bin/python
 
 # Top-leve definition of AMWG Diagnostics.
@@ -16,7 +17,7 @@ from metrics.fileio import stationData
 from metrics.packages.amwg.derivations import *
 from metrics.packages.amwg.derivations import qflx_lhflx_conversions as flxconv
 from metrics.frontend.defines import *
-from unidata import udunits
+from genutil import udunits
 import cdutil.times, numpy
 from numbers import Number
 from pprint import pprint

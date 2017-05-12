@@ -1,3 +1,4 @@
+
 # AMWG Diagnostics, plot set 2.
 # Here's the title used by NCAR:
 # DIAG Set 3 - Line Plots of  Zonal Means
@@ -14,7 +15,7 @@ from metrics.frontend.uvcdat import *
 from metrics.fileio.findfiles import *
 from metrics.common.utilities import *
 from metrics.computation.region import *
-from unidata import udunits
+from genutil import udunits
 import cdutil.times, numpy, pdb
 import logging
 

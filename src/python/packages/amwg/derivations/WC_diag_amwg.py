@@ -1,9 +1,10 @@
+
 #!/usr/local/uvcdat/1.3.1/bin/python
 
 #classes and functions to be added to amwg.py and amwg1.py
 
 import pdb
-from unidata import udunits
+from genutil import udunits
 import cdutil
 import numpy
 from pprint import pprint

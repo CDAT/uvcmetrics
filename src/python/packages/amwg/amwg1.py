@@ -1,3 +1,4 @@
+
 # AMWG Diagnostics, plot set 1.
 # Unlike all the other plot sets, this is just a table.
 # So this "plot set" calculation is completely different.
@@ -20,7 +21,7 @@ from metrics.computation.plotspec import *
 from metrics.fileio.findfiles import *
 from metrics.common.utilities import *
 from metrics.computation.region import *
-from unidata import udunits
+from genutil import udunits
 import cdutil.times, numpy, pdb
 import logging
 

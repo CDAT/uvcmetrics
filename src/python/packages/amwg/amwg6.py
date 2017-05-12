@@ -1,3 +1,4 @@
+
 # AMWG Diagnostics, plot set 6.
 # Here's the title used by NCAR:
 # DIAG Set 6 - Horizontal Vector Plots of Seasonal Means
@@ -13,7 +14,7 @@ from metrics.fileio.findfiles import *
 from metrics.common.utilities import *
 from metrics.computation.region import *
 from metrics.packages.amwg.derivations import *
-from unidata import udunits
+from genutil import udunits
 import cdutil.times, numpy, pdb
 import logging
 

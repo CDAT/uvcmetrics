@@ -1,4 +1,5 @@
 
+
 # Pressures, algorithm from Susannah Burrows:
 # First, calculate the pressure at the model level interfaces:
 #   pressure_int = hyai*P0 + hybi*PS
@@ -16,7 +17,7 @@ import numpy
 import cdms2
 import logging, pdb
 from atmconst import AtmConst
-from unidata import udunits
+from genutil import udunits
 
 
 logger = logging.getLogger(__name__)

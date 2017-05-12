@@ -1,3 +1,4 @@
+
 # AMWG Diagnostics, plot set 2.
 # Here's the title used by NCAR:
 # DIAG Set 2 - Line Plots of Annual Implied Northward Transport
@@ -12,7 +13,7 @@ from metrics.computation.plotspec import *
 from metrics.fileio.findfiles import *
 from metrics.common.utilities import *
 from metrics.computation.region import *
-from unidata import udunits
+from genutil import udunits
 
 from metrics.packages.amwg.derivations import *
 

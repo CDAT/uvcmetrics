@@ -1,9 +1,10 @@
+
 #!/usr/local/uvcdat/bin/python
 
 # Ngl doesn't work yet onoceanonly:
 # import Ngl
 import numpy, cdms2, cdutil, pdb, logging
-from unidata import udunits
+from genutil import udunits
 
 
 
